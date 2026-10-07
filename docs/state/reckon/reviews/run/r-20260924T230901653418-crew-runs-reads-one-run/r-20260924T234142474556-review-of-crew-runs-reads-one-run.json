@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:3446"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T23:41:42.474556+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/timing.log",
+      "line": "1",
+      "text": "the header names revision 6e7afb6e without the uncommitted-tree note this author's sibling negative-control.log carries, while the measurement ran on a tree whose run_id narrowing was not yet committed: at the named revision runs_view has no run_id parameter, so the 0.2808 s and opens=2 numbers cannot be reproduced from the revision the receipt names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 6e7afb6e \u2014 c8eab419 adds the run_id selector and its 136-line test file, 0c021526 adds only the evidence and plan landing records (+104/-1 in the archive page, one line relocated) with no plan meta changed and nothing outside the declared paths.",
+    "done_when": "every clause of the done-when carries a receipt \u2014 the narrowing at query.py:426-430, the 2,000-row synthetic ledger and its fixed open budget asserted at tests/test_crew_runs_by_run_id.py:111 with the positive control at :106, the declared mutation's red log, the 0.2808 s run-id timing at timing.log:5-6, and mcp.py untouched by the diff.",
+    "goal": "the node's goal is a runs read that narrows to one run by id rather than filtering a full read, and reckon/crew/query.py:370 lands it \u2014 run_id is validated as a non-empty identifier at query.py:407-409, the live arm reads one pointer through _live_records_for_run (query.py:351) instead of walking the fleet, and the ledger arm keeps one row at query.py:466-470 before any compact row is built.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/manifest.md; it names status complete, commits c8eab419 and 0c021526, the focused gate result (24 passed) with three named logs, the declared negative control, the four pre-existing failures with their sites, and the call-site follow-on.",
+    "write_paths": "the five declared paths are exactly the five files git diff --stat 6e7afb6e..0c021526 reports, and the archive evidence page's one flagged deletion is a dangling peer anchor tag re-added verbatim after the new section, so no peer's landed record is displaced."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_runs_by_run_id.py:111 reddens under the declared mutation (2001 <= 4, negative-control.log), the positive control at :106 proves the instrument counts what it claims, and the ceiling MAX_OPEN_FILES = 4 leaves two opens of headroom above the measured 2.",
+    "evidence": "the done-when's receipts are recorded and I reproduced the file-count test green at head 0c021526, docked because timing.log:1 names revision 6e7afb6e where runs_view has no run_id parameter, so the receipt cannot be reproduced from the revision it names.",
+    "fit": "the selector follows the surrounding idiom (RunQueryError validation beside the existing checks at reckon/crew/query.py:404-409, underscore helper with a mechanism docstring, no banned label or attribution in any added name), docked for re-applying the same narrowing in the filter at query.py:496, which reads like the mechanism the node exists to replace.",
+    "goal_fidelity": "reckon/crew/query.py:407-470 does what the goal states, docked one because the only production caller at reckon/mcp.py:3446 does not yet forward run_id, so no runtime path reaches the narrowing until the recorded follow-on lands.",
+    "scope_discipline": "every path in the diff at base..head is one of the five declared write paths, docked because the archive page's single removed line relocates a peer's dangling anchor tag rather than only appending this node's own section."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260924T230901653418-crew-runs-reads-one-run\nbase 6e7afb6ea9db39d226de75b2ad45b90525501fbf head 0c021526ff09a826e198a3dda227166422367598\nreviewing run r-20260924T234142474556-review-of-crew-runs-reads-one-run\n\nVERDICT goal: the node's goal is a runs read that narrows to one run by id rather than filtering a full read, and reckon/crew/query.py:370 lands it \u2014 run_id is validated as a non-empty identifier at query.py:407-409, the live arm reads one pointer through _live_records_for_run (query.py:351) instead of walking the fleet, and the ledger arm keeps one row at query.py:466-470 before any compact row is built.\nVERDICT done_when: every clause of the done-when carries a receipt \u2014 the narrowing at query.py:426-430, the 2,000-row synthetic ledger and its fixed open budget asserted at tests/test_crew_runs_by_run_id.py:111 with the positive control at :106, the declared mutation's red log, the 0.2808 s run-id timing at timing.log:5-6, and mcp.py untouched by the diff.\nVERDICT write_paths: the five declared paths are exactly the five files git diff --stat 6e7afb6e..0c021526 reports, and the archive evidence page's one flagged deletion is a dangling peer anchor tag re-added verbatim after the new section, so no peer's landed record is displaced.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/manifest.md; it names status complete, commits c8eab419 and 0c021526, the focused gate result (24 passed) with three named logs, the declared negative control, the four pre-existing failures with their sites, and the call-site follow-on.\nVERDICT diff: read commit by commit against base 6e7afb6e \u2014 c8eab419 adds the run_id selector and its 136-line test file, 0c021526 adds only the evidence and plan landing records (+104/-1 in the archive page, one line relocated) with no plan meta changed and nothing outside the declared paths.\nCALL_SITES: reckon/mcp.py:3446\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:407-470 does what the goal states, docked one because the only production caller at reckon/mcp.py:3446 does not yet forward run_id, so no runtime path reaches the narrowing until the recorded follow-on lands.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done-when's receipts are recorded and I reproduced the file-count test green at head 0c021526, docked because timing.log:1 names revision 6e7afb6e where runs_view has no run_id parameter, so the receipt cannot be reproduced from the revision it names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff at base..head is one of the five declared write paths, docked because the archive page's single removed line relocates a peer's dangling anchor tag rather than only appending this node's own section.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_runs_by_run_id.py:111 reddens under the declared mutation (2001 <= 4, negative-control.log), the positive control at :106 proves the instrument counts what it claims, and the ceiling MAX_OPEN_FILES = 4 leaves two opens of headroom above the measured 2.\nSCORE fit: 16\nJUSTIFICATION fit: the selector follows the surrounding idiom (RunQueryError validation beside the existing checks at reckon/crew/query.py:404-409, underscore helper with a mechanism docstring, no banned label or attribution in any added name), docked for re-applying the same narrowing in the filter at query.py:496, which reads like the mechanism the node exists to replace.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/timing.log:1 the header names revision 6e7afb6e without the uncommitted-tree note this author's sibling negative-control.log carries, while the measurement ran on a tree whose run_id narrowing was not yet committed: at the named revision runs_view has no run_id parameter, so the 0.2808 s and opens=2 numbers cannot be reproduced from the revision the receipt names.",
+  "review_run_id": "r-20260924T234142474556-review-of-crew-runs-reads-one-run",
+  "reviewed_base_sha": "6e7afb6ea9db39d226de75b2ad45b90525501fbf",
+  "reviewed_head_sha": "0c021526ff09a826e198a3dda227166422367598",
+  "reviewed_run_id": "r-20260924T230901653418-crew-runs-reads-one-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T00:36:39.446248+00:00",
+  "total": 87
+}

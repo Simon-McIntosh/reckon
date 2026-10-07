@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "233f442b0da394d459e5afaf6b8e59a9605a0cb4",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:2615",
+    "reckon/_store.py:2840",
+    "reckon/serve.py:3415"
+  ],
+  "completed_at": "2026-10-02T07:41:09.137Z",
+  "dispatched_at": "2026-10-02T07:12:11Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "2984",
+      "severity": "follow-on",
+      "text": "follow-on: the HTTP-patch refusal wired in validate_landing_patch has no test asserting it; no test passes a followups key through validate_landing_patch, so dropping the call or misreading the stored ids leaves the suite green."
+    },
+    {
+      "file": "tests/test_continuation.py",
+      "line": "501",
+      "severity": "follow-on",
+      "text": "follow-on: the declared fence lists five write paths and this file is not one."
+    }
+  ],
+  "head_log_revision": "9136d128bba68fbaaedf31d0310784cae52d7d5e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; five commits change reckon/_store.py (one refusal, two append call sites, one HTTP validator call), one new test file, two fixtures and one evidence fragment, all 315 insertions/5 deletions.",
+    "done_when": "the done-when names the new test file's cases plus the files the measurement found; the manifest records base and head arms and a negative control, and I re-ran the new file at head: 6 passed in 2.56s.",
+    "goal": "the node goal is to refuse appending a followup that reckon/followup_pointers.py classifies as hiding work, naming the reason and the remedy; reckon/_store.py:2875 _refuse_hiding_followup is one function built on classify_followup that does exactly that.",
+    "manifest": "read; it records base 233f442b0 3 failed/433 passed, head 9136d128b 436 passed, negative control EXIT=1, and names each fixture repair.",
+    "write_paths": "the declared fence lists five paths; the diff also changes tests/test_edit_plan.py and tests/test_continuation.py, which the done-when authorizes as fixture repairs and each is named in the manifest, with only prompt strings and added section_declarations changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_followup_that_hides_work_is_refused.py:145-180 reddens when the refusal is removed (negative control EXIT=1), but the HTTP-patch route added at reckon/_store.py:2984 has no test that fails if it regresses.",
+    "evidence": "the manifest's gate is the new file plus the measurement population and its result is recorded at after-suite-2.log (436 passed, EXIT=0).",
+    "fit": "the helpers at reckon/_store.py:2875 and 2956 are named by mechanism and their docstrings describe what they do, with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/_store.py:2875-2900 raises OpError naming the reason word and both remedies, reached from append_to_list and _apply_append.",
+    "scope_discipline": "every changed path is authorized by the done-when, which permits a fixture repair and requires each named; both fixture changes are named in the manifest."
+  },
+  "node": "a-followup-that-hides-work-is-refused",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse appending a followup that reckon/followup_pointers.py classifies as hiding work, naming the reason and the remedy; reckon/_store.py:2875 _refuse_hiding_followup is one function built on classify_followup that does exactly that.\nVERDICT done_when: the done-when names the new test file's cases plus the files the measurement found; the manifest records base and head arms and a negative control, and I re-ran the new file at head: 6 passed in 2.56s.\nVERDICT write_paths: the declared fence lists five paths; the diff also changes tests/test_edit_plan.py and tests/test_continuation.py, which the done-when authorizes as fixture repairs and each is named in the manifest, with only prompt strings and added section_declarations changed.\nVERDICT manifest: read; it records base 233f442b0 3 failed/433 passed, head 9136d128b 436 passed, negative control EXIT=1, and names each fixture repair.\nVERDICT diff: read commit by commit; five commits change reckon/_store.py (one refusal, two append call sites, one HTTP validator call), one new test file, two fixtures and one evidence fragment, all 315 insertions/5 deletions.\nCALL_SITES: reckon/mcp.py:2615, reckon/_store.py:2840, reckon/serve.py:3415\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:2875-2900 raises OpError naming the reason word and both remedies, reached from append_to_list and _apply_append.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's gate is the new file plus the measurement population and its result is recorded at after-suite-2.log (436 passed, EXIT=0).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is authorized by the done-when, which permits a fixture repair and requires each named; both fixture changes are named in the manifest.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_followup_that_hides_work_is_refused.py:145-180 reddens when the refusal is removed (negative control EXIT=1), but the HTTP-patch route added at reckon/_store.py:2984 has no test that fails if it regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers at reckon/_store.py:2875 and 2956 are named by mechanism and their docstrings describe what they do, with no plan or ticket identifier.\nFINDING reckon/_store.py:2984 follow-on: the HTTP-patch refusal wired in validate_landing_patch has no test asserting it; no test passes a followups key through validate_landing_patch, so dropping the call or misreading the stored ids leaves the suite green.\nFINDING tests/test_continuation.py:501 follow-on: the declared fence lists five write paths and this file is not one.\n",
+  "review_run_id": "r-20261002T071141388102-review-of-a-followup-that-hides-work-is-refused",
+  "reviewed_base_sha": "233f442b0da394d459e5afaf6b8e59a9605a0cb4",
+  "reviewed_head_sha": "d6ed3c8e0896c67632b85b4dd90bf2660fb8c78e",
+  "reviewed_run_id": "r-20261002T053311899319-a-followup-that-hides-work-is-refused",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T07:27:41.068364+00:00",
+  "total": 89
+}

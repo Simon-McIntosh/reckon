@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (4095a2b0, base_focused.log) exit 0 / 173 passed with failure_ids []; after_suite (d91c91fe4, head_focused.log) exit 0 / 181 passed with failure_ids []. The one added test is the parity test, so added failures = 0. The head log's own header records rev=6b35af3c, not the after_suite revision.",
+  "base_log_revision": "4095a2b0d51f542fa252c85e047a5e5f7fd37c4f",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/repair.py:_finding_kind",
+    "reckon/crew/repair.py:unmarked_findings",
+    "reckon/crew/reports.py:_severity_stated",
+    "reckon/crew/review.py:_stated_severity",
+    "reckon/crew/recovery.py:dispatch_repair_for_run"
+  ],
+  "completed_at": "2026-10-02T16:58:04.978Z",
+  "dispatched_at": "2026-10-02T16:37:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "1171",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring now reads \"A value outside the vocabulary \u2014 is not a severity any gate can read\"; the clause between the \"\u2014\" and the verb was deleted and the dash left behind, so the sentence no longer parses. Cosmetic; the predicate is unaffected."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T123339958959-one-severity-predicate/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite carries revision d91c91fe4 but the log its log_path names (head_focused.log) records rev=6b35af3c in its header, so a reader taking the after_suite revision at face value reads the 14-module head arm as run at a commit it did not run at; the recovery.py change is covered only by head_after_recovery.log (a 6b35af3c+worktree arm), which I re-ran green at the true head."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "194",
+      "severity": "follow-on",
+      "text": "follow-on: the reference :func:`declared_severity` is written unqualified in a module where the name is not in scope (the call is review_module.declared_severity), so the cross-module Sphinx reference cannot resolve; reckon/crew/reports.py:1173 repeats it, where the repo's convention for a cross-module reference is the fully qualified path (reckon/crew/budget_group.py:237)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T123339958959-one-severity-predicate/landing.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the landing record still lists the recovery.py clause deletion as an \"Unmet condition (scope)\" reported as a blocker, but its own Head line (6b35af3c) predates commit d91c91fe4, which applied that change; a reader of landing.md alone would believe a done-when bullet is unmet."
+    }
+  ],
+  "head_log_revision": "6b35af3c9e27473138975169282e81eb39897226",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 4095a2b0 -- 6b35af3c adds declared_severity and routes the parser, the audit and the reflex through it, d91c91fe4 drops the always-zero unmarked clause from the no-repair reason in recovery.py and asserts 'unmarked' is absent from that reason; both commits stay inside the declared paths.",
+    "done_when": "the done-when names a parity test; tests/test_severity_predicate_parity.py runs 'minor', '' and a missing key through reports._severity_stated and repair._finding_kind, asserts each of the three is unmarked to the audit and blocks in the reflex, and names its run in the manifest's tests line.",
+    "goal": "the node's goal is to make every reader of a stored finding's severity call one shared predicate in reckon/crew/review.py; declared_severity (reckon/crew/review.py:118) is that predicate, and the parser (_stated_severity), the promotion audit (reports._severity_stated) and the repair reflex (repair._finding_kind, repair.unmarked_findings) each call it and keep no vocabulary test of their own.",
+    "manifest": "read; status complete; baseline_suite (4095a2b0, base_focused.log, exit 0, 173 passed) and after_suite (d91c91fe4, head_focused.log, exit 0, 181 passed) both carried as JSON with revision, command, log_path, completed true and failure_ids [], so added failures derive from the reviewed run's own two gate logs; negative_control_log is a bare path.",
+    "write_paths": "read the manifest's declared paths -- six files; the diff 4095a2b0..d91c91fe4 changes exactly those six (reckon/crew/review.py, repair.py, reports.py, recovery.py, tests/test_severity_predicate_parity.py, tests/test_repair_answers_only_blocking_findings.py)."
+  },
+  "justifications": {
+    "durability": "negative_control.log shows the declared mutation (restoring _finding_kind's own severity-is-None test) reddens the parity test for 'minor' with three failing ids absent from the head arm, and the parity is asserted as a reader-to-reader relation rather than against a literal either reader owns.",
+    "evidence": "the parity gate is recorded (head_after_recovery.log, 14 passed EXIT=0, which I re-ran at d91c91fe4 with the same 14 passed EXIT=0) and the added-failure count is derived from the reviewed run's own logs (base_focused.log 173 passed, head_focused.log 181 passed, both EXIT=0, delta 0); deducted because after_suite names revision d91c91fe4 while the log it cites records rev=6b35af3c.",
+    "fit": "declared_severity is mechanism-named with no plan or ticket identifier, but reckon/crew/reports.py:1171 leaves a dangling em-dash where a clause was deleted and reckon/crew/repair.py:194 plus reckon/crew/reports.py:1173 use an unqualified :func:`declared_severity` cross-module reference the Sphinx domain cannot resolve.",
+    "goal_fidelity": "reckon/crew/review.py:118 declared_severity is the one vocabulary decision, and reckon/crew/repair.py:196, reckon/crew/repair.py:244, reckon/crew/reports.py:1176 and reckon/crew/review.py:326 each consult it rather than testing the value themselves.",
+    "scope_discipline": "the diff 4095a2b0..d91c91fe4 touches exactly the six declared write paths and adds no file outside them, and the node's test files are inside that fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make every reader of a stored finding's severity call one shared predicate in reckon/crew/review.py; declared_severity (reckon/crew/review.py:118) is that predicate, and the parser (_stated_severity), the promotion audit (reports._severity_stated) and the repair reflex (repair._finding_kind, repair.unmarked_findings) each call it and keep no vocabulary test of their own.\nVERDICT done_when: the done-when names a parity test; tests/test_severity_predicate_parity.py runs 'minor', '' and a missing key through reports._severity_stated and repair._finding_kind, asserts each of the three is unmarked to the audit and blocks in the reflex, and names its run in the manifest's tests line.\nVERDICT write_paths: read the manifest's declared paths -- six files; the diff 4095a2b0..d91c91fe4 changes exactly those six (reckon/crew/review.py, repair.py, reports.py, recovery.py, tests/test_severity_predicate_parity.py, tests/test_repair_answers_only_blocking_findings.py).\nVERDICT manifest: read; status complete; baseline_suite (4095a2b0, base_focused.log, exit 0, 173 passed) and after_suite (d91c91fe4, head_focused.log, exit 0, 181 passed) both carried as JSON with revision, command, log_path, completed true and failure_ids [], so added failures derive from the reviewed run's own two gate logs; negative_control_log is a bare path.\nVERDICT diff: read commit by commit against base 4095a2b0 -- 6b35af3c adds declared_severity and routes the parser, the audit and the reflex through it, d91c91fe4 drops the always-zero unmarked clause from the no-repair reason in recovery.py and asserts 'unmarked' is absent from that reason; both commits stay inside the declared paths.\nCALL_SITES: reckon/crew/repair.py:_finding_kind, reckon/crew/repair.py:unmarked_findings, reckon/crew/reports.py:_severity_stated, reckon/crew/review.py:_stated_severity, reckon/crew/recovery.py:dispatch_repair_for_run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:118 declared_severity is the one vocabulary decision, and reckon/crew/repair.py:196, reckon/crew/repair.py:244, reckon/crew/reports.py:1176 and reckon/crew/review.py:326 each consult it rather than testing the value themselves.\nSCORE evidence: 17\nJUSTIFICATION evidence: the parity gate is recorded (head_after_recovery.log, 14 passed EXIT=0, which I re-ran at d91c91fe4 with the same 14 passed EXIT=0) and the added-failure count is derived from the reviewed run's own logs (base_focused.log 173 passed, head_focused.log 181 passed, both EXIT=0, delta 0); deducted because after_suite names revision d91c91fe4 while the log it cites records rev=6b35af3c.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 4095a2b0..d91c91fe4 touches exactly the six declared write paths and adds no file outside them, and the node's test files are inside that fence.\nSCORE durability: 19\nJUSTIFICATION durability: negative_control.log shows the declared mutation (restoring _finding_kind's own severity-is-None test) reddens the parity test for 'minor' with three failing ids absent from the head arm, and the parity is asserted as a reader-to-reader relation rather than against a literal either reader owns.\nSCORE fit: 16\nJUSTIFICATION fit: declared_severity is mechanism-named with no plan or ticket identifier, but reckon/crew/reports.py:1171 leaves a dangling em-dash where a clause was deleted and reckon/crew/repair.py:194 plus reckon/crew/reports.py:1173 use an unqualified :func:`declared_severity` cross-module reference the Sphinx domain cannot resolve.\nFINDING reckon/crew/reports.py:1171 follow-on: the docstring now reads \"A value outside the vocabulary \u2014 is not a severity any gate can read\"; the clause between the \"\u2014\" and the verb was deleted and the dash left behind, so the sentence no longer parses. Cosmetic; the predicate is unaffected.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T123339958959-one-severity-predicate/manifest.md:1 follow-on: after_suite carries revision d91c91fe4 but the log its log_path names (head_focused.log) records rev=6b35af3c in its header, so a reader taking the after_suite revision at face value reads the 14-module head arm as run at a commit it did not run at; the recovery.py change is covered only by head_after_recovery.log (a 6b35af3c+worktree arm), which I re-ran green at the true head.\nFINDING reckon/crew/repair.py:194 follow-on: the reference :func:`declared_severity` is written unqualified in a module where the name is not in scope (the call is review_module.declared_severity), so the cross-module Sphinx reference cannot resolve; reckon/crew/reports.py:1173 repeats it, where the repo's convention for a cross-module reference is the fully qualified path (reckon/crew/budget_group.py:237).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T123339958959-one-severity-predicate/landing.md:1 follow-on: the landing record still lists the recovery.py clause deletion as an \"Unmet condition (scope)\" reported as a blocker, but its own Head line (6b35af3c) predates commit d91c91fe4, which applied that change; a reader of landing.md alone would believe a done-when bullet is unmet.\nreviewed_base_sha: 4095a2b0d51f542fa252c85e047a5e5f7fd37c4f\nreviewed_head_sha: d91c91fe4b1ae37f670cc628de0793b24ef0cd7c",
+  "review_run_id": "r-20261002T163700280340-review-of-one-severity-predicate",
+  "reviewed_base_sha": "4095a2b0d51f542fa252c85e047a5e5f7fd37c4f",
+  "reviewed_head_sha": "d91c91fe4b1ae37f670cc628de0793b24ef0cd7c",
+  "reviewed_run_id": "r-20261002T123339958959-one-severity-predicate",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T163700280340-review-of-one-severity-predicate",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T16:50:41.663671+00:00",
+  "total": 92
+}

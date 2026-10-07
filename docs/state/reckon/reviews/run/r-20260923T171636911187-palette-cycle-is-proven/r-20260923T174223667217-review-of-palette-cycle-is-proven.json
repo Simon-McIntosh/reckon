@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T17:42:23.667217+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-page-load-reads-each-file-once-landed.html",
+      "line": "327",
+      "text": "the pre block quotes the gate run as \"2 passed in 5.75s\" and the paragraph at :328 attributes it to revision ea1a0649 while the log it cites, logs/gate-head.log, carries \"# revision de3a348f\" and \"2 passed in 5.77s\", and no log taken at ea1a0649 exists on disk, so a reader following the citation cannot verify the run the record claims."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; ea1a0649 edits the test alone and de3a348f appends the landed note at docs/plans/a-page-load-reads-each-file-once.html:329, the evidence section at docs/evidence/archive/a-page-load-reads-each-file-once-landed.html:300 and the figure, adds 169 lines overall and removes 10 from the test, and leaves docs/ui/shell.jsx and docs/ui/shell-palette.jsx untouched.",
+    "done_when": "tests/test_shell_project_list_is_immediate.py:194 asserts the probe's completed-cycle count equals 2 before the count is read at :200; my rerun at the reviewed head gives 2 passed, exit 0 (logs/reviewer-gate.log), and my independent re-run of the declared mutation gives cycles 1 with closed false while the count assertion alone still passes (logs/reviewer-mutation-check.log).",
+    "goal": "the goal is a probe that proves each palette open cycle before the request list is read; tests/test_shell_project_list_is_immediate.py:106 confirms each open by the palette's own presence and each close by its absence, counts a cycle only at :136 when the close was observed and a reopen followed, and returns the observed booleans at :147 so a failure names the step that did not land.",
+    "manifest": "read; it records commits ea1a0649 and de3a348f, the gate result at de3a348f, the five logs by name, the declared negative control under negative_control_log with its mutation on the log's first line, and its own note about the earlier node's gate-log interpreter path; the reviewed worktree is clean at the reviewed head.",
+    "write_paths": "the manifest declares tests/test_shell_project_list_is_immediate.py, docs/evidence/archive/a-page-load-reads-each-file-once-landed.html, docs/figures/a-page-load-reads-each-file-once/palette-cycle.svg and docs/plans/a-page-load-reads-each-file-once.html; git diff --stat 2bd62d04..de3a348f touches exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the added assertion at tests/test_shell_project_list_is_immediate.py:194 compares the probe's own counted cycles against the independent literal 2, and it reddens on the declared mutation in my re-run at cycles 1 while the count assertion still passes, so it is a guard rather than a restatement.",
+    "evidence": "the gate names the file and its result is recorded with revision, tree and command headers in logs/gate-head.log and the four control logs, and I reproduced the declared mutation independently at cycles 1 with the count assertion still green, but the landed record at docs/evidence/archive/a-page-load-reads-each-file-once-landed.html:327 quotes a run its own cited log does not carry.",
+    "fit": "tests/test_shell_project_list_is_immediate.py:106 follows the module's existing probe idiom and reuses _WAIT_FOR at :75, names its returned facts by mechanism (cycles, opened, closed, reopened) with no plan, sprint or ticket label anywhere in the new identifiers, and the documentation uses the plan system's landed-note, cumulative-evidence and project-absolute figure conventions.",
+    "goal_fidelity": "tests/test_shell_project_list_is_immediate.py:136 counts a cycle only when an observed close is followed by a reopen, which is the measure the node's goal states, and the probe's own wait results are returned at :147 rather than discarded, so a cycle that did not happen cannot be read past.",
+    "scope_discipline": "every path in git diff 2bd62d04..de3a348f lies inside the four declared write paths, the two documentation changes are pure appends, and the plan's meta, followup and decision elements are untouched."
+  },
+  "project": "reckon",
+  "raw_text": "\nIndependent review of run r-20260923T171636911187-palette-cycle-is-proven\n(node palette-cycle-is-proven, plan reckon:a-page-load-reads-each-file-once sec 6),\nread in the reviewed worktree at de3a348f91607d801653c0d99d792ac2c2a3afc9 over base 2bd62d04d2280b162d8fac25378af0f0a1f5a457.\nreviewed_base_sha: 2bd62d04d2280b162d8fac25378af0f0a1f5a457\nreviewed_head_sha: de3a348f91607d801653c0d99d792ac2c2a3afc9\n\nVERDICT goal: the goal is a probe that proves each palette open cycle before the request list is read; tests/test_shell_project_list_is_immediate.py:106 confirms each open by the palette's own presence and each close by its absence, counts a cycle only at :136 when the close was observed and a reopen followed, and returns the observed booleans at :147 so a failure names the step that did not land.\nVERDICT done_when: tests/test_shell_project_list_is_immediate.py:194 asserts the probe's completed-cycle count equals 2 before the count is read at :200; my rerun at the reviewed head gives 2 passed, exit 0 (logs/reviewer-gate.log), and my independent re-run of the declared mutation gives cycles 1 with closed false while the count assertion alone still passes (logs/reviewer-mutation-check.log).\nVERDICT write_paths: the manifest declares tests/test_shell_project_list_is_immediate.py, docs/evidence/archive/a-page-load-reads-each-file-once-landed.html, docs/figures/a-page-load-reads-each-file-once/palette-cycle.svg and docs/plans/a-page-load-reads-each-file-once.html; git diff --stat 2bd62d04..de3a348f touches exactly those four paths and nothing else.\nVERDICT manifest: read; it records commits ea1a0649 and de3a348f, the gate result at de3a348f, the five logs by name, the declared negative control under negative_control_log with its mutation on the log's first line, and its own note about the earlier node's gate-log interpreter path; the reviewed worktree is clean at the reviewed head.\nVERDICT diff: read commit by commit; ea1a0649 edits the test alone and de3a348f appends the landed note at docs/plans/a-page-load-reads-each-file-once.html:329, the evidence section at docs/evidence/archive/a-page-load-reads-each-file-once-landed.html:300 and the figure, adds 169 lines overall and removes 10 from the test, and leaves docs/ui/shell.jsx and docs/ui/shell-palette.jsx untouched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_shell_project_list_is_immediate.py:136 counts a cycle only when an observed close is followed by a reopen, which is the measure the node's goal states, and the probe's own wait results are returned at :147 rather than discarded, so a cycle that did not happen cannot be read past.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate names the file and its result is recorded with revision, tree and command headers in logs/gate-head.log and the four control logs, and I reproduced the declared mutation independently at cycles 1 with the count assertion still green, but the landed record at docs/evidence/archive/a-page-load-reads-each-file-once-landed.html:327 quotes a run its own cited log does not carry.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 2bd62d04..de3a348f lies inside the four declared write paths, the two documentation changes are pure appends, and the plan's meta, followup and decision elements are untouched.\nSCORE durability: 19\nJUSTIFICATION durability: the added assertion at tests/test_shell_project_list_is_immediate.py:194 compares the probe's own counted cycles against the independent literal 2, and it reddens on the declared mutation in my re-run at cycles 1 while the count assertion still passes, so it is a guard rather than a restatement.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_shell_project_list_is_immediate.py:106 follows the module's existing probe idiom and reuses _WAIT_FOR at :75, names its returned facts by mechanism (cycles, opened, closed, reopened) with no plan, sprint or ticket label anywhere in the new identifiers, and the documentation uses the plan system's landed-note, cumulative-evidence and project-absolute figure conventions.\nFINDING docs/evidence/archive/a-page-load-reads-each-file-once-landed.html:327 the pre block quotes the gate run as \"2 passed in 5.75s\" and the paragraph at :328 attributes it to revision ea1a0649 while the log it cites, logs/gate-head.log, carries \"# revision de3a348f\" and \"2 passed in 5.77s\", and no log taken at ea1a0649 exists on disk, so a reader following the citation cannot verify the run the record claims.\n",
+  "review_run_id": "r-20260923T174223667217-review-of-palette-cycle-is-proven",
+  "reviewed_base_sha": "2bd62d04d2280b162d8fac25378af0f0a1f5a457",
+  "reviewed_head_sha": "de3a348f91607d801653c0d99d792ac2c2a3afc9",
+  "reviewed_run_id": "r-20260923T171636911187-palette-cycle-is-proven",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T18:05:35.165928+00:00",
+  "total": 94
+}

@@ -1,0 +1,147 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/prompts.py:152",
+    "reckon/crew/prompts.py:350",
+    "reckon/crew/prompts.py:468",
+    "reckon/crew/promotion.py:2604"
+  ],
+  "completed_at": "2026-09-30T07:09:37.360Z",
+  "dispatched_at": "2026-09-29T20:39:11Z",
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "749",
+      "text": "this test pins the sentence the change retires from skills/reckon-build/references/sprint-orchestration.md, so the change moves it from pass to fail: I ran the file at the reviewed base (3 failed, 53 passed) and at the reviewed head (4 failed, 52 passed), the added id being test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer with AssertionError on 'Append your landing record to your own section of the plan' (logs/review-contracts-base.log, logs/review-contracts-head.log); the node's arms measured three files only, and its follow_ons names no consequence outside them, so a reader of the reviewed run's evidence cannot see that the tree gains a failing test."
+    },
+    {
+      "file": "logs/arm_head_three_files.log",
+      "line": "1",
+      "text": "both arm logs open with a label ('# base arm', '# head arm') where the test_logs clause asks the first line to name the revision, tree and command, so review.recorded_log_revision returns None for both and the derived count carries no revision; the head arm's revision line names 4c91e7bb6b949f8f5b259330247e74adc31eb037 - the reviewed base - with '(worktree, uncommitted edits)', and the manifest's after_suite revision is the prose '4c91e7bb6... + uncommitted node edits (committed as 77a44905b)', so no field names 77a44905b and the count cannot be tied to the reviewed commit from the record alone, even though I reproduced the result at that commit."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/skill-landing-sentence-follows-the-prompt.html",
+      "line": "23",
+      "text": "the fragment names the runtime prompt's constant as PLAN_LANDING_CONTRACT in tests/test_crew_prompts.py, but the constant is defined in reckon/crew/prompts.py:152; the test file imports it, so the citation points a reader at the import rather than its home."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read 77a44905b against 4c91e7bb commit by commit: six files, +76/-24, the four skill occurrences of the retired sentence replaced by the prompt's composed text, the prompt-test constants re-anchored (LAND_OWN_FRAGMENT, LAND_FRAGMENT_PATH, LAND_IN_COMMIT, FIGURES_DIRECTORY) with five asserts kept, and the parity locator re-sliced from PLAN_LANDING_CONTRACT's current anchors.",
+    "done_when": "the done-when asks the six ids red at base and green at head, the retired sentence replaced verbatim wherever the skills carried it, no assertion deleted, a code-read re-derivation of the expected sentence from the prompt's own anchors, a logged negative control, zero added failures over three named files, logs headed with revision, tree and command, and a fragment; I confirmed every clause at the reviewed head, but the done-when's three-file added-failure scope does not cover tests/test_skill_contracts.py, whose pin of the same sentence moved from pass to fail (4 failed at head against 3 at base: logs/review-contracts-head.log, logs/review-contracts-base.log).",
+    "goal": "the goal is to bring the two prompt tests and the skills' landing sentence in line with the runtime prompt's fragment landing contract; at 77a44905b skills/reckon-build/SKILL.md:787, references/worker-protocol.md:213 and references/sprint-orchestration.md:420 and :507 carry the contract's sentence, and the six ids named in the run's base log pass, which I reproduced by exporting 77a44905b to a scratch tree and running them (logs/review-head-gate.log: six passed, EXIT=0).",
+    "manifest": "read at 7747 bytes, sha256 5f4af4e1dba1df134980963fdbe126605c08cbfac36de6640f6c7f0994bd757; status complete, one commit, changed_paths, a single landing line, both suite arms as JSON carrying completed true with per-arm log paths and failure ids, the negative-control path and note, artifacts, evidence_inputs and follow_ons; the follow_ons names the prompts.py figures-directory question but not the peer test file this change turns red.",
+    "write_paths": "the six granted paths are the two test files, the three skill files, the fragment and the figure directory; commit 77a44905b touches exactly the first six of those paths (the figure directory holds no file) and git status in the reviewed worktree at 77a44905b is clean, so nothing outside the grant was written."
+  },
+  "justifications": {
+    "durability": "the parity test derives its expectation from PLAN_LANDING_CONTRACT and I verified the derivation lands verbatim in each skill file, so a skill reverting to the retired sentence reddens it, and the negative control (rewording the prompt's anchor) raises ValueError and fails four ids rather than passing on a stale literal; the guard set is not coherent with the tree, because tests/test_skill_contracts.py:749 still pins the retired sentence and moves from pass to fail.",
+    "evidence": "the gate measures what the done-when asserts and I reproduced it at the committed head (six passed, EXIT=0; three files 58 passed: logs/review-head-gate.log), against which logs/arm_head_three_files.log:1 names revision 4c91e7bb6, the base, with '(worktree, uncommitted edits)', so no field ties the head measurement to 77a44905b and the arms' three-file scope leaves the peer test this change reddens unmeasured.",
+    "fit": "the change follows the file's constant idiom and its derive-from-the-pattern discipline, the new names state the mechanism, and ruff check and format --check are clean on both changed test files at the reviewed head (logs/review-ruff-head.log); the evidence fragment's citation of PLAN_LANDING_CONTRACT places the constant in the test file rather than reckon/crew/prompts.py:152.",
+    "goal_fidelity": "the six red ids named in the run's base log pass at 77a44905b and the derived landing sentence is verbatim in all three skill files, which I re-derived and matched myself (logs/review-verbatim.log); the delivered tree still carries one test pinning the retired sentence, so the change is in line but the tree it lands into is not.",
+    "scope_discipline": "every path in commit 77a44905b is inside the six granted write paths, no plan meta line or shared state is touched, and the reviewed worktree at 77a44905b is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to bring the two prompt tests and the skills' landing sentence in line with the runtime prompt's fragment landing contract; at 77a44905b skills/reckon-build/SKILL.md:787, references/worker-protocol.md:213 and references/sprint-orchestration.md:420 and :507 carry the contract's sentence, and the six ids named in the run's base log pass, which I reproduced by exporting 77a44905b to a scratch tree and running them (logs/review-head-gate.log: six passed, EXIT=0).\nVERDICT done_when: the done-when asks the six ids red at base and green at head, the retired sentence replaced verbatim wherever the skills carried it, no assertion deleted, a code-read re-derivation of the expected sentence from the prompt's own anchors, a logged negative control, zero added failures over three named files, logs headed with revision, tree and command, and a fragment; I confirmed every clause at the reviewed head, but the done-when's three-file added-failure scope does not cover tests/test_skill_contracts.py, whose pin of the same sentence moved from pass to fail (4 failed at head against 3 at base: logs/review-contracts-head.log, logs/review-contracts-base.log).\nVERDICT write_paths: the six granted paths are the two test files, the three skill files, the fragment and the figure directory; commit 77a44905b touches exactly the first six of those paths (the figure directory holds no file) and git status in the reviewed worktree at 77a44905b is clean, so nothing outside the grant was written.\nVERDICT manifest: read at 7747 bytes, sha256 5f4af4e1dba1df134980963fdbe126605c08cbfac36de6640f6c7f0994bd757; status complete, one commit, changed_paths, a single landing line, both suite arms as JSON carrying completed true with per-arm log paths and failure ids, the negative-control path and note, artifacts, evidence_inputs and follow_ons; the follow_ons names the prompts.py figures-directory question but not the peer test file this change turns red.\nVERDICT diff: read 77a44905b against 4c91e7bb commit by commit: six files, +76/-24, the four skill occurrences of the retired sentence replaced by the prompt's composed text, the prompt-test constants re-anchored (LAND_OWN_FRAGMENT, LAND_FRAGMENT_PATH, LAND_IN_COMMIT, FIGURES_DIRECTORY) with five asserts kept, and the parity locator re-sliced from PLAN_LANDING_CONTRACT's current anchors.\nCALL_SITES: reckon/crew/prompts.py:152, reckon/crew/prompts.py:350, reckon/crew/prompts.py:468, reckon/crew/promotion.py:2604\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the six red ids named in the run's base log pass at 77a44905b and the derived landing sentence is verbatim in all three skill files, which I re-derived and matched myself (logs/review-verbatim.log); the delivered tree still carries one test pinning the retired sentence, so the change is in line but the tree it lands into is not.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate measures what the done-when asserts and I reproduced it at the committed head (six passed, EXIT=0; three files 58 passed: logs/review-head-gate.log), against which logs/arm_head_three_files.log:1 names revision 4c91e7bb6, the base, with '(worktree, uncommitted edits)', so no field ties the head measurement to 77a44905b and the arms' three-file scope leaves the peer test this change reddens unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in commit 77a44905b is inside the six granted write paths, no plan meta line or shared state is touched, and the reviewed worktree at 77a44905b is clean.\nSCORE durability: 17\nJUSTIFICATION durability: the parity test derives its expectation from PLAN_LANDING_CONTRACT and I verified the derivation lands verbatim in each skill file, so a skill reverting to the retired sentence reddens it, and the negative control (rewording the prompt's anchor) raises ValueError and fails four ids rather than passing on a stale literal; the guard set is not coherent with the tree, because tests/test_skill_contracts.py:749 still pins the retired sentence and moves from pass to fail.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the file's constant idiom and its derive-from-the-pattern discipline, the new names state the mechanism, and ruff check and format --check are clean on both changed test files at the reviewed head (logs/review-ruff-head.log); the evidence fragment's citation of PLAN_LANDING_CONTRACT places the constant in the test file rather than reckon/crew/prompts.py:152.\nFINDING tests/test_skill_contracts.py:749 this test pins the sentence the change retires from skills/reckon-build/references/sprint-orchestration.md, so the change moves it from pass to fail: I ran the file at the reviewed base (3 failed, 53 passed) and at the reviewed head (4 failed, 52 passed), the added id being test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer with AssertionError on 'Append your landing record to your own section of the plan' (logs/review-contracts-base.log, logs/review-contracts-head.log); the node's arms measured three files only, and its follow_ons names no consequence outside them, so a reader of the reviewed run's evidence cannot see that the tree gains a failing test.\nFINDING logs/arm_head_three_files.log:1 both arm logs open with a label ('# base arm', '# head arm') where the test_logs clause asks the first line to name the revision, tree and command, so review.recorded_log_revision returns None for both and the derived count carries no revision; the head arm's revision line names 4c91e7bb6b949f8f5b259330247e74adc31eb037 - the reviewed base - with '(worktree, uncommitted edits)', and the manifest's after_suite revision is the prose '4c91e7bb6... + uncommitted node edits (committed as 77a44905b)', so no field names 77a44905b and the count cannot be tied to the reviewed commit from the record alone, even though I reproduced the result at that commit.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/skill-landing-sentence-follows-the-prompt.html:23 the fragment names the runtime prompt's constant as PLAN_LANDING_CONTRACT in tests/test_crew_prompts.py, but the constant is defined in reckon/crew/prompts.py:152; the test file imports it, so the citation points a reader at the import rather than its home.\n",
+  "review_evidence": {
+    "added_failure_probe": {
+      "log_base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt/logs/review-contracts-base.log",
+      "log_head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt/logs/review-contracts-head.log",
+      "result": "tests/test_skill_contracts.py at base 3 failed 53 passed; at head 4 failed 52 passed; the delta is test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer"
+    },
+    "added_failures_derivation": {
+      "result": "added_failures_from_gate_logs over the reviewed run's own two arm logs returns count 0 and no ids"
+    },
+    "head_gate_re_run": {
+      "command": "env -C <scratch-head> PYTHONPATH=<scratch-head> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q <six ids>; then the three file arm",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt/logs/review-head-gate.log",
+      "module_file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt/scratch-head/reckon/__init__.py",
+      "result": "six ids: 6 passed in 0.51s, EXIT=0; three files: 58 passed in 0.82s, EXIT=0",
+      "tree": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt/scratch-head"
+    },
+    "ruff": {
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt/logs/review-ruff-head.log",
+      "result": "All checks passed; 2 files already formatted"
+    },
+    "verbatim_derivation": {
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt/logs/review-verbatim.log",
+      "result": "the derived landing requirement is present in SKILL.md, worker-protocol.md and sprint-orchestration.md at the reviewed head"
+    }
+  },
+  "review_run_id": "legacy-c5064d96d862",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "4c91e7bb6b949f8f5b259330247e74adc31eb037",
+  "reviewed_changed_paths": [
+    "tests/test_crew_prompts.py",
+    "tests/test_skill_contract_parity.py",
+    "skills/reckon-build/SKILL.md",
+    "skills/reckon-build/references/worker-protocol.md",
+    "skills/reckon-build/references/sprint-orchestration.md",
+    "docs/evidence/fragments/the-suite-is-green-at-head/skill-landing-sentence-follows-the-prompt.html"
+  ],
+  "reviewed_commits": [
+    "77a44905bd5a0e3d060317fa4d221e0e36900b0b"
+  ],
+  "reviewed_diffstat": "77a44905b 6 files changed, 76 insertions(+), 24 deletions(-)",
+  "reviewed_done_when": "The six ids named in the eight-red-ids root-cause report are run at the node's base and logged failing, and all six pass after the change with no assertion deleted. Wherever the skills carry the old landing sentence it is replaced verbatim by the landing sentence reckon/crew/prompts.py composes today, at SKILL.md:787, worker-protocol.md:213 and sprint-orchestration.md:420 and :507, with no other skill wording changed. tests/test_crew_prompts.py, tests/test_skill_contract_parity.py and tests/test_brief_prompt.py show 0 added failures between a base arm and a head arm. Every log sits under the run directory, headed with revision, tree and command and ending EXIT=. The declared negative control is executed and logged. An evidence fragment records the change. The turn ends once the manifest reads complete.",
+  "reviewed_goal": "Bring the prompt tests and the skills' landing sentence in line with the prompt's landing contract",
+  "reviewed_head_sha": "77a44905bd5a0e3d060317fa4d221e0e36900b0b",
+  "reviewed_manifest": {
+    "bytes": 7747,
+    "last_modified": "2026-09-29T20:56:51.717604+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203854647957-skill-landing-sentence-follows-the-prompt/manifest.md",
+    "sha256": "5f4af4e1dba1df134980963fdbe126605c08cbfac36de6640f6c7f0994bd757"
+  },
+  "reviewed_node": "skill-landing-sentence-follows-the-prompt",
+  "reviewed_plan": "the-suite-is-green-at-head",
+  "reviewed_run_id": "r-20260929T203854647957-skill-landing-sentence-follows-the-prompt",
+  "reviewed_suite_fields": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "revision": "4c91e7bb6b949f8f5b259330247e74adc31eb037 + uncommitted node edits (committed as 77a44905b)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_prompts.py tests/test_skill_contract_parity.py tests/test_brief_prompt.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 6,
+      "revision": "4c91e7bb6b949f8f5b259330247e74adc31eb037"
+    }
+  },
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/skill-landing-sentence-follows-the-prompt",
+  "reviewed_write_paths": [
+    "tests/test_crew_prompts.py",
+    "tests/test_skill_contract_parity.py",
+    "skills/reckon-build/SKILL.md",
+    "skills/reckon-build/references/worker-protocol.md",
+    "skills/reckon-build/references/sprint-orchestration.md",
+    "docs/evidence/fragments/the-suite-is-green-at-head/skill-landing-sentence-follows-the-prompt.html",
+    "docs/figures/the-suite-is-green-at-head/skill-landing-sentence-follows-the-prompt"
+  ],
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash",
+    "node": "review-of-skill-landing-sentence-follows-the-prompt",
+    "run_id": "r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T21:19:28.321468+00:00",
+  "total": 90
+}

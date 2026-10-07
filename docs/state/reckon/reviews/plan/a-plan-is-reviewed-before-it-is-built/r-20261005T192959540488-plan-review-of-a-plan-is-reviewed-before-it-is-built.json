@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T19:34:59.230Z",
+  "dispatched_at": "2026-10-05T19:30:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:94",
+      "id": "deep_module-1",
+      "reason": "the plan must name a span source that yields identity-less section-element spans (project the protected set from the parser's own raw span list, not from `plan_headings` records), or the consolidation regresses the store boundary protection it exists to preserve.",
+      "text": "\u00a717 states `structured_section_spans` \"keeps its spans-only contract but is expressed as a projection of `plan_headings`' records\", yet that reader yields one named record per heading, and the protected-span set the store's boundary protection consumes also includes spans with no identity-bearing heading: measured on `docs/plans/a-plan-is-reviewed-before-it-is-built.html`, `structured_section_spans` returns 18 spans, of which 3 are the `<section data-reckon=\"decisions\"|\"followups\"|\"comments\">` regions whose `<h2>` carries no `id`/`data-id` and which no `section_record_id`-keyed heading record describes, so a projection built only on per-heading records silently drops them and the `_splice_section`/`_reject_emptying_unparsed_section` boundary protection stops covering those machinery regions",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "740469c2f5997126f1b43885a232c95e824fe6a4e7f926bee8ad37398690e490",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 119,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T192959540488-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "8a4ff633661b75a5d8545dd0c743653b6eb6958d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan re-expresses `structured_section_spans` as \"a projection of `plan_headings`' records\", but that reader yields one record per heading while the protected-span set it must reproduce also contains identity-less machinery-section spans.",
+    "duplicate_owner": "pass \u2014 \u00a716 hoists `section_record_id`/`section_id_candidates` to one owner, \u00a717 re-homes `landed_section_ids` and the store's span helpers onto the existing span parser rather than beside it, and \u00a718 names `plan_review.RUN_COMMENT_PREFIX` as the owner promotion should import instead of its own `_LANDING_COMMENT_PREFIX`; each names the file to extend.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; each of \u00a716, \u00a717, \u00a718 carries its own interface-accounting text naming what it retires or moves (`landed_section_ids`, `plan_fingerprint`'s `legacy` flag) or stating why nothing can be (kept public callers), and their sum (+4: `strip_tags`, `plan_headings`, the machinery-element predicate, the classification predicate) matches the per-section figures.",
+    "reuse_search": "pass \u2014 the design sections cite the mechanisms they extend or re-home (`structured_section_spans`, `_TAG_RE`/`count_open_decisions`, `landed_section_ids`, `_fingerprint_forms`, `roadmap.implementable_sections`) and each citation was checked against the code: `_plan_html.py:94/1506/1525`, `_store.py:1075`, `plan_review.py:598`, `roadmap.py:106` all exist as named.",
+    "thin_wrapper": "pass \u2014 the one thin exposure, `strip_tags` on `reckon/_plan_html.py`, is justified as exposing the existing `_TAG_RE` across the package boundary and folding `count_open_decisions` onto it, so the expression keeps one caller rather than gaining a parallel one."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.791705+00:00"
+}

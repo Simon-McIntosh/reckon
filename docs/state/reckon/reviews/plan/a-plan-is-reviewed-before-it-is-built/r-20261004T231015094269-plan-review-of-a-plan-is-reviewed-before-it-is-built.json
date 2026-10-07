@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T23:13:50.726Z",
+  "dispatched_at": "2026-10-04T23:10:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s11",
+      "id": "reuse_search-1",
+      "reason": "naming the enumerator turns \u00a711's script into a reader of existing machinery and removes a second cross-project glob whose path resolution would otherwise drift from the store's.",
+      "text": "the census in \u00a711 is specified as a fresh walk of \"`plan-*.vN.json` across every project\" with no citation of `list_plan_reviews` (`reckon/crew/plan_review.py:516`), the function that already enumerates every project's plan reviews, sets each record's `project` and `review_path`, and restricts the glob so code reviews are never mixed in",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:11187",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a710 should name `_is_review_node` as the owner and make dispatch's recogniser call it, so the one plan-review identity has one recogniser as well as one constant.",
+      "text": "`_is_review_run` here recognises a review by `role == \"review\"` or `RECORD_NODE_ID.startswith(REVIEW_NODE_PREFIX)` independently of `reckon/crew/recovery.py:904` `_is_review_run`, which delegates to the owning `_is_review_node` (`reckon/crew/recovery.py:228`); since `\"plan-review-of-\u2026\".startswith(\"review-of-\")` is false, the two predicates disagree on a plan-review node whose role is not exactly `review`, and \u00a710 \u2014 which names only \"dispatch's reader\" and the literal \u2014 does not consolidate them",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d55fbada0f684e9961cc3efd0eb756d70b30d171fb8226c65347fe7ff3893c6c",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 36,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-04T23:15:44.165828+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-04T23:15:43.331283+00:00"
+    }
+  },
+  "review_run_id": "r-20261004T231015094269-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "ee00823f509d285ee32d9fa774f003be5ad8e149",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the remaining nodes consolidate rather than spread: \u00a79 moves the report grammar into `reckon/crew/review.py` beside `parse_review`, \u00a710 reduces the plan-review node identity to one constant; neither adds a wrapper over the same machinery.",
+    "duplicate_owner": "a finding \u2014 `reckon/crew/dispatch.py:11187` re-implements the review-run recogniser that `reckon/crew/recovery.py:228` (`_is_review_node`) already owns; \u00a710 fixes only the literal, leaving two predicates that can disagree about a plan-review node.",
+    "reuse_search": "a finding \u2014 \u00a711's census proposes enumerating \"every stored plan review ... (`plan-*.vN.json` across every project)\" without citing `list_plan_reviews` (`reckon/crew/plan_review.py:516`), which already performs exactly that cross-project walk.",
+    "thin_wrapper": "pass \u2014 \u00a79 extends the existing parser owner (`reckon/crew/review.py:409`, `_FIND_RE` at :380) instead of layering a parallel parser, and \u00a73's design review extends the build skill's existing reuse-map rule (`skills/reckon-build/references/sprint-orchestration.md:713`) rather than adding a second reuse mechanism."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T23:14:03.184415+00:00"
+}

@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_derivation": {
+    "base_logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T070217225283-review-of-validate-node-refuses-plan-and-brief/base-suite-brief-plan-exclusivity.log"
+    ],
+    "excluded_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/negative-control-brief-plan-exclusivity.log",
+    "head_logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/gate-brief-plan-exclusivity.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T070217225283-review-of-validate-node-refuses-plan-and-brief/review-gate-at-f04e0304.log"
+    ],
+    "measured_by": "reckon.crew.review.added_failures_from_gate_logs",
+    "note": "the reviewed manifest names no baseline_suite/after_suite pair, so this review ran the missing base arm itself: base = fae0865c, the reviewed run's own orientation_base_sha, with the two gate files that exist at that revision (15 passed, EXIT=0); head = the reviewed run's own gate log at e3b07de5 (20 passed, EXIT=0), corroborated by this review's re-run of all three files at the reviewed head f04e0304 (20 passed, EXIT=0). The set difference over pytest node ids is empty, so the count is a measured zero; the reviewed run's declared mutation log is deliberately red and is excluded from the difference and used as the positive control instead.",
+    "positive_control": {
+      "count": 3,
+      "ids": [
+        "tests/test_brief_plan_exclusivity.py::test_a_brief_with_a_plan_is_refused",
+        "tests/test_brief_plan_exclusivity.py::test_a_brief_with_a_section_is_refused",
+        "tests/test_brief_plan_exclusivity.py::test_plan_dispatch_refuses_before_the_plan_section_gate_is_skipped"
+      ],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/negative-control-brief-plan-exclusivity.log"
+    }
+  },
+  "added_failures_note": "measured zero, derived by reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate log at e3b07de5 against a base arm this review ran at the reviewed base revision fae0865c (the reviewed manifest names no baseline_suite/after_suite pair, so its own suite-delta reading is unmeasured; the same extractor sees the 3 failures in the reviewed run's declared mutation log, so the zero is not an instrument that cannot see failure). Details under added_failures_derivation.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:plan_dispatch"
+  ],
+  "completed_at": "2026-09-28T08:05:00.604Z",
+  "dispatched_at": "2026-09-28T07:02:35Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit from fae0865c; e3b07de5 is the entire behaviour change, 24 lines inside validate_node plus the 192-line test file, and f04e0304 is docs only; no other path is touched, and the base-revision defect reproduces and is refused at the head: validate_node returns ok True for a plan-plus-brief node at fae0865c and ok False with a fully-specified finding naming plan and brief at f04e0304.",
+    "done_when": "the five named cases live at tests/test_brief_plan_exclusivity.py:88 (brief plus plan refused, with the plan named in the detail), :101 (brief plus section refused), :113 (brief alone validates), :122 (plan and section alone validate), :153 (plan_dispatch refuses the pair, with a spy proving require_plan_section_visible is never reached); the reviewed gate log reports 20 passed at e3b07de5 exit 0, this review reproduced 20 passed exit 0 at f04e0304, and the declared mutation log goes red with exactly 3 of 5, each failing on the missing refusal rather than a missing file.",
+    "goal": "the dispatched goal is that validate_node refuse a node naming both a plan and a brief so a caller that bypasses the argv check cannot reach the brief branch with a plan section named; at f04e0304 reckon/crew/node.py:1057 refuses a stripped brief beside a non-empty plan or section, the finding at :1060-1068 names both carriers and states the structural reason, and the branch it protects is unreachable with a second authority because plan_dispatch validates through this function at reckon/crew/dispatch.py:3159 before the brief branch at :3218.",
+    "manifest": "read at f04e0304; it carries status complete, commits e3b07de5 and f04e0304, the gate command and its 20 passed result, both log paths under test_logs, and a negative_control_log line whose named log repeats the declared mutation verbatim; it declares no baseline_suite/after_suite pair, so read_review's read-time annotation reports this run's added-failure count unmeasured, which is why this review ran the missing base arm itself and stored the measured zero on the record.",
+    "write_paths": "the manifest's five declared paths cover every path the two commits touch, reckon/crew/node.py and tests/test_brief_plan_exclusivity.py in e3b07de5 and docs/figures/a-worker-can-take-a-brief/authority-exclusivity.svg, docs/evidence/archive/a-worker-can-take-a-brief-landed.html and docs/plans/a-worker-can-take-a-brief.html in f04e0304; the cumulative evidence record gained 63 lines against a single deletion so the earlier anchor survives, and no plan-version or plan-modified meta line is touched."
+  },
+  "justifications": {
+    "durability": "the declared mutation makes 3 of 5 cases fail on the missing refusal, the fifth case pins the real plan_dispatch step with a spy so the guard cannot silently degrade into the skipped gate, and this review reproduced the pre-fix behaviour at the base revision; the deduction is that no case pins a brief beside a whitespace-only plan, the one input where the strip at node.py:1050 decides the outcome.",
+    "evidence": "the gate and negative-control logs each name their revision, tree and command, the gate's 20 passed at e3b07de5 is reproduced by this review at f04e0304 with 20 passed exit 0, and the declared mutation is red with 3 of 5; the deduction is that the run left no base arm, so its own suite-delta reading is unmeasured and this review had to supply the base arm to derive the count.",
+    "fit": "the guard sits inside validate_node with a why-comment stating the structural reason and carries no plan, sprint or ticket identifier; the deduction is that it adds a fourth branch to the one fully-specified property, so the property now conflates no-authority and two-authority refusals for any caller that reads the property alone.",
+    "goal_fidelity": "reckon/crew/node.py:1057 refuses exactly the pair the goal names, covering both the plan and the section direction, and this review measured the defect present at fae0865c and refused at f04e0304; the deduction is that the finding reuses the fully-specified property, so a caller counting refusal reasons cannot tell two authorities apart from none without reading the detail.",
+    "scope_discipline": "all five touched paths lie inside the manifest's declared five, the cumulative evidence record at docs/evidence/archive/a-worker-can-take-a-brief-landed.html was spliced with one deletion, and the plan's version and modified meta lines are untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the dispatched goal is that validate_node refuse a node naming both a plan and a brief so a caller that bypasses the argv check cannot reach the brief branch with a plan section named; at f04e0304 reckon/crew/node.py:1057 refuses a stripped brief beside a non-empty plan or section, the finding at :1060-1068 names both carriers and states the structural reason, and the branch it protects is unreachable with a second authority because plan_dispatch validates through this function at reckon/crew/dispatch.py:3159 before the brief branch at :3218.\nVERDICT done_when: the five named cases live at tests/test_brief_plan_exclusivity.py:88 (brief plus plan refused, with the plan named in the detail), :101 (brief plus section refused), :113 (brief alone validates), :122 (plan and section alone validate), :153 (plan_dispatch refuses the pair, with a spy proving require_plan_section_visible is never reached); the reviewed gate log reports 20 passed at e3b07de5 exit 0, this review reproduced 20 passed exit 0 at f04e0304, and the declared mutation log goes red with exactly 3 of 5, each failing on the missing refusal rather than a missing file.\nVERDICT write_paths: the manifest's five declared paths cover every path the two commits touch, reckon/crew/node.py and tests/test_brief_plan_exclusivity.py in e3b07de5 and docs/figures/a-worker-can-take-a-brief/authority-exclusivity.svg, docs/evidence/archive/a-worker-can-take-a-brief-landed.html and docs/plans/a-worker-can-take-a-brief.html in f04e0304; the cumulative evidence record gained 63 lines against a single deletion so the earlier anchor survives, and no plan-version or plan-modified meta line is touched.\nVERDICT manifest: read at f04e0304; it carries status complete, commits e3b07de5 and f04e0304, the gate command and its 20 passed result, both log paths under test_logs, and a negative_control_log line whose named log repeats the declared mutation verbatim; it declares no baseline_suite/after_suite pair, so read_review's read-time annotation reports this run's added-failure count unmeasured, which is why this review ran the missing base arm itself and stored the measured zero on the record.\nVERDICT diff: read commit by commit from fae0865c; e3b07de5 is the entire behaviour change, 24 lines inside validate_node plus the 192-line test file, and f04e0304 is docs only; no other path is touched, and the base-revision defect reproduces and is refused at the head: validate_node returns ok True for a plan-plus-brief node at fae0865c and ok False with a fully-specified finding naming plan and brief at f04e0304.\nVERDICT call_sites: validate_node has one production call site, reckon/crew/dispatch.py:3159 inside plan_dispatch, and the reviewed test's fifth case drives that real resolution step, so the refusal is proven on the path the argv check does not cover rather than only against the validator in isolation.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1057 refuses exactly the pair the goal names, covering both the plan and the section direction, and this review measured the defect present at fae0865c and refused at f04e0304; the deduction is that the finding reuses the fully-specified property, so a caller counting refusal reasons cannot tell two authorities apart from none without reading the detail.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate and negative-control logs each name their revision, tree and command, the gate's 20 passed at e3b07de5 is reproduced by this review at f04e0304 with 20 passed exit 0, and the declared mutation is red with 3 of 5; the deduction is that the run left no base arm, so its own suite-delta reading is unmeasured and this review had to supply the base arm to derive the count.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five touched paths lie inside the manifest's declared five, the cumulative evidence record at docs/evidence/archive/a-worker-can-take-a-brief-landed.html was spliced with one deletion, and the plan's version and modified meta lines are untouched.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation makes 3 of 5 cases fail on the missing refusal, the fifth case pins the real plan_dispatch step with a spy so the guard cannot silently degrade into the skipped gate, and this review reproduced the pre-fix behaviour at the base revision; the deduction is that no case pins a brief beside a whitespace-only plan, the one input where the strip at node.py:1050 decides the outcome.\nSCORE fit: 18\nJUSTIFICATION fit: the guard sits inside validate_node with a why-comment stating the structural reason and carries no plan, sprint or ticket identifier; the deduction is that it adds a fourth branch to the one fully-specified property, so the property now conflates no-authority and two-authority refusals for any caller that reads the property alone.\nCALL_SITES: reckon/crew/dispatch.py:plan_dispatch\n",
+  "review_run_id": "r-20260928T070217225283-review-of-validate-node-refuses-plan-and-brief",
+  "reviewed_base_sha": "fae0865c27cc01aa78a6d7ee30c71203988caecd",
+  "reviewed_head_sha": "f04e0304478b9b3f864a5a4c6d2b1f20095c3fd1",
+  "reviewed_run_id": "r-20260928T063504306183-validate-node-refuses-plan-and-brief",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T07:54:18.353364+00:00",
+  "total": 93
+}

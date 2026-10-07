@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T13:40:48.039Z",
+  "dispatched_at": "2026-10-06T13:36:50Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:536",
+      "id": "reuse_search-1",
+      "reason": "naming the existing call site makes the object-store row an extension rather than a second mechanism, and tells the \u00a73 node where the write belongs.",
+      "text": "the plan's \"Reviewed bytes\" row proposes writing reviewed plan bytes to the object store with `git hash-object -w` as if new, but recovery.py:536-542 already runs `git hash-object --stdin` at exactly the plan-review composition point and stores the resulting blob as the sidecar's reviewed_blob_sha; the change is one token (`-w`) on an existing call, and the plan should name that call site as the mechanism to extend",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:1242",
+      "id": "deep_module-1",
+      "reason": "a single resolver keeps the two-root rule in one place and stops each repointed reader re-deriving it, which is the difference between depth and a spread of shallow edits.",
+      "text": "\u00a73's \"committed store first, staging only for unpromoted runs\" rule is stated once but implemented by every reader separately (list_plan_reviews and read_plan_review in plan_review.py, read_review here, select_review_for_head in recovery.py), so the two-root decision leaks into each call site instead of living behind the resolver that already owns a record's location (stored_record, review.py:1696); the section names no module that owns the read order",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:1210",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's \u00a73 claim that \"the existing readers are repointed\" is an incomplete census; the author must extend the root owner review_store_root (and the write-path composer) so every consumer sees the committed store, or name why each is left staging-only, before any node implements it.",
+      "text": "`review_store_root` is the owner of the store's location, and beyond the four readers \u00a73 names it has many direct consumers that resolve it themselves and will keep reading the staging root once the committed root exists: reckon/crew/recovery.py:927 (_review_store_record_paths selects declared write paths by candidate.parent == review_store_root()/project), recovery.py:1019 (_delivered_review_record globs it), recovery.py:7494, recovery.py:7516, recovery.py:7538 (own-record existence, misfiled candidates, input identities), reckon/crew/reports.py:1287 (matches node.write_paths by candidate.parent.parent == store_root), reckon/crew/runs.py:63-70 (delivery_roots resolves it as a durable root), reckon/crew/dispatch.py:1948, dispatch.py:4684, dispatch.py:4734 (sandbox_write_roots passes review_store_directory=review_store_root()), and reckon/cli.py:5493-5529 (path cleanup builds from review_store_root()/project); the write-path composer at recovery.py:612-615 also builds a reviewer's dispatch write_paths through review_path",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:2595",
+      "id": "interface_budget-1",
+      "reason": "the interface-budget rule requires each adding section to name what it retires or merges or state why nothing can be, and \u00a73 and \u00a75 add a CLI argument and a writer refusal without that accounting.",
+      "text": "\u00a73 adds a `review` argument to crew(view=\"plan-review\") and a `review:<project>/<id>` reference for audit-doc to resolve, and \u00a75's \"guard in the store's writer refuses anything that is not a record\" is a new refusal path, while \u00a73 only accounts for the MCP side (\"no MCP tool, view or server route is added\") and \u00a75 only accounts for avoiding a CLI command; against cli_options 317 and refusal_families 23 the sections name nothing they retire or merge, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6e945192b969f74f2ace965f78e23f5c2f9e21d90a95376aec519b6dc33a3c62",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "e4e34290",
+      "reason": "acted on in v11 (commit pending): stored_record in review.py owns the committed-then-staging read order and the four readers go through it",
+      "when": "2026-10-06T13:42:26.619992+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "e4e34290",
+      "reason": "acted on in v11 (commit pending): each further review_store_root caller is classified in the node manifest: live-run callers stay on staging, history callers use the resolver",
+      "when": "2026-10-06T13:42:26.621379+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "e4e34290",
+      "reason": "acted on in v11 (commit pending): the crew view gains no argument (audit-doc resolves a reference by id) and the store guard is an internal writer check that retires arbitrary-file acceptance",
+      "when": "2026-10-06T13:42:26.622782+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "e4e34290",
+      "reason": "acted on in v11 (commit pending): the reviewed-bytes row now extends the existing git hash-object --stdin call in recovery.py with -w",
+      "when": "2026-10-06T13:42:26.618481+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v10.json",
+  "review_run_id": "r-20261006T133630605074-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "4e0651f899dcc07adeed9d455c41af5470dba1ad",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a73 threads the \"committed store first, staging for unpromoted runs\" rule through every reader separately instead of hiding it behind the one resolver that already owns a record's location.",
+    "duplicate_owner": "a finding \u2014 the plan names four readers to repoint but the store's root owner `review_store_root` has more than a dozen direct consumers that bypass review_path and will keep reading only the staging root.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds a `review` argument to crew(view=\"plan-review\") and \u00a75 adds a non-record refusal in the store writer, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan searched the codebase broadly (naming review_path, plan_review_path, store_delivered_reviews, _commit_state_write, _COMMITLESS_ROLES and import_runs_into_store.py) but did not find the existing `git hash-object --stdin` call that already computes the reviewed plan blob, so its \"Reviewed bytes\" row announces a new object-store mechanism instead of extending that call.",
+    "thin_wrapper": "pass \u2014 \u00a73 explicitly rejects a second store path and extends store_delivered_reviews, and \u00a75 justifies its separate migration script by input/output difference rather than wrapping import_runs_into_store.py."
+  },
+  "section_digests": {
+    "_document": "a497c3cf2ebac7e47528423445ceab6bbf2a59433c46baf3758efb4ee8f79e2c",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "78f24915293fa12b598627e4b56e8c915ee6e3109c3dfb9106a2b73ca6e88bd3",
+    "s4": "c6b40339524825df2f0358edb7238db04cd3560ce33a763f01adeb14675eadc3",
+    "s5": "7f3043e43fba4ea08441749678820749986f6ac710a5cc4c0b65bcfe1c0840f8",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T13:42:26.595134+00:00"
+}

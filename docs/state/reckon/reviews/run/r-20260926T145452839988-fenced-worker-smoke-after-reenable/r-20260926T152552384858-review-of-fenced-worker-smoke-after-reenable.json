@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T16:00:58.863Z",
+  "dispatched_at": "2026-09-26T15:26:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "line": "1689",
+      "text": "the row-4 Observed cell quotes Read-only file system (likewise row 5 at line 1704 and row 6 at line 1715) while the logs those cells cite, logs/row4-write-main-checkout.txt, logs/row5b-main-git-readonly.txt and logs/row4-write-main-checkout.txt's siblings row5b and row6-write-claude.txt, record only exit=1 and file_exists_after=no, so the quoted text is true (it is in the run's stream.jsonl) but a reader following the citation cannot confirm the refusal's kind there."
+    },
+    {
+      "file": "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "line": "1648",
+      "text": "the record evidences the Stop hook only as wiring in the staged settings.json, while the plan's re-enable proof requires the smoke test to fire the Stop hook; the direct observable exists in the run directory (.worker_stop_blocks holding 1, the counter reckon/hooks/worker_stop.py:151 writes when the hook refuses a stop) and is cited nowhere in the anchor, the plan comment or the manifest."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 10ecd1e5, 83ab4dfa adds the single marker line at tests/fence_smoke_marker.txt and d264d579 adds 266 lines with zero deletions across the archive anchor, its SVG figure and the plan landing comment, splicing the cumulative archive rather than rewriting it and leaving every plan-* meta line untouched.",
+    "done_when": "all six rows are measured with a command and its logged output under the run directory (logs/row1-claude-config-dir.txt through logs/row6b-write-memory.txt), the marker commit and the evidence change are the only commits, and the logs stay under the run directory; the row-5 literal command was refused by the PreToolUse worker-git guard rather than by the fence, which the node states and answers by probing the fence's own seal on the same target in row5b.",
+    "goal": "the node goal is to prove from inside a fenced worker that the re-enabled fence holds by recording its own environment and filesystem allowances; the anchor at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1620 carries that record and the run's launch argv (live pointer) is a real bwrap invocation whose --ro-bind seals /home/ITER/mcintos/Code/reckon, ~/.claude, ~/.agents and ~/.config/reckon and whose --bind re-opens the run's worktree git dir, the shared object store, the lock dir and the run dir.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T145452839988-fenced-worker-smoke-after-reenable/manifest.md (mtime 15:22Z, after the 14:55:12Z dispatch, carrying commits 83ab4dfa and d264d579 and status complete), it records the six rows, the ten log paths, the declared negative control whose first line matches logs/row4-write-main-checkout.txt verbatim, and evidence_inputs that disclose the literal-versus-resolved include and the guard-versus-fence distinction.",
+    "write_paths": "the four declared paths are tests/fence_smoke_marker.txt, docs/evidence/archive/a-worker-cannot-write-your-home-landed.html, docs/figures/a-worker-cannot-write-your-home and docs/plans/a-worker-cannot-write-your-home.html; git diff --name-only 10ecd1e52e5dce412df771a73254c1dfb4ad8795..HEAD lists exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "neither commit adds an assertion, so nothing here reddens if the live fence's guarantees regress; the switch itself is pinned by tests/test_fence_is_on_again.py at the re-enable node and this node's durability rests on the record being re-verifiable.",
+    "evidence": "the refusals are real (grep -c 'Read-only file system' on the run's stream.jsonl returns 17) but three archive rows quote that kernel text while their cited logs carry only exit=1 and file_exists_after=no, and the Stop-hook firing observable .worker_stop_blocks is cited nowhere.",
+    "fit": "the anchor uses the archive's numbered-section idiom with a project-absolute /reckon/figures/... image source at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1620 and both commit messages are conventional with bodies and no attribution.",
+    "goal_fidelity": "git -C <worktree> log --oneline 10ecd1e52e5dce412df771a73254c1dfb4ad8795..HEAD returns exactly 83ab4dfa and d264d579, the two commits the node goal implies, and the anchor at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1616 records the six probes the goal names.",
+    "scope_discipline": "git diff --name-only against base 10ecd1e5 lists only the four declared write paths, both commits carry zero deletions, and no probe artefact survives in the main checkout, the operator home or ~/.claude/projects."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 10ecd1e52e5dce412df771a73254c1dfb4ad8795\nreviewed_head_sha: d264d579083f4249b2da6c0c9ce1a6b2ca9c9f5b\nVERDICT goal: the node goal is to prove from inside a fenced worker that the re-enabled fence holds by recording its own environment and filesystem allowances; the anchor at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1620 carries that record and the run's launch argv (live pointer) is a real bwrap invocation whose --ro-bind seals /home/ITER/mcintos/Code/reckon, ~/.claude, ~/.agents and ~/.config/reckon and whose --bind re-opens the run's worktree git dir, the shared object store, the lock dir and the run dir.\nVERDICT done_when: all six rows are measured with a command and its logged output under the run directory (logs/row1-claude-config-dir.txt through logs/row6b-write-memory.txt), the marker commit and the evidence change are the only commits, and the logs stay under the run directory; the row-5 literal command was refused by the PreToolUse worker-git guard rather than by the fence, which the node states and answers by probing the fence's own seal on the same target in row5b.\nVERDICT write_paths: the four declared paths are tests/fence_smoke_marker.txt, docs/evidence/archive/a-worker-cannot-write-your-home-landed.html, docs/figures/a-worker-cannot-write-your-home and docs/plans/a-worker-cannot-write-your-home.html; git diff --name-only 10ecd1e52e5dce412df771a73254c1dfb4ad8795..HEAD lists exactly those four files and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T145452839988-fenced-worker-smoke-after-reenable/manifest.md (mtime 15:22Z, after the 14:55:12Z dispatch, carrying commits 83ab4dfa and d264d579 and status complete), it records the six rows, the ten log paths, the declared negative control whose first line matches logs/row4-write-main-checkout.txt verbatim, and evidence_inputs that disclose the literal-versus-resolved include and the guard-versus-fence distinction.\nVERDICT diff: read commit by commit against base 10ecd1e5, 83ab4dfa adds the single marker line at tests/fence_smoke_marker.txt and d264d579 adds 266 lines with zero deletions across the archive anchor, its SVG figure and the plan landing comment, splicing the cumulative archive rather than rewriting it and leaving every plan-* meta line untouched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: git -C <worktree> log --oneline 10ecd1e52e5dce412df771a73254c1dfb4ad8795..HEAD returns exactly 83ab4dfa and d264d579, the two commits the node goal implies, and the anchor at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1616 records the six probes the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the refusals are real (grep -c 'Read-only file system' on the run's stream.jsonl returns 17) but three archive rows quote that kernel text while their cited logs carry only exit=1 and file_exists_after=no, and the Stop-hook firing observable .worker_stop_blocks is cited nowhere.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only against base 10ecd1e5 lists only the four declared write paths, both commits carry zero deletions, and no probe artefact survives in the main checkout, the operator home or ~/.claude/projects.\nSCORE durability: 15\nJUSTIFICATION durability: neither commit adds an assertion, so nothing here reddens if the live fence's guarantees regress; the switch itself is pinned by tests/test_fence_is_on_again.py at the re-enable node and this node's durability rests on the record being re-verifiable.\nSCORE fit: 19\nJUSTIFICATION fit: the anchor uses the archive's numbered-section idiom with a project-absolute /reckon/figures/... image source at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1620 and both commit messages are conventional with bodies and no attribution.\nFINDING docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1689 the row-4 Observed cell quotes Read-only file system (likewise row 5 at line 1704 and row 6 at line 1715) while the logs those cells cite, logs/row4-write-main-checkout.txt, logs/row5b-main-git-readonly.txt and logs/row4-write-main-checkout.txt's siblings row5b and row6-write-claude.txt, record only exit=1 and file_exists_after=no, so the quoted text is true (it is in the run's stream.jsonl) but a reader following the citation cannot confirm the refusal's kind there.\nFINDING docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1648 the record evidences the Stop hook only as wiring in the staged settings.json, while the plan's re-enable proof requires the smoke test to fire the Stop hook; the direct observable exists in the run directory (.worker_stop_blocks holding 1, the counter reckon/hooks/worker_stop.py:151 writes when the hook refuses a stop) and is cited nowhere in the anchor, the plan comment or the manifest.\n",
+  "review_run_id": "r-20260926T152552384858-review-of-fenced-worker-smoke-after-reenable",
+  "reviewed_base_sha": "10ecd1e52e5dce412df771a73254c1dfb4ad8795",
+  "reviewed_head_sha": "d264d579083f4249b2da6c0c9ce1a6b2ca9c9f5b",
+  "reviewed_run_id": "r-20260926T145452839988-fenced-worker-smoke-after-reenable",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T15:55:55.518899+00:00",
+  "total": 89
+}

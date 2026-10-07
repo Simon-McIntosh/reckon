@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "set difference over the reviewed run's own baseline_suite (16 ids, gate-base.log) and after_suite (16 ids, gate-head.log): the two FAILED sets are identical (comm empty in both directions), so the change adds no failing id. Re-derived independently from the two logs' own FAILED lines.",
+  "base_log_revision": "3b63138018b9e0e8d061a587dcc5009b4c3e3bba",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4668",
+    "reckon/crew/dispatch.py:5170",
+    "reckon/cli.py:1569",
+    "reckon/crew/promotion.py:5985"
+  ],
+  "completed_at": "2026-10-01T04:54:08.920Z",
+  "dispatched_at": "2026-10-01T04:30:56Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183505187178-the-fence-fails-closed/manifest.md",
+      "line": "baseline_suite",
+      "text": "the manifest contract requires the suite command to be the literal command that ran with no angle-bracket placeholder, but baseline_suite.command ends with '<142 test files importing reckon.crew.dispatch or reckon._backends, conftest and the new file excluded>' rather than the literal file list; the literal command is present in gate-base.log's own header, so the field is redundant-but-nonconforming rather than unrecoverable."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183505187178-the-fence-fails-closed/manifest.md",
+      "line": "after_suite",
+      "text": "likewise after_suite.command carries '<the same 142 files plus tests/test_the_fence_fails_closed.py>' in place of the literal command, which the contract forbids; the literal command sits in gate-head.log's header on line 3."
+    }
+  ],
+  "head_log_revision": "35604d67e838758ea09323f28cdc65b6e98e4a3b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production call sites reckon/crew/dispatch.py:4668, reckon/crew/dispatch.py:5170, reckon/cli.py:1569 and reckon/crew/promotion.py:5985.",
+    "diff": "read commit by commit; 4cc24938d adds _probe_user_namespace and fence_capability_problem at reckon/_backends.py:1957, the fail-closed block at reckon/crew/dispatch.py:4668, the --no-fence-reason option at reckon/cli.py:1331, the fence_waiver field on LaunchPlan and its as_dict, and the ledger copy at reckon/crew/promotion.py:5985; 35604d67e memoises the probe.",
+    "done_when": "the done_when names six cases plus a memoisation case, a base/head population gate over the dispatch-importing files at -n 8 with per-arm basetemps, and an executed negative control; the manifest records each, and I independently confirmed 7 passed at head, the negative-control driver red, and the two arms' FAILED sets identical (16 = 16, zero added).",
+    "goal": "the node goal is to refuse a CLI worker's dispatch before any worktree exists when the fence cannot be built, with --no-fence REASON as the one recorded way through; reckon/crew/dispatch.py:4668 runs the capability probe and raises ahead of _create_worktree at reckon/crew/dispatch.py:4942.",
+    "manifest": "read; it records commits 4cc24938d, 423bdf97b and 35604d67e, both arm figures, the per-case results, the negative-control log and its cause, and zero added failing ids; its baseline_suite and after_suite command fields carry an angle-bracket placeholder.",
+    "write_paths": "the diff 3b6313801..35604d67e changes five declared product/test files plus the evidence fragment, all inside the manifest's declared write paths; the docs/figures directory is correctly left unwritten."
+  },
+  "justifications": {
+    "durability": "tests/test_the_fence_fails_closed.py:219 (case 1) reddens if the fence check is removed, and the negative control at tests/test_the_fence_fails_closed.py:447 forces the check to succeed while bwrap is hidden and reaches the worktree spy, showing the guard fires; case 7 at tests/test_the_fence_fails_closed.py:317 pins the memoised probe to one fork for two dispatches, so the guard cannot be silently cheapened.",
+    "evidence": "both gate arms are now headed with revision, tree and the literal command and end EXIT=1 with 16 FAILED lines each; the base header names 3b63138018b9e0e8d061a587dcc5009b4c3e3bba and the head header names 35604d67e838758ea09323f28cdc65b6e98e4a3b, so each arm's revision is readable from its own log; the two FAILED sets are identical (comm empty both ways), which I re-derived independently, so the change adds no failing id; I also re-ran tests/test_the_fence_fails_closed.py at the reviewed head (7 passed) and the negative-control driver (EXIT=1, case 1 failed as declared). The one defect is that both manifest suite commands carry an angle-bracket placeholder.",
+    "fit": "fence_capability_problem at reckon/_backends.py:1957 follows the module's injectable-probe idiom, the memo dict keys on the probe callable rather than a module global, and no added symbol, comment or commit subject names a plan, version or ticket.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4668 calls _backends.fence_capability_problem() and raises there, before _create_worktree at reckon/crew/dispatch.py:4942, so the refusal precedes the worktree, live pointer and run directory the goal names; the refusal text names the missing capability (bwrap absent from PATH, or the namespace probe's own failure text), and --no-fence REASON is the one recorded way through (reckon/cli.py:1331, recorded on the pointer at reckon/crew/dispatch.py:5170, on the composed plan via LaunchPlan.fence_waiver, and on the ledger row at reckon/crew/promotion.py:5985).",
+    "scope_discipline": "git diff 3b6313801..35604d67e changes exactly reckon/_backends.py, reckon/cli.py, reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_the_fence_fails_closed.py and the evidence fragment, every one inside the manifest's declared write paths; the unused docs/figures directory is correctly left unwritten because the done-when names no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a CLI worker's dispatch before any worktree exists when the fence cannot be built, with --no-fence REASON as the one recorded way through; reckon/crew/dispatch.py:4668 calls _backends.fence_capability_problem() and raises there, ahead of _create_worktree at reckon/crew/dispatch.py:4942.\nVERDICT done_when: the done_when names cases 1-6 plus a memoisation case, a base/head population gate over the dispatch-importing files at -n 8 with per-arm basetemps, and an executed negative control; the manifest records all of them, I re-ran tests/test_the_fence_fails_closed.py at the reviewed head (7 passed) and the negative-control driver (EXIT=1, case 1 failed as declared), and both arms' FAILED sets are identical (16 = 16, zero added).\nVERDICT write_paths: the diff 3b6313801..35604d67e changes reckon/crew/dispatch.py, reckon/cli.py, reckon/_backends.py, reckon/crew/promotion.py, tests/test_the_fence_fails_closed.py and the evidence fragment, every one inside the manifest's declared write paths.\nVERDICT manifest: read; it records commits 4cc24938d, 423bdf97b and 35604d67e, the base and head arm figures, the per-case results, the negative-control log and its cause, and zero added failing ids; its suite command fields carry an angle-bracket placeholder.\nVERDICT diff: read commit by commit; 4cc24938d adds _probe_user_namespace and fence_capability_problem at reckon/_backends.py:1957, the fail-closed block at reckon/crew/dispatch.py:4668, the --no-fence option at reckon/cli.py:1331, the fence_waiver field on LaunchPlan and its as_dict, and the code:\"ledger copy at reckon/crew/promotion.py:5985; 423bdf97b cites the change commit from the evidence fragment; 35604d67e memoises the probe per process.\nCALL_SITES: reckon/crew/dispatch.py:4668, reckon/crew/dispatch.py:5170, reckon/cli.py:1569, reckon/crew/promotion.py:5985\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4668 refuses with the missing capability named (bwrap absent, or the probe's own failure text) before _create_worktree at reckon/crew/dispatch.py:4942, and the --no-fence reason is recorded on the pointer, the composed plan and the ledger row, matching the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms are headed with revision, tree and literal command and end EXIT=1 with 16 FAILED lines each; the base header names 3b6313801 and the head header names 35604d67e, so each arm's revision is readable; the FAILED sets are identical (zero added), which I re-derived; I re-ran the named file (7 passed) and the negative control (EXIT=1). The one defect is the two manifest suite commands' angle-bracket placeholder.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 3b6313801..35604d67e is one of the manifest's declared write paths and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: case 1 at tests/test_the_fence_fails_closed.py:219 reddens if the fence check is removed, the negative control at tests/test_the_fence_... line 447 forces the check to succeed while bwrap is hidden and reaches the worktree spy, and case 7 pins the memoised probe.\nSCORE fit: 18\nJUSTIFICATION fit: fence_capability_problem at reckon/_backends.py:1957 follows the module's injectable-probe idiom and no added symbol, comment or commit message names a plan, version or ticket.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183505187178-the-fence-fails-closed/manifest.md:baseline_suite the manifest contract requires the suite command to be the literal command that ran with no angle-bracket placeholder, but baseline_suite.command ends with '<142 test files importing reckon.crew.dispatch or reckon._backends, conftest and the four neighbour files excluded>' rather than the literal file list; the literal command is present in gate-base.log's own header.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183505187178-the-fence-fails-closed/manifest.md:after_suite likewise after_suite.command carries '<the same 142 files plus tests/test_the_fence_fails_closed.py>' in place of the literal command, which the contract forbids; the literal command sits in gate-head.log's header on line 3.\n",
+  "review_run_id": "r-20261001T043034671935-review-of-the-fence-fails-closed",
+  "reviewed_base_sha": "3b63138018b9e0e8d061a587dcc5009b4c3e3bba",
+  "reviewed_head_sha": "35604d67e838758ea09323f28cdc65b6e98e4a3b",
+  "reviewed_run_id": "r-20260930T183505187178-the-fence-fails-closed",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T04:46:02.380245+00:00",
+  "total": 93
+}

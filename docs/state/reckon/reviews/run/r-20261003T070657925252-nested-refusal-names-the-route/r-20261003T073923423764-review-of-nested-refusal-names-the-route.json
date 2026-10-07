@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4c28566915dc727e67df7dbc54cb27aa1d145e17",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/nested_launch.py:200",
+    "reckon/crew/worker_digest.py:553",
+    "reckon/crew/worker_digest.py:569"
+  ],
+  "completed_at": "2026-10-03T07:45:40.030Z",
+  "dispatched_at": "2026-10-03T07:39:55Z",
+  "findings": [
+    {
+      "file": "tests/test_nested_refusal_names_the_route.py",
+      "line": "54",
+      "severity": "follow-on",
+      "text": "follow-on: ROUTES is built from nested.PARTITION_ROUTE and nested.OVERRIDE_ENV and named_routes reads the same constants out of the produced text, so the guard proves the refusal and the digest name whatever those constants hold, not that the partition phrase still reads as a partition route \u2014 an edit to the constant's value would keep the test green while the route name stopped describing a separate job."
+    }
+  ],
+  "head_log_revision": "30e63dd785f29c34261ad10db6301977b6abbd32",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the seven commits against base 4c2856691; the runtime change is the refusal sentence at reckon/nested_launch.py:148 and the digest sentence at reckon/crew/worker_digest.py:126, with the remainder regenerating the committed digests, adding the test, and recording evidence.",
+    "done_when": "the done-when names a test asserting both texts name both routes; tests/test_nested_refusal_names_the_route.py:87 asserts the refusal names both and :100 the composed digest, and the manifest records the head arm at 91 passed, base at 8 collection errors.",
+    "goal": "the node goal asks the shim refusal and the worker brief to name both routes out of a nested launch; reckon/nested_launch.py:148-152 appends the partition-route sentence and keeps the RECKON_ALLOW_NESTED_LAUNCH line, and reckon/crew/worker_digest.py:126-136 composes both routes into the fleet compute block via ADDED_SENTENCES.",
+    "manifest": "read; it records base 85 passed/8 errors exit 1 at 4c2856691, head 91 passed exit 0 at 30e63dd7, the declared mutation at 3 failed/3 passed exit 1, and completed baseline_suite/after_suite objects naming their log paths.",
+    "write_paths": "the manifest declares reckon/nested_launch.py, reckon/crew/worker_digest.py, reckon/crew/digests/{implement,test}.md, tests/test_nested_refusal_names_the_route.py and the evidence fragment; git show --stat for 4c2856691..572bb9515 lists exactly those, all inside scope."
+  },
+  "justifications": {
+    "durability": "the declared mutation that removes the partition-route line reddens the three refusal cases (logs/negative-control-4.log, 3 failed/3 passed, EXIT=1), ids the head arm does not fail, but the expected set is built from the same constants the code reads, so an edit to PARTITION_ROUTE's own text would move both sides together.",
+    "evidence": "tests/test_nested_refusal_names_the_route.py:87 asserts the refusal names both routes and the manifest's head arm (logs/gate-head-6.log, revision=30e63dd7, 91 passed, EXIT=0) records it, but that arm ran at 30e63dd7 and the reviewed head is the later 572bb9515, which the manifest states touches only the evidence page.",
+    "fit": "reckon/nested_launch.py:60 and reckon/crew/worker_digest.py:124 follow the module-comment-and-constant idiom beside OVERRIDE_ENV, importing the route constants rather than copying their text, and no new name carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/nested_launch.py:150-152 names the separate partition job with both example partitions and retains the opt-in, so a worker reading the refusal learns where work should go rather than only that it was refused.",
+    "scope_discipline": "git show --stat across 4c2856691..572bb9515 lists only reckon/nested_launch.py, reckon/crew/worker_digest.py, reckon/crew/digests/{implement,test}.md, tests/test_nested_refusal_names_the_route.py and the evidence fragment, all inside the manifest's declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal asks the shim refusal and the worker brief to name both routes out of a nested launch; reckon/nested_launch.py:148-152 appends the partition-route sentence and keeps the RECKON_ALLOW_NESTED_LAUNCH line, and reckon/crew/worker_digest.py:126-136 composes both routes into the fleet compute block via ADDED_SENTENCES.\nVERDICT done_when: the done-when names a test asserting both texts name both routes; tests/test_nested_refusal_names_the_route.py:87 asserts the refusal names both and :100 the composed digest, and the manifest records the head arm at 91 passed, base at 8 collection errors.\nVERDICT write_paths: the manifest declares reckon/nested_launch.py, reckon/crew/worker_digest.py, reckon/crew/digests/{implement,test}.md, tests/test_nested_refusal_names_the_route.py and the evidence fragment; git show --stat for 4c2856691..572bb9515 lists exactly those, all inside scope.\nVERDICT manifest: read; it records base 85 passed/8 errors exit 1 at 4c2856691, head 91 passed exit 0 at 30e63dd7, the declared mutation at 3 failed/3 passed exit 1, and completed baseline_suite/after_suite objects naming their log paths.\nVERDICT diff: read the seven commits against base 4c2856691; the runtime change is the refusal sentence at reckon/nested_launch.py:148 and the digest sentence at reckon/crew/worker_digest.py:126, with the remainder regenerating the committed digests, adding the test, and recording evidence.\nCALL_SITES: reckon/nested_launch.py:200, reckon/crew/worker_digest.py:553, reckon/crew/worker_digest.py:569\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:150-152 names the separate partition job with both example partitions and retains the opt-in, so a worker reading the refusal learns where work should go rather than only that it was refused.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_nested_refusal_names_the_route.py:87 asserts the refusal names both routes and the manifest's head arm (logs/gate-head-6.log, revision=30e63dd7, 91 passed, EXIT=0) records it, but that arm ran at 30e63dd7 and the reviewed head is the later 572bb9515, which the manifest states touches only the evidence page.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat across 4c2856691..572bb9515 lists only reckon/nested_launch.py, reckon/crew/worker_digest.py, reckon/crew/digests/{implement,test}.md, tests/test_nested_refusal_names_the_route.py and the evidence fragment, all inside the manifest's declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation that removes the partition-route line reddens the three refusal cases (logs/negative-control-4.log, 3 failed/3 passed, EXIT=1), ids the head arm does not fail, but the expected set is built from the same constants the code reads, so an edit to PARTITION_ROUTE's own text would move both sides together.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/nested_launch.py:60 and reckon/crew/worker_digest.py:124 follow the module-comment-and-constant idiom beside OVERRIDE_ENV, importing the route constants rather than copying their text, and no new name carries a plan or ticket identifier.\nFINDING tests/test_nested_refusal_names_the_route.py:54 follow-on: ROUTES is built from nested.PARTITION_ROUTE and nested.OVERRIDE_ENV and named_routes reads the same constants out of the produced text, so the guard proves the refusal and the digest name whatever those constants hold, not that the partition phrase still reads as a partition route \u2014 an edit to the constant's value would keep the test green while the route name stopped describing a separate job.",
+  "review_run_id": "r-20261003T073923423764-review-of-nested-refusal-names-the-route",
+  "reviewed_base_sha": "4c28566915dc727e67df7dbc54cb27aa1d145e17",
+  "reviewed_head_sha": "572bb9515fca092326682ddc294db12ede75d5d4",
+  "reviewed_run_id": "r-20261003T070657925252-nested-refusal-names-the-route",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T07:45:03.493688+00:00",
+  "total": 92
+}

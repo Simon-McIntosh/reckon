@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:_follow_watch_lines",
+    "reckon/cli.py:stream_events",
+    "reckon/crew/follow_checkpoint.py:append_history"
+  ],
+  "completed_at": "2026-09-26T12:41:23.413Z",
+  "dispatched_at": "2026-09-26T11:30:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "line": "385",
+      "text": "the base-arm row claims the scratch tree carried \"the same two files\" overlaid, but its tests/test_follow_rearm_continues.py copy holds the marker assertion on one line where the committed blob wraps it, so the overlay is not the committed bytes; the assertions and the red verdict are unaffected, but a reader auditing the claim against the blob finds a mismatch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base 9fafad1f; 33adbdc9 is the code change and e128bcbc the landing record, the cumulative evidence record gained 23 lines with zero deletions, and the plan gained one landing paragraph with no meta line changed.",
+    "done_when": "the fence asks each check red at base, green at head, and no added failures; gate.log records 22 passed at rev=33adbdc9 whose code blobs are identical at e128bcbc, base-arm.log records exactly those two checks failed at base with 20 passed, both at the intended assertion (base-arm.log:56, base-arm.log:102), so the added-failure count is zero.",
+    "goal": "read both behaviours the goal names against the reviewed head; reckon/cli.py:2297 adds the file-presence half to the checkpoint write gate and reckon/crew/follow_checkpoint.py:341 collapses adjacent format markers on the read, and my own re-run of the two named checks at e128bcbc passed 2 in 0.66s with reckon.__file__ resolving into the reviewed worktree.",
+    "manifest": "read; its gate, base-arm and mutation claims agree with the logs on disk, and I verified the mutation tree /tmp/head-arm-x1yj5t differs from head 33adbdc9 by exactly the declared gate line while /tmp/base-arm-jRmAtp carries the base product files with the node's tests.",
+    "write_paths": "read the seven declared paths; git diff --stat 9fafad1f..e128bcbc names exactly those seven files and nothing else, and the worktree was clean before and after my recheck."
+  },
+  "justifications": {
+    "durability": "tests/test_follower_keeps_memory.py:227 is red under the declared mutation (negative-control.log) and tests/test_follow_rearm_continues.py:759 is red at base (base-arm.log:102), though the first asserts presence at the end of a twelve-poll idle rather than at the first poll after the deletion its name claims.",
+    "evidence": "gate.log, base-arm.log and negative-control.log are recorded and reproducible, but the base arm's overlaid tests/test_follow_rearm_continues.py copy is not byte-identical to the committed blob (finding below) and the negative-control log names no tree or module on its header lines.",
+    "fit": "collapse_format_markers and exists are mechanism-named with no plan or tracker reference, the new docstrings follow the style at reckon/crew/follow_checkpoint.py:307, and both commits carry a conventional subject and a body.",
+    "goal_fidelity": "both named behaviours sit in the landed code at reckon/cli.py:2297 and reckon/crew/follow_checkpoint.py:341, and both new checks pass at the reviewed head in my re-run.",
+    "scope_discipline": "every path in the diff against 9fafad1f is inside the seven declared write paths, and the docs edits are the mandated landing record and its figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read both behaviours the goal names against the reviewed head; reckon/cli.py:2297 adds the file-presence half to the checkpoint write gate and reckon/crew/follow_checkpoint.py:341 collapses adjacent format markers on the read, and my own re-run of the two named checks at e128bcbc passed 2 in 0.66s with reckon.__file__ resolving into the reviewed worktree.\nVERDICT done_when: the fence asks each check red at base, green at head, and no added failures; gate.log records 22 passed at rev=33adbdc9 whose code blobs are identical at e128bcbc, base-arm.log records exactly those two checks failed at base with 20 passed, both at the intended assertion (base-arm.log:56, base-arm.log:102), so the added-failure count is zero.\nVERDICT write_paths: read the seven declared paths; git diff --stat 9fafad1f..e128bcbc names exactly those seven files and nothing else, and the worktree was clean before and after my recheck.\nVERDICT manifest: read; its gate, base-arm and mutation claims agree with the logs on disk, and I verified the mutation tree /tmp/head-arm-x1yj5t differs from head 33adbdc9 by exactly the declared gate line while /tmp/base-arm-jRmAtp carries the base product files with the node's tests.\nVERDICT diff: read both commits against base 9fafad1f; 33adbdc9 is the code change and e128bcbc the landing record, the cumulative evidence record gained 23 lines with zero deletions, and the plan gained one landing paragraph with no meta line changed.\nCALL_SITES: reckon/cli.py:_follow_watch_lines, reckon/cli.py:stream_events, reckon/crew/follow_checkpoint.py:append_history\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both named behaviours sit in the landed code at reckon/cli.py:2297 and reckon/crew/follow_checkpoint.py:341, and both new checks pass at the reviewed head in my re-run.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log, base-arm.log and negative-control.log are recorded and reproducible, but the base arm's overlaid tests/test_follow_rearm_continues.py copy is not byte-identical to the committed blob (finding below) and the negative-control log names no tree or module on its header lines.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff against 9fafad1f is inside the seven declared write paths, and the docs edits are the mandated landing record and its figure.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_follower_keeps_memory.py:227 is red under the declared mutation (negative-control.log) and tests/test_follow_rearm_continues.py:759 is red at base (base-arm.log:102), though the first asserts presence at the end of a twelve-poll idle rather than at the first poll after the deletion its name claims.\nSCORE fit: 19\nJUSTIFICATION fit: collapse_format_markers and exists are mechanism-named with no plan or tracker reference, the new docstrings follow the style at reckon/crew/follow_checkpoint.py:307, and both commits carry a conventional subject and a body.\nFINDING docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:385 the base-arm row claims the scratch tree carried \"the same two files\" overlaid, but its tests/test_follow_rearm_continues.py copy holds the marker assertion on one line where the committed blob wraps it, so the overlay is not the committed bytes; the assertions and the red verdict are unaffected, but a reader auditing the claim against the blob finds a mismatch.",
+  "review_run_id": "r-20260926T112938635538-review-of-follower-rewrites-a-deleted-checkpoint",
+  "reviewed_base_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_head_sha": "e128bcbc6bf8ba358750147a7ddd169c11343b2e",
+  "reviewed_run_id": "r-20260926T103118451595-follower-rewrites-a-deleted-checkpoint",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T12:30:42.955461+00:00",
+  "total": 92
+}

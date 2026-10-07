@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:5380",
+    "reckon/crew/promotion.py:3702"
+  ],
+  "completed_at": "2026-09-30T23:07:09.100Z",
+  "dispatched_at": "2026-09-30T22:50:55Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T222845255523-repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run was armed (its pointer carries suite_command '.venv/bin/python -m pytest -n 8 -p no:cacheprovider -q tests/') but its manifest records a focused eight-file gate under tests/test_logs and no baseline_suite/after_suite, so its own review's added-failure count reads unmeasured and an armed promotion refuses at reckon/crew/promotion.py:4109-4123 with no waiver path."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base 4027b1c368ed; 95284f034 changes reckon/crew/recovery.py and adds two tests, bf1354234 adds the evidence fragment, and the only new None is the withheld-selection branch.",
+    "done_when": "it requires a committed change answering each finding and a manifest naming every finding by id; the manifest records 'acted f35b48d790f: 95284f034' and the focused gate, which I re-ran green at head.",
+    "goal": "the goal is to repair finding f35b48d790f (a held review's display-only command names the saturated lane); the diff at reckon/crew/recovery.py:539-590 makes _composed_review_lane return no lane for a withheld selection and _review_dispatch_action print the hold instead.",
+    "manifest": "read at the run directory; status complete, commits 95284f034 and bf1354234, negative_control_log names the reverted-product mutation, gate recorded under logs/gate-head.log.",
+    "write_paths": "the manifest declares tests/test_a_review_waits_for_a_saturated_lane.py, reckon/crew/recovery.py, the evidence fragment and its figure directory; every path in the two commits is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_waits_for_a_saturated_lane.py:369 asserts _composed_review_lane is None and the printed action carries no --local, which reddens when the withheld branch at reckon/crew/recovery.py:559 is reverted.",
+    "evidence": "the manifest records the gate tests/test_a_review_waits_for_a_saturated_lane.py which I re-ran at head as 50 passed, and its negative_control_log reproduces the defect at base whose behaviour I independently re-derived at reckon/crew/recovery.py:544.",
+    "fit": "the helpers at reckon/crew/recovery.py:502, 579 and 1347 follow the module's mechanism-naming idiom and introduce no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/recovery.py:539 returns None only for the withheld selection and reckon/crew/recovery.py:579 prints the hold, where the base revision 4027b1c368ed returned ['--local'] and a command ending in --local for the same saturated input.",
+    "scope_discipline": "the two commits touch only reckon/crew/recovery.py, tests/test_a_review_waits_for_a_saturated_lane.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "node": "review-of-repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to repair finding f35b48d790f (a held review's display-only command names the saturated lane); the diff at reckon/crew/recovery.py:539-590 makes _composed_review_lane return no lane for a withheld selection and _review_dispatch_action print the hold instead.\nVERDICT done_when: it requires a committed change answering each finding and a manifest naming every finding by id; the manifest records 'acted f35b48d790f: 95284f034' and the focused gate, which I re-ran green at head.\nVERDICT write_paths: the manifest declares tests/test_a_review_waits_for_a_saturated_lane.py, reckon/crew/recovery.py, the evidence fragment and its figure directory; every path in the two commits is inside them.\nVERDICT manifest: read at the run directory; status complete, commits 95284f034 and bf1354234, negative_control_log names the reverted-product mutation, gate recorded under logs/gate-head.log.\nVERDICT diff: read both commits against base 4027b1c368ed; 95284f034 changes reckon/crew/recovery.py and adds two tests, bf1354234 adds the evidence fragment, and the only new None is the withheld-selection branch.\nCALL_SITES: reckon/crew/recovery.py:5380, reckon/crew/promotion.py:3702\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:539 returns None only for the withheld selection and reckon/crew/recovery.py:579 prints the hold, where the base revision 4027b1c368ed returned ['--local'] and a command ending in --local for the same saturated input.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest records the gate tests/test_a_review_waits_for_a_saturated_lane.py which I re-ran at head as 50 passed, and its negative_control_log reproduces the defect at base whose behaviour I independently re-derived at reckon/crew/recovery.py:544.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/crew/recovery.py, tests/test_a_review_waits_for_a_saturated_lane.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_waits_for_a_saturated_lane.py:369 asserts _composed_review_lane is None and the printed action carries no --local, which reddens when the withheld branch at reckon/crew/recovery.py:559 is reverted.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers at reckon/crew/recovery.py:502, 579 and 1347 follow the module's mechanism-naming idiom and introduce no plan or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T222845255523-repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed/manifest.md:14 follow-on: the reviewed run was armed (its pointer carries suite_command '.venv/bin/python -m pytest -n 8 -p no:cacheprovider -q tests/') but its manifest records a focused eight-file gate under tests/test_logs and no baseline_suite/after_suite, so its own review's added-failure count reads unmeasured and an armed promotion refuses at reckon/crew/promotion.py:4109-4123 with no waiver path.",
+  "review_run_id": "r-20260930T225039845371-review-of-repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed",
+  "reviewed_base_sha": "4027b1c368ed85e0d5fc5114288ab1b4bb1f2b95",
+  "reviewed_head_sha": "bf1354234306449666ebde3ba6d472e5e18f4264",
+  "reviewed_run_id": "r-20260930T222845255523-repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T23:05:04.627356+00:00",
+  "total": 93
+}

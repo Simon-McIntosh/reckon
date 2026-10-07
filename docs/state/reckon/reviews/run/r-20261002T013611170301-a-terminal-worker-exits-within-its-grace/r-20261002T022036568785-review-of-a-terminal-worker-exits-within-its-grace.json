@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f91fa54eeb9248f7e9e02b715a361fa93edbdfa1",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:8694"
+  ],
+  "completed_at": "2026-10-02T02:28:04.042Z",
+  "dispatched_at": "2026-10-02T02:21:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-terminal-worker-exits-within-its-grace.html",
+      "line": "79",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence fragment's Evidence section names the head arm as 'revision f91fa54eeb plus the working tree', but the head-arm receipt it cites, logs/comparison-head.log, opens 'revision: b68b72c556733eb6bbabc17ddc589aa1e2ad052a' and the manifest's after_suite names b68b72c55, so a reader comparing the fragment to the log it cites sees two different head revisions; the measured numbers agree (14 passed) and only the stated revision is wrong."
+    }
+  ],
+  "head_log_revision": "b68b72c556733eb6bbabc17ddc589aa1e2ad052a",
+  "item_aggregate": 1,
+  "item_verdicts": {
+    "diff": "read b68b72c55 (and its parent 84f434af0) against base f91fa54eeb; reckon/crew/dispatch.py +209/-6 replaces the supervisor's blocking os.waitpid with _reap_worker_on_its_terminal_manifest and adds _worker_manifest_done_status, _supervisor_manifest_baseline_ns, _supervisor_manifest_path, _terminal_manifest_grace_seconds; tests/test_a_terminal_worker_exits_within_its_grace.py +484; the evidence fragment +105; no other file changes across either commit.",
+    "done_when": "the dispatch's FENCE-EVIDENCE names tests/test_a_terminal_worker_exits_within_its_grace.py, a stub worker that writes a complete manifest and sleeps, an exit within the grace measured from the manifest's terminal write, blocked and in-progress cases keeping the worker running, and a logged negative control; the worker's gate.log records 5 passed EXIT=0 and I reproduced 5 passed EXIT=0 in the reviewed worktree (gate-reproduce.log), and the declared grace-exit mutation reproduced red here (2 failed 3 passed EXIT=1, negative-control-reproduce.log).",
+    "goal": "the node's goal is that a worker whose manifest turns terminal exits within a bounded grace without waiting for promotion; _run_supervisor (dispatch.py:8694) now collects the exit through _reap_worker_on_its_terminal_manifest, which ends the worker once its manifest reads complete or failed, so the goal is met.",
+    "manifest": "read; status complete, naming the grace env, the done set (complete+failed, blocked kept for resume), the baseline gate, the poll interval, the sender-record-first signal and the SIGKILL escalation, with machine-readable baseline_suite and after_suite JSON; both arm logs open with 'revision:' so their recorded revisions resolve.",
+    "write_paths": "the declared paths are reckon/crew/dispatch.py, tests/test_a_terminal_worker_exits_within_its_grace.py and the evidence fragment; git show --stat over 84f434af0 and b68b72c55 touches exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared grace-exit mutation removes the reap and test_a_complete_manifest_ends_the_worker_within_the_grace reddens on the worker staying alive past its grace (negative-control.log, and reproduced here: 2 failed 3 passed EXIT=1), so the guard is verified by reinstating the regression; the second declared mutation drops the baseline comparison and test_a_manifest_left_by_a_previous_attempt_is_not_this_attempts_delivery reddens (negative-control-baseline.log, 1 failed 4 passed EXIT=1).",
+    "evidence": "the gate tests/test_a_terminal_worker_exits_within_its_grace.py asserts the done_when measure and I reproduced 5 passed EXIT=0 (gate-reproduce.log); the arm logs comparison-base.log and comparison-head.log record 14 passed each at f91fa54eeb and b68b72c55 so the added-failure count is zero; the arms carry no newly added failures and the fragment's stated head revision diverges from the log it cites.",
+    "fit": "the new helpers sit beside _run_supervisor in dispatch.py:8417-8612 and reuse the existing routing.signal_worker (sender record written before the signal) rather than a new os.kill; the done-set comment states why blocked is excluded; no added name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "dispatch.py:8694 routes the supervisor's exit collection through _reap_worker_on_its_terminal_manifest, which ends a worker whose manifest is complete or failed within a grace (RECKON_WORKER_TERMINAL_GRACE_SECONDS, default 300 s) measured from the manifest's own write time, escalating SIGTERM to SIGKILL after 10 s; blocked is excluded and kept for resume and in-progress is waited on, both as the done-when requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a worker whose manifest turns terminal exits within a bounded grace without waiting for promotion; _run_supervisor (dispatch.py:8694) now collects the exit through _reap_worker_on_its_terminal_manifest, which ends the worker once its manifest reads complete or failed, so the goal is met.\nVERDICT done_when: the dispatch's FENCE-EVIDENCE names tests/test_a_terminal_worker_exits_within_its_grace.py, a stub worker that writes a complete manifest and sleeps, an exit within the grace measured from the manifest's terminal write, blocked and in-progress cases keeping the worker running, and a logged negative control; the worker's gate.log records 5 passed EXIT=0 and I reproduced 5 passed EXIT=0 in the reviewed worktree (gate-reproduce.log), and the declared grace-exit mutation reproduced red here (2 failed 3 passed EXIT=1, negative-control-reproduce.log).\nVERDICT write_paths: the declared paths are reckon/crew/dispatch.py, tests/test_a_terminal_worker_exits_within_its_grace.py and the evidence fragment; git show --stat over 84f434af0 and b68b72c55 touches exactly those three files and nothing else.\nVERDICT manifest: read; status complete, naming the grace env, the done set (complete+failed, blocked kept for resume), the baseline gate, the poll interval, the sender-record-first signal and the SIGKILL escalation, with machine-readable baseline_suite and after_suite JSON; both arm logs open with 'revision:' so their recorded revisions resolve.\nVERDICT diff: read b68b72c55 (and its parent 84f434af0) against base f91fa54eeb; reckon/crew/dispatch.py +209/-6 replaces the supervisor's blocking os.waitpid with _reap_worker_on_its_terminal_manifest and adds _worker_manifest_done_status, _supervisor_manifest_baseline_ns, _supervisor_manifest_path, _terminal_manifest_grace_seconds; tests/test_a_terminal_worker_exits_within_its_grace.py +484; the evidence fragment +105; no other file changes across either commit.\nCALL_SITES: reckon/crew/dispatch.py:8694\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: dispatch.py:8694 routes the supervisor's exit collection through _reap_worker_on_its_terminal_manifest, which ends a worker whose manifest is complete or failed within a grace (RECKON_WORKER_TERMINAL_GRACE_SECONDS, default 300 s) measured from the manifest's own write time, escalating SIGTERM to SIGKILL after 10 s; blocked is excluded and kept for resume and in-progress is waited on, both as the done-when requires.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate tests/test_a_terminal_worker_exits_within_its_grace.py asserts the done_when measure and I reproduced 5 passed EXIT=0 (gate-reproduce.log) and the grace-exit negative control red (negative-control-reproduce.log, 2 failed 3 passed EXIT=1); the arm logs comparison-base.log and comparison-head.log record 14 passed each at f91fa54eeb and b68b72c55, so the added-failure count is zero, but the evidence fragment states the head arm ran at 'f91fa54eeb plus the working tree' where the log it cites names b68b72c55.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over both commits lists exactly the three declared paths (dispatch.py, the new test module, the evidence fragment) with no scratch, figure or generated file, and dispatch.py's change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the declared grace-exit mutation removes the reap and test_a_complete_manifest_ends_the_worker_within_the_grace reddens on the worker staying alive past its grace (negative-control.log, and reproduced here: 2 failed 3 passed EXIT=1), so the guard is verified by reinstating the regression; the second declared mutation drops the baseline comparison and test_a_manifest_left_by_a_previous_attempt_is_not_this_attempts_delivery reddens (negative-control-baseline.log, 1 failed 4 passed EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers sit beside _run_supervisor in dispatch.py:8425-8612 and reuse the existing routing.signal_worker (sender record written before the signal) rather than a new os.kill; the done-set comment states why blocked is excluded; the coarse 3 s poll with an mtime-gated reparse answers the plan's shared-storage concern; no added name carries a plan, sprint or ticket identifier.\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-terminal-worker-exits-within-its-grace.html:79 follow-on: the evidence fragment's Evidence section names the head arm as 'revision f91fa54eeb plus the working tree', but the head-arm receipt it cites, logs/comparison-head.log, opens 'revision: b68b72c556733eb6bbabc17ddc589aa1e2ad052a' and the manifest's after_suite names b68b72c55, so a reader comparing the fragment to the log it cites sees two different head revisions; the measured numbers agree (14 passed) and only the stated revision is wrong.\n",
+  "review_run_id": "r-20261002T022036568785-review-of-a-terminal-worker-exits-within-its-grace",
+  "reviewed_base_sha": "f91fa54eeb9248f7e9e02b715a361fa93edbdfa1",
+  "reviewed_head_sha": "b68b72c556733eb6bbabc17ddc589aa1e2ad052a",
+  "reviewed_run_id": "r-20261002T013611170301-a-terminal-worker-exits-within-its-grace",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T02:26:31+00:00",
+  "total": 96
+}

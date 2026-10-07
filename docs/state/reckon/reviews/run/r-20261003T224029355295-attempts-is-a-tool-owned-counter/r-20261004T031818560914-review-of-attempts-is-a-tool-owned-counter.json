@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5ebe5d8f570e7cc5cbaa447252063314d54b585a",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:2877 plan view payload",
+    "reckon/serve.py:3044 HTTP plan payload",
+    "reckon/roadmap.py:2214 _build_roadmap ready set",
+    "reckon/crew/routing.py:326 resolve_section_routing"
+  ],
+  "completed_at": "2026-10-04T03:26:32.444Z",
+  "dispatched_at": "2026-10-04T03:18:52Z",
+  "findings": [
+    {
+      "file": "docs/plans/section-contract-and-computed-impl.html",
+      "line": "326",
+      "severity": "follow-on",
+      "text": "follow-on: s4 states 'reckon crew dispatch increments the target section's attempts' but the landed change derives the count from run history and never writes it (reckon/mcp_views.py:1474), so the plan text and the code disagree about the mechanism."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's changed_paths names reckon/crew/promotion.py, but no node commit changes it; the net 81b5353..cea34116 change there belongs to the peer commit 6db8d13e1, so a reader reconciling changed_paths against the node's commits finds an entry the node did not author."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2214",
+      "severity": "follow-on",
+      "text": "follow-on: delivering section_attempts on the roadmap ready set adds a per-call aggregation; the run's paired logs measure the roadmap build rising 29.894s to 38.046s and the section view 6.182s to 9.316s on a 3604-row ledger, a cost paid on every read for a count that moves only when a run launches or completes."
+    }
+  ],
+  "head_log_revision": "cea3411645decd83a5712cb74637e6535c4fb52a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit; the launch-counting write (faca5b63) was reverted by d2b52e548, leaving a derived read (reckon/mcp_views.py:1474), a write-time strip of the legacy attempts attribute (reckon/_store.py:1382), server delivery (reckon/serve.py:3042), and section routing by the derived count (reckon/crew/routing.py:326).",
+    "done_when": "the done_when's four outcomes are asserted by tests/test_section_attempts_are_tool_owned.py:161-262 (two dispatches and one promotion leave attempts at 2, a resume leaves it unchanged, outcomes are recorded, the stored plan carries no counter), and the manifest records the head gate at 238 passed.",
+    "goal": "the goal is the s4 tool-owned attempt counter; the landed change derives it from distinct implement/test run ids (reckon/mcp_views.py:1474 section_attempts_by_plan) and delivers it on the section heading (docs/ui/plan.jsx:771) and the roadmap ready set (reckon/roadmap.py:2874) instead of writing a stored count at dispatch.",
+    "manifest": "read at orientation; status complete, commits ending cea34116, baseline_suite revision 5ebe5d8f (13 failed) and after_suite revision cea34116 (238 passed, 0 failed), negative control whose last line reads EXIT=1.",
+    "write_paths": "the node's commits change its declared production files (reckon/mcp_views.py, reckon/_store.py, reckon/serve.py, reckon/roadmap.py, docs/ui/plan.jsx, reckon/crew/routing.py, reckon/crew/dispatch.py) plus its tests; reckon/crew/promotion.py is named in changed_paths but no node commit touches it."
+  },
+  "justifications": {
+    "durability": "tests/test_section_attempts_are_tool_owned.py:161 dispatches real runs and reads the count back through the real view path, so a return to a stored counter reddens it, and the declared negative control reddens the analogue at EXIT=1.",
+    "evidence": "the run's baseline-suite-merged-guard.log records 13 failed EXIT=1 at 5ebe5d8f against after-suite-merged-guard-retry.log at 238 passed EXIT=0 at cea34116, and the done_when's four outcomes are asserted by tests/test_section_attempts_are_tool_owned.py:161-262.",
+    "fit": "the added symbols (section_attempts_by_plan, section_attempt_count, _group_section_attempts) name the mechanism, the twenty node commits carry conventional subjects with bodies and no AI trailer, and no plan or sprint identifier reaches source.",
+    "goal_fidelity": "reckon/mcp_views.py:1474 derives the count and outcomes from distinct implement/test run ids and reckon/roadmap.py:2874 exposes them, but the s4 text still describes a written counter, so the mechanism diverges from the plan's letter.",
+    "scope_discipline": "every node commit lands inside the declared production paths, though reckon/crew/promotion.py appears in the manifest's changed_paths with no change the node authored (reckon/crew/promotion.py:1)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is the s4 tool-owned attempt counter; the landed change derives it from distinct implement/test run ids (reckon/mcp_views.py:1474 section_attempts_by_plan) and delivers it on the section heading (docs/ui/plan.jsx:771) and the roadmap ready set (reckon/roadmap.py:2874) instead of writing a stored count at dispatch.\nVERDICT done_when: the done_when's four outcomes are asserted by tests/test_section_attempts_are_tool_owned.py:161-262 (two dispatches and one promotion leave attempts at 2, a resume leaves it unchanged, outcomes are recorded, the stored plan carries no counter), and the manifest records the head gate at 238 passed.\nVERDICT write_paths: the node's commits change its declared production files (reckon/mcp_views.py, reckon/_store.py, reckon/serve.py, reckon/roadmap.py, docs/ui/plan.jsx, reckon/crew/routing.py, reckon/crew/dispatch.py) plus its tests; reckon/crew/promotion.py is named in changed_paths but no node commit touches it.\nVERDICT manifest: read at orientation; status complete, commits ending cea34116, baseline_suite revision 5ebe5d8f (13 failed) and after_suite revision cea34116 (238 passed, 0 failed), negative control whose last line reads EXIT=1.\nVERDICT diff: read commit by commit; the launch-counting write (faca5b63) was reverted by d2b52e548, leaving a derived read (reckon/mcp_views.py:1474), a write-time strip of the legacy attempts attribute (reckon/_store.py:1382), server delivery (reckon/serve.py:3042), and section routing by the derived count (reckon/crew/routing.py:326).\nCALL_SITES: reckon/mcp_views.py:2877 plan view payload, reckon/serve.py:3044 HTTP plan payload, reckon/roadmap.py:2214 _build_roadmap ready set, reckon/crew/routing.py:326 resolve_section_routing\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:1474 derives the count and outcomes from distinct implement/test run ids and reckon/roadmap.py:2874 exposes them, but the s4 text still describes a written counter, so the mechanism diverges from the plan's letter.\nSCORE evidence: 18\nJUSTIFICATION evidence: the run's baseline-suite-merged-guard.log records 13 failed EXIT=1 at 5ebe5d8f against after-suite-merged-guard-retry.log at 238 passed EXIT=0 at cea34116, and the done_when's four outcomes are asserted by tests/test_section_attempts_are_tool_owned.py:161-262.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every node commit lands inside the declared production paths, though reckon/crew/promotion.py appears in the manifest's changed_paths with no change the node authored (reckon/crew/promotion.py:1).\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_section_attempts_are_tool_owned.py:161 dispatches real runs and reads the count back through the real view path, so a return to a stored counter reddens it, and the declared negative control reddens the analogue at EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the added symbols (section_attempts_by_plan, section_attempt_count, _group_section_attempts) name the mechanism, the twenty node commits carry conventional subjects with bodies and no AI trailer, and no plan or sprint identifier reaches source.\nFINDING docs/plans/section-contract-and-computed-impl.html:326 follow-on: s4 states 'reckon crew dispatch increments the target section's attempts' but the landed change derives the count from run history and never writes it (reckon/mcp_views.py:1474), so the plan text and the code disagree about the mechanism.\nFINDING reckon/crew/promotion.py:1 follow-on: the manifest's changed_paths names reckon/crew/promotion.py, but no node commit changes it; the net 81b5353..cea34116 change there belongs to the peer commit 6db8d13e1, so a reader reconciling changed_paths against the node's commits finds an entry the node did not author.\nFINDING reckon/roadmap.py:2214 follow-on: delivering section_attempts on the roadmap ready set adds a per-call aggregation; the run's paired logs measure the roadmap build rising 29.894s to 38.046s and the section view 6.182s to 9.316s on a 3604-row ledger, a cost paid on every read for a count that moves only when a run launches or completes.\n",
+  "review_run_id": "r-20261004T031818560914-review-of-attempts-is-a-tool-owned-counter",
+  "reviewed_base_sha": "81b535347259d3e171447e1be7880affb700ef03",
+  "reviewed_head_sha": "cea3411645decd83a5712cb74637e6535c4fb52a",
+  "reviewed_run_id": "r-20261003T224029355295-attempts-is-a-tool-owned-counter",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T031818560914-review-of-attempts-is-a-tool-owned-counter",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T03:25:26.826837+00:00",
+  "total": 89
+}

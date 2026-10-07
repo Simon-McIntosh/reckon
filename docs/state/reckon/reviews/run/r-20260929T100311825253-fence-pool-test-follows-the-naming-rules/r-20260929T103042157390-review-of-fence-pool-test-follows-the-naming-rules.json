@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T11:08:16.330Z",
+  "dispatched_at": "2026-09-29T10:31:03Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T100311825253-fence-pool-test-follows-the-naming-rules/manifest.md",
+      "line": "10",
+      "text": "the tests: line carries the unsubstituted placeholder PYTHONPATH=<wt>, so the gate command cannot be re-run from the line a reader lands on; the node's own brief forbids a template command carrying an unsubstituted placeholder, and the exact form survives only inside logs/run-gates.sh."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T100311825253-fence-pool-test-follows-the-naming-rules/logs/gate-without-bwrap.out",
+      "line": "1",
+      "text": "the header names revision 58d65ae2011128864c796385843cd882135a754f while the tree measured carried the uncommitted change, so a reader who takes the header at face value re-runs at a revision that yields a different result: at that revision with bubblewrap hidden the file reports 1 passed and 2 skipped, not the logged 2 passed and 1 skipped."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against 58d65ae2 - b554bbd2 makes 2 insertions and 3 deletions in tests/test_fence_protects_the_worktree_pool.py, and 22ff7c64 adds the 27-line landing fragment; no product source changed.",
+    "done_when": "the done_when names the naming checks and the bwrap-hidden run; I re-ran both at the reviewed head myself - checks 2a and 2b over the file print nothing (exit 1 each), the file with bubblewrap hidden reports 2 passed 1 skipped with the skip at :209, and with bubblewrap present 3 passed.",
+    "goal": "the goal is to bring tests/test_fence_protects_the_worktree_pool.py in line with the predecessor review's two test-file findings, and both are discharged at the exact lines the findings named (the docstring label at :6, the skip marker at :190).",
+    "manifest": "read end to end; every result it claims reproduces under my own re-run, while its tests: line at manifest.md:10 carries an unsubstituted placeholder and its gate logs' headers name the pre-commit revision (FINDINGS below).",
+    "write_paths": "the declared paths are tests/test_fence_protects_the_worktree_pool.py, docs/evidence/fragments/a-worker-cannot-write-your-home/fence-pool-test-follows-the-naming-rules.html and the figure directory; the diff against 58d65ae2 touches only the first two."
+  },
+  "justifications": {
+    "durability": "the ordering assertion at tests/test_fence_protects_the_worktree_pool.py:201 now runs on a bubblewrap-less host and its positive control at :199 makes an un-overlaid pool fail rather than pass, but nothing fails if the skip marker is restored.",
+    "evidence": "the done_when's figures reproduce under my own three-arm re-run at tests/test_fence_protects_the_worktree_pool.py (head without bubblewrap 2 passed 1 skipped at :209, head with bubblewrap 3 passed, base without bubblewrap 1 passed 2 skipped at :190), but the record the run keeps cannot be re-run from its own tests: line and its logs misattribute the revision measured (FINDINGS below).",
+    "fit": "the rewritten docstring at tests/test_fence_protects_the_worktree_pool.py:6 speaks in the file's own mechanism voice and checks 2a, 2b and the changelog-prose check over the file all print nothing.",
+    "goal_fidelity": "tests/test_fence_protects_the_worktree_pool.py:6 now states the mechanism and :190 carries no skip marker, which are the two lines the predecessor review's findings named.",
+    "scope_discipline": "the whole diff against 58d65ae2 is the test file at tests/test_fence_protects_the_worktree_pool.py and the landing fragment docs/evidence/fragments/a-worker-cannot-write-your-home/fence-pool-test-follows-the-naming-rules.html, both inside the declared write paths, with no product or unrelated file touched."
+  },
+  "node": "review-of-fence-pool-test-follows-the-naming-rules",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T100311825253-fence-pool-test-follows-the-naming-rules\n(node fence-pool-test-follows-the-naming-rules, plan reckon:a-worker-cannot-write-your-home s3)\n\nREVIEWED_BASE: 58d65ae2011128864c796385843cd882135a754f\nREVIEWED_HEAD_SHA: 22ff7c64c06b2c40d12015ad2ddd9345d627aeb8\n\nVERDICT goal: the goal is to bring tests/test_fence_protects_the_worktree_pool.py in line with the predecessor review's two test-file findings, and both are discharged at the exact lines the findings named (the docstring label at :6, the skip marker at :190).\nVERDICT done_when: the done_when names the naming checks and the bwrap-hidden run; I re-ran both at the reviewed head myself - checks 2a and 2b over the file print nothing (exit 1 each), the file with bubblewrap hidden reports 2 passed 1 skipped with the skip at :209, and with bubblewrap present 3 passed.\nVERDICT write_paths: the declared paths are tests/test_fence_protects_the_worktree_pool.py, docs/evidence/fragments/a-worker-cannot-write-your-home/fence-pool-test-follows-the-naming-rules.html and the figure directory; the diff against 58d65ae2 touches only the first two.\nVERDICT manifest: read end to end; every result it claims reproduces under my own re-run, while its tests: line at manifest.md:10 carries an unsubstituted placeholder and its gate logs' headers name the pre-commit revision (FINDINGS below).\nVERDICT diff: read both commits against 58d65ae2 - b554bbd2 makes 2 insertions and 3 deletions in tests/test_fence_protects_the_worktree_pool.py, and 22ff7c64 adds the 27-line landing fragment; no product source changed.\nCALL_SITES: none\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_fence_protects_the_worktree_pool.py:6 now states the mechanism and :190 carries no skip marker, which are the two lines the predecessor review's findings named.\n\nSCORE evidence: 17\nJUSTIFICATION evidence: the done_when's figures reproduce under my own three-arm re-run at tests/test_fence_protects_the_worktree_pool.py (head without bubblewrap 2 passed 1 skipped at :209, head with bubblewrap 3 passed, base without bubblewrap 1 passed 2 skipped at :190), but the record the run keeps cannot be re-run from its own tests: line and its logs misattribute the revision measured (FINDINGS below).\n\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff against 58d65ae2 is the test file at tests/test_fence_protects_the_worktree_pool.py and the landing fragment docs/evidence/fragments/a-worker-cannot-write-your-home/fence-pool-test-follows-the-naming-rules.html, both inside the declared write paths, with no product or unrelated file touched.\n\nSCORE durability: 18\nJUSTIFICATION durability: the ordering assertion at tests/test_fence_protects_the_worktree_pool.py:201 now runs on a bubblewrap-less host and its positive control at :199 makes an un-overlaid pool fail rather than pass, but nothing fails if the skip marker is restored.\n\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten docstring at tests/test_fence_protects_the_worktree_pool.py:6 speaks in the file's own mechanism voice and checks 2a, 2b and the changelog-prose check over the file all print nothing.\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T100311825253-fence-pool-test-follows-the-naming-rules/manifest.md:10 the tests: line carries the unsubstituted placeholder PYTHONPATH=<wt>, so the gate command cannot be re-run from the line a reader lands on; the node's own brief forbids a template command carrying an unsubstituted placeholder, and the exact form survives only inside logs/run-gates.sh.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T100311825253-fence-pool-test-follows-the-naming-rules/logs/gate-without-bwrap.out:1 the header names revision 58d65ae2011128864c796385843cd882135a754f while the tree measured carried the uncommitted change, so a reader who takes the header at face value re-runs at a revision that yields a different result: at that revision with bubblewrap hidden the file reports 1 passed and 2 skipped, not the logged 2 passed and 1 skipped.",
+  "review_run_id": "r-20260929T103042157390-review-of-fence-pool-test-follows-the-naming-rules",
+  "reviewed_base_sha": "58d65ae2011128864c796385843cd882135a754f",
+  "reviewed_head_sha": "22ff7c64c06b2c40d12015ad2ddd9345d627aeb8",
+  "reviewed_run_id": "r-20260929T100311825253-fence-pool-test-follows-the-naming-rules",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T11:00:56.786294+00:00",
+  "total": 93
+}

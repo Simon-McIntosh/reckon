@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/reflex-review-outlives-its-follower /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_supervisor_outlives_its_launcher.py tests/test_review_reflex_sweep.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191814388880-reflex-review-outlives-its-follower/regression-siblings.log",
+    "revision": "168455b58"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T191814388880-reflex-review-outlives-its-follower/base-2c49c0457 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_supervisor_outlives_its_launcher.py tests/test_review_reflex_sweep.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191814388880-reflex-review-outlives-its-follower/baseline-suite.log",
+    "revision": "2c49c045748cd9b00bfd5217ff371410eb8a78e5"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T20:30:46.308Z",
+  "dispatched_at": "2026-10-01T20:07:46Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 2c49c045748..168455b582 file by file; two files, 334 insertions, no deletions, no product source; the test imports reckon.crew.dispatch and stubs only _create_worktree and _supervisor_argv so the vector measured is how dispatch starts the supervisor, which is exactly what the negative arm's _spawn_detached_supervisor mutation changes.",
+    "done_when": "the done-when names tests/test_reflex_review_outlives_its_follower.py with a temporary RECKON_HOME and a stub backend, a follower in its own process group, a reflex-launched review, SIGTERM to that group, and a supervisor alive in a session other than the follower's; the manifest records the head gate 1 passed 1 skipped EXIT=0, the negative arm 1 failed 1 passed EXIT=1, and the two sibling arms 14 passed EXIT=0 base and head; I reproduced both arms of the head file at 168455b582 (1 passed 1 skipped EXIT=0, and RECKON_REFLEX_LAUNCH=in-tree 1 failed 1 passed EXIT=1 with the survival assertion reddening), and both sibling arms are recorded in baseline-suite.log and regression-siblings.log.",
+    "goal": "the node goal is that a test proves a review the follower's reflex launches survives a SIGTERM to the follower's whole process group; tests/test_reflex_review_outlives_its_follower.py:285 is that test, it starts a real follower in a session of its own (tests/test_reflex_review_outlives_its_follower.py:196), lets the reflex dispatch through reckon/crew/recovery.py:1548 dispatch_review_for_run into reckon/crew/dispatch.py:7930 _start_supervisor, sends SIGTERM to the follower's whole group with os.killpg at :264, and asserts the review's supervisor is still alive at :270 in a session of its own at :276-:278.",
+    "manifest": "read run-dir manifest.md; it records the head gate 1 passed 1 skipped EXIT=0 (gate.log), the declared mutation (launch put back in-tree) reddening the survival assertion (negative-control.log EXIT=1), and it names baseline-suite.log (14 passed base, revision 2c49c045748) and regression-siblings.log (14 passed head, revision 168455b582, EXIT=0) under the armed baseline_suite and after_suite fields.",
+    "write_paths": "the node declares tests/test_reflex_review_outlives_its_follower.py, docs/evidence/fragments/a-crew-process-ends-with-its-owner/reflex-review-outlives-its-follower.html, and a figures directory; git diff --stat 2c49c045748..168455b582 touches only the first two (306 and 28 insertions), the figures directory is not created, and the done-when names no figure artifact, which sanctions its absence."
+  },
+  "justifications": {
+    "durability": "with RECKON_REFLEX_LAUNCH=in-tree the launch is put back in-tree and tests/test_reflex_review_outlives_its_follower.py:270 reddens, so the guard names the condition under which it fails.",
+    "evidence": "gate.log, negative-control.log, baseline-suite.log and regression-siblings.log are recorded with revisions and exits, and the one claim a static read cannot settle \\u2014 that the mutated launch reddens the assertion \\u2014 I reproduced at the reviewed head (tests/test_reflex_review_outlives_its_follower.py:270).",
+    "fit": "the helper idioms in tests/test_reflex_review_outlives_its_follower.py (_proc_fields at :220 and _alive at :228, the importlib dispatch_module load, and the start_new_session follower at :196) mirror tests/test_supervisor_outlives_its_launcher.py:1-60, and the module name is a descriptive node slug carrying no plan or stage label.",
+    "goal_fidelity": "tests/test_reflex_review_outlives_its_follower.py:262-278 starts a real follower, dispatches through reckon/crew/recovery.py:1548, and asserts a detached supervisor survives the follower's group signal.",
+    "scope_discipline": "git diff --stat 2c49c045748..168455b582 touches only tests/test_reflex_review_outlives_its_follower.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/reflex-review-outlives-its-follower.html, both declared."
+  },
+  "manifest_note": "the reviewed manifest armed baseline_suite and after_suite; the added-failure count was derived from those two gate logs by this reviewer via reckon.crew.review.added_failures_from_gate_logs.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a test proves a review the follower's reflex launches survives a SIGTERM to the follower's whole process group; tests/test_reflex_review_outlives_its_follower.py:285 is that test, it starts a real follower in a session of its own (tests/test_reflex_review_outlives_its_follower.py:196), lets the reflex dispatch through reckon/crew/recovery.py:1548 dispatch_review_for_run into reckon/crew/dispatch.py:7930 _start_supervisor, sends SIGTERM to the follower's whole group with os.killpg at :264, and asserts the review's supervisor is still alive at :270 in a session of its own at :276-:278.\nVERDICT done_when: the done-when names tests/test_reflex_review_outlives_its_follower.py with a temporary RECKON_HOME and a stub backend, a follower in its own process group, a reflex-launched review, SIGTERM to that group, and a supervisor alive in a session other than the follower's; the manifest records the head gate 1 passed 1 skipped EXIT=0, the negative arm 1 failed 1 passed EXIT=1, and the two sibling arms 14 passed EXIT=0 base and head; I reproduced both arms of the head file at 168455b582 (1 passed 1 skipped EXIT=0, and RECKON_REFLEX_LAUNCH=in-tree 1 failed 1 passed EXIT=1 with the survival assertion reddening), and both sibling arms are recorded in baseline-suite.log and regression-siblings.log.\nVERDICT write_paths: the node declares tests/test_reflex_review_outlives_its_follower.py, docs/evidence/fragments/a-crew-process-ends-with-its-owner/reflex-review-outlives-its-follower.html, and a figures directory; git diff --stat 2c49c045748..168455b582 touches only the first two (306 and 28 insertions), the figures directory is not created, and the done-when names no figure artifact, which sanctions its absence.\nVERDICT manifest: read run-dir manifest.md; it records the head gate 1 passed 1 skipped EXIT=0 (gate.log), the declared mutation (launch put back in-tree) reddening the survival assertion (negative-control.log EXIT=1), and it names baseline-suite.log (14 passed base, revision 2c49c045748) and regression-siblings.log (14 passed head, revision 168455b582, EXIT=0) under the armed baseline_suite and after_suite fields.\nVERDICT diff: read 2c49c045748..168455b582 file by file; two files, 334 insertions, no deletions, no product source; the test imports reckon.crew.dispatch and stubs only _create_worktree and _supervisor_argv so the vector measured is how dispatch starts the supervisor, which is exactly what the negative arm's _spawn_detached_supervisor mutation changes.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_reflex_review_outlives_its_follower.py:262-278 starts a real follower, dispatches through reckon/crew/recovery.py:1548, and asserts a detached supervisor survives the follower's group signal.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log, negative-control.log, baseline-suite.log and regression-siblings.log are recorded with revisions and exits, and the one claim a static read cannot settle \\u2014 that the mutated launch reddens the assertion \\u2014 I reproduced at the reviewed head (tests/test_reflex_review_outlives_its_follower.py:270).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 2c49c045748..168455b582 touches only tests/test_reflex_review_outlives_its_follower.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/reflex-review-outlives-its-follower.html, both declared.\nSCORE durability: 18\nJUSTIFICATION durability: with RECKON_REFLEX_LAUNCH=in-tree the launch is put back in-tree and tests/test_reflex_review_outlives_its_follower.py:270 reddens, so the guard names the condition under which it fails.\nSCORE fit: 18\nJUSTIFICATION fit: the helper idioms in tests/test_reflex_review_outlives_its_follower.py (_proc_fields at :220 and _alive at :228, the importlib dispatch_module load, and the start_new_session follower at :196) mirror tests/test_supervisor_outlives_its_launcher.py:1-60, and the module name is a descriptive node slug carrying no plan or stage label.\n_its_follower.py:220 _proc_fields and :228 _alive, the importlib dispatch_module load, and the start_new_session follower) mirror tests/test_supervisor_outlives_its_launcher.py:1-60, and the module name is a descriptive node slug carrying no plan or stage label.\n",
+  "review_run_id": "r-20261001T200725784182-review-of-reflex-review-outlives-its-follower",
+  "reviewed_base_sha": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+  "reviewed_head_sha": "168455b582e0daa885b06ce4b48c3b0e10f0e242",
+  "reviewed_run_id": "r-20261001T191814388880-reflex-review-outlives-its-follower",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T200725784182-review-of-reflex-review-outlives-its-follower",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.738568+00:00",
+  "total": 92
+}

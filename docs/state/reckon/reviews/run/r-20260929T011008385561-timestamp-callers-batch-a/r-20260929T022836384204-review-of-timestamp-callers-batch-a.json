@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 13,
+  "call_sites": [
+    "reckon/crew/hold.py:158",
+    "reckon/crew/lane_document.py:309",
+    "reckon/crew/lane_evidence.py:235",
+    "reckon/crew/obligations.py:74",
+    "reckon/crew/pace_replay.py:424",
+    "reckon/crew/paid_lanes.py:183",
+    "reckon/crew/query.py:700",
+    "reckon/crew/resumption.py:300",
+    "reckon/crew/rollout.py:455",
+    "reckon/crew/routing.py:1662",
+    "reckon/crew/runs.py:3211",
+    "reckon/crew/summary.py:556",
+    "reckon/crew/window_reading.py:224"
+  ],
+  "completed_at": "2026-09-29T02:50:37.491Z",
+  "dispatched_at": "2026-09-29T02:28:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "line": "587",
+      "text": "the zone test matches only a trailing Z/z or an offset ending in minutes, so a stamp like 2026-09-29T01:02:03+00:00:30 is read as naming no zone and _normalize_stamp returns (None, \"unknown\") where the base returned (\"2026-09-29T01:01:33+00:00\", \"utc\")."
+    },
+    {
+      "file": "reckon/crew/rollout.py",
+      "line": "230",
+      "text": "the same predicate makes _parse_timestamp hand back a naive datetime 2026-09-29 01:01:33 for that stamp where the base returned an aware one, and the shared input table carries no cell for the shape, so the gate this node is measured by cannot see it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 13 production call site(s)",
+    "diff": "read commit by commit against base a15e11cb \u2014 d8fa30bf migrates the callers and repairs the space-separated zone case, c980aa10 corrects the evidence fragment \u2014 and every hunk sits inside the declared scope.",
+    "done_when": "the done_when asks that no caller parse ISO strings itself and that each reproduces its recorded output, and tests/test_timestamp_callers_batch_a.py:347 asserts both over one shared list of eleven inputs; re-run by me at the delivered head in a scratch copy of that tree it reported 145 passed, EXIT=0.",
+    "goal": "the node's goal is to move this batch's timestamp callers onto reckon/_timestamps.py:36 parse_utc while each caller keeps its own door and its recorded output; the diff does that for all thirteen modules, and two callers answer differently from the base for a stamp whose offset carries seconds.",
+    "manifest": "read; its baseline_suite and after_suite carry the armed JSON the template names, each with its log path, and its negative_control_log exists with the declared mutation as its first line and EXIT=1 (the same mutation replayed by me in a scratch copy reddens the same cell).",
+    "write_paths": "the manifest declares sixteen paths; git diff a15e11cb c980aa10 measures exactly those sixteen (568 insertions, 82 deletions) and neither commit carries a path outside them."
+  },
+  "justifications": {
+    "durability": "the AST guard and the recorded table both fire when a regression is reinstated, but the table at tests/test_timestamp_callers_batch_a.py:74 has no cell for an offset carrying seconds, so the divergence two callers now carry against the base reddens no test.",
+    "evidence": "tests/test_timestamp_callers_batch_a.py:347 exists, re-runs, and its provenance is recorded (head_test.txt names revision, tree, command and module.__file__), and the 145-passed result reproduced at the delivered head.",
+    "fit": "mechanism names throughout and no forbidden name, but the zone test is written twice \u2014 reckon/crew/query.py:587 and reckon/crew/rollout.py:230 hold identical predicates and identical _states_zone helpers, where one shared helper belongs beside parse_utc.",
+    "goal_fidelity": "reckon/crew/query.py:612 and reckon/crew/rollout.py:253 return a different answer from the base for an ISO offset written with seconds, so the migration is not output-preserving across the whole input class its door accepts.",
+    "scope_discipline": "the diff a15e11cb..c980aa10 is exactly the sixteen paths the manifest declares, with nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to move this batch's timestamp callers onto reckon/_timestamps.py:36 parse_utc while each caller keeps its own door and its recorded output; the diff does that for all thirteen modules, and two callers answer differently from the base for a stamp whose offset carries seconds.\nVERDICT done_when: the done_when asks that no caller parse ISO strings itself and that each reproduces its recorded output, and tests/test_timestamp_callers_batch_a.py:347 asserts both over one shared list of eleven inputs; re-run by me at the delivered head in a scratch copy of that tree it reported 145 passed, EXIT=0.\nVERDICT write_paths: the manifest declares sixteen paths; git diff a15e11cb c980aa10 measures exactly those sixteen (568 insertions, 82 deletions) and neither commit carries a path outside them.\nVERDICT manifest: read; its baseline_suite and after_suite carry the armed JSON the template names, each with its log path, and its negative_control_log exists with the declared mutation as its first line and EXIT=1 (the same mutation replayed by me in a scratch copy reddens the same cell).\nVERDICT diff: read commit by commit against base a15e11cb \u2014 d8fa30bf migrates the callers and repairs the space-separated zone case, c980aa10 corrects the evidence fragment \u2014 and every hunk sits inside the declared scope.\nCALL_SITES: reckon/crew/hold.py:158, reckon/crew/lane_document.py:309, reckon/crew/lane_evidence.py:235, reckon/crew/obligations.py:74, reckon/crew/pace_replay.py:424, reckon/crew/paid_lanes.py:183, reckon/crew/query.py:700, reckon/crew/resumption.py:300, reckon/crew/rollout.py:455, reckon/crew/routing.py:1662, reckon/crew/runs.py:3211, reckon/crew/summary.py:556, reckon/crew/window_reading.py:224\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:612 and reckon/crew/rollout.py:253 return a different answer from the base for an ISO offset written with seconds, so the migration is not output-preserving across the whole input class its door accepts.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_timestamp_callers_batch_a.py:347 exists, re-runs, and its provenance is recorded (head_test.txt names revision, tree, command and module.__file__), and the 145-passed result reproduced at the delivered head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a15e11cb..c980aa10 is exactly the sixteen paths the manifest declares, with nothing the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: the AST guard and the recorded table both fire when a regression is reinstated, but the table at tests/test_timestamp_callers_batch_a.py:74 has no cell for an offset carrying seconds, so the divergence two callers now carry against the base reddens no test.\nSCORE fit: 17\nJUSTIFICATION fit: mechanism names throughout and no forbidden name, but the zone test is written twice \u2014 reckon/crew/query.py:587 and reckon/crew/rollout.py:230 hold identical predicates and identical _states_zone helpers, where one shared helper belongs beside parse_utc.\nFINDING reckon/crew/query.py:587 the zone test matches only a trailing Z/z or an offset ending in minutes, so a stamp like 2026-09-29T01:02:03+00:00:30 is read as naming no zone and _normalize_stamp returns (None, \"unknown\") where the base returned (\"2026-09-29T01:01:33+00:00\", \"utc\").\nFINDING reckon/crew/rollout.py:230 the same predicate makes _parse_timestamp hand back a naive datetime 2026-09-29 01:01:33 for that stamp where the base returned an aware one, and the shared input table carries no cell for the shape, so the gate this node is measured by cannot see it.\n",
+  "review_run_id": "r-20260929T022836384204-review-of-timestamp-callers-batch-a",
+  "reviewed_base_sha": "a15e11cbf453c71af872bc9e402ac9c1224bd929",
+  "reviewed_head_sha": "c980aa10e793d7ca68602bfdea8730c69991889f",
+  "reviewed_run_id": "r-20260929T011008385561-timestamp-callers-batch-a",
+  "reviewer_run_id": "r-20260929T022836384204-review-of-timestamp-callers-batch-a",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T02:48:23.118124+00:00",
+  "total": 88
+}

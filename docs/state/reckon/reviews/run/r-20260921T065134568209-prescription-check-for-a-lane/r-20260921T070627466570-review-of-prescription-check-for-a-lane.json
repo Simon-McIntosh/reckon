@@ -1,0 +1,129 @@
+{
+  "absent": [],
+  "backend": "codex",
+  "commits_read": [
+    "873724a4be65a9cc09412a9fa10073cb11f4b1d9",
+    "f69a122c0da95fbb63dd5c01e3eae2e400fe0729"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T07:06:27.466570+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "115",
+      "text": "reachability result: all five names in PRESCRIBED_PROPERTIES are independently reachable as the sole failure under synthesised inputs, confirmed at merged head 346b98b6."
+    },
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "63",
+      "text": "bare-none result: composing the exclusion as NEGATIVE_CONTROL_NONE plus a colon admits bare none, which agrees with the brief's exact does-not-begin-with-none-colon wording but disagrees with reckon/crew/node.py:628-631, where bare none is semantically an exemption."
+    },
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "100",
+      "text": "caller result: the merged tree has zero production callers and fifteen test call sites, so no existing production caller is newly judged unprescribed; dispatch integration remains future work."
+    },
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "66",
+      "text": "is_landing_path and artifact_paths at line 86 are unprefixed public functions, so the module exposes three public functions while the done-when and both landing records claim exactly one."
+    },
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "116",
+      "text": "a node with zero artifact paths is prescribed because only counts greater than one fail, while the live ruling says one artifact; excluding tests and the two shared landing records is correct, but the remaining cardinality should be exactly one."
+    },
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "133",
+      "text": "the numeric-gate check accepts Before editing, read the 2026 note because it only tests token co-occurrence, so a node with no numeric gate can enter the prescribed class."
+    },
+    {
+      "file": "tests/test_prescription.py",
+      "line": "16",
+      "text": "the source hardcodes the plan-document slug and line 102 hardcodes the node identity, contrary to the repository rule that plan-document names and plan labels do not enter source."
+    }
+  ],
+  "interpretation_verdict": {
+    "caveat": "After those exclusions, the semantic phrase one artifact implies exactly one; the implementation currently admits zero.",
+    "file": "reckon/crew/prescription.py",
+    "landing_path_exclusion_is_right": true,
+    "line": "86",
+    "verdict": "Exclude test paths, the plan file, and the cumulative evidence record: those are checks and shared landing records, not the node artifact, and counting them would refuse every plan-dispatched implementation node."
+  },
+  "justifications": {
+    "durability": "tests/test_prescription.py:39-194 independently reaches all five named failures and guards the 30-minute boundary, but it does not reject zero artifacts, a bare none declaration, a coincidental digit-plus-before phrase, or additional public functions.",
+    "evidence": "tests/test_prescription.py:39-194 reran at merged head 346b98b6 with 19 passed in 0.06s, the actual dispatch record returned prescribed true, and the declared mutation reddened only three time-fence assertions while 16 tests passed.",
+    "fit": "reckon/crew/prescription.py:23 reuses TaskNode, parse_duration, is_test_path, and NEGATIVE_CONTROL_NONE, but lines 3 and 66-86 add role provenance and public helpers contrary to the repository's source and public-surface conventions.",
+    "goal_fidelity": "reckon/crew/prescription.py:100 returns the required three-key verdict and every named refusal is reachable, but lines 66 and 86 add two more public functions, line 116 admits zero artifacts, and line 133 accepts a digit plus an unrelated baseline word as a numeric gate.",
+    "scope_discipline": "the reviewed commits 873724a4 and f69a122c modify only the four declared paths recorded in the source manifest, as their commit stats show."
+  },
+  "merged_head_gate": {
+    "command": "PYTHONPATH=<346b98b6-export> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_prescription.py",
+    "elapsed": "0.06s",
+    "exit_status": 0,
+    "failed": 0,
+    "file": "tests/test_prescription.py",
+    "line": "1",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T070627466570-review-of-prescription-check-for-a-lane/merged-head-gate.log",
+    "passed": 19,
+    "revision": "346b98b6"
+  },
+  "model": "gpt-5.6-sol",
+  "negative_control_check": {
+    "declared_mutation": "change the fence comparison in prescription.py so an over-long time budget is admitted instead of refused; tests/test_prescription.py must fail",
+    "failed": 3,
+    "failure_tests": [
+      "test_an_over_long_fence_is_refused_naming_time_fence_only",
+      "test_every_failed_property_is_reported_in_the_ruling_order",
+      "test_a_fence_longer_than_the_ruling_limit_is_the_only_thing_that_bounds_it"
+    ],
+    "file": "tests/test_prescription.py",
+    "line": "79",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T065134568209-prescription-check-for-a-lane/negative-control.log",
+    "only_fence_tests_failed": true,
+    "passed": 16
+  },
+  "own_dispatch_verdict": {
+    "detail": {},
+    "failures": [],
+    "file": "reckon/crew/prescription.py",
+    "line": "100",
+    "prescribed": true,
+    "source": "/home/ITER/mcintos/.config/reckon/crew/live/r-20260921T065134568209-prescription-check-for-a-lane.json"
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/prescription.py:100 returns the required three-key verdict and every named refusal is reachable, but lines 66 and 86 add two more public functions, line 116 admits zero artifacts, and line 133 accepts a digit plus an unrelated baseline word as a numeric gate.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_prescription.py:39-194 reran at merged head 346b98b6 with 19 passed in 0.06s, the actual dispatch record returned prescribed true, and the declared mutation reddened only three time-fence assertions while 16 tests passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed commits 873724a4 and f69a122c modify only the four declared paths recorded in the source manifest, as their commit stats show.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_prescription.py:39-194 independently reaches all five named failures and guards the 30-minute boundary, but it does not reject zero artifacts, a bare none declaration, a coincidental digit-plus-before phrase, or additional public functions.\nSCORE fit: 13\nJUSTIFICATION fit: reckon/crew/prescription.py:23 reuses TaskNode, parse_duration, is_test_path, and NEGATIVE_CONTROL_NONE, but lines 3 and 66-86 add role provenance and public helpers contrary to the repository's source and public-surface conventions.\nFINDING reckon/crew/prescription.py:115 reachability result: all five names in PRESCRIBED_PROPERTIES are independently reachable as the sole failure under synthesised inputs, confirmed at merged head 346b98b6.\nFINDING reckon/crew/prescription.py:63 bare-none result: composing the exclusion as NEGATIVE_CONTROL_NONE plus a colon admits bare none, which agrees with the brief's exact does-not-begin-with-none-colon wording but disagrees with reckon/crew/node.py:628-631, where bare none is semantically an exemption.\nFINDING reckon/crew/prescription.py:100 caller result: the merged tree has zero production callers and fifteen test call sites, so no existing production caller is newly judged unprescribed; dispatch integration remains future work.\nFINDING reckon/crew/prescription.py:66 is_landing_path and artifact_paths at line 86 are unprefixed public functions, so the module exposes three public functions while the done-when and both landing records claim exactly one.\nFINDING reckon/crew/prescription.py:116 a node with zero artifact paths is prescribed because only counts greater than one fail, while the live ruling says one artifact; excluding tests and the two shared landing records is correct, but the remaining cardinality should be exactly one.\nFINDING reckon/crew/prescription.py:133 the numeric-gate check accepts Before editing, read the 2026 note because it only tests token co-occurrence, so a node with no numeric gate can enter the prescribed class.\nFINDING tests/test_prescription.py:16 the source hardcodes the plan-document slug and line 102 hardcodes the node identity, contrary to the repository rule that plan-document names and plan labels do not enter source.\n",
+  "reachability_findings": [
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "115",
+      "result": "all five PRESCRIBED_PROPERTIES are individually reachable as sole failures"
+    },
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "63",
+      "result": "bare none is admitted, matching the exact none-colon wording but differing from node.py negative_control_is_none semantics"
+    },
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "100",
+      "result": "zero production callers exist at the merged head, so no existing production caller is newly unprescribed"
+    }
+  ],
+  "review_run_id": "r-20260921T070627466570-review-of-prescription-check-for-a-lane",
+  "reviewed_base_sha": "c19f9e60f1c20543503e0b06b21bb60d8c85f034",
+  "reviewed_merged_head": "346b98b6",
+  "reviewed_run_id": "r-20260921T065134568209-prescription-check-for-a-lane",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 13,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T07:16:01.787203+00:00",
+  "total": 82
+}

@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:36:51.519Z",
+  "dispatched_at": "2026-10-05T17:31:36Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:162",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a717's whole thesis is one raw-text walk and it names this parser as its single exception, but treats the exception as a heading-recognition question only; the plan must either derive the digest's prose component from `structured_section_spans`' protected ranges (the owner already yields them) or state, in the exception's own sentence, what the owner's regions lack (head/meta and card-heading discrimination) so the duplication is a named tradeoff rather than an unaddressed fork.",
+      "text": "`_AuthoredProseParser` and `_StructuredSectionSpanParser` are two independent readers over one document, and the prose parser duplicates the owner's boundary bookkeeping: `_AuthoredProseParser.handle_starttag` tests `any(name == \"data-reckon\" for name, _value in attrs)` (plan_review.py:204) to set `_protected()`, which is the same machinery-region test `_StructuredSectionSpanParser` performs with its `section_stack`/`protected` flag (_plan_html.py:70-71) and that `mcp_views._inside_structured_region` performs a third time; \u00a716 then extends the duplicate further, teaching the prose parser to record enclosing-section attributes and call the hoisted `section_record_id` at each heading, so \u00a717's stated goal (\"One raw-text section reader\") leaves two heading walks and two region detectors alive",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e21f34d6840418ea8b7d636e8cc6a433dd99fbadb76cdcf5424701f8f263b480",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 101,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T173118852703-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "3accaac474df8f40e7bd26c7a826450dd1a79ca5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 consolidates thirteen private store helpers (`_H2_OPEN_RE`, `_SECTION_OPEN_RE`, `_SECTION_CLOSE_RE`, `_matching_section_close`, `_section_heading`, `_wrapper_section_heading`, `_section_body_end`, `_landed_card_span`, `_is_structural_boundary`, `_attr`, `_class_list`, `_element_id`, `_heading_open_tag_with_id` \u2014 all confirmed present in `reckon/_store.py:807-1034`) plus the card recogniser behind one public reader `plan_headings`, and \u00a716 adds one private `_section_digests` and one private coverage predicate; the behaviour-to-interface ratio rises rather than spreading into a family of wrappers.",
+    "duplicate_owner": "a finding \u2014 the machinery-region (\"is this element `data-reckon`-owned\") test is spelled three times across the package, and the plan consolidates none of them: `_StructuredSectionSpanParser.section_stack` / `structured_section_spans` in `reckon/_plan_html.py:44-103` is the owner to extend, while `_AuthoredProseParser._stack` / `carries_reckon` at `reckon/crew/plan_review.py:196-216` and `_inside_structured_region` used at `reckon/mcp_views.py:2099` fork it.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds no public definition and states why nothing is retired (the identity digest and the prose walk keep their names), \u00a717 adds exactly `plan_headings` and names the `landed_section_ids` move under its own name, and \u00a718 adds exactly the run-comment predicate and names the prefix constant's move, so each section that touches a family accounts in its own text for what it retires, merges or moves.",
+    "reuse_search": "pass \u2014 every mechanism the design extends resolves in the tree: `_StructuredSectionSpanParser` / `structured_section_spans` and `read_state` at `reckon/_plan_html.py:44,94`, `landed_section_ids` at `reckon/_store.py:1034`, `_authored_prose` / `_fingerprint_forms` at `reckon/crew/plan_review.py:257,598`, `section_record_id` / `section_id_candidates` at `reckon/crew/routing.py:215,234`, `roadmap.implementable_sections` at `reckon/roadmap.py:106`, and the AST census `read_trees` / `definitions` / `_staged_writes` at `reckon/interface_counts.py:74,97,441`; the design hoists nothing new that these already own \u2014 it hoists, moves and extends them, and \u00a717's premise that the package already owns raw-text span location is true.",
+    "thin_wrapper": "pass \u2014 the two readers the design adds are each justified in their own text against extending what exists: the coverage predicate is stated as joining two existing readers (outstanding sections against the union of section digests) rather than wrapping `read_plan_review`, and `plan_headings` adds heading level, identity and card recognition the spans-only reader lacks, so neither is a thin layer without a stated reason."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.831583+00:00"
+}

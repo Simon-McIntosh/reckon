@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "c091e7c9ccc3a0b4e1c82db4c78dc541a8cfb546",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/cli.py:1462 (plan_dispatch)",
+    "reckon/cli.py:1550 (crew.dispatch)",
+    "reckon/crew/dispatch.py:4511",
+    "reckon/crew/dispatch.py:4834",
+    "reckon/crew/dispatch.py:4955",
+    "reckon/crew/dispatch.py:9066",
+    "reckon/crew/recovery.py:1690",
+    "reckon/crew/recovery.py:2503"
+  ],
+  "completed_at": "2026-10-01T11:37:30.443Z",
+  "dispatched_at": "2026-10-01T11:30:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "411",
+      "severity": "follow-on",
+      "text": "follow-on: a section whose plan resource does not resolve (resolve_resource returns None) and the two earlier returns (no section reference at :399, no repo and no authority at :401) still record section_routing as None, so an unmounted or unreadable plan stays indistinguishable from a section carrying no raise -- the defect this change repairs for the raised case; the reviewed manifest names this under follow_ons and it is a separate decision, not a regression in this node."
+    }
+  ],
+  "head_log_revision": "1d7d6959c445f261a536a91e2bdea5fa17887c61",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read c091e7c9..8bbf49dd (three files, +472/-6): _dispatch_section_routing now returns _section_routing_failure(node.section, exc) on the caught exception, _section_routing_evidence writes a failure key on every outcome, plan_dispatch (dispatch.py:3869) falls back to role routing when failure is not None, and dispatch() records section_routing on the run pointer (dispatch.py:5391).",
+    "done_when": "the done-when is the four-file gate run at base and at head with a named control; the manifest records base 18 passed/5 failed (EXIT=1) and head 23 passed (EXIT=0), and the control log reddens three cases (EXIT=1).",
+    "goal": "the node goal is that a dispatch whose section routing rule cannot be resolved records the failure with its exception class and the section, distinguishable from a section with no raise, and still falls back to role routing; reckon/crew/dispatch.py:420 returns the failure record and :3869 still takes role routing when it is present.",
+    "manifest": "read; status complete, carries structured baseline_suite and after_suite JSON, the three gate log paths, the declared negative control whose path is a bare path, and names its own early-return follow-on rather than hiding it.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_a_raise_failure_is_visible.py, docs/evidence/fragments/section-contract-and-computed-impl/a-raise-failure-is-visible.html and a figures directory; the diff c091e7c9..8bbf49dd touches exactly the first three, so every changed path is inside scope and the worktree is clean at 8bbf49dd."
+  },
+  "justifications": {
+    "durability": "the declared control (the failure dropped so _dispatch_section_routing returns None) reddens test_a_malformed_rule_records_its_failure_and_still_dispatches, test_a_malformed_rule_is_not_reported_as_a_section_with_no_rule and test_the_pointer_carries_the_failure_too, and each assertion is independent of the value it guards (the exception type is re-derived by a direct resolve_section_routing call and the raise list is a literal).",
+    "evidence": "the manifest's structured arms (base 18 passed/5 failed EXIT=1, head 23 passed EXIT=0) each name their revision, tree, module and cwd in logs/gate-*.log, the control log reddens three cases, and I independently reproduced the head file (5 passed, EXIT=0).",
+    "fit": "the change matches the surrounding idiom in reckon/crew/dispatch.py (a typed record trimmed to evidence, the payload/pointer two-carrier pattern) and introduces no plan label, ticket, version name or author attribution; the section token in the test is the domain section reference the code resolves.",
+    "goal_fidelity": "reckon/crew/dispatch.py:420 returns a failure record naming the exception class and section while :3869 leaves the backend on resolve_role, so the three states the goal names are distinguishable at the landing.",
+    "scope_discipline": "every path in git diff c091e7c9..8bbf49dd is inside the manifest's declared write paths, the worktree is clean, and both commits carry a conventional subject with a body and no attribution."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a dispatch whose section routing rule cannot be resolved records the failure with its exception class and the section, distinguishable from a section with no raise, and still falls back to role routing; reckon/crew/dispatch.py:420 returns the failure record and :3869 still takes role routing when it is present.\nVERDICT done_when: the done-when is the four-file gate run at base and at head with a named control; the manifest records base 18 passed/5 failed (EXIT=1) and head 23 passed (EXIT=0), and the control log reddens three cases (EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_a_raise_failure_is_visible.py, docs/evidence/fragments/section-contract-and-computed-impl/a-raise-failure-is-visible.html and a figures directory; the diff c091e7c9..8bbf49dd touches exactly the first three, so every changed path is inside scope and the worktree is clean at 8bbf49dd.\nVERDICT manifest: read; status complete, carries structured baseline_suite and after_suite JSON, the three gate log paths, the declared negative control whose path is a bare path, and names its own early-return follow-on rather than hiding it.\nVERDICT diff: read c091e7c9..8bbf49dd (three files, +472/-6): _dispatch_section_routing now returns _section_routing_failure(node.section, exc) on the caught exception, _section_routing_evidence writes a failure key on every outcome, plan_dispatch (dispatch.py:3869) falls back to role routing when failure is not None, and dispatch() records section_routing on the run pointer (dispatch.py:5391).\nCALL_SITES: reckon/cli.py:1462 (plan_dispatch), reckon/cli.py:1550 (crew.dispatch), reckon/crew/dispatch.py:4511, reckon/crew/dispatch.py:4834, reckon/crew/dispatch.py:4955, reckon/crew/dispatch.py:9066, reckon/crew/recovery.py:1690, reckon/crew/recovery.py:2503\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:420 returns a failure record naming the exception class and section while :3869 leaves the backend on resolve_role, so the three states the goal names are distinguishable at the landing.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's structured arms (base 18 passed/5 failed EXIT=1, head 23 passed EXIT=0) each name their revision, tree, module and cwd in logs/gate-*.log, the control log reddens three cases, and I independently reproduced the head file (5 passed, EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff c091e7c9..8bbf49dd is inside the manifest's declared write paths, the worktree is clean, and both commits carry a conventional subject with a body and no attribution.\nSCORE durability: 19\nJUSTIFICATION durability: the declared control (the failure dropped so _dispatch_section_routing returns None) reddens test_a_malformed_rule_records_its_failure_and_still_dispatches, test_a_malformed_rule_is_not_reported_as_a_section_with_no_rule and test_the_pointer_carries_the_failure_too, and each assertion is independent of the value it guards (the exception type is re-derived by a direct resolve_section_routing call and the raise list is a literal).\nSCORE fit: 19\nJUSTIFICATION fit: the change matches the surrounding idiom in reckon/crew/dispatch.py (a typed record trimmed to evidence, the payload/pointer two-carrier pattern) and introduces no plan label, ticket, version name or author attribution; the section token in the test is the domain section reference the code resolves.\nFINDING reckon/crew/dispatch.py:411 follow-on: a section whose plan resource does not resolve (resolve_resource returns None) and the two earlier returns (no section reference at :399, no repo and no authority at :401) still record section_routing as None, so an unmounted or unreadable plan stays indistinguishable from a section carrying no raise -- the defect this change repairs for the raised case; the reviewed manifest names this under follow_ons and it is a separate decision, not a regression in this node.\n",
+  "review_run_id": "r-20261001T113025154237-review-of-a-raise-failure-is-visible",
+  "reviewed_base_sha": "c091e7c9ccc3a0b4e1c82db4c78dc541a8cfb546",
+  "reviewed_head_sha": "8bbf49dde521332002bbedfc345f5617055fc986",
+  "reviewed_run_id": "r-20261001T075825399501-a-raise-failure-is-visible",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.450648+00:00",
+  "total": 95
+}

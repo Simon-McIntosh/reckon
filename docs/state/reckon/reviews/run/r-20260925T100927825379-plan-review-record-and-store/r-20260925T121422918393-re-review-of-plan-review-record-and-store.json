@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T12:14:22.918393+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "98cbbaeb..b0027963 adds PLAN_DERIVED_SCALARS and authored-body fingerprinting plus the real-corpus regression test; the prior finding is closed by the derived-field assertion and its negative control.",
+    "done_when": "the repaired-head gate log records all 6 tests in tests/test_plan_review_store.py passing, including the real legacy/current corpus boundary and the authored-prose control.",
+    "goal": "reckon/crew/plan_review.py:78-100 adds the derived metadata exclusions required by the record and fingerprint goal, preserving the original store API while closing the legacy-plan edge.",
+    "manifest": "the source manifest records the original landed commits, focused green gate, durable logs and the prior review's legacy-plan finding; the repaired-head evidence is recorded in r-20260925T121422918393-re-review-of-plan-review-record-and-store/gate-b002-plan-review-store.log.",
+    "write_paths": "the repair commit changes only reckon/crew/plan_review.py and tests/test_plan_review_store.py, both inside the source manifest's declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_store.py:278-310 runs each named metadata mutation against both real plans, asserts each edit reaches parsed state, and fails on the legacy effort transition when the derived exclusion is removed.",
+    "evidence": "r-20260925T121422918393-re-review-of-plan-review-record-and-store/gate-b002-plan-review-store.log records 6 passed at b002, and r-20260925T121422918393-re-review-of-plan-review-record-and-store/negative-control-b002-derived-scalars.log records the legacy effort_hours assertion failing when the derived exclusions are removed.",
+    "fit": "reckon/crew/plan_review.py:121-199 uses the existing HTMLParser and keeps metadata-derived state separate from authored body prose before the existing canonical JSON digest.",
+    "goal_fidelity": "reckon/crew/plan_review.py:97-100 excludes effort_calibrated and compatibility_warnings alongside the named metadata scalars, so adding plan-effort-hours to a legacy plan no longer invalidates its content join.",
+    "scope_discipline": "b002 changes only reckon/crew/plan_review.py and tests/test_plan_review_store.py, which are two of the source node's five declared write-path groups."
+  },
+  "model": "review",
+  "prior_finding": {
+    "closure": "b002 adds effort_calibrated and compatibility_warnings to PLAN_DERIVED_SCALARS and the real-corpus regression plus red mutation control passes.",
+    "id": "legacy-derived-metadata-fingerprint",
+    "status": "closed",
+    "text": "Adding the named plan-effort-hours scalar to real legacy docs/plans/reckon-mcp-plan.html changed the fingerprint through effort_calibrated."
+  },
+  "prior_finding_status": "closed",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 98cbbaebce793549c991032719af6dceeeb5cbfa\nreviewed_head_sha: b0027963b2c5dd036a1f95f361de1aa467c5e074\nVERDICT goal: reckon/crew/plan_review.py:78-100 adds the derived metadata exclusions required by the record and fingerprint goal, preserving the original store API while closing the legacy-plan edge.\nVERDICT done_when: the repaired-head gate log records all 6 tests in tests/test_plan_review_store.py passing, including the real legacy/current corpus boundary and the authored-prose control.\nVERDICT write_paths: the repair commit changes only reckon/crew/plan_review.py and tests/test_plan_review_store.py, both inside the source manifest's declared scope.\nVERDICT manifest: the source manifest records the original landed commits, focused green gate, durable logs and the prior review's legacy-plan finding; the repaired-head evidence is recorded in r-20260925T121422918393-re-review-of-plan-review-record-and-store/gate-b002-plan-review-store.log.\nVERDICT diff: 98cbbaeb..b0027963 adds PLAN_DERIVED_SCALARS and authored-body fingerprinting plus the real-corpus regression test; the prior finding is closed by the derived-field assertion and its negative control.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:97-100 excludes effort_calibrated and compatibility_warnings alongside the named metadata scalars, so adding plan-effort-hours to a legacy plan no longer invalidates its content join.\nSCORE evidence: 20\nJUSTIFICATION evidence: r-20260925T121422918393-re-review-of-plan-review-record-and-store/gate-b002-plan-review-store.log records 6 passed at b002, and r-20260925T121422918393-re-review-of-plan-review-record-and-store/negative-control-b002-derived-scalars.log records the legacy effort_hours assertion failing when the derived exclusions are removed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: b002 changes only reckon/crew/plan_review.py and tests/test_plan_review_store.py, which are two of the source node's five declared write-path groups.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_plan_review_store.py:278-310 runs each named metadata mutation against both real plans, asserts each edit reaches parsed state, and fails on the legacy effort transition when the derived exclusion is removed.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/plan_review.py:121-199 uses the existing HTMLParser and keeps metadata-derived state separate from authored body prose before the existing canonical JSON digest.\n",
+  "repair_commit": "b0027963b2c5dd036a1f95f361de1aa467c5e074",
+  "review_run_id": "r-20260925T121422918393-re-review-of-plan-review-record-and-store",
+  "review_scope": "re-review of the prior legacy derived-field finding at the repaired head",
+  "reviewed_base_sha": "98cbbaebce793549c991032719af6dceeeb5cbfa",
+  "reviewed_head_sha": "b0027963b2c5dd036a1f95f361de1aa467c5e074",
+  "reviewed_run_id": "r-20260925T100927825379-plan-review-record-and-store",
+  "reviewer": "re-review-of-plan-review-record-and-store",
+  "reviewer_run_id": "r-20260925T121422918393-re-review-of-plan-review-record-and-store",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T12:23:27.242810+00:00",
+  "total": 100
+}

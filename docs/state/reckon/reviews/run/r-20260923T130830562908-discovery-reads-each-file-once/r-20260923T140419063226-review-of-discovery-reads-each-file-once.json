@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/_plan_html.py:993 (file_memo.memoized wrapping the meta parse the counter instruments)",
+    "reckon/serve.py:1347 (resource_scan_scope around _discover_plans_uncached",
+    "reached from the /_discover handler at serve.py:1986 and serve.py:2294/2370/2462)",
+    "reckon/fleet_index.py:190 (collect_project_rows calling _activity30 for the rollup row",
+    "whose discovery runs at fleet_index.py:171)",
+    "reckon/roadmap.py:1236 (resource_scan_scope around _build_roadmap)",
+    "reckon/serve.py:669 and reckon/serve.py:1649 (the other memoised readers)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T14:04:19.063226+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T130830562908-discovery-reads-each-file-once/manifest.md",
+      "line": "14",
+      "text": "the manifest names /tmp/dr-node/final-test.log as its gate log, but that file's first line is the bare pytest progress line with no revision, tree or command, and the two regression-gate logs \u00a72 requires \u2014 /tmp/dr-node/gate-base.log and /tmp/dr-node/gate-head.log, whose first lines do carry revision, tree and command \u2014 are named nowhere in the manifest, so the revisions the gate ran at cannot be established from the record without listing the two directories' other files."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read both commits against d51b2cf0 \u2014 98d99673 adds tests/test_discovery_reads_each_file_once.py (254 insertions, 0 deletions) and f9d08b55 appends 120 lines to docs/evidence/archive/a-page-load-reads-each-file-once-landed.html with 0 deletions, 14 lines to the plan's \u00a72 landing, and the figure png; no module among the six repairable write paths was touched, which \u00a72 permits only for defects the gate shows.",
+    "done_when": "\u00a72's done-when names six assertions, a declared negative control with its log, and a regression gate of six suite files run at base 00106ce2 and at head with one log each; the test carries all six (lines 147-254), the node's negative-control log shows the declared mutation reddening the cold assertion at 42 parses per file, the gate logs record 127 passed / 2 failed identically at base 00106ce2 and at head, and I reproduced both the 6 passed and the red myself.",
+    "goal": "the goal \u2014 discovery parses each plan file at most once cold and none warm \u2014 is what the landed test asserts directly at tests/test_discovery_reads_each_file_once.py:163 (`max(parse_counter.values()) <= 1`) and :175 (`parse_counter == {}`), and I re-ran the file at f9d08b55 from the reviewed tree: 6 passed.",
+    "manifest": "read in full; it names commits 98d99673 and f9d08b55, the gate counts at both revisions with the two tests/test_crew_routes.py refusals attributed as pre-existing follow-ons, the declared negative control with its arming string and log, and changed_paths matching the diff, but its test_logs names only /tmp/dr-node/final-test.log, whose first line carries no revision.",
+    "write_paths": "the declared scope is ten paths and `git diff --numstat d51b2cf0 f9d08b55` lists four files, all inside it, with zero deletions \u2014 the test (+254), the figure png, the cumulative evidence record (+120) and the plan's \u00a72 landing (+14)."
+  },
+  "justifications": {
+    "durability": "each added assertion names the code change that reddens it (memo bypassed, shared scan removed, signature TTL ignored, HEAD memo removed, TimeoutExpired left uncaught), and my own armed run at f9d08b55 reddened tests/test_discovery_reads_each_file_once.py:163 and :188 at 42 parses per file rather than merely passing.",
+    "evidence": "every done-when measurement is real and reproducible \u2014 I re-ran tests/test_discovery_reads_each_file_once.py at f9d08b55 (6 passed) and re-armed the declared control (42 parses per file) \u2014 but the record's traceability is weakened as the FINDING below describes: the gate log it names carries no revision and the two regression-gate logs are named nowhere.",
+    "fit": "the temporary-tree fixture, the autouse cache-clearing fixture and the patched subprocess.run follow the idiom of tests/test_discovery_cache.py:18-60, and the added file carries no plan, ticket or version identifier in names or comments.",
+    "goal_fidelity": "tests/test_discovery_reads_each_file_once.py:163 pins `max(parse_counter.values()) <= 1` over a counter installed on reckon._plan_html._parse_meta_uncached and :175 pins `parse_counter == {}` on the unchanged second call, which are the goal's two claims exactly, on the temporary 40-plan tree \u00a72 prescribes.",
+    "scope_discipline": "`git diff --numstat d51b2cf0 f9d08b55` lists only the declared paths \u2014 tests/test_discovery_reads_each_file_once.py (+254), docs/figures/a-page-load-reads-each-file-once/parse-counts-per-file.png, docs/evidence/archive/a-page-load-reads-each-file-once-landed.html (+120, 0 deletions) and docs/plans/a-page-load-reads-each-file-once.html (+14) \u2014 and leaves the six repairable modules untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal \u2014 discovery parses each plan file at most once cold and none warm \u2014 is what the landed test asserts directly at tests/test_discovery_reads_each_file_once.py:163 (`max(parse_counter.values()) <= 1`) and :175 (`parse_counter == {}`), and I re-ran the file at f9d08b55 from the reviewed tree: 6 passed.\nVERDICT done_when: \u00a72's done-when names six assertions, a declared negative control with its log, and a regression gate of six suite files run at base 00106ce2 and at head with one log each; the test carries all six (lines 147-254), the node's negative-control log shows the declared mutation reddening the cold assertion at 42 parses per file, the gate logs record 127 passed / 2 failed identically at base 00106ce2 and at head, and I reproduced both the 6 passed and the red myself.\nVERDICT write_paths: the declared scope is ten paths and `git diff --numstat d51b2cf0 f9d08b55` lists four files, all inside it, with zero deletions \u2014 the test (+254), the figure png, the cumulative evidence record (+120) and the plan's \u00a72 landing (+14).\nVERDICT manifest: read in full; it names commits 98d99673 and f9d08b55, the gate counts at both revisions with the two tests/test_crew_routes.py refusals attributed as pre-existing follow-ons, the declared negative control with its arming string and log, and changed_paths matching the diff, but its test_logs names only /tmp/dr-node/final-test.log, whose first line carries no revision.\nVERDICT diff: read both commits against d51b2cf0 \u2014 98d99673 adds tests/test_discovery_reads_each_file_once.py (254 insertions, 0 deletions) and f9d08b55 appends 120 lines to docs/evidence/archive/a-page-load-reads-each-file-once-landed.html with 0 deletions, 14 lines to the plan's \u00a72 landing, and the figure png; no module among the six repairable write paths was touched, which \u00a72 permits only for defects the gate shows.\nCALL_SITES: reckon/_plan_html.py:993 (file_memo.memoized wrapping the meta parse the counter instruments), reckon/serve.py:1347 (resource_scan_scope around _discover_plans_uncached, reached from the /_discover handler at serve.py:1986 and serve.py:2294/2370/2462), reckon/fleet_index.py:190 (collect_project_rows calling _activity30 for the rollup row, whose discovery runs at fleet_index.py:171), reckon/roadmap.py:1236 (resource_scan_scope around _build_roadmap), reckon/serve.py:669 and reckon/serve.py:1649 (the other memoised readers)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_discovery_reads_each_file_once.py:163 pins `max(parse_counter.values()) <= 1` over a counter installed on reckon._plan_html._parse_meta_uncached and :175 pins `parse_counter == {}` on the unchanged second call, which are the goal's two claims exactly, on the temporary 40-plan tree \u00a72 prescribes.\nSCORE evidence: 18\nJUSTIFICATION evidence: every done-when measurement is real and reproducible \u2014 I re-ran tests/test_discovery_reads_each_file_once.py at f9d08b55 (6 passed) and re-armed the declared control (42 parses per file) \u2014 but the record's traceability is weakened as the FINDING below describes: the gate log it names carries no revision and the two regression-gate logs are named nowhere.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --numstat d51b2cf0 f9d08b55` lists only the declared paths \u2014 tests/test_discovery_reads_each_file_once.py (+254), docs/figures/a-page-load-reads-each-file-once/parse-counts-per-file.png, docs/evidence/archive/a-page-load-reads-each-file-once-landed.html (+120, 0 deletions) and docs/plans/a-page-load-reads-each-file-once.html (+14) \u2014 and leaves the six repairable modules untouched.\nSCORE durability: 20\nJUSTIFICATION durability: each added assertion names the code change that reddens it (memo bypassed, shared scan removed, signature TTL ignored, HEAD memo removed, TimeoutExpired left uncaught), and my own armed run at f9d08b55 reddened tests/test_discovery_reads_each_file_once.py:163 and :188 at 42 parses per file rather than merely passing.\nSCORE fit: 20\nJUSTIFICATION fit: the temporary-tree fixture, the autouse cache-clearing fixture and the patched subprocess.run follow the idiom of tests/test_discovery_cache.py:18-60, and the added file carries no plan, ticket or version identifier in names or comments.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T130830562908-discovery-reads-each-file-once/manifest.md:14 the manifest names /tmp/dr-node/final-test.log as its gate log, but that file's first line is the bare pytest progress line with no revision, tree or command, and the two regression-gate logs \u00a72 requires \u2014 /tmp/dr-node/gate-base.log and /tmp/dr-node/gate-head.log, whose first lines do carry revision, tree and command \u2014 are named nowhere in the manifest, so the revisions the gate ran at cannot be established from the record without listing the two directories' other files.",
+  "review_run_id": "r-20260923T140419063226-review-of-discovery-reads-each-file-once",
+  "reviewed_base_sha": "d51b2cf03a1550a14b134c280b5028a4512f3c54",
+  "reviewed_head_sha": "f9d08b55c1144f3c9b6ce1d0d98d9016ef45e6bc",
+  "reviewed_run_id": "r-20260923T130830562908-discovery-reads-each-file-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T15:00:16.085546+00:00",
+  "total": 98
+}

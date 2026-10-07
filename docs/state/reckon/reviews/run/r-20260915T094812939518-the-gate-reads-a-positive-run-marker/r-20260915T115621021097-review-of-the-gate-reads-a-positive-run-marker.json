@@ -1,0 +1,38 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T11:56:21.021097+00:00",
+  "findings": [
+    {
+      "file": "tests/test_crew_gate_log_agrees.py",
+      "line": "46",
+      "text": "the run's structured baseline_suite carries four failure_ids (test_an_agreeing_recorded_exit_status_does_not_refuse, test_promotion_whose_log_and_command_agree_lands_unchanged, test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected, test_a_cited_log_path_that_cannot_be_read_is_left_to_the_promotion) that share one cause outside the goal -- the fixture began with no git worktree, so promotion refused before the gate-log checks -- while the goal's own defect reproduction sits in a separate reproduction-positive-marker.log; the cause split is disclosed in the evidence record and evidence_inputs, but a reader of the manifest field alone sees four unlabelled failures."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_crew_gate_log_agrees.py:278 test_positive_exit_record_outranks_command_not_found_text_in_runner_output fails if the recorded!=0 guard is dropped (the run's own reproduction-positive-marker.log shows both parameter cases refused under the unguarded base), while the bare-diagnostic refusals at :225 and :247 and the exit-mismatch refusal at :179 hold in the other direction.",
+    "evidence": "I re-ran the gate at the reviewed head 016accb4 in the reviewed worktree (11 passed, 0 failed, /tmp/rev_gate_after.log; schema byte-identity 1 passed, /tmp/rev_schema_after.log), matching the stored after/final/byte-identity logs which each end in a results line plus the capture EXIT=0, and the run's own reproduction-positive-marker.log shows both new cases refused at the base revision.",
+    "fit": "the change is one guarded condition added at reckon/crew/promotion.py:462 inside the established _require_gate_log_agrees shape, the parameterised test reuses the file's own _write_pointer/_complete_arguments/CliRunner helpers, the touched docstrings state the mechanism rather than the incident, and ruff adds no finding to either touched file (10=10 delta on promotion.py, zero on the test file).",
+    "goal_fidelity": "reckon/crew/promotion.py:462 gates the command-not-found refusal on a recorded!=0 check, so a log carrying a terminal EXIT=0 capture (tests/test_crew_gate_log_agrees.py:278-298) is accepted even when the phrase appears later as quoted or fixture content while a bare diagnostic without a positive record still refuses.",
+    "scope_discipline": "git diff-tree --name-only across 1601c27c..016accb4 lists exactly the four declared write paths (reckon/crew/promotion.py, tests/test_crew_gate_log_agrees.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html), the reviewed worktree is clean at its head, and every message is conventional with a body and no plan, run or AI identifiers."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:462 gates the command-not-found refusal on a recorded!=0 check, so a log carrying a terminal EXIT=0 capture (tests/test_crew_gate_log_agrees.py:278-298) is accepted even when the phrase appears later as quoted or fixture content while a bare diagnostic without a positive record still refuses.\nSCORE evidence: 19\nJUSTIFICATION evidence: I re-ran the gate at the reviewed head 016accb4 in the reviewed worktree (11 passed, 0 failed, /tmp/rev_gate_after.log; schema byte-identity 1 passed, /tmp/rev_schema_after.log), matching the stored after/final/byte-identity logs which each end in a results line plus the capture EXIT=0, and the run's own reproduction-positive-marker.log shows both new cases refused at the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff-tree --name-only across 1601c27c..016accb4 lists exactly the four declared write paths (reckon/crew/promotion.py, tests/test_crew_gate_log_agrees.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html), the reviewed worktree is clean at its head, and every message is conventional with a body and no plan, run or AI identifiers.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_crew_gate_log_agrees.py:278 test_positive_exit_record_outranks_command_not_found_text_in_runner_output fails if the recorded!=0 guard is dropped (the run's own reproduction-positive-marker.log shows both parameter cases refused under the unguarded base), while the bare-diagnostic refusals at :225 and :247 and the exit-mismatch refusal at :179 hold in the other direction.\nSCORE fit: 20\nJUSTIFICATION fit: the change is one guarded condition added at reckon/crew/promotion.py:462 inside the established _require_gate_log_agrees shape, the parameterised test reuses the file's own _write_pointer/_complete_arguments/CliRunner helpers, the touched docstrings state the mechanism rather than the incident, and ruff adds no finding to either touched file (10=10 delta on promotion.py, zero on the test file).\nFINDING tests/test_crew_gate_log_agrees.py:46 the run's structured baseline_suite carries four failure_ids (test_an_agreeing_recorded_exit_status_does_not_refuse, test_promotion_whose_log_and_command_agree_lands_unchanged, test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected, test_a_cited_log_path_that_cannot_be_read_is_left_to_the_promotion) that share one cause outside the goal -- the fixture began with no git worktree, so promotion refused before the gate-log checks -- while the goal's own defect reproduction sits in a separate reproduction-positive-marker.log; the cause split is disclosed in the evidence record and evidence_inputs, but a reader of the manifest field alone sees four unlabelled failures.\n",
+  "review_run_id": "r-20260915T115621021097-review-of-the-gate-reads-a-positive-run-marker",
+  "reviewed_base": "8f6712d833f45d7af5b47364c09d101167e0de27",
+  "reviewed_commit": "016accb45c239ac7e56bb6c5de771640b30496d4",
+  "reviewed_run_id": "r-20260915T094812939518-the-gate-reads-a-positive-run-marker",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T12:46:47.477658+00:00",
+  "total": 99
+}

@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. Baseline arm (gate-base.log) 43 passed EXIT=0 at 67aa4a7ff; head arm at the shipped revision (round3-nodes.log) and the reviewer's own focused gate (gate-focused-head-reviewer.log) 48 passed EXIT=0 at 21e3bf567. The reviewed run's named after arm (gate-head.log) 48 passed EXIT=0 ran at the earlier round-2 head ef22fdae5; it carries no failing test either. Zero failures at both arms, so no failure is added at any base. The reviewer independently re-ran the new test file (5 passed EXIT=0), the focused eight-file gate (48 passed EXIT=0) and all three declared negative controls (each 1 failed EXIT=1) at 21e3bf567.",
+  "backend": "local",
+  "base_log_revision": "67aa4a7ff59b9bdc57fd3d91a1c8802d51b5b2ef",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery.py:2814 dispatch_repair_for_run same-round retry guard: records the round exhausted when _reviewed_run_refused_the_round sees this round's token in a terminal manifest",
+    "reckon/crew/recovery.py:2104 _reviewed_run_refused_the_round: reads the reviewed run's own manifest, matches the round token, and treats only a terminal status as a refusal, degrading toward the retry otherwise",
+    "reckon/crew/recovery.py:2319 _repair_resume_advice: opens the composed advice with _repair_round_token(round_id) so the marker the guard reads back is authored by the same constant",
+    "reckon/crew/recovery.py:977 REPAIR_ROUND_TOKEN_LINE / _repair_round_token: one constant shared by the advice text and the guard, so they cannot drift",
+    "reckon/crew/dispatch.py:10817 change_lane: restates the fence via _restate_time_fence(prompt, record, attempt_started_at=lane_change['changed_at']) before writing lane-change-<n>-prompt.txt",
+    "reckon/crew/resumption.py:788 _resume: writes plan.stdin_text (the plan's own prompt, the advice restated with the attempt's fence) to resume-<turn>-advice.txt rather than the bare advice"
+  ],
+  "completed_at": "2026-10-02T23:11:45.005Z",
+  "dispatched_at": "2026-10-02T22:47:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2104",
+      "severity": "follow-on",
+      "text": "_reviewed_run_refused_the_round suppresses a same-round retry only when the reviewed run's manifest text contains the literal round-token line 'Repair round: <round_id>'. The token is the advice's first line, so a worker that refuses by quoting the scope line or the blocker prose but not that opening line reads as a mid-work death, and the retry re-sends the identical advice into the same dead end - Defect A's symptom, narrowed rather than closed. The guard degrades toward the retry on an unreadable or non-terminal manifest, which is the safe direction, and any refusal composed after this change can quote the token, so the residual is a paraphrasing worker. No test exercises a token-less refusal manifest, so the residual is unmeasured."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "4671",
+      "severity": "follow-on",
+      "text": "Two hand-typed resume doors still write the bare advice to resume-<turn>-advice.txt as the launcher's prompt_path: reckon/mcp.py:4671 and reckon/cli.py:5445 (the manifest cites cli.py:5380, which is stale). Neither restates the time fence, so a repair resume driven through the MCP surface or the CLI leaves the worker reading the inherited session's first-attempt deadline - the same door the resumption._resume fix just closed, on a path the automatic repair does not use. The manifest discloses both under follow_ons with paths; they are outside this node's write scope."
+    }
+  ],
+  "head_log_revision": "21e3bf56723cca772932f46aa7b7b7484ddfb6ab",
+  "item_verdicts": {
+    "diff": "Read commit by commit. 9239bac22 adds the same-round refusal guard and writes plan.stdin_text to the advice file; ef22fdae5 restates the lane-change fence and round-scopes the refusal marker; dcc6e45b2 reverts the whole-file format sweep; 21e3bf567 adds the resumed-advice test and updates three advice tests, merging main 2877bbb42. The one-round-per-run cap (recovery.py:2331) and the empty-scope decline (recovery.py:2468) are untouched, as the brief required. The recovery.py change against the run's base is 86 insertions / 3 deletions with zero timezone/import churn, so the format sweep is fully reverted.",
+    "done_when": "All clauses hold at 21e3bf567. Base reproduction of the new test file is recorded (base-repro-repair-retry.log, 2 failed / 1 passed). The refused-advice retry is no longer resumed; the mid-work-death retry still resumes; the resumed prompt carries its own deadline and not the first attempt's - the five cases pass at head (5 passed EXIT=0, re-run by the reviewer). The declared negative control restores the unconditional retry and reddens the refused-advice case (1 failed / 4 passed EXIT=1); the lane-change and round-scope controls each redden their named case (both 1 failed EXIT=1) - all three re-run by the reviewer. The focused eight-file gate is 48 passed EXIT=0 at head (re-run by the reviewer); base 43 passed EXIT=0 from the run's gate-base.log; zero added failures. The manifest names the nova-49 cause and cites the records. status reads complete.",
+    "goal": "Met. Defect A: a same-round retry whose ended turn refused the round's advice records the round exhausted (recovery.py:2814 via _reviewed_run_refused_the_round at 2104) rather than re-sending byte-identical advice, keyed on a round token so an earlier round's refusal does not suppress this one. Defect B: both doors are repaired - resumption.py:788 writes the plan's own fence-restated prompt for a repair resume, and dispatch.py:10817 restates the fence for a lane change, the door the three nova-49 refusals actually used. The nova-49 cause is recorded with the citing records. Round 1 left the lane-change door unfixed and the cause unrecorded; round 2 closed both; round 3 reverted the round-1 format sweep and updated the three advice tests.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-.../manifest.md: status complete, commits 9239bac22 + ef22fdae5 + dcc6e45b2 + 21e3bf567, both gate arms and three negative controls named with log paths, nova_49_cause recorded with the citing records and the fix commit. baseline_suite and after_spec are prose strings rather than the JSON objects the template asks for, and the run's gate logs carry no revision/tree/command header line. round3_note records the shipped head's arm (57 passed) only in prose.",
+    "write_paths": "The node's net change against main (git diff 2877bbb42..21e3bf567) lists exactly seven paths: reckon/crew/recovery.py, reckon/crew/resumption.py, reckon/crew/dispatch.py, tests/test_a_repair_retry_carries_new_input.py, tests/test_crew_recover.py, tests/test_external_wait.py, tests/test_resume_refuses_a_session_over_the_window.py. All are the run's declared paths or paths a round brief granted. No plan, sprint or shared index file is touched. dispatch.py is authorised by the round-2 brief; the three test files by the round-3 brief; the live pointer's write_paths still lists only the round-1 set, which the manifest discloses rather than widening."
+  },
+  "justifications": {
+    "durability": "Five tests cover the three required cases plus the round-scoping and lane-change cases; three declared negative controls each redden their named case under independent re-run; the guard degrades toward the retry on an unreadable or non-terminal manifest; the marker is a single constant shared by the advice and the guard so they cannot drift. The two unaddressed sibling doors (mcp.py:4671, cli.py:5445) are disclosed with paths.",
+    "evidence": "Strong and independently reproduced at head: new test file 5 passed EXIT=0, focused gate 48 passed EXIT=0, and all three declared negative controls 1 failed EXIT=1 (each reddening its named case) - all re-run by the reviewer at 21e3bf567. Base arm 43 passed EXIT=0 and the base reproduction 2 failed / 1 passed are recorded. Deductions for the contract's log-header requirement (the run's gate logs carry no revision/tree/command header and baseline_suite/after_spec are prose), and for the shipped head's arm being recorded as a prose note rather than a named gate arm - the named after_suite (gate-head.log) sits at the earlier ef22fdae5.",
+    "fit": "Reuses the module's helpers and idioms (manifest_status_is_terminal, the exhausted result, _restate_time_fence as resume_plan already uses it), places the guard beside the existing prior>=REPAIR_RESUME_LIMIT branch, and comments state mechanism rather than history. The format churn that blemished the prior round is reverted; the sibling doors and the detection heuristic are the remaining blemishes.",
+    "goal_fidelity": "Both defects are met at head. Defect A is closed by a round-scoped refusal guard that reuses the module's own vocabulary (exhausted, manifest_status_is_terminal). Defect B is closed on both the resume door and the lane-change door the nova-49 evidence actually used, with the cause now recorded and cited. The residual (recovery.py:2104) is a detection heuristic, not an unaddressed door.",
+    "scope_discipline": "Only the declared/granted paths changed; the net change against main is the seven paths above and no shared state is touched. The whole-file format sweep that round 1 folded in is fully reverted (dcc6e45b2; recovery.py base-to-node diff carries zero timezone churn), which lifts this from the fold-in that blemished the prior round. The remaining deduction is the live-pointer scope lag - dispatch.py and three test files are authorised by round briefs while the pointer still lists the round-1 paths; the manifest discloses it rather than silently widening."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Defect A met (same-round refusal recorded exhausted, recovery.py:2814); Defect B met on both doors - resumption.py:788 writes the plan's own fence-restated prompt and dispatch.py:10817 restates the lane-change fence the nova-49 refusals used.\nVERDICT done_when: all clauses hold at 21e3bf567; base 2 failed/1 passed, head 5 passed, three controls 1 failed each, focused gate 48 passed EXIT=0 - head, controls and focused gate independently re-run by the reviewer; nova-49 cause recorded and cited.\nVERDICT write_paths: net change against main is the seven granted paths; no shared state touched; the live-pointer scope lag is disclosed not widened.\nVERDICT manifest: read; status complete, four commits, both arms and three controls named; baseline_suite/after_spec are prose and gate logs carry no header.\nVERDICT diff: read commit by commit; guard + round token + fence restatements + reverted sweep; one-round cap and empty-scope decline untouched.\nCALL_SITES: reckon/crew/recovery.py:2814, reckon/crew/recovery.py:2104, reckon/crew/recovery.py:2319, reckon/crew/recovery.py:977, reckon/crew/dispatch.py:10817, reckon/crew/resumption.py:788\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both defects met at head; defect B's lane-change door fixed and the nova-49 cause recorded and cited; residual is a detection heuristic.\nSCORE evidence: 17\nJUSTIFICATION evidence: head, three controls and focused gate independently reproduced; deductions for gate-log header and prose suite fields.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: only granted paths changed and the format sweep is fully reverted; the live-pointer scope lag is protected by the manifest - the change is inside the round briefs, so the disclosure stands as the only blemish.\nSCORE durability: 17\nJUSTIFICATION durability: five tests, three red negative controls independently reproduced, guard degrades toward retry, marker centralised; two sibling doors disclosed.\nSCORE fit: 17\nJUSTIFICATION fit: reuses module vocabulary and _restate_time_fence; guard sits beside the prior-limit branch; format churn reverted.\nFINDING reckon/crew/recovery.py:2104 follow-on: the refusal marker is a literal token match, so a paraphrased refusal reads as a mid-work death and the retry re-sends; the residual paraphrase case is unmeasured.\nFINDING reckon/mcp.py:4671 follow-on: mcp.py:4671 and cli.py:5445 still write the bare advice as the resume prompt with no restated fence, the sibling doors the resumption fix closed for the automatic path.",
+  "review_run_id": "r-20261002T224650684111-review-of-a-repair-retry-carries-new-input",
+  "reviewed_base_sha": "67aa4a7ff59b9bdc57fd3d91a1c8802d51b5b2ef",
+  "reviewed_head_sha": "21e3bf56723cca772932f46aa7b7b7484ddfb6ab",
+  "reviewed_run_id": "r-20261002T204545832773-a-repair-retry-carries-new-input",
+  "reviewer": "review-of-a-repair-retry-carries-new-input",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.474619+00:00",
+  "total": 85
+}

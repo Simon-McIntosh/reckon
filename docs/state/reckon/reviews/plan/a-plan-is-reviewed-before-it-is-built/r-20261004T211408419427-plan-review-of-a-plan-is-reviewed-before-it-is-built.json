@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:18:07.049Z",
+  "dispatched_at": "2026-10-04T21:14:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:318",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend `review.py`'s record store (generalise its keyed path/selection) rather than fork it, exactly the \"state readers\" duplicate the plan's own \u00a73 rubric names, and the fork contradicts the reuse the decision claims.",
+      "text": "`_target_path`/`_stored_blob8`/`_candidate_paths`/`read_plan_review` re-implement, keyed on `plan_version`+blob8, exactly the \"same key, second record of it moves to an `.at-<sha>` sibling, newest-by-mtime wins\" selection that `reckon/crew/review.py` already owns as `_partial_review_path` (`review.py:1076`), `_complete_review_exists` (`review.py:1009`) and `stored_record` (`review.py:1444`); the plan's `review-storage` decision and D1 claim the store \"reuses the code-review machinery\", yet the selection logic is a parallel copy that will drift from the owner as the store's rules change",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:454",
+      "id": "duplicate_owner-2",
+      "reason": "path resolution is the recurring duplicate the plan's own \u00a73 rubric names, and the honest change is to name and call `resolve_resource` in the design rather than add a second resolution path.",
+      "text": "`plan_review_subject` resolves the plan document as `flight.mounted_project_docs()[project] / \"plans\" / f\"{slug}.html\"`, while `require_plan_reviewed` two functions away (`reckon/crew/routing.py:2665`) resolves the same plan through `resolve_resource`, the canonical resolver in `reckon/resources.py:557` that roadmap, evidence and resources.py also use; the sweep and the gate can therefore disagree about which plan a slug names (archived, migrated or colliding slugs) and the plan's design does not name one resolver",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/prompts/plan_design_review.md:1",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should either add the interface-budget item to the rubric (extending `interface_counts` into it, as the \u00a72 anchor item was folded in) or drop the \"Also done when\", because a done-when the named mechanism cannot produce is a criterion that can never be met.",
+      "text": "\u00a73's interface-budget half (\"the review cites the current week's four figures \u2026 a section that adds surface without naming what it retires or merges \u2026 receives a finding\") is a declared done-when (`plan.html` \u00a73, \"Also done when\") with no home in the delivered rubric: `plan_design_review.md` carries only the four depth items, `PLAN_DESIGN_REVIEW_ITEMS` (`reckon/crew/review.py:157`) matches those four, and the composed brief adds nothing, so no plan review will ever emit the check the plan promises over `reckon/interface_counts.py`",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e26fa10b2a81ef2954db89703efd73d45df8caf14a22e6f28f97d70d024a1767",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 31,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T211408419427-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "e5dbc6f92dea85514e8149a6da78b4d9e99d6968",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/crew/plan_review.py` hides the record shape, the store, the content-join by fingerprint, the authored-prose digest and the report parser behind a small interface (`plan_fingerprint`, `store_plan_review`, `read_plan_review`, `unanswered_findings`, `record_response`), substantively more behaviour than it exposes.",
+    "duplicate_owner": "a finding \u2014 `reckon/crew/plan_review.py` forks the review store's file-selection and blob-keyed-sibling machinery that `reckon/crew/review.py` already owns, and the plan's own `review-storage` decision says it reuses that store; and `plan_review_subject` resolves the plan path by hand rather than through `reckon/resources.py::resolve_resource`, the resolver the gate two functions away already uses.",
+    "reuse_search": "pass \u2014 the plan cites the review store, the review reflex, the refusal-family table, `_is_review_node`, `reckon/interface_counts.py` and the flight defaults as the machinery it extends, and each citation resolves.",
+    "thin_wrapper": "a finding \u2014 \u00a73 declares an interface-budget check (cite the week's four counts; retire-or-justify any added surface) that the delivered design rubric `reckon/crew/prompts/plan_design_review.md` does not carry and does not justify omitting, so the check exists only as plan prose over the existing `interface_counts` measurement."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.956829+00:00"
+}

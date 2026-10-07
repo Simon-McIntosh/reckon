@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-25T13:21:39.227Z",
+  "dispatched_at": "2026-09-25T12:26:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "100",
+      "text": "the implementation adds both plan-rubric constants, paths and loaders to a file outside the node exclusive write paths; the manifest notes the breach but a missing scope extension cannot be converted into authorization after the write."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read eb2fc40f and e2685b55 commit by commit against 8a11525c; 382 inserted lines touch six files, the prompt and test content is additive and semantically matches the plan, while reckon/crew/review.py is an undeclared seventh scope entry relative to the source node fence.",
+    "done_when": "the worker gate and declared mutation cover both prompt mirrors and the two pilot clauses; gate-plan-review-prompt.log records 8 passed and negative-control-mirror.log records 1 failed with naming removed, and the independent exact-head recheck reproduced 8 passed in review-gate.log.",
+    "goal": "the exact goal is present in reckon/crew/prompts/plan_review.md:21-55 and reckon/crew/prompts/plan_design_review.md:20-40; the content prompt covers all section 2 items plus the three-part reasoning check, the design prompt covers all section 3 items, both require would-change verdicts with reasons, the extensionless-href rule is explicit at plan_review.md:34-40, and the real-path caller is required at plan_review.md:51-53.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122637024608-plan-review-rubric-prompts/manifest.md; it reports complete, names eb2fc40f and e2685b55, records both green gates and the red control, and explicitly acknowledges reckon/crew/review.py as outside its fence.",
+    "write_paths": "the declared paths are the two prompts, the focused test, the cumulative evidence file, the figures directory and the plan HTML, but the diff also modifies reckon/crew/review.py, which is absent from that exclusive fence."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_prompt.py:47-100 contains bidirectional prompt-to-constant mirrors plus focused assertions for extensionless hrefs, would-change reasons and the real-path caller; removing naming from the content prompt list produced the recorded 1 failed and 7 passed control.",
+    "evidence": "tests/test_plan_review_prompt.py:47-100 checks both prompt mirrors, both would-change forms, extensionless resolution, the three-part reasoning clause and call-time loading; the declared mutation reddened the mirror and review-gate.log independently reproduced 8 passed at e2685b55.",
+    "fit": "reckon/crew/review.py:151-158 and 229-236 follow the existing disk-backed loader idiom, and both prompts use the repository review grammar and mechanism-based names without forbidden source labels.",
+    "goal_fidelity": "reckon/crew/prompts/plan_review.md:21-55 and reckon/crew/prompts/plan_design_review.md:20-40 implement every requested section 2, section 3, pilot and reasoning clause, including the named production caller check at plan_review.md:51-53.",
+    "scope_discipline": "reckon/crew/review.py:100-158 and 229-236 were added even though reckon/crew/review.py is absent from the exclusive write paths in the source dispatch and manifest orientation."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the exact goal is present in reckon/crew/prompts/plan_review.md:21-55 and reckon/crew/prompts/plan_design_review.md:20-40; the content prompt covers all section 2 items plus the three-part reasoning check, the design prompt covers all section 3 items, both require would-change verdicts with reasons, the extensionless-href rule is explicit at plan_review.md:34-40, and the real-path caller is required at plan_review.md:51-53.\nVERDICT done_when: the worker gate and declared mutation cover both prompt mirrors and the two pilot clauses; gate-plan-review-prompt.log records 8 passed and negative-control-mirror.log records 1 failed with naming removed, and the independent exact-head recheck reproduced 8 passed in review-gate.log.\nVERDICT write_paths: the declared paths are the two prompts, the focused test, the cumulative evidence file, the figures directory and the plan HTML, but the diff also modifies reckon/crew/review.py, which is absent from that exclusive fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122637024608-plan-review-rubric-prompts/manifest.md; it reports complete, names eb2fc40f and e2685b55, records both green gates and the red control, and explicitly acknowledges reckon/crew/review.py as outside its fence.\nVERDICT diff: read eb2fc40f and e2685b55 commit by commit against 8a11525c; 382 inserted lines touch six files, the prompt and test content is additive and semantically matches the plan, while reckon/crew/review.py is an undeclared seventh scope entry relative to the source node fence.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/prompts/plan_review.md:21-55 and reckon/crew/prompts/plan_design_review.md:20-40 implement every requested section 2, section 3, pilot and reasoning clause, including the named production caller check at plan_review.md:51-53.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_plan_review_prompt.py:47-100 checks both prompt mirrors, both would-change forms, extensionless resolution, the three-part reasoning clause and call-time loading; the declared mutation reddened the mirror and review-gate.log independently reproduced 8 passed at e2685b55.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: reckon/crew/review.py:100-158 and 229-236 were added even though reckon/crew/review.py is absent from the exclusive write paths in the source dispatch and manifest orientation.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_plan_review_prompt.py:47-100 contains bidirectional prompt-to-constant mirrors plus focused assertions for extensionless hrefs, would-change reasons and the real-path caller; removing naming from the content prompt list produced the recorded 1 failed and 7 passed control.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review.py:151-158 and 229-236 follow the existing disk-backed loader idiom, and both prompts use the repository review grammar and mechanism-based names without forbidden source labels.\nFINDING reckon/crew/review.py:100 the implementation adds both plan-rubric constants, paths and loaders to a file outside the node exclusive write paths; the manifest notes the breach but a missing scope extension cannot be converted into authorization after the write.\n",
+  "review_run_id": "r-20260925T130740397874-review-of-plan-review-rubric-prompts",
+  "reviewed_base_sha": "8a11525c42e2f77f4369b663df76b4ca7645cd14",
+  "reviewed_head_sha": "e2685b55e958a51e052e067e825e20f75b42ce51",
+  "reviewed_run_id": "r-20260925T122637024608-plan-review-rubric-prompts",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:13:35.735142+00:00",
+  "total": 86
+}

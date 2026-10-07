@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "64e6b337609d64af4fd463154f1fde2454bab0f1",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/routing.py:2677",
+    "reckon/crew/recovery.py:494",
+    "reckon/crew/plan_review.py:658"
+  ],
+  "completed_at": "2026-10-06T12:05:56.811Z",
+  "dispatched_at": "2026-10-06T11:51:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "584",
+      "severity": "follow-on",
+      "text": "follow-on: the added _edit_share docstring ends \"the sequence-matcher edit share \u00a722 declares\", citing a plan section inside source; the naming rules forbid plan-section references in code and comments, so the file stops standing alone if the plan is renumbered or deleted."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2677",
+      "severity": "follow-on",
+      "text": "follow-on: _review_coverage_report is called here with no config, and neither this caller nor reckon/crew/recovery.py:494 resolves the flight config, so _plan_review_change_threshold always reads the default 0.30 and a project or host override of review.plan_change_threshold cannot change the production verdict, contradicting the promise at reckon/flight.py:710 that a host or project layer can tighten it without a code change."
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/review-is-earned-by-significant-change.html",
+      "line": "37",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence list states tests/test_review_is_earned_by_significant_change.py has \"(13 cases)\", but the file defines 12 test functions and the named 14-passed total is 12 plus the two in tests/test_plan_settle_window_is_declared.py."
+    }
+  ],
+  "head_log_revision": "c8a1ae305c33257c3d3e48bdce245ef83a22fd57",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 64e6b3376; one product commit (02021245b, plan_review.py/routing.py/flight.py/flight-defaults.yaml/SKILL.md and the two tests) plus three docs commits (c8a1ae305, a5ee88ae4, 0a5e3a893) that add the landing fragment and the replay script; every hunk serves the goal.",
+    "done_when": "the done-when names a synthetic-plan series (10% covered, 35% uncovered with the gate refusal naming the section and its measured share; three successive edits covered then uncovered; an added section; a done-when edit; a deferred-to-implementable section; no-snapshot exact-only; a project override; the declared threshold read and validated; one key table; the dispatch tokeniser reused; rule 9; the replay; the interface count; the pytest line N passed EXIT=0); I re-ran the named gate in the reviewed worktree and reproduced 14 passed, EXIT=0.",
+    "goal": "the node's goal is to cover a plan-review unit whose authored prose changed by less than review.plan_change_threshold against the newest stored review snapshot, with a changed done-when or a newly implementable section uncovered whatever its size; reckon/crew/plan_review.py:598 _review_coverage_report implements the per-unit measure and the three material cases, so the landed change is what the goal states.",
+    "manifest": "read; status complete, four commits, tests \"14 passed, EXIT=0\", baseline_suite (base 64e6b3376, 3 failed) and after_suite (head c8a1ae305, 2 failed) with their log paths, and negative-control.log named.",
+    "write_paths": "the manifest declares nine exclusive paths (reckon/crew/plan_review.py, reckon/crew/routing.py, reckon/flight.py, reckon/schema/flight-defaults.yaml, skills/reckon-edit/SKILL.md, tests/test_review_is_earned_by_significant_change.py, tests/test_plan_settle_window_is_declared.py, the landing fragment, and the figures directory); every path in git diff 64e6b3376..0a5e3a893 lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_review_is_earned_by_significant_change.py drives the real predicate, store and gate over a synthesised mounted project and the cumulative three-edit case fails when the comparator is mutated (logs/negative-control.log, EXIT=1), so the assertions are not merely green.",
+    "evidence": "the gate asserts the done-when and its result is recorded (manifest tests \"14 passed, EXIT=0\" at logs/newtests.log), the base/head suites and their logs are named, and I confirmed public_definitions 1481 at 64e6b3376 against 1482 at head with reckon.interface_counts.",
+    "fit": "the additions follow the module's lazy-import and docstring idiom, but the new _edit_share docstring at reckon/crew/plan_review.py:584 cites a plan section, which the repository naming rules forbid in source.",
+    "goal_fidelity": "reckon/crew/plan_review.py:598-720 measures each outstanding unit's present prose against the newest covering review's snapshot and leaves a changed done-when, an added section and a newly implementable section uncovered, exactly as the goal states.",
+    "reuse": "the measure reuses the owner's tokeniser dispatch._normalised_words and the owner predicates implementable_sections and _section_digests rather than forking a second tokeniser or digest, per reckon/crew/plan_review.py:574-590.",
+    "scope_discipline": "every path in git diff --stat 64e6b3376..0a5e3a893 lies inside the nine declared write paths, and the two-value _review_coverage is kept beside the new predicate rather than replaced."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to cover a plan-review unit whose authored prose changed by less than review.plan_change_threshold against the newest stored review snapshot, with a changed done-when or a newly implementable section uncovered whatever its size; reckon/crew/plan_review.py:598 _review_coverage_report implements the per-unit measure and the three material cases, so the landed change is what the goal states.\nVERDICT done_when: the done-when names a synthetic-plan series (10% covered, 35% uncovered with the gate refusal naming the section and its measured share; three successive edits covered then uncovered; an added section; a done-when edit; a deferred-to-implementable section; no-snapshot exact-only; a project override; the declared threshold read and validated; one key table; the dispatch tokeniser reused; rule 9; the replay; the interface count; the pytest line N passed EXIT=0); I re-ran the named gate in the reviewed worktree and reproduced 14 passed, EXIT=0.\nVERDICT write_paths: the manifest declares nine exclusive paths (reckon/crew/plan_review.py, reckon/crew/routing.py, reckon/flight.py, reckon/schema/flight-defaults.yaml, skills/reckon-edit/SKILL.md, tests/test_review_is_earned_by_significant_change.py, tests/test_plan_settle_window_is_declared.py, the landing fragment, and the figures directory); every path in git diff 64e6b3376..0a5e3a893 lies inside them.\nVERDICT manifest: read; status complete, four commits, tests \"14 passed, EXIT=0\", baseline_suite (base 64e6b3376, 3 failed) and after_suite (head c8a1ae305, 2 failed) with their log paths, and negative-control.log named.\nVERDICT diff: read commit by commit against 64e6b3376; one product commit (02021245b, plan_review.py/routing.py/flight.py/flight-defaults.yaml/SKILL.md and the two tests) plus three docs commits (c8a1ae305, a5ee88ae4, 0a5e3a893) that add the landing fragment and the replay script; every hunk serves the goal.\nCALL_SITES: reckon/crew/routing.py:2677, reckon/crew/recovery.py:494, reckon/crew/plan_review.py:658\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:598-720 measures each outstanding unit's present prose against the newest covering review's snapshot and leaves a changed done-when, an added section and a newly implementable section uncovered, exactly as the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate asserts the done-when and its result is recorded (manifest tests \"14 passed, EXIT=0\" at logs/newtests.log), the base/head suites and their logs are named, and I confirmed public_definitions 1481 at 64e6b3376 against 1482 at head with reckon.interface_counts.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in git diff --stat 64e6b3376..0a5e3a893 lies inside the nine declared write paths, and the two-value _review_coverage is kept beside the new predicate rather than replaced.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_is_earned_by_significant_change.py drives the real predicate, store and gate over a synthesised mounted project and the cumulative three-edit case fails when the comparator is mutated (logs/negative-control.log, EXIT=1), so the assertions are not merely green.\nSCORE fit: 14\nJUSTIFICATION fit: the additions follow the module's lazy-import and docstring idiom, but the new _edit_share docstring at reckon/crew/plan_review.py:584 cites a plan section, which the repository naming rules forbid in source.\nSCORE reuse: 19\nJUSTIFICATION reuse: the measure reuses the owner's tokeniser dispatch._normalised_words and the owner predicates implementable_sections and _section_digests rather than forking a second tokeniser or digest, per reckon/crew/plan_review.py:574-590.\nFINDING reckon/crew/plan_review.py:584 follow-on: the added _edit_share docstring ends \"the sequence-matcher edit share \u00a722 declares\", citing a plan section inside source; the naming rules forbid plan-section references in code and comments, so the file stops standing alone if the plan is renumbered or deleted.\nFINDING reckon/crew/routing.py:2677 follow-on: _review_coverage_report is called here with no config, and neither this caller nor reckon/crew/recovery.py:494 resolves the flight config, so _plan_review_change_threshold always reads the default 0.30 and a project or host override of review.plan_change_threshold cannot change the production verdict, contradicting the promise at reckon/flight.py:710 that a host or project layer can tighten it without a code change.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/review-is-earned-by-significant-change.html:37 follow-on: the evidence list states tests/test_review_is_earned_by_significant_change.py has \"(13 cases)\", but the file defines 12 test functions and the named 14-passed total is 12 plus the two in tests/test_plan_settle_window_is_declared.py.",
+  "review_run_id": "r-20261006T115055889255-review-of-review-is-earned-by-significant-change",
+  "review_type": null,
+  "reviewed_base_sha": "64e6b337609d64af4fd463154f1fde2454bab0f1",
+  "reviewed_head_sha": "0a5e3a893c40505fef470927c0d7c7d6b010aeba",
+  "reviewed_run_id": "r-20261006T104213071108-review-is-earned-by-significant-change",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:09.061489+00:00",
+  "total": 103
+}

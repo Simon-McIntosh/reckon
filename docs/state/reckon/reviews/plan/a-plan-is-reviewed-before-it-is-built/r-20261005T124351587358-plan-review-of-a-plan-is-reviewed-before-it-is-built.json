@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T12:47:24.007Z",
+  "dispatched_at": "2026-10-05T12:44:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "deep_module-1",
+      "reason": "the author must either state that the identity still folds the normalised state beside the section set, or justify dropping decisions, followups and authored comments from the review trigger, and either choice edits \u00a716.",
+      "text": "\u00a716 redefines the whole-document fingerprint as the digest of the sorted authored-section set, but the present digest folds in the normalised parsed state (reckon/crew/plan_review.py:418) precisely because decisions, followups and authored comments sit in `data-reckon` regions the prose walk excludes (reckon/crew/plan_review.py:162-268); under a section-set identity an edit to a decision, a followup, or an authored comment moves no section digest, so the coverage predicate reports every unlanded section still covered and composes no review \u2014 regressing \u00a78's tested requirement that an authored comment moves the fingerprint and composes one",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3fa5c86bfec8785e07079fd5f430d077defdc433c8fa0b99c7ef96495a8e6e51",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 62,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T124351587358-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "3941bd42ca3d1a0a98c2ceed3e615924142d5dd7",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the identity \u00a716 defines as the digest of the sorted authored-section set is an interface too narrow for the behaviour it must hide, because decisions, followups and authored comments live outside every authored section and enter the current digest only through the whole-document state component.",
+    "duplicate_owner": "pass \u2014 \u00a716's one repeated-mechanism hazard is section enumeration, and it names the owners and hoists `_authored_section_headings` into `reckon/_store.py` beside `_section_heading`/`landed_section_ids` rather than adding a third segmenter.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition (the coverage predicate the gate and the sweep read) and states in its own text that nothing is retired because the identity digest and the prose walk keep their names and gain a mode, and that the refusal reuses the existing plan-review-missing family rather than adding one.",
+    "reuse_search": "pass \u2014 \u00a716 cites and extends the existing owners it builds on: `plan_fingerprint`/`_authored_prose` (reckon/crew/plan_review.py), `_authored_section_headings` (reckon/mcp_views.py:2080), `_section_heading`/`landed_section_ids` (reckon/_store.py:899,1034) and the two-form legacy mechanism `_fingerprint_forms` (reckon/crew/plan_review.py:598); no per-section digest exists in the tree, so there is nothing else to reuse for the new unit.",
+    "thin_wrapper": "pass \u2014 the only new layer is the third recognised form in `_fingerprint_forms`, a transition shim the plan justifies as the mechanism that keeps a pre-change record current, and no wrapper is placed over existing machinery without a reason."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.937605+00:00"
+}

@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:27:56.078Z",
+  "dispatched_at": "2026-10-06T06:25:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py:471",
+      "id": "reuse_search-1",
+      "reason": "the plan must state how the record is committed (its own commit, or the ledger's state-write path) rather than assuming a commit that does not occur.",
+      "text": "\u00a73's write path asserts the reviewed-run promotion commit carries the record (\"no new commit is created\"), but _COMMITLESS_ROLES lists \"review\" and the comment at promotion.py:2566 records that a review \"promotes without a commit, which is its correct disposition\" because a review's deliverable sits outside the repository, so there is no commit for the store write to ride",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:618",
+      "id": "duplicate_owner-1",
+      "reason": "placement and the commit should extend the ledger owner, not fork a second writer of the same committed tree, which is how the review record and the run ledger would drift.",
+      "text": "\u00a73 adds docs/state/<project>/reviews/<...>.json and a writer that commits it, but reckon/ledger.py owns the committed state tree (docs/state/<project>/ via ledger_path/run_path) and the commit of a state write (_commit_state_write), and the plan never names it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s3",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added public surface in its own text, per the interface-budget rule.",
+      "text": "\u00a73 adds a server route GET /review/<project>/<id> and a new MCP surface for the record by id, and names nothing the change retires or merges or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s4",
+      "id": "interface_budget-2",
+      "reason": "the section must name the view it merges or retires, or state why the payload cannot extend an existing view (e.g. the existing crew(view=\"plan-review\")), before adding a view.",
+      "text": "\u00a74 adds \"a crew view reporting, per plan and per day, the reviews run, the authored-prose change behind each re-review and how often \u00a722's threshold fired\", a new member of the mcp_views family (33), and the only thing it names as replaced is the throwaway scripts edit_size.py/section_change.py, which are not a counted family",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "03f0c498c83741607067f7d27fb0f50908c55c244912fd85999b49922abf45e4",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "e4e34290",
+      "reason": "acted on in commit 5ff3b5bb0, which revised sections 3 and 4",
+      "when": "2026-10-06T06:36:36.582098+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "e4e34290",
+      "reason": "acted on in commit 5ff3b5bb0, which revised sections 3 and 4",
+      "when": "2026-10-06T06:36:36.583352+00:00"
+    },
+    "interface_budget-2": {
+      "action": "acted",
+      "by": "e4e34290",
+      "reason": "acted on in commit 5ff3b5bb0, which revised sections 3 and 4",
+      "when": "2026-10-06T06:36:36.584577+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "e4e34290",
+      "reason": "acted on in commit 5ff3b5bb0, which revised sections 3 and 4",
+      "when": "2026-10-06T06:36:36.579890+00:00"
+    }
+  },
+  "review_run_id": "r-20261006T062446935905-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "da3c5c6e5fc0f91596da98ec8bba31d3df5077f4",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the committed store plus one reader (extending read_plan_review/list_plan_reviews) hides record shape, path resolution and the join behind a few functions rather than a spread of wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a73 places a committed store at docs/state/<project>/reviews/ and moves it through a promotion commit, but reckon/ledger.py owns placement under docs/state/<project>/ and the state-write commit.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 adds a crew view to the mcp_views family and \u00a73 adds a server route and MCP surface, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a73 cites \"The review run's own promotion commit moves the record into the committed store, so no new commit is created\", but a review run is a commitless role and promotes without a commit, so the cited carrier does not exist.",
+    "thin_wrapper": "pass \u2014 every added layer is justified as an extension of an existing mechanism: \u00a73 changes where store_delivered_report writes, \u00a76 extends _review_dispatch_fields, \u00a77 uses the existing set op, \u00a72 is prompt text only."
+  },
+  "section_digests": {
+    "_document": "c3562c738cab087b866e9bc15ed3793db9d12893830765436e9014bccbcb5c93",
+    "s1": "d333aa7f2c925cc28d10652f937427775e80946ff9334b6bcd9145aff3e04b91",
+    "s2": "1d32d23ade9a2f67c761b6ae7aba7d7657c84da80a58e50c003d120e94679abd",
+    "s3": "ea3048c154600d91144edfdbc9b38e1dbed84199d69b7f4a46dcc75d9468b5e8",
+    "s4": "8b02833aaf1d77bba89af1c53702ed93281bfa4876c83ec3ce744c770d04205f",
+    "s5": "049b059cf1b7f88d13015349cd5ec13979bc801dbe26d0bdee08b0bee6abe02a",
+    "s6": "575c9d89e9e8fc362d3192fcff31c77d7a1b6353f3a2971d2410d183570e3358",
+    "s7": "25a9982c5350cf821a2704cd37f14481c3f75e262726ee9efa7d8e7fdeff5c6e",
+    "s8": "b9ad6cbd95673381cecbab7e03b74058aaae945bd4185b4c1f6d51658433b081"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T06:34:35.384140+00:00"
+}

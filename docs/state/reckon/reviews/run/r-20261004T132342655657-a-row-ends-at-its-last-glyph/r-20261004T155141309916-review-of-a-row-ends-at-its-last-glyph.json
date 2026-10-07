@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-04T15:59:16.178Z",
+  "dispatched_at": "2026-10-04T15:52:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/a-row-ends-at-its-last-glyph.html",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control paragraph states the mutation as replacing the unpadded append with `cells.append((f\"{reason:<{room}}\", \"dim\"))`, but that edit alone does not fail the test \u2014 the empty-reason branch guards on `if reason:`, so with reason=\"\" nothing is appended and the row still ends on a glyph (reproduced, /tmp/review_rowend_minmut.log: len=121, ends_blank=False, test would pass). The recorded control is valid \u2014 the log shows EXIT=1 and a rendered row ending in blanks \u2014 but the actual mutation must also drop the guard (revert toward the base block that pads whenever room>0). A reader following the fragment's one-line recipe would not reproduce the control."
+    },
+    {
+      "file": "tests/test_crew_ticker_layout.py",
+      "line": "362",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_reason_is_truncated_to_the_room_the_grid_leaves and test_a_reason_clipped_at_the_margin_ends_on_a_word relaxed `len(...) == 180` to `<= 180` although a truncated clause fills the room, so those exact assertions were checking truncation-to-fill rather than pinning the pad and could have stayed strict; the weakening is minor because `\u2026` presence and count are still asserted."
+    }
+  ],
+  "justifications": {
+    "durability": "every behaviour the measure names has a test that flips when it is reverted: restoring the base right pad reddens test_a_row_with_no_clause_ends_at_its_last_glyph at the `assert empty[-1] != \" \"` line (reproduced, /tmp/review_rowend_negctl.log, EXIT=1), and the alignment guarantees are asserted on the same test and on the role-column offset test.",
+    "evidence": "the manifest arithmetic reproduces here: the eight named files read 146 passed EXIT=0 at head (re-run, /tmp/review_rowend_head.log) against the base arm of 145 passed 0 failed EXIT=0, both reconciling with the log summaries they cite; the base defect and the head fix reproduce directly (/tmp/review_rowend_probe.log), and the negative control's EXIT=1 reproduces when the base pad is restored (/tmp/review_rowend_negctl.log). Two minor notes keep this below full: the fragment's literal mutation recipe does not by itself reproduce the control, because the empty-reason branch guards on `if reason:` so padding the append alone leaves the row unpadded (/tmp/review_rowend_minmut.log); and one truncation assertion was relaxed from exact to at-most where it did not pin the pad.",
+    "fit": "the change is minimal and idiomatic \u2014 it removes the unconditional trailing separator and the right pad, leaves `_reason` receiving the identical room (grid_width - head - GAP, unchanged before and after), and names the new test by mechanism (test_a_row_with_no_clause_ends_at_its_last_glyph); the naming checks over the 149 added lines find no banned label, and no commit carries an AI attribution.",
+    "goal_fidelity": "the measure lands and is asserted: Ticker.render appends the clause at its own length and appends the two-column separator only when a clause is present, so an empty-reason row ends on its last fixed glyph. Verified independently by loading both module revisions and rendering the same blocked-with-empty-reason event: the base renders len=180 ending in 59 trailing blanks, the head renders len=121 ending on the counters glyph with 0 trailing blanks (/tmp/review_rowend_probe.log). Fixed columns keep their offsets, asserted in test_a_row_with_no_clause_ends_at_its_last_glyph (counters start and the blocked index match the clause-bearing row) and in test_a_role_column_still_leaves_every_other_column_on_its_own_position (arrow index and letter columns).",
+    "scope_discipline": "the two commits touch exactly ten paths \u2014 reckon/crew/ticker.py, the eight named test files, and the node's own evidence fragment \u2014 every one inside the declared write paths; no path outside the fence is modified and the reviewed worktree is clean at head c7fbc3389."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Ticker.render ends a row at its last glyph \u2014 the reason clause is bounded by the room the fixed columns leave after its separator but is no longer right-padded, and the separator is appended only when a clause is present, so an empty-reason row ends on its last fixed glyph with no trailing whitespace while every fixed column ahead keeps its width.\nVERDICT review: read the two commits (f1fccc57f source, c7fbc3389 landing fragment) from base b0979dfd6 to head c7fbc3389, re-ran the focused gate at head (146 passed EXIT=0), reproduced the base defect and the head fix directly, reproduced the negative control, and falsified the fragment's literal mutation recipe.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the measure lands and is asserted: Ticker.render appends the clause at its own length and appends the two-column separator only when a clause is present, so an empty-reason row ends on its last fixed glyph. Verified independently by loading both module revisions and rendering the same blocked-with-empty-reason event: the base renders len=180 ending in 59 trailing blanks, the head renders len=121 ending on the counters glyph with 0 trailing blanks (/tmp/review_rowend_probe.log). Fixed columns keep their offsets, asserted in test_a_row_with_no_clause_ends_at_its_last_glyph (counters start and the blocked index match the clause-bearing row) and in test_a_role_column_still_leaves_every_other_column_on_its_own_position (arrow index and letter columns).\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest arithmetic reproduces here: the eight named files read 146 passed EXIT=0 at head (re-run, /tmp/review_rowend_head.log) against the base arm of 145 passed 0 failed EXIT=0, both reconciling with the log summaries they cite; the base defect and the head fix reproduce directly (/tmp/review_rowend_probe.log), and the negative control's EXIT=1 reproduces when the base pad is restored (/tmp/review_rowend_negctl.log). Two minor notes keep this below full: the fragment's literal mutation recipe does not by itself reproduce the control, because the empty-reason branch guards on `if reason:` so padding the append alone leaves the row unpadded (/tmp/review_rowend_minmut.log); and one truncation assertion was relaxed from exact to at-most where it did not pin the pad.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch exactly ten paths \u2014 reckon/crew/ticker.py, the eight named test files, and the node's own evidence fragment \u2014 every one inside the declared write paths; no path outside the fence is modified and the reviewed worktree is clean at head c7fbc3389.\nSCORE durability: 19\nJUSTIFICATION durability: every behaviour the measure names has a test that flips when it is reverted: restoring the base right pad reddens test_a_row_with_no_clause_ends_at_its_last_glyph at the `assert empty[-1] != \" \"` line (reproduced, /tmp/review_rowend_negctl.log, EXIT=1), and the alignment guarantees are asserted on the same test and on the role-column offset test.\nSCORE fit: 18\nJUSTIFICATION fit: the change is minimal and idiomatic \u2014 it removes the unconditional trailing separator and the right pad, leaves `_reason` receiving the identical room (grid_width - head - GAP, unchanged before and after), and names the new test by mechanism (test_a_row_with_no_clause_ends_at_its_last_glyph); the naming checks over the 149 added lines find no banned label, and no commit carries an AI attribution.\nFINDING docs/evidence/fragments/crew-observability-truth/a-row-ends-at-its-last-glyph.html:23 follow-on: the negative-control paragraph states the mutation as replacing the unpadded append with `cells.append((f\"{reason:<{room}}\", \"dim\"))`, but that edit alone does not fail the test \u2014 the empty-reason branch guards on `if reason:`, so with reason=\"\" nothing is appended and the row still ends on a glyph (reproduced, /tmp/review_rowend_minmut.log: len=121, ends_blank=False, test would pass). The recorded control is valid \u2014 the log shows EXIT=1 and a rendered row ending in blanks \u2014 but the actual mutation must also drop the guard (revert toward the base block that pads whenever room>0). A reader following the fragment's one-line recipe would not reproduce the control.\nFINDING tests/test_crew_ticker_layout.py:362 follow-on: test_a_reason_is_truncated_to_the_room_the_grid_leaves and test_a_reason_clipped_at_the_margin_ends_on_a_word relaxed `len(...) == 180` to `<= 180` although a truncated clause fills the room, so those exact assertions were checking truncation-to-fill rather than pinning the pad and could have stayed strict; the weakening is minor because `\u2026` presence and count are still asserted.",
+  "review_run_id": "r-20261004T155141309916-review-of-a-row-ends-at-its-last-glyph",
+  "reviewed_base_sha": "b0979dfd6fba68b453a7f07c102339ea3c087e29",
+  "reviewed_head_sha": "c7fbc3389266baa767d825e096636461d6a67930",
+  "reviewed_run_id": "r-20261004T132342655657-a-row-ends-at-its-last-glyph",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T155141309916-review-of-a-row-ends-at-its-last-glyph",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T15:57:04.877135+00:00",
+  "total": 94
+}

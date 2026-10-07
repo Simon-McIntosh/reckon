@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:18:26.227Z",
+  "dispatched_at": "2026-10-05T14:14:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "reuse_search-1",
+      "reason": "the author must either extend the existing AST census or state why a separate pass is warranted, which changes what the node builds and where the instrument lives.",
+      "text": "the section specifies a new AST pass over `reckon/` that reports calls whose argument names a heading tag, regex literals containing `<h2`, and uses of `_H2_OPEN_RE`, yet cites no prior-art search for it; `reckon/interface_counts.py:76` already implements an AST visitor over the same prefix that enumerates call and definition shapes, and `reckon/served_code.py`, `reckon/velocity.py` and `reckon/crew/dispatch.py` also import `ast`, so the tree already has census machinery this instrument could extend",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/interface_counts.py:76",
+      "id": "duplicate_owner-1",
+      "reason": "a duplicate census drifts from the owner exactly as the section's own reuse rule warns, so the plan should name the owner it extends or justify a separate pass.",
+      "text": "the heading-walk instrument would be a second AST pass over `reckon/`, parallel to the census that `reckon/interface_counts.py` already owns (its `definitions(tree)` visitor walks package trees for interface shapes), and \u00a716 does not name a home for the new instrument or say whether it reuses that visitor",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:7236",
+      "id": "duplicate_owner-2",
+      "reason": "the implementer cannot place the shared reader without a decision the section does not settle, and placement is the recurring duplicate this item exists to pin to a named owner.",
+      "text": "the section hoists the coverage reader (`promotion._plan_remaining_sections`, whose sibling `doccheck._implementable_section_ids` sits in top-level `reckon/doccheck.py`) to \"a shared home the gate, the sweep and promotion all import\" without naming that home, while every other consolidation in the section names its owner (`reckon/_plan_html.py:44`); the two readers live in different package layers, so the hoist forces a placement and import-direction decision the plan leaves open",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fe0c4784ffcaf66fbf90f21a23dcc8206e72ef2ab42467d53a903017b58181b2",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 73,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T141402650783-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "1c1ef610bcefdae5e2f8ce41f730bb755ade2e23",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the section consolidates section identity, extent and the collapse span onto one raw-text enumerator whose interface is small (identity, heading text, replaced span as offsets), and the coverage question onto one reader, so it deepens rather than spreads.",
+    "duplicate_owner": "a finding \u2014 the new AST heading-walk instrument duplicates the AST-over-`reckon/` census that `reckon/interface_counts.py` already owns, and the coverage reader's \"shared home\" is left unnamed although its two source readers live in different layers (`reckon/doccheck.py`, `reckon/crew/promotion.py`).",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; the section names its one added public definition (the coverage predicate the gate and sweep read), states why nothing is retired (the identity digest and the prose walk keep their names), discloses the `plan_fingerprint` signature change, and adds no CLI option, MCP view or refusal family (the refusal reuses `plan-review-missing`).",
+    "reuse_search": "a finding \u2014 \u00a716 cites the owners it intends to extend and those owners resolve (`reckon/_plan_html.py:44` `_StructuredSectionSpanParser`, `reckon/_store.py:899,932` `_section_heading`/`_section_body_end`, `reckon/mcp_views.py:2080` `_authored_section_headings`, `reckon/crew/promotion.py:7236` `_plan_remaining_sections`), but it proposes a new \"AST pass over `reckon/`\" heading-walk instrument while `reckon/interface_counts.py` already owns an AST census over the same tree, and the section never names it.",
+    "thin_wrapper": "pass \u2014 no new thin layer is placed over the fingerprint or store machinery; the two-valued `legacy` flag becomes a named mode over the same digest function rather than a second walker beside it, and the per-section digest reuses the enumerator rather than adding a scanner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.898164+00:00"
+}

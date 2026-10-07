@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T20:39:34.374506+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+      "line": "96",
+      "text": "the lint row's magnitudes (\"the one remaining finding and the two unformatted files\") reproduce in no scope I measured: the seven touched files give 3 findings (1 F841 in tests/test_crew_promotion.py, 2 ISC004 in tests/test_gate_evidence.py) and 3 files unformatted at both 77c20349 and e5dbe176, tests/ gives 177 findings and 56 unformatted files at both revisions, and the whole repository at e5dbe176 gives 441 findings and 84 unformatted files; the row's delta claim holds in every scope, but its magnitudes name no scope a later reader can check."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190035866471-promotion-tests-meet-the-review-and-checkout-guards/manifest.md",
+      "line": "10",
+      "text": "the seven head logs and the base-revision control log named at line 11 are node-local temporary paths on the compute node that ran the node, so the reproduction the done_when requires is readable only while that allocation lives; I could read them only because this review runs on the same node, where they corroborate the manifest (1 failed/25 passed, 21 passed, 3 passed, and 31 FAILED in the control), and the ids and classes survive inline in the manifest and the research record, but a later reader cannot check the raw receipts."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read all three commits against 77c20349; the change is test fixtures plus the plan and archive records, with no test function removed, no skip or xfail added, and the removed assertion lines re-expressed as stronger properties.",
+    "done_when": "the done_when names each owned file run in its own pytest process with its own --basetemp, the per-file before/after result recorded, and the red-test list recorded; the run's manifest records both, and I re-derived the base control myself rather than reading the manifest's account of it.",
+    "goal": "the goal is that the seven files the research record's section 4 lists for this node pass at head; 30 of the 31 base ids are green at e5dbe176 (tests/test_promotion_reads_the_terminal_record.py re-run by me at 6 passed, tests/test_role_write_scope.py at 21 passed) and the one id still red is named in the run's follow_ons, which the done_when permits.",
+    "manifest": "read in full; it states per-file head results, a class and cause for each of the 31 ids, and the one remaining failure as a product defect with file, lines, behaviour and a reproduction, all of which I re-ran or re-read.",
+    "write_paths": "the declared scope is the ten paths in the run's orientation_write_paths; every path in git diff --name-only 77c20349..e5dbe176 is inside it, nine paths in all, and the worktree is clean at e5dbe176."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_promotion.py:1262 asserts the worktree audit's git-call count does not move with the peer population, so the guard is measured as an invariant rather than a literal; the two load-sensitive ids left in the suite are named for a robustness follow-up.",
+    "evidence": "the base control log's declared first line and its 31 FAILED ids reproduce the research record's section 4 exactly and the two sides sum to 132 tests either side, but the run's lint row (docs/evidence/archive/the-suite-is-green-at-head-landed.html:96) carries magnitudes I could not reproduce in any scope, and its raw receipts are node-local temporary paths.",
+    "fit": "the new helpers follow the file-local fixture idiom of tests/test_gate_evidence.py:248 and the touched files carry the same ruff findings and unformatted-file count at base and at head.",
+    "goal_fidelity": "30 of the 31 base ids are green at e5dbe176, and the one id still red is named as a product defect in the run's follow_ons with file, lines, behaviour and a reproduction that I confirmed.",
+    "scope_discipline": "every path in git diff --name-only 77c20349..e5dbe176 lies inside the ten declared write paths, and nothing outside them was written."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 77c20349aa33b7ddda106d6b3a35fa62f9549fa5\nreviewed_head_sha: e5dbe1765ea0776ab97739af551483ee455ecb6f\nVERDICT goal: the goal is that the seven files the research record's section 4 lists for this node pass at head; 30 of the 31 base ids are green at e5dbe176 (tests/test_promotion_reads_the_terminal_record.py re-run by me at 6 passed, tests/test_role_write_scope.py at 21 passed) and the one id still red is named in the run's follow_ons, which the done_when permits.\nVERDICT done_when: the done_when names each owned file run in its own pytest process with its own --basetemp, the per-file before/after result recorded, and the red-test list recorded; the run's manifest records both, and I re-derived the base control myself rather than reading the manifest's account of it.\nVERDICT write_paths: the declared scope is the ten paths in the run's orientation_write_paths; every path in git diff --name-only 77c20349..e5dbe176 is inside it, nine paths in all, and the worktree is clean at e5dbe176.\nVERDICT manifest: read in full; it states per-file head results, a class and cause for each of the 31 ids, and the one remaining failure as a product defect with file, lines, behaviour and a reproduction, all of which I re-ran or re-read.\nVERDICT diff: read all three commits against 77c20349; the change is test fixtures plus the plan and archive records, with no test function removed, no skip or xfail added, and the removed assertion lines re-expressed as stronger properties.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: 30 of the 31 base ids are green at e5dbe176, and the one id still red is named as a product defect in the run's follow_ons with file, lines, behaviour and a reproduction that I confirmed.\nSCORE evidence: 16\nJUSTIFICATION evidence: the base control log's declared first line and its 31 FAILED ids reproduce the research record's section 4 exactly and the two sides sum to 132 tests either side, but the run's lint row (docs/evidence/archive/the-suite-is-green-at-head-landed.html:96) carries magnitudes I could not reproduce in any scope, and its raw receipts are node-local temporary paths.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-only 77c20349..e5dbe176 lies inside the ten declared write paths, and nothing outside them was written.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_promotion.py:1262 asserts the worktree audit's git-call count does not move with the peer population, so the guard is measured as an invariant rather than a literal; the two load-sensitive ids left in the suite are named for a robustness follow-up.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers follow the file-local fixture idiom of tests/test_gate_evidence.py:248 and the touched files carry the same ruff findings and unformatted-file count at base and at head.\nFINDING docs/evidence/archive/the-suite-is-green-at-head-landed.html:96 the lint row's magnitudes (\"the one remaining finding and the two unformatted files\") reproduce in no scope I measured: the seven touched files give 3 findings (1 F841 in tests/test_crew_promotion.py, 2 ISC004 in tests/test_gate_evidence.py) and 3 files unformatted at both 77c20349 and e5dbe176, tests/ gives 177 findings and 56 unformatted files at both revisions, and the whole repository at e5dbe176 gives 441 findings and 84 unformatted files; the row's delta claim holds in every scope, but its magnitudes name no scope a later reader can check.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190035866471-promotion-tests-meet-the-review-and-checkout-guards/manifest.md:10 the seven head logs and the base-revision control log named at line 11 are node-local temporary paths on the compute node that ran the node, so the reproduction the done_when requires is readable only while that allocation lives; I could read them only because this review runs on the same node, where they corroborate the manifest (1 failed/25 passed, 21 passed, 3 passed, and 31 FAILED in the control), and the ids and classes survive inline in the manifest and the research record, but a later reader cannot check the raw receipts.\n",
+  "review_run_id": "r-20260924T203934374506-review-of-promotion-tests-meet-the-review-and-checkout-guards",
+  "reviewed_base_sha": "77c20349aa33b7ddda106d6b3a35fa62f9549fa5",
+  "reviewed_head_sha": "e5dbe1765ea0776ab97739af551483ee455ecb6f",
+  "reviewed_run_id": "r-20260924T190035866471-promotion-tests-meet-the-review-and-checkout-guards",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T21:41:41.618999+00:00",
+  "total": 90
+}

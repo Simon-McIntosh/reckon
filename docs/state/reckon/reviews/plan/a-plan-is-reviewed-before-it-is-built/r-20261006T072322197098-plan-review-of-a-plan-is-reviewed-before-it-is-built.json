@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T07:30:06.543Z",
+  "dispatched_at": "2026-10-06T07:23:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "interface_budget-1",
+      "reason": "the section must name its net public-definition delta in one unambigous figure, because that figure is the whole interface-budget rule and the two statements in its own text cannot both be true.",
+      "text": "the interface-accounting paragraph says the stripper conversion \"keeps the family at 1481 and the section's net addition is one public definition\", while the done-when says \"public_definitions at the first node's head is exactly one higher than at its base and at the second node's head equal to its base\"; read from the actual base these disagree (1480\u21921481\u21921481 is a net +1, not a return to base), and the section's \"nothing is retired, because the identity digest and the prose walk keep their names\" clause omits the interim public `strip_tags` (`reckon/_plan_html.py:1880`) it does retire to `_strip_tags`",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:296",
+      "id": "duplicate_owner-1",
+      "reason": "both modules live in the `reckon.crew` package, which the plan's own house rule (a shared-package definition stays private) admits, so this is a consistency note the \u00a722 author can record rather than a design change.",
+      "text": "\u00a722 reads `dispatch._normalised_words` (a `_`-prefixed tokeniser) from `plan_review.py` while \u00a716 elsewhere treats a cross-module private read as a defect it repairs (`_REVIEW_SIDECAR_NAME`)",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "ee9d447dd6961af68359634ca654dbb9fe295081de4ab25ab8cddd11a6c67da1",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 183,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T072322197098-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "fdc0dacdeb389cae1db29bbbacf73f584b02ba49",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `section_prose` hides boundary discovery, skip-tag subtraction, entity decoding and whitespace normalisation behind one reader, and `_review_coverage` (`reckon/crew/plan_review.py:510`) already joins `list_plan_reviews` to `roadmap.implementable_sections` with no walk of its own.",
+    "duplicate_owner": "a finding \u2014 \u00a721's report-directory consolidation is correct (`delivered_reports` at `reckon/crew/plan_review.py:880` rebuilds the same `reports_dir()/project/\"plan-review\"/slug` root that `review_report_directory` builds at `:791`), but \u00a722 introduces a second consumer of a module-private tokeniser across module boundaries \u2014 `dispatch._normalised_words` (`reckon/crew/dispatch.py:289`) read from `reckon/crew/plan_review.py` \u2014 beside the plan's own rule that a shared tokeniser earns a shared name.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a716's interface accounting and its done-when state the public_definitions delta inconsistently, so a reader cannot check the one rule the section exists to satisfy.",
+    "reuse_search": "pass \u2014 the section runs its own censuses and reuses the named machinery; the prose-reader census `grep -rn 'stripped_strings\\|get_text(' reckon/` returns 14 lines and the three plan-prose readers (`reckon/mcp_views.py:2072` `authored_plan_text`, `reckon/mcp_views.py:2238` `_section_response`, `reckon/crew/dispatch.py:343` `_plan_section_text`) converge on `section_prose`; `_TAG_RE` (`reckon/_plan_html.py:1876`), `_PROSE_SKIP_TAGS` (`:1877`), `section_record_id` (`:90`), `structured_section_spans` (`:415`), `is_implementable_section` (`reckon/_schema.py:788`) and `review_report_directory` (`reckon/crew/plan_review.py:791`) are all cited and extended rather than rebuilt.",
+    "thin_wrapper": "pass \u2014 \u00a723 justifies extending `routing._store_delivered_plan_review` (`reckon/crew/routing.py:2582`) into the single public `store_delivered_reviews` rather than adding a parallel store step, and \u00a716 merges the span rule into one private function both projections call."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "26ca19409dda668832f554406818ad8b98561beb0262bc1b48b017f4fd98efe7",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "f2849c3493f957459b8b3f4d726d09a8e4f3328eb245a3a643cade4b8f16b4cf",
+    "s22": "b8ae65d85e368ea7985e864219f0a45466640ec14ada439ac6f591ced31c227c",
+    "s23": "36f4cce8c95f9d8d1a023837f0c57f9d3b931f8138d4ac59029232bb31778768",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:57:41.735861+00:00"
+}

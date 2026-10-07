@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "zero added failures: the reviewed run's baseline_suite (revision 57dfae0345a5d8ecee9377da3706e8b1ea5dee3b, logs/base-arm.log) and after_suite (revision 0bdecbed5, logs/head-arm.log) each report 0 FAILED/ERROR node ids, and the head gate file is new so it adds none.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-10-02T10:04:19.130Z",
+  "dispatched_at": "2026-10-02T09:27:18Z",
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py",
+      "line": "64",
+      "severity": "follow-on",
+      "text": "follow-on: the parametrized fleets include a handed-off and a bare pointer but no still-working disposition, the one branch where closure_disposition_valid depends on the pointer's current classification; a regression that mishandles still-working would leave the committed equivalence test green. Fix: add a fleet whose pointer classifies running under a still-working disposition."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records/logs/node-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node gate log carries no header naming its revision, tree, command, module.__file__ and cwd, unlike base-arm.log and head-arm.log, so its 4-passed result cannot be tied to a revision from the log alone. Fix: have the gate write the same header the arms do."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "Read commit by commit against base 57dfae0345a5d8ecee9377da3706e8b1ea5dee3b; three files (+196/-7): promotion.py replaces the drain call with _unreconciled_live_runs, a new 130-line test, and a 28-line evidence fragment.",
+    "done_when": "The done-when names a test that the bounded read gives the same answer as the full read on a synthetic repository, plus a negative control; tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py asserts equality to runs.drain (4 passed, EXIT=0) and the declared mutation reddens it (EXIT=1).",
+    "goal": "The node's goal is that the promotion's fleet-state reading computes only the fields its ledger row records; reckon/crew/promotion.py:6119 _fleet_state_reading now derives unreconciled_runs from the live pointers alone instead of running the closure drain.",
+    "manifest": "Read; status complete, baseline_suite and after_suite readable with 0 failures each, negative_control_log names logs/negative-control.log (EXIT=1).",
+    "write_paths": "Declared promotion.py, the new test, an evidence fragment and a figures directory; the implied diff touches promotion.py, the test and the fragment, all declared write paths, and the declared figures directory is unemitted."
+  },
+  "justifications": {
+    "durability": "test_the_bounded_reading_does_not_run_the_closure_drain fails when the drain is reinstated (logs/negative-control.log, EXIT=1), and test_the_bounded_reading_agrees_with_the_full_drain compares the reading to runs.drain, an independent reference that would fail on divergence; but the committed fleets carry no still-working disposition, the one branch where closure_disposition_valid turns on the current classification.",
+    "evidence": "the gate tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py (4 passed, EXIT=0) and both 18-minute suite arms (logs/base-arm.log, logs/head-arm.log, 259 passed EXIT=0 each) are complete and header'd, and logs/negative-control.log reddens EXIT=1; deducted because node-gate.log carries no revision/tree/command header.",
+    "fit": "_unreconciled_live_runs (reckon/crew/promotion.py:6088) mirrors the drain's per-pointer loop and reuses closure_disposition_valid and local_liveness unchanged, with a local recovery import matching the sibling _fleet_state_reading; the row.get(\"classification\") or row.get(\"recovery_classification\") fallback is a needless expression difference from the drain though classification is never empty.",
+    "goal_fidelity": "_fleet_state_reading (reckon/crew/promotion.py:6119) drops the drain(project) call and derives unreconciled_runs through _unreconciled_live_runs (reckon/crew/promotion.py:6088) from the pointers it already lists, and I reproduced the count equal to runs.drain on handed-off, unknown and still-working fleets.",
+    "scope_discipline": "the base..head diff is confined to reckon/crew/promotion.py, tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py and the evidence fragment, all declared write paths; the declared figures directory is unemitted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the promotion's fleet-state reading computes only the fields its ledger row records; reckon/crew/promotion.py:6119 _fleet_state_reading now derives unreconciled_runs from the live pointers alone instead of running the closure drain.\nVERDICT done_when: The done-when names a test that the bounded read gives the same answer as the full read on a synthetic repository, plus a negative control; tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py asserts equality to runs.drain (4 passed, EXIT=0) and the declared mutation reddens it (EXIT=1).\nVERDICT write_paths: Declared promotion.py, the new test, an evidence fragment and a figures directory; the implied diff touches promotion.py, the test and the fragment, all declared write paths, and the declared figures directory is unemitted.\nVERDICT manifest: Read; status complete, baseline_suite and after_suite readable with 0 failures each, negative_control_log names logs/negative-control.log (EXIT=1).\nVERDICT diff: Read commit by commit against base 57dfae0345a5d8ecee9377da3706e8b1ea5dee3b; three files (+196/-7): promotion.py replaces the drain call with _unreconciled_live_runs, a new 130-line test, and a 28-line evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: _fleet_state_reading (reckon/crew/promotion.py:6119) drops the drain(project) call and derives unreconciled_runs through _unreconciled_live_runs (reckon/crew/promotion.py:6088) from the pointers it already lists, and I reproduced the count equal to runs.drain on handed-off, unknown and still-working fleets.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py (4 passed, EXIT=0) and both 18-minute suite arms (logs/base-arm.log, logs/head-arm.log, 259 passed EXIT=0 each) are complete and header'd, and logs/negative-control.log reddens EXIT=1; deducted because node-gate.log carries no revision/tree/command header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the base..head diff is confined to reckon/crew/promotion.py, tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py and the evidence fragment, all declared write paths; the declared figures directory is unemitted.\nSCORE durability: 17\nJUSTIFICATION durability: test_the_bounded_reading_does_not_run_the_closure_drain fails when the drain is reinstated (logs/negative-control.log, EXIT=1), and test_the_bounded_reading_agrees_with_the_full_drain compares the reading to runs.drain, an independent reference that would fail on divergence; but the committed fleets carry no still-working disposition, the one branch where closure_disposition_valid turns on the current classification.\nSCORE fit: 18\nJUSTIFICATION fit: _unreconciled_live_runs (reckon/crew/promotion.py:6088) mirrors the drain's per-pointer loop and reuses closure_disposition_valid and local_liveness unchanged, with a local recovery import matching the sibling _fleet_state_reading; the row.get(\"classification\") or row.get(\"recovery_classification\") fallback is a needless expression difference from the drain though classification is never empty.\nFINDING tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py:64 follow-on: the parametrized fleets include a handed-off and a bare pointer but no still-working disposition, the one branch where closure_disposition_valid depends on the pointer's current classification; a regression that mishandles still-working would leave the committed equivalence test green. Fix: add a fleet whose pointer classifies running under a still-working disposition.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records/logs/node-gate.log:1 follow-on: the node gate log carries no header naming its revision, tree, command, module.__file__ and cwd, unlike base-arm.log and head-arm.log, so its 4-passed result cannot be tied to a revision from the log alone. Fix: have the gate write the same header the arms do.",
+  "review_run_id": "r-20261002T092656510580-review-of-a-promotion-reads-only-the-fleet-fields-it-records",
+  "reviewed_base_sha": "57dfae0345a5d8ecee9377da3706e8b1ea5dee3b",
+  "reviewed_head_sha": "e2934c4ef9969e2860888ef8b2dc86c58cfa4f53",
+  "reviewed_run_id": "r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T09:49:14.425587+00:00",
+  "total": 91
+}

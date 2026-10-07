@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 13,
+  "added_failure_ids": [
+    "tests/test_a_repair_hold_names_its_cause.py::test_a_repair_held_by_an_exclusion_names_the_exclusion",
+    "tests/test_a_repair_hold_names_its_cause.py::test_a_repair_whose_only_lane_is_in_harness_is_held_with_a_reason",
+    "tests/test_a_repair_hold_names_its_cause.py::test_a_spawnable_lane_still_dispatches_the_composition",
+    "tests/test_reflex_dispatches_one_repair.py::test_a_promoted_repair_leaves_the_round_dispatching_nothing",
+    "tests/test_reflex_dispatches_one_repair.py::test_a_second_sweep_over_a_live_round_dispatches_nothing",
+    "tests/test_reflex_dispatches_one_repair.py::test_a_three_finding_review_dispatches_exactly_one_repair",
+    "tests/test_reflex_dispatches_one_repair.py::test_the_repair_keeps_the_reviewed_runs_test_paths",
+    "tests/test_reflex_dispatches_one_repair.py::test_the_repair_worktree_is_cut_from_the_reviewed_head",
+    "tests/test_reflex_dispatches_one_repair.py::test_the_scope_drops_record_paths_but_keeps_source_paths",
+    "tests/test_repair_skips_out_of_repo_findings.py::test_a_mixed_round_dispatches_with_only_the_repository_path",
+    "tests/test_repair_skips_out_of_repo_findings.py::test_a_standing_suite_is_not_inherited_by_an_unarmed_run",
+    "tests/test_repair_skips_out_of_repo_findings.py::test_the_reflex_composes_an_unarmed_repair_for_a_malformed_standing_suite",
+    "tests/test_repair_skips_out_of_repo_findings.py::test_the_repair_carries_the_reviewed_runs_suite_command"
+  ],
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite pair, so this review ran arms at the reviewed base (pre-change tree 3c4f5cd72, 27 passed EXIT=0) and the reviewed head (939f3a23e, 13 failed/17 passed EXIT=1) over tests/test_reflex_dispatches_one_repair.py, tests/test_repair_skips_out_of_repo_findings.py and tests/test_a_repair_hold_names_its_cause.py, and derived the count through the store's own reader (reckon/crew/review.py:1068): 13; a positive control injecting one FAILED id into the head log returns 14.",
+  "backend": "clive",
+  "base_log_revision": "3c4f5cd72",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:2484"
+  ],
+  "completed_at": "2026-10-01T02:31:07.374Z",
+  "dispatched_at": "2026-10-01T02:20:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2227",
+      "severity": "blocking",
+      "text": "blocking: merging this change leaves the tree red. The new resume branch supersedes the dispatch behaviour asserted by existing tests: at the reviewed head 939f3a23e my arm over tests/test_reflex_dispatches_one_repair.py, tests/test_repair_skips_out_of_repo_findings.py and tests/test_a_repair_hold_names_its_cause.py gives 13 failed/17 passed/EXIT=1, against 27 passed/EXIT=0 at the pre-change tree, so 13 node ids are added and main goes red on promotion; the node's fence excluded the files it must update, so a scope extension was required before landing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's follow_ons name ten failing tests across two files, but the change's own population fails thirteen across three \u2014 the three in tests/test_a_repair_hold_names_its_cause.py (test_a_repair_held_by_an_exclusion_names_the_exclusion, test_a_repair_whose_only_lane_is_in_harness_is_held_with_a_reason, test_a_spawnable_lane_still_dispatches_the_composition) are named nowhere, so the disclosed impact under-reports by three."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1887",
+      "severity": "follow-on",
+      "text": "follow-on: a resume the reflex launched is recognised only by its recorded round status, so a resumed turn that ends without answering the findings leaves status \"resumed\" for the same round_id and the reflex never re-attempts it, whereas the dispatch path re-attempts a died repair through _repair_in_flight (recovery.py:1942); the composed findings ride the one advice and can be lost."
+    }
+  ],
+  "head_log_revision": "939f3a23e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 3c4f5cd72; afa5c04f2 adds _repair_resumed_for_round and _repair_resume_advice and the resume branch in dispatch_repair_for_run (+108 in recovery.py, +291 test), 939f3a23e adds the evidence fragment only.",
+    "done_when": "the emitted done-when is the plan's \u00a73 measure; the node's gate tests/test_the_reflex_resumes_an_unpromoted_run.py drives a stored finding through the reflex and observes one resume carrying the finding id and no dispatch, and I re-ran it at the reviewed head 939f3a23e (3 passed, EXIT=0).",
+    "goal": "the node replaces the reflex's repair-by-dispatch of an unpromoted reviewed run with a resume of the reviewed run itself, delivering the composed findings as advice (reckon/crew/recovery.py:2216-2275); the landed branch does exactly that.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run/manifest.md; status complete, commits afa5c04f2 and 939f3a23e over base 3c4f5cd72, gate.log named with 3 passed EXIT=0, negative-control.log 2 failed/EXIT=1, follow_ons listing ten failing sibling tests \u2014 but it omits three more the change also fails.",
+    "write_paths": "declared paths are reckon/crew/recovery.py, tests/test_the_reflex_resumes_an_unpromoted_run.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/the-reflex-resumes-an-unpromoted-run.html; the diff (git diff --numstat 3c4f5cd72 939f3a23e) is exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "the added cases redden under the reinstated regression (negative control 2 failed EXIT=1, reproduced), but tests/test_the_reflex_resumes_an_unpromoted_run.py:291 asserts only recorded.get(\"status\") != \"resumed\", a one-sided check that holds whether the status is \"refused\" or absent.",
+    "evidence": "the node's gate is genuine and falsifiable \u2014 I reproduced its negative control (resume branch disabled: 2 failed/1 passed, EXIT=1) and the gate passes (3 passed, EXIT=0) \u2014 but the node's own population under-measures: my arms give 13 failing tests at head against 27 passed at base, three of them unnamed in the manifest.",
+    "fit": "_repair_resumed_for_round and _repair_resume_advice are named by mechanism beside _record_repair_dispatch (recovery.py:1887, 1904), the branch reuses resumption._resume exactly as a hand-typed resume does, and no plan, phase, ticket or version label appears in the new code.",
+    "goal_fidelity": "recovery.py:2227-2275 routes an unpromoted, exited, finding-bearing run to resumption._resume with the composed brief, so the run that owns the worktree answers the finding \u2014 the plan \u00a73 re-land the coordinator asked for \u2014 but the change lands a suite regression it cannot itself repair (see finding).",
+    "scope_discipline": "the diff stays inside the three declared paths (git diff --numstat 3c4f5cd72 939f3a23e), but the change's required companion edits \u2014 the sibling tests asserting the superseded dispatch behaviour \u2014 lie outside the fence and were not obtained by a scope extension, so recovery.py:2227 lands the tree red."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node replaces the reflex's repair-by-dispatch of an unpromoted reviewed run with a resume of the reviewed run itself, delivering the composed findings as advice (reckon/crew/recovery.py:2216-2275); the landed branch does exactly that.\nVERDICT done_when: the emitted done-when is the plan's \u00a73 measure; the node's gate tests/test_the_reflex_resumes_an_unpromoted_run.py drives a stored finding through the reflex and observes one resume carrying the finding id and no dispatch, and I re-ran it at the reviewed head 939f3a23e (3 passed, EXIT=0).\nVERDICT write_paths: declared paths are reckon/crew/recovery.py, tests/test_the_reflex_resumes_an_unpromoted_run.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/the-reflex-resumes-an-unpromoted-run.html; the diff (git diff --numstat 3c4f5cd72 939f3a23e) is exactly those three files and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run/manifest.md; status complete, commits afa5c04f2 and 939f3a23e over base 3c4f5cd72, gate.log named with 3 passed EXIT=0, negative-control.log 2 failed/EXIT=1, follow_ons listing ten failing sibling tests \u2014 but it omits three more the change also fails.\nVERDICT diff: read commit by commit against base 3c4f5cd72; afa5c04f2 adds _repair_resumed_for_round and _repair_resume_advice and the resume branch in dispatch_repair_for_run (+108 in recovery.py, +291 test), 939f3a23e adds the evidence fragment only.\nCALL_SITES: reckon/crew/recovery.py:2484\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery.py:2227-2275 routes an unpromoted, exited, finding-bearing run to resumption._resume with the composed brief, so the run that owns the worktree answers the finding \u2014 the plan \u00a73 re-land the coordinator asked for \u2014 but the change lands a suite regression it cannot itself repair (see finding).\nSCORE evidence: 16\nJUSTIFICATION evidence: the node's gate is genuine and falsifiable \u2014 I reproduced its negative control (resume branch disabled: 2 failed/1 passed, EXIT=1) and the gate passes (3 passed, EXIT=0) \u2014 but the node's own population under-measures: my arms give 13 failing tests at head against 27 passed at base, three of them unnamed in the manifest.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the diff stays inside the three declared paths (git diff --numstat 3c4f5cd72 939f3a23e), but the change's required companion edits \u2014 the sibling tests asserting the superseded dispatch behaviour \u2014 lie outside the fence and were not obtained by a scope extension, so recovery.py:2227 lands the tree red.\nSCORE durability: 18\nJUSTIFICATION durability: the added cases redden under the reinstated regression (negative control 2 failed EXIT=1, reproduced), but tests/test_the_reflex_resumes_an_unpromoted_run.py:291 asserts only recorded.get(\"status\") != \"resumed\", a one-sided check that holds whether the status is \"refused\" or absent.\nSCORE fit: 19\nJUSTIFICATION fit: _repair_resumed_for_round and _repair_resume_advice are named by mechanism beside _record_repair_dispatch (recovery.py:1887, 1904), the branch reuses resumption._resume exactly as a hand-typed resume does, and no plan, phase, ticket or version label appears in the new code.\nFINDING reckon/crew/recovery.py:2227 blocking: merging this change leaves the tree red. The new resume branch supersedes the dispatch behaviour asserted by existing tests: at the reviewed head 939f3a23e my arm over tests/test_reflex_dispatches_one_repair.py, tests/test_repair_skips_out_of_repo_findings.py and tests/test_a_repair_hold_names_its_cause.py gives 13 failed/17 passed/EXIT=1, against 27 passed/EXIT=0 at the pre-change tree, so 13 node ids are added and main goes red on promotion; the node's fence excluded the files it must update, so a scope extension was required before landing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run/manifest.md:16 follow-on: the manifest's follow_ons name ten failing tests across two files, but the change's own population fails thirteen across three \u2014 the three in tests/test_a_repair_hold_names_its_cause.py (test_a_repair_held_by_an_exclusion_names_the_exclusion, test_a_repair_whose_only_lane_is_in_harness_is_held_with_a_reason, test_a_spawnable_lane_still_dispatches_the_composition) are named nowhere, so the disclosed impact under-reports by three.\nFINDING reckon/crew/recovery.py:1887 follow-on: a resume the reflex launched is recognised only by its recorded round status, so a resumed turn that ends without answering the findings leaves status \"resumed\" for the same round_id and the reflex never re-attempts it, whereas the dispatch path re-attempts a died repair through _repair_in_flight (recovery.py:1942); the composed findings ride the one advice and can be lost.\nREVISION: 939f3a23e4f116105abc4006976167cd59093bdd\nreviewed_base_sha: 3c4f5cd72081bed2cb7d4d55c605d6fcc7a4f556\n",
+  "review_run_id": "r-20261001T021948051014-review-of-the-reflex-resumes-an-unpromoted-run",
+  "reviewed_base_sha": "3c4f5cd72081bed2cb7d4d55c605d6fcc7a4f556",
+  "reviewed_head_sha": "939f3a23e4f116105abc4006976167cd59093bdd",
+  "reviewed_run_id": "r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run",
+  "reviewer_run_id": "r-20261001T021948051014-review-of-the-reflex-resumes-an-unpromoted-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.057122+00:00",
+  "total": 5
+}

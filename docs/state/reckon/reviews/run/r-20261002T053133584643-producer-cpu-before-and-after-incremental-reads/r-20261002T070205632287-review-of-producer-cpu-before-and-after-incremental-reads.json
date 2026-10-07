@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T07:41:54.844Z",
+  "dispatched_at": "2026-10-02T07:02:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T053133584643-producer-cpu-before-and-after-incremental-reads/driver.py",
+      "line": "324",
+      "severity": "blocking",
+      "text": "blocking: the report's candidate 2 rests on the claim that the registration carries no bytes_parsed_last_poll, but wait_registration globs crew/watch/* and reads the first sorted entry, which is the seat/lock file rather than the registration written by runs.py:1181 (base name plus \".registration\"); the actual registration (arm-after/home/crew/watch/synthshape-4675207fd0d8.lock.registration) carries bytes_parsed_last_poll: 0, so the field is present with value zero rather than absent, and the follow_on built on its absence sends a repair node after a phantom; the cursor was also sampled only after the streams stopped, so the record cannot yet show whether the incremental reader engaged during growth, and the claim and follow_on should be corrected to that state."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed run lands no commit \u2014 its worktree sits at c47424bd, equal to its base and head \u2014 so there is no diff; the reviewed work is the measurement harness (driver.py, summarise.py, facts.py) and producer-cpu.md under the run directory.",
+    "done_when": "the done_when is the dispatch's evidence fence (producer CPU over nine runs, pidstat 60 s, before and after, stated in the landing); pidstat.txt and arm.json for both arms are on disk and reconcile with the captured figures, and the covering suite arms are logged (suite-before-tree.log 43 passed, suite-after-tree.log 49 passed).",
+    "goal": "the node's goal is to measure the producer's CPU over a nine-run shape before and after incremental stream reads; driver.py launches `reckon crew watch --project synthshape` against nine synthetic growing streams once from 42eddfe (the first parent of the \u00a711 merge bebae5a7a) and once from 233f442b (main, which contains \u00a711), and records pidstat mean 25.35 vs 25.22 in the arm JSONs and producer-cpu.md.",
+    "manifest": "read; it records the measure, both arm pidstat commands and their means, baseline_suite/after_suite (0 failures each), the negative-control declaration `none: a measurement with no product change to falsify`, and two follow_ons.",
+    "write_paths": "this node changes no repository file \u2014 the reviewed manifest lists commits: [] and changed_paths: [] \u2014 and its writes stay inside the run directory, with a dispatch-authorised copy of the report to crew/reports/reckon/producer-cpu.md."
+  },
+  "justifications": {
+    "durability": "the node changes no product code so adds no regression guard, and its harness (driver.py) is uncommitted and reads /tmp scratch (driver.py:4), so the measurement is not re-runnable from the repository once the scratch is reaped.",
+    "evidence": "the CPU and /proc/io instruments are recorded and reconcile with producer-cpu.md (driver.py:367-431; before rchar window 1,686,849,154 B, after 1,756,219,772 B), but one recorded evidence item is false (see FINDING).",
+    "fit": "driver.py, summarise.py and facts.py use plain descriptive names and carry no plan, sprint or ticket label; the only grep hit is the synthetic pointer field value \"phase\": \"working\" (driver.py:269), which is run data rather than a plan label.",
+    "goal_fidelity": "driver.py:368 runs pidstat -u -p PID 1 60 on the producer's own process for each arm, and arm-before/arm-after arm.json carry mean 25.35/25.22 and peak 49/51, matching producer-cpu.md.",
+    "scope_discipline": "the reviewed manifest lists commits: [] and changed_paths: [], a read-only measurement, and its writes stay under the run directory named in orientation_write_paths; no plan, index or product file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure the producer's CPU over a nine-run shape before and after incremental stream reads; driver.py launches `reckon crew watch --project synthshape` against nine synthetic growing streams once from 42eddfe (the first parent of the \u00a711 merge bebae5a7a) and once from 233f442b (main, which contains \u00a711), and records pidstat mean 25.35 vs 25.22 in the arm JSONs and producer-cpu.md.\nVERDICT done_when: the done_when is the dispatch's evidence fence (producer CPU over nine runs, pidstat 60 s, before and after, stated in the landing); pidstat.txt and arm.json for both arms are on disk and reconcile with the captured figures, and the covering suite arms are logged (suite-before-tree.log 43 passed, suite-after-tree.log 49 passed).\nVERDICT write_paths: this node changes no repository file \u2014 the reviewed manifest lists commits: [] and changed_paths: [] \u2014 and its writes stay inside the run directory, with a dispatch-authorised copy of the report to crew/reports/reckon/producer-cpu.md.\nVERDICT manifest: read; it records the measure, both arm pidstat commands and their means, baseline_suite/after_suite (0 failures each), the negative-control declaration `none: a measurement with no product change to falsify`, and two follow_ons.\nVERDICT diff: the reviewed run lands no commit \u2014 its worktree sits at c47424bd, equal to its base and head \u2014 so there is no diff; the reviewed work is the measurement harness (driver.py, summarise.py, facts.py) and producer-cpu.md under the run directory.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nSCORE evidence: 14\nSCORE scope_discipline: 19\nSCORE durability: 10\nSCORE fit: 17\nJUSTIFICATION goal_fidelity: driver.py:368 runs pidstat -u -p PID 1 60 on the producer's own process for each arm, and arm-before/arm-after arm.json carry mean 25.35/25.22 and peak 49/51, matching producer-cpu.md.\nJUSTIFICATION evidence: the CPU and /proc/io instruments are recorded and reconcile with producer-cpu.md (driver.py:367-431; before rchar window 1,686,849,154 B, after 1,756,219,772 B), but one recorded evidence item is false (see FINDING).\nJUSTIFICATION scope_discipline: the reviewed manifest lists commits: [] and changed_paths: [], a read-only measurement, and its writes stay under the run directory named in orientation_write_paths; no plan, index or product file is touched.\nJUSTIFICATION durability: the node changes no product code so adds no regression guard, and its harness (driver.py) is uncommitted and reads /tmp scratch (driver.py:4), so the measurement is not re-runnable from the repository once the scratch is reaped.\nJUSTIFICATION fit: driver.py, summarise.py and facts.py use plain descriptive names and carry no plan, sprint or ticket label; the only grep hit is the synthetic pointer field value \"phase\": \"working\" (driver.py:269), which is run data rather than a plan label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T053133584643-producer-cpu-before-and-after-incremental-reads/driver.py:324 blocking: the report's candidate 2 rests on the claim that the registration carries no bytes_parsed_last_poll, but wait_registration globs crew/watch/* and reads the first sorted entry, which is the seat/lock file rather than the registration written by runs.py:1181 (base name plus \".registration\"); the actual registration (arm-after/home/crew/watch/synthshape-4675207fd0d8.lock.registration) carries bytes_parsed_last_poll: 0, so the field is present with value zero rather than absent, and the follow_on built on its absence sends a repair node after a phantom; the cursor was also sampled only after the streams stopped, so the record cannot yet show whether the incremental reader engaged during growth, and the claim and follow_on should be corrected to that state.",
+  "review_run_id": "r-20261002T070205632287-review-of-producer-cpu-before-and-after-incremental-reads",
+  "reviewed_base_sha": "c47424bd75e134cee6fa51e3b30948a11253372d",
+  "reviewed_head_sha": "c47424bd75e134cee6fa51e3b30948a11253372d",
+  "reviewed_run_id": "r-20261002T053133584643-producer-cpu-before-and-after-incremental-reads",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T070205632287-review-of-producer-cpu-before-and-after-incremental-reads",
+  "scores": {
+    "durability": 10,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T07:30:30.885906+00:00",
+  "total": 77
+}

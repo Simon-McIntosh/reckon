@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "arm_logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/logs/arm-base.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/logs/arm-head.log"
+    ],
+    "control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203535328300-review-of-test-crew-follows-the-shipped-contracts/logs/added-failures-derivation.log",
+    "controls": "the same parser reads 16 ids out of the base log and 5 out of the head log, and renaming one head failure to a new id makes the same call return 1 with that id, so the zero is a measured set difference rather than an empty parse",
+    "derivation": "reckon.crew.review.added_failures_from_gate_logs over the two gate logs the reviewed run's own baseline_suite and after_suite name; the base arm printed 16 failure ids and the head arm 5, all five also present at base, so the set difference is empty"
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1392 _grant_landing_write_paths",
+    "reckon/crew/dispatch.py:1354 _landing_fragment_paths",
+    "reckon/crew/promotion.py:291 _require_commits_beyond_base",
+    "reckon/crew/promotion.py:78 scoped_diff_stat",
+    "reckon/crew/promotion.py:3763 complete",
+    "reckon/crew/recovery.py:3865 classify_pointer"
+  ],
+  "completed_at": "2026-09-29T21:16:08.899Z",
+  "dispatched_at": "2026-09-29T20:35:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md",
+      "line": "10",
+      "text": "the tests field, and the command of both baseline_suite and after_suite, carry the unsubstituted placeholders <tree> and <bt> where the field rule asks for the gate command that actually ran; the substituted command exists only in the arm logs' own '# command:' header (logs/arm-base.log:4), so a reader holding the manifest alone cannot re-run the gate the record scores."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md",
+      "line": "20",
+      "text": "the stated ruff figures '26 findings at base, 21 at head' do not reproduce as given: measured against the same blobs with the repository's own pyproject and the shared ruff 0.16.4, the base files carry 24 findings (13 + 11) and the head files 21 (11 + 10). The head figure and the zero-added conclusion hold \u2014 the head's finding set is a strict subset of the base's, losing only the fixed '/tmp/node-a-manifest.md' S108 \u2014 but the base figure is overstated by two and no log backs either number."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md",
+      "line": "20",
+      "text": "the gate's own stop condition was not honoured: 'Stop and log df if /tmp has under 5 GB free', and logs/df-at-start.txt records 2.8 GB free before the base arm. Both arms ran in /tmp anyway and it ended at 1.1 GB free (98%), as logs/arm-base.log and logs/arm-head.log record; the manifest discloses the figure, but the run proceeded where its measure said stop."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the single commit a8ac415ae against base e4b64b7aa commit by commit: three files, 260 insertions and 36 deletions, no product source touched, assertions net +3 (7 added, 4 replaced in place).",
+    "done_when": "the done-when names eleven ids, a base arm and a head arm, a new two-process case and an executed negative control; the arms are logs/arm-base.log (16 failed, 259 passed) and logs/arm-head.log (5 failed, 271 passed), every id has its own base and head log, and the negative control ran \u2014 but the manifest's tests field and both arm commands carry unsubstituted placeholders.",
+    "goal": "the node's goal is to bring the eleven stale tests/test_crew.py expectations and the shared manifest path in line with the shipped contracts, and all eleven ids are green at head \u2014 each has a head log under logs/head-ids at a8ac415ae ending EXIT=0 \u2014 with the helper's manifest path per-test in both tests/test_crew.py and tests/test_budget.py.",
+    "manifest": "read the manifest and checked its claims against the artefacts on disk: the arms, the eleven per-id logs, the negative control and the df readings match, but the tests field names <tree>/<bt> rather than the command that ran and the stated ruff base figure does not reproduce.",
+    "write_paths": "read the manifest's declared scope against what the diff wrote: the three changed paths are tests/test_crew.py, tests/test_budget.py and the node's own landing fragment, each inside the granted set, and the reviewed worktree is clean at a8ac415ae."
+  },
+  "justifications": {
+    "durability": "tests/test_crew.py:209 reddens when the fixed path is restored, shown by the executed mutation at logs/negative-control.log:1-6, while tests/test_crew.py:4762 no longer measures promotion's own changed_lines for a parentless head because the base-citation guard at reckon/crew/promotion.py:331 precedes it.",
+    "evidence": "the arms and the negative control are logged with revision, tree, command and module.__file__ headers (logs/arm-base.log:1-5) and their failure id sets reproduce exactly (16 and 5), but the manifest's tests field carries <tree>/<bt> and its stated ruff base figure does not reproduce (logs/ruff-delta-check.log).",
+    "fit": "the added helpers carry mechanism docstrings in the surrounding idiom (tests/test_crew.py:170-196) and the change introduces no plan or ticket identifier, no versioned name and no attribution; the fragment follows its neighbours under docs/evidence/fragments/the-suite-is-green-at-head/.",
+    "goal_fidelity": "the eleven ids the goal names are green at head, each with its own log under logs/head-ids (tests_test_crew.py__test_terminal_phase_without_a_manifest_is_abandoned.log: '1 passed in 6.57s'), and tests/test_crew.py:2986 ends the first run before the second dispatch so the tested contract is the one that shipped.",
+    "scope_discipline": "the diff against base e4b64b7aa is three paths, all inside the declared write scope, with no product source touched; the only change the goal does not imply is the four-line re-wrap of two _record(...) calls at tests/test_budget.py:808-813."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bring the eleven stale tests/test_crew.py expectations and the shared manifest path in line with the shipped contracts, and all eleven ids are green at head \u2014 each has a head log under logs/head-ids at a8ac415ae ending EXIT=0 \u2014 with the helper's manifest path per-test in both tests/test_crew.py and tests/test_budget.py.\nVERDICT done_when: the done-when names eleven ids, a base arm and a head arm, a new two-process case and an executed negative control; the arms are logs/arm-base.log (16 failed, 259 passed) and logs/arm-head.log (5 failed, 271 passed), every id has its own base and head log, and the negative control ran \u2014 but the manifest's tests field and both arm commands carry unsubstituted placeholders.\nVERDICT write_paths: read the manifest's declared scope against what the diff wrote: the three changed paths are tests/test_crew.py, tests/test_budget.py and the node's own landing fragment, each inside the granted set, and the reviewed worktree is clean at a8ac415ae.\nVERDICT manifest: read the manifest and checked its claims against the artefacts on disk: the arms, the eleven per-id logs, the negative control and the df readings match, but the tests field names <tree>/<bt> rather than the command that ran and the stated ruff base figure does not reproduce.\nVERDICT diff: read the single commit a8ac415ae against base e4b64b7aa commit by commit: three files, 260 insertions and 36 deletions, no product source touched, assertions net +3 (7 added, 4 replaced in place).\nCALL_SITES: reckon/crew/dispatch.py:1392 _grant_landing_write_paths, reckon/crew/dispatch.py:1354 _landing_fragment_paths, reckon/crew/promotion.py:291 _require_commits_beyond_base, reckon/crew/promotion.py:78 scoped_diff_stat, reckon/crew/promotion.py:3763 complete, reckon/crew/recovery.py:3865 classify_pointer\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the eleven ids the goal names are green at head, each with its own log under logs/head-ids (tests_test_crew.py__test_terminal_phase_without_a_manifest_is_abandoned.log: '1 passed in 6.57s'), and tests/test_crew.py:2986 ends the first run before the second dispatch so the tested contract is the one that shipped.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms and the negative control are logged with revision, tree, command and module.__file__ headers (logs/arm-base.log:1-5) and their failure id sets reproduce exactly (16 and 5), but the manifest's tests field carries <tree>/<bt> and its stated ruff base figure does not reproduce (logs/ruff-delta-check.log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff against base e4b64b7aa is three paths, all inside the declared write scope, with no product source touched; the only change the goal does not imply is the four-line re-wrap of two _record(...) calls at tests/test_budget.py:808-813.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew.py:209 reddens when the fixed path is restored, shown by the executed mutation at logs/negative-control.log:1-6, while tests/test_crew.py:4762 no longer measures promotion's own changed_lines for a parentless head because the base-citation guard at reckon/crew/promotion.py:331 precedes it.\nSCORE fit: 19\nJUSTIFICATION fit: the added helpers carry mechanism docstrings in the surrounding idiom (tests/test_crew.py:170-196) and the change introduces no plan or ticket identifier, no versioned name and no attribution; the fragment follows its neighbours under docs/evidence/fragments/the-suite-is-green-at-head/.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md:10 the tests field, and the command of both baseline_suite and after_suite, carry the unsubstituted placeholders <tree> and <bt> where the field rule asks for the gate command that actually ran; the substituted command exists only in the arm logs' own '# command:' header (logs/arm-base.log:4), so a reader holding the manifest alone cannot re-run the gate the record scores.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md:20 the stated ruff figures '26 findings at base, 21 at head' do not reproduce as given: measured against the same blobs with the repository's own pyproject and the shared ruff 0.16.4, the base files carry 24 findings (13 + 11) and the head files 21 (11 + 10). The head figure and the zero-added conclusion hold \u2014 the head's finding set is a strict subset of the base's, losing only the fixed '/tmp/node-a-manifest.md' S108 \u2014 but the base figure is overstated by two and no log backs either number.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md:20 the gate's own stop condition was not honoured: 'Stop and log df if /tmp has under 5 GB free', and logs/df-at-start.txt records 2.8 GB free before the base arm. Both arms ran in /tmp anyway and it ended at 1.1 GB free (98%), as logs/arm-base.log and logs/arm-head.log record; the manifest discloses the figure, but the run proceeded where its measure said stop.",
+  "review_run_id": "r-20260929T203535328300-review-of-test-crew-follows-the-shipped-contracts",
+  "reviewed_base_sha": "e4b64b7aa02d536fb9b87dbd2a3db6d45e876041",
+  "reviewed_commits": [
+    "a8ac415ae87e6402df947ec62d03d60990f2fa04"
+  ],
+  "reviewed_head_sha": "a8ac415ae87e6402df947ec62d03d60990f2fa04",
+  "reviewed_manifest": {
+    "bytes": 8578,
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md",
+    "sha256": "46c8723c5bad2a5a0f862fdc1b4cb704c29537931a33c3fac5c958379acd5257"
+  },
+  "reviewed_run_id": "r-20260929T193242157192-test-crew-follows-the-shipped-contracts",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/test-crew-follows-the-shipped-contracts",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-test-crew-follows-the-shipped-contracts",
+  "reviewer_run_id": "r-20260929T203535328300-review-of-test-crew-follows-the-shipped-contracts",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T21:06:37.346474+00:00",
+  "total": 91
+}

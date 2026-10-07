@@ -1,0 +1,32 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T12:39:38.849457+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "the test fails if the classification regresses: tests/test_crew_recovery.py:610 asserts decorated_row[field] == plain_row[field] across classification, recovery, manifest status and next action, and the state assertions in the same test fail if a dead process with a parsed complete manifest stops reading as completed_unpromoted or a live terminal run stops deferring.",
+    "evidence": "the gate measures the done_when and its result is on disk: I independently re-ran the new test at the reviewed commit (1 passed) and the full file (1 failed, 91 passed), matching the recorded base run of 1 failed, 90 passed in /tmp/cot_base2.log so the single failure (test_refusal_recovery_remedy_survives_promotion) is identically pre-existing and zero added.",
+    "fit": "the change follows the idiom around it: it uses the existing home fixture, recovery.classify_pointer, recovery._watch_snapshot and the FLEET_WORKING_STATES/FLEET_UNPROMOTED_STATES vocabulary in recovery.py:2424-2425, the test name and _finished_pointer helper carry no plan labels, and ruff check is flat at 6 findings and ruff format clean on the file.",
+    "goal_fidelity": "the landed change pins exactly what the done_when asserts: the new test in tests/test_crew_recovery.py:604 asserts a dead process with '- **status**: complete' classifies into the terminal family (scoring/completed_unpromoted), a plain 'status: complete' produces a field-for-field identical row, an unreadable manifest stays unreadable rather than complete, and a live process with a terminal manifest stays running/working with its status deferred.",
+    "scope_discipline": "the combined diff be162a17..e7bdb34f touches exactly the three declared write paths \u2014 tests/test_crew_recovery.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html \u2014 with recovery.py left untouched, and the plan diff carries no plan-version/plan-modified edit."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the landed change pins exactly what the done_when asserts: the new test in tests/test_crew_recovery.py:604 asserts a dead process with '- **status**: complete' classifies into the terminal family (scoring/completed_unpromoted), a plain 'status: complete' produces a field-for-field identical row, an unreadable manifest stays unreadable rather than complete, and a live process with a terminal manifest stays running/working with its status deferred.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate measures the done_when and its result is on disk: I independently re-ran the new test at the reviewed commit (1 passed) and the full file (1 failed, 91 passed), matching the recorded base run of 1 failed, 90 passed in /tmp/cot_base2.log so the single failure (test_refusal_recovery_remedy_survives_promotion) is identically pre-existing and zero added.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the combined diff be162a17..e7bdb34f touches exactly the three declared write paths \u2014 tests/test_crew_recovery.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html \u2014 with recovery.py left untouched, and the plan diff carries no plan-version/plan-modified edit.\nSCORE durability: 20\nJUSTIFICATION durability: the test fails if the classification regresses: tests/test_crew_recovery.py:610 asserts decorated_row[field] == plain_row[field] across classification, recovery, manifest status and next action, and the state assertions in the same test fail if a dead process with a parsed complete manifest stops reading as completed_unpromoted or a live terminal run stops deferring.\nSCORE fit: 20\nJUSTIFICATION fit: the change follows the idiom around it: it uses the existing home fixture, recovery.classify_pointer, recovery._watch_snapshot and the FLEET_WORKING_STATES/FLEET_UNPROMOTED_STATES vocabulary in recovery.py:2424-2425, the test name and _finished_pointer helper carry no plan labels, and ruff check is flat at 6 findings and ruff format clean on the file.\n",
+  "review_run_id": "r-20260915T123938849457-review-of-a-finished-run-is-not-stalled-retry",
+  "reviewed_base": "be162a172557f9562c3627efa7875bcedb3eb73e",
+  "reviewed_commit": "e7bdb34f6b0a69dfb99f97af81b6ec07b4122fb4",
+  "reviewed_run_id": "r-20260915T101223859925-a-finished-run-is-not-stalled-retry",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T13:11:34.000000+00:00",
+  "total": 100
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T145007874475-missing-object-branch-of-the-shared-reader-is-exercised/gate.log",
+  "base_log_revision": null,
+  "baseline_suite_log": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/velocity.py:408",
+    "reckon/interface_counts.py:462",
+    "reckon/interface_counts.py:522",
+    "reckon/velocity.py:2550",
+    "reckon/crew/recovery.py:571"
+  ],
+  "completed_at": "2026-10-05T15:08:06.844Z",
+  "dispatched_at": "2026-10-05T14:56:43Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read revision by revision against base 2b947776; ed4ed1ecf adds the two-revision test and deletes the dead None filter with a one-line comment, d2c004db4 adds only the evidence fragment, and no product code outside reckon/interface_counts.py changes.",
+    "done_when": "all four clauses hold at head - the test asks one read_blobs call for the same path at the revision before and after it appears, asserting None beside the present bytes; grep -n \"is not None\" reckon/interface_counts.py yields no hit inside read_trees; the negative control (a raise in the missing branch) reddens the test at EXIT=1; the gate runs the two named files to 9 passed in 39.18s with EXIT=0 and the log ends in a bare EXIT=0 line.",
+    "goal": "the node goal is to exercise velocity.read_blobs's missing-object branch with a test and retire the counter's dead absence filter; the diff adds test_missing_object_answers_none_beside_present_bytes_in_one_call (tests/test_one_blob_reader_serves_velocity_and_the_counter.py:108) and deletes the if text is not None filter at reckon/interface_counts.py:449.",
+    "manifest": "read; it names the two landed revisions ed4ed1ecf and d2c004db4, the gate command with 9 passed EXIT=0, the negative control at 1 failed EXIT=1, and the landing line.",
+    "write_paths": "the declared scope is four paths; the diff changes three - reckon/interface_counts.py, tests/test_one_blob_reader_serves_velocity_and_the_counter.py and docs/evidence/fragments/a-worker-reuses-before-it-writes/missing-object-branch-of-the-shared-reader-is-exercised.html - every one inside the declared set, with the figures directory unused."
+  },
+  "justifications": {
+    "durability": "the new test's assertions are independent of the value under test - blobs[(first, LATER_PATH)] is None reddens under the negative control's raise and blobs[(second, LATER_PATH)] is compared to the on-disk bytes - and the filter removal is covered by test_velocity_interface_counts.py exercising read_trees.",
+    "evidence": "the reviewed run's gate.log records the two named files at 9 passed in 39.18s EXIT=0 and negative-control.log records the mutation reddening the new test at EXIT=1, though the done-when's grep is quoted in manifest prose and the gate log's revision header names the base 2b947776 while its measured tree collects the head's 9 tests.",
+    "fit": "the added helper _git_env and _git_reports_present follow the file's existing _git subprocess idiom and the one-line comment at reckon/interface_counts.py:449 states the mechanism, with no name the naming rules forbid.",
+    "goal_fidelity": "tests/test_one_blob_reader_serves_velocity_and_the_counter.py:108 exercises the missing-object branch and reckon/interface_counts.py:449 deletes the dead filter, exactly the two things the goal names.",
+    "reuse": "the change adds no production definition - it extends the coverage of the existing owner reckon/velocity.py:360 and deletes counter code rather than forking any capability.",
+    "scope_discipline": "every path in the base..head diff lies inside the four declared write paths and the change carries nothing the goal does not imply."
+  },
+  "node": "review-of-missing-object-branch-of-the-shared-reader-is-exercised",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to exercise velocity.read_blobs's missing-object branch with a test and retire the counter's dead absence filter; the diff adds test_missing_object_answers_none_beside_present_bytes_in_one_call (tests/test_one_blob_reader_serves_velocity_and_the_counter.py:108) and deletes the if text is not None filter at reckon/interface_counts.py:449.\nVERDICT done_when: all four clauses hold at head - the test asks one read_blobs call for the same path at the revision before and after it appears, asserting None beside the present bytes; grep -n \"is not None\" reckon/interface_counts.py yields no hit inside read_trees; the negative control (a raise in the missing branch) reddens the test at EXIT=1; the gate runs the two named files to 9 passed in 39.18s with EXIT=0 and the log ends in a bare EXIT=0 line.\nVERDICT write_paths: the declared scope is four paths; the diff changes three - reckon/interface_counts.py, tests/test_one_blob_reader_serves_velocity_and_the_counter.py and docs/evidence/fragments/a-worker-reuses-before-it-writes/missing-object-branch-of-the-shared-reader-is-exercised.html - every one inside the declared set, with the figures directory unused.\nVERDICT manifest: read; it names the two landed revisions ed4ed1ecf and d2c004db4, the gate command with 9 passed EXIT=0, the negative control at 1 failed EXIT=1, and the landing line.\nVERDICT diff: read revision by revision against base 2b947776; ed4ed1ecf adds the two-revision test and deletes the dead None filter with a one-line comment, d2c004db4 adds only the evidence fragment, and no product code outside reckon/interface_counts.py changes.\nCALL_SITES: reckon/velocity.py:408, reckon/interface_counts.py:462, reckon/interface_counts.py:522, reckon/velocity.py:2550, reckon/crew/recovery.py:571\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_one_blob_reader_serves_velocity_and_the_counter.py:108 exercises the missing-object branch and reckon/interface_counts.py:449 deletes the dead filter, exactly the two things the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed run's gate.log records the two named files at 9 passed in 39.18s EXIT=0 and negative-control.log records the mutation reddening the new test at EXIT=1, though the done-when's grep is quoted in manifest prose and the gate log's revision header names the base 2b947776 while its measured tree collects the head's 9 tests.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the base..head diff lies inside the four declared write paths and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the new test's assertions are independent of the value under test - blobs[(first, LATER_PATH)] is None reddens under the negative control's raise and blobs[(second, LATER_PATH)] is compared to the on-disk bytes - and the filter removal is covered by test_velocity_interface_counts.py exercising read_trees.\nSCORE fit: 19\nJUSTIFICATION fit: the added helper _git_env and _git_reports_present follow the file's existing _git subprocess idiom and the one-line comment at reckon/interface_counts.py:449 states the mechanism, with no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition - it extends the coverage of the existing owner reckon/velocity.py:360 and deletes counter code rather than forking any capability.\n",
+  "review_run_id": "r-20261005T145626828742-review-of-missing-object-branch-of-the-shared-reader-is-exercised",
+  "reviewed_base_sha": "2b947776ba588f1a46c6c0bf11be3ca873b8735c",
+  "reviewed_head_sha": "d2c004db4244ad35e3be9b2a1e1516d505e37b0c",
+  "reviewed_run_id": "r-20261005T145007874475-missing-object-branch-of-the-shared-reader-is-exercised",
+  "reviewer_run_id": "r-20261005T145626828742-review-of-missing-object-branch-of-the-shared-reader-is-exercised",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T15:04:47.970648+00:00",
+  "total": 116
+}

@@ -1,0 +1,92 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/stored-phase-advances-past-starting /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/reckon-crew-scratch/r-20261001T191656122403-stored-phase-advances-past-starting/bth2.t7EA tests/test_a_live_run_never_reads_dead.py tests/test_crew_interrupted_phase.py tests/test_directory_row_reads_the_derived_phase.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191656122403-stored-phase-advances-past-starting/logs/arms-head.log",
+    "revision": "0fe686195968803747aca99d8667e4d4aa93f2ce"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T191656122403-stored-phase-advances-past-starting/basetree.WHo3 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/reckon-crew-scratch/r-20261001T191656122403-stored-phase-advances-past-starting/btb2.knXH tests/test_a_live_run_never_reads_dead.py tests/test_crew_interrupted_phase.py tests/test_directory_row_reads_the_derived_phase.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191656122403-stored-phase-advances-past-starting/logs/arms-base.log",
+    "revision": "2c49c045748cd9b00bfd5217ff371410eb8a78e5"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T20:10:17.760Z",
+  "dispatched_at": "2026-10-01T19:59:54Z",
+  "failure_attribution": {},
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "8402",
+      "severity": "follow-on",
+      "text": "follow-on: the spawn-failure branch (and the launch-abandoned branch above it) returns before _publish_stored_phase, so a launch that fails to spawn keeps the stored phase at the pre-spawn label for the whole life of the pointer -- the exact defect this node fixes on the normal path -- even though the exit record it writes carries ended_during='launch', which _delivered_phase would already map to launch-failed. Detected by reading the removed-lines' control flow, not by a test: no test exercises a spawn failure."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "8553",
+      "severity": "follow-on",
+      "text": "follow-on: the stored phase now has two writers with different sources -- the supervisor derives it from the manifest status, and for a cli run observe() rewrites it from the backend-observed phase -- so a late fold can replace the terminal phase the supervisor wrote. The node declares this in its own follow_ons; a single writer of record is the remaining work."
+    },
+    {
+      "file": "tests/test_stored_phase_advances.py",
+      "line": "216",
+      "severity": "follow-on",
+      "text": "follow-on: the gate asserts only the starting->working->complete arc; the attempt-mismatch guard (_record_is_this_attempt) and the discarded-pointer guard (the CrewError catch in _publish_stored_phase) are correct by reading but unasserted, so a later edit could invert either without the gate noticing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 2c49c045748cd9b00bfd5217ff371410eb8a78e5..ba88018d795b7b52f7b86ee5b6e7b681477c7d04 file by file -- dispatch.py +105/-8 (three new private helpers and two call sites), a 219-line new test, and a 27-line evidence fragment; no other file.",
+    "done_when": "the reviewed done-when asks a test to drive a stub run from launch, through its first stream record, to a terminal manifest and assert the stored pointer phase reads starting then working then complete, with a negative control that removes the writer and keeps the phase at starting. tests/test_stored_phase_advances.py:178 does exactly that; I ran it at the reviewed head in a scratch tree (1 passed, EXIT=0) and reproduced the declared control (RECKON_STORED_PHASE_NEGATIVE_CONTROL=phase-write, 1 failed, EXIT=1, phase last read 'starting').",
+    "goal": "the node goal is that the per-run supervisor rewrites a live pointer's stored phase from the pre-spawn label through working to the delivered terminal phase; reckon/crew/dispatch.py:8334 _publish_stored_phase writes `working` once the worker is spawned (called at :8443) and the delivered phase once the worker has exited (called at :8460), reading _PRE_SPAWN_PHASES (:8296) and TERMINAL statuses -> a manifest status in complete/blocked/failed, or launch-failed when the exit record's ended_during is launch (:8320-8329).",
+    "manifest": "read the reviewed run-dir manifest.md; it names the gate 1 passed/EXIT=0, the negative control log, and the base/head arms at 1 failed/23 passed each with the same pre-existing id. I re-derived the arms from the reviewed logs and independently reproduced both.",
+    "write_paths": "the manifest declares four paths (reckon/crew/dispatch.py, tests/test_stored_phase_advances.py, the evidence fragment, and a figures dir); git diff --stat 2c49c045748cd9b00bfd5217ff371410eb8a78e5 ba88018d795b7b52f7b86ee5b6e7b681477c7d04 touches the first three and creates no figures directory."
+  },
+  "justifications": {
+    "durability": "the mechanism is genuinely guarded -- the positive test fails if the writer is removed (the control shows this), so a later refactor that drops _publish_stored_phase turns the gate red. But the gate covers only the happy arc: the attempt-mismatch branch, the discarded-pointer branch, and the spawn-failure branch are asserted by nothing, and for a cli run observe() overwrites the stored phase from the backend log while the supervisor writes the manifest status, so two writers with different sources can disagree, as the node itself records in follow_ons.",
+    "evidence": "every figure is reproducible and I reproduced them. Gate at head: 1 passed, EXIT=0 (logs/reviewer-gate... scratch tree). Negative control: 1 failed, EXIT=1, the log's phase reads 'starting' after 15s waits. Base arm 2c49c045748cd9b00bfd5217ff371410eb8a78e5: 1 failed / 23 passed; head arm ba88018d795b7b52f7b86ee5b6e7b681477c7d04: 1 failed / 23 passed; the one failing id (tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word) is identical on both sides, so the added-failure count is 0. The test file also isolates correctly: it points RECKON_HOME at tmp_path, and _store._config_home reads the env at call time.",
+    "fit": "the helpers follow the module's private-helper idiom with mechanism docstrings, the commit messages are conventional and bodied with no plan label or AI attribution, and the added lines carry no plan/sprint/ticket identifier. One overstated claim: the docstring says the supervisor is the only process that touches the pointer while the run is alive, which observe() callers (the producer, crew observe) also do.",
+    "goal_fidelity": "the advance is implemented on the run's normal life exactly as the followup asks -- starting, then working at spawn, then the delivered terminal phase -- and the phase vocabulary written (working/complete/blocked/failed/launch-failed) matches what dispatch.py already stores elsewhere (observe() fold at :8553, orientation block at :8594/:8650). The gap: the spawn-failure branch (:8402) and the launch-abandoned branch return before _publish_stored_phase, so a launch that never spawns leaves the stored phase at the pre-spawn label, and no test covers it.",
+    "scope_discipline": "git diff --stat 2c49c045748cd9b00bfd5217ff371410eb8a78e5 ba88018d795b7b52f7b86ee5b6e7b681477c7d04 touches exactly reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the declared evidence fragment; nothing outside the fence, and no figures directory was created."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the per-run supervisor rewrites a live pointer's stored phase from the pre-spawn label through working to the delivered terminal phase; reckon/crew/dispatch.py:8334 _publish_stored_phase writes `working` once the worker is spawned (called at :8443) and the delivered phase once the worker has exited (called at :8460), reading _PRE_SPAWN_PHASES (:8296) and TERMINAL statuses -> a manifest status in complete/blocked/failed, or launch-failed when the exit record's ended_during is launch (:8320-8329).\nVERDICT done_when: the reviewed done-when asks a test to drive a stub run from launch, through its first stream record, to a terminal manifest and assert the stored pointer phase reads starting then working then complete, with a negative control that removes the writer and keeps the phase at starting. tests/test_stored_phase_advances.py:178 does exactly that; I ran it at the reviewed head in a scratch tree (1 passed, EXIT=0) and reproduced the declared control (RECKON_STORED_PHASE_NEGATIVE_CONTROL=phase-write, 1 failed, EXIT=1, phase last read 'starting').\nVERDICT write_paths: the manifest declares four paths (reckon/crew/dispatch.py, tests/test_stored_phase_advances.py, the evidence fragment, and a figures dir); git diff --stat 2c49c045748cd9b00bfd5217ff371410eb8a78e5 ba88018d795b7b52f7b86ee5b6e7b681477c7d04 touches the first three and creates no figures directory.\nVERDICT manifest: read the reviewed run-dir manifest.md; it names the gate 1 passed/EXIT=0, the negative control log, and the base/head arms at 1 failed/23 passed each with the same pre-existing id. I re-derived the arms from the reviewed logs and independently reproduced both.\nVERDICT diff: read 2c49c045748cd9b00bfd5217ff371410eb8a78e5..ba88018d795b7b52f7b86ee5b6e7b681477c7d04 file by file -- dispatch.py +105/-8 (three new private helpers and two call sites), a 219-line new test, and a 27-line evidence fragment; no other file.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the advance is implemented on the run's normal life exactly as the followup asks -- starting, then working at spawn, then the delivered terminal phase -- and the phase vocabulary written (working/complete/blocked/failed/launch-failed) matches what dispatch.py already stores elsewhere (observe() fold at :8553, orientation block at :8594/:8650). The gap: the spawn-failure branch (:8402) and the launch-abandoned branch return before _publish_stored_phase, so a launch that never spawns leaves the stored phase at the pre-spawn label, and no test covers it.\nSCORE evidence: 18\nJUSTIFICATION evidence: every figure is reproducible and I reproduced them. Gate at head: 1 passed, EXIT=0 (logs/reviewer-gate... scratch tree). Negative control: 1 failed, EXIT=1, the log's phase reads 'starting' after 15s waits. Base arm 2c49c045748cd9b00bfd5217ff371410eb8a78e5: 1 failed / 23 passed; head arm ba88018d795b7b52f7b86ee5b6e7b681477c7d04: 1 failed / 23 passed; the one failing id (tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word) is identical on both sides, so the added-failure count is 0. The test file also isolates correctly: it points RECKON_HOME at tmp_path, and _store._config_home reads the env at call time.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2c49c045748cd9b00bfd5217ff371410eb8a78e5 ba88018d795b7b52f7b86ee5b6e7b681477c7d04 touches exactly reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the declared evidence fragment; nothing outside the fence, and no figures directory was created.\nSCORE durability: 15\nJUSTIFICATION durability: the mechanism is genuinely guarded -- the positive test fails if the writer is removed (the control shows this), so a later refactor that drops _publish_stored_phase turns the gate red. But the gate covers only the happy arc: the attempt-mismatch branch, the discarded-pointer branch, and the spawn-failure branch are asserted by nothing, and for a cli run observe() overwrites the stored phase from the backend log while the supervisor writes the manifest status, so two writers with different sources can disagree, as the node itself records in follow_ons.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow the module's private-helper idiom with mechanism docstrings, the commit messages are conventional and bodied with no plan label or AI attribution, and the added lines carry no plan/sprint/ticket identifier. One overstated claim: the docstring says the supervisor is the only process that touches the pointer while the run is alive, which observe() callers (the producer, crew observe) also do.\nFINDING reckon/crew/dispatch.py:8402 follow-on: the spawn-failure branch (and the launch-abandoned branch above it) returns before _publish_stored_phase, so a launch that fails to spawn keeps the stored phase at the pre-spawn label for the whole life of the pointer -- the exact defect this node fixes on the normal path -- even though the exit record it writes carries ended_during='launch', which _delivered_phase would already map to launch-failed. Detected by reading the removed-lines' control flow, not by a test: no test exercises a spawn failure.\nFINDING reckon/crew/dispatch.py:8553 follow-on: the stored phase now has two writers with different sources -- the supervisor derives it from the manifest status, and for a cli run observe() rewrites it from the backend-observed phase -- so a late fold can replace the terminal phase the supervisor wrote. The node declares this in its own follow_ons; a single writer of record is the remaining work.\nFINDING tests/test_stored_phase_advances.py:216 follow-on: the gate asserts only the starting->working->complete arc; the attempt-mismatch guard (_record_is_this_attempt) and the discarded-pointer guard (the CrewError catch in _publish_stored_phase) are correct by reading but unasserted, so a later edit could invert either without the gate noticing.\nreviewed_base_sha: 2c49c045748cd9b00bfd5217ff371410eb8a78e5\nreviewed_head_sha: ba88018d795b7b52f7b86ee5b6e7b681477c7d04\n",
+  "review_run_id": "r-20261001T195934376349-review-of-stored-phase-advances-past-starting",
+  "reviewed_base_sha": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+  "reviewed_head_sha": "ba88018d795b7b52f7b86ee5b6e7b681477c7d04",
+  "reviewed_run_id": "r-20261001T191656122403-stored-phase-advances-past-starting",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T195934376349-review-of-stored-phase-advances-past-starting",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T20:08:51.545705+00:00",
+  "total": 88
+}

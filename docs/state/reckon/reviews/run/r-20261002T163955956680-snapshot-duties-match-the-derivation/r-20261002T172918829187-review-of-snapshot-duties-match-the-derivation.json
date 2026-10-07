@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b63fd85ff95bc003926ed636c4d76a78b0de4470",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:664",
+    "reckon/crew/obligation_snapshot.py:620"
+  ],
+  "completed_at": "2026-10-02T17:58:17.545Z",
+  "dispatched_at": "2026-10-02T17:29:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "561",
+      "severity": "follow-on",
+      "text": "follow-on: FleetState.pointers is built from the same runs.list_live loop and one-line dict comprehension that obligations() writes inline at reckon/crew/obligations.py:647, so the run-id to pointer mapping the two readers both need now has two copies that can drift; sharing one builder would keep the parity the change exists to establish."
+    }
+  ],
+  "head_log_revision": "4a9d1f7a9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 4a9d1f7a9 against b63fd85ff; 92 insertions and 18 deletions across exactly reckon/crew/obligation_snapshot.py and tests/test_obligations_snapshot_is_published.py, no file outside that pair.",
+    "done_when": "the done-when names both parity cases passing at the merged head plus a moved-head case asserting the snapshot and the derivation name the same two heads; the manifest records base arm 2 failed / 33 passed at b63fd85ff, head arm 36 passed at 4a9d1f7a9, and negative-control-2.log 3 failed / 33 passed with the moved-head case among the failures.",
+    "goal": "the goal is that the snapshot's review duties are built through the derivation's own review-duty function; payload_for now routes every REVIEW_CLASSIFICATION_KINDS row through module._review_duty_item, the function obligations() uses, passing the live pointer carried on the snapshot's fleet state, so both readers build the same duty.",
+    "manifest": "read; status complete, baseline_suite and after_suite both carry completed true with matching failure sets (base 2 ids, head none), and the landing line states the gate figure.",
+    "write_paths": "the diff touches exactly the two declared write paths; reckon/crew/obligations.py was in scope and correctly left unmodified, and changed_paths lists the two files the diff changes."
+  },
+  "justifications": {
+    "durability": "the two parity cases pin the snapshot's duty list equal to the derivation's field for field, and the new moved-head case fails under the declared mutation (negative-control-2.log: 3 failed / 33 passed, test_a_moved_head_names_the_same_two_heads among them), so a regression to the snapshot's own duty path is caught rather than silently agreeing.",
+    "evidence": "the gate the done-when names ran at both arms (base-arm-2.log: 2 failed / 33 passed, EXIT=1, the two parity cases; head-arm-2.log: 36 passed, EXIT=0) and the base log shows the defect as a review-missing duty whose snapshot row lacks the head pair; I re-ran the snapshot test file independently in the reviewed tree (independent-head-arm.log: 12 passed, EXIT=0).",
+    "fit": "the change follows the module's idiom, removes the now-redundant scoring and promotable branches from _duty_kind and documents the split, but the run-id to pointer mapping is now built twice (reckon/crew/obligation_snapshot.py:561 and reckon/crew/obligations.py:647).",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:616-625 builds a REVIEW_CLASSIFICATION_KINDS row through module._review_duty_item with the run's pointer, the same call obligations() makes at reckon/crew/obligations.py:663, preserving the scoring-in-flight skip and the promotable-stale grace, which is exactly section 9's done-when.",
+    "scope_discipline": "every path in the diff is a declared write path, the change is one commit, and ruff check and ruff format --check report no finding on the two changed files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the snapshot's review duties are built through the derivation's own review-duty function; payload_for now routes every REVIEW_CLASSIFICATION_KINDS row through module._review_duty_item, the function obligations() uses, passing the live pointer carried on the snapshot's fleet state, so both readers build the same duty.\nVERDICT done_when: the done-when names both parity cases passing at the merged head plus a moved-head case asserting the snapshot and the derivation name the same two heads; the manifest records base arm 2 failed / 33 passed at b63fd85ff, head arm 36 passed at 4a9d1f7a9, and negative-control-2.log 3 failed / 33 passed with the moved-head case among the failures.\nVERDICT write_paths: the diff touches exactly the two declared write paths; reckon/crew/obligations.py was in scope and correctly left unmodified, and changed_paths lists the two files the diff changes.\nVERDICT manifest: read; status complete, baseline_suite and after_suite both carry completed true with matching failure sets (base 2 ids, head none), and the landing line states the gate figure.\nVERDICT diff: read 4a9d1f7a9 against b63fd85ff; 92 insertions and 18 deletions across exactly reckon/crew/obligation_snapshot.py and tests/test_obligations_snapshot_is_published.py, no file outside that pair.\nCALL_SITES: reckon/crew/obligations.py:664, reckon/crew/obligation_snapshot.py:620\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:616-625 builds a REVIEW_CLASSIFICATION_KINDS row through module._review_duty_item with the run's pointer, the same call obligations() makes at reckon/crew/obligations.py:663, preserving the scoring-in-flight skip and the promotable-stale grace, which is exactly section 9's done-when.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate the done-when names ran at both arms (base-arm-2.log: 2 failed / 33 passed, EXIT=1, the two parity cases; head-arm-2.log: 36 passed, EXIT=0) and the base log shows the defect as a review-missing duty whose snapshot row lacks the head pair; I re-ran the snapshot test file independently in the reviewed tree (independent-head-arm.log: 12 passed, EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is a declared write path, the change is one commit, and ruff check and ruff format --check report no finding on the two changed files.\nSCORE durability: 19\nJUSTIFICATION durability: the two parity cases pin the snapshot's duty list equal to the derivation's field for field, and the new moved-head case fails under the declared mutation (negative-control-2.log: 3 failed / 33 passed, test_a_moved_head_names_the_same_two_heads among them), so a regression to the snapshot's own duty path is caught rather than silently agreeing.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's idiom, removes the now-redundant scoring and promotable branches from _duty_kind and documents the split, but the run-id to pointer mapping is now built twice (reckon/crew/obligation_snapshot.py:561 and reckon/crew/obligations.py:647).\nFINDING reckon/crew/obligation_snapshot.py:561 follow-on: FleetState.pointers is built from the same runs.list_live loop and one-line dict comprehension that obligations() writes inline at reckon/crew/obligations.py:647, so the run-id to pointer mapping the two readers both need now has two copies that can drift; sharing one builder would keep the parity the change exists to establish.\n",
+  "review_run_id": "r-20261002T172918829187-review-of-snapshot-duties-match-the-derivation",
+  "reviewed_base_sha": "b63fd85ff95bc003926ed636c4d76a78b0de4470",
+  "reviewed_head_sha": "4a9d1f7a9bb85fb7597c719caad42b9739295617",
+  "reviewed_run_id": "r-20261002T163955956680-snapshot-duties-match-the-derivation",
+  "reviewer": {
+    "backend": "sonnet",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T17:42:00+00:00",
+  "total": 95
+}

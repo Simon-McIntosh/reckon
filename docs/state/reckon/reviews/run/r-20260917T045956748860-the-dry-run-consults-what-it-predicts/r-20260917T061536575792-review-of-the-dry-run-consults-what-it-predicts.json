@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "backend": "codex",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T06:15:36.575792+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "1036",
+      "text": "the dry-run branch calls _launcher_refusal outside the real branch's BudgetHold/CrewError/OSError handler, even though _launcher_refusal can raise from _backend_settings at line 540; independently reproduced with an eligible waiting pointer carrying launch=cli but no argv or configured backend, where the dry run aborts with CrewError instead of emitting the resume-refused row the real sweep emits, so one malformed candidate can terminate the entire prediction."
+    },
+    {
+      "file": "tests/test_dry_run_predicts_the_launcher.py",
+      "line": "153",
+      "text": "the test named every_guard manually enumerates only spawned, live and budget cases and calls the private mirror directly, so it cannot enforce the line 565 promise that a newly added launcher guard is automatically caught and it misses the already-present exception-path asymmetry for an unreadable backend record."
+    },
+    {
+      "file": "docs/evidence/archive/monitor-renders-what-it-is-given-landed.html",
+      "line": "116",
+      "text": "the table presents a 116-test cohort beside one base failure and two after failures as a before/after measure, but the manifest says only two discriminating tests ran at base and marks both suite receipts completed=false; no complete base result exists for the 116-test cohort, so the claimed failure delta is not reproducible from the recorded evidence."
+    },
+    {
+      "file": "tests/test_a_met_wait_is_ready_not_abandoned.py",
+      "line": "117",
+      "text": "the reviewed commit leaves this focused resumption test failing because its pointer fixture has no launch or argv fields; the manifest correctly attributes and fences the repair as follow-on work, but the merged head must repair the fixture before this cohort is green."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_dry_run_predicts_the_launcher.py:118-150 contains a strong budget-hold regression and positive control that pass 7/7 independently, but its finite parity table at line 153 neither follows future resume_plan guards automatically nor covers a guard helper that raises before returning a refusal.",
+    "evidence": "tests/test_dry_run_predicts_the_launcher.py passes 7/7 independently and /tmp/after_suite.log records 114 passed with two named failures, but docs/evidence/archive/monitor-renders-what-it-is-given-landed.html:116-119 implies a full cohort delta despite the manifest recording only a two-test base run and completed=false receipts.",
+    "fit": "reckon/crew/resumption.py:523-599 preserves the launcher's read-only budget decision and shares refusal formatting, but duplicates resume_plan's guard list and calls that mirror outside the exception boundary used by the real path at lines 1052-1062.",
+    "goal_fidelity": "reckon/crew/resumption.py:1031-1051 now withholds would_resume for the budget-held case and retains a positive resumable control, but an eligible malformed record can still make the dry run abort instead of reporting what the launcher would report.",
+    "scope_discipline": "commit b0547eee changes exactly the four declared paths\u2014reckon/crew/resumption.py, tests/test_dry_run_predicts_the_launcher.py, and the two monitor plan/evidence HTML resources\u2014and carries one conventional commit with a body and no attribution trailer."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1031-1051 now withholds would_resume for the budget-held case and retains a positive resumable control, but an eligible malformed record can still make the dry run abort instead of reporting what the launcher would report.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_dry_run_predicts_the_launcher.py passes 7/7 independently and /tmp/after_suite.log records 114 passed with two named failures, but docs/evidence/archive/monitor-renders-what-it-is-given-landed.html:116-119 implies a full cohort delta despite the manifest recording only a two-test base run and completed=false receipts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit b0547eee changes exactly the four declared paths\u2014reckon/crew/resumption.py, tests/test_dry_run_predicts_the_launcher.py, and the two monitor plan/evidence HTML resources\u2014and carries one conventional commit with a body and no attribution trailer.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_dry_run_predicts_the_launcher.py:118-150 contains a strong budget-hold regression and positive control that pass 7/7 independently, but its finite parity table at line 153 neither follows future resume_plan guards automatically nor covers a guard helper that raises before returning a refusal.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/resumption.py:523-599 preserves the launcher's read-only budget decision and shares refusal formatting, but duplicates resume_plan's guard list and calls that mirror outside the exception boundary used by the real path at lines 1052-1062.\nFINDING reckon/crew/resumption.py:1036 the dry-run branch calls _launcher_refusal outside the real branch's BudgetHold/CrewError/OSError handler, even though _launcher_refusal can raise from _backend_settings at line 540; independently reproduced with an eligible waiting pointer carrying launch=cli but no argv or configured backend, where the dry run aborts with CrewError instead of emitting the resume-refused row the real sweep emits, so one malformed candidate can terminate the entire prediction.\nFINDING tests/test_dry_run_predicts_the_launcher.py:153 the test named every_guard manually enumerates only spawned, live and budget cases and calls the private mirror directly, so it cannot enforce the line 565 promise that a newly added launcher guard is automatically caught and it misses the already-present exception-path asymmetry for an unreadable backend record.\nFINDING docs/evidence/archive/monitor-renders-what-it-is-given-landed.html:116 the table presents a 116-test cohort beside one base failure and two after failures as a before/after measure, but the manifest says only two discriminating tests ran at base and marks both suite receipts completed=false; no complete base result exists for the 116-test cohort, so the claimed failure delta is not reproducible from the recorded evidence.\nFINDING tests/test_a_met_wait_is_ready_not_abandoned.py:117 the reviewed commit leaves this focused resumption test failing because its pointer fixture has no launch or argv fields; the manifest correctly attributes and fences the repair as follow-on work, but the merged head must repair the fixture before this cohort is green.\n",
+  "review_run_id": "r-20260917T061536575792-review-of-the-dry-run-consults-what-it-predicts",
+  "reviewed_base": "7efeeb7739b01368936246291627fb6141849549",
+  "reviewed_commit": "b0547eeeae9aed6fe1ddde8a2132d6b10dd302da",
+  "reviewed_run_id": "r-20260917T045956748860-the-dry-run-consults-what-it-predicts",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 14,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T06:22:21.862202+00:00",
+  "total": 79
+}

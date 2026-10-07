@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/flight.py:validate_layer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T01:09:09.082010+00:00",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": "812",
+      "text": "select_profile_backend has no production caller, appearing only in tests/test_flight.py, so the refusal the goal names cannot fire in production; its sibling select_local_backend is called from reckon/cli.py:1166 and reckon/crew/recovery.py:491, so the wiring pattern exists and is absent here, and a profile routed on a lane that never receives the image would still be answered."
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": "765",
+      "text": "PROFILE_INPUT_MODALITIES declares the figure profile as requiring image input while no backend in any configuration layer declares it, so the profile resolves nowhere until a lane declares the modality and the section's refusal is unreachable in the shipped configuration."
+    },
+    {
+      "file": "docs/evidence/archive/a-review-can-see-the-figure-landed.html",
+      "line": "45",
+      "text": "the anchor states that the other 84 tests in the declared gate were unaffected, while negative_control.log:10 reports those 84 as deselected rather than run, so that half of the claim rests on the absence of a run rather than on a green one."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 91e4095a: f2ea9301 adds the InputModality enum and the input_modalities slot to the LinkML source at reckon/schema/flight.yaml:104 and :334, regenerates reckon/_flight_schema.py:172, and adds the modality helpers and select_profile_backend at reckon/flight.py:759-870 with six cases at tests/test_flight.py:1439-1547; 5b1759ab lands the plan record and the evidence anchor; 428477c7 regenerates the served JSON schema; every hunk is insertions only.",
+    "done_when": "the done_when asks for the schema slot and the regenerated model with a test asserting they agree, the codex backends declaring image input, refusal tests naming the backend and the word image with no fall-through, the applied negative control logged, and a green gate over tests/test_flight.py and tests/test_backend_reference_contract.py; gate.log:1 names both files and gate.log:4 records 93 passed, and my independent re-run at the landed revision reproduced 93 passed EXIT=0 with the round-trip pair running rather than skipping once the environment's console scripts are on PATH; the codex-declaration clause carries no evidence because it was not landed.",
+    "goal": "the goal is that BackendConfig carries an input-modalities slot, the codex backends declare image input, and a figure profile routed to a backend declaring no image input is refused naming the backend and the missing capability; reckon/schema/flight.yaml:104 declares the closed InputModality enum and reckon/flight.py:765 the PROFILE_INPUT_MODALITIES map, and reckon/flight.py:812 refuses by name, but no layer sets input_modalities on any backend, so the codex-declaration clause of the goal is unlanded.",
+    "manifest": "read in full; status complete, commits f2ea9301, 5b1759ab and 428477c7, and its gate, test_logs, negative_control_log, negative_control_note and blockers fields each match the artefact they name rather than standing in for one.",
+    "write_paths": "the manifest declares seven paths and git diff --stat 91e4095a 428477c7 is insertions only, 404 lines over exactly those seven plus docs/_shared/flight.schema.json, which is outside the fence and named as such in the manifest's own blockers field."
+  },
+  "justifications": {
+    "durability": "the declared negative control at negative_control.log:1 repeats the declared string verbatim and negative_control.log:8-10 shows exactly the two refusal tests reddening with DID NOT RAISE when the slot check is replaced by a fall-through, so the guard is demonstrated to fire; tests/test_flight.py:1472 is a validation echo that supplies the value it asserts back and reddens only because a missing field raises.",
+    "evidence": "gate.log:4 records 93 passed and I reproduced 93 passed EXIT=0 at 428477c7, but the done_when's codex-declaration clause is unlanded and gate.log:1 names the base revision 91e4095a rather than the landed head the command tested.",
+    "fit": "reckon/flight.py:812 sits beside the sibling select_local_backend at reckon/flight.py:731 and raises FlightConfigError in the same resolved-flight key-path form as its neighbours, and no name in the diff carries a plan label or ticket reference.",
+    "goal_fidelity": "reckon/flight.py:812 refuses a figure profile by name on a lane declaring no image, but the codex lanes the goal names carry no declaration and no production path calls the resolver, so a figure profile cannot be served today.",
+    "scope_discipline": "six of the seven changed paths are inside the declared fence; docs/_shared/flight.schema.json is outside it and the run's own check.log records it as the sole out-of-scope path, disclosed in the manifest and required by the committed round-trip test."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260922T204207559107-a-lane-declares-its-input-modalities read at its landed commit 428477c7c147bb86c68bc1654b2c446e7702eca3 against docs/plans/a-review-can-see-the-figure.html section s1 as the semantic authority. The reviewer changed no repository path; this record is the deliverable.\n\nVERDICT goal: the goal is that BackendConfig carries an input-modalities slot, the codex backends declare image input, and a figure profile routed to a backend declaring no image input is refused naming the backend and the missing capability; reckon/schema/flight.yaml:104 declares the closed InputModality enum and reckon/flight.py:765 the PROFILE_INPUT_MODALITIES map, and reckon/flight.py:812 refuses by name, but no layer sets input_modalities on any backend, so the codex-declaration clause of the goal is unlanded.\nVERDICT done_when: the done_when asks for the schema slot and the regenerated model with a test asserting they agree, the codex backends declaring image input, refusal tests naming the backend and the word image with no fall-through, the applied negative control logged, and a green gate over tests/test_flight.py and tests/test_backend_reference_contract.py; gate.log:1 names both files and gate.log:4 records 93 passed, and my independent re-run at the landed revision reproduced 93 passed EXIT=0 with the round-trip pair running rather than skipping once the environment's console scripts are on PATH; the codex-declaration clause carries no evidence because it was not landed.\nVERDICT write_paths: the manifest declares seven paths and git diff --stat 91e4095a 428477c7 is insertions only, 404 lines over exactly those seven plus docs/_shared/flight.schema.json, which is outside the fence and named as such in the manifest's own blockers field.\nVERDICT manifest: read in full; status complete, commits f2ea9301, 5b1759ab and 428477c7, and its gate, test_logs, negative_control_log, negative_control_note and blockers fields each match the artefact they name rather than standing in for one.\nVERDICT diff: read commit by commit against base 91e4095a: f2ea9301 adds the InputModality enum and the input_modalities slot to the LinkML source at reckon/schema/flight.yaml:104 and :334, regenerates reckon/_flight_schema.py:172, and adds the modality helpers and select_profile_backend at reckon/flight.py:759-870 with six cases at tests/test_flight.py:1439-1547; 5b1759ab lands the plan record and the evidence anchor; 428477c7 regenerates the served JSON schema; every hunk is insertions only.\nCALL_SITES: reckon/flight.py:validate_layer\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/flight.py:812 refuses a figure profile by name on a lane declaring no image, but the codex lanes the goal names carry no declaration and no production path calls the resolver, so a figure profile cannot be served today.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate.log:4 records 93 passed and I reproduced 93 passed EXIT=0 at 428477c7, but the done_when's codex-declaration clause is unlanded and gate.log:1 names the base revision 91e4095a rather than the landed head the command tested.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: six of the seven changed paths are inside the declared fence; docs/_shared/flight.schema.json is outside it and the run's own check.log records it as the sole out-of-scope path, disclosed in the manifest and required by the committed round-trip test.\nSCORE durability: 17\nJUSTIFICATION durability: the declared negative control at negative_control.log:1 repeats the declared string verbatim and negative_control.log:8-10 shows exactly the two refusal tests reddening with DID NOT RAISE when the slot check is replaced by a fall-through, so the guard is demonstrated to fire; tests/test_flight.py:1472 is a validation echo that supplies the value it asserts back and reddens only because a missing field raises.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/flight.py:812 sits beside the sibling select_local_backend at reckon/flight.py:731 and raises FlightConfigError in the same resolved-flight key-path form as its neighbours, and no name in the diff carries a plan label or ticket reference.\nFINDING reckon/flight.py:812 select_profile_backend has no production caller, appearing only in tests/test_flight.py, so the refusal the goal names cannot fire in production; its sibling select_local_backend is called from reckon/cli.py:1166 and reckon/crew/recovery.py:491, so the wiring pattern exists and is absent here, and a profile routed on a lane that never receives the image would still be answered.\nFINDING reckon/flight.py:765 PROFILE_INPUT_MODALITIES declares the figure profile as requiring image input while no backend in any configuration layer declares it, so the profile resolves nowhere until a lane declares the modality and the section's refusal is unreachable in the shipped configuration.\nFINDING docs/evidence/archive/a-review-can-see-the-figure-landed.html:45 the anchor states that the other 84 tests in the declared gate were unaffected, while negative_control.log:10 reports those 84 as deselected rather than run, so that half of the claim rests on the absence of a run rather than on a green one.",
+  "review_run_id": "r-20260923T010909082010-review-of-a-lane-declares-its-input-modalities",
+  "reviewed_base_sha": "91e4095a79a34541fea2cb30113a7c90d13f0dac",
+  "reviewed_head_sha": "428477c7c147bb86c68bc1654b2c446e7702eca3",
+  "reviewed_revision": "428477c7c147bb86c68bc1654b2c446e7702eca3",
+  "reviewed_run_id": "r-20260922T204207559107-a-lane-declares-its-input-modalities",
+  "reviewer_node": "review-of-a-lane-declares-its-input-modalities",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T01:27:49.983141+00:00",
+  "total": 77
+}

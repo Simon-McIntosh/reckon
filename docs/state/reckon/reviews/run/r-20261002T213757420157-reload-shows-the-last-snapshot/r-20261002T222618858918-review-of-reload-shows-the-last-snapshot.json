@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f506a3aa1542f2f7c9b8630c6582184bbc0466de",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:746 (main dispatches _prompt)",
+    "reckon/cli.py:3230 (follower reads PRODUCER_RELOAD_WINDOW_SECONDS)",
+    "reckon/cli.py:2334 (follower reload probe timeout)"
+  ],
+  "completed_at": "2026-10-02T22:34:06.250Z",
+  "dispatched_at": "2026-10-02T22:27:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/reload-shows-the-last-snapshot.html",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the declared write scope grants docs/figures/the-obligations-hook-reads-a-snapshot/reload-shows-the-last-snapshot but no figure was produced and the fragment embeds none, so the fragment's reload timeline is prose where a before/after of the hook's answers would read faster; not required by \u00a710, so the landing is unaffected."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "538",
+      "severity": "follow-on",
+      "text": "follow-on: not_fresh_line no longer handles the producer-stale-code state, so a future direct caller passing that state would fall to the else branch and render the no-producer line and its remedy; the state is currently unreachable there because _prompt routes it through reload_in_progress first, so the removal is safe today."
+    }
+  ],
+  "head_log_revision": "68421f00b424b850dfa4a0b304d6756975a1e1b9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against f506a3aa; 651e3969b adds reload_in_progress and the named window to the snapshot reader, the reloading branch and reload-tagged digest to the hook, and the shared file-path loader to cli.py; 68421f00b adds the evidence fragment; cb9680e60 aligns the fragment's gate figures with the kept logs and touches no code or test.",
+    "done_when": "the four cases \u00a710 names each have a test driving the prompt path as a subprocess against a temporary configuration home at tests/test_obligations_hook_reads_the_snapshot.py:414, :447, :479 and :510, the head arm records 26 passed EXIT=0, and the declared negative control reds exactly the reloading cases (2 failed, 7 passed, EXIT=1).",
+    "goal": "the node goal is that a reload in progress shows the last snapshot's list headed by its age and the words producer reloading with no remedy, and that no-producer plus its remedy appear only past the reload bound; reckon/hooks/coordinator_obligations.py:670-681 draws that branch and reckon/crew/obligation_snapshot.py:389 (reload_in_progress) answers it from the shared window.",
+    "manifest": "read; it reads status complete, records both gate arms and the negative control with their logs and revisions, and carries the added-failure count as zero derived from both arms.",
+    "write_paths": "read the manifest's declared scope; the diff f506a3aa..cb9680e60 touches only reckon/cli.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_obligations_hook_reads_the_snapshot.py and the evidence fragment, every path inside the seven declared write paths."
+  },
+  "justifications": {
+    "durability": "the negative control at reckon/hooks/coordinator_obligations.py:558 reinstates the not-current line for a live reloading producer and tests/test_obligations_hook_reads_the_snapshot.py::test_a_live_producer_on_older_code_shows_the_last_snapshot reds (2 failed, EXIT=1), so the guard is load-bearing and regression-visible.",
+    "evidence": "the manifest records baseline_suite f506a3aa 22 passed and after_suite 68421f00b 26 passed, both EXIT=0, and the negative-control log at coordinator_obligations.py:670 reds the two reloading cases with 2 failed 7 passed EXIT=1, so the gate measures the done_when and its result is recorded.",
+    "fit": "the new names (reload_in_progress, PRODUCER_RELOAD_WINDOW_SECONDS) carry no plan label or version, and cli.py's _snapshot_module at cli.py:2528 mirrors the hook's snapshot_module loader at coordinator_obligations.py:93.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:670-681 shows the last snapshot under the reloading note with no remedy, and not_fresh_line at coordinator_obligations.py:557 withholds that remedy only past the window, which is what the goal states.",
+    "scope_discipline": "git diff f506a3aa..cb9680e60 --stat lists only reckon/cli.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_obligations_hook_reads_the_snapshot.py and the evidence fragment, all within the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a reload in progress shows the last snapshot's list headed by its age and the words producer reloading with no remedy, and that no-producer plus its remedy appear only past the reload bound; reckon/hooks/coordinator_obligations.py:670-681 draws that branch and reckon/crew/obligation_snapshot.py:389 (reload_in_progress) answers it from the shared window.\nVERDICT done_when: the four cases \u00a710 names each have a test driving the prompt path as a subprocess against a temporary configuration home at tests/test_obligations_hook_reads_the_snapshot.py:414, :447, :479 and :510, the head arm records 26 passed EXIT=0, and the declared negative control reds exactly the reloading cases (2 failed, 7 passed, EXIT=1).\nVERDICT write_paths: read the manifest's declared scope; the diff f506a3aa..cb9680e60 touches only reckon/cli.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_obligations_hook_reads_the_snapshot.py and the evidence fragment, every path inside the seven declared write paths.\nVERDICT manifest: read; it reads status complete, records both gate arms and the negative control with their logs and revisions, and carries the added-failure count as zero derived from both arms.\nVERDICT diff: read commit by commit against f506a3aa; 651e3969b adds reload_in_progress and the named window to the snapshot reader, the reloading branch and reload-tagged digest to the hook, and the shared file-path loader to cli.py; 68421f00b adds the evidence fragment; cb9680e60 aligns the fragment's gate figures with the kept logs and touches no code or test.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:746 (main dispatches _prompt), reckon/cli.py:3230 (follower reads PRODUCER_RELOAD_WINDOW_SECONDS), reckon/cli.py:2334 (follower reload probe timeout)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:670-681 shows the last snapshot under the reloading note with no remedy, and not_fresh_line at coordinator_obligations.py:557 withholds that remedy only past the window, which is what the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest records baseline_suite f506a3aa 22 passed and after_suite 68421f00b 26 passed, both EXIT=0, and the negative-control log at coordinator_obligations.py:670 reds the two reloading cases with 2 failed 7 passed EXIT=1, so the gate measures the done_when and its result is recorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff f506a3aa..cb9680e60 --stat lists only reckon/cli.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_obligations_hook_reads_the_snapshot.py and the evidence fragment, all within the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: the negative control at reckon/hooks/coordinator_obligations.py:558 reinstates the not-current line for a live reloading producer and tests/test_obligations_hook_reads_the_snapshot.py::test_a_live_producer_on_older_code_shows_the_last_snapshot reds (2 failed, EXIT=1), so the guard is load-bearing and regression-visible.\nSCORE fit: 19\nJUSTIFICATION fit: the new names (reload_in_progress, PRODUCER_RELOAD_WINDOW_SECONDS) carry no plan label or version, and cli.py's _snapshot_module at cli.py:2528 mirrors the hook's snapshot_module loader at coordinator_obligations.py:93.\nFINDING docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/reload-shows-the-last-snapshot.html:22 follow-on: the declared write scope grants docs/figures/the-obligations-hook-reads-a-snapshot/reload-shows-the-last-snapshot but no figure was produced and the fragment embeds none, so the fragment's reload timeline is prose where a before/after of the hook's answers would read faster; not required by \u00a710, so the landing is unaffected.\nFINDING reckon/hooks/coordinator_obligations.py:538 follow-on: not_fresh_line no longer handles the producer-stale-code state, so a future direct caller passing that state would fall to the else branch and render the no-producer line and its remedy; the state is currently unreachable there because _prompt routes it through reload_in_progress first, so the removal is safe today.",
+  "review_run_id": "r-20261002T222618858918-review-of-reload-shows-the-last-snapshot",
+  "reviewed_base_sha": "f506a3aa1542f2f7c9b8630c6582184bbc0466de",
+  "reviewed_head_sha": "cb9680e6069cffd3bd6e0fde98b693b93b71e4ba",
+  "reviewed_run_id": "r-20261002T213757420157-reload-shows-the-last-snapshot",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T22:32:51.591146+00:00",
+  "total": 96
+}

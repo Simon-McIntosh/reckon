@@ -1,0 +1,44 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:3635"
+  ],
+  "completed_at": "2026-09-25T13:54:12.180Z",
+  "dispatched_at": "2026-09-25T13:15:14Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base d677269f; fe70b862 adds the two helpers and three call sites in reckon/mcp_views.py plus the new test, and 1f1363a0 appends one plan comment and one cumulative evidence section with additions only.",
+    "done_when": "the done_when asks for a declared-congested plus undeclared test, a live host receipt, and an executed negative control; tests/test_lanes_view_shows_local_congestion.py:36-86 is that test, the node's gate.log records 2 passed, and the run directory holds crew-lanes-host.log, negative-control.log and the two suite logs.",
+    "goal": "read the goal and the landed change at reckon/mcp_views.py:554 and :586; the helpers read the declared lane document through the gate-aware reader and attach its fields, and my live re-run of the reviewed tree read the clive row off the real lane document as answered with admission_headroom 4 (width 14 - in_flight 10 - waiting 0) and engine_headroom 9, matching the document on disk.",
+    "manifest": "read; it records commits fe70b862 and 1f1363a0, the focused gate at 2 passed, base and after suites at 99 passed each, and the live receipt values admission_headroom -3 with verdict congested.",
+    "write_paths": "the node was fenced to four paths; git show --stat on its two commits lists exactly four files, reckon/mcp_views.py, the new test, and two docs, none outside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_lanes_view_shows_local_congestion.py:64-74 assert the attached fields and the -9 admission arithmetic across the reader boundary, and negative-control.log shows KeyError on lane_document once the wiring is reverted.",
+    "evidence": "the node's gate.log names its revision and 2 passed, base-suite.log and after-suite.log name both revisions with 99 passed each, and crew-lanes-host.log carries the live congested row.",
+    "fit": "the helpers follow the surrounding per-dimension composition style in reckon/mcp_views.py:554 and the only added import is the shared reader reckon/crew/lane_document.py, with no plan or ticket name in the diff.",
+    "goal_fidelity": "reckon/mcp_views.py:680-714 and :880 attach the declared document to every row shape, and the live re-run read the gate fields on the clive row.",
+    "scope_discipline": "the four files across the two commits are each inside the declared fence and no hunk carries anything the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal and the landed change at reckon/mcp_views.py:554 and :586; the helpers read the declared lane document through the gate-aware reader and attach its fields, and my live re-run of the reviewed tree read the clive row off the real lane document as answered with admission_headroom 4 (width 14 - in_flight 10 - waiting 0) and engine_headroom 9, matching the document on disk.\nVERDICT done_when: the done_when asks for a declared-congested plus undeclared test, a live host receipt, and an executed negative control; tests/test_lanes_view_shows_local_congestion.py:36-86 is that test, the node's gate.log records 2 passed, and the run directory holds crew-lanes-host.log, negative-control.log and the two suite logs.\nVERDICT write_paths: the node was fenced to four paths; git show --stat on its two commits lists exactly four files, reckon/mcp_views.py, the new test, and two docs, none outside the fence.\nVERDICT manifest: read; it records commits fe70b862 and 1f1363a0, the focused gate at 2 passed, base and after suites at 99 passed each, and the live receipt values admission_headroom -3 with verdict congested.\nVERDICT diff: read commit by commit against base d677269f; fe70b862 adds the two helpers and three call sites in reckon/mcp_views.py plus the new test, and 1f1363a0 appends one plan comment and one cumulative evidence section with additions only.\nCALL_SITES: reckon/mcp.py:3635\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:680-714 and :880 attach the declared document to every row shape, and the live re-run read the gate fields on the clive row.\nSCORE evidence: 19\nJUSTIFICATION evidence: the node's gate.log names its revision and 2 passed, base-suite.log and after-suite.log name both revisions with 99 passed each, and crew-lanes-host.log carries the live congested row.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four files across the two commits are each inside the declared fence and no hunk carries anything the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_lanes_view_shows_local_congestion.py:64-74 assert the attached fields and the -9 admission arithmetic across the reader boundary, and negative-control.log shows KeyError on lane_document once the wiring is reverted.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers follow the surrounding per-dimension composition style in reckon/mcp_views.py:554 and the only added import is the shared reader reckon/crew/lane_document.py, with no plan or ticket name in the diff.\n",
+  "review_run_id": "r-20260925T131502350811-review-of-lanes-view-shows-local-congestion",
+  "reviewed_base_sha": "d677269f3ac3475018b77f8cbec92d3b5f4b84e3",
+  "reviewed_head_sha": "1f1363a0fb371b63ed2fd87a99aba91a4c64b93a",
+  "reviewed_run_id": "r-20260925T130201428821-lanes-view-shows-local-congestion",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:48:05.115246+00:00",
+  "total": 96
+}

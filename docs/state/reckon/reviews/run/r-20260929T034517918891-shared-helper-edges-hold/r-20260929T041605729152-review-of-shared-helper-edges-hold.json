@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:456",
+    "reckon/_timestamps.py:86",
+    "reckon/crew/query.py:601",
+    "reckon/crew/rollout.py:238"
+  ],
+  "completed_at": "2026-09-29T04:50:32.558Z",
+  "dispatched_at": "2026-09-29T04:16:24Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "408",
+      "text": "the sibling created by os.open at :396 is still left on disk when os.fdopen raises between the successful chmod and the return, because the caller's finally at :452 unlinks only a returned temporary and that assignment never completed -- the same shape the chmod branch just closed -- so the brief's clause that every failure after the temporary is created removes it holds for the common failure and not literally for this one, recorded rather than scored as a defect because the trigger is exotic."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "commit 070845cc adds the one-line unlink at reckon/_store.py:406 and replaces the two text-shape zone predicates with tzinfo reads through the new reckon/_timestamps.py:62 parse_iso, commits 42789b18 and de95f4e2 carry the evidence fragment, its figure and a one-line fragment correction, no hunk touches locking or retry behaviour, and re stays used in both crew modules.",
+    "done_when": "the measure is the two defect cases armed at base and green at the committed head with armed JSON arms and a fired negative control, and logs/baseline-base-4files.log records 3 failed, 186 passed with exactly test_chmod_failure_leaves_no_temporary_beside_the_destination, test_query_reads_a_seconds_offset_as_a_zone and test_rollout_reads_a_seconds_offset_as_a_zone, logs/after-head-6files.log records 288 passed at de95f4e2 that I re-ran myself, and logs/negative-control-chmod.log repeats the declared mutation and fails the chmod id with EXIT=1.",
+    "goal": "the goal names two repairs -- the shared writer's failed chmod leaving its sibling temporary, and an offset carrying seconds read as zoneless by query and rollout -- and at the head both hold, with reckon/_store.py:406 unlinking the sibling while the destination keeps its old bytes and reckon/crew/query.py:601 plus reckon/crew/rollout.py:238 reading the zone from reckon/_timestamps.py:62 parse_iso's tzinfo, giving ('2026-09-29T01:01:33+00:00', 'utc') and an aware 01:02:03+00:00:30 against (None, 'unknown') and a naive 01:01:33 at cea6da07, exactly the values c786e44a produced.",
+    "manifest": "both suite entries are complete armed JSON whose ids match their logs and tests names the 288-passed gate I re-ran at de95f4e2, negative_control_log is the bare path whose first line repeats the declared string with an EXIT= line, and two sentences overstate slightly -- evidence_inputs' \"Every failure after the temporary is created now removes it\" is not literal for the os.fdopen return (see the finding), and its rollout sentence prints the other representation's clock 01:01:33+00:00 where the returned object prints 2026-09-29 01:02:03+00:00:30, equal instants and identical to c786e44a.",
+    "write_paths": "the fence is the six declared paths plus the coordinator-authorised reckon/_timestamps.py, recorded in the node record's write_paths and in resume-1-advice.txt, and git diff --stat cea6da07..de95f4e2 returns exactly those seven paths and nothing else, with the worktree clean at the head."
+  },
+  "justifications": {
+    "durability": "each of the three added assertions reddens on the exact code it guards -- the base arm and the negative control show the chmod case failing on the reinstated leak and both zone cases on the reinstated text-shape test (tests/test_shared_helper_edges.py:30, :59, :64) -- marked one short because the one sibling-leak path at reckon/_store.py:408 carries no guard either way.",
+    "evidence": "the gate asserts the done_when measure and records it -- the base arm's three ids in logs/baseline-base-4files.log, the head arm's 288 passes at de95f4e2 re-run at logs/reviewer-head-gate.log, and logs/negative-control-chmod.log naming the declared mutation -- and every arm log opens with a line naming its revision, tree, module.__file__, cwd and command.",
+    "fit": "parse_iso sits beside parse_utc as the one parser's zone-preserving view with reckon/_timestamps.py:86 _from_iso8601 routed through it, the failure branch reads like its neighbours, re stays used in both crew modules, and no name or comment carries a plan, ticket or version label.",
+    "goal_fidelity": "both named defects are repaired and every output matches the pre-migration base (reckon/crew/query.py:601, reckon/crew/rollout.py:238, reckon/_store.py:406), marked one short because the done_when's blanket clause that every failure after the temporary is created removes it does not hold for the os.fdopen return at reckon/_store.py:408.",
+    "scope_discipline": "git diff --stat cea6da07..de95f4e2 lists exactly the six fenced paths and the coordinator-authorised reckon/_timestamps.py, and the reviewed worktree reads clean at the head."
+  },
+  "node": "review-of-shared-helper-edges-hold",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T034517918891-shared-helper-edges-hold\n(plan a-worker-reuses-before-it-writes, section 3; node shared-helper-edges-hold; role review; spec exact)\nreviewed_base_sha: cea6da07b60e6bf92e7476e52b4c52d8e114ebb0\nreviewed_head_sha: de95f4e2c87634794b8cf16f2d45dcd0c2f76650\nRead at the head: the run's node record and prompt (goal, done_when, declared write paths), its manifest.md, the three commits against the base, the four code modules and the new test file, the four gate logs and the negative-control log, the evidence fragment and its figure, the reviewed worktree's status, and the pre-migration revision c786e44a's two stamp readers.\nRe-derived in this node's own turn: the added-failure set over the two logs the manifest names (0 added ids from logs/baseline-base-4files.log and logs/after-head-6files.log); the named head gate re-run in the reviewed worktree at de95f4e2 (288 passed, exit 0, logs/reviewer-head-gate.log); and both defects reproduced at cea6da07 in a scratch package holding that revision's four changed modules (logs/base-arm-scratch-repro.log) and refuted at the head worktree (logs/head-arm-edge-repro.log) -- the chmod failure left a sibling temporary at base and none at head, query returned (None, 'unknown') then ('2026-09-29T01:01:33+00:00', 'utc'), and rollout a naive 01:01:33 then the aware 01:02:03+00:00:30 that c786e44a's own datetime.fromisoformat call returned.\nVERDICT goal: the goal names two repairs -- the shared writer's failed chmod leaving its sibling temporary, and an offset carrying seconds read as zoneless by query and rollout -- and at the head both hold, with reckon/_store.py:406 unlinking the sibling while the destination keeps its old bytes and reckon/crew/query.py:601 plus reckon/crew/rollout.py:238 reading the zone from reckon/_timestamps.py:62 parse_iso's tzinfo, giving ('2026-09-29T01:01:33+00:00', 'utc') and an aware 01:02:03+00:00:30 against (None, 'unknown') and a naive 01:01:33 at cea6da07, exactly the values c786e44a produced.\nVERDICT done_when: the measure is the two defect cases armed at base and green at the committed head with armed JSON arms and a fired negative control, and logs/baseline-base-4files.log records 3 failed, 186 passed with exactly test_chmod_failure_leaves_no_temporary_beside_the_destination, test_query_reads_a_seconds_offset_as_a_zone and test_rollout_reads_a_seconds_offset_as_a_zone, logs/after-head-6files.log records 288 passed at de95f4e2 that I re-ran myself, and logs/negative-control-chmod.log repeats the declared mutation and fails the chmod id with EXIT=1.\nVERDICT write_paths: the fence is the six declared paths plus the coordinator-authorised reckon/_timestamps.py, recorded in the node record's write_paths and in resume-1-advice.txt, and git diff --stat cea6da07..de95f4e2 returns exactly those seven paths and nothing else, with the worktree clean at the head.\nVERDICT manifest: both suite entries are complete armed JSON whose ids match their logs and tests names the 288-passed gate I re-ran at de95f4e2, negative_control_log is the bare path whose first line repeats the declared string with an EXIT= line, and two sentences overstate slightly -- evidence_inputs' \"Every failure after the temporary is created now removes it\" is not literal for the os.fdopen return (see the finding), and its rollout sentence prints the other representation's clock 01:01:33+00:00 where the returned object prints 2026-09-29 01:02:03+00:00:30, equal instants and identical to c786e44a.\nVERDICT diff: commit 070845cc adds the one-line unlink at reckon/_store.py:406 and replaces the two text-shape zone predicates with tzinfo reads through the new reckon/_timestamps.py:62 parse_iso, commits 42789b18 and de95f4e2 carry the evidence fragment, its figure and a one-line fragment correction, no hunk touches locking or retry behaviour, and re stays used in both crew modules.\nCALL_SITES: reckon/_store.py:456, reckon/_timestamps.py:86, reckon/crew/query.py:601, reckon/crew/rollout.py:238\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both named defects are repaired and every output matches the pre-migration base (reckon/crew/query.py:601, reckon/crew/rollout.py:238, reckon/_store.py:406), marked one short because the done_when's blanket clause that every failure after the temporary is created removes it does not hold for the os.fdopen return at reckon/_store.py:408.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate asserts the done_when measure and records it -- the base arm's three ids in logs/baseline-base-4files.log, the head arm's 288 passes at de95f4e2 re-run at logs/reviewer-head-gate.log, and logs/negative-control-chmod.log naming the declared mutation -- and every arm log opens with a line naming its revision, tree, module.__file__, cwd and command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat cea6da07..de95f4e2 lists exactly the six fenced paths and the coordinator-authorised reckon/_timestamps.py, and the reviewed worktree reads clean at the head.\nSCORE durability: 19\nJUSTIFICATION durability: each of the three added assertions reddens on the exact code it guards -- the base arm and the negative control show the chmod case failing on the reinstated leak and both zone cases on the reinstated text-shape test (tests/test_shared_helper_edges.py:30, :59, :64) -- marked one short because the one sibling-leak path at reckon/_store.py:408 carries no guard either way.\nSCORE fit: 20\nJUSTIFICATION fit: parse_iso sits beside parse_utc as the one parser's zone-preserving view with reckon/_timestamps.py:86 _from_iso8601 routed through it, the failure branch reads like its neighbours, re stays used in both crew modules, and no name or comment carries a plan, ticket or version label.\nFINDING reckon/_store.py:408 the sibling created by os.open at :396 is still left on disk when os.fdopen raises between the successful chmod and the return, because the caller's finally at :452 unlinks only a returned temporary and that assignment never completed -- the same shape the chmod branch just closed -- so the brief's clause that every failure after the temporary is created removes it holds for the common failure and not literally for this one, recorded rather than scored as a defect because the trigger is exotic.\n",
+  "review_run_id": "r-20260929T041605729152-review-of-shared-helper-edges-hold",
+  "reviewed_base_sha": "cea6da07b60e6bf92e7476e52b4c52d8e114ebb0",
+  "reviewed_head_sha": "de95f4e2c87634794b8cf16f2d45dcd0c2f76650",
+  "reviewed_run_id": "r-20260929T034517918891-shared-helper-edges-hold",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T041605729152-review-of-shared-helper-edges-hold",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T04:40:34.711774+00:00",
+  "total": 98
+}

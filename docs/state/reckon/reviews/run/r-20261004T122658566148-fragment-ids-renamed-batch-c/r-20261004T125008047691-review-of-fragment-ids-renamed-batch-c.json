@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own base and head gate arms: gate-base.log (revision 07ad28145) reports TOTAL 28 duplicate-element-id findings, EXIT=1, and gate-head.log (revision aa3367847) reports TOTAL 0 findings, EXIT=0. The head arm's finding set is empty, so the set difference against the base arm is empty: added_failure_count 0, added_failure_ids []. I re-ran the run's gate.py against both trees and reproduced 28/EXIT=1 and 0/EXIT=0.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T13:00:24.445Z",
+  "dispatched_at": "2026-10-04T12:50:39Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production symbol or call site; the measure is reckon.doccheck.audit_fragment_ids over the nine fragment directories.",
+    "diff": "read commit by commit against base 07ad28145; 61803a858 renames the ids, aa3367847 adds the landing record, all inside the declared scope.",
+    "done_when": "the done-when names: audit_fragment_ids reports no finding for the nine fragment directories; no non-colliding id and no prose changed; every renamed id begins with its file's node id; a grep of docs/ finds no remaining link to a renamed bare id; the manifest lists the ids renamed per plan. All five hold: gate head 0 findings, masking proves only id values changed, all 83 ids prefixed, the only docs/ hrefs to a bare collision name point at other plans' archive records whose ids were not renamed, and the manifest lists the renamed ids.",
+    "goal": "the goal is a node-prefixed rename of every colliding element id in the named fragments; commit 61803a858 applies exactly that and my independent parse finds all 83 new ids prefixed with the file stem and no duplicate new ids.",
+    "manifest": "read; it records the rename commit and landing commit, the gate command, and the base/head arms 28 findings EXIT=1 / 0 findings EXIT=0, plus the two scaffolding retries with attributions.",
+    "write_paths": "the manifest declares the 36 fragments plus the landing fragment; both commits change only paths inside that set."
+  },
+  "justifications": {
+    "durability": "the repair is a data change with no test file in scope, so it adds no regression test of its own; the guard that keeps future fragments clean is the id-prefix convention in the landing contract plus the scoped audit_fragment_ids this section's sibling node added, which the run's gate exercises \u2014 the rename itself is not self-guarding beyond that existing audit.",
+    "evidence": "the manifest's gate logs are reproducible: I re-ran the run's own gate.py and read gate-base.log 28 findings EXIT=1 at 07ad28145 and gate-head.log 0 findings EXIT=0 at aa3367847; verify.log records 0 remaining renamed bare ids and 0 remaining href links, and the composed records are clean for eight of the nine plans with the ninth's two residuals (triage-method, triage-keep-budget) documented as an out-of-scope follow-on.",
+    "fit": "the prefix is the fragment file's stem, which is the node id the composition keys on, so sibling fragments composed into one record carry distinct anchors; the landing fragment deliberately carries no element ids and therefore adds none to the composition it is checked by, and same-file href anchors were renamed with their targets (the diff contains no href lines because the in-scope fragments held none to rename).",
+    "goal_fidelity": "the node goal is to rename every colliding element id in the committed fragments so it begins with its fragment's node id, renaming same-file href anchors with it; the diff renames 83 ids across 36 fragments and my probe confirms all 83 new ids begin with the file's stem plus '-', the renamed set is 19 distinct bare ids, and every renamed old id was a genuine duplicate-element-id collision in its plan directory at base while every base collision was renamed (0 mismatches both directions).",
+    "scope_discipline": "commit 61803a858 changes exactly the 36 fragments named in the write scope and commit aa3367847 adds only docs/evidence/fragments/crew-observability-truth/fragment-ids-renamed-batch-c.html; masking every id=\"...\" value makes base and head byte-identical across all 36 files (0 differing), so no prose, attribute or non-colliding id changed, and no plan file was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a node-prefixed rename of every colliding element id in the named fragments; commit 61803a858 applies exactly that and my independent parse finds all 83 new ids prefixed with the file stem and no duplicate new ids.\nVERDICT done_when: the done-when names: audit_fragment_ids reports no finding for the nine fragment directories; no non-colliding id and no prose changed; every renamed id begins with its file's node id; a grep of docs/ finds no remaining link to a renamed bare id; the manifest lists the ids renamed per plan. All five hold: gate head 0 findings, masking proves only id values changed, all 83 ids prefixed, the only docs/ hrefs to a bare collision name point at other plans' archive records whose ids were not renamed, and the manifest lists the renamed ids.\nVERDICT write_paths: the manifest declares the 36 fragments plus the landing fragment; both commits change only paths inside that set.\nVERDICT manifest: read; it records the rename commit and landing commit, the gate command, and the base/head arms 28 findings EXIT=1 / 0 findings EXIT=0, plus the two scaffolding retries with attributions.\nVERDICT diff: read commit by commit against base 07ad28145; 61803a858 renames the ids, aa3367847 adds the landing record, all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the node goal is to rename every colliding element id in the committed fragments so it begins with its fragment's node id, renaming same-file href anchors with it; the diff renames 83 ids across 36 fragments and my probe confirms all 83 new ids begin with the file's stem plus '-', the renamed set is 19 distinct bare ids, and every renamed old id was a genuine duplicate-element-id collision in its plan directory at base while every base collision was renamed (0 mismatches both directions).\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's gate logs are reproducible: I re-ran the run's own gate.py and read gate-base.log 28 findings EXIT=1 at 07ad28145 and gate-head.log 0 findings EXIT=0 at aa3367847; verify.log records 0 remaining renamed bare ids and 0 remaining href links, and the composed records are clean for eight of the nine plans with the ninth's two residuals (triage-method, triage-keep-budget) documented as an out-of-scope follow-on.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 61803a858 changes exactly the 36 fragments named in the write scope and commit aa3367847 adds only docs/evidence/fragments/crew-observability-truth/fragment-ids-renamed-batch-c.html; masking every id=\"...\" value makes base and head byte-identical across all 36 files (0 differing), so no prose, attribute or non-colliding id changed, and no plan file was touched.\nSCORE durability: 18\nJUSTIFICATION durability: the repair is a data change with no test file in scope, so it adds no regression test of its own; the guard that keeps future fragments clean is the id-prefix convention in the landing contract plus the scoped audit_fragment_ids this section's sibling node added, which the run's gate exercises \u2014 the rename itself is not self-guarding beyond that existing audit.\nSCORE fit: 19\nJUSTIFICATION fit: the prefix is the fragment file's stem, which is the node id the composition keys on, so sibling fragments composed into one record carry distinct anchors; the landing fragment deliberately carries no element ids and therefore adds none to the composition it is checked by, and same-file href anchors were renamed with their targets (the diff contains no href lines because the in-scope fragments held none to rename).\n",
+  "review_run_id": "r-20261004T125008047691-review-of-fragment-ids-renamed-batch-c",
+  "reviewed_base_sha": "07ad28145c987ee3a9f0154d8470b0808ade6e62",
+  "reviewed_head_sha": "aa33678473da67583f7265018be7581d126559be",
+  "reviewed_run_id": "r-20261004T122658566148-fragment-ids-renamed-batch-c",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T125008047691-review-of-fragment-ids-renamed-batch-c",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T12:57:26+00:00",
+  "total": 96
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite arm, so the added-failure count was not taken",
+  "backend": "local",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T23:38:54.259Z",
+  "dispatched_at": "2026-10-04T23:30:22Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py",
+      "line": "163",
+      "severity": "follow-on",
+      "text": "follow-on: directory_counts globs plan-*.json while list_plan_reviews globs plan-*.v*.json, so the brief's \"row count equals the directory listing's record count\" compares two different predicates; they agree at 9 today only because every stored plan file is version-named, and a later non-versioned plan-*.json would report a spurious difference unrelated to a skipped record. Use the reader's own pattern for the directory count so the two sides measure the same population."
+    },
+    {
+      "file": "docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py",
+      "line": "97",
+      "severity": "follow-on",
+      "text": "follow-on: resolve_anchor checks a plan-section anchor's id against the reviewed plan blob regardless of the path the anchor names, so a finding anchored to a section of a different HTML document would be resolved against the wrong bytes; every current plan anchor names the reviewed plan itself, so no row is affected today, but the path in the anchor is ignored. Load the blob the anchor's own path names for plan anchors."
+    },
+    {
+      "file": "docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py",
+      "line": "123",
+      "severity": "follow-on",
+      "text": "follow-on: confirmed_by_repair searches every docs/plans/*.html for a distinctive identifier the finding names, so an identifier that also appears in an unrelated plan marks the finding confirmed; the two ground-truth confirmations (this plan's v23 findings) resolve correctly, but the column can over-report confirmation. Scope the corpus to the reviewed plan, or record the confirming location, so a confirmed cell can be traced to the repair that confirms it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against b09a1ccf7: three added files (+374), a cumulative-evidence section s11 appended to the landed record, a new evidence fragment, and the 304-line census.py; no product code or test changed.",
+    "done_when": "every stored review is a row (9 rows over 9 records), both shares carry numerator and denominator, every anchor was resolved against the reviewed blob or main at the review timestamp (line bounds verified for dispatch.py:11187, recovery.py:6193, plan_review.py:709, recovery.py:238, supervisor_main.py:1), unresolved anchors are listed (none), and census.py reproduces the table byte for byte.",
+    "goal": "met and independently reproduced: list_plan_reviews() is the sole enumerator, the s11 table carries all named columns, shares are 9 of 9 and 23 of 23, unresolved anchors are listed (none), and the reading is timestamped 2026-10-04T23:14:03Z.",
+    "manifest": "read; status complete; it names no baseline_suite or after_suite arm, so the added-failure count is unmeasured; test_logs names census-gate.log, which records RUN1/RUN2 EXIT=0, DIFF EXIT=0, ROWS=9, DIRECTORY=9.",
+    "write_paths": "git diff --name-only b09a1ccf7..9fa1d1782 is exactly docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html, docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/plan-review-predicts-a-duplicate-census.html and docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py; the worktree at 9fa1d1782 is clean."
+  },
+  "justifications": {
+    "durability": "the commit carries a conventional subject and a body stating what changed and why, with no attribution and no plan or ticket identifier; the census script and the fragment are committed under docs/ and docs/evidence/, the gate log is durable under the run directory, and the manifest was written incrementally.",
+    "evidence": "the gate is real and independently reproduced -- census.py run twice from an extraction of 9fa1d1782 diffs empty (EXIT=0), its 9 rows equal the 9 plan-*.json files under the crew review store, and the embedded block in the landed record is byte-identical to a fresh run's stdout; the script asserts three negative controls on every run (a missing file, a line past end, an absent plan section), so the all-resolved column is shown to measure rather than miss; deducted one because the confirmation column is an in-corpus identifier heuristic and the negative control is asserted inside the same script rather than by an independent red log, and the reviewed manifest carries no armed suite pair so its added-failure count is unmeasured.",
+    "fit": "the census reads the store through the one reader that already walks every project and excludes code reviews rather than globbing itself, the script lives under docs/figures beside the record it reproduces, and the landing follows the plan's cumulative-evidence shape; deducted one because the directory-count glob (plan-*.json) is a different predicate from the reader's (plan-*.v*.json), so the equality the brief asked for is between two counts that only coincide while every stored plan file is version-named.",
+    "goal_fidelity": "every clause of the brief's deliverable is met at 9fa1d1782: the census enumerates the store only through plan_review.list_plan_reviews(), prints one HTML table row per stored review with project, plan, version, rubric, review run, finding-type counts, per-finding anchor resolution and confirmation, states both shares with numerator and denominator, lists the unresolved anchors by name, and is timestamped -- and I reproduced the committed table byte for byte from a fresh run of census.py.",
+    "scope_discipline": "the diff b09a1ccf7..9fa1d1782 is exactly the three declared paths (landed section, evidence fragment, census.py), 374 insertions and no deletions, and the reviewed worktree at 9fa1d1782 is clean; deducted one because the node declared a figures directory (plan-review-predicts-a-duplicate-census) it never used, so its declared and written sets differ."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nSCORE evidence: 19\nSCORE scope_discipline: 19\nSCORE durability: 20\nSCORE fit: 19\nJUSTIFICATION goal_fidelity: every clause of the brief's deliverable is met at 9fa1d1782: the census enumerates the store only through plan_review.list_plan_reviews(), prints one HTML table row per stored review with project, plan, version, rubric, review run, finding-type counts, per-finding anchor resolution and confirmation, states both shares with numerator and denominator, lists the unresolved anchors by name, and is timestamped -- and I reproduced the committed table byte for byte from a fresh run of census.py.\nJUSTIFICATION evidence: the gate is real and independently reproduced -- census.py run twice from an extraction of 9fa1d1782 diffs empty (EXIT=0), its 9 rows equal the 9 plan-*.json files under the crew review store, and the embedded block in the landed record is byte-identical to a fresh run's stdout; the script asserts three negative controls on every run (a missing file, a line past end, an absent plan section), so the all-resolved column is shown to measure rather than miss; deducted one because the confirmation column is an in-corpus identifier heuristic and the negative control is asserted inside the same script rather than by an independent red log, and the reviewed manifest carries no armed suite pair so its added-failure count is unmeasured.\nJUSTIFICATION scope_discipline: the diff b09a1ccf7..9fa1d1782 is exactly the three declared paths (landed section, evidence fragment, census.py), 374 insertions and no deletions, and the reviewed worktree at 9fa1d1782 is clean; deducted one because the node declared a figures directory (plan-review-predicts-a-duplicate-census) it never used, so its declared and written sets differ.\nJUSTIFICATION durability: the commit carries a conventional subject and a body stating what changed and why, with no attribution and no plan or ticket identifier; the census script and the fragment are committed under docs/ and docs/evidence/, the gate log is durable under the run directory, and the manifest was written incrementally.\nJUSTIFICATION fit: the census reads the store through the one reader that already walks every project and excludes code reviews rather than globbing itself, the script lives under docs/figures beside the record it reproduces, and the landing follows the plan's cumulative-evidence shape; deducted one because the directory-count glob (plan-*.json) is a different predicate from the reader's (plan-*.v*.json), so the equality the brief asked for is between two counts that only coincide while every stored plan file is version-named.\nVERDICT goal: met and independently reproduced: list_plan_reviews() is the sole enumerator, the s11 table carries all named columns, shares are 9 of 9 and 23 of 23, unresolved anchors are listed (none), and the reading is timestamped 2026-10-04T23:14:03Z.\nVERDICT done_when: every stored review is a row (9 rows over 9 records), both shares carry numerator and denominator, every anchor was resolved against the reviewed blob or main at the review timestamp (line bounds verified for dispatch.py:11187, recovery.py:6193, plan_review.py:709, recovery.py:238, supervisor_main.py:1), unresolved anchors are listed (none), and census.py reproduces the table byte for byte.\nVERDICT write_paths: git diff --name-only b09a1ccf7..9fa1d1782 is exactly docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html, docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/plan-review-predicts-a-duplicate-census.html and docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py; the worktree at 9fa1d1782 is clean.\nVERDICT manifest: read; status complete; it names no baseline_suite or after_suite arm, so the added-failure count is unmeasured; test_logs names census-gate.log, which records RUN1/RUN2 EXIT=0, DIFF EXIT=0, ROWS=9, DIRECTORY=9.\nVERDICT diff: read against b09a1ccf7: three added files (+374), a cumulative-evidence section s11 appended to the landed record, a new evidence fragment, and the 304-line census.py; no product code or test changed.\nCALL_SITES: none\nREVIEWED_BASE_SHA: b09a1ccf71322aee71f64752db4730309917e9e0\nREVIEWED_HEAD_SHA: 9fa1d1782d6e05826c26ad12223ffdd2dd1cc132\nFINDING docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py:163 follow-on: directory_counts globs plan-*.json while list_plan_reviews globs plan-*.v*.json, so the brief's \"row count equals the directory listing's record count\" compares two different predicates; they agree at 9 today only because every stored plan file is version-named, and a later non-versioned plan-*.json would report a spurious difference unrelated to a skipped record. Use the reader's own pattern for the directory count so the two sides measure the same population.\nFINDING docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py:97 follow-on: resolve_anchor checks a plan-section anchor's id against the reviewed plan blob regardless of the path the anchor names, so a finding anchored to a section of a different HTML document would be resolved against the wrong bytes; every current plan anchor names the reviewed plan itself, so no row is affected today, but the path in the anchor is ignored. Load the blob the anchor's own path names for plan anchors.\nFINDING docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py:123 follow-on: confirmed_by_repair searches every docs/plans/*.html for a distinctive identifier the finding names, so an identifier that also appears in an unrelated plan marks the finding confirmed; the two ground-truth confirmations (this plan's v23 findings) resolve correctly, but the column can over-report confirmation. Scope the corpus to the reviewed plan, or record the confirming location, so a confirmed cell can be traced to the repair that confirms it.\n",
+  "review_run_id": "r-20261004T233005392520-review-of-plan-review-predicts-a-duplicate-census",
+  "reviewed_base_sha": "b09a1ccf71322aee71f64752db4730309917e9e0",
+  "reviewed_head_sha": "9fa1d1782d6e05826c26ad12223ffdd2dd1cc132",
+  "reviewed_run_id": "r-20261004T231658588421-plan-review-predicts-a-duplicate-census",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T23:36:46.192948+00:00",
+  "total": 97
+}

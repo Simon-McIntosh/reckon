@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:_apply_append_evidence",
+    "reckon/_store.py:_write_state_locked"
+  ],
+  "completed_at": "2026-09-25T11:45:07.588Z",
+  "dispatched_at": "2026-09-25T11:04:22Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read git show 7a8d7051; the per-record write loop the prior review measured at reckon/_store.py:697 is replaced by a grouped read-apply-validate pass under every named record's lock taken in sorted path order (reckon/_store.py:701-702), with the replaces only after it (reckon/_store.py:716), the locks being taken at reckon/_store.py:968 under the plan lock held by _write_state (reckon/_store.py:823) and no path acquires an evidence lock before a plan lock.",
+    "done_when": "read tests/test_edit_plan_append_evidence.py:267 at 7a8d7051; the added test asserts the refusal and compares both records' bytes and st_mtime_ns against a snapshot taken from the files (lines 276, 292), and the reviewed manifest records the gate the node ran (134 passed, exit 0).",
+    "goal": "the reviewed node's goal is that a refused cross-record batch leaves every record untouched and that the sorted-order locks cannot deadlock; measured both at 7a8d7051 with an independent probe, where probe-refusal-head.log reports changed_records=[] and first_has_beat_one=False, and probe-locks-head.log reports both batches completed with all four anchors landed.",
+    "manifest": "read the reviewed run's manifest at 7a8d7051; it records the four commits, the gate command with its 134-passed result, the gate, mutation and audit-demo logs, and names 7a8d7051 as the all-or-nothing batch fix, with status complete.",
+    "write_paths": "read git show 7a8d7051 --stat against the reviewed node's declared paths; the commit touches only reckon/_store.py and tests/test_edit_plan_append_evidence.py, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_edit_plan_append_evidence.py:292 compares each record's bytes and mtime_ns against a snapshot taken from the files themselves, so restoring the per-record write loop reddens it, as the pre-fix arm of the probe shows.",
+    "evidence": "the refusal arm is measured at both revisions (probe-refusal-head.log, probe-refusal-prefix.log) and the deadlock claim against a sorted()-removed control that stuck both threads (probe-locks-control-unsorted.log), while the reviewed manifest discloses the locking property was not mutation-tested before this re-review.",
+    "fit": "reckon/_store.py:700-702 reuses the existing _serialized_path_lock idiom (reckon/_store.py:268) through an ExitStack over sorted paths, and the docstring states the ordering reason beside the code.",
+    "goal_fidelity": "reckon/_store.py:701-716 reads and validates every record before the first replace, and the probe measures changed_records=[] on refusal where the pre-fix arm 5ca9701f changed plan-a-landed.html.",
+    "scope_discipline": "git show 7a8d7051 --stat lists only reckon/_store.py and tests/test_edit_plan_append_evidence.py, both inside the reviewed node's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a refused cross-record batch leaves every record untouched and that the sorted-order locks cannot deadlock; measured both at 7a8d7051 with an independent probe, where probe-refusal-head.log reports changed_records=[] and first_has_beat_one=False, and probe-locks-head.log reports both batches completed with all four anchors landed.\nVERDICT done_when: read tests/test_edit_plan_append_evidence.py:267 at 7a8d7051; the added test asserts the refusal and compares both records' bytes and st_mtime_ns against a snapshot taken from the files (lines 276, 292), and the reviewed manifest records the gate the node ran (134 passed, exit 0).\nVERDICT write_paths: read git show 7a8d7051 --stat against the reviewed node's declared paths; the commit touches only reckon/_store.py and tests/test_edit_plan_append_evidence.py, both inside them.\nVERDICT manifest: read the reviewed run's manifest at 7a8d7051; it records the four commits, the gate command with its 134-passed result, the gate, mutation and audit-demo logs, and names 7a8d7051 as the all-or-nothing batch fix, with status complete.\nVERDICT diff: read git show 7a8d7051; the per-record write loop the prior review measured at reckon/_store.py:697 is replaced by a grouped read-apply-validate pass under every named record's lock taken in sorted path order (reckon/_store.py:701-702), with the replaces only after it (reckon/_store.py:716), the locks being taken at reckon/_store.py:968 under the plan lock held by _write_state (reckon/_store.py:823) and no path acquires an evidence lock before a plan lock.\nCALL_SITES: reckon/_store.py:_apply_append_evidence, reckon/_store.py:_write_state_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:701-716 reads and validates every record before the first replace, and the probe measures changed_records=[] on refusal where the pre-fix arm 5ca9701f changed plan-a-landed.html.\nSCORE evidence: 18\nJUSTIFICATION evidence: the refusal arm is measured at both revisions (probe-refusal-head.log, probe-refusal-prefix.log) and the deadlock claim against a sorted()-removed control that stuck both threads (probe-locks-control-unsorted.log), while the reviewed manifest discloses the locking property was not mutation-tested before this re-review.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show 7a8d7051 --stat lists only reckon/_store.py and tests/test_edit_plan_append_evidence.py, both inside the reviewed node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_edit_plan_append_evidence.py:292 compares each record's bytes and mtime_ns against a snapshot taken from the files themselves, so restoring the per-record write loop reddens it, as the pre-fix arm of the probe shows.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_store.py:700-702 reuses the existing _serialized_path_lock idiom (reckon/_store.py:268) through an ExitStack over sorted paths, and the docstring states the ordering reason beside the code.",
+  "review_run_id": "r-20260925T110405625415-re-review-of-evidence-append-op",
+  "reviewed_base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+  "reviewed_head_sha": "7a8d7051a44e77417988bcdc423919fb2b32c4a6",
+  "reviewed_run_id": "r-20260925T075737298879-evidence-append-op",
+  "reviewer": "deepseek-v4.1-flash",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T11:40:17.713192+00:00",
+  "total": 92
+}

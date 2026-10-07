@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:5257"
+  ],
+  "completed_at": "2026-10-02T18:00:48.627Z",
+  "dispatched_at": "2026-10-02T17:30:51Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_gate_log_agrees.py",
+      "line": "244",
+      "severity": "blocking",
+      "text": "blocking: this file was edited in commit 10d4be364 outside the node's declared write scope, and promotion's _outside_declared_scope refuses changed paths outside scope, so the row cannot land without a landed out-of-scope acceptance; the manifest's changed_paths omits the file."
+    },
+    {
+      "file": "tests/test_crew_gate_log_agrees.py",
+      "line": "252",
+      "severity": "follow-on",
+      "text": "follow-on: the repurposed case now runs at EXIT=0, so the module no longer exercises a quoted diagnostic beside a nonzero recorded exit and that guard is narrowed."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1244",
+      "severity": "follow-on",
+      "text": "follow-on: _zero_added_against_a_red_base trusts a baseline_suite that does not declare completed true, where _baseline_suite_failure_ids at :6665 and _head_suite_failure_ids at :6675 require it, so an interrupted baseline arm can license the exemption."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against ca630c06e; three files changed, reckon/crew/promotion.py +116 (new guard and helpers), tests/test_passed_verdict_needs_exit_zero.py new (+261), and tests/test_crew_gate_log_agrees.py 7 added / 8 deleted in commit 10d4be364.",
+    "done_when": "the node done_when names the refusal and still-promotes cases; tests/test_passed_verdict_needs_exit_zero.py drives them through the crew complete CLI in a temporary RECKON_HOME and repository, and the manifest records the arm results.",
+    "goal": "the node goal asks crew complete to refuse a passed verdict beside a nonzero exit status or a non-executable gate command; commit 9a4166c40 implements the exit-status half at reckon/crew/promotion.py:1252, and the plan's section 27 reassigns the command guard to a later section, so the delivered half is what the plan now assigns here.",
+    "manifest": "read; it records the base arm 8 failed / 1131 passed with EXIT=1 and the head arm 5 failed / 1134 passed with EXIT=1, the negative control 3 failed / 2 passed, and 0 added ids, while its changed_paths lists only 2 of the 3 changed files.",
+    "write_paths": "the declared scope is promotion.py, ledger.py, the node test, the evidence fragment and the figures dir; the diff also changes tests/test_crew_gate_log_agrees.py, which is outside them."
+  },
+  "justifications": {
+    "durability": "the negative control removes the comparison in reckon/crew/promotion.py:1281 and reddens the three refusal cases, so the added tests fail if the guard regresses.",
+    "evidence": "the manifest records both arms and the negative control, and tests/test_passed_verdict_needs_exit_zero.py asserts the refusals, the zero-status promotion and the red-base delta.",
+    "fit": "the helpers follow the module's Mapping-guard idiom at reckon/crew/promotion.py:1189, but the exemption at :1244 skips the completed check its siblings enforce.",
+    "goal_fidelity": "reckon/crew/promotion.py:1252 refuses a passed verdict beside a nonzero exit status, the deliverable section 26 owns after section 27 moved the command guard elsewhere.",
+    "scope_discipline": "the diff changes tests/test_crew_gate_log_agrees.py at :244, outside the declared write paths, and the manifest's changed_paths omits it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal asks crew complete to refuse a passed verdict beside a nonzero exit status or a non-executable gate command; commit 9a4166c40 implements the exit-status half at reckon/crew/promotion.py:1252, and the plan's section 27 reassigns the command guard to a later section, so the delivered half is what the plan now assigns here.\nVERDICT done_when: the node done_when names the refusal and still-promotes cases; tests/test_passed_verdict_needs_exit_zero.py drives them through the crew complete CLI in a temporary RECKON_HOME and repository, and the manifest records the arm results.\nVERDICT write_paths: the declared scope is promotion.py, ledger.py, the node test, the evidence fragment and the figures dir; the diff also changes tests/test_crew_gate_log_agrees.py, which is outside them.\nVERDICT manifest: read; it records the base arm 8 failed / 1131 passed with EXIT=1 and the head arm 5 failed / 1134 passed with EXIT=1, the negative control 3 failed / 2 passed, and 0 added ids, while its changed_paths lists only 2 of the 3 changed files.\nVERDICT diff: read commit by commit against ca630c06e; three files changed, reckon/crew/promotion.py +116 (new guard and helpers), tests/test_passed_verdict_needs_exit_zero.py new (+261), and tests/test_crew_gate_log_agrees.py 7 added / 8 deleted in commit 10d4be364.\nCALL_SITES: reckon/crew/promotion.py:5257\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1252 refuses a passed verdict beside a nonzero exit status, the deliverable section 26 owns after section 27 moved the command guard elsewhere.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records both arms and the negative control, and tests/test_passed_verdict_needs_exit_zero.py asserts the refusals, the zero-status promotion and the red-base delta.\nSCORE scope_discipline: 11\nJUSTIFICATION scope_discipline: the diff changes tests/test_crew_gate_log_agrees.py at :244, outside the declared write paths, and the manifest's changed_paths omits it.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control removes the comparison in reckon/crew/promotion.py:1281 and reddens the three refusal cases, so the added tests fail if the guard regresses.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers follow the module's Mapping-guard idiom at reckon/crew/promotion.py:1189, but the exemption at :1244 skips the completed check its siblings enforce.\nFINDING tests/test_crew_gate_log_agrees.py:244 blocking: this file was edited in commit 10d4be364 outside the node's declared write scope, and promotion's _outside_declared_scope refuses changed paths outside scope, so the row cannot land without a landed out-of-scope acceptance; the manifest's changed_paths omits the file.\nFINDING tests/test_crew_gate_log_agrees.py:252 follow-on: the repurposed case now runs at EXIT=0, so the module no longer exercises a quoted diagnostic beside a nonzero recorded exit and that guard is narrowed.\nFINDING reckon/crew/promotion.py:1244 follow-on: _zero_added_against_a_red_base trusts a baseline_suite that does not declare completed true, where _baseline_suite_failure_ids at :6665 and _head_suite_failure_ids at :6675 require it, so an interrupted baseline arm can license the exemption.\n",
+  "review_run_id": "r-20261002T173003682835-review-of-passed-verdict-needs-exit-zero",
+  "reviewed_base_sha": "ca630c06e894d95111a8627b11d02a023aa270dd",
+  "reviewed_head_sha": "9a4166c40cf24212d3f508a4f558a58679638657",
+  "reviewed_run_id": "r-20261002T130419125202-passed-verdict-needs-exit-zero",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T173003682835-review-of-passed-verdict-needs-exit-zero",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 11
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T17:54:11.831388+00:00",
+  "total": 80
+}

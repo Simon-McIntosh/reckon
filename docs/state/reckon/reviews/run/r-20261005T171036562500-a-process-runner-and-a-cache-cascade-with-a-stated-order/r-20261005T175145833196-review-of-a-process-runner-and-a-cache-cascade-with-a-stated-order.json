@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 12,
+  "call_site_note": "production call sites of the two introduced public functions",
+  "call_sites": [
+    "reckon/crew/routing.py:483",
+    "reckon/velocity.py:162",
+    "reckon/velocity.py:324",
+    "reckon/velocity.py:391",
+    "reckon/velocity.py:649",
+    "reckon/velocity.py:655",
+    "reckon/velocity.py:553",
+    "reckon/capabilities.py:1145",
+    "reckon/clones.py:536",
+    "reckon/ledger.py:789",
+    "reckon/serve.py:468",
+    "reckon/crew/picker/lane_context.py:262"
+  ],
+  "completed_at": "2026-10-05T17:59:46.989Z",
+  "dispatched_at": "2026-10-05T17:52:03Z",
+  "findings": [
+    {
+      "file": "reckon/velocity.py",
+      "line": "148",
+      "severity": "follow-on",
+      "text": "follow-on, non-blocking: the new byte runner passes capture_output=True, so velocity.git over it now captures git's stderr where subprocess.check_output previously left it inherited on the process's stderr. On the success path any git warning that used to reach the operator is now silently held; on the failure path the behaviour improves (CalledProcessError.stderr is populated where check_output left it None). The new test test_git_failure_returns_bytes_and_checked_wrappers_keep_their_error_domains asserts the capture deliberately and the section's own prose does not name the change, so this is a recorded behaviour change rather than a defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 12 production call sites of the two introduced public functions: velocity.run_git from routing._git (1 cross-module) plus velocity's own git/_plan_documents/read_blobs/_is_ancestor/_blob_sha (5), and _store.cache_root from velocity.velocity_cache_root, capabilities.pick_input_cache_path, clones.clone_matches, ledger._run_index_path, serve._client_cache_root and lane_context._profile_cache_root (6); interface_counts.py reaches the cascade through velocity.velocity_cache_root.",
+    "diff": "Read all three commits against the base. The refactor commit adds run_git on velocity and routes git/_plan_documents/read_blobs/_is_ancestor/_blob_sha and routing._git through it, adds _store.cache_root with the kind table beside _config_home, deletes clones._cache_root, capabilities.pick_input_cache_root and lane_context/serve/velocity's own resolvers, and points every consumer at cache_root with its kind; the fix commit makes the 'after' kinds consult XDG before the home; the docs commit records the evidence fragment.",
+    "done_when": "Every \u00a713 clause holds: git -C reads run_git contains no subprocess call and returns text to checked callers and the completed process to check=False callers; grep XDG_CACHE_HOME reckon/ returns one function (_store.cache_root); the sole invoking function in velocity.py is run_git; def cache_root is one line in reckon/_store.py; pick_input_cache_path resolves through cache_root; def pick_input_cache_root returns nothing; the new test asserts five-kind directory parity across 25 cells, the explicit override and the ValueError on an unknown kind under isolated RECKON_HOME and explicit XDG_CACHE_HOME; the negative control restores a private cascade in capabilities.py and reddens three assertions; public_definitions is exactly one higher (1476 -> 1477); the gate log ends in a bare EXIT=0.",
+    "goal": "Read the node goal (\u00a713: one process-returning git runner on velocity and one cache cascade with a stated order in _store, retiring the copies). velocity's subprocess invocation functions fell 4 -> 1 and the five cache resolvers fell to one kind-keyed table; routing._git keeps its CrewError/text error domain and velocity.git its bytes-and-raise contract, exactly as the section specifies.",
+    "manifest": "Read the reviewed run's manifest; it states 519 passed EXIT=0 against 475 at base, the public_definitions 1476 -> 1477 figure, the private-cascade negative control at 7 failed EXIT=1, and names base-gate.log, final-gate.log and negative-gate.log with base/after suite JSON whose revisions (1fb3df68, 6eb68190) match the arm files.",
+    "write_paths": "Every path in the base..head diff (10 files) is inside the declared write paths; no plan, index or out-of-scope file was touched, and the detector's own _git runner and archive reader are correctly left for the dependent \u00a712 section."
+  },
+  "justifications": {
+    "durability": "tests/test_one_cache_cascade_serves_every_kind.py pins each of the five kinds' directory across default, isolated home, XDG, both and configured environments (25 cells), the override precedence, the unknown-kind refusal, the single XDG_CACHE_HOME owner by AST, the git error domains of run_git/git/routing._git, the single subprocess-invoking function, and the velocity-imports-no-crew layering; the negative control (private cascade restored in capabilities.py) reddens the parity cells, the owner test and the ledger/detector test, so the guard is shown to fire.",
+    "evidence": "base-gate.log 475 passed in 366.25s EXIT=0 and final-gate.log 519 passed in 365.43s EXIT=0, both against a declared revision and tree with module=_store.py and cwd named; the negative-gate.log ends 7 failed, 37 passed, EXIT=1; head-measurements.json records public_definitions 1476 -> 1477, the single cache owner and the single velocity process owner; added_failure_count 0 was derived from the two gate logs by review.added_failures_from_gate_logs, not asserted from the manifest. One point withheld: the after gate ran at the source head 6eb681901 while the reviewed head is the docs commit 3184f4a8b, so the run and the delivered revision differ by one evidence-only commit.",
+    "fit": "cache_root lands in the path-helpers section of reckon/_store.py beside _config_home, the package's owner of RECKON_HOME precedence, reading the home through it and keeping each kind's leaf, env var and home-order in the table as \u00a713 argues; run_git stays on velocity where \u00a710 placed the public git names, with the generic runner's placement tradeoff already recorded by the plan-design review; the mode wrappers state their contract (git raises on bytes, routing._git translates to CrewError, the raw runner returns the process); no CLI option, MCP view or refusal family was added.",
+    "goal_fidelity": "The section's two deliverables are both the working tree's behaviour at the reviewed head: grep 'def cache_root' returns one line in reckon/_store.py, the sole XDG_CACHE_HOME reading is that function, velocity.py's sole subprocess-invoking function is run_git, routing._git contains no subprocess call, pick_input_cache_root is gone with every caller rewired, and the 25 base-recorded directory cells are preserved by the shared cascade.",
+    "reuse": "This section is de-duplication end to end: five cache resolvers in two orders plus the detector's copy collapse to one kind-keyed function, and four velocity subprocess sites plus routing's private runner collapse to one byte runner. No new fork is introduced \u2014 the kind table is data, the reviewers' contracts are preserved by thin mode wrappers, and the residual second runner (the detector's _git) is outside this section and named by \u00a712 and the git-access-has-one-owner followup.",
+    "scope_discipline": "Every path in the base..head diff is inside the declared write paths and every change serves \u00a713's two mechanisms; nothing touches the shared plan, project index or sprint state, and the deliberately out-of-scope direct git invocations across the twenty-one modules are left to the followup the section names."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261005T175145833196-review-of-a-process-runner-and-a-cache-cascade-with-a-stated-order",
+  "reviewed_base_sha": "1fb3df688f4b80d8f1003006ec081714ee54d9b8",
+  "reviewed_head_sha": "3184f4a8b43bb8e0a7703046288f59dc3bcb0731",
+  "reviewed_run_id": "r-20261005T171036562500-a-process-runner-and-a-cache-cascade-with-a-stated-order",
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T18:08:00+00:00",
+  "total": 116
+}

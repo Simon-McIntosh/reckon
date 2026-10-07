@@ -1,0 +1,92 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "commits_read": [
+    "d6c15105782a5b973a3e17d7036b4ad982547f86"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T14:56:17.365673+00:00",
+  "evidence": {
+    "baseline": {
+      "exit_status": 0,
+      "failed": 0,
+      "import_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/660d357e-1ede-4027-b678-d89d9391ff8f/scratchpad/callsites-mutation-tree/reckon/__init__.py",
+      "passed": 5,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/logs/negative-control-declared-baseline.log"
+    },
+    "declared_mutation": {
+      "exit_status": 1,
+      "failed": 2,
+      "failure_ids": [
+        "tests/test_review_call_sites.py::test_omitted_call_sites_is_absent_rather_than_zero",
+        "tests/test_review_call_sites.py::test_legacy_record_without_call_sites_remains_complete"
+      ],
+      "first_line_matches_declaration": true,
+      "import_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/660d357e-1ede-4027-b678-d89d9391ff8f/scratchpad/callsites-mutation-tree/reckon/__init__.py",
+      "passed": 3,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/logs/negative-control-declared.log"
+    },
+    "review_record_validation": {
+      "parsed_dimension_count": 5,
+      "score_bounds": "all integer values are within 0..20",
+      "total": 100
+    },
+    "scope": {
+      "declared_paths": 4,
+      "diff_paths": 2,
+      "out_of_scope_paths": 0,
+      "worktree_clean": true
+    },
+    "scratch_mutation": {
+      "observed_effect": "The scratch record literal writes call_sites and call_site_count unconditionally, whereas the retained committed source writes them only when call_sites_seen is true.",
+      "path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/660d357e-1ede-4027-b678-d89d9391ff8f/scratchpad/callsites-mutation-tree/reckon/crew/review.py",
+      "result": "An omitted CALL_SITES emission is converted to [] and 0 in the scratch mutation, precisely the defect asserted by the two red focused tests."
+    }
+  },
+  "findings": [],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read d6c15105782a5b973a3e17d7036b4ad982547f86 against 5c71414ad92e875d5605a957b7c4ca94594ddfad: it changes only the plan record and cumulative evidence archive, with the declared mutation and receipt links preserved.",
+    "done_when": "Read the source prompt and manifest; the durable baseline records 5 passed with exit 0 and the declared scratch mutation records 2 failed and 3 passed with exit 1, with distinct failure identifiers.",
+    "goal": "Read the source prompt; the committed plan record and evidence anchor apply the exact unconditional-parser-key mutation and distinguish it from the earlier weaker control.",
+    "manifest": "Read the complete manifest; it names d6c15105782a5b973a3e17d7036b4ad982547f86, both durable receipts, the two changed HTML paths, the clean worktree, and the two attributed failures.",
+    "write_paths": "Compared the four paths in the source manifest with the commit diff; the two committed paths are declared and the two receipt paths exist at their exact locations."
+  },
+  "justifications": {
+    "durability": "The focused tests named by the source manifest fail specifically under the unconditional-key mutation, and the exact green and red receipts are durably retained at the paths recorded in the landing documents.",
+    "evidence": "The baseline receipt shows the archive import and 5 passed with exit 0, while the declared receipt starts with the exact mutation and shows the two expected failures plus exit 1; independent inspection confirms the scratch record literal makes both keys unconditional.",
+    "fit": "The d6c15105 additions follow the existing plan r-comment and cumulative evidence-section structure, use the established project-absolute archive anchor, and preserve plan metadata.",
+    "goal_fidelity": "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html:474 and docs/plans/scoring-should-stop-a-promotion.html:1212 record the exact declared mutation, its isolated receipts, and the distinction between omitted and explicit zero measurements.",
+    "scope_discipline": "The source manifest declares two receipt paths and two HTML paths; d6c15105 changes only the two HTML paths, while the receipt files remain at their declared locations and the assigned worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source prompt; the committed plan record and evidence anchor apply the exact unconditional-parser-key mutation and distinguish it from the earlier weaker control.\nVERDICT done_when: Read the source prompt and manifest; the durable baseline records 5 passed with exit 0 and the declared scratch mutation records 2 failed and 3 passed with exit 1, with distinct failure identifiers.\nVERDICT write_paths: Compared the four paths in the source manifest with the commit diff; the two committed paths are declared and the two receipt paths exist at their exact locations.\nVERDICT manifest: Read the complete manifest; it names d6c15105782a5b973a3e17d7036b4ad982547f86, both durable receipts, the two changed HTML paths, the clean worktree, and the two attributed failures.\nVERDICT diff: Read d6c15105782a5b973a3e17d7036b4ad982547f86 against 5c71414ad92e875d5605a957b7c4ca94594ddfad: it changes only the plan record and cumulative evidence archive, with the declared mutation and receipt links preserved.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/archive/scoring-should-stop-a-promotion-landed.html:474 and docs/plans/scoring-should-stop-a-promotion.html:1212 record the exact declared mutation, its isolated receipts, and the distinction between omitted and explicit zero measurements.\nSCORE evidence: 20\nJUSTIFICATION evidence: the baseline receipt shows the archive import and 5 passed with exit 0, the declared receipt starts with the exact mutation and shows the two expected failures plus exit 1, and the scratch record literal makes both call-site keys unconditional.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the source manifest declares two receipt paths and two HTML paths; d6c15105 changes only the two HTML paths, while the receipt files remain at their declared locations and the assigned worktree is clean.\nSCORE durability: 20\nJUSTIFICATION durability: the focused tests named by the source manifest fail specifically under the unconditional-key mutation, and the exact green and red receipts are durably retained at the paths recorded in the landing documents.\nSCORE fit: 20\nJUSTIFICATION fit: the d6c15105 additions follow the existing plan r-comment and cumulative evidence-section structure, use the established project-absolute archive anchor, and preserve plan metadata.\n",
+  "recommendation": "accept",
+  "review_limitations": [
+    "Read the recorded focused baseline and declared-mutation receipts; did not rerun the full suite.",
+    "This review attaches findings and scores only. It does not repair source, merge the commit, promote the run, or verify the separately scoped merged-head gate.",
+    "The review covers the evidence/documentation commit d6c15105782a5b973a3e17d7036b4ad982547f86; the parser implementation it records is outside this node's changed paths."
+  ],
+  "review_run_id": "r-20260921T145617365673-review-of-declared-absent-versus-zero-mutation-reddens-the-call-sites-test",
+  "reviewed_base_sha": "5c71414ad92e875d5605a957b7c4ca94594ddfad",
+  "reviewed_commit": "d6c15105782a5b973a3e17d7036b4ad982547f86",
+  "reviewed_head_sha": "d6c15105782a5b973a3e17d7036b4ad982547f86",
+  "reviewed_run_id": "r-20260921T144155963632-declared-absent-versus-zero-mutation-reddens-the-call-sites-test",
+  "reviewer_run_id": "r-20260921T145617365673-review-of-declared-absent-versus-zero-mutation-reddens-the-call-sites-test",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144155963632-declared-absent-versus-zero-mutation-reddens-the-call-sites-test/manifest.md",
+  "source_manifest_sha256": "c31516acf6115c718abcfb48a16496333b280094da8c2502c94ab0c16899deeb",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/declared-absent-versus-zero-mutation-reddens-the-call-sites-test",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:21:56+02:00",
+  "total": 100
+}

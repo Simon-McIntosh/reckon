@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T20:11:16.374Z",
+  "dispatched_at": "2026-10-05T20:06:45Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:1506",
+      "id": "thin_wrapper-1",
+      "reason": "the gate must be word-boundaried or the claim dropped, otherwise the node cannot satisfy its own done-when and would report a blocker on a false positive.",
+      "text": "\u00a716's done-when asserts `grep -rn '_TAG_RE' reckon/` returns \"its definition and its one use inside strip_tags and nothing else\", but that pattern already matches `_META_TAG_RE` at reckon/_schema.py:239, 355 and 451 (substring match, not the intended symbol), so the stated result is false at the base",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:2534",
+      "id": "duplicate_owner-1",
+      "reason": "the census must either name this site and require it composed from the owner or exempt it explicitly, as the plan already does for `is_section_identity`, or the one-owner claim the census exists to enforce is already violated at the base.",
+      "text": "the section-id validity grammar `re.fullmatch(r\"[A-Za-z0-9][A-Za-z0-9._-]*\", section_id)` is a copy of `reckon/_schema.py:127` `_RESOURCE_SEGMENT_RE`, re-spelled inside a block that already imports from `reckon._schema` (the same block imports `SECTION_DECLARATION_ENUM`), and the plan's census of section-spelling regular expressions names six sites and omits this seventh",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:825",
+      "id": "duplicate_owner-2",
+      "reason": "the gate cannot pass as written and does not measure the thing it names; it must grep the inline expression's own text (`<section\\b`), or the node's done-when is unsatisfiable.",
+      "text": "\u00a717's done-when asserts `grep -c 'section\\b' reckon/_store.py` returns zero \"because the inline section-open expression is gone\", but the measured count at the base is 136: the pattern matches the standalone word \"section\" throughout docstrings, `OpError` messages and the `insert_section`/`collapse_section` symbols, not the inline `<section\\b[^>]*>` expression at line 825 that the section names as the copy of `_SECTION_OPEN_RE` to remove",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "182e86844070a371a637a567c7e53062bc5234a2527b9ae63fc30948ed577dcc",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 124,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T200625003467-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "2a7f8777ee1aa07a4fe179bcbe5ca85251fb5a69",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one private HTMLParser read in `reckon/_plan_html.py` is projected through a small named-record interface (`plan_headings`) plus the existing `structured_section_spans`, so section enumeration, identity and extent are answered behind an interface smaller than the machinery it hides; no new module is added and the change reduces walk surface.",
+    "duplicate_owner": "a finding \u2014 the plan's census of section-spelling grammars names six sites and omits the section-id validity grammar re-spelled in `reckon/_store.py:2534` from `reckon/_schema.py`'s `_RESOURCE_SEGMENT_RE`, and \u00a717's own removal gate cannot be satisfied at `reckon/_store.py`.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716, \u00a717 and \u00a718 each carry an Interface accounting paragraph that names the added public definitions (`strip_tags`; `plan_headings` and the machinery-element predicate; the schema classification predicate) and states why nothing can be retired, so no section adds surface without accounting for it.",
+    "reuse_search": "pass \u2014 the design names and extends the mechanisms it found (`_StructuredSectionSpanParser`/`structured_section_spans` and `_store`'s collapse helpers in `reckon/_plan_html.py`/`reckon/_store.py`, `routing.section_record_id`, `_schema`'s declaration enum, `interface_counts.read_trees`/`definitions`) rather than adding a parallel reader.",
+    "thin_wrapper": "a finding \u2014 `strip_tags` is justified as exposing the existing `_TAG_RE` across a package boundary, but the section's done-when tries to prove that singularity with a grep that over-matches another module's `_META_TAG_RE`."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.770255+00:00"
+}

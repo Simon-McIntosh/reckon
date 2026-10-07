@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_plan_html.py:1269 parse_plan",
+    "reckon/serve.py:1424 _fresh_discovery"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:22:18.841168+00:00",
+  "findings": [
+    {
+      "file": "docs/research/reckon-read-latency-profile.html",
+      "line": "33",
+      "text": "the sentence claims the tables exclude only the profile driver and the public MCP envelope, but the audit table's rank 3 entries are preceded in the log by third-party frames it never excludes (bs4/__init__.py:211 at 36.209 s, soupsieve/css_match.py:1633 at 33.756 s), so a reader applying the stated rule cannot reproduce the published ranking."
+    },
+    {
+      "file": "docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html",
+      "line": "13",
+      "text": "plan-commits names only 436c75f3 while the landing work spans two commits, the plan landing record and this evidence anchor itself having landed in 37c8988a, so the anchor's own revision is not named for a reader following the pointer."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against the base, 436c75f3 adds the 110-line research doc and the 47-line SVG, 37c8988a appends the 12-line plan landing record and creates the 54-line cumulative evidence anchor, all insertions and no reckon/ source file.",
+    "done_when": "the doc carries a per-read top-five table with seconds, file:line, category and memo candidate, the profiling command at line 55 and the expected warm latencies at lines 70, 85 and 100, with validate_docs.sh exiting 0 in final-validation.log; its \"no file outside docs/research/ and the plan landing record\" clause conflicts with the run's own four declared write paths, and the diff matches those write paths, not the two-path clause.",
+    "goal": "the goal is to profile the warm audit, roadmap-summary and discovery reads and name each one's top call sites, and docs/research/reckon-read-latency-profile.html:59-100 carries a ranked table per read whose spot-checked rows all match their receipts (audit-profile.log:15 gives read_state 625 calls and 59.365 s, the doc's audit rank 1).",
+    "manifest": "read at status complete, commits [436c75f32d918cad81349350ff423c86f53378e4, 37c8988ae55d21dc036f8ecc0f9b24b7c61a1c62], with the four profile and validation logs and the artifact and evidence_inputs summary, and its claimed numbers match the logs I read.",
+    "write_paths": "the run declares four paths, docs/research/reckon-read-latency-profile.html, docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html, docs/figures/reckon-reads-answer-in-seconds and docs/plans/reckon-reads-answer-in-seconds.html, and git diff --numstat ac231ab2..37c8988a names exactly those four with 223 insertions and zero deletions."
+  },
+  "justifications": {
+    "durability": "no committed test covers the landed documents, and validate_docs.sh lives in the run directory, so an edit that removed the ranked tables from docs/research/reckon-read-latency-profile.html would leave every committed check green.",
+    "evidence": "the gate validate_docs.sh exited 0 and its per-file results are recorded in final-validation.log, but it is a structural audit (audit-doc, xmllint) that asserts nothing about the table numbers, which I verified against all three profile logs myself.",
+    "fit": "the page follows the repo idiom (plan-* metas at lines 6-17, figure under docs/figures/<plan>/, cumulative record at docs/evidence/archive/<plan>-landed.html) and both commits carry conventional subjects with bodies and no plan or ticket identifiers.",
+    "goal_fidelity": "docs/research/reckon-read-latency-profile.html:63 names the audit leader as read_state with 625 calls and 59.365 s exactly as audit-profile.log:15 does, but the ranking rule the doc states at line 33 is not the rule its tables apply.",
+    "scope_discipline": "git diff --numstat ac231ab2 37c8988a is 223 insertions and 0 deletions across exactly the four declared write paths, with no production file touched."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ac231ab23c991fc574799a28645ecaccd97cde24\nreviewed_head_sha: 37c8988ae55d21dc036f8ecc0f9b24b7c61a1c62\nVERDICT goal: the goal is to profile the warm audit, roadmap-summary and discovery reads and name each one's top call sites, and docs/research/reckon-read-latency-profile.html:59-100 carries a ranked table per read whose spot-checked rows all match their receipts (audit-profile.log:15 gives read_state 625 calls and 59.365 s, the doc's audit rank 1).\nVERDICT done_when: the doc carries a per-read top-five table with seconds, file:line, category and memo candidate, the profiling command at line 55 and the expected warm latencies at lines 70, 85 and 100, with validate_docs.sh exiting 0 in final-validation.log; its \"no file outside docs/research/ and the plan landing record\" clause conflicts with the run's own four declared write paths, and the diff matches those write paths, not the two-path clause.\nVERDICT write_paths: the run declares four paths, docs/research/reckon-read-latency-profile.html, docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html, docs/figures/reckon-reads-answer-in-seconds and docs/plans/reckon-reads-answer-in-seconds.html, and git diff --numstat ac231ab2..37c8988a names exactly those four with 223 insertions and zero deletions.\nVERDICT manifest: read at status complete, commits [436c75f32d918cad81349350ff423c86f53378e4, 37c8988ae55d21dc036f8ecc0f9b24b7c61a1c62], with the four profile and validation logs and the artifact and evidence_inputs summary, and its claimed numbers match the logs I read.\nVERDICT diff: read commit by commit against the base, 436c75f3 adds the 110-line research doc and the 47-line SVG, 37c8988a appends the 12-line plan landing record and creates the 54-line cumulative evidence anchor, all insertions and no reckon/ source file.\nCALL_SITES: reckon/_plan_html.py:1269 parse_plan, reckon/serve.py:1424 _fresh_discovery\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/research/reckon-read-latency-profile.html:63 names the audit leader as read_state with 625 calls and 59.365 s exactly as audit-profile.log:15 does, but the ranking rule the doc states at line 33 is not the rule its tables apply.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate validate_docs.sh exited 0 and its per-file results are recorded in final-validation.log, but it is a structural audit (audit-doc, xmllint) that asserts nothing about the table numbers, which I verified against all three profile logs myself.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat ac231ab2 37c8988a is 223 insertions and 0 deletions across exactly the four declared write paths, with no production file touched.\nSCORE durability: 10\nJUSTIFICATION durability: no committed test covers the landed documents, and validate_docs.sh lives in the run directory, so an edit that removed the ranked tables from docs/research/reckon-read-latency-profile.html would leave every committed check green.\nSCORE fit: 19\nJUSTIFICATION fit: the page follows the repo idiom (plan-* metas at lines 6-17, figure under docs/figures/<plan>/, cumulative record at docs/evidence/archive/<plan>-landed.html) and both commits carry conventional subjects with bodies and no plan or ticket identifiers.\nFINDING docs/research/reckon-read-latency-profile.html:33 the sentence claims the tables exclude only the profile driver and the public MCP envelope, but the audit table's rank 3 entries are preceded in the log by third-party frames it never excludes (bs4/__init__.py:211 at 36.209 s, soupsieve/css_match.py:1633 at 33.756 s), so a reader applying the stated rule cannot reproduce the published ranking.\nFINDING docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html:13 plan-commits names only 436c75f3 while the landing work spans two commits, the plan landing record and this evidence anchor itself having landed in 37c8988a, so the anchor's own revision is not named for a reader following the pointer.\n",
+  "review_run_id": "r-20260925T072218841168-review-of-read-latency-profile",
+  "reviewed_base_sha": "ac231ab23c991fc574799a28645ecaccd97cde24",
+  "reviewed_head_sha": "37c8988ae55d21dc036f8ecc0f9b24b7c61a1c62",
+  "reviewed_run_id": "r-20260925T064039051367-read-latency-profile",
+  "reviewer": "review-of-read-latency-profile",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T07:43:12.934910+00:00",
+  "total": 82
+}

@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T14:07:04.638Z",
+  "dispatched_at": "2026-10-03T13:48:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "824",
+      "severity": "follow-on",
+      "text": "a manifest that records its two suite arms as one nested object keyed by arm name is not resolvable by _gate_log_path, which reads a flat object's log_path, and read_review would therefore annotate this run's record with added_failure_count=null (unmeasured) even though both arms' gate logs exist and this review derived 0 from them; the record stored here carries the count and the empty id list directly, and the nested shape is the reviewed run's own manifest rather than a defect in the landed change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site reaches the change; the diff changes test files only and leaves reckon/crew/ticker.py and reckon/flight.py byte-identical to base",
+    "diff": "read commit by commit against aff594161bf1098fe807fa73b41180db35d32130; 4c4bffb09 changes the five test files, e1537020a adds the evidence fragment only",
+    "done_when": "the done_when names the five ticker test files under both a TERM=dumb NO_COLOR=1 arm and a TERM=xterm-256color NO_COLOR-unset arm; the manifest's baseline_suite and after_suite record four runs and their logs",
+    "goal": "the node's goal is to make the ticker tests hold at head under any caller terminal; the diff pins each environment fact (NO_COLOR, model-cell geometry, stdout stream, help wording) at the test that reads it",
+    "manifest": "read; it states the gate command, the four arm results with exit codes and failing ids, the four failure groups with every base id, and names logs/base-arm-*.log and logs/head-arm-*.log",
+    "write_paths": "the manifest declares reckon/crew/ticker.py, reckon/flight.py, the five test files and the evidence fragment; every path in the diff is inside them and the two source paths were untouched"
+  },
+  "justifications": {
+    "durability": "tests/test_ticker_node_names_keep_their_ends.py:52 takes its column offset from grid.model_width rather than the module constant, so the node-cell assertion reddens if the model cell or the columns after it move; the geometry pins measure the row at a fixed cell width, which is the determinism section 35 prescribes and which leaves the config-resolved alias path to tests/test_ticker_row_is_one_transition.py.",
+    "evidence": "the four logs record both arms with no ambiguity: logs/base-arm-dumb.log (30 failed, EXIT=1), logs/base-arm-colour.log (22 failed, EXIT=1), logs/head-arm-dumb.log (215 passed, EXIT=0) and logs/head-arm-colour.log (215 passed, EXIT=0); the head logs contain no FAILED line against a base log that names 30, so the set difference over node ids is empty and the added-failure count is a measured 0 rather than an unmeasured value.",
+    "fit": "the terminal facts are pinned with the file's existing monkeypatch idiom (tests/test_crew_ticker_layout.py:253) and the added comments describe the mechanism without a plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_crew_ticker_layout.py:80 pins model_aliases=() on the grid fixture and tests/test_crew_ticker.py:430 deletes NO_COLOR, so each environment fact the failed ids depended on is pinned where it is read rather than left to the caller's terminal.",
+    "scope_discipline": "the diff touches only the five declared test files and the evidence fragment, and the declared source paths reckon/crew/ticker.py and reckon/flight.py are absent from the diff entirely."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the five ticker test files hold at head under both a TERM=dumb NO_COLOR=1 arm and a TERM=xterm-256color NO_COLOR-unset arm; the diff pins each environment fact at the test that reads it, changing five test files and no source.\nVERDICT done_when: the done_when names the five files under both arms; the manifest's baseline_suite and after_suite record four runs (base dumb 30 failed/185 passed EXIT=1, base colour 22 failed/193 passed EXIT=1, head dumb 215 passed EXIT=0, head colour 215 passed EXIT=0).\nVERDICT write_paths: the manifest declares reckon/crew/ticker.py, reckon/flight.py, the five test files and the evidence fragment; every path in the diff is inside them, and the two declared source paths were left untouched.\nVERDICT manifest: read; it states the gate command, the four arm results, the four failure groups with every base id, and names the logs at logs/base-arm-*.log and logs/head-arm-*.log.\nVERDICT diff: read commit by commit against aff594161bf1098fe807fa73b41180db35d32130; 4c4bffb09 changes the five test files, e1537020a adds the evidence fragment only.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_crew_ticker_layout.py:80 pins model_aliases=() on the grid fixture and tests/test_crew_ticker.py:430 deletes NO_COLOR, so each environment fact the failed ids depended on is pinned where it is read rather than left to the caller's terminal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the four logs at logs/base-arm-dumb.log (30 failed, EXIT=1), logs/base-arm-colour.log (22 failed, EXIT=1), logs/head-arm-dumb.log (215 passed, EXIT=0) and logs/head-arm-colour.log (215 passed, EXIT=0) record both arms, and the head logs contain no FAILED line against a base log that names 30, so the set difference over node ids is a measured 0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only the five declared test files and the evidence fragment, and the declared source paths reckon/crew/ticker.py and reckon/flight.py are byte-identical to base.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_ticker_node_names_keep_their_ends.py:52 takes its column offset from grid.model_width rather than the module constant, so the assertion reddens if the model cell or the columns after it move; the geometry pins measure a fixed cell and leave the config-resolved alias path to tests/test_ticker_row_is_one_transition.py.\nSCORE fit: 19\nJUSTIFICATION fit: the pins use the file's existing monkeypatch idiom (tests/test_crew_ticker_layout.py:253) and the comments describe the mechanism without a plan, sprint or ticket identifier.\nFINDING reckon/crew/review.py:824 follow-on: a manifest that records its two suite arms as one nested object keyed by arm name is not resolvable by _gate_log_path, so read_review would annotate this run's record with added_failure_count=null even though both arms' logs exist and this review derived 0 from them; the record stored here carries the count directly.\n",
+  "review_run_id": "r-20261003T134811157981-review-of-ticker-tests-hold-under-any-terminal",
+  "reviewed_base_sha": "aff594161bf1098fe807fa73b41180db35d32130",
+  "reviewed_head_sha": "e1537020a600759149bbbb7e4aacc216c6b8b5e3",
+  "reviewed_run_id": "r-20261003T130535115617-ticker-tests-hold-under-any-terminal",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T134811157981-review-of-ticker-tests-hold-under-any-terminal",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T14:00:00+00:00",
+  "total": 93
+}

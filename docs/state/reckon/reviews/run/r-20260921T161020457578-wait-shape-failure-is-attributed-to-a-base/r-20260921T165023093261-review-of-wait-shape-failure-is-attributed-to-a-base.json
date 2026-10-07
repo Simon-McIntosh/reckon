@@ -1,0 +1,45 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:50:23.093261+00:00",
+  "findings": [],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read 0a075d70 against its parent 308113186cd4a3aee4b485399599fcce5d5b6f94; it appends one plan section of 33 lines and one evidence section of 41 lines whose anchor id=\"s16\" is exactly the target of the plan's new link to /reckon/evidence/archive/crew-runtime-positive-controls-landed#s16, and it touches no plan meta line.",
+    "done_when": "the done_when asks for two runs of tests/test_crew_recovery.py at ca9434550cfb2cda9b132d47bdd1c166965a9cbf and 5e9dde395459d7d78aad8d33eeb7f2526496957a, each preceded by a line naming its revision and followed by its EXIT line, taken by git archive rather than by switching a checkout, plus one line naming base, head or both and the failure-set difference, and the log carries every one of those unedited.",
+    "goal": "the goal is to attribute the wait-shape gate's single failure to that node or to its base, and the ATTRIBUTION line at the end of /home/ITER/mcintos/.config/reckon/crew/reports/reckon/wait-shape-failure-delta.log states \"fails at BOTH base and head\" with \"added=[none] removed=[none]\", which is that attribution, and both legs reproduced here.",
+    "manifest": "read; it names commit 0a075d70, records both runs as 1 failed and 91 passed with exit 1, carries completed baseline_suite and after_suite blocks naming tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion at ca943455 and 5e9dde39, and carries an empty failure_attribution whose reason, that no new failure exists, is stated.",
+    "write_paths": "the manifest declares four paths, the delta log, the plan, the evidence archive and docs/figures/crew-runtime-positive-controls, and git show --stat 0a075d70 touches only the last two of the repository paths with 2 files changed at 74 insertions, while the log is written at its declared path under the reports directory and the figures directory is declared and left unused with a stated reason."
+  },
+  "justifications": {
+    "durability": "this node changes no code and no test, so nothing in the tree reddens if its attribution is later contradicted; nothing protects the record beyond the unedited log at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/wait-shape-failure-delta.log, whose two named revisions, exact command and failure sets at both revisions make the measurement re-runnable.",
+    "evidence": "re-running the gate's own command here reproduced the log's figures exactly, 1 failed and 91 passed with exit 1 at ca943455 and the same at 5e9dde39, and the causal paragraph the log labels read-from-the-sources is independently confirmed, since the case passes when pytest's temporary root sits inside a git worktree.",
+    "fit": "the new archive heading follows the &sect;N &mdash; title idiom every other section there uses, the anchor s16 keeps the archive's one-section-per-plan-section numbering that runs s1 to s15 at HEAD, and no path, symbol or commit message carries a plan, stage or version identifier.",
+    "goal_fidelity": "the ATTRIBUTION line of /home/ITER/mcintos/.config/reckon/crew/reports/reckon/wait-shape-failure-delta.log attributes the red case to the base, and re-running that case here on git-archive extracts of both revisions returned exit 1 at ca9434550cfb2cda9b132d47bdd1c166965a9cbf and exit 1 at 5e9dde395459d7d78aad8d33eeb7f2526496957a with the same case red in each.",
+    "scope_discipline": "git show --stat 0a075d70 lists exactly the two declared repository paths at 74 insertions and no deletions, the delivery log sits at its declared path under the reports directory, and no plan meta line, index or sprint state is edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to attribute the wait-shape gate's single failure to that node or to its base, and the ATTRIBUTION line at the end of /home/ITER/mcintos/.config/reckon/crew/reports/reckon/wait-shape-failure-delta.log states \"fails at BOTH base and head\" with \"added=[none] removed=[none]\", which is that attribution, and both legs reproduced here.\nVERDICT done_when: the done_when asks for two runs of tests/test_crew_recovery.py at ca9434550cfb2cda9b132d47bdd1c166965a9cbf and 5e9dde395459d7d78aad8d33eeb7f2526496957a, each preceded by a line naming its revision and followed by its EXIT line, taken by git archive rather than by switching a checkout, plus one line naming base, head or both and the failure-set difference, and the log carries every one of those unedited.\nVERDICT write_paths: the manifest declares four paths, the delta log, the plan, the evidence archive and docs/figures/crew-runtime-positive-controls, and git show --stat 0a075d70 touches only the last two of the repository paths with 2 files changed at 74 insertions, while the log is written at its declared path under the reports directory and the figures directory is declared and left unused with a stated reason.\nVERDICT manifest: read; it names commit 0a075d70, records both runs as 1 failed and 91 passed with exit 1, carries completed baseline_suite and after_suite blocks naming tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion at ca943455 and 5e9dde39, and carries an empty failure_attribution whose reason, that no new failure exists, is stated.\nVERDICT diff: read 0a075d70 against its parent 308113186cd4a3aee4b485399599fcce5d5b6f94; it appends one plan section of 33 lines and one evidence section of 41 lines whose anchor id=\"s16\" is exactly the target of the plan's new link to /reckon/evidence/archive/crew-runtime-positive-controls-landed#s16, and it touches no plan meta line.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the ATTRIBUTION line of /home/ITER/mcintos/.config/reckon/crew/reports/reckon/wait-shape-failure-delta.log attributes the red case to the base, and re-running that case here on git-archive extracts of both revisions returned exit 1 at ca9434550cfb2cda9b132d47bdd1c166965a9cbf and exit 1 at 5e9dde395459d7d78aad8d33eeb7f2526496957a with the same case red in each.\nSCORE evidence: 20\nJUSTIFICATION evidence: re-running the gate's own command here reproduced the log's figures exactly, 1 failed and 91 passed with exit 1 at ca943455 and the same at 5e9dde39, and the causal paragraph the log labels read-from-the-sources is independently confirmed, since the case passes when pytest's temporary root sits inside a git worktree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 0a075d70 lists exactly the two declared repository paths at 74 insertions and no deletions, the delivery log sits at its declared path under the reports directory, and no plan meta line, index or sprint state is edited.\nSCORE durability: 8\nJUSTIFICATION durability: this node changes no code and no test, so nothing in the tree reddens if its attribution is later contradicted; nothing protects the record beyond the unedited log at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/wait-shape-failure-delta.log, whose two named revisions, exact command and failure sets at both revisions make the measurement re-runnable.\nSCORE fit: 20\nJUSTIFICATION fit: the new archive heading follows the &sect;N &mdash; title idiom every other section there uses, the anchor s16 keeps the archive's one-section-per-plan-section numbering that runs s1 to s15 at HEAD, and no path, symbol or commit message carries a plan, stage or version identifier.",
+  "review_run_id": "r-20260921T165023093261-review-of-wait-shape-failure-is-attributed-to-a-base",
+  "reviewed_run_id": "r-20260921T161020457578-wait-shape-failure-is-attributed-to-a-base",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260921T165023093261-review-of-wait-shape-failure-is-attributed-to-a-base",
+  "scores": {
+    "durability": 8,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:31:08.450847+00:00",
+  "total": 88
+}

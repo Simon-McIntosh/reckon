@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "65370f6d04f7b3ed383d6c154375a957f94afd9b",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:7398",
+    "reckon/crew/recovery.py:8817",
+    "reckon/cli.py:4104"
+  ],
+  "completed_at": "2026-10-02T08:34:05.010Z",
+  "dispatched_at": "2026-10-02T08:10:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T065704186701-the-live-producer-reads-only-what-changed/measure.sh",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "follow-on: the driver's full arm JSONs, which carry the proc_io rchar deltas the landing quotes (recovery.py read 1,788,437,710 B to 168,705,172 B), are written only under the node-local $TMPDIR scratch and are not copied into the run directory; measure-console.txt keeps only the pidstat summary, so once the scratch is reaped the read figures cannot be reconciled from a durable log the run directory holds."
+    }
+  ],
+  "head_log_revision": "6fd52ac3d7d38b75756733d36ce616ad488766df",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 65370f6d; recovery.py adds the memo, the alive-gate and the byte counter, the test adds one case, and the fragment records the landing and reconciles with the arm JSONs.",
+    "done_when": "the done-when names a case asserting a poll over unchanged runs reads zero admission bytes; tests/test_producer_reads_only_what_changed.py:305 is that case, and the manifest records the gate at 49 passed base and 50 passed head, EXIT=0 for both arms.",
+    "goal": "the node's goal is that the live producer's per-poll stream reads scale with the bytes appended rather than total stream size; the landed change gates the admission scan to the dead-process arm (reckon/crew/recovery.py:6167) and memoises its result by the stream's stat identity (reckon/crew/recovery.py:3417), which is the whole-stream read the goal names.",
+    "manifest": "read; it records commits 6fd52ac3d and 12bf09030, both gate arms with zero added failures (49 passed base, 50 passed head), the negative-control log path, and the fleet-node before/after figures.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, tests/test_producer_reads_only_what_changed.py and the evidence fragment; the diff 65370f6d..12bf09030 touches only those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_producer_reads_only_what_changed.py:339 asserts a module-level counter the test does not supply, and the negative control shows the case redden to [2682, 2682, 905220] once the whole-stream scan is restored.",
+    "evidence": "gate-base.log (49 passed) and gate-head.log (50 passed) are recorded with EXIT=0 and the negative control reddens at tests/test_producer_reads_only_what_changed.py:336, but the raw rchar arm JSONs carrying the landing's read figures sit only on node-local scratch.",
+    "fit": "the new names take_admission_stream_bytes and _count_admission_bytes follow the surrounding idiom in reckon/crew/recovery.py:5635 and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery.py:6167 skips the scan unless alive is False, so a live run reads nothing on this path, and the arm JSONs show the steady-window read falling from 800,136,647 B to 31,343,418 B.",
+    "scope_discipline": "the diff 65370f6d..12bf09030 changes exactly the three paths the manifest declares, with no file outside them and nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the live producer's per-poll stream reads scale with the bytes appended rather than total stream size; the landed change gates the admission scan to the dead-process arm (reckon/crew/recovery.py:6167) and memoises its result by the stream's stat identity (reckon/crew/recovery.py:3417), which is the whole-stream read the goal names.\nVERDICT done_when: the done-when names a case asserting a poll over unchanged runs reads zero admission bytes; tests/test_producer_reads_only_what_changed.py:305 is that case, and the manifest records the gate at 49 passed base and 50 passed head, EXIT=0 for both arms.\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, tests/test_producer_reads_only_what_changed.py and the evidence fragment; the diff 65370f6d..12bf09030 touches only those three paths.\nVERDICT manifest: read; it records commits 6fd52ac3d and 12bf09030, both gate arms with zero added failures (49 passed base, 50 passed head), the negative-control log path, and the fleet-node before/after figures.\nVERDICT diff: read commit by commit against base 65370f6d; recovery.py adds the memo, the alive-gate and the byte counter, the test adds one case, and the fragment records the landing and reconciles with the arm JSONs.\nCALL_SITES: reckon/crew/recovery.py:7398, reckon/crew/recovery.py:8817, reckon/cli.py:4104\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:6167 skips the scan unless alive is False, so a live run reads nothing on this path, and the arm JSONs show the steady-window read falling from 800,136,647 B to 31,343,418 B.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-base.log (49 passed) and gate-head.log (50 passed) are recorded with EXIT=0 and the negative control reddens at tests/test_producer_reads_only_what_changed.py:336, but the raw rchar arm JSONs carrying the landing's read figures sit only on node-local scratch.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff 65370f6d..12bf09030 changes exactly the three paths the manifest declares, with no file outside them and nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_producer_reads_only_what_changed.py:339 asserts a module-level counter the test does not supply, and the negative control shows the case redden to [2682, 2682, 905220] once the whole-stream scan is restored.\nSCORE fit: 17\nJUSTIFICATION fit: the new names take_admission_stream_bytes and _count_admission_bytes follow the surrounding idiom in reckon/crew/recovery.py:5635 and carry no plan or ticket label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T065704186701-the-live-producer-reads-only-what-changed/measure.sh:23 follow-on: the driver's full arm JSONs, which carry the proc_io rchar deltas the landing quotes (recovery.py read 1,788,437,710 B to 168,705,172 B), are written only under the node-local $TMPDIR scratch and are not copied into the run directory; measure-console.txt keeps only the pidstat summary, so once the scratch is reaped the read figures cannot be reconciled from a durable log the run directory holds.",
+  "review_run_id": "r-20261002T081013402487-review-of-the-live-producer-reads-only-what-changed",
+  "reviewed_base_sha": "65370f6d04f7b3ed383d6c154375a957f94afd9b",
+  "reviewed_head_sha": "12bf0903059a2c04c4dc8f48814c1054d208391c",
+  "reviewed_run_id": "r-20261002T065704186701-the-live-producer-reads-only-what-changed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T081013402487-review-of-the-live-producer-reads-only-what-changed",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T08:32:01.626584+00:00",
+  "total": 87
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:Handler.do_GET",
+    "reckon/doccheck.py:main",
+    "reckon/mcp.py:_audit_document"
+  ],
+  "completed_at": "2026-09-28T04:54:49.856Z",
+  "dispatched_at": "2026-09-27T19:28:51Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "2114",
+      "text": "the OSError/EvidenceSynthesisError fallback that serves the record's own bytes is not exercised by any test, so a regression there would answer a 500 or the raw record with nothing reddening."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "1246",
+      "text": "the audit fallback to _plan_html._read_plan_text is untested on the same terms, so the audit would silently report on the record alone if the composer started raising."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "1211",
+      "text": "the docs/evidence/<plan>-landed.html spelling that _evidence_record_plan resolves (and serve.py:2036 duplicates) is never written by either test file, so only the archive spelling is covered."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; 32d932b2 carries the two readers and the three-case test, and 53ceb356 carries only the plan section, the evidence anchor and readers.svg, so no production path outside the two readers named in the goal is changed.",
+    "done_when": "the done_when names tests/test_readers_compose_the_record.py and its three cases; the manifest records 34 passed EXIT=0 in logs/gate-green.log, and an independent re-run of that one file at the pinned head 53ceb356 in a scratch tree passed 3/3 (logs/review-rerun-head-53ceb356.log).",
+    "goal": "the goal is to route the served evidence record and the audit-doc through compose_landed_record; reckon/serve.py:2113 calls the composer from the record branch of Handler.do_GET, and reckon/doccheck.py:1243 calls it from _composed_record_text, which line 1253 routes every record path through, so both readers the goal names read the composed bytes.",
+    "manifest": "read; it states the gate command and its result, names both gate logs and the negative-control log, and its negative_control_note matches the log it names, where the served-bytes case is red while the audit and no-fragment cases stay green.",
+    "write_paths": "read the manifest's six declared paths; the diff 8ab4d4b8..53ceb356 touches exactly those six and nothing else, with 353 insertions and one replaced line."
+  },
+  "justifications": {
+    "durability": "the served-bytes case is falsified by the declared negative control and the ETag, 304 and composed-audit branches redden on reversion, but both readers' fallback branches and the second record spelling have no test.",
+    "evidence": "the manifest's 34-passed gate result is reproduced by an independent 3/3 run of the named test at the pinned head, recorded in logs/review-rerun-head-53ceb356.log.",
+    "fit": "the ETag and no-cache handling in reckon/serve.py:2101 mirrors _send_file at reckon/serve.py:2052, though _evidence_record_plan is duplicated verbatim at reckon/serve.py:2036 and reckon/doccheck.py:1211.",
+    "goal_fidelity": "reckon/serve.py:2113 and reckon/doccheck.py:1243 both pass a record path to compose_landed_record, which is the routing the goal states.",
+    "scope_discipline": "git show --stat over 32d932b2 and 53ceb356 lists only the six declared paths, and no plan-version or plan-modified meta line is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to route the served evidence record and the audit-doc through compose_landed_record; reckon/serve.py:2113 calls the composer from the record branch of Handler.do_GET, and reckon/doccheck.py:1243 calls it from _composed_record_text, which line 1253 routes every record path through, so both readers the goal names read the composed bytes.\nVERDICT done_when: the done_when names tests/test_readers_compose_the_record.py and its three cases; the manifest records 34 passed EXIT=0 in logs/gate-green.log, and an independent re-run of that one file at the pinned head 53ceb356 in a scratch tree passed 3/3 (logs/review-rerun-head-53ceb356.log).\nVERDICT write_paths: read the manifest's six declared paths; the diff 8ab4d4b8..53ceb356 touches exactly those six and nothing else, with 353 insertions and one replaced line.\nVERDICT manifest: read; it states the gate command and its result, names both gate logs and the negative-control log, and its negative_control_note matches the log it names, where the served-bytes case is red while the audit and no-fragment cases stay green.\nVERDICT diff: read commit by commit; 32d932b2 carries the two readers and the three-case test, and 53ceb356 carries only the plan section, the evidence anchor and readers.svg, so no production path outside the two readers named in the goal is changed.\nCALL_SITES: reckon/serve.py:Handler.do_GET, reckon/doccheck.py:main, reckon/mcp.py:_audit_document\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:2113 and reckon/doccheck.py:1243 both pass a record path to compose_landed_record, which is the routing the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's 34-passed gate result is reproduced by an independent 3/3 run of the named test at the pinned head, recorded in logs/review-rerun-head-53ceb356.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over 32d932b2 and 53ceb356 lists only the six declared paths, and no plan-version or plan-modified meta line is touched.\nSCORE durability: 17\nJUSTIFICATION durability: the served-bytes case is falsified by the declared negative control and the ETag, 304 and composed-audit branches redden on reversion, but both readers' fallback branches and the second record spelling have no test.\nSCORE fit: 18\nJUSTIFICATION fit: the ETag and no-cache handling in reckon/serve.py:2101 mirrors _send_file at reckon/serve.py:2052, though _evidence_record_plan is duplicated verbatim at reckon/serve.py:2036 and reckon/doccheck.py:1211.\nFINDING reckon/serve.py:2114 the OSError/EvidenceSynthesisError fallback that serves the record's own bytes is not exercised by any test, so a regression there would answer a 500 or the raw record with nothing reddening.\nFINDING reckon/doccheck.py:1246 the audit fallback to _plan_html._read_plan_text is untested on the same terms, so the audit would silently report on the record alone if the composer started raising.\nFINDING reckon/doccheck.py:1211 the docs/evidence/<plan>-landed.html spelling that _evidence_record_plan resolves (and serve.py:2036 duplicates) is never written by either test file, so only the archive spelling is covered.\nreviewed_base_sha: 8ab4d4b873b2ef3976428938ff3e736ba68b5dd5\nreviewed_head_sha: 53ceb35680910ee503ff48d798816a4f47e801de",
+  "review_run_id": "r-20260927T192835108442-review-of-served-and-audited-records-are-composed",
+  "reviewed_base_sha": "8ab4d4b873b2ef3976428938ff3e736ba68b5dd5",
+  "reviewed_head_sha": "53ceb35680910ee503ff48d798816a4f47e801de",
+  "reviewed_run_id": "r-20260927T191508209015-served-and-audited-records-are-composed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T04:47:56.313762+00:00",
+  "total": 93
+}

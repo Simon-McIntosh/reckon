@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-25T21:06:16.862Z",
+  "dispatched_at": "2026-09-25T20:26:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "line": "708",
+      "text": "the anchor says git diff 39fd7a28 HEAD touches three files, all under tests/, but at the HEAD that carries it (adc6a3d6) that command lists nine paths with six of them outside tests/, so a reader checking the record against the revision it names finds the opposite of what it claims."
+    },
+    {
+      "file": "docs/plans/a-worker-cannot-write-your-home.html",
+      "line": "331",
+      "text": "the landing comment's data-when=\"2026-09-25T21:10:00+00:00\" is 46 minutes after the commit that carries it (adc6a3d6, committed 20:24:07Z) and was still in the future when read, so the record's own stamp does not name when it was written."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 39fd7a28; 8fc68320 rewrites the five fenced cases and the unfenced clause across the three test files (50 insertions, 30 deletions) and adc6a3d6 adds the landing record, the cumulative anchor with its figure and three logs, with no product code in either commit and the tests binding to the production readers reckon/crew/dispatch.py:6548, :4028 and :6897, which read FENCE_WORKERS at call time.",
+    "done_when": "the measure names the six ids, no added failures over the five files, a tests-only diff, the committed repair and the executed control; I reproduced both arms in my own scratch exports of 39fd7a28 (6 failed, 59 passed, the failures exactly the six named ids) and of adc6a3d6 (65 passed) plus the declared mutation, so the measurement is real and repeatable, though the clause requiring git diff 39fd7a28 HEAD to touch only files under tests/ cannot hold for a node whose landing contract requires the plan, anchor, figure and log paths, and docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:708 restates that clause as though it were true at its own head.",
+    "goal": "the goal is that the six tests 39fd7a28 turned red state the fence they test and that the unfenced-home case asserts the rule that replaced it, with no product code changed; the diff does exactly this, five cases setting dispatch.FENCE_WORKERS true by monkeypatch before they act (tests/test_fenced_resume_reaches_its_harness.py:163, :195, :232, :261 and tests/test_backend_environment.py:223) and the sixth asserting the operator home is kept with neither CLAUDE_CONFIG_DIR nor CODEX_HOME (tests/test_each_run_owns_its_harness_home.py:495-498), while git diff 39fd7a28 adc6a3d6 -- reckon/ is empty.",
+    "manifest": "read; its two commits, both gate arms with counts and log paths, the base failure ids, the lint delta (5 to 5 on the three files, 466 to 466 whole tree, all formatted), the negative control's first line and its declared mutation all match what I opened and re-ran, and the module and cwd headers of gate-base.txt and gate-final.txt resolve to the trees those arms name.",
+    "write_paths": "the fence grants three test files, the landed evidence record, the plan and this plan's figures directory; git diff --name-only 39fd7a28 adc6a3d6 lists nine paths, every one inside the declared set, with nothing under reckon/ and the plan's plan-version and plan-modified meta lines untouched."
+  },
+  "justifications": {
+    "durability": "the clive case fails on assert positions == [0] with argv ['/work/projects/imas_gpu/agents/clive'] when its opt-in line is removed, and the four assertions added at tests/test_each_run_owns_its_harness_home.py:495-498 test absence of code-produced keys and paths against independent expectations, though the home-existence assertion at :497 is unanchored in this case because no fenced claude plan is composed beside it.",
+    "evidence": "my own arms reproduce the recorded result (base 39fd7a28 6 failed and 59 passed with exactly the six named ids, head adc6a3d6 65 passed) and the declared mutation repeats verbatim as the red log's first line, but one done-when clause is unsatisfiable beside the landing contract and the anchor at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:708 asserts it as true at its own head.",
+    "fit": "the added lines follow the file's own idiom, fixture.isolate then monkeypatch.setattr on the module imported for that purpose, state the mechanism rather than a changelog, and the naming checks over all 50 added lines return no hit.",
+    "goal_fidelity": "tests/test_fenced_resume_reaches_its_harness.py:163 states the fence for the clive resume and my removal of that one line reddens the case with the unfenced argv, so the opt-in is what makes the repaired test measure the fenced path.",
+    "scope_discipline": "every one of the nine paths in git diff --name-only 39fd7a28 adc6a3d6 is inside the declared fence, nothing under reckon/ changed, and the anchor, figure and logs sit under the granted evidence and figures paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the six tests 39fd7a28 turned red state the fence they test and that the unfenced-home case asserts the rule that replaced it, with no product code changed; the diff does exactly this, five cases setting dispatch.FENCE_WORKERS true by monkeypatch before they act (tests/test_fenced_resume_reaches_its_harness.py:163, :195, :232, :261 and tests/test_backend_environment.py:223) and the sixth asserting the operator home is kept with neither CLAUDE_CONFIG_DIR nor CODEX_HOME (tests/test_each_run_owns_its_harness_home.py:495-498), while git diff 39fd7a28 adc6a3d6 -- reckon/ is empty.\nVERDICT done_when: the measure names the six ids, no added failures over the five files, a tests-only diff, the committed repair and the executed control; I reproduced both arms in my own scratch exports of 39fd7a28 (6 failed, 59 passed, the failures exactly the six named ids) and of adc6a3d6 (65 passed) plus the declared mutation, so the measurement is real and repeatable, though the clause requiring git diff 39fd7a28 HEAD to touch only files under tests/ cannot hold for a node whose landing contract requires the plan, anchor, figure and log paths, and docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:708 restates that clause as though it were true at its own head.\nVERDICT write_paths: the fence grants three test files, the landed evidence record, the plan and this plan's figures directory; git diff --name-only 39fd7a28 adc6a3d6 lists nine paths, every one inside the declared set, with nothing under reckon/ and the plan's plan-version and plan-modified meta lines untouched.\nVERDICT manifest: read; its two commits, both gate arms with counts and log paths, the base failure ids, the lint delta (5 to 5 on the three files, 466 to 466 whole tree, all formatted), the negative control's first line and its declared mutation all match what I opened and re-ran, and the module and cwd headers of gate-base.txt and gate-final.txt resolve to the trees those arms name.\nVERDICT diff: read commit by commit against 39fd7a28; 8fc68320 rewrites the five fenced cases and the unfenced clause across the three test files (50 insertions, 30 deletions) and adc6a3d6 adds the landing record, the cumulative anchor with its figure and three logs, with no product code in either commit and the tests binding to the production readers reckon/crew/dispatch.py:6548, :4028 and :6897, which read FENCE_WORKERS at call time.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_fenced_resume_reaches_its_harness.py:163 states the fence for the clive resume and my removal of that one line reddens the case with the unfenced argv, so the opt-in is what makes the repaired test measure the fenced path.\nSCORE evidence: 18\nJUSTIFICATION evidence: my own arms reproduce the recorded result (base 39fd7a28 6 failed and 59 passed with exactly the six named ids, head adc6a3d6 65 passed) and the declared mutation repeats verbatim as the red log's first line, but one done-when clause is unsatisfiable beside the landing contract and the anchor at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:708 asserts it as true at its own head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the nine paths in git diff --name-only 39fd7a28 adc6a3d6 is inside the declared fence, nothing under reckon/ changed, and the anchor, figure and logs sit under the granted evidence and figures paths.\nSCORE durability: 19\nJUSTIFICATION durability: the clive case fails on assert positions == [0] with argv ['/work/projects/imas_gpu/agents/clive'] when its opt-in line is removed, and the four assertions added at tests/test_each_run_owns_its_harness_home.py:495-498 test absence of code-produced keys and paths against independent expectations, though the home-existence assertion at :497 is unanchored in this case because no fenced claude plan is composed beside it.\nSCORE fit: 19\nJUSTIFICATION fit: the added lines follow the file's own idiom, fixture.isolate then monkeypatch.setattr on the module imported for that purpose, state the mechanism rather than a changelog, and the naming checks over all 50 added lines return no hit.\nFINDING docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:708 the anchor says git diff 39fd7a28 HEAD touches three files, all under tests/, but at the HEAD that carries it (adc6a3d6) that command lists nine paths with six of them outside tests/, so a reader checking the record against the revision it names finds the opposite of what it claims.\nFINDING docs/plans/a-worker-cannot-write-your-home.html:331 the landing comment's data-when=\"2026-09-25T21:10:00+00:00\" is 46 minutes after the commit that carries it (adc6a3d6, committed 20:24:07Z) and was still in the future when read, so the record's own stamp does not name when it was written.",
+  "review_run_id": "r-20260925T202640826084-review-of-fence-tests-opt-into-the-fence",
+  "reviewed_base_sha": "39fd7a2835b7f010dfb126953b965350850c488a",
+  "reviewed_head_sha": "adc6a3d6c163ce80142491f67578ccc51c97e476",
+  "reviewed_run_id": "r-20260925T201646123970-fence-tests-opt-into-the-fence",
+  "reviewed_tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fence-tests-opt-into-the-fence",
+  "reviewer_recheck": "both arms and the declared mutation re-ran in reviewer scratch exports (/tmp/fence-rv-base at 39fd7a28, /tmp/fence-rv-head at adc6a3d6, /tmp/fence-rv-mut for the mutation); logs reviewer-arm-base.txt, reviewer-arm-head.txt, reviewer-mutation-arm.txt beside this run's manifest",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T20:49:25.758442+00:00",
+  "total": 95
+}

@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. baseline_suite (gate-base.log, revision e947890bca294329f03cae5353fdff65a1e272bc) reports '101 passed' EXIT=0, failure_count 0; after_suite (gate-head.log, revision df876e6b5136b3badae12fa463c64a9229d876c6) reports '102 passed' EXIT=0, failure_count 0. The +1 test is the new test in_harness_backend_is_never_offered added by the commit; no existing test id changes from pass to fail, so added_failure_count is 0 and added_failure_ids is empty. The reviewer independently reproduced both arms from clean trees: head worktree d5015e75/delivered head df876e6b 102 passed EXIT=0 (gate-head-reviewer.log); base e947890bc export 101 passed EXIT=0 (gate-base-reviewer.log). The delivered change adds no failure against the base.",
+  "backend": "local",
+  "base_log_revision": "e947890bca294329f03cae5353fdff65a1e272bc",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:270 the exclusion branch: if backend.get(\"launch\") == recovery.IN_HARNESS_LAUNCH: reasons.append(\"in-harness-backend\"), where backend is the role-overlay-resolved backend returned by routing.resolve_role_override",
+    "reckon/crew/picker/snapshot.py:271 reasons.append(\"in-harness-backend\"): the exclusion reason string the done-when names",
+    "reckon/crew/picker/snapshot.py:11 the module import that now carries recovery alongside lane_document, resumption and routing",
+    "reckon/crew/recovery.py:1019 IN_HARNESS_LAUNCH = \"in-harness\": the shared constant the filter reads, so the launch-key name has one source of truth",
+    "tests/test_picker_cached_availability.py:74 test_in_harness_backend_is_never_offered: builds an in-harness candidate with unknown availability and asserts reasons == [\"in-harness-backend\"], while the CLI backend with the same unknown availability stays offered"
+  ],
+  "completed_at": "2026-10-03T00:29:52.666Z",
+  "dispatched_at": "2026-10-03T00:19:01Z",
+  "findings": [
+    {
+      "file": ".config/reckon/crew/runs/r-20261002T235857425086-picker-never-offers-in-harness/gate-base.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "The base arm's log header names the revision with one stray trailing character: '# base revision: e947890bca294329f03cae5353fdff65a1e272bc1' (41 hex chars) rather than the 40-char e947890bca294329f03cae5353fdff65a1e272bc. The manifest's baseline_suite.revision is correct, and the reviewer's independent base export confirms the same revision and result, so the conclusion is unaffected. Flagged only so the receipt matches a resolvable sha; non-blocking."
+    }
+  ],
+  "head_log_revision": "df876e6b5136b3badae12fa463c64a9229d876c6",
+  "item_verdicts": {
+    "diff": "Read the single commit df876e6b end to end. The change lifts the recovery import to module scope, replaces the function-local import, adds one guarded reason append in candidates(), and adds one test. No format sweep and no unrelated churn. The logic is correct: the exclusion reads the resolved backend, lands before the probe/serving gates, and mirrors the neighbouring review-excluded-backend pattern. The shipped default reckon/schema/flight-defaults.yaml:19 declares backends.native launch: in-harness, so the path is live and the change is not vacuous.",
+    "done_when": "Met. Clause 1 (candidate filter removes every in-harness backend with reason in-harness-backend): holds at the committed head. Clause 2 (test builds an in-harness candidate with unknown availability, asserts exclusion with that reason while a CLI backend with unknown availability stays offered): holds, tests/test_picker_cached_availability.py:74 asserts by['native'].reasons == ['in-harness-backend'], by['remote'].availability == 'unknown' and by['remote'].reasons == []. Clause 3 (it fails at base in a recorded log): holds, negative-control.log drops the exclusion and the test fails at EXIT=1 with assert [] == ['in-harness-backend']. Clause 4 (gate = every tests/test_picker*.py plus every test file importing picker/snapshot.py, base and head, zero added failure ids): holds, the eight tests/test_picker*.py are exactly the union of the glob and the snapshot importers found by grep, base 101 passed EXIT=0, head 102 passed EXIT=0, zero added failure ids. Clause 5 (completion): the manifest reads status complete and its baseline_suite/after_suite JSON match their logs.",
+    "goal": "Met. The candidate filter (reckon/crew/picker/snapshot.py:270) appends reason in-harness-backend whenever the role-overlay-resolved backend's launch equals recovery.IN_HARNESS_LAUNCH. The read is on the backend returned by routing.resolve_role_override, so an overlay that names launch is honoured; _effective_backend merges the backend's own settings with the overlay, so an overlay that does not name launch carries the backend's in-harness value through. The exclusion is appended before the serving/budget/probe checks, and the later 'if not reasons: reasons.extend(_fit(...))' plus 'if reasons: availability = \"not-probed\"' mean an in-harness backend is never probed or offered for Jev to weigh, matching the done-when.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T235857425086-picker-never-offers-in-harness/manifest.md: status complete, one commit (df876e6b), baseline_suite and after_suite present as well-formed JSON with log paths and failure_ids, measurement_module and measurement_cwd recorded, negative_control_log present as a bare path. baseline_suite matches gate-base.log (101 passed, 0 failures) and after_suite matches gate-head.log (102 passed, 0 failures). The single receipt defect is the malformed base-log header revision noted above, which does not affect the manifest's own correct fields.",
+    "write_paths": "Only the three declared paths changed against the run's base: reckon/crew/picker/snapshot.py (+11/-3, net +8), tests/test_picker_cached_availability.py (+23), and the new empty evidence anchor docs/evidence/fragments/one-typesafe-model-picker/picker-never-offers-in-harness.html (119 bytes, an r-evidence article with no prose \u2014 the small-node convention also seen at picker-fast-on-dispatch-path.html, 118 bytes). No plan, sprint or shared index file is touched. The reviewed worktree is clean at the delivered head with no uncommitted edit."
+  },
+  "justifications": {
+    "durability": "The exclusion reads a module constant (recovery.IN_HARNESS_LAUNCH), so the launch-key name and its parsing have one source of truth; the branch is placed before the probe so it cannot be reached only for probeable lanes; the new test is pinned by a negative control that turns it red when the exclusion is dropped. The guard degrades in the safe direction (an unreadable launch is not in-harness and stays offered, matching pre-existing behaviour).",
+    "evidence": "The run produced a base log, a head log, a negative-control log and well-formed baseline_suite/after_suite JSON, and both arms were independently reproduced from clean trees (head 102 passed EXIT=0, base 101 passed EXIT=0). The negative control reproduces a genuine red at EXIT=1 (assert [] == ['in-harness-backend']). Deducted one point only because the base-arm log header names a 41-character revision (one stray trailing digit), a receipt defect in the reviewed run's own evidence even though the manifest's revision field is correct.",
+    "fit": "Reuses the module's own vocabulary and helpers (recovery.IN_HARNESS_LAUNCH, the reasons list, the neighbouring review-excluded-backend branch), reads the resolved backend the function already computes, and the comment states the mechanism (nothing spawns an in-harness backend; only a coordinator attaching its own task can bind the harness) rather than a plan or ticket reference. No plan, sprint or ticket identifiers in code, names or comments.",
+    "goal_fidelity": "The done-when is implemented exactly and holds at the delivered head: in-harness backends are removed from candidates with reason in-harness-backend, read from the role-overlay-resolved backend, before any serving, budget or probe check, so a lane with unknown availability is still removed. The change reaches the goal's mechanism without breaking a surrounding behaviour.",
+    "scope_discipline": "Only the three declared paths changed and no shared state is touched; the diff is free of unrelated churn, the evidence anchor is empty per the small-node convention, and the reviewed worktree is clean with no undelivered edit."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: met - candidates() (reckon/crew/picker/snapshot.py:270) appends in-harness-backend when the role-overlay-resolved backend's launch == recovery.IN_HARNESS_LAUNCH, before the serving/budget/probe checks.\nVERDICT done_when: met - exclusion reason correct and pre-probe; test test_in_harness_backend_is_never_offered asserts exclusion with the reason and the CLI contrast; negative control drops the exclusion and fails EXIT=1 ([] != ['in-harness-backend']); gate = the eight tests/test_picker*.py (union of the glob and the snapshot importers) base 101 passed EXIT=0, head 102 passed EXIT=0, zero added failure ids; manifest status complete.\nVERDICT write_paths: only snapshot.py, the test file and the empty evidence anchor changed; worktree clean; no shared state.\nVERDICT manifest: read; status complete, one commit df876e6b, well-formed suite JSON matching its logs; base-log header names a 41-char revision (receipt typo only).\nVERDICT diff: read end to end; clean, no churn; the filter reads the resolved backend so an overlay that names launch is honoured, and the shipped default birds.native declares launch: in-harness, so the path is live.\nCALL_SITES: reckon/crew/picker/snapshot.py:270, reckon/crew/picker/snapshot.py:271, reckon/crew/picker/snapshot.py:11, reckon/crew/recovery.py:1019, tests/test_picker_cached_availability.py:74\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: implemented exactly, correct source (resolved backend) and correct placement (before probe); holds at head.\nSCORE evidence: 19\nJUSTIFICATION evidence: base/head/negative-control logs and suite JSON present, both arms independently reproduced (102/101 passed EXIT=0); deducted one for the malformed base-log revision header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: three declared paths only, no churn, no shared state, clean worktree.\nSCORE durability: 20\nJUSTIFICATION durability: reads a shared constant, placed before the probe, new test pinned by a reproducing negative control, fails logically safe.\nSCORE fit: 20\nJUSTIFICATION fit: reuses recovery.IN_HARNESS_LAUNCH and the module's own reason-list pattern; comment states mechanism; no plan or ticket identifiers.\nFINDING .config/reckon/crew/runs/r-20261002T235857425086-picker-never-offers-in-harness/gate-base.log:1 follow-on: base-arm log header names a 41-char revision (e947890bca294329f03cae5353fdff65a1e272bc1 vs ...bc); manifest field correct and independently reconfirmed; non-blocking.",
+  "review_run_id": "r-20261003T001831253176-review-of-picker-never-offers-in-harness",
+  "reviewed_base_sha": "e947890bca294329f03cae5353fdff65a1e272bc",
+  "reviewed_head_sha": "df876e6b5136b3badae12fa463c64a9229d876c6",
+  "reviewed_run_id": "r-20261002T235857425086-picker-never-offers-in-harness",
+  "reviewer": "review-of-picker-never-offers-in-harness",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.730855+00:00",
+  "total": 99
+}

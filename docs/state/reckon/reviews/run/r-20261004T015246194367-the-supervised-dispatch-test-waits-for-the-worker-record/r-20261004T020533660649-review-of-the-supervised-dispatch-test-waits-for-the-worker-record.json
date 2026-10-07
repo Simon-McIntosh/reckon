@@ -1,0 +1,45 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-04T02:10:16.026Z",
+  "dispatched_at": "2026-10-04T02:05:58Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "baseline_suite/after_suite",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's manifest records baseline_suite and after_suite as null although its declared write paths include a test file, so the two gate arms exist only as free text in test_logs and before-*.log; a reader that looks for the arms in the structured keys finds nothing and must reconstruct the delta from the before-summary.txt line PASSES=5 FAILS=5 and the gate logs. The arms were measured and are readable, so this is a record-shape gap, not missing evidence: the offline derivation here reads added_failure_count 0 and added_failure_ids [] from before-{1..10}.log (5 failed of 10 of test_a_dispatch_confirms_its_supervisor_reached_the_run, FileNotFoundError on worker.json) against gate-repeat.log (PASSES=20 FAILS=0) and gate-file.log (5 passed EXIT=0)."
+    }
+  ],
+  "justifications": {
+    "durability": "the fix routes the worker.json read through the file's own bounded _wait_for (tests/test_fleet_lane_carries_the_dispatch_environment.py:82, WAIT_SECONDS 20.0, fail with a named message rather than hanging), so a record that never arrives fails cleanly; the stub worker sleeps 60 s (fixture line ~225) so the following exit.json absence assertion is not itself exposed to the same race, and the id passed 20 of 20 alone.",
+    "evidence": "a differential arm exists on both sides: before-{1..10}.log show 5 failed / 5 passed of the single id at base c952174a7 with FileNotFoundError on worker.json, gate-repeat.log shows 20 of 20 passes at head b75238a53, and the declared negative control (delayed-write-* / negative-control.log) reddens the parent commit's test deterministically (1 failed, worker.json FileNotFoundError, EXIT=1) while the head arm stays green (EXIT=0). An independent whole-file re-run in the reviewed worktree at 94c799c3e reproduced 5 passed / EXIT=0.",
+    "fit": "the change reuses the existing _wait_for helper the marker wait already calls, adds no import, and its comment states the write-ordering mechanism (marker at worker start vs worker.json after the spawn returns) rather than the ticket; both commits are conventional with bodies, no plan or ticket identifiers appear in source or messages, and the evidence fragment follows the repository's docs/evidence/fragments shape. The record-shape finding on the manifest is the one deduction.",
+    "goal_fidelity": "the node's stated goal is that the supervised-dispatch test wait for the worker record before reading it, and the diff does exactly that (tests/test_fleet_lane_carries_the_dispatch_environment.py:344-349): it adds a bounded wait on worker.json before the read at the line that raced. The named cause is confirmed in the product the test exercises -- the supervisor writes WORKER_RECORD_NAME via _write_attempt_artifact at reckon/crew/dispatch.py:10326-10339, after the _supervisor_spawn_worker call at :10306 -- so the marker (written as the stub worker starts) does not imply the record exists. No failing test is disabled, skipped or deleted and no assertion was weakened.",
+    "scope_discipline": "the diff c952174a7..94c799c3e touches exactly the two declared write paths (the test file and one docs/evidence fragment) with 43 insertions and 2 deletions; no file under reckon/ or any skill or SPA source changed, and the worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node's stated goal is that the supervised-dispatch test wait for the worker record before reading it, and the diff does exactly that (tests/test_fleet_lane_carries_the_dispatch_environment.py:344-349): it adds a bounded wait on worker.json before the read at the line that raced. The named cause is confirmed in the product the test exercises -- the supervisor writes WORKER_RECORD_NAME via _write_attempt_artifact at reckon/crew/dispatch.py:10326-10339, after the _supervisor_spawn_worker call at :10306 -- so the marker (written as the stub worker starts) does not imply the record exists. No failing test is disabled, skipped or deleted and no assertion was weakened.\nSCORE evidence: 19\nJUSTIFICATION evidence: a differential arm exists on both sides: before-{1..10}.log show 5 failed / 5 passed of the single id at base c952174a7 with FileNotFoundError on worker.json, gate-repeat.log shows 20 of 20 passes at head b75238a53, and the declared negative control (delayed-write-* / negative-control.log) reddens the parent commit's test deterministically (1 failed, worker.json FileNotFoundError, EXIT=1) while the head arm stays green (EXIT=0). An independent whole-file re-run in the reviewed worktree at 94c799c3e reproduced 5 passed / EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff c952174a7..94c799c3e touches exactly the two declared write paths (the test file and one docs/evidence fragment) with 43 insertions and 2 deletions; no file under reckon/ or any skill or SPA source changed, and the worktree is clean at head.\nSCORE durability: 19\nJUSTIFICATION durability: the fix routes the worker.json read through the file's own bounded _wait_for (tests/test_fleet_lane_carries_the_dispatch_environment.py:82, WAIT_SECONDS 20.0, fail with a named message rather than hanging), so a record that never arrives fails cleanly; the stub worker sleeps 60 s (fixture line ~225) so the following exit.json absence assertion is not itself exposed to the same race, and the id passed 20 of 20 alone.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the existing _wait_for helper the marker wait already calls, adds no import, and its comment states the write-ordering mechanism (marker at worker start vs worker.json after the spawn returns) rather than the ticket; both commits are conventional with bodies, no plan or ticket identifiers appear in source or messages, and the evidence fragment follows the repository's docs/evidence/fragments shape. The record-shape finding on the manifest is the one deduction.\nFINDING manifest.md:baseline_suite/after_suite follow-on: the reviewed run's manifest records baseline_suite and after_suite as null although its declared write paths include a test file, so the two gate arms exist only as free text in test_logs and before-*.log; a reader that looks for the arms in the structured keys finds nothing and must reconstruct the delta from the before-summary.txt line PASSES=5 FAILS=5 and the gate logs. The arms were measured and are readable, so this is a record-shape gap, not missing evidence: the offline derivation here reads added_failure_count 0 and added_failure_ids [] from before-{1..10}.log (5 failed of 10 of test_a_dispatch_confirms_its_supervisor_reached_the_run, FileNotFoundError on worker.json) against gate-repeat.log (PASSES=20 FAILS=0) and gate-file.log (5 passed EXIT=0).\n",
+  "review_run_id": "r-20261004T020533660649-review-of-the-supervised-dispatch-test-waits-for-the-worker-record",
+  "reviewed_base_sha": "c952174a7a5f72e5ccad0c1c5f67251392a27af2",
+  "reviewed_head_sha": "94c799c3e10c3a2cae7fb7a62287aec5d9e523a0",
+  "reviewed_run_id": "r-20261004T015246194367-the-supervised-dispatch-test-waits-for-the-worker-record",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T020533660649-review-of-the-supervised-dispatch-test-waits-for-the-worker-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T02:15:00.000000+00:00",
+  "total": 96
+}

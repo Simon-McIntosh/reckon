@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:3502",
+    "reckon/crew/recovery.py:3925",
+    "reckon/crew/directory.py:71",
+    "reckon/sprint_liveness.py:149",
+    "reckon/crew/runs.py:1028"
+  ],
+  "completed_at": "2026-09-29T05:39:36.581Z",
+  "dispatched_at": "2026-09-29T05:01:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1028",
+      "text": "The drain view writes a bare local probe into the record before classifying it, so for a run launched on another host whose pid number this host holds the row reads process_alive true, and with the run's own exit record on disk the stored read says process_alive false with the run abandoned while the drain row says process_alive true with it running \u2014 measured in one synthetic crew home read both ways \u2014 which is the defect class the first review recorded in the directory view and which the docstring the repair added at reckon/crew/runs.py:510 now claims is closed for every reporting consumer."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit, the repair moves the read into recovery.local_liveness and points the directory and sprint views at it, and both defects the first review recorded are repaired under a case that fails at the repair base \u2014 but one defect of the same class survives on a path of the same module, at reckon/crew/runs.py:1028, which is the finding I record.",
+    "done_when": "The three checks the resume advice asked for are all present and measured: the sprint case at tests/test_sprint_liveness.py:468 and the directory case at tests/test_a_foreign_pid_never_reads_dead.py:331 fail at the repair base and pass at the head, and my own two arms reproduce the manifest's arms exactly \u2014 3 failed and 37 passed at 03b5131a, 1 failed and 39 passed at 2eabd341, the same ids on each side \u2014 with both logs opening on a revision and command header and ending in an EXIT= line.",
+    "goal": "A pid answers only on the host that issued it, and the repair extends that rule to the two readings the first review recorded as unmeasured \u2014 the sprint view now derives the process read through recovery.local_liveness (reckon/sprint_liveness.py:149) and the directory view reads the classified record (reckon/crew/directory.py:71) \u2014 and I reproduced each repaired reading against its own arm rather than accepting the account.",
+    "manifest": "The manifest carries both suites as objects with revision, command, exit status, one log path and failure ids, the scope note, the negative control, the pre-change suite and three follow-ons, and its empty added_failure_ids is a claim I re-derived from those same two logs with the store's own derivation and reproduced with my own arms.",
+    "write_paths": "The node's whole diff touches eight files and nothing else, 794 insertions and 58 deletions, and the repair commit alone touches six of them."
+  },
+  "justifications": {
+    "durability": "The repair's two cases fail at the base for the declared reasons and pass at the head, so a later reader can re-derive both defects from the run's own logs; one deduction because the landing fragment quotes the pointer reader's docstring as it read at 03b5131a, which the repair commit then corrected, leaving the node's own record disagreeing with the pointer it cites.",
+    "evidence": "I re-ran the gate at both revisions in my own trees, re-derived the added-failure count from the reviewed manifest's own logs with the store's own instrument, and probed the ungated read directly; one deduction because the manifest's tests field names four files rather than the gate command each was run under with its result.",
+    "fit": "The commit subjects and bodies state the mechanism, the new test names name what they measure rather than a plan item, and the landing fragment carries its figure; one deduction because the docstring at reckon/crew/runs.py:510 states a consumer guarantee the drain view does not keep.",
+    "goal_fidelity": "Both repaired halves are load-bearing and each was reproduced against its own arm; one deduction because the account the change writes at reckon/crew/runs.py:510 asserts of its consumers a property that the drain view at reckon/crew/runs.py:1028 does not keep.",
+    "scope_discipline": "The diff touches nothing beyond the five declared paths and the three the resume advice named in the turn that requested these edits, and the tests read and write only under a temporary crew home; one deduction because the declared list still holds five, so a check rebuilt from it reports the three as stray."
+  },
+  "node": "review-of-a-foreign-pid-never-reads-dead",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T025436655393-a-foreign-pid-never-reads-dead\n(node a-foreign-pid-never-reads-dead, plan a-stalled-row-says-whether-the-worker-lives, role review, spec guided, second review at the repair head)\nreviewed_base_sha: fc6c5ecb5f953f3f68d138f7728e3249571efd47\nreviewed_head_sha: 2eabd341567d85afcd513d99eb413c08b08315ca\nRead at the head: the run's prompt.txt and the resume advice that asked for the repair, its manifest, the two repair-arm gate logs, the negative-control log, the raw-pointer probe log, the tree at 2eabd341 with the diff against 03b5131a and against the base, the two cases the repair added, and a scratch tree built from each arm.\nVERDICT goal: A pid answers only on the host that issued it, and the repair extends that rule to the two readings the first review recorded as unmeasured \u2014 the sprint view now derives the process read through recovery.local_liveness (reckon/sprint_liveness.py:149) and the directory view reads the classified record (reckon/crew/directory.py:71) \u2014 and I reproduced each repaired reading against its own arm rather than accepting the account.\nVERDICT done_when: The three checks the resume advice asked for are all present and measured: the sprint case at tests/test_sprint_liveness.py:468 and the directory case at tests/test_a_foreign_pid_never_reads_dead.py:331 fail at the repair base and pass at the head, and my own two arms reproduce the manifest's arms exactly \u2014 3 failed and 37 passed at 03b5131a, 1 failed and 39 passed at 2eabd341, the same ids on each side \u2014 with both logs opening on a revision and command header and ending in an EXIT= line.\nVERDICT write_paths: The node's whole diff touches eight files and nothing else, 794 insertions and 58 deletions, and the repair commit alone touches six of them.\nVERDICT manifest: The manifest carries both suites as objects with revision, command, exit status, one log path and failure ids, the scope note, the negative control, the pre-change suite and three follow-ons, and its empty added_failure_ids is a claim I re-derived from those same two logs with the store's own derivation and reproduced with my own arms.\nVERDICT diff: Read commit by commit, the repair moves the read into recovery.local_liveness and points the directory and sprint views at it, and both defects the first review recorded are repaired under a case that fails at the repair base \u2014 but one defect of the same class survives on a path of the same module, at reckon/crew/runs.py:1028, which is the finding I record.\nCALL_SITES: reckon/crew/recovery.py:3502, reckon/crew/recovery.py:3925, reckon/crew/directory.py:71, reckon/sprint_liveness.py:149, reckon/crew/runs.py:1028\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: Both repaired halves are load-bearing and each was reproduced against its own arm; one deduction because the account the change writes at reckon/crew/runs.py:510 asserts of its consumers a property that the drain view at reckon/crew/runs.py:1028 does not keep.\nSCORE evidence: 19\nJUSTIFICATION evidence: I re-ran the gate at both revisions in my own trees, re-derived the added-failure count from the reviewed manifest's own logs with the store's own instrument, and probed the ungated read directly; one deduction because the manifest's tests field names four files rather than the gate command each was run under with its result.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The diff touches nothing beyond the five declared paths and the three the resume advice named in the turn that requested these edits, and the tests read and write only under a temporary crew home; one deduction because the declared list still holds five, so a check rebuilt from it reports the three as stray.\nSCORE durability: 18\nJUSTIFICATION durability: The repair's two cases fail at the base for the declared reasons and pass at the head, so a later reader can re-derive both defects from the run's own logs; one deduction because the landing fragment quotes the pointer reader's docstring as it read at 03b5131a, which the repair commit then corrected, leaving the node's own record disagreeing with the pointer it cites.\nSCORE fit: 18\nJUSTIFICATION fit: The commit subjects and bodies state the mechanism, the new test names name what they measure rather than a plan item, and the landing fragment carries its figure; one deduction because the docstring at reckon/crew/runs.py:510 states a consumer guarantee the drain view does not keep.\nFINDING reckon/crew/runs.py:1028 The drain view writes a bare local probe into the record before classifying it, so for a run launched on another host whose pid number this host holds the row reads process_alive true, and with the run's own exit record on disk the stored read says process_alive false with the run abandoned while the drain row says process_alive true with it running \u2014 measured in one synthetic crew home read both ways \u2014 which is the defect class the first review recorded in the directory view and which the docstring the repair added at reckon/crew/runs.py:510 now claims is closed for every reporting consumer.\n",
+  "review_run_id": "r-20260929T050044810579-review-of-a-foreign-pid-never-reads-dead",
+  "reviewed_base_sha": "fc6c5ecb5f953f3f68d138f7728e3249571efd47",
+  "reviewed_head_sha": "2eabd341567d85afcd513d99eb413c08b08315ca",
+  "reviewed_run_id": "r-20260929T025436655393-a-foreign-pid-never-reads-dead",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "host": "98dci4-clu-2018.iter.org",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T050044810579-review-of-a-foreign-pid-never-reads-dead",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T05:31:34.462315+00:00",
+  "total": 92
+}

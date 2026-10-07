@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b09a1ccf71322aee71f64752db4730309917e9e0",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/dispatch.py:11238",
+    "reckon/crew/promotion.py:5193",
+    "reckon/crew/obligations.py:363",
+    "reckon/crew/routing.py:2578",
+    "reckon/crew/recovery.py:906",
+    "reckon/crew/recovery.py:1035",
+    "reckon/crew/recovery.py:1405",
+    "reckon/crew/recovery.py:2358",
+    "reckon/crew/recovery.py:2744",
+    "reckon/crew/recovery.py:4108"
+  ],
+  "completed_at": "2026-10-04T23:55:32.177Z",
+  "dispatched_at": "2026-10-04T23:50:38Z",
+  "findings": [
+    {
+      "file": "tests/test_plan_review_prefix_is_one_constant.py",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the ownership grep globs Path(recovery.__file__).parent.glob(\"*.py\") non-recursively, so it does not search the reckon/crew/picker subpackage (8 modules) and cannot redden on a bare plan-review-of- literal reintroduced there, which the done-when's \"greps the package\" requires."
+    }
+  ],
+  "head_log_revision": "b8125e2b82d9f4930480add4da3857ca27d211a1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit b8125e2b8 against base b09a1ccf7; recovery.py adds the constant and replaces four bare literals, dispatch.py delegates _is_review_run to _is_review_node, and the new test file adds three cases.",
+    "done_when": "the done-when names three clauses - a grep assertion, both recognisers accepting a built id, and a negative control; tests/test_plan_review_prefix_is_one_constant.py provides all three and the run's negative-control.log shows the restored literal reddening it.",
+    "goal": "the node goal is that the plan-review identity is minted and recognised through one constant; reckon/crew/recovery.py:218 defines PLAN_REVIEW_NODE_PREFIX and the four former literal sites (recovery.py:240, :486, :598, :2281) now read it.",
+    "manifest": "read; it records commit b8125e2b8, the 58-passed gate, the 97-passed ledger, the 150-passed baseline and the negative control (1 failed), with one scaffolding retry disclosed.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, reckon/crew/dispatch.py, tests/test_plan_review_prefix_is_one_constant.py and evidence/figures paths; the diff changes only the three code/test files, all inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_prefix_is_one_constant.py:11 reddens on a restored top-level literal (negative-control.log) but its glob at line 14 skips reckon/crew/picker/*.py, and line 23 builds the input from the same constant the recogniser reads.",
+    "evidence": "the run's gate.log records \"58 passed\" at revision b8125e2b8 and negative-control.log records \"1 failed\" EXIT=1, but the grep assertion at tests/test_plan_review_prefix_is_one_constant.py:14 globs non-recursively.",
+    "fit": "the constant sits beside REVIEW_NODE_PREFIX at reckon/crew/recovery.py:218 and the function-local delegation matches the existing pattern at reckon/crew/routing.py:2576.",
+    "goal_fidelity": "reckon/crew/recovery.py:218 is the sole occurrence of the literal and all four former sites plus dispatch's _is_review_run at reckon/crew/dispatch.py:11197 read it.",
+    "scope_discipline": "every path in the diff (reckon/crew/recovery.py, reckon/crew/dispatch.py, tests/test_plan_review_prefix_is_one_constant.py) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the plan-review identity is minted and recognised through one constant; reckon/crew/recovery.py:218 defines PLAN_REVIEW_NODE_PREFIX and the four former literal sites (recovery.py:240, :486, :598, :2281) now read it.\nVERDICT done_when: the done-when names three clauses - a grep assertion, both recognisers accepting a built id, and a negative control; tests/test_plan_review_prefix_is_one_constant.py provides all three and the run's negative-control.log shows the restored literal reddening it.\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, reckon/crew/dispatch.py, tests/test_plan_review_prefix_is_one_constant.py and evidence/figures paths; the diff changes only the three code/test files, all inside the declaration.\nVERDICT manifest: read; it records commit b8125e2b8, the 58-passed gate, the 97-passed ledger, the 150-passed baseline and the negative control (1 failed), with one scaffolding retry disclosed.\nVERDICT diff: read commit b8125e2b8 against base b09a1ccf7; recovery.py adds the constant and replaces four bare literals, dispatch.py delegates _is_review_run to _is_review_node, and the new test file adds three cases.\nCALL_SITES: reckon/crew/dispatch.py:11238, reckon/crew/promotion.py:5193, reckon/crew/obligations.py:363, reckon/crew/routing.py:2578, reckon/crew/recovery.py:906, reckon/crew/recovery.py:1035, reckon/crew/recovery.py:1405, reckon/crew/recovery.py:2358, reckon/crew/recovery.py:2744, reckon/crew/recovery.py:4108\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:218 is the sole occurrence of the literal and all four former sites plus dispatch's _is_review_run at reckon/crew/dispatch.py:11197 read it.\nSCORE evidence: 18\nJUSTIFICATION evidence: the run's gate.log records \"58 passed\" at revision b8125e2b8 and negative-control.log records \"1 failed\" EXIT=1, but the grep assertion at tests/test_plan_review_prefix_is_one_constant.py:14 globs non-recursively.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/recovery.py, reckon/crew/dispatch.py, tests/test_plan_review_prefix_is_one_constant.py) is inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_plan_review_prefix_is_one_constant.py:11 reddens on a restored top-level literal (negative-control.log) but its glob at line 14 skips reckon/crew/picker/*.py, and line 23 builds the input from the same constant the recogniser reads.\nSCORE fit: 18\nJUSTIFICATION fit: the constant sits beside REVIEW_NODE_PREFIX at reckon/crew/recovery.py:218 and the function-local delegation matches the existing pattern at reckon/crew/routing.py:2576.\nFINDING tests/test_plan_review_prefix_is_one_constant.py:14 follow-on: the ownership grep globs Path(recovery.__file__).parent.glob(\"*.py\") non-recursively, so it does not search the reckon/crew/picker subpackage (8 modules) and cannot redden on a bare plan-review-of- literal reintroduced there, which the done-when's \"greps the package\" requires.",
+  "review_run_id": "r-20261004T235017462606-review-of-plan-review-prefix-is-one-constant",
+  "reviewed_base_sha": "b09a1ccf71322aee71f64752db4730309917e9e0",
+  "reviewed_commits": [
+    "b8125e2b82d9f4930480add4da3857ca27d211a1"
+  ],
+  "reviewed_head_sha": "b8125e2b82d9f4930480add4da3857ca27d211a1",
+  "reviewed_run_id": "r-20261004T231735782122-plan-review-prefix-is-one-constant",
+  "reviewer_run_id": "r-20261004T235017462606-review-of-plan-review-prefix-is-one-constant",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T23:54:41.438745+00:00",
+  "total": 91
+}

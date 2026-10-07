@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "carried_forward": {
+    "at": "2026-10-03T11:28:44Z",
+    "from": "8a92a62f82081c35a3768942667b303577095f3d",
+    "paths": [
+      "tests/test_skill_contracts.py"
+    ],
+    "to": "433969df033f94825df2991ef3ee5965b61936fa"
+  },
+  "completed_at": "2026-10-03T11:23:44.363Z",
+  "dispatched_at": "2026-10-03T11:16:22Z",
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "713",
+      "text": "the recorded base read-set figure and the line-cost beside FIXED_READ_SET_TOKEN_BUDGET do not reproduce at the recorded base revision: the manifest reports base 15580 and calls the added line a 35-token cost, but SKILL.md at the recorded base e79c1000b is 11691 words = 15588 estimated tokens by the gate's own formula ((words*4+2)//3), so the added line costs 15615-15588 = 27, not 35, and the previous budget's headroom was 12 above base rather than 20; the budget constant 15_616 itself is correct and the head reading 15615 reproduces exactly, so only the base figure and the derived cost are off by 8."
+    }
+  ],
+  "justifications": {
+    "durability": "the census change removes the moving literal so adding a verb needs exactly one edit (its STATE_PHRASES row); the phrase values are still enforced at tests/test_crew_help_names_its_state.py:130, so both reconciled rows (ack, recover) are guarded, and the skill-inventory line is guarded by tests/test_skill_contracts.py:1204 (registered verb must be named) plus the flag-table test at :1068.",
+    "evidence": "the falsifier is the right shape and I reproduced it rather than reading the log \u2014 in a scratch extraction of head 8a92a62f, restoring `assert len(leaves) == 35` fails 1/4 with `assert 36 == 35` and restoring the old phrase values (ack \"one live run's obligations\", recover \"live pointers left by an interrupted orchestrator\") fails at line 130, confirming both rows were genuinely stale and masked by the literal at line 125; the head gate reproduces as 65 passed EXIT=0, but the manifest's base token reading (15580) does not reconcile with SKILL.md at e79c1000b (15588), so one recorded figure is not trustworthy as written.",
+    "fit": "the SKILL.md line matches the compact inventory style of the `reckon crew pick` entry above it and its flags (--run --status --reason) match the verb's own --help; the budget comment names the mechanism (the line added and the state a coordinator reads) with no plan or node label, but it carries the unreproducible 35-token cost.",
+    "goal_fidelity": "both reds the done-when names are resolved \u2014 the literal `assert len(leaves) == 35` is removed (set equality at line 124 is the real check and already implies the length), and `reckon crew repair-status` is named in skills/reckon-build/SKILL.md:619 with its --help flags, resolving the registered-but-unnamed failure without an exemption; the two masked phrase rows that removing the literal exposed are reconciled, which the done-when's own gate requires.",
+    "scope_discipline": "the diff touches exactly the three files the coordinator's resume advice fenced (tests/test_crew_help_names_its_state.py, skills/reckon-build/SKILL.md, tests/test_skill_contracts.py): the worker hit the original-scope conflict, blocked, and the coordinator's resume advice 2026-10-03T11:11 expressly extended the fence to include tests/test_skill_contracts.py before the edit landed; the evidence-fragment path in the original fence was correctly left unwritten because the prompt states this node's done-when names no artifact; the reviewed worktree is clean at 8a92a62f with both commits present."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both reds the done-when names are resolved \u2014 the literal `assert len(leaves) == 35` is removed (set equality at line 124 is the real check and already implies the length), and `reckon crew repair-status` is named in skills/reckon-build/SKILL.md:619 with its --help flags, resolving the registered-but-unnamed failure without an exemption; the two masked phrase rows that removing the literal exposed are reconciled, which the done-when's own gate requires.\nSCORE evidence: 17\nJUSTIFICATION evidence: the falsifier is the right shape and I reproduced it rather than reading the log \u2014 in a scratch extraction of head 8a92a62f, restoring `assert len(leaves) == 35` fails 1/4 with `assert 36 == 35` and restoring the old phrase values (ack \"one live run's obligations\", recover \"live pointers left by an interrupted orchestrator\") fails at line 130, confirming both rows were genuinely stale and masked by the literal at line 125; the head gate reproduces as 65 passed EXIT=0, but the manifest's base token reading (15580) does not reconcile with SKILL.md at e79c1000b (15588), so one recorded figure is not trustworthy as written.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the three files the coordinator's resume advice fenced (tests/test_crew_help_names_its_state.py, skills/reckon-build/SKILL.md, tests/test_skill_contracts.py): the worker hit the original-scope conflict, blocked, and the coordinator's resume advice 2026-10-03T11:11 expressly extended the fence to include tests/test_skill_contracts.py before the edit landed; the evidence-fragment path in the original fence was correctly left unwritten because the prompt states this node's done-when names no artifact; the reviewed worktree is clean at 8a92a62f with both commits present.\nSCORE durability: 19\nJUSTIFICATION durability: the census change removes the moving literal so adding a verb needs exactly one edit (its STATE_PHRASES row); the phrase values are still enforced at tests/test_crew_help_names_its_state.py:130, so both reconciled rows (ack, recover) are guarded, and the skill-inventory line is guarded by tests/test_skill_contracts.py:1204 (registered verb must be named) plus the flag-table test at :1068.\nSCORE fit: 18\nJUSTIFICATION fit: the SKILL.md line matches the compact inventory style of the `reckon crew pick` entry above it and its flags (--run --status --reason) match the verb's own --help; the budget comment names the mechanism (the line added and the state a coordinator reads) with no plan or node label, but it carries the unreproducible 35-token cost.\nFINDING tests/test_skill_contracts.py:713 the recorded base read-set figure and the line-cost beside FIXED_READ_SET_TOKEN_BUDGET do not reproduce at the recorded base revision: the manifest reports base 15580 and calls the added line a 35-token cost, but SKILL.md at the recorded base e79c1000b is 11691 words = 15588 estimated tokens by the gate's own formula ((words*4+2)//3), so the added line costs 15615-15588 = 27, not 35, and the previous budget's headroom was 12 above base rather than 20; the budget constant 15_616 itself is correct and the head reading 15615 reproduces exactly, so only the base figure and the derived cost are off by 8.\n",
+  "review_run_id": "r-20261003T111550402864-review-of-crew-verb-census-is-derived",
+  "reviewed_base_sha": "8a92a62f82081c35a3768942667b303577095f3d",
+  "reviewed_commits": [
+    "e1cb0b1103392f4a459e8e5fe56d420a57d1fddc",
+    "8a92a62f82081c35a3768942667b303577095f3d"
+  ],
+  "reviewed_head_sha": "433969df033f94825df2991ef3ee5965b61936fa",
+  "reviewed_run_id": "r-20261003T105808412251-crew-verb-census-is-derived",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T111550402864-review-of-crew-verb-census-is-derived",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T11:28:44Z",
+  "total": 94
+}

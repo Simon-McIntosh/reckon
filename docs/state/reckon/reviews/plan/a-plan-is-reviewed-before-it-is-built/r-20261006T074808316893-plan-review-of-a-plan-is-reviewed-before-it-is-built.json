@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T07:57:02.029Z",
+  "dispatched_at": "2026-10-06T07:48:28Z",
+  "findings": [
+    {
+      "anchor": "tests/test_a_section_reviewed_as_authored_stays_reviewed.py:312",
+      "id": "reuse_search-1",
+      "reason": "the node enumerates call sites with a grep at implementation time and the count is anchored to version 158, so the understatement does not change the design, though the repo's own fuse rule says a count that a landing can move should be derived rather than written down.",
+      "text": "\u00a716 states the second node repoints \"four of the stripper and one of the slicer\" call sites in this file, but the file carries two `plan_review._prose_slices` call sites at this head (lines 312 and 324), both added by \u00a716's own first-node landing commit 05cf6e736, so the declared replacement census is short one site",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "6f7d01cb4595908b51c2a50f0742251627762853ffc3097f85161a45a18b34cd",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 186,
+  "project": "reckon",
+  "responses": {
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the reviewer marked it non-blocking: the second node's done-when requires grep for _prose_slices to return nothing at its head, so every call site, two at this head, is found by that grep rather than by the stated count, which the landing records as measured",
+      "when": "2026-10-06T07:58:32.605871+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-reviewed-before-it-is-built.v186.json",
+  "review_run_id": "r-20261006T074808316893-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "d3bde1b1b62d7c62cd61259f50851a210b524a36",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `section_prose` on `reckon/_plan_html.py` is one reader hiding span subtraction, skip-set interior removal, tag stripping, entity decoding and the landed-card mode behind one ordered-slice return; `_review_coverage` is one predicate over the two existing readers `roadmap.implementable_sections` and `list_plan_reviews`; neither spreads its complexity across shallow wrappers.",
+    "duplicate_owner": "pass \u2014 the plan names each duplicate it found and the owner to extend: the plan-level report root built twice (`reckon/crew/plan_review.py:795`, `:866`) collapses to one private root function, the snapshot name spelled at `reckon/crew/recovery.py:547` becomes a private constant beside `_REVIEW_SIDECAR_NAME` (`plan_review.py:784`), the gate's record pick at `reckon/crew/routing.py:2666` retires into `read_plan_review`, and the `read_plan_review` whole-document match retires into `_review_coverage`; no owner is forked.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; each open section carries an interface-accounting paragraph naming what it adds and what it retires \u2014 \u00a716 net +1 (`section_prose` added, interim public `strip_tags` made private), \u00a721 nothing public, \u00a722 `plan_review_settings` added as `plan_review_settle_seconds` is retired, \u00a723 `store_delivered_reviews` added as `store_delivered_report` goes private \u2014 and none adds a CLI option, MCP view or refusal family without accounting (\u00a723 reuses the existing `plan-review-missing` family and an existing sidecar key).",
+    "reuse_search": "a finding \u2014 the plan searched the target codebase thoroughly for every mechanism it proposes (the fourteen-site prose-extractor census is exact, the three converging readers are correct, the duplicate owners are correctly located, and \u00a722 states why no existing similarity machinery can be extended), but its census of the call sites a replacement must repoint is understated.",
+    "thin_wrapper": "pass \u2014 every wrapper-shaped addition is a widening or hoist of an existing owner with the reason in the section's own text: `plan_review_settings` widens `plan_review_settle_seconds`'s three single-key sites in `reckon/flight.py` to a table, `store_delivered_reviews` hoists the one existing store loop beside `store_delivered_report`, and \u00a722 states plainly why the change measure is not an extension of `dispatch._longest_contiguous_word_span`."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "73c5b6996d69f9aad532414624ddb66aeaa5348344ecce830e835004ebc84584",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "f2849c3493f957459b8b3f4d726d09a8e4f3328eb245a3a643cade4b8f16b4cf",
+    "s22": "d63621e0b299830296654204bf882514336f79c61556382b4bb773a4baa69ce8",
+    "s23": "2f89e8f7bbc5795ecad4f5113a6a991a364d10143c7ec6c80f5368e4ccaa6df1",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:57:41.731107+00:00"
+}

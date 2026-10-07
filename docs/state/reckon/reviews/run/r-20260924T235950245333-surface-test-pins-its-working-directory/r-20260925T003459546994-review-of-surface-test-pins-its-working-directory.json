@@ -1,0 +1,42 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T00:34:59.546994+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit \u2014 382d2a8b adds cwd=PACKAGE_ROOT to both child launches in tests/test_crew_surface.py (+10/-3: the two arguments and the docstring paragraph) and 5c913d3f appends the plan landing note (+30/-0), the evidence anchor (+59/-0, no deletions) and the figure script and image.",
+    "done_when": "the done_when (prompt.txt:81) requires a repository-root launch, a launch from a directory holding another reckon checkout, and a red pre-change log, each recorded; the manifest cites the three logs, the head arms printed 2 passed each and the base arm 1 failed 1 passed, and my own three recheck arms reproduced those results from the reviewed tree.",
+    "goal": "read the source dispatch goal (prompt.txt:25) and tests/test_crew_surface.py at head, where both child launches pass cwd=PACKAGE_ROOT (lines 75 and 93); my rerun of that file with pytest launched from /tmp/other-reckon-surface passed 2 of 2, so the child imports this checkout's reckon whatever the caller's directory.",
+    "manifest": "read at runs/r-20260924T235950245333-surface-test-pins-its-working-directory/manifest.md; it states status complete, commits 382d2a8b and 5c913d3f, the five changed paths, the gate command with its three arms and log paths, and the negative control log whose first line repeats the declared mutation string verbatim.",
+    "write_paths": "the declared paths are tests/test_crew_surface.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html and docs/figures/the-suite-is-green-at-head, and git diff --numstat 2a72458c..5c913d3f names exactly five files under them, none outside."
+  },
+  "justifications": {
+    "durability": "no assertion was added, and the pin is guarded only by test_public_surface_matches_snapshot (tests/test_crew_surface.py:80) failing when pytest is launched from a directory holding another reckon checkout, a condition the suite does not impose on itself, so removing cwd=PACKAGE_ROOT is invisible from the repository root.",
+    "evidence": "the three arms are logged receipts and I reproduced them \u2014 logs/recheck-head-from-root.log 2 passed EXIT=0, logs/recheck-head-from-other-checkout.log 2 passed EXIT=0, logs/recheck-base-arm-other-checkout.log 1 failed 1 passed EXIT=1 with the child resolving /tmp/other-reckon-surface/reckon/__init__.py.",
+    "fit": "cwd=PACKAGE_ROOT (tests/test_crew_surface.py:75 and :93) reuses the existing PACKAGE_ROOT name (line 9), adds no symbol, and the docstring at lines 57-63 states the sys.path mechanism rather than the plan.",
+    "goal_fidelity": "tests/test_crew_surface.py:75 and :93 pin the child cwd to PACKAGE_ROOT (tests/test_crew_surface.py:9), and my recheck from /tmp/other-reckon-surface passed 2 of 2 (logs/recheck-head-from-other-checkout.log).",
+    "scope_discipline": "git diff --numstat 2a72458c..5c913d3f names only the declared paths (tests/test_crew_surface.py 10/3, docs/plans 30/0, docs/evidence 59/0, figure pair) and the plan's plan-version and plan-modified meta lines are absent from the diff."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260924T235950245333-surface-test-pins-its-working-directory at head 5c913d3f, base 2a72458c.\nreviewed_base: 2a72458cad5f7843fc2b7637719b8510d0151788\nreviewed_head_sha: 5c913d3fd20b480d808fa7db39f95c566aef713f\nVERDICT goal: read the source dispatch goal (prompt.txt:25) and tests/test_crew_surface.py at head, where both child launches pass cwd=PACKAGE_ROOT (lines 75 and 93); my rerun of that file with pytest launched from /tmp/other-reckon-surface passed 2 of 2, so the child imports this checkout's reckon whatever the caller's directory.\nVERDICT done_when: the done_when (prompt.txt:81) requires a repository-root launch, a launch from a directory holding another reckon checkout, and a red pre-change log, each recorded; the manifest cites the three logs, the head arms printed 2 passed each and the base arm 1 failed 1 passed, and my own three recheck arms reproduced those results from the reviewed tree.\nVERDICT write_paths: the declared paths are tests/test_crew_surface.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html and docs/figures/the-suite-is-green-at-head, and git diff --numstat 2a72458c..5c913d3f names exactly five files under them, none outside.\nVERDICT manifest: read at runs/r-20260924T235950245333-surface-test-pins-its-working-directory/manifest.md; it states status complete, commits 382d2a8b and 5c913d3f, the five changed paths, the gate command with its three arms and log paths, and the negative control log whose first line repeats the declared mutation string verbatim.\nVERDICT diff: read commit by commit \u2014 382d2a8b adds cwd=PACKAGE_ROOT to both child launches in tests/test_crew_surface.py (+10/-3: the two arguments and the docstring paragraph) and 5c913d3f appends the plan landing note (+30/-0), the evidence anchor (+59/-0, no deletions) and the figure script and image.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_surface.py:75 and :93 pin the child cwd to PACKAGE_ROOT (tests/test_crew_surface.py:9), and my recheck from /tmp/other-reckon-surface passed 2 of 2 (logs/recheck-head-from-other-checkout.log).\nSCORE evidence: 19\nJUSTIFICATION evidence: the three arms are logged receipts and I reproduced them \u2014 logs/recheck-head-from-root.log 2 passed EXIT=0, logs/recheck-head-from-other-checkout.log 2 passed EXIT=0, logs/recheck-base-arm-other-checkout.log 1 failed 1 passed EXIT=1 with the child resolving /tmp/other-reckon-surface/reckon/__init__.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 2a72458c..5c913d3f names only the declared paths (tests/test_crew_surface.py 10/3, docs/plans 30/0, docs/evidence 59/0, figure pair) and the plan's plan-version and plan-modified meta lines are absent from the diff.\nSCORE durability: 14\nJUSTIFICATION durability: no assertion was added, and the pin is guarded only by test_public_surface_matches_snapshot (tests/test_crew_surface.py:80) failing when pytest is launched from a directory holding another reckon checkout, a condition the suite does not impose on itself, so removing cwd=PACKAGE_ROOT is invisible from the repository root.\nSCORE fit: 19\nJUSTIFICATION fit: cwd=PACKAGE_ROOT (tests/test_crew_surface.py:75 and :93) reuses the existing PACKAGE_ROOT name (line 9), adds no symbol, and the docstring at lines 57-63 states the sys.path mechanism rather than the plan.",
+  "review_run_id": "r-20260925T003459546994-review-of-surface-test-pins-its-working-directory",
+  "reviewed_base_sha": "2a72458cad5f7843fc2b7637719b8510d0151788",
+  "reviewed_head_sha": "5c913d3fd20b480d808fa7db39f95c566aef713f",
+  "reviewed_run_id": "r-20260924T235950245333-surface-test-pins-its-working-directory",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T00:58:55.875633+00:00",
+  "total": 92
+}

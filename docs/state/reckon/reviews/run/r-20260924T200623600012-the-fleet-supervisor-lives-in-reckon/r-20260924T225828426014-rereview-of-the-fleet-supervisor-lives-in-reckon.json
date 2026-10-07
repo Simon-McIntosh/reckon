@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T22:58:28.426014+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+      "line": "522",
+      "text": "the record quotes the control's failing comparison with 'record_sha256': '466451e3\u2026', but the log it cites (runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/logs/negative-controls-assertions.log:16) holds 'b560cb2b944422815571b58297abb597f15b3659e6316a2e3ccf5dd506bc6b33' from a different run, so a reader cross-checking record and evidence finds a digest the delivered log never produced."
+    },
+    {
+      "file": "docs/plans/a-dispatch-returns-without-its-worker.html",
+      "line": "723",
+      "text": "the landing record states the runtime directory's mode is asserted \"in the same case\" as the spawn readings, but it is a case of its own (tests/test_fleet_supervisor.py:250), as the same page says at :699, and the sentence at :721 introducing \"The five cases\" then names four, so a reader counting cases from it counts wrong."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 02e2757d; 770abccf adds the module and the test, a55aff86 appends the landing record, the cumulative evidence section and the figure, and 025ba057 adds 60 lines to the test with 0 deletions (the snapshot assertion and the mode case) and rewrites the two records (40/4 and 33/12), so the repair only added to the suite and weakened nothing.",
+    "done_when": "the manifest records 5 passed for tests/test_fleet_supervisor.py in logs/gate.log, whose first three lines name revision 025ba057, the reviewed tree and the command; the same file re-run at 025ba057 from the reviewed tree gives 5 passed in 5.14s, EXIT=0, recorded at runs/r-20260924T225828426014-rereview-of-the-fleet-supervisor-lives-in-reckon/logs/recheck-gate.log.",
+    "goal": "read section 10 of docs/plans/a-dispatch-returns-without-its-worker.html (the landed subsection at :685-703 and :721-735) and the module; reckon/crew/fleet_supervisor.py:416 runs as python -m reckon.crew.fleet_supervisor and carries the reference's protocol \u2014 session start at :210, reload at :302, the mode-0700 runtime directory at :123-136, inherited-variable stripping at :92-101, and the spawn verb at :247-281 that runs the spec's argv and writes spawned.json only after the child exists.",
+    "manifest": "read; complete, three commits recorded (770abccf, a55aff86, 025ba057), test_logs names the gate log, and the negative_control_note records three executed controls with their logs; the gate log shows 5 passed at the delivered head.",
+    "write_paths": "git diff --name-only 02e2757d 025ba057 returns exactly the five paths the manifest declares \u2014 the module, the five-case test, the plan page, the landed evidence record and the figure \u2014 and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_supervisor.py:238 requires the machine's fleet-state snapshot identical across the case and :261 asserts the mode read as 0700, both independent of any value the case supplies, and the delivered controls show each reddens (state override dropped: the byte-identity assertion fails; chmod dropped under umask 000: assert 511 == 448).",
+    "evidence": "the gate re-ran green from the reviewed tree (5 passed in 5.14s) and the two new claims each carry an executed control, but docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:522 quotes a control digest its cited log does not contain, so record and evidence cannot be reconciled as delivered.",
+    "fit": "the module follows the surrounding idiom (typed Request at fleet_supervisor.py:287, atomic JSON writes at :147, explicit child reaping at :349) and carries no plan or ticket identifier, though its comments say \"the reference\" without naming the dotfiles script a reader needs.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:247-281 runs the spec's argv and writes spawned.json only after the child exists, and :323-347 dispatches session, reload and spawn lines, which is exactly what section 10 fixes.",
+    "scope_discipline": "every path in git diff --name-only 02e2757d 025ba057 is one of the five the manifest declares, and the repair commit touches only the test and the two records it corrects."
+  },
+  "project": "reckon",
+  "raw_text": "Context for the call-site line: no module in reckon imports or launches the batch step at this head; the first in-repo caller is the dispatch-side routing the sibling node owns under section 10, and the batch step is reached through python -m from outside the repository, so the node's own test file is its only in-tree reader and is not a production call site.\n\nVERDICT goal: read section 10 of docs/plans/a-dispatch-returns-without-its-worker.html (the landed subsection at :685-703 and :721-735) and the module; reckon/crew/fleet_supervisor.py:416 runs as python -m reckon.crew.fleet_supervisor and carries the reference's protocol \u2014 session start at :210, reload at :302, the mode-0700 runtime directory at :123-136, inherited-variable stripping at :92-101, and the spawn verb at :247-281 that runs the spec's argv and writes spawned.json only after the child exists.\n\nVERDICT done_when: the manifest records 5 passed for tests/test_fleet_supervisor.py in logs/gate.log, whose first three lines name revision 025ba057, the reviewed tree and the command; the same file re-run at 025ba057 from the reviewed tree gives 5 passed in 5.14s, EXIT=0, recorded at runs/r-20260924T225828426014-rereview-of-the-fleet-supervisor-lives-in-reckon/logs/recheck-gate.log.\n\nVERDICT write_paths: git diff --name-only 02e2757d 025ba057 returns exactly the five paths the manifest declares \u2014 the module, the five-case test, the plan page, the landed evidence record and the figure \u2014 and nothing outside them.\n\nVERDICT manifest: read; complete, three commits recorded (770abccf, a55aff86, 025ba057), test_logs names the gate log, and the negative_control_note records three executed controls with their logs; the gate log shows 5 passed at the delivered head.\n\nVERDICT diff: read commit by commit against 02e2757d; 770abccf adds the module and the test, a55aff86 appends the landing record, the cumulative evidence section and the figure, and 025ba057 adds 60 lines to the test with 0 deletions (the snapshot assertion and the mode case) and rewrites the two records (40/4 and 33/12), so the repair only added to the suite and weakened nothing.\n\nCALL_SITES: none\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:247-281 runs the spec's argv and writes spawned.json only after the child exists, and :323-347 dispatches session, reload and spawn lines, which is exactly what section 10 fixes.\n\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate re-ran green from the reviewed tree (5 passed in 5.14s) and the two new claims each carry an executed control, but docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:522 quotes a control digest its cited log does not contain, so record and evidence cannot be reconciled as delivered.\n\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-only 02e2757d 025ba057 is one of the five the manifest declares, and the repair commit touches only the test and the two records it corrects.\n\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_fleet_supervisor.py:238 requires the machine's fleet-state snapshot identical across the case and :261 asserts the mode read as 0700, both independent of any value the case supplies, and the delivered controls show each reddens (state override dropped: the byte-identity assertion fails; chmod dropped under umask 000: assert 511 == 448).\n\nSCORE fit: 19\nJUSTIFICATION fit: the module follows the surrounding idiom (typed Request at fleet_supervisor.py:287, atomic JSON writes at :147, explicit child reaping at :349) and carries no plan or ticket identifier, though its comments say \"the reference\" without naming the dotfiles script a reader needs.\n\nFINDING docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:522 the record quotes the control's failing comparison with 'record_sha256': '466451e3\u2026', but the log it cites (runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/logs/negative-controls-assertions.log:16) holds 'b560cb2b944422815571b58297abb597f15b3659e6316a2e3ccf5dd506bc6b33' from a different run, so a reader cross-checking record and evidence finds a digest the delivered log never produced.\n\nFINDING docs/plans/a-dispatch-returns-without-its-worker.html:723 the landing record states the runtime directory's mode is asserted \"in the same case\" as the spawn readings, but it is a case of its own (tests/test_fleet_supervisor.py:250), as the same page says at :699, and the sentence at :721 introducing \"The five cases\" then names four, so a reader counting cases from it counts wrong.\n\nreviewed_base_sha: 02e2757d4795338d9c3af4209aef400cfbd4f7f4\nreviewed_head_sha: 025ba05783e45fa9915007359efcea7367a91d49\n",
+  "review_run_id": "r-20260924T225828426014-rereview-of-the-fleet-supervisor-lives-in-reckon",
+  "reviewed_base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+  "reviewed_head_sha": "025ba05783e45fa9915007359efcea7367a91d49",
+  "reviewed_run_id": "r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T00:00:16.016171+00:00",
+  "total": 97
+}

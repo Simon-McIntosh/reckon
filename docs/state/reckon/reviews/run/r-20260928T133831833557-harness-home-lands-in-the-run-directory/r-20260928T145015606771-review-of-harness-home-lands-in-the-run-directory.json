@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:7267 resume_plan",
+    "reckon/crew/dispatch.py:4614 dispatch",
+    "reckon/crew/dispatch.py:7650 change_lane",
+    "reckon/crew/resumption.py:242 _request_lane_availability",
+    "reckon/_backends.py:2643 launch_plan"
+  ],
+  "completed_at": "2026-09-28T15:41:49.265Z",
+  "dispatched_at": "2026-09-28T14:50:33Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "1939",
+      "text": "the refusal returns None for the manifest-less caller, so a fenced codex resume of a record carrying no manifest path now has no home and falls back to the operator's sealed home \u2014 the \"Read-only file system\" failure the write-roots ordering at reckon/_backends.py:2638-2645 exists to avoid; the repair belongs to the dispatch-layer follow-on the manifest already names, and no gate here exercises that path end to end."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T133831833557-harness-home-lands-in-the-run-directory/manifest.md",
+      "line": "45",
+      "text": "the caller chain cites harness_home at \"line 1943 base\" but the base revision's return is reckon/_backends.py:1936; line 1943 falls inside seed_harness_home, so a reader following the anchor lands in a different function."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T133831833557-harness-home-lands-in-the-run-directory/manifest.md",
+      "line": "51",
+      "text": "the fence grant is cited at reckon/_backends.py:2532 but the roots.append(Path(manifest_path).parent) it names is base 2533 and head 2548, and docs/plans/crew-observability-truth.html repeats 2532, so the anchor opens inside fence_argv's docstring rather than on the grant."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T133831833557-harness-home-lands-in-the-run-directory/logs/baseline-gate.log",
+      "line": "1",
+      "text": "neither arm log's first line names the revision it ran at, the tree, or the command, though the node's own manifest contract requires it of a gate log; the added-failure derivation and both suite fields depend on these two files, and a reader holding one alone cannot tell which tree produced it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit \u2014 38e24e80 changes one predicate and its docstring in reckon/_backends.py plus the new test, and 83ba84af appends the landing record, one figure and one plan comment, with zero deletions in either cumulative file.",
+    "done_when": "the manifest names the caller as file:line with how the wrong directory reached it, and its three clauses are each logged \u2014 4 passed for the new test (logs/after-new-test.log), 2 of 4 failing at base with \"the worktree carries ['harness']\" (logs/negative-control.log), and both gate arms as log paths (logs/baseline-gate.log 123 passed, logs/after-gate.log 127 passed, no failing ids either side).",
+    "goal": "the node was dispatched to find which caller resolves a run's harness home inside the worktree and make it land in the run directory; the caller is named (reckon/crew/dispatch.py:7276 composes manifest_path=str(record.get(\"manifest_path\") or \"\") beneath the frame the spy trace at logs/caller-spy-trace.log reports as dispatch.py:7267, and reckon/_backends.py:2635 turns that string into Path(\".\")), and the change stops the pollution by refusing a non-absolute run directory (reckon/_backends.py:1939-1948), which leaves that caller with no harness home rather than one under the run directory.",
+    "manifest": "read; it records both commits, the two gate arms with sha256 digests that match the files on disk (99132347... baseline, 0bc8d2e9... after), the negative-control log whose first line repeats the declared mutation verbatim, and the follow-ons it was fenced out of.",
+    "write_paths": "the manifest declares five exclusive paths (reckon/_backends.py, tests/test_harness_home_is_not_in_the_worktree.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/figures/crew-observability-truth, docs/plans/crew-observability-truth.html) and git diff ff0818f6 83ba84af touches exactly those five."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log reinstates the base harness_home in a scratch copy and the two dialect cases redden with the worktree carrying ['harness'], so the added assertions fail on the defect they guard, and they compare against an independently built expectation (run / folder, an empty worktree, an absent variable) rather than a value the test handed in.",
+    "evidence": "I re-derived the added failures through the production reader over the reviewed manifest's own fields \u2014 reckon/crew/review.py added_failures_from_gate_logs on logs/baseline-gate.log and logs/after-gate.log returns (0, []) while the same extractor finds the two FAILED ids in logs/negative-control.log, so the zero is measured rather than blind \u2014 but neither arm log carries the revision/tree/command header, so the count rests on the manifest that names them.",
+    "fit": "the refusal reuses the treatment the file already gives a run directory that does not exist yet (reckon/_backends.py:2640-2645) with a docstring paragraph in the same voice, the naming checks over the added lines are clean, and the new module name states the invariant it holds.",
+    "goal_fidelity": "I confirmed the predicate directly against the reviewed tree \u2014 reckon/_backends.py harness_home returns None for \"\", \".\" and \"manifest.md\" in both dialects and returns <run>/harness or <run>/codex-home for an absolute run directory \u2014 so the worktree is no longer polluted, but for the one defective caller the home lands nowhere instead of in the run directory the goal names.",
+    "scope_discipline": "every path in git diff ff0818f6 83ba84af is inside the declared write paths, the cumulative landing record and the plan each gained lines with 0 deletions, and the new test writes only under tmp_path and asserts the synthetic operator home and the decoy are untouched (tests/test_harness_home_is_not_in_the_worktree.py:239-243)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was dispatched to find which caller resolves a run's harness home inside the worktree and make it land in the run directory; the caller is named (reckon/crew/dispatch.py:7276 composes manifest_path=str(record.get(\"manifest_path\") or \"\") beneath the frame the spy trace at logs/caller-spy-trace.log reports as dispatch.py:7267, and reckon/_backends.py:2635 turns that string into Path(\".\")), and the change stops the pollution by refusing a non-absolute run directory (reckon/_backends.py:1939-1948), which leaves that caller with no harness home rather than one under the run directory.\nVERDICT done_when: the manifest names the caller as file:line with how the wrong directory reached it, and its three clauses are each logged \u2014 4 passed for the new test (logs/after-new-test.log), 2 of 4 failing at base with \"the worktree carries ['harness']\" (logs/negative-control.log), and both gate arms as log paths (logs/baseline-gate.log 123 passed, logs/after-gate.log 127 passed, no failing ids either side).\nVERDICT write_paths: the manifest declares five exclusive paths (reckon/_backends.py, tests/test_harness_home_is_not_in_the_worktree.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/figures/crew-observability-truth, docs/plans/crew-observability-truth.html) and git diff ff0818f6 83ba84af touches exactly those five.\nVERDICT manifest: read; it records both commits, the two gate arms with sha256 digests that match the files on disk (99132347... baseline, 0bc8d2e9... after), the negative-control log whose first line repeats the declared mutation verbatim, and the follow-ons it was fenced out of.\nVERDICT diff: read commit by commit \u2014 38e24e80 changes one predicate and its docstring in reckon/_backends.py plus the new test, and 83ba84af appends the landing record, one figure and one plan comment, with zero deletions in either cumulative file.\nCALL_SITES: reckon/crew/dispatch.py:7267 resume_plan, reckon/crew/dispatch.py:4614 dispatch, reckon/crew/dispatch.py:7650 change_lane, reckon/crew/resumption.py:242 _request_lane_availability, reckon/_backends.py:2643 launch_plan\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: I confirmed the predicate directly against the reviewed tree \u2014 reckon/_backends.py harness_home returns None for \"\", \".\" and \"manifest.md\" in both dialects and returns <run>/harness or <run>/codex-home for an absolute run directory \u2014 so the worktree is no longer polluted, but for the one defective caller the home lands nowhere instead of in the run directory the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: I re-derived the added failures through the production reader over the reviewed manifest's own fields \u2014 reckon/crew/review.py added_failures_from_gate_logs on logs/baseline-gate.log and logs/after-gate.log returns (0, []) while the same extractor finds the two FAILED ids in logs/negative-control.log, so the zero is measured rather than blind \u2014 but neither arm log carries the revision/tree/command header, so the count rests on the manifest that names them.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff ff0818f6 83ba84af is inside the declared write paths, the cumulative landing record and the plan each gained lines with 0 deletions, and the new test writes only under tmp_path and asserts the synthetic operator home and the decoy are untouched (tests/test_harness_home_is_not_in_the_worktree.py:239-243).\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log reinstates the base harness_home in a scratch copy and the two dialect cases redden with the worktree carrying ['harness'], so the added assertions fail on the defect they guard, and they compare against an independently built expectation (run / folder, an empty worktree, an absent variable) rather than a value the test handed in.\nSCORE fit: 19\nJUSTIFICATION fit: the refusal reuses the treatment the file already gives a run directory that does not exist yet (reckon/_backends.py:2640-2645) with a docstring paragraph in the same voice, the naming checks over the added lines are clean, and the new module name states the invariant it holds.\nFINDING reckon/_backends.py:1939 the refusal returns None for the manifest-less caller, so a fenced codex resume of a record carrying no manifest path now has no home and falls back to the operator's sealed home \u2014 the \"Read-only file system\" failure the write-roots ordering at reckon/_backends.py:2638-2645 exists to avoid; the repair belongs to the dispatch-layer follow-on the manifest already names, and no gate here exercises that path end to end.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T133831833557-harness-home-lands-in-the-run-directory/manifest.md:45 the caller chain cites harness_home at \"line 1943 base\" but the base revision's return is reckon/_backends.py:1936; line 1943 falls inside seed_harness_home, so a reader following the anchor lands in a different function.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T133831833557-harness-home-lands-in-the-run-directory/manifest.md:51 the fence grant is cited at reckon/_backends.py:2532 but the roots.append(Path(manifest_path).parent) it names is base 2533 and head 2548, and docs/plans/crew-observability-truth.html repeats 2532, so the anchor opens inside fence_argv's docstring rather than on the grant.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T133831833557-harness-home-lands-in-the-run-directory/logs/baseline-gate.log:1 neither arm log's first line names the revision it ran at, the tree, or the command, though the node's own manifest contract requires it of a gate log; the added-failure derivation and both suite fields depend on these two files, and a reader holding one alone cannot tell which tree produced it.\n",
+  "review_run_id": "r-20260928T145015606771-review-of-harness-home-lands-in-the-run-directory",
+  "reviewed_base_sha": "ff0818f66c00d4d0fe164352f582673358f5fc6a",
+  "reviewed_head_sha": "83ba84af2f9b4c2707de07854802ce06dd1bc335",
+  "reviewed_run_id": "r-20260928T133831833557-harness-home-lands-in-the-run-directory",
+  "reviewer": {
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260928T145015606771-review-of-harness-home-lands-in-the-run-directory",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T15:30:07.387682+00:00",
+  "total": 89
+}

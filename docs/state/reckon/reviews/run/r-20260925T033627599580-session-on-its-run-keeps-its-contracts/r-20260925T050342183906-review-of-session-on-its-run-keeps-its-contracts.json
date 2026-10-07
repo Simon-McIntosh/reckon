@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/dispatch.py:change_lane",
+    "reckon/crew/dispatch.py:resume_plan",
+    "reckon/crew/runs.py:capture_run_session",
+    "reckon/crew/promotion.py:promote",
+    "reckon/crew/routing.py:_register_session_member"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T05:03:42.183906+00:00",
+  "findings": [
+    {
+      "file": "tests/test_crew_members.py",
+      "line": "170",
+      "text": "the recorded agent configuration assertion still requires the dialect key this change removed, so the importer test is red at head; the file is outside the node's fence and was correctly reported as a blocker rather than repaired, but the goal's \"keeps every contract it broke\" stays unmet until that file is assigned."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit; the five repair commits each restore one",
+    "done_when": "the done_when is the importer gate \u2014 the seven ids plus",
+    "goal": "the goal is that the session-on-its-run change keeps every",
+    "manifest": "read at",
+    "write_paths": "the declared fence is the seven production modules, eight"
+  },
+  "justifications": {
+    "durability": "the declared control fires \u2014 re-adding the dialect key reddens tests/test_backend_environment.py:237, measured in my re-run as 1 failed \u2014 and tests/test_session_lives_on_its_run.py:154 pins the roster file's raw bytes, but the other five repairs rest on passing tests that no control was run against.",
+    "evidence": "the manifest records both arms with revisions and log paths, a suite-delta table giving raw_added seven ids, outside_exceptions three and roster_write yes/no per row, and the declared control log, and my independent re-runs at 3eb57e55 reproduced the gate (14 passed) and the control (1 failed).",
+    "fit": "the repairs follow module idiom \u2014 explicit run-record fields beside session_id, the pointer lock reused from reckon/crew/runs.py:356 \u2014 with no naming-rule violation in the five repair commits, the only cost being the transitional fallback reading a key the change removed at reckon/crew/promotion.py:3981.",
+    "goal_fidelity": "all seven named regressions and the run-record session fields are verified repaired at head by my own re-run (review-focused-gate.log, 14 passed), but the gate's no-added-failures clause is unmet: tests/test_crew_members.py:170 stays red requiring the dialect key this change removed.",
+    "scope_discipline": "every changed path at 3eb57e55 is inside the declared fence, and the only test file edited, tests/test_crew_ephemeral_members.py:136-139, replaces just the assertions that encoded the removed roster write with a run-pointer capture and a roster-bytes-unchanged check."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of node session-on-its-run-keeps-its-contracts, read at\nhead 3eb57e55ac50452a71a1fb07a30c44575e59e685 against base\nc6abaeb9c1fe7e932ee3cd46475632672ea11975. Sources read: the source node's\nprompt and manifest, its suite-delta evidence, the eight landed commits, and\ntwo re-runs I made myself in the reviewed worktree.\n\nVERDICT goal: the goal is that the session-on-its-run change keeps every\ncontract it broke that was not about roster writes; the seven named regressions\nare repaired by restoring each contract rather than rewriting its test \u2014\nreckon/crew/dispatch.py no longer writes a dialect key into the recorded agent\nconfiguration, reckon/crew/promotion.py:3981 carries session_harness and\nsession_model onto the ledger row, and reckon/crew/routing.py:1288 wraps member\nregistration in the pointer lock.\nVERDICT done_when: the done_when is the importer gate \u2014 the seven ids plus\ntests/test_session_lives_on_its_run.py green, and no added failure outside four\npeer-held files; the manifest records the base arm at c6abaeb9 (7 failed, 7\npassed) and the repair arm at 199069f1 (14 passed), and my re-run of the same\neight targets at 3eb57e55 gave 14 passed, EXIT=0 (review-focused-gate.log);\nthe no-added-failures clause is not met at head \u2014 three added failures stand\noutside the exempt files, reported by the node as blockers rather than repaired.\nVERDICT write_paths: the declared fence is the seven production modules, eight\ntest files and the three landing-record paths; the diff c6abaeb9..3eb57e55\ntouches nine files \u2014 reckon/crew/dispatch.py, reckon/crew/runs.py,\nreckon/ledger.py, reckon/crew/routing.py, reckon/crew/promotion.py,\ntests/test_crew_ephemeral_members.py, docs/plans/new-work-gets-a-new-worker.html,\ndocs/evidence/archive/new-work-gets-a-new-worker-landed.html and a new figure \u2014\nevery one inside the declared paths.\nVERDICT manifest: read at\nr-20260925T033627599580-session-on-its-run-keeps-its-contracts/manifest.md; it\nis a blocked record, not a complete one, and that is the honest state: it names\nthe eight commits, both suite arms with revisions and log paths, the executed\nnegative control, and three blockers naming the residual failures with whether\neach asserts the roster write.\nVERDICT diff: read commit by commit; the five repair commits each restore one\ncontract (agent shape, resume wording, stream-session resolution without\ncaching stream identity, session classification before dialect resolution,\nserialized member registration), and the three later commits carry no\nbehaviour change \u2014 a figure, two comment blocks in reckon/crew/promotion.py and\nreckon/crew/runs.py verified comment-only line by line, and appended plan and\nevidence prose \u2014 so the suite arm taken at 199069f1 measures the same code as\nthe head it is reported against.\nCALL_SITES: reckon/crew/dispatch.py:dispatch, reckon/crew/dispatch.py:change_lane, reckon/crew/dispatch.py:resume_plan, reckon/crew/runs.py:capture_run_session, reckon/crew/promotion.py:promote, reckon/crew/routing.py:_register_session_member\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: all seven named regressions and the run-record session fields are verified repaired at head by my own re-run (review-focused-gate.log, 14 passed), but the gate's no-added-failures clause is unmet: tests/test_crew_members.py:170 stays red requiring the dialect key this change removed.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records both arms with revisions and log paths, a suite-delta table giving raw_added seven ids, outside_exceptions three and roster_write yes/no per row, and the declared control log, and my independent re-runs at 3eb57e55 reproduced the gate (14 passed) and the control (1 failed).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path at 3eb57e55 is inside the declared fence, and the only test file edited, tests/test_crew_ephemeral_members.py:136-139, replaces just the assertions that encoded the removed roster write with a run-pointer capture and a roster-bytes-unchanged check.\nSCORE durability: 18\nJUSTIFICATION durability: the declared control fires \u2014 re-adding the dialect key reddens tests/test_backend_environment.py:237, measured in my re-run as 1 failed \u2014 and tests/test_session_lives_on_its_run.py:154 pins the roster file's raw bytes, but the other five repairs rest on passing tests that no control was run against.\nSCORE fit: 17\nJUSTIFICATION fit: the repairs follow module idiom \u2014 explicit run-record fields beside session_id, the pointer lock reused from reckon/crew/runs.py:356 \u2014 with no naming-rule violation in the five repair commits, the only cost being the transitional fallback reading a key the change removed at reckon/crew/promotion.py:3981.\nFINDING tests/test_crew_members.py:170 the recorded agent configuration assertion still requires the dialect key this change removed, so the importer test is red at head; the file is outside the node's fence and was correctly reported as a blocker rather than repaired, but the goal's \"keeps every contract it broke\" stays unmet until that file is assigned.\nreviewed_base_sha: c6abaeb9c1fe7e932ee3cd46475632672ea11975\nreviewed_head_sha: 3eb57e55ac50452a71a1fb07a30c44575e59e685",
+  "review_run_id": "r-20260925T050342183906-review-of-session-on-its-run-keeps-its-contracts",
+  "reviewed_base_sha": "c6abaeb9c1fe7e932ee3cd46475632672ea11975",
+  "reviewed_head_sha": "3eb57e55ac50452a71a1fb07a30c44575e59e685",
+  "reviewed_run_id": "r-20260925T033627599580-session-on-its-run-keeps-its-contracts",
+  "reviewer": "review-of-session-on-its-run-keeps-its-contracts",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T05:26:46.641792+00:00",
+  "total": 88
+}

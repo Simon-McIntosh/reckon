@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "env PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/r-20261001T183044423847-held-worktrees-read-run-files/bt-head /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_held_worktrees_read_run_files.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_a_resumed_run_counts_as_working.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_crew_ack.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_crew_obligations.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_mcp_crew_obligations.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_obligations_do_not_mislead.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_review_in_flight_by_record_path.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_sub_floor_dimension_is_an_obligation.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_sub_floor_disposition_has_a_writer.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T183044423847-held-worktrees-read-run-files/gate-head.log",
+    "revision": "44139f82ee9efae1ff3b27c26d13c60cec4caf9c"
+  },
+  "baseline_suite": {
+    "command": "env PYTHONPATH=/tmp/r-20261001T183044423847-held-worktrees-read-run-files/base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/r-20261001T183044423847-held-worktrees-read-run-files/bt-base /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_held_worktrees_read_run_files.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_a_resumed_run_counts_as_working.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_crew_ack.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_crew_obligations.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_mcp_crew_obligations.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_obligations_do_not_mislead.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_review_in_flight_by_record_path.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_sub_floor_dimension_is_an_obligation.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_sub_floor_disposition_has_a_writer.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_held_worktrees_read_run_files.py::test_inspected_runs_are_read_from_their_own_files",
+      "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T183044423847-held-worktrees-read-run-files/gate-base.log",
+    "revision": "64a56280f21a10d8312b04fc3441373d1207e857"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/obligations.py:511"
+  ],
+  "completed_at": "2026-10-01T20:19:53.857Z",
+  "dispatched_at": "2026-10-01T19:59:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "341",
+      "severity": "blocking",
+      "text": "blocking: the fallback is triggered by counting per-run files naming a tree, so a tree named by exactly one per-run file and by a record living only in the aggregate crew.json is answered from the per-run file, while the whole-ledger scan attributes it to the last record by completion; the two disagree (repro-parity-divergence.log: HELD_fast r-...T090000000000-alpha-holds vs WHOLE r-...T100000000000-alpha-holds), sending a coordinator at the wrong run for a held tree. Latent today only because no inspected tree resolves through the fast path (fallback-share.log trees_from_file 0), but reachable once post-split runs accumulate held trees."
+    },
+    {
+      "file": "docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment's gate figures read \"50 passed, 2 failed\" (base) and \"51 passed, 1 failed\" (head), while the gate logs it cites read 51/2 and 52/1 at the same revision; the numbers were not regenerated after the ordering test was added."
+    }
+  ],
+  "findings_note": "the mixed per-run-plus-aggregate divergence was reproduced at head by the reviewer under the run scratch (repro-parity-divergence.log)",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 64a56280f..44139f82e commit by commit; 40d66ddc1 replaces the whole-ledger load with a per-inspected-tree read selected from the run id (reckon/crew/obligations.py:334), 44139f82e adds the whole-ledger fallback for a tree more than one per-run file names (reckon/crew/obligations.py:341), 0adc145f1 and 9e2114a4d are the evidence fragment; the mixed per-run-plus-aggregate case is unhandled.",
+    "done_when": "the done-when names a parity case (held set equals the whole-ledger derivation), a never-called case and a fallback case, recorded as base/head arms; tests/test_held_worktrees_read_run_files.py:175 asserts parity but its fixture never places one tree under both a per-run file and the aggregate, so the equality the gate asserts is weaker than the equality the code must hold.",
+    "goal": "read the node goal at prompt.txt (\"obligations._held_worktrees no longer loads the whole ledger, and reads the per-run ledger file for each run whose worktree it inspects\") and the landed change in reckon/crew/obligations.py:327-358: the per-run read lands, but a tree named by one per-run file and also by an aggregate-only record resolves to a different run than the whole-ledger scan.",
+    "manifest": "read the manifest: it records commits 40d66ddc1..44139f82e, the gate (base 2 failed 51 passed, head 1 failed 52 passed), parity over 25 sessions and two negative controls; it does not record the ruff gate its done-when names (I ran it at head: ruff check and ruff format --check both clean), and its fragment's gate counts lag those in the logs it cites.",
+    "write_paths": "the manifest's orientation_write_paths and the diff agree \u2014 reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html, with no path outside the grant and no plan edit."
+  },
+  "justifications": {
+    "durability": "tests/test_held_worktrees_read_run_files.py:250 monkeypatches ledger.runs and ledger.load to raise and so would redden if the whole-ledger read returned, but the parity guard at tests/test_held_worktrees_read_run_files.py:175 cannot fail on the mixed per-run-plus-aggregate case that the divergence reproduces.",
+    "evidence": "gate-base.log and gate-head.log name revisions 64a56280f21a10d8312b04fc3441373d1207e857 and 44139f82ee9efae1ff3b27c26d13c60cec4caf9c and exit 1 with one added-failure-free delta, parity-real-fleet.log compares 25 sessions with 0 mismatches and gate-negative-control-ordering.log shows the control red (2 failed) \u2014 but the parity case omits the mixed source, and the fragment's counts lag the logs.",
+    "fit": "the change follows the module's existing helpers and mechanism-voice comments (reckon/crew/obligations.py:266 _names_worktree reads the same two fields as the whole-ledger scan) and introduces no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/obligations.py:341 triggers the whole-ledger fallback only when a tree has no per-run file or more than one, so a tree named by one per-run file and by an aggregate-only record yields a different run id than the whole-ledger scan the goal's parity implies.",
+    "scope_discipline": "the diff touches only the three granted paths (reckon/crew/obligations.py, the new test file and the evidence fragment) and the naming checks over the added lines flag nothing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal at prompt.txt (\"obligations._held_worktrees no longer loads the whole ledger, and reads the per-run ledger file for each run whose worktree it inspects\") and the landed change in reckon/crew/obligations.py:327-358: the per-run read lands, but a tree named by one per-run file and also by an aggregate-only record resolves to a different run than the whole-ledger scan.\nVERDICT done_when: the done-when names a parity case (held set equals the whole-ledger derivation), a never-called case and a fallback case, recorded as base/head arms; tests/test_held_worktrees_read_run_files.py:175 asserts parity but its fixture never places one tree under both a per-run file and the aggregate, so the equality the gate asserts is weaker than the equality the code must hold.\nVERDICT write_paths: the manifest's orientation_write_paths and the diff agree \u2014 reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html, with no path outside the grant and no plan edit.\nVERDICT manifest: read the manifest: it records commits 40d66ddc1..44139f82e, the gate (base 2 failed 51 passed, head 1 failed 52 passed), parity over 25 sessions and two negative controls; it does not record the ruff gate its done-when names (I ran it at head: ruff check and ruff format --check both clean), and its fragment's gate counts lag those in the logs it cites.\nVERDICT diff: read 64a56280f..44139f82e commit by commit; 40d66ddc1 replaces the whole-ledger load with a per-inspected-tree read selected from the run id (reckon/crew/obligations.py:334), 44139f82e adds the whole-ledger fallback for a tree more than one per-run file names (reckon/crew/obligations.py:341), 0adc145f1 and 9e2114a4d are the evidence fragment; the mixed per-run-plus-aggregate case is unhandled.\nCALL_SITES: reckon/crew/obligations.py:511\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:341 triggers the whole-ledger fallback only when a tree has no per-run file or more than one, so a tree named by one per-run file and by an aggregate-only record yields a different run id than the whole-ledger scan the goal's parity implies.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-base.log and gate-head.log name revisions 64a56280f21a10d8312b04fc3441373d1207e857 and 44139f82ee9efae1ff3b27c26d13c60cec4caf9c and exit 1 with one added-failure-free delta, parity-real-fleet.log compares 25 sessions with 0 mismatches and gate-negative-control-ordering.log shows the control red (2 failed) \u2014 but the parity case omits the mixed source, and the fragment's counts lag the logs.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only the three granted paths (reckon/crew/obligations.py, the new test file and the evidence fragment) and the naming checks over the added lines flag nothing.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_held_worktrees_read_run_files.py:250 monkeypatches ledger.runs and ledger.load to raise and so would redden if the whole-ledger read returned, but the parity guard at tests/test_held_worktrees_read_run_files.py:175 cannot fail on the mixed per-run-plus-aggregate case that the divergence reproduces.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's existing helpers and mechanism-voice comments (reckon/crew/obligations.py:266 _names_worktree reads the same two fields as the whole-ledger scan) and introduces no plan, ticket or version label.\nFINDING reckon/crew/obligations.py:341 blocking: the fallback is triggered by counting per-run files naming a tree, so a tree named by exactly one per-run file and by a record living only in the aggregate crew.json is answered from the per-run file, while the whole-ledger scan attributes it to the last record by completion; the two disagree (repro-parity-divergence.log: HELD_fast r-...T090000000000-alpha-holds vs WHOLE r-...T100000000000-alpha-holds), sending a coordinator at the wrong run for a held tree. Latent today only because no inspected tree resolves through the fast path (fallback-share.log trees_from_file 0), but reachable once post-split runs accumulate held trees.\nFINDING docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html:1 follow-on: the fragment's gate figures read \"50 passed, 2 failed\" (base) and \"51 passed, 1 failed\" (head), while the gate logs it cites read 51/2 and 52/1 at the same revision; the numbers were not regenerated after the ordering test was added.\n",
+  "review_run_id": "r-20261001T195927716047-review-of-held-worktrees-read-run-files",
+  "reviewed_base_sha": "64a56280f21a10d8312b04fc3441373d1207e857",
+  "reviewed_head_sha": "44139f82ee9efae1ff3b27c26d13c60cec4caf9c",
+  "reviewed_run_id": "r-20261001T183044423847-held-worktrees-read-run-files",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T195927716047-review-of-held-worktrees-read-run-files",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T20:16:10.156466+00:00",
+  "total": 79
+}

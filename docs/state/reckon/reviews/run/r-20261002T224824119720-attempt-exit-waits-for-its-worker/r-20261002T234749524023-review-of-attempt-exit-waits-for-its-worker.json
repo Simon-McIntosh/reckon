@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "Derived from the reviewed run's own gate logs. baseline_suite log gate-base.log (revision 8702883ad00f6379077e3482b41f1cb292213819): 39 passed, 0 FAILED/ERROR lines. after_suite log gate-head.log (revision 49d25e64b): 40 passed, 0 FAILED/ERROR lines. Head-minus-base failing-id set difference = 0 ids; I re-ran tests/test_attempt_exit_waits_for_its_worker.py at the reviewed head 326adf19245ac3c65407d0e23684a4cc190e466e (1 passed EXIT=0), so the zero-added-failure conclusion holds at the revision under review.",
+  "base_log_revision": "8702883ad00f6379077e3482b41f1cb292213819",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py::_run_supervisor calls _reap_the_launched_worker",
+    "reckon/crew/dispatch.py::_run_supervisor calls _become_child_subreaper before _supervisor_spawn_worker"
+  ],
+  "completed_at": "2026-10-03T00:02:04.315Z",
+  "dispatched_at": "2026-10-02T23:48:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "9358",
+      "severity": "follow-on",
+      "text": "the signal short-circuit records an exit as soon as the spawned child ends by signal even if the worker it adopted lives on, so a launcher killed by signal whose worker is still running would record the attempt early; the measured defect (a launcher that exits voluntarily) does not exercise this path."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "9366",
+      "severity": "follow-on",
+      "text": "the wait covers every child of the supervisor, so a normally-exiting adopted worker that leaves a live reparented descendant holds the exit record through that descendant under the manifest grace; the second commit's short-circuit covers only the signal case."
+    },
+    {
+      "file": "gate-head.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "the recorded head gate ran at 49d25e64b, one docs-only commit before the reviewed head 326adf19245ac3c65407d0e23684a4cc190e466e, so the recorded suite figure is not at the revision under review; my head re-run of the case passed, so the zero-added-failure conclusion is unaffected."
+    }
+  ],
+  "head_log_revision": "49d25e64b56f8ac22385b0de4f3061082e94b436",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites in reckon/crew/dispatch.py::_run_supervisor",
+    "diff": "read 8702883ad..326adf192 (3 files, +417/-1); adds _become_child_subreaper, _child_processes_of and _reap_the_launched_worker and wires the last into _run_supervisor.",
+    "done_when": "an exit record is never written while the worker behind the launcher is alive; tests/test_attempt_exit_waits_for_its_worker.py::test_the_exit_record_waits_for_the_worker_behind_a_launcher asserts it at lines 250-266; reproduced at head 1 passed EXIT=0.",
+    "goal": "the supervisor becomes a child subreaper before it spawns, so a launcher that exits ahead of its worker leaves the worker parented to the supervisor; the exit record waits for it; achieved and verified at 326adf19245ac3c65407d0e23684a4cc190e466e.",
+    "manifest": "read; status complete; both suite arms completed and EXIT=0; negative_control_log names the write-at-launcher-exit mutation; derived added-failure set empty.",
+    "write_paths": "reckon/crew/dispatch.py, tests/test_attempt_exit_waits_for_its_worker.py and the evidence fragment; all in scope; supervisor_main.py declared but unchanged."
+  },
+  "justifications": {
+    "durability": "the declared mutation (RECKON_ATTEMPT_EXIT_NEGATIVE_CONTROL=write-at-launcher-exit) makes the case fail at EXIT=1, which I reproduced at head; the os.WIFSIGNALED short-circuit from 49d25e64b has no test of its own.",
+    "evidence": "gate-base.log (revision 8702883ad) 39 passed EXIT=0, gate-head.log (revision 49d25e64b) 40 passed EXIT=0, negative-control.log 1 failed EXIT=1; reproduced both arms independently at head (head-rerun 1 passed EXIT=0; neg-rerun 1 failed EXIT=1).",
+    "fit": "reuses _reap_worker_on_its_terminal_manifest, the terminal-manifest grace and the stop bound unchanged, and reads /proc parentage rather than inventing a record.",
+    "goal_fidelity": "the goal is that an attempt's exit record waits for the worker it launched to end, and it holds at 326adf19245ac3c65407d0e23684a4cc190e466e: the supervisor becomes a child subreaper before the spawn (dispatch.py:9434), _reap_the_launched_worker (dispatch.py:9336-9390) waits on the adopted worker under the same terminal-manifest grace and stop bound, and the exit record carries worker_pid=worker_pid (dispatch.py:9496).",
+    "scope_discipline": "the diff 8702883ad..326adf192 touches exactly one source file, one test file and one evidence fragment, all inside the granted write paths; supervisor_main.py was declared but untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 8702883ad00f6379077e3482b41f1cb292213819\nreviewed_head_sha: 326adf19245ac3c65407d0e23684a4cc190e466e\nVERDICT goal: the supervisor becomes a child subreaper before it spawns, so a launcher that exits ahead of its worker leaves the worker parented to the supervisor; the exit record waits for it; achieved and verified at 326adf19245ac3c65407d0e23684a4cc190e466e.\nVERDICT done_when: an exit record is never written while the worker behind the launcher is alive; tests/test_attempt_exit_waits_for_its_worker.py::test_the_exit_record_waits_for_the_worker_behind_a_launcher asserts it at lines 250-266; reproduced at head 1 passed EXIT=0.\nVERDICT write_paths: reckon/crew/dispatch.py, tests/test_attempt_exit_waits_for_its_worker.py and the evidence fragment; all in scope; supervisor_main.py declared but unchanged.\nVERDICT manifest: read; status complete; both suite arms completed and EXIT=0; negative_control_log names the write-at-launcher-exit mutation; derived added-failure set empty.\nVERDICT diff: read 8702883ad..326adf192 (3 files, +417/-1); adds _become_child_subreaper, _child_processes_of and _reap_the_launched_worker and wires the last into _run_supervisor.\nVERDICT call_sites: verified 2 production call sites in reckon/crew/dispatch.py::_run_supervisor\nCALL_SITES: reckon/crew/dispatch.py::_run_supervisor calls _reap_the_launched_worker\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the goal is that an attempt's exit record waits for the worker it launched to end, and it holds at 326adf19245ac3c65407d0e23684a4cc190e466e: the supervisor becomes a child subreaper before the spawn (dispatch.py:9434), _reap_the_launched_worker (dispatch.py:9336-9390) waits on the adopted worker under the same terminal-manifest grace and stop bound, and the exit record carries worker_pid=worker_pid (dispatch.py:9496).\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log (revision 8702883ad) 39 passed EXIT=0, gate-head.log (revision 49d25e64b) 40 passed EXIT=0, negative-control.log 1 failed EXIT=1; reproduced both arms independently at head (head-rerun 1 passed EXIT=0; neg-rerun 1 failed EXIT=1).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff 8702883ad..326adf192 touches exactly one source file, one test file and one evidence fragment, all inside the granted write paths; supervisor_main.py was declared but untouched.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation (RECKON_ATTEMPT_EXIT_NEGATIVE_CONTROL=write-at-launcher-exit) makes the case fail at EXIT=1, which I reproduced at head; the os.WIFSIGNALED short-circuit from 49d25e64b has no test of its own.\nSCORE fit: 18\nJUSTIFICATION fit: reuses _reap_worker_on_its_terminal_manifest, the terminal-manifest grace and the stop bound unchanged, and reads /proc parentage rather than inventing a record.\nFINDING reckon/crew/dispatch.py:9358 follow-on: the signal short-circuit records an exit as soon as the spawned child ends by signal even if the worker it adopted lives on, so a launcher killed by signal whose worker is still running would record the attempt early; the measured defect (a launcher that exits voluntarily) does not exercise this path.\nFINDING reckon/crew/dispatch.py:9366 follow-on: the wait covers every child of the supervisor, so a normally-exiting adopted worker that leaves a live reparented descendant holds the exit record through that descendant under the manifest grace; the second commit's short-circuit covers only the signal case.\nFINDING gate-head.log:2 follow-on: the recorded head gate ran at 49d25e64b, one docs-only commit before the reviewed head 326adf19245ac3c65407d0e23684a4cc190e466e, so the recorded suite figure is not at the revision under review; my head re-run of the case passed, so the zero-added-failure conclusion is unaffected.",
+  "review_run_id": "r-20261002T234749524023-review-of-attempt-exit-waits-for-its-worker",
+  "reviewed_base_sha": "8702883ad00f6379077e3482b41f1cb292213819",
+  "reviewed_head_sha": "326adf19245ac3c65407d0e23684a4cc190e466e",
+  "reviewed_run_id": "r-20261002T224824119720-attempt-exit-waits-for-its-worker",
+  "reviewed_sha": "326adf19245ac3c65407d0e23684a4cc190e466e",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T23:59:00.000000+00:00",
+  "total": 88
+}

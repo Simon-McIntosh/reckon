@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/_backends.py:2322 fence_argv call inside launch_plan",
+    "reckon/crew/dispatch.py:4001 launch_plan",
+    "reckon/crew/dispatch.py:6525 launch_plan",
+    "reckon/crew/dispatch.py:6876 launch_plan",
+    "reckon/crew/resumption.py:242 launch_plan"
+  ],
+  "completed_at": "2026-09-26T07:41:25.334Z",
+  "dispatched_at": "2026-09-26T06:12:17Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "2148",
+      "text": "the early return that keeps a main checkout's own git directory out of the write roots has no test that reddens if the guard is removed: both tests compose a fence for a linked worktree, where the worktree git directory differs from the common directory, so deleting the guard changes nothing the suite executes while reckon/_backends.py:2111 and the evidence record both state the refusal as a guarantee."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against base f01992d3; a13d1cc2 is the production helper plus one call line plus the new test file, 5f6e9ff8 is the plan landing record, the evidence anchor and four logs plus a figure, 516 insertions and one deletion, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_fenced_worker_can_commit.py executed under a real bubblewrap fence with a commit-reachability check, three refusal probes, a stated skip reason and a logged negative control; the manifest records that gate at head a13d1cc2 (27 passed) against base f01992d3 (25 passed, zero added) and I re-ran the named file at the reviewed head 5f6e9ff8, 2 passed, in the run-dir log recheck-fenced-commit.txt.",
+    "goal": "the goal asks that a fenced worker's own worktree git directory and its repository's shared object store become writable while the rest of the sealed checkout stays read-only; reckon/_backends.py:2111 worktree_git_write_roots resolves exactly those two paths and reckon/_backends.py:2199 adds them to the write roots, and nothing else below the sealed main checkout is granted.",
+    "manifest": "read; it records the gate result, the base arm, the lint delta, the negative control and the evidence anchor, and its follow_ons names the unmeasured auto-gc residual rather than claiming it away.",
+    "write_paths": "the manifest declares five write paths and every path the two commits touch lies inside them, with no file the goal does not imply."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fenced_worker_can_commit.py:206 is an executed negative control that reddens on the exact regression \u2014 with the two roots withheld the commit fails with a read-only file system \u2014 but the main-checkout branch at reckon/_backends.py:2148 has no test that reddens if the guard is deleted.",
+    "evidence": "every done_when item has a receipt on disk (docs/figures/a-worker-cannot-write-your-home/gate-git-roots-head.txt, its base arm and negative-control-git-roots.txt) and my recheck at the reviewed head passed 2/2, with only tests/test_a_fenced_worker_can_commit.py:65 suppressing auto-gc so the production command's gc path stays unmeasured.",
+    "fit": "the helper sits beside the module's other fence helpers and follows their Path and subprocess idiom, the test reuses the sibling fence files' __main__ red-log pattern, and lint over the touched paths is unchanged.",
+    "goal_fidelity": "reckon/_backends.py:2199 adds both roots to the write roots and the executed probe at tests/test_a_fenced_worker_can_commit.py:167 shows the commit landing while the main index, refs/heads and working tree each stay refused.",
+    "scope_discipline": "every path in the two commits lies inside the manifest's declared write paths, and the docs edits are the landing record and evidence the dispatch's landing contract requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that a fenced worker's own worktree git directory and its repository's shared object store become writable while the rest of the sealed checkout stays read-only; reckon/_backends.py:2111 worktree_git_write_roots resolves exactly those two paths and reckon/_backends.py:2199 adds them to the write roots, and nothing else below the sealed main checkout is granted.\nVERDICT done_when: the done_when names tests/test_a_fenced_worker_can_commit.py executed under a real bubblewrap fence with a commit-reachability check, three refusal probes, a stated skip reason and a logged negative control; the manifest records that gate at head a13d1cc2 (27 passed) against base f01992d3 (25 passed, zero added) and I re-ran the named file at the reviewed head 5f6e9ff8, 2 passed, in the run-dir log recheck-fenced-commit.txt.\nVERDICT write_paths: the manifest declares five write paths and every path the two commits touch lies inside them, with no file the goal does not imply.\nVERDICT manifest: read; it records the gate result, the base arm, the lint delta, the negative control and the evidence anchor, and its follow_ons names the unmeasured auto-gc residual rather than claiming it away.\nVERDICT diff: read both commits against base f01992d3; a13d1cc2 is the production helper plus one call line plus the new test file, 5f6e9ff8 is the plan landing record, the evidence anchor and four logs plus a figure, 516 insertions and one deletion, all inside the declared scope.\nCALL_SITES: reckon/_backends.py:2322 fence_argv call inside launch_plan, reckon/crew/dispatch.py:4001 launch_plan, reckon/crew/dispatch.py:6525 launch_plan, reckon/crew/dispatch.py:6876 launch_plan, reckon/crew/resumption.py:242 launch_plan\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2199 adds both roots to the write roots and the executed probe at tests/test_a_fenced_worker_can_commit.py:167 shows the commit landing while the main index, refs/heads and working tree each stay refused.\nSCORE evidence: 18\nJUSTIFICATION evidence: every done_when item has a receipt on disk (docs/figures/a-worker-cannot-write-your-home/gate-git-roots-head.txt, its base arm and negative-control-git-roots.txt) and my recheck at the reviewed head passed 2/2, with only tests/test_a_fenced_worker_can_commit.py:65 suppressing auto-gc so the production command's gc path stays unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two commits lies inside the manifest's declared write paths, and the docs edits are the landing record and evidence the dispatch's landing contract requires.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_fenced_worker_can_commit.py:206 is an executed negative control that reddens on the exact regression \u2014 with the two roots withheld the commit fails with a read-only file system \u2014 but the main-checkout branch at reckon/_backends.py:2148 has no test that reddens if the guard is deleted.\nSCORE fit: 19\nJUSTIFICATION fit: the helper sits beside the module's other fence helpers and follows their Path and subprocess idiom, the test reuses the sibling fence files' __main__ red-log pattern, and lint over the touched paths is unchanged.\nFINDING reckon/_backends.py:2148 the early return that keeps a main checkout's own git directory out of the write roots has no test that reddens if the guard is removed: both tests compose a fence for a linked worktree, where the worktree git directory differs from the common directory, so deleting the guard changes nothing the suite executes while reckon/_backends.py:2111 and the evidence record both state the refusal as a guarantee.\n",
+  "review_run_id": "r-20260926T061203657419-review-of-a-fenced-worker-can-commit",
+  "reviewed_base_sha": "f01992d3d6b56b4b072c09a0861f125a10d9ad25",
+  "reviewed_head_sha": "5f6e9ff880e7729d68fc1ae78a3fce64e50f5ff2",
+  "reviewed_run_id": "r-20260925T205915194790-a-fenced-worker-can-commit",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T07:36:13.362960+00:00",
+  "total": 94
+}

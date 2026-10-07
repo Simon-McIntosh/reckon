@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T113307099904-hyphenated-noun-is-not-an-action/gate-goal-contract-lint-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T113307099904-hyphenated-noun-is-not-an-action/gate-goal-contract-lint.log",
+    "count_derivation": "set difference of FAILED/ERROR node ids over the two gate logs the reviewed manifest names under test_logs, computed with review.added_failures_from_gate_logs; the reviewed manifest carries no baseline_suite/after_suite (unarmed run), so annotate_review_of_run resolves no log and renders this count unmeasured in the read-time view while the stored record keeps it",
+    "pair_rejected_because": "both logs are green over the same ten tests and both were written with the fix in the working tree; the first is headed revision 4b05b1d7 before the first commit existed, so the pair is head-against-head and supports no pre-change delta",
+    "pair_usable_as_suite_delta": false,
+    "positive_control": {
+      "count": 1,
+      "ids": [
+        "tests/test_goal_contract_lint.py::test_an_accepted_goal_keeps_both_goal_properties[positive-control]"
+      ],
+      "mutation": "append one FAILED line to the head log"
+    },
+    "true_pre_change_reading": "the reviewed run's negative-control log and this review's base-arm call (node.py at 4b05b1d7 returns ' and ' for the goal)"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/node.py:1020",
+    "reckon/crew/dispatch.py:3207",
+    "reckon/crew.py:56"
+  ],
+  "completed_at": "2026-09-28T12:07:49.310Z",
+  "dispatched_at": "2026-09-28T11:43:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T113307099904-hyphenated-noun-is-not-an-action/gate-goal-contract-lint.log",
+      "line": "1",
+      "text": "the header names revision 4b05b1d7 while the run collected ten tests, and the base test file carries eight rows, so the working tree already held both new rows and the fix; the file measures the fixed tree rather than a pre-change arm, yet the reviewed manifest lists it first under test_logs, where a reader or a suite-delta consumer takes it for a baseline."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; 956f91dd narrows the leading-token match at reckon/crew/node.py:192-196 and adds the two test rows, d78ae0f3 appends the s5 landing section and figure to the cumulative evidence record and the worker-record div to the plan, with the record spliced rather than rewritten (three meta lines extended, no line deleted).",
+    "done_when": "tests/test_goal_contract_lint.py:105 carries the goal the plan quotes verbatim as an accepted row and :135 carries a refused row whose second clause opens on a bare action verb, the declared control is logged, and my own re-run at d78ae0f3 reports 10 passed, exit 0.",
+    "goal": "the node's deliverable is that a token joined by a hyphen to a following word is not read as an action verb opening a clause; reckon/crew/node.py:195 reads the leading token whole, and a two-arm read of the plan's verbatim goal returns ' and ' at 4b05b1d7 and None at d78ae0f3.",
+    "manifest": "read; it records the gate, the control log and the scope, but names no baseline_suite or after_suite (an unarmed run leaves them absent by contract), so the added-failure count is derived from the two gate logs it does name under test_logs.",
+    "write_paths": "the manifest declares five paths and git diff --name-only 4b05b1d7 d78ae0f3 in the node worktree names exactly those five, nothing outside them."
+  },
+  "justifications": {
+    "durability": "restoring the first-word reading reddens tests/test_goal_contract_lint.py::test_an_accepted_goal_keeps_both_goal_properties[a hyphenated compound beginning a clause is not an action verb], as the run's control log shows and as my base-arm call returns (' and ' at 4b05b1d7), while the refused row guards the opposite direction; both added assertions compare the validator's own verdict against a property-name constant rather than a value the test supplied.",
+    "evidence": "the gate the done_when names is recorded at the reviewed head (10 passed, exit 0) and reproduces in my re-run with the module resolving to the node worktree, and the declared control's first line repeats the declared mutation verbatim, but the run's own first gate log is headed with the pre-change revision while collecting ten tests, so its pair with the head log is head-against-head and carries no pre-change arm; the change's production reach is the eight-property validator at reckon/crew/node.py:1020, reached from the dispatch preflight at reckon/crew/dispatch.py:3207 and re-exported at reckon/crew.py:56.",
+    "fit": "the change is a one-line character-class narrowing inside the established helper, its docstring is extended in the file's own voice with no new name, and ruff with the repo config reports 8 findings across the two changed files, none inside the changed hunk and none in the test file.",
+    "goal_fidelity": "reckon/crew/node.py:195 matches the clause's leading token whole, so a hyphenated compound whose first word is an action verb (\"verify-gate\") is the noun the author wrote: the plan's verbatim goal yields ' and ' at 4b05b1d7 and None at d78ae0f3, while \"narrow the goal lint; verify the node validator\" still splits at ';' on both arms.",
+    "scope_discipline": "git diff --name-only 4b05b1d7 d78ae0f3 names exactly the five declared paths, the worktree is clean at its head, and both commit messages are conventional with a body and no plan, run or tooling identifier."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's deliverable is that a token joined by a hyphen to a following word is not read as an action verb opening a clause; reckon/crew/node.py:195 reads the leading token whole, and a two-arm read of the plan's verbatim goal returns ' and ' at 4b05b1d7 and None at d78ae0f3.\nVERDICT done_when: tests/test_goal_contract_lint.py:105 carries the goal the plan quotes verbatim as an accepted row and :135 carries a refused row whose second clause opens on a bare action verb, the declared control is logged, and my own re-run at d78ae0f3 reports 10 passed, exit 0.\nVERDICT write_paths: the manifest declares five paths and git diff --name-only 4b05b1d7 d78ae0f3 in the node worktree names exactly those five, nothing outside them.\nVERDICT manifest: read; it records the gate, the control log and the scope, but names no baseline_suite or after_suite (an unarmed run leaves them absent by contract), so the added-failure count is derived from the two gate logs it does name under test_logs.\nVERDICT diff: read commit by commit; 956f91dd narrows the leading-token match at reckon/crew/node.py:192-196 and adds the two test rows, d78ae0f3 appends the s5 landing section and figure to the cumulative evidence record and the worker-record div to the plan, with the record spliced rather than rewritten (three meta lines extended, no line deleted).\nCALL_SITES: reckon/crew/node.py:1020, reckon/crew/dispatch.py:3207, reckon/crew.py:56\nSCORE goal_fidelity: 20\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 20\nSCORE fit: 20\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:195 matches the clause's leading token whole, so a hyphenated compound whose first word is an action verb (\"verify-gate\") is the noun the author wrote: the plan's verbatim goal yields ' and ' at 4b05b1d7 and None at d78ae0f3, while \"narrow the goal lint; verify the node validator\" still splits at ';' on both arms.\nJUSTIFICATION evidence: the gate the done_when names is recorded at the reviewed head (10 passed, exit 0) and reproduces in my re-run with the module resolving to the node worktree, and the declared control's first line repeats the declared mutation verbatim, but the run's own first gate log is headed with the pre-change revision while collecting ten tests, so its pair with the head log is head-against-head and carries no pre-change arm; the change's production reach is the eight-property validator at reckon/crew/node.py:1020, reached from the dispatch preflight at reckon/crew/dispatch.py:3207 and re-exported at reckon/crew.py:56.\nJUSTIFICATION scope_discipline: git diff --name-only 4b05b1d7 d78ae0f3 names exactly the five declared paths, the worktree is clean at its head, and both commit messages are conventional with a body and no plan, run or tooling identifier.\nJUSTIFICATION durability: restoring the first-word reading reddens tests/test_goal_contract_lint.py::test_an_accepted_goal_keeps_both_goal_properties[a hyphenated compound beginning a clause is not an action verb], as the run's control log shows and as my base-arm call returns (' and ' at 4b05b1d7), while the refused row guards the opposite direction; both added assertions compare the validator's own verdict against a property-name constant rather than a value the test supplied.\nJUSTIFICATION fit: the change is a one-line character-class narrowing inside the established helper, its docstring is extended in the file's own voice with no new name, and ruff with the repo config reports 8 findings across the two changed files, none inside the changed hunk and none in the test file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T113307099904-hyphenated-noun-is-not-an-action/gate-goal-contract-lint.log:1 the header names revision 4b05b1d7 while the run collected ten tests, and the base test file carries eight rows, so the working tree already held both new rows and the fix; the file measures the fixed tree rather than a pre-change arm, yet the reviewed manifest lists it first under test_logs, where a reader or a suite-delta consumer takes it for a baseline.\n",
+  "review_run_id": "r-20260928T114331759926-review-of-hyphenated-noun-is-not-an-action",
+  "reviewed_base_sha": "4b05b1d77052b4e07879277ca69d05088497859a",
+  "reviewed_head_sha": "d78ae0f31fd3b859b467d01c0df416ad57dd5d3b",
+  "reviewed_run_id": "r-20260928T113307099904-hyphenated-noun-is-not-an-action",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T12:00:41.597748+00:00",
+  "total": 98
+}

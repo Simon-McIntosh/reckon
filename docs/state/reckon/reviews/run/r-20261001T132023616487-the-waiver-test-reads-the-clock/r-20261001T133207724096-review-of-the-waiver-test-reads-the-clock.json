@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T13:38:56.971Z",
+  "dispatched_at": "2026-10-01T13:32:28Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_boundary_waiver.py",
+      "line": "161",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion that the stale arm's reason equals the literal passed into crew.complete moves with the input the test supplied, so it holds whatever the age-bound code does and guards nothing on its own; the durability rests on the no_referent assertions at lines 157-158."
+    },
+    {
+      "file": "tests/test_crew_boundary_waiver.py",
+      "line": "128",
+      "severity": "follow-on",
+      "text": "follow-on: the added assert that no_referent is absent is already implied by the exact-dict equality assertion two lines above it, so it adds intent but no coverage against the fresh-arm regression."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; d364ab60e changes only tests/test_crew_boundary_waiver.py and 10d5794d9 adds only the evidence fragment, 72 insertions and 4 deletions over two files, with no plan meta edit.",
+    "done_when": "the done_when names tests/test_crew_boundary_waiver.py at head ending EXIT=0 with a second case pinning the bound from the stale side; I re-ran that file at 10d5794d9 and got 4 passed, EXIT=0, and the recorded negative control reddens the waiver case with EXIT=1.",
+    "goal": "the node goal is to derive the boundary-waiver fixture's creation date from the clock so the seven-day age bound never trips it; tests/test_crew_boundary_waiver.py adds _stamp and the fixture now writes created_at one hour before now.",
+    "manifest": "read; it records status complete, commits d364ab60e and 10d5794d9, the gate command and its 4-passed result, and a negative_control_log path.",
+    "write_paths": "the manifest declares tests/test_crew_boundary_waiver.py and the plan's evidence fragment; both files in the diff are inside that scope and the declared figures path was not written."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_boundary_waiver.py:157 asserts the stale arm's waiver carries no_referent with \"older than the\", which reddens if the age-bound branch regresses, while the fresh arm's guard at line 128 is subsumed by the exact-dict equality above it.",
+    "evidence": "the done_when's gate is tests/test_crew_boundary_waiver.py, whose 4-passed EXIT=0 result the manifest records and review-gate.log reproduces at 10d5794d9, and the declared mutation's EXIT=1 is logged in negative-control.log.",
+    "fit": "the new _stamp helper and the created_at keyword follow the file's existing fixture style at tests/test_crew_boundary_waiver.py:67 and introduce no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_crew_boundary_waiver.py:17 defines _stamp from datetime.now(tz=UTC) and the fixture at line 73 derives created_at as one hour before now, which is exactly the goal.",
+    "scope_discipline": "the reviewed range 8b83cfd75..10d5794d9 changes exactly tests/test_crew_boundary_waiver.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-waiver-test-reads-the-clock.html, both inside the declared write paths, with no plan-version or plan-modified edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to derive the boundary-waiver fixture's creation date from the clock so the seven-day age bound never trips it; tests/test_crew_boundary_waiver.py adds _stamp and the fixture now writes created_at one hour before now.\nVERDICT done_when: the done_when names tests/test_crew_boundary_waiver.py at head ending EXIT=0 with a second case pinning the bound from the stale side; I re-ran that file at 10d5794d9 and got 4 passed, EXIT=0, and the recorded negative control reddens the waiver case with EXIT=1.\nVERDICT write_paths: the manifest declares tests/test_crew_boundary_waiver.py and the plan's evidence fragment; both files in the diff are inside that scope and the declared figures path was not written.\nVERDICT manifest: read; it records status complete, commits d364ab60e and 10d5794d9, the gate command and its 4-passed result, and a negative_control_log path.\nVERDICT diff: read commit by commit; d364ab60e changes only tests/test_crew_boundary_waiver.py and 10d5794d9 adds only the evidence fragment, 72 insertions and 4 deletions over two files, with no plan meta edit.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_boundary_waiver.py:17 defines _stamp from datetime.now(tz=UTC) and the fixture at line 73 derives created_at as one hour before now, which is exactly the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when's gate is tests/test_crew_boundary_waiver.py, whose 4-passed EXIT=0 result the manifest records and review-gate.log reproduces at 10d5794d9, and the declared mutation's EXIT=1 is logged in negative-control.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed range 8b83cfd75..10d5794d9 changes exactly tests/test_crew_boundary_waiver.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-waiver-test-reads-the-clock.html, both inside the declared write paths, with no plan-version or plan-modified edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_boundary_waiver.py:157 asserts the stale arm's waiver carries no_referent with \"older than the\", which reddens if the age-bound branch regresses, while the fresh arm's guard at line 128 is subsumed by the exact-dict equality above it.\nSCORE fit: 19\nJUSTIFICATION fit: the new _stamp helper and the created_at keyword follow the file's existing fixture style at tests/test_crew_boundary_waiver.py:67 and introduce no plan or ticket identifier.\nFINDING tests/test_crew_boundary_waiver.py:161 follow-on: the assertion that the stale arm's reason equals the literal passed into crew.complete moves with the input the test supplied, so it holds whatever the age-bound code does and guards nothing on its own; the durability rests on the no_referent assertions at lines 157-158.\nFINDING tests/test_crew_boundary_waiver.py:128 follow-on: the added assert that no_referent is absent is already implied by the exact-dict equality assertion two lines above it, so it adds intent but no coverage against the fresh-arm regression.\n",
+  "review_run_id": "r-20261001T133207724096-review-of-the-waiver-test-reads-the-clock",
+  "reviewed_base_sha": "8b83cfd7574aae4c0beb277d5e4f3489d88c96ee",
+  "reviewed_head_sha": "10d5794d944a2a1343d1d52b1fe71e9b5b160850",
+  "reviewed_run_id": "r-20261001T132023616487-the-waiver-test-reads-the-clock",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T13:37:52.978472+00:00",
+  "total": 96
+}

@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/serve.py:2257"
+  ],
+  "completed_at": "2026-09-29T07:54:34.642Z",
+  "dispatched_at": "2026-09-29T07:06:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-page-load-reads-each-file-once/rollup-isolates-a-project.html",
+      "line": "22",
+      "text": "names the new error PlanPageRefusal where reckon/serve.py:668 declares PlanPageRefusalError, so a reader who greps the landing record for the symbol it prints finds nothing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T064712390989-rollup-isolates-a-project/manifest.md",
+      "line": "21",
+      "text": "follow-on (2) says the per-project /_discover/<project> route's 500 detail omits the refused file name, but the wrap that landed sits on the read path both routes share and my probe at head returns detail \"migration-project-state.html: sections[''].id: record must be adjacent to its h2\" for /_discover/bad, so only the error key still differs and the follow-on sends a coordinator after a difference the change already closed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T064712390989-rollup-isolates-a-project/logs/node-gate.log",
+      "line": "1",
+      "text": "records a revision of 7cc73727 while the command beside it runs a test file that exists only at 9d867811, so the log cannot be reproduced from the revision it names and reads as if the new test passed at the base it was written against."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit \u2014 one commit adding the exception class at reckon/serve.py:668, the row-handler tuple at:685, the wrapping read at:1795-1798 and a 189-line test file plus a 28-line landing fragment \u2014 and the only slip I found in it is the fragment printing a symbol the code does not define (see FINDING).",
+    "done_when": "the measure is that one malformed page in one mount no longer empties the other rows, and the added gate asserts exactly that at tests/test_rollup_isolates_a_project.py:152-168 (status 200, all three mount names present, both good rows carrying their data row, the bad row's error naming the refused file and the parser's refusal) with an in-suite control at:171-189 that restores the base catch clause and requires the request to fail.",
+    "goal": "the node's goal is that a plan page the parser refuses costs only its own project's row in /_projects/index.json, and at head reckon/serve.py:668 declares PlanPageRefusalError carrying the file and the parser's message, reckon/serve.py:685-690 adds it to the row handler's isolated errors, and my own arm over three synthesised mounts returns 200 with the refused row marked \"migration-project-state.html: sections[''].id: record must be adjacent to its h2\" and both good rows intact on disk (logs/probe-discover-route.log).",
+    "manifest": "read; status complete, negative_control_log is the bare path whose log opens with the mutation and ends 1 failed EXIT=1, the two suites are armed JSON keyed to the base and head revisions, and re-running both arms myself reproduces 14 passed, 2 skipped, EXIT=0 on each side, so failure_ids [] is a measured zero rather than an unmeasured one.",
+    "write_paths": "the manifest declares reckon/serve.py, tests/test_rollup_isolates_a_project.py, the landing fragment under docs/evidence/fragments/a-page-load-reads-each-file-once/ and that plan's figures directory, and git diff --stat 7cc73727..9d867811 lists exactly the first three at 247 insertions and 4 deletions with no figure file written."
+  },
+  "justifications": {
+    "durability": "tests/test_rollup_isolates_a_project.py:156 is red at base in my own arm (2 failed, EXIT=1) and red on each half of the fix independently \u2014 the row-handler tuple restored to (OSError, ProjectStateError), and the wrap at reckon/serve.py:1795 removed \u2014 leaving the fingerprint assertion's crew/ exemption as the one carve-out.",
+    "evidence": "the gate carries a log per arm and the run's own negative-control.log ends 1 failed EXIT=1, but logs/node-gate.log:1 names revision 7cc73727, where the test file it ran does not exist, so the node gate's own log is not reproducible from the revision it names.",
+    "fit": "the class, the tuple constant and the wrap follow the error-handling idiom already in reckon/serve.py and carry no plan or stage reference, but the landing fragment prints a symbol the code does not define (see FINDING).",
+    "goal_fidelity": "reckon/serve.py:668-690 wraps the parser's refusal in a named error carrying the file and catches it in the row handler, and my arm over three synthesised mounts returns the refused row marked with the file and refusal beside both good rows' data.",
+    "scope_discipline": "git diff --stat 7cc73727..9d867811 lists exactly the three declared paths and the follow-ons name the out-of-scope sites, such as the bare ValueError at reckon/_plan_html.py:379, rather than touching them."
+  },
+  "node": "review-of-rollup-isolates-a-project",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T064712390989-rollup-isolates-a-project\n(plan a-page-load-reads-each-file-once section 5; node rollup-isolates-a-project; role implement)\nreviewed_base_sha: 7cc73727c25282aaee94ab65b52e975b1c8a4b9c\nreviewed_head_sha: 9d867811b44db8bf6d14c104efe5e62910e2d51d\nVERDICT goal: the node's goal is that a plan page the parser refuses costs only its own project's row in /_projects/index.json, and at head reckon/serve.py:668 declares PlanPageRefusalError carrying the file and the parser's message, reckon/serve.py:685-690 adds it to the row handler's isolated errors, and my own arm over three synthesised mounts returns 200 with the refused row marked \"migration-project-state.html: sections[''].id: record must be adjacent to its h2\" and both good rows intact on disk (logs/probe-discover-route.log).\nVERDICT done_when: the measure is that one malformed page in one mount no longer empties the other rows, and the added gate asserts exactly that at tests/test_rollup_isolates_a_project.py:152-168 (status 200, all three mount names present, both good rows carrying their data row, the bad row's error naming the refused file and the parser's refusal) with an in-suite control at:171-189 that restores the base catch clause and requires the request to fail.\nVERDICT write_paths: the manifest declares reckon/serve.py, tests/test_rollup_isolates_a_project.py, the landing fragment under docs/evidence/fragments/a-page-load-reads-each-file-once/ and that plan's figures directory, and git diff --stat 7cc73727..9d867811 lists exactly the first three at 247 insertions and 4 deletions with no figure file written.\nVERDICT manifest: read; status complete, negative_control_log is the bare path whose log opens with the mutation and ends 1 failed EXIT=1, the two suites are armed JSON keyed to the base and head revisions, and re-running both arms myself reproduces 14 passed, 2 skipped, EXIT=0 on each side, so failure_ids [] is a measured zero rather than an unmeasured one.\nVERDICT diff: read commit by commit \u2014 one commit adding the exception class at reckon/serve.py:668, the row-handler tuple at:685, the wrapping read at:1795-1798 and a 189-line test file plus a 28-line landing fragment \u2014 and the only slip I found in it is the fragment printing a symbol the code does not define (see FINDING).\nCALL_SITES: reckon/serve.py:2257\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/serve.py:668-690 wraps the parser's refusal in a named error carrying the file and catches it in the row handler, and my arm over three synthesised mounts returns the refused row marked with the file and refusal beside both good rows' data.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate carries a log per arm and the run's own negative-control.log ends 1 failed EXIT=1, but logs/node-gate.log:1 names revision 7cc73727, where the test file it ran does not exist, so the node gate's own log is not reproducible from the revision it names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 7cc73727..9d867811 lists exactly the three declared paths and the follow-ons name the out-of-scope sites, such as the bare ValueError at reckon/_plan_html.py:379, rather than touching them.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_rollup_isolates_a_project.py:156 is red at base in my own arm (2 failed, EXIT=1) and red on each half of the fix independently \u2014 the row-handler tuple restored to (OSError, ProjectStateError), and the wrap at reckon/serve.py:1795 removed \u2014 leaving the fingerprint assertion's crew/ exemption as the one carve-out.\nSCORE fit: 18\nJUSTIFICATION fit: the class, the tuple constant and the wrap follow the error-handling idiom already in reckon/serve.py and carry no plan or stage reference, but the landing fragment prints a symbol the code does not define (see FINDING).\nFINDING docs/evidence/fragments/a-page-load-reads-each-file-once/rollup-isolates-a-project.html:22 names the new error PlanPageRefusal where reckon/serve.py:668 declares PlanPageRefusalError, so a reader who greps the landing record for the symbol it prints finds nothing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T064712390989-rollup-isolates-a-project/manifest.md:21 follow-on (2) says the per-project /_discover/<project> route's 500 detail omits the refused file name, but the wrap that landed sits on the read path both routes share and my probe at head returns detail \"migration-project-state.html: sections[''].id: record must be adjacent to its h2\" for /_discover/bad, so only the error key still differs and the follow-on sends a coordinator after a difference the change already closed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T064712390989-rollup-isolates-a-project/logs/node-gate.log:1 records a revision of 7cc73727 while the command beside it runs a test file that exists only at 9d867811, so the log cannot be reproduced from the revision it names and reads as if the new test passed at the base it was written against.\n",
+  "review_run_id": "r-20260929T070551906736-review-of-rollup-isolates-a-project",
+  "reviewed_base_sha": "7cc73727c25282aaee94ab65b52e975b1c8a4b9c",
+  "reviewed_head_sha": "9d867811b44db8bf6d14c104efe5e62910e2d51d",
+  "reviewed_run_id": "r-20260929T064712390989-rollup-isolates-a-project",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T070551906736-review-of-rollup-isolates-a-project",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:02.447897+00:00",
+  "total": 94
+}

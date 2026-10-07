@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T23:55:07.312Z",
+  "dispatched_at": "2026-10-05T23:50:03Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:87",
+      "id": "duplicate_owner-1",
+      "reason": "the fallback already has one home in `reckon/_plan_html.py`, so acting on this corrects a stale sentence about already-landed code and does not change what the node builds.",
+      "text": "\u00a716 says `section_anchor`, \"the one-line owner of the empty-identity fallback \u2026 that lives in routing today beside the pair and moves with it into reckon/_plan_html.py, promotion importing it from there\", but \u00a717 already moved the whole identity trio into that module (`section_record_id:71`, `section_anchor:87`, `section_id_candidates:92`), so the relocation clause describes state that no longer exists \u2014 the same module the plan elsewhere (same paragraph) says the pair already \"live[s] on \u2026 since \u00a717 landed\", a self-contradiction",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "43b49c1f0a09068e7a8c65da92934121ed4c0b5eed73c5b3e433e8f874c7e5a6",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 147,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the predicate applies no landing subtraction: \u00a716 states the coverage question is the schema's, a section is outstanding until declared done whatever has landed, so it reads roadmap.implementable_sections unchanged and derives no set; promotion's pickup list subtracts landings for a different question, after a refusal; the sentence is reworded to say so",
+      "when": "2026-10-06T00:22:59.481401+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T234944389152-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "f45dbaf46ff04b4cda10d2b1c15b3011de37050e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 collapses a whole-document fingerprint into a section-keyed digest map (`_section_digests`) behind one module-private coverage predicate, and that predicate is the single owner of the coverage question, replacing the gate's own read (`reckon/crew/routing.py:2666`) and the sweep's (`reckon/crew/recovery.py:494`); it deletes `_AuthoredProseParser` rather than adding wrappers, so it reduces surface while hiding more behaviour behind a smaller interface.",
+    "duplicate_owner": "a finding \u2014 \u00a716 states `section_anchor` \"lives in routing today\" and still needs moving, but \u00a717 already relocated it; the owner is `reckon/_plan_html.py`.",
+    "interface_budget": "pass \u2014 public_definitions 1480, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds exactly one public definition (`strip_tags`, \u2192 1481) and states in its own text that it retires nothing because the identity digest and the prose walk keep their names, and that the refusal reuses the existing plan-review-missing family; \u00a719 adds none (its expression stays private) and retires nothing.",
+    "reuse_search": "pass \u2014 \u00a716 and \u00a719 name the machinery they extend and every cited symbol exists where the plan says: `_TAG_RE`/`count_open_decisions` (`reckon/_plan_html.py:1804`,`:1812`), `SECTION_NUMBER_PATTERN`/`SECTION_NUMBER_CONTINUATION` (`:64`,`:65`), `section_record_id`/`section_anchor`/`section_id_candidates` (`:71`,`:87`,`:92`), `plan_headings`/`structured_section_spans` (`:358`,`:372`), `_PROSE_SKIP_TAGS`/`_AuthoredProseParser`/`_authored_prose` (`reckon/crew/plan_review.py:148`,`:169`,`:266`), `_fingerprint_forms`/`list_plan_reviews` (`:604`,`:674`), `roadmap.implementable_sections` (`reckon/roadmap.py:107`), `recovery._plan_review_pending` (`reckon/crew/recovery.py:490`), `_INVOCATION_RE` (`reckon/followup_pointers.py:43`).",
+    "thin_wrapper": "pass \u2014 \u00a716 states why the coverage predicate is not a wrapper over `read_plan_review` (a join of the outstanding-section set against the union of stored section digests, over two existing readers, versus a one-record-to-one-digest match), and states why `strip_tags` exposes the module's existing tag expression rather than a parallel one, and why `count_open_decisions` keeps its bare substitution."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T23:56:17.364744+00:00"
+}

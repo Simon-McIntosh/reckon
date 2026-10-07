@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T17:31:06.828392+00:00",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "2016",
+      "text": "the calibration ruler is emitted for a human reader only; nothing in the committed tree reads the position where the pane cut it. The production width is the ancestor terminal's ioctl column count passed through calibrated_width (reckon/crew/ticker.py:367), which equals the ruler's break on a real pty but is not the ruler itself, and a detached follower falls back to DEFAULT_WIDTH with no ruler observation at all. The plan's intent \u2014 a width measured rather than a guessed constant \u2014 is met, and 'where it is cut recorded' is satisfied by the ioctl reading; stated here so a reader does not assume the emitted ruler is parsed back."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "732",
+      "text": "the wall cell blanks on any transition into dispatched regardless of whether spend_wall_seconds carries a real value (test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker renders a dispatched event with 1234.0s and still expects seven blanks), so a re-dispatch whose elapsed figure would be meaningful is blanked too. This is exactly the plan's stated definition \u2014 a transition into dispatched is time zero by definition \u2014 and the docstring documents it, so it is a design note recorded for the next reader with a different event model, not a defect."
+    },
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "text": "the flush of the cut spend cells leaves tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers broken (AttributeError: module has no attribute MODEL_SECS at tests/test_crew_recovery.py:1720, reproduced at head here), which the manifest correctly reports as a follow_on outside its write scope; under the merged-head attribution run it will fail a wider suite, so the promotion that lands this commit must bundle the repair or the review record that owns it, not treat the four-file gate as the whole story."
+    }
+  ],
+  "justifications": {
+    "durability": "every behaviour the measure names has a failing-flips test in the commit: a re-added INSET or guessed margin fails `assert not hasattr(ticker_module, \"INSET\")` (test_calibration_consumes_an_observed_cut_position, tests/test_crew_ticker_layout.py), a column re-added to the row fails the reason-floor test, blanking or the marker removed on a dispatched row fails test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker, and a repeated or json-leaked ruler fails test_the_ruler_is_emitted_once_and_only_on_a_human_stream (tests/test_crew_ticker.py).",
+    "evidence": "the manifest's arithmetic reproduces independently here: base 101 passed / 0 failed and head 106 passed / 0 failed re-run in the reviewed worktree (/tmp/review_rowrenders_base.log, /tmp/review_rowrenders_head.log), the reason floor measures 76 free columns at the observed 208-column cut against 58 at base (both rendered through the calibration path), and the lint delta reproduces as 4 base vs 3 head real findings with only one strict-zip fixed, none added (see finding).",
+    "fit": "ruler_line, calibrated_width and RULER_LENGTH follow the module idiom \u2014 a named module constant, a one-paragraph mechanism docstring, and a floor raised like the pre-existing mins \u2014 the four naming checks over the diff's added lines find nothing banned, and the comments state the mechanism ('where the pane broke the ruler \u2014 a reading, not a guess') rather than the work item.",
+    "goal_fidelity": "all three plan measures land and are asserted: the render width is the observed cut with the provisional inset constant deleted (calibrated_width(208)==208, resolve_terminal_width()==208 on a real pty), a cell whose row state makes its figure noise renders blank while the absence marker survives a genuinely unmeasured figure (test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker), and the reason field grows from 58 to 76 columns at the measured pane width on the commit's own fixture (tests/test_crew_ticker_layout.py, '> = 75' assertion).",
+    "scope_discipline": "commit b876427 touches exactly four files \u2014 reckon/crew/ticker.py, reckon/cli.py, tests/test_crew_ticker.py, tests/test_crew_ticker_layout.py \u2014 every one inside the declared seven-path write scope, with no out-of-fence path modified and the three declared but unchanged test files still green at head (tests/test_monitor_invocation_docs.py 4 passed here)."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all three plan measures land and are asserted: the render width is the observed cut with the provisional inset constant deleted (calibrated_width(208)==208, resolve_terminal_width()==208 on a real pty), a cell whose row state makes its figure noise renders blank while the absence marker survives a genuinely unmeasured figure (test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker), and the reason field grows from 58 to 76 columns at the measured pane width on the commit's own fixture (tests/test_crew_ticker_layout.py, '> = 75' assertion).\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's arithmetic reproduces independently here: base 101 passed / 0 failed and head 106 passed / 0 failed re-run in the reviewed worktree (/tmp/review_rowrenders_base.log, /tmp/review_rowrenders_head.log), the reason floor measures 76 free columns at the observed 208-column cut against 58 at base (both rendered through the calibration path), and the lint delta reproduces as 4 base vs 3 head real findings with only one strict-zip fixed, none added (see finding).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit b876427 touches exactly four files \u2014 reckon/crew/ticker.py, reckon/cli.py, tests/test_crew_ticker.py, tests/test_crew_ticker_layout.py \u2014 every one inside the declared seven-path write scope, with no out-of-fence path modified and the three declared but unchanged test files still green at head (tests/test_monitor_invocation_docs.py 4 passed here).\nSCORE durability: 19\nJUSTIFICATION durability: every behaviour the measure names has a failing-flips test in the commit: a re-added INSET or guessed margin fails `assert not hasattr(ticker_module, \"INSET\")` (test_calibration_consumes_an_observed_cut_position, tests/test_crew_ticker_layout.py), a column re-added to the row fails the reason-floor test, blanking or the marker removed on a dispatched row fails test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker, and a repeated or json-leaked ruler fails test_the_ruler_is_emitted_once_and_only_on_a_human_stream (tests/test_crew_ticker.py).\nSCORE fit: 18\nJUSTIFICATION fit: ruler_line, calibrated_width and RULER_LENGTH follow the module idiom \u2014 a named module constant, a one-paragraph mechanism docstring, and a floor raised like the pre-existing mins \u2014 the four naming checks over the diff's added lines find nothing banned, and the comments state the mechanism ('where the pane broke the ruler \u2014 a reading, not a guess') rather than the work item.\nFINDING reckon/cli.py:2016 the calibration ruler is emitted for a human reader only; nothing in the committed tree reads the position where the pane cut it. The production width is the ancestor terminal's ioctl column count passed through calibrated_width (reckon/crew/ticker.py:367), which equals the ruler's break on a real pty but is not the ruler itself, and a detached follower falls back to DEFAULT_WIDTH with no ruler observation at all. The plan's intent \u2014 a width measured rather than a guessed constant \u2014 is met, and 'where it is cut recorded' is satisfied by the ioctl reading; stated here so a reader does not assume the emitted ruler is parsed back.\nFINDING reckon/crew/ticker.py:732 the wall cell blanks on any transition into dispatched regardless of whether spend_wall_seconds carries a real value (test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker renders a dispatched event with 1234.0s and still expects seven blanks), so a re-dispatch whose elapsed figure would be meaningful is blanked too. This is exactly the plan's stated definition \u2014 a transition into dispatched is time zero by definition \u2014 and the docstring documents it, so it is a design note recorded for the next reader with a different event model, not a defect.\nFINDING manifest.md:21 the flush of the cut spend cells leaves tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers broken (AttributeError: module has no attribute MODEL_SECS at tests/test_crew_recovery.py:1720, reproduced at head here), which the manifest correctly reports as a follow_on outside its write scope; under the merged-head attribution run it will fail a wider suite, so the promotion that lands this commit must bundle the repair or the review record that owns it, not treat the four-file gate as the whole story.",
+  "review_run_id": "r-20260914T173106828392-review-of-row-renders-only-measured-cells",
+  "reviewed_base": "0533d5cb8cc35924b7265d78d10076d117e885c1",
+  "reviewed_commit": "b876427a7bc4e7d920f3d8c296755d7ad7095d3b",
+  "reviewed_run_id": "r-20260914T152451139662-row-renders-only-measured-cells",
+  "reviewer_run_id": "r-20260914T173106828392-review-of-row-renders-only-measured-cells",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-10-07T04:36:58.877186+00:00",
+  "total": 95
+}

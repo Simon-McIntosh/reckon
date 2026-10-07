@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite gate logs, so the added-failure count was not taken; the derivation instrument was confirmed with a positive control (added_failures_from_gate_logs returned count 1 id tests/test_x.py::test_c, and None when the base log is absent)",
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:919",
+    "reckon/crew/dispatch.py:5164",
+    "reckon/crew/dispatch.py:5650"
+  ],
+  "completed_at": "2026-10-01T08:43:40.117Z",
+  "dispatched_at": "2026-10-01T08:31:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2099",
+      "severity": "follow-on",
+      "text": "follow-on: the mixed-resolution branch is unreachable from the production writers \u2014 the peer pointer's created_at is written by _publish_launch_claim from the dispatch's own claim_registered_at (dispatch.py:1487, :5076) and that stamp is runs._utc_now (runs.py:329, isoformat(timespec=\"seconds\")), so both sides always carry zero fractional digits and _fractional_digits differs only in the hand-built fixture (_same_second_with_fraction). The branch is conservative (it returns refuse) so it is not a correctness risk, but the landing and fragment present the resolution rule as a production hazard; if it ever did fire symmetrically it would make both racing claims refuse, the harm the ordering exists to prevent."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2082",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring state \"the same instant is written ``...T04:00:00Z`` by one caller and ``...T04:00:00.500000+00:00`` by another\" \u2014 those two spellings name moments half a second apart, not the same instant, and (see above) no production caller writes the fractional form; carried from the prior review at this line."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "919",
+      "severity": "follow-on",
+      "text": "follow-on: the third entry to _raise_repository_scope_conflict, the _raise_live_scope_conflict facade, builds its claims with the default empty registered_at and passes neither own_run_id nor own_registered_at, so the parsed-time ordering never applies at that seam; pre-existing and carried from the prior review."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2106",
+      "severity": "follow-on",
+      "text": "follow-on: the ordering still compares wall-clock registration moments, so a later arrival from a host whose clock runs behind still ranks as the earlier one; the run-id tie-break settles only same-resolution equal instants, which the resolution guard now additionally refuses inside a second."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T070609066219-racing-claims-order-by-parsed-time/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names no baseline_suite and no after_suite, only gate.log and the negative-control logs, so the added-failure count derives as unmeasured rather than zero and the record cannot be reconciled against a base arm at a stated revision; carried from the prior review."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s) of _raise_repository_scope_conflict; the ordering is invoked at dispatch.py:2153 and both admission checks pass own_registered_at (dispatch.py:5164, :5650)",
+    "diff": "read against 598f4dc0; dispatch.py adds `_UNLAUNCHED_CLAIM_PHASES` and widens `launched` to include the pointer phase, adds `_fractional_digits` and an inconclusive-return when the two stamps' resolutions differ inside one second; the test file adds the two running-owner cases and rewrites the mixed-spelling case to assert inconclusiveness in both directions plus a >1s ordered case; the fragment records the repair, its measure and the three controls. No other production line changes.",
+    "done_when": "the node is an implement role with no authored done-when; its manifest's landing states the running-owner refusal and the resolution rule on top of the parsed-instant ordering, and tests/test_one_of_two_racing_reviews_survives.py drives each against worst inputs: a running owner registered a minute later (isolating the phase term), a running owner whose sub-second stamp shares the newcomer's second, and the mixed-spelling pair that must stay inconclusive.",
+    "goal": "the node makes the racing-claim order read parsed registration moments and never let a newcomer outrank a run that has already passed its own admission; at head 6cf2cbc5 `_peer_claim_is_a_later_racing_arrival` (reckon/crew/dispatch.py:2058) returns True only when the peer claim is still composing, both stamps parse, their resolutions agree, and `(peer_instant, claim.run_id) > (own_instant, own_run_id)`; `launched` (dispatch.py:1419) is now true when the pointer carries a worktree or pid OR its phase lies outside `_UNLAUNCHED_CLAIM_PHASES` {starting, launching, launcher, dispatching}, so a running owner refuses a newcomer; a resolution mismatch inside a second returns False, keeping the peer established. That is the goal.",
+    "manifest": "read the reviewed manifest; status complete, commits a8010923b2ab9339759acc1c4aa6a63697774c8d and 6cf2cbc5842d750c3ccf22bde249be04bde7fc07 (plus 598f4dc0, 277f357a) over base 29560d96, gate.log (22 passed, EXIT=0) and three negative-control logs each red; the manifest names no baseline_suite and no after_suite, so the added-failure count derives as unmeasured rather than zero.",
+    "write_paths": "the manifest's orientation names reckon/crew/dispatch.py, tests/test_one_of_two_racing_reviews_survives.py and the evidence fragment; the two repair commits a8010923b and 6cf2cbc5 change exactly those three (+59/-... dispatch.py, +105 the test file, +61/-37 the fragment over 598f4dc0) and the reviewed worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "the guards are real and independent, verified by the three isolating negative controls, and the running-owner guard closes a genuine intermittent failure (the node's own test_crew.py runs are cited). Residual: the resolution guard's precondition cannot be produced by the production writers \u2014 both the peer pointer's created_at and the dispatch's own claim_registered_at come from the same second-precision runs._utc_now (runs.py:329) \u2014 so that branch is inert outside its hand-built fixture; the docstring's 'same instant' example and the _raise_live_scope_conflict facade gap are carried from the prior review.",
+    "evidence": "strong on the guards: three negative-control logs each redden exactly one guard \u2014 restoring the raw-string comparison 2 failed/6 passed, dropping the phase term 1 failed/7 passed, dropping the resolution guard 1 failed/7 passed \u2014 so each protection fails when removed, and I reproduced the head gate independently (22 passed, EXIT=0). Two gaps: the reviewed manifest names no baseline_suite/after_suite, so the added-failure count derives as unmeasured (I confirmed the derivation instrument with a positive control: added_failures_from_gate_logs returned count 1, id tests/test_x.py::test_c, and None when the base log is absent); and the resolution guard's fixture shape is hand-built, not drawn from a production writer.",
+    "fit": "the change reuses the existing parse_utc, the existing phase vocabulary (the launch claim already writes phase 'starting' at dispatch.py:1488) and the one shared ordering helper both admission checks call, so no second ordering implementation appears; the new module constant names a mechanism rather than a plan item.",
+    "goal_fidelity": "every clause of the landing is present: the parsed-instant comparison (277f357a) is unchanged, the running-owner refusal is a real fix (a pointer whose phase is 'working' but which carries no worktree/pid \u2014 the running-pointer fixtures, and a resumed or reclaimed run \u2014 previously read as still-composing and could be outranked), and the resolution rule is present; I reproduced the head gate 22 passed / EXIT=0.",
+    "scope_discipline": "the two repair commits change dispatch.py, the test file and the fragment and nothing else; the reviewed worktree is clean at head and every written path lies inside the node's declared orientation scope; no peer file is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-racing-claims-order-by-parsed-time",
+  "project": "reckon",
+  "raw_text": "REVIEWED_BASE_SHA: 29560d96633faf84024d625290af205f97125fa1\nREVIEWED_HEAD_SHA: 6cf2cbc5842d750c3ccf22bde249be04bde7fc07\nVERDICT goal: the node makes the racing-claim order read parsed registration moments and never let a newcomer outrank a run that has already passed its own admission; at head 6cf2cbc5 `_peer_claim_is_a_later_racing_arrival` (reckon/crew/dispatch.py:2058) returns True only when the peer claim is still composing, both stamps parse, their resolutions agree, and `(peer_instant, claim.run_id) > (own_instant, own_run_id)`; `launched` (dispatch.py:1419) is now true when the pointer carries a worktree or pid OR its phase lies outside `_UNLAUNCHED_CLAIM_PHASES` {starting, launching, launcher, dispatching}, so a running owner refuses a newcomer; a resolution mismatch inside a second returns False, keeping the peer established. That is the goal.\nVERDICT done_when: the node is an implement role with no authored done-when; its manifest's landing states the running-owner refusal and the resolution rule on top of the parsed-instant ordering, and tests/test_one_of_two_racing_reviews_survives.py drives each against worst inputs: a running owner registered a minute later (isolating the phase term), a running owner whose sub-second stamp shares the newcomer's second, and the mixed-spelling pair that must stay inconclusive.\nVERDICT write_paths: the manifest's orientation names reckon/crew/dispatch.py, tests/test_one_of_two_racing_reviews_survives.py and the evidence fragment; the two repair commits a8010923b and 6cf2cbc5 change exactly those three (+59/-... dispatch.py, +105 the test file, +61/-37 the fragment over 598f4dc0) and the reviewed worktree is clean at head.\nVERDICT manifest: read the reviewed manifest; status complete, commits a8010923b2ab9339759acc1c4aa6a63697774c8d and 6cf2cbc5842d750c3ccf22bde249be04bde7fc07 (plus 598f4dc0, 277f357a) over base 29560d96, gate.log (22 passed, EXIT=0) and three negative-control logs each red; the manifest names no baseline_suite and no after_suite, so the added-failure count derives as unmeasured rather than zero.\nVERDICT diff: read against 598f4dc0; dispatch.py adds `_UNLAUNCHED_CLAIM_PHASES` and widens `launched` to include the pointer phase, adds `_fractional_digits` and an inconclusive-return when the two stamps' resolutions differ inside one second; the test file adds the two running-owner cases and rewrites the mixed-spelling case to assert inconclusiveness in both directions plus a >1s ordered case; the fragment records the repair, its measure and the three controls. No other production line changes.\nCALL_SITES: reckon/crew/runs.py:919, reckon/crew/dispatch.py:5164, reckon/crew/dispatch.py:5650\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every clause of the landing is present: the parsed-instant comparison (277f357a) is unchanged, the running-owner refusal is a real fix (a pointer whose phase is 'working' but which carries no worktree/pid \u2014 the running-pointer fixtures, and a resumed or reclaimed run \u2014 previously read as still-composing and could be outranked), and the resolution rule is present; I reproduced the head gate 22 passed / EXIT=0.\nSCORE evidence: 18\nJUSTIFICATION evidence: strong on the guards: three negative-control logs each redden exactly one guard \u2014 restoring the raw-string comparison 2 failed/6 passed, dropping the phase term 1 failed/7 passed, dropping the resolution guard 1 failed/7 passed \u2014 so each protection fails when removed, and I reproduced the head gate independently (22 passed, EXIT=0). Two gaps: the reviewed manifest names no baseline_suite/after_suite, so the added-failure count derives as unmeasured (I confirmed the derivation instrument with a positive control: added_failures_from_gate_logs returned count 1, id tests/test_x.py::test_c, and None when the base log is absent); and the resolution guard's fixture shape is hand-built, not drawn from a production writer.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two repair commits change dispatch.py, the test file and the fragment and nothing else; the reviewed worktree is clean at head and every written path lies inside the node's declared orientation scope; no peer file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: the guards are real and independent, verified by the three isolating negative controls, and the running-owner guard closes a genuine intermittent failure (the node's own test_crew.py runs are cited). Residual: the resolution guard's precondition cannot be produced by the production writers \u2014 both the peer pointer's created_at and the dispatch's own claim_registered_at come from the same second-precision runs._utc_now (runs.py:329) \u2014 so that branch is inert outside its hand-built fixture; the docstring's 'same instant' example and the _raise_live_scope_conflict facade gap are carried from the prior review.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the existing parse_utc, the existing phase vocabulary (the launch claim already writes phase 'starting' at dispatch.py:1488) and the one shared ordering helper both admission checks call, so no second ordering implementation appears; the new module constant names a mechanism rather than a plan item.",
+  "review_run_id": "r-20261001T083033161186-review-of-racing-claims-order-by-parsed-time",
+  "reviewed_base_sha": "29560d96633faf84024d625290af205f97125fa1",
+  "reviewed_head_sha": "6cf2cbc5842d750c3ccf22bde249be04bde7fc07",
+  "reviewed_run_id": "r-20261001T070609066219-racing-claims-order-by-parsed-time",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T08:42:13.714508+00:00",
+  "total": 94
+}

@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "faf859078835171eea6c4287a47074ee729e2a31",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:1989 (the reflex releases a stranded standing review and composes again)",
+    "reckon/crew/recovery.py:7926 (classify_pointer names a stranded launch in the launch-failed family)"
+  ],
+  "completed_at": "2026-10-03T02:44:51.695Z",
+  "dispatched_at": "2026-10-03T02:34:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "5985",
+      "severity": "follow-on",
+      "text": "follow-on: _stranded_launch returns False when the pointer carries no attempt clock -- no attempt_started_at and no attempt.json -- so a stranded pointer that also lacks the clock is still left in flight; the observed incident's pointer carried attempt_started_at, but a pointer predating the field with no attempt record repeats the original symptom with the fix present."
+    },
+    {
+      "file": "tests/test_stranded_launch_releases_its_claim.py",
+      "line": "125",
+      "severity": "follow-on",
+      "text": "follow-on: the release case asserts the standing claim no longer reads in flight and that composition proceeds, but never asserts a review was actually dispatched; the done-when asks the test to assert both the release and the redispatch, and the case's own comment concedes it measures only that the refusal is reached."
+    },
+    {
+      "file": "r-20261003T013928758342-stranded-launch-releases-its-claim/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's failure_attribution records all three head-arm failures as a read-only crew home (OSError Errno 30), but only test_cli_follow_streams_each_event_as_one_json_document fails that way; the two ticker tests fail on an extra trailing line 'reckon crew watch stopped: watch stream ended' corrupting their line-count and JSON assertions, and the Errno 30 in head.log is an unrelated obligation-sweep thread warning -- the ids match at base so the count is unaffected, but the stated cause would misdirect a later repair."
+    },
+    {
+      "file": "r-20261003T013928758342-stranded-launch-releases-its-claim/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm was scoped to the three head failure ids rather than the full 62-file set (a deviation the manifest declares), so a failure the full base set would have shown elsewhere is not excluded."
+    }
+  ],
+  "head_log_revision": "29e85041d9ebec141de50a398a77af782c59c36e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from faf85907: 29e85041 adds _stranded_launch and STRANDED_LAUNCH_BOUND_SECONDS, wires the reading into classify_pointer and threads a readable-standing-review check into dispatch_review_for_run that discards a stranded claim and falls through to compose again, with tests; b07593fe records the evidence fragment. Only recovery.py changes behaviour.",
+    "done_when": "the classification and release clauses are met end to end -- _stranded_launch (reckon/crew/recovery.py:5985) reads a pre-spawn pointer with no pid, worker record, stream or launch log past the 900s bound as stranded, classify_pointer (:7926) names it in the launch-failed family, and dispatch_review_for_run (:1989) discards the standing review with the reason recorded and falls through to compose again; counted below full because the release test asserts the claim no longer reads in flight and that composition proceeds rather than an actual redispatch, and the ruled-out re-exec cause lives only in the manifest, not the landed evidence.",
+    "goal": "the node's goal is that a launch cut off before it spawns stops holding its review claim forever: the diff reads a pre-spawn pointer with no launch evidence past a bound as a stranded launch and has the reflex discard it with the reason recorded and compose the review again, which I confirmed by re-running the new cases at head (4 passed) and by the release case removing the pointer and writing discard.json.",
+    "manifest": "read; status complete, both arms recorded with revisions and literal absolute commands, the negative control names its log and its designed failing case, and commits 29e85041/b07593fe match the tree; but baseline_suite and after_suite are written as prose rather than the JSON shape the review annotator reads, so the added-failure count is derived here from the two gate logs directly, and the failure_attribution mis-states two of the three failure causes (findings below).",
+    "write_paths": "git diff --stat faf85907..b07593fe names exactly reckon/crew/recovery.py, tests/test_stranded_launch_releases_its_claim.py and docs/evidence/fragments/crew-runtime-positive-controls/stranded-launch-releases-its-claim.html, all inside the node's declared write paths, and git status is clean at head."
+  },
+  "justifications": {
+    "durability": "the guard is shown to fire -- removing the bound (or neutralising _stranded_launch) reds the stranded-detection and release cases and leaves the pointer standing, and the release writes a durable discard marker while reporting a refused discard rather than raising so the sweep still reaches the rest of the fleet; two points withheld because a stranded pointer carrying no attempt clock (no attempt_started_at and no attempt.json) is still left in flight.",
+    "evidence": "both arms are recorded as JSON with literal absolute commands and readable logs (gate/base.json revision faf85907, gate/head.json revision 29e85041), the three head failures reproduce identically at base so head adds no failure id, and the negative control is a real red I reproduced independently (neutralising the bound reds exactly the stranded-detection and release cases); four points withheld because the base arm ran only the three head failure ids rather than the full 62-file set and because the failure_attribution mis-states the cause of two of the three failures.",
+    "fit": "the new names state their mechanism and the docstrings say why the reading is evidence rather than age alone and why a release must not stop the sweep, with no version, plan label or ticket reference in source; one point withheld because the tests restate the 900s bound through the constant rather than pinning a fixture age derived from it.",
+    "goal_fidelity": "the done-when's classification and release clauses are met end to end (recovery.py:5985, :7926, :1989), but the test asserts the claim is released and composition proceeds rather than an actual redispatch, and the cause question is answered only in the manifest prose rather than in the landed evidence, so three points are withheld.",
+    "scope_discipline": "the diff faf85907..b07593fe touches exactly reckon/crew/recovery.py, tests/test_stranded_launch_releases_its_claim.py and the node's evidence fragment, all inside the node's FENCE write paths, and names no other path; the new symbols carry no plan, section or ticket label."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a launch cut off before it spawns stops holding its review claim forever: the diff reads a pre-spawn pointer with no launch evidence past a bound as a stranded launch and has the reflex discard it with the reason recorded and compose the review again, which I confirmed by re-running the new cases at head (4 passed) and by the release case removing the pointer and writing discard.json.\nVERDICT done_when: the classification and release clauses are met end to end -- _stranded_launch (reckon/crew/recovery.py:5985) reads a pre-spawn pointer with no pid, worker record, stream or launch log past the 900s bound as stranded, classify_pointer (:7926) names it in the launch-failed family, and dispatch_review_for_run (:1989) discards the standing review with the reason recorded and falls through to compose again; counted below full because the release test asserts the claim no longer reads in flight and that composition proceeds rather than an actual redispatch, and the ruled-out re-exec cause lives only in the manifest, not the landed evidence.\nVERDICT write_paths: git diff --stat faf85907..b07593fe names exactly reckon/crew/recovery.py, tests/test_stranded_launch_releases_its_claim.py and docs/evidence/fragments/crew-runtime-positive-controls/stranded-launch-releases-its-claim.html, all inside the node's declared write paths, and git status is clean at head.\nVERDICT manifest: read; status complete, both arms recorded with revisions and literal absolute commands, the negative control names its log and its designed failing case, and commits 29e85041/b07593fe match the tree; but baseline_suite and after_suite are written as prose rather than the JSON shape the review annotator reads, so the added-failure count is derived here from the two gate logs directly, and the failure_attribution mis-states two of the three failure causes (findings below).\nVERDICT diff: read commit by commit from faf85907: 29e85041 adds _stranded_launch and STRANDED_LAUNCH_BOUND_SECONDS, wires the reading into classify_pointer and threads a readable-standing-review check into dispatch_review_for_run that discards a stranded claim and falls through to compose again, with tests; b07593fe records the evidence fragment. Only recovery.py changes behaviour.\nCALL_SITES: reckon/crew/recovery.py:1989 (the reflex releases a stranded standing review and composes again), reckon/crew/recovery.py:7926 (classify_pointer names a stranded launch in the launch-failed family)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the done-when's classification and release clauses are met end to end (recovery.py:5985, :7926, :1989), but the test asserts the claim is released and composition proceeds rather than an actual redispatch, and the cause question is answered only in the manifest prose rather than in the landed evidence, so three points are withheld.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms are recorded as JSON with literal absolute commands and readable logs (gate/base.json revision faf85907, gate/head.json revision 29e85041), the three head failures reproduce identically at base so head adds no failure id, and the negative control is a real red I reproduced independently (neutralising the bound reds exactly the stranded-detection and release cases); four points withheld because the base arm ran only the three head failure ids rather than the full 62-file set and because the failure_attribution mis-states the cause of two of the three failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff faf85907..b07593fe touches exactly reckon/crew/recovery.py, tests/test_stranded_launch_releases_its_claim.py and the node's evidence fragment, all inside the node's FENCE write paths, and names no other path; the new symbols carry no plan, section or ticket label.\nSCORE durability: 18\nJUSTIFICATION durability: the guard is shown to fire -- removing the bound (or neutralising _stranded_launch) reds the stranded-detection and release cases and leaves the pointer standing, and the release writes a durable discard marker while reporting a refused discard rather than raising so the sweep still reaches the rest of the fleet; two points withheld because a stranded pointer carrying no attempt clock (no attempt_started_at and no attempt.json) is still left in flight.\nSCORE fit: 19\nJUSTIFICATION fit: the new names state their mechanism and the docstrings say why the reading is evidence rather than age alone and why a release must not stop the sweep, with no version, plan label or ticket reference in source; one point withheld because the tests restate the 900s bound through the constant rather than pinning a fixture age derived from it.\nFINDING reckon/crew/recovery.py:5985 follow-on: _stranded_launch returns False when the pointer carries no attempt clock -- no attempt_started_at and no attempt.json -- so a stranded pointer that also lacks the clock is still left in flight; the observed incident's pointer carried attempt_started_at, but a pointer predating the field with no attempt record repeats the original symptom with the fix present.\nFINDING tests/test_stranded_launch_releases_its_claim.py:125 follow-on: the release case asserts the standing claim no longer reads in flight and that composition proceeds, but never asserts a review was actually dispatched; the done-when asks the test to assert both the release and the redispatch, and the case's own comment concedes it measures only that the refusal is reached.\nFINDING r-20261003T013928758342-stranded-launch-releases-its-claim/manifest.md:22 follow-on: the manifest's failure_attribution records all three head-arm failures as a read-only crew home (OSError Errno 30), but only test_cli_follow_streams_each_event_as_one_json_document fails that way; the two ticker tests fail on an extra trailing line 'reckon crew watch stopped: watch stream ended' corrupting their line-count and JSON assertions, and the Errno 30 in head.log is an unrelated obligation-sweep thread warning -- the ids match at base so the count is unaffected, but the stated cause would misdirect a later repair.\nFINDING r-20261003T013928758342-stranded-launch-releases-its-claim/manifest.md:20 follow-on: the base arm was scoped to the three head failure ids rather than the full 62-file set (a deviation the manifest declares), so a failure the full base set would have shown elsewhere is not excluded.\nREVIEWED_BASE_SHA: faf859078835171eea6c4287a47074ee729e2a31\nREVIEWED_HEAD_SHA: b07593fed906406f532c8420a1e369d4cc5adb85\n",
+  "review_run_id": "r-20261003T023340624994-review-of-stranded-launch-releases-its-claim",
+  "reviewed_base_sha": "faf859078835171eea6c4287a47074ee729e2a31",
+  "reviewed_head_sha": "b07593fed906406f532c8420a1e369d4cc5adb85",
+  "reviewed_run_id": "r-20261003T013928758342-stranded-launch-releases-its-claim",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.800632+00:00",
+  "total": 90
+}

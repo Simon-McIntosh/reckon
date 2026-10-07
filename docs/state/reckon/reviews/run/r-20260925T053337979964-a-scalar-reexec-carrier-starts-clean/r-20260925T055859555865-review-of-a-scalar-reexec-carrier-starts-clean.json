@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:2372",
+    "reckon/crew/dispatch.py:4506"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T05:58:59.555865+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+      "line": "2104",
+      "text": "the anchor states both importer arm logs carry a resolved-cwd header line and the manifest contract requires every gate log's first line to name revision, tree and command, but neither arm log carries a cwd line and the two focused logs (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean/logs/base.log:1 and logs/head.log:1) open on pytest progress with no header at all, so three of the seven receipts cannot be attributed to a revision or a resolved directory from the log alone."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean/logs/importers-head-n8.log",
+      "line": "3",
+      "text": "the command line names the arm as \"90 importer files of reckon.crew.dispatch\" and no log lists the selection, so the gate's scope cannot be re-derived or re-run from the record -- my probes give 32 direct AST importers, 66-86 by string pattern and 389 over the full import closure of the module."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read the three commits against base d4f13e1a commit by commit -- the six-line product fix at reckon/crew/dispatch.py:4530-4540, the landed note at docs/plans/the-suite-is-green-at-head.html:1055 with the branch figure script and its 98 KB PNG, and the base-arm correction that replaced only text this node itself had added; every doc path is zero deletions against base.",
+    "done_when": "Every clause of the done_when is receipted -- the scalar case red at base and green at head (logs/base.log, logs/head.log, and my own re-run at bc651ec1 in the reviewed worktree is 7 passed), the declared negative control red with its first line verbatim (logs/negative-control.log), zero added failures (importers-head-n8.log 1242 passed and 0 failed against importers-base-n8.log 1240 passed and 2 failed), no test file in the diff, and the ledger failure re-run alone red at both revisions (logs/ledger-alone.log).",
+    "goal": "The node's goal is that a reexec carrier parsing to a JSON scalar starts the new image clean instead of raising; reckon/crew/dispatch.py:4536 narrows the second arm to isinstance(payload, (list, tuple)) and :4539-4540 returns before the registry is touched for any other parsed type, which is what the docstring at :4519-4521 already promises.",
+    "manifest": "Read the run manifest; it records status complete, commits eaf6f977/b45165da/bc651ec1, seven log paths all present under logs/, the base and head arm results, and the ledger case as a follow-on, and each stated result matches the log I read.",
+    "write_paths": "The declared fence is reckon/crew/dispatch.py, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head and docs/plans/the-suite-is-green-at-head.html; git diff --numstat d4f13e1a..bc651ec1 names exactly those four plus the figure's .py and .png, and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reexec_keeps_its_children.py:270-272 asserts the call does not raise and the registry is empty, and logs/negative-control.log shows that same case reddening with TypeError when the new arm is removed, so it fails if the change regresses.",
+    "evidence": "The two importer-set arms carry headers naming revision, tree, module.__file__ and command, and my own re-run at the reviewed head is 7 passed, but logs/base.log:1 and logs/head.log:1 open on pytest progress with no revision or tree, the anchor at docs/evidence/archive/the-suite-is-green-at-head-landed.html:2104-2105 claims a resolved-cwd header neither arm log carries, and the arm's scope is named only by a count of 90 that I could not reproduce (32 direct AST importers, 66-95 by string pattern, 389 over the full import closure).",
+    "fit": "The six-line change follows the function's existing dict-or-list shape with a mechanism comment at reckon/crew/dispatch.py:4530-4532 and carries no plan label, ticket, attribution or version suffix, and all three commits are two-part conventional messages.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4536 admits only a list or a tuple and :4540 returns for anything else, so a scalar carrier leaves the registry empty instead of raising, as reckon/crew/dispatch.py:4519-4521 promises.",
+    "scope_discipline": "git diff --numstat d4f13e1a..bc651ec1 lists only the four declared paths (dispatch.py 5/1, the plan 47/0, the anchor 84/0, the figure pair) and tests/ is untouched, with the ledger failure named as a follow-on rather than repaired in-file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a reexec carrier parsing to a JSON scalar starts the new image clean instead of raising; reckon/crew/dispatch.py:4536 narrows the second arm to isinstance(payload, (list, tuple)) and :4539-4540 returns before the registry is touched for any other parsed type, which is what the docstring at :4519-4521 already promises.\nVERDICT done_when: Every clause of the done_when is receipted -- the scalar case red at base and green at head (logs/base.log, logs/head.log, and my own re-run at bc651ec1 in the reviewed worktree is 7 passed), the declared negative control red with its first line verbatim (logs/negative-control.log), zero added failures (importers-head-n8.log 1242 passed and 0 failed against importers-base-n8.log 1240 passed and 2 failed), no test file in the diff, and the ledger failure re-run alone red at both revisions (logs/ledger-alone.log).\nVERDICT write_paths: The declared fence is reckon/crew/dispatch.py, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head and docs/plans/the-suite-is-green-at-head.html; git diff --numstat d4f13e1a..bc651ec1 names exactly those four plus the figure's .py and .png, and nothing else.\nVERDICT manifest: Read the run manifest; it records status complete, commits eaf6f977/b45165da/bc651ec1, seven log paths all present under logs/, the base and head arm results, and the ledger case as a follow-on, and each stated result matches the log I read.\nVERDICT diff: Read the three commits against base d4f13e1a commit by commit -- the six-line product fix at reckon/crew/dispatch.py:4530-4540, the landed note at docs/plans/the-suite-is-green-at-head.html:1055 with the branch figure script and its 98 KB PNG, and the base-arm correction that replaced only text this node itself had added; every doc path is zero deletions against base.\nCALL_SITES: reckon/cli.py:2372, reckon/crew/dispatch.py:4506\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4536 admits only a list or a tuple and :4540 returns for anything else, so a scalar carrier leaves the registry empty instead of raising, as reckon/crew/dispatch.py:4519-4521 promises.\nSCORE evidence: 17\nJUSTIFICATION evidence: The two importer-set arms carry headers naming revision, tree, module.__file__ and command, and my own re-run at the reviewed head is 7 passed, but logs/base.log:1 and logs/head.log:1 open on pytest progress with no revision or tree, the anchor at docs/evidence/archive/the-suite-is-green-at-head-landed.html:2104-2105 claims a resolved-cwd header neither arm log carries, and the arm's scope is named only by a count of 90 that I could not reproduce (32 direct AST importers, 66-95 by string pattern, 389 over the full import closure).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --numstat d4f13e1a..bc651ec1 lists only the four declared paths (dispatch.py 5/1, the plan 47/0, the anchor 84/0, the figure pair) and tests/ is untouched, with the ledger failure named as a follow-on rather than repaired in-file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_reexec_keeps_its_children.py:270-272 asserts the call does not raise and the registry is empty, and logs/negative-control.log shows that same case reddening with TypeError when the new arm is removed, so it fails if the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: The six-line change follows the function's existing dict-or-list shape with a mechanism comment at reckon/crew/dispatch.py:4530-4532 and carries no plan label, ticket, attribution or version suffix, and all three commits are two-part conventional messages.\nFINDING docs/evidence/archive/the-suite-is-green-at-head-landed.html:2104 the anchor states both importer arm logs carry a resolved-cwd header line and the manifest contract requires every gate log's first line to name revision, tree and command, but neither arm log carries a cwd line and the two focused logs (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean/logs/base.log:1 and logs/head.log:1) open on pytest progress with no header at all, so three of the seven receipts cannot be attributed to a revision or a resolved directory from the log alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean/logs/importers-head-n8.log:3 the command line names the arm as \"90 importer files of reckon.crew.dispatch\" and no log lists the selection, so the gate's scope cannot be re-derived or re-run from the record -- my probes give 32 direct AST importers, 66-86 by string pattern and 389 over the full import closure of the module.",
+  "review_run_id": "r-20260925T055859555865-review-of-a-scalar-reexec-carrier-starts-clean",
+  "reviewed_base_sha": "d4f13e1ac6d57b4c72e708367d3e628ba24d5a07",
+  "reviewed_head_sha": "bc651ec1e771cd5ffbd71352ce85830fdcd9594f",
+  "reviewed_run_id": "r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean",
+  "reviewer": "review-of-a-scalar-reexec-carrier-starts-clean",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T06:13:39.597904+00:00",
+  "total": 92
+}

@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's two gate arms, logs/base-gate.log and logs/head-gate.log, through reckon.crew.review.added_failures_from_gate_logs; a synthetic id present only in the head arm returns 1, so the zero is measured rather than blind; the reviewed manifest names its arms under test_logs rather than baseline_suite/after_suite, so the store's read-time annotation reports this count as unmeasured",
+  "base_log_revision": "d6e2e0390c2980c46061839c03702bcab6751f27",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp.py:976",
+    "reckon/mcp.py:1343",
+    "reckon/mcp.py:1393",
+    "reckon/mcp.py:1520",
+    "reckon/cli.py:6227",
+    "reckon/agent_context.py:399"
+  ],
+  "completed_at": "2026-09-30T10:33:51.644Z",
+  "dispatched_at": "2026-09-30T10:21:41Z",
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1318",
+      "text": "the guard's field list chains to _OP_VOCAB, whose insert_section entry is held against the implementation nowhere \u2014 tests/test_mcp_vocabulary_is_complete.py:18 holds op names against _OP_DISPATCH and :26 checks only that id/title/body appear \u2014 so a field added to SectionRecord at reckon/_schema.py:852 would leave the vocabulary, the skill prose and the pin green together while only the example, validated against the implementation at tests/test_skill_contracts.py:1453, carried the new field; the claim at :1321-1323 that reading the vocabulary pins the skills to the code is true of op names, not of field lists."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/skills-name-the-landing-beat-ops.html",
+      "line": "48",
+      "text": "the fragment quotes the declared mutation failing at \"assert op in edit \u2014 reckon-edit does not name the collapse_section op\", which is the pre-repair revision's message; the log it cites, logs/negative-control.log, carries \"AssertionError: reckon-edit op reference does not list collapse_section with its required fields\" at tests/test_skill_contracts.py:1354, so the evidence record reproduces a message that appears in no artefact it cites."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "666",
+      "text": "FIXED_READ_SET_TOKEN_BUDGET rises 15_350 to 15_500 to carry the 112-token worked-examples block, against the same test's message at :687 that worked examples are reference material which moves to references/; moving the block leaves 15,298 estimated tokens under the 15_350 bound, so the raise spends attention the file's own rule says is recoverable \u2014 named rather than scored as a defect because the reason is recorded and the examples are what a coordinator copies at the landing beat."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T094134809163-skills-name-the-landing-beat-ops/manifest.md",
+      "line": "14-15",
+      "text": "the manifest names its two gate arms under tests and test_logs rather than the armed-only baseline_suite/after_suite fields, so reckon/crew/review.py:1201 read_review annotates every stored record for this run with added_failure_count null and an unmeasured note while the stored record carries the derived 0 \u2014 two answers to one question, and the review fence at prompt.txt:59 asks for the count under exactly those two field names."
+    }
+  ],
+  "head_log_revision": "5f0938e83a3e8143c7d60a389843c2e1542c9a0a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base d6e2e0390 \u2014 442670a05 adds the append_evidence vocabulary entry, the skill paragraphs and the first pin; 34a43322b repairs insert_section's field list, adds the example blocks and the apply case; 5f0938e83 adds the evidence fragment \u2014 conventional subjects with substantive bodies and every hunk inside the declared write paths.",
+    "done_when": "the measure's five clauses were re-derived at head 5f0938e83 \u2014 logs/base-gate.log is red on tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op while logs/head-gate.log is green on it, both skills show each op with the fields _OP_VOCAB declares, tests/test_skill_contracts.py:1334 and :1435 pin that, the two arms show zero added failures by id, and both mutation controls reproduce red \u2014 all verified.",
+    "goal": "the goal asks both skills to name collapse_section, append_evidence and insert_section as the landing-beat writes with a direct plan HTML edit as the announced exception; skills/reckon-build/SKILL.md:868-871 and :925-947 and skills/reckon-edit/SKILL.md:344-347 and :356-362 name all three with the fields their implementation accepts and both state the exception, and reckon/mcp.py:1646 adds append_evidence to _OP_VOCAB.",
+    "manifest": "read at head 5f0938e83 with status complete, three commits, a landing line and two negative controls; I re-derived its figures \u2014 15,410 estimated tokens against the 15_500 bound, base 3 failed/112 passed, head 2 failed/115 passed, zero added failures by id under a synthetic-id control \u2014 and its arms are named under test_logs rather than the armed-only baseline_suite/after_suite fields, so the store's read-time annotation reports the count unmeasured (see the FINDING on that manifest).",
+    "write_paths": "the fence grants six paths and the three commits touch five of them \u2014 skills/reckon-build/SKILL.md, skills/reckon-edit/SKILL.md, reckon/mcp.py, tests/test_skill_contracts.py and the new docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/skills-name-the-landing-beat-ops.html \u2014 292 insertions and 1 deletion, nothing outside the fence and the docs/figures path unused."
+  },
+  "justifications": {
+    "durability": "the apply case at tests/test_skill_contracts.py:1435 refuses a capability-less example with op_error and the pin at :1334 reddens when reckon-edit loses collapse_section, both reproduced in a scratch copy, but the prose half chains to _OP_VOCAB whose field lists no test holds against reckon/_store.py (see the FINDING on the field derivation).",
+    "evidence": "the arms carry revision headers and zero added failures by id, re-derived through reckon/crew/review.py:1022 with a synthetic-id control returning 1, and both declared mutations reproduce red in my own scratch copies, but the fragment at docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/skills-name-the-landing-beat-ops.html:48 quotes a failure message the log it cites does not carry (see the FINDING on the fragment).",
+    "fit": "the paragraphs, table rows and example block follow the idiom of both skills, and the added names at tests/test_skill_contracts.py:1312-1331 and :1360-1433 are named for their mechanism with no plan or ticket identifier.",
+    "goal_fidelity": "skills/reckon-edit/SKILL.md:356-358 lists all three ops with the keys the record requires and skills/reckon-build/SKILL.md:925-930 shows the six insert_section fields the example is accepted with at tests/test_skill_contracts.py:1453.",
+    "scope_discipline": "every path of the three commits is inside the fence at prompt.txt:67-72 with the docs/figures path unused, and the one judgement call \u2014 the FIXED_READ_SET_TOKEN_BUDGET raises at tests/test_skill_contracts.py:666 \u2014 is inside the fence and carries a recorded reason."
+  },
+  "node": "review-of-skills-name-the-landing-beat-ops",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks both skills to name collapse_section, append_evidence and insert_section as the landing-beat writes with a direct plan HTML edit as the announced exception; skills/reckon-build/SKILL.md:868-871 and :925-947 and skills/reckon-edit/SKILL.md:344-347 and :356-362 name all three with the fields their implementation accepts and both state the exception, and reckon/mcp.py:1646 adds append_evidence to _OP_VOCAB.\nVERDICT done_when: the measure's five clauses were re-derived at head 5f0938e83 \u2014 logs/base-gate.log is red on tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op while logs/head-gate.log is green on it, both skills show each op with the fields _OP_VOCAB declares, tests/test_skill_contracts.py:1334 and :1435 pin that, the two arms show zero added failures by id, and both mutation controls reproduce red \u2014 all verified.\nVERDICT write_paths: the fence grants six paths and the three commits touch five of them \u2014 skills/reckon-build/SKILL.md, skills/reckon-edit/SKILL.md, reckon/mcp.py, tests/test_skill_contracts.py and the new docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/skills-name-the-landing-beat-ops.html \u2014 292 insertions and 1 deletion, nothing outside the fence and the docs/figures path unused.\nVERDICT manifest: read at head 5f0938e83 with status complete, three commits, a landing line and two negative controls; I re-derived its figures \u2014 15,410 estimated tokens against the 15_500 bound, base 3 failed/112 passed, head 2 failed/115 passed, zero added failures by id under a synthetic-id control \u2014 and its arms are named under test_logs rather than the armed-only baseline_suite/after_suite fields, so the store's read-time annotation reports the count unmeasured (see the FINDING on that manifest).\nVERDICT diff: read commit by commit against base d6e2e0390 \u2014 442670a05 adds the append_evidence vocabulary entry, the skill paragraphs and the first pin; 34a43322b repairs insert_section's field list, adds the example blocks and the apply case; 5f0938e83 adds the evidence fragment \u2014 conventional subjects with substantive bodies and every hunk inside the declared write paths.\nCALL_SITES: reckon/mcp.py:976, reckon/mcp.py:1343, reckon/mcp.py:1393, reckon/mcp.py:1520, reckon/cli.py:6227, reckon/agent_context.py:399\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-edit/SKILL.md:356-358 lists all three ops with the keys the record requires and skills/reckon-build/SKILL.md:925-930 shows the six insert_section fields the example is accepted with at tests/test_skill_contracts.py:1453.\nSCORE evidence: 18\nJUSTIFICATION evidence: the arms carry revision headers and zero added failures by id, re-derived through reckon/crew/review.py:1022 with a synthetic-id control returning 1, and both declared mutations reproduce red in my own scratch copies, but the fragment at docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/skills-name-the-landing-beat-ops.html:48 quotes a failure message the log it cites does not carry (see the FINDING on the fragment).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path of the three commits is inside the fence at prompt.txt:67-72 with the docs/figures path unused, and the one judgement call \u2014 the FIXED_READ_SET_TOKEN_BUDGET raises at tests/test_skill_contracts.py:666 \u2014 is inside the fence and carries a recorded reason.\nSCORE durability: 18\nJUSTIFICATION durability: the apply case at tests/test_skill_contracts.py:1435 refuses a capability-less example with op_error and the pin at :1334 reddens when reckon-edit loses collapse_section, both reproduced in a scratch copy, but the prose half chains to _OP_VOCAB whose field lists no test holds against reckon/_store.py (see the FINDING on the field derivation).\nSCORE fit: 19\nJUSTIFICATION fit: the paragraphs, table rows and example block follow the idiom of both skills, and the added names at tests/test_skill_contracts.py:1312-1331 and :1360-1433 are named for their mechanism with no plan or ticket identifier.\nFINDING tests/test_skill_contracts.py:1318 the guard's field list chains to _OP_VOCAB, whose insert_section entry is held against the implementation nowhere \u2014 tests/test_mcp_vocabulary_is_complete.py:18 holds op names against _OP_DISPATCH and :26 checks only that id/title/body appear \u2014 so a field added to SectionRecord at reckon/_schema.py:852 would leave the vocabulary, the skill prose and the pin green together while only the example, validated against the implementation at tests/test_skill_contracts.py:1453, carried the new field; the claim at :1321-1323 that reading the vocabulary pins the skills to the code is true of op names, not of field lists.\nFINDING docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/skills-name-the-landing-beat-ops.html:48 the fragment quotes the declared mutation failing at \"assert op in edit \u2014 reckon-edit does not name the collapse_section op\", which is the pre-repair revision's message; the log it cites, logs/negative-control.log, carries \"AssertionError: reckon-edit op reference does not list collapse_section with its required fields\" at tests/test_skill_contracts.py:1354, so the evidence record reproduces a message that appears in no artefact it cites.\nFINDING tests/test_skill_contracts.py:666 FIXED_READ_SET_TOKEN_BUDGET rises 15_350 to 15_500 to carry the 112-token worked-examples block, against the same test's message at :687 that worked examples are reference material which moves to references/; moving the block leaves 15,298 estimated tokens under the 15_350 bound, so the raise spends attention the file's own rule says is recoverable \u2014 named rather than scored as a defect because the reason is recorded and the examples are what a coordinator copies at the landing beat.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T094134809163-skills-name-the-landing-beat-ops/manifest.md:14-15 the manifest names its two gate arms under tests and test_logs rather than the armed-only baseline_suite/after_suite fields, so reckon/crew/review.py:1201 read_review annotates every stored record for this run with added_failure_count null and an unmeasured note while the stored record carries the derived 0 \u2014 two answers to one question, and the review fence at prompt.txt:59 asks for the count under exactly those two field names.",
+  "review_run_id": "r-20260930T102123464251-review-of-skills-name-the-landing-beat-ops",
+  "reviewed_base_sha": "d6e2e0390c2980c46061839c03702bcab6751f27",
+  "reviewed_head_sha": "5f0938e83a3e8143c7d60a389843c2e1542c9a0a",
+  "reviewed_run_id": "r-20260930T094134809163-skills-name-the-landing-beat-ops",
+  "reviewer_run_id": "r-20260930T102123464251-review-of-skills-name-the-landing-beat-ops",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T10:30:46.117948+00:00",
+  "total": 92
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "556e5b6f5e5dd6e2e92d4972f12edcb99c2bfd6c",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5355",
+    "reckon/crew/dispatch.py:7119"
+  ],
+  "completed_at": "2026-10-04T03:46:25.742Z",
+  "dispatched_at": "2026-10-04T03:40:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "line": "155",
+      "severity": "follow-on",
+      "text": "follow-on: the _DELTA_AGAINST_BASE alternative for bare 'adds no failures' matches a delta phrase that names no base, so 'pytest tests/test_preexisting.py exits 0; adds no failure anywhere' returns [] from done_when_warnings, silencing the warning the increment exists to emit; the test lists bare 'adds no failure' among its admitted-delta cases."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "165",
+      "severity": "follow-on",
+      "text": "follow-on: the plan row offers 'refused, or accepted with the base failure count quoted back'; the warning reads the wording rather than the base and emits a fixed string, so the coordinator is warned but never shown the base failure count."
+    }
+  ],
+  "head_log_revision": "4d539a01f4c015e9052424314fdbdbdd346fbb29",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the increment (cd6fa4e4..4d539a01) commit by commit; node.py drops the validate_node absolute-green refusal and adds done_when_warnings with broadened base/delta patterns, dispatch.py wires the warning into DispatchPlan and the dispatched record, and the test converts the former refusal cases into admitted-with-warning cases.",
+    "done_when": "the reviewed run's done_when names tests/test_done_when_lints.py's three cases plus the paired test_crew_node/test_crew_dryrun records; the manifest's baseline_suite records 3 failures and after_suite 24 passed; reproduced the head arm here: 24 passed, EXIT=0.",
+    "goal": "section-15 done-when lints; the increment makes the uncited absolute-green check a non-refusing warning instead of a refusal, meeting the plan's negative while broadening base and delta recognition.",
+    "manifest": "read; carries the five commits, changed_paths, flat baseline_suite/after_suite JSON with log_paths, the negative_control_log path, and measurement_cwd of the base scratch arm.",
+    "write_paths": "the manifest declares node.py, dispatch.py, the test file, an evidence fragment and a figures directory; the increment touches the first three, all inside the declared set."
+  },
+  "justifications": {
+    "durability": "mutating done_when_warnings to return [] in a scratch tree reddened tests/test_done_when_lints.py:186 (EXIT=1), so the warning path is guarded; the bare 'adds no failures' over-suppression direction is untested.",
+    "evidence": "the paired gate reconciles with baseline-suite.log (3 failing ids) and after-suite.log (24 passed) and I reproduced the head arm (24 passed, EXIT=0); the negative control is a real EXIT=1; the census is self-reported.",
+    "fit": "the new patterns and warning function follow the module-level regex idiom and existing DispatchPlan wiring, with no plan or ticket label introduced.",
+    "goal_fidelity": "the plan's negative (a genuinely green uncited check must not be refused) is now met; the positive arm's 'base failure count quoted back' is not, since the warning reads the wording not the base.",
+    "scope_discipline": "the increment is node.py, dispatch.py and the test file only, all inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment continues the section-15 done-when lints; 4d539a01 removes the absolute-green refusal at validate_node and adds done_when_warnings (node.py:165) which reports a named absolute-green check with no base citation/delta as a non-refusing warning, broadens _BASE_REVISION_CITATION (:146) and _DELTA_AGAINST_BASE (:150), and carries the warning into DispatchPlan (:3333,:3405) so both the dry-run payload and the dispatched record (:7119) expose it.\nVERDICT done_when: the reviewed run's done_when names tests/test_done_when_lints.py's three cases and the paired test_crew_node/test_crew_dryrun records; the manifest's baseline_suite records 3 failures (exactly the three new cases) and after_suite 24 passed; I reproduced the head arm in the reviewed worktree: 24 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/node.py, reckon/crew/dispatch.py, tests/test_done_when_lints.py, an evidence fragment and a figures directory; the increment touches only node.py, dispatch.py and the test file, all inside the declared set.\nVERDICT manifest: read; it carries the five commits, changed_paths, flat baseline_suite/after_suite JSON with log_paths, the negative_control_log path, and measurement_cwd of the base scratch arm.\nVERDICT diff: read the increment (cd6fa4e4..4d539a01) commit by commit: node.py loses the validate_node absolute-green refusal and gains done_when_warnings plus broadened base/delta patterns; dispatch.py adds the done_when_warnings field to DispatchPlan/as_dict and to the dispatched record; the test converts the former refusal cases into admitted-with-warning cases and adds a real-dispatch record assertion.\nCALL_SITES: reckon/crew/dispatch.py:5355, reckon/crew/dispatch.py:7119\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the increment meets the plan's binding negative -- a genuinely green uncited check is no longer refused -- and the warning does quote the check name back; but the plan's positive arm offers 'refused, OR accepted with the base failure count quoted back', and the warning reads the wording rather than the base, so it cannot quote that count and simply states the base is unstated.\nSCORE evidence: 18\nJUSTIFICATION evidence: the paired gate reconciles with the two logs (3 failing ids at base, 24 passed at head) and I reproduced the head arm independently (24 passed, EXIT=0); the declared negative control is a real EXIT=1; the six-warning census is self-reported and was not re-run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the increment is reckon/crew/node.py, reckon/crew/dispatch.py and tests/test_done_when_lints.py only, all inside the declared write paths, with no unrelated change.\nSCORE durability: 17\nJUSTIFICATION durability: I mutated done_when_warnings to return [] in a scratch tree and test_absolute_green_accounts_for_red_named_base reddened at tests/test_done_when_lints.py:186 (EXIT=1), so the warning path is genuinely guarded; but the bare 'adds no failures' alternative suppresses the warning without naming a base and no test asserts that direction, leaving the warning's own soundness unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: the new patterns and the warning function follow the module-level regex idiom of _EVIDENCE_SIGNALS and _GATE_POPULATION, the DispatchPlan field and payload wiring match the surrounding form, and no plan, sprint or ticket label is introduced.\nFINDING reckon/crew/node.py:155 follow-on: the _DELTA_AGAINST_BASE alternative r\"\\badds?\\s+no\\s+(?:new\\s+)?failures?\\b\" matches a delta phrase that names no base, so a done-when 'pytest tests/test_preexisting.py exits 0; adds no failure anywhere' returns [] from done_when_warnings and silences the very warning the increment exists to emit. Measured: done_when_warnings('pytest tests/test_preexisting.py exits 0; the suite adds no failures') == []. The test enshrines this by listing bare 'adds no failure' among its admitted-delta cases (tests/test_done_when_lints.py:191).\nFINDING reckon/crew/node.py:165 follow-on: the plan's section-15 row states 'refused, or accepted with the base failure count quoted back so the coordinator sees what it just demanded'; the warning reads the done-when wording instead of the base and emits a fixed string ('base state ... is unstated or uncited'), so a coordinator is warned but not shown the base failure count the row asks for. This carries the prior review's observation that the check reads the wording rather than the base, now at warning severity.",
+  "review_run_id": "r-20261004T033947729968-review-of-done-when-lints-refuse-unfalsifiable-measures",
+  "reviewed_base_sha": "cd6fa4e40b9300d4900388a9bcd1edc4e82a49c6",
+  "reviewed_head_sha": "4d539a01f4c015e9052424314fdbdbdd346fbb29",
+  "reviewed_run_id": "r-20261004T022020994347-done-when-lints-refuse-unfalsifiable-measures",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T03:45:17.189070+00:00",
+  "total": 89
+}

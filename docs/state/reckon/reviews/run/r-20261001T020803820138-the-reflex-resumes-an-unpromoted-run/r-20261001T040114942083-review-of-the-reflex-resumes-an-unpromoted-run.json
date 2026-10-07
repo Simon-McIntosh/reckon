@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "the reviewed manifest names no baseline_suite/after_suite field, so the read-time annotation reports the count unmeasured; the 0 stored here is what this review's own base arm (33 passed at 3c4f5cd7, /tmp/reflexrev-base) and head arm (39 passed at 29e4f30e) measured",
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite field, so the read-time annotation reports the count unmeasured; the 0 stored here is what this review's own base arm (35 passed at 3c4f5cd7) and head arm (39 passed at 29e4f30e) measured",
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:2267"
+  ],
+  "completed_at": "2026-10-01T04:28:30.375Z",
+  "dispatched_at": "2026-10-01T04:01:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1886",
+      "severity": "follow-on",
+      "text": "follow-on: the resume attempt counter is cumulative across rounds, not per-round \u2014 _record_repair_dispatch increments the pointer's repair_dispatch.attempt without regard to round_id, and dispatch_repair_for_run:2301 reads it as prior for the same round. So REPAIR_RESUME_LIMIT=2 yields two resumes only for the run's first round; once the reviewed head moves, the new round's first resume records attempt 3, and the next sweep finds prior >= 2 and marks it exhausted after a single resume. Reproduced: with a second review at an advanced head, round two resumed once, not twice (attempt 5, status exhausted) \u2014 review-probe-crossround.log."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2306",
+      "severity": "follow-on",
+      "text": "follow-on: the exhaustion reason is the literal 'the round was resumed twice without answering its findings' while the bound is REPAIR_RESUME_LIMIT; and it is written for a round whose prior outcome may be a refusal rather than a resume, so the recorded cause can misstate how many times the round was actually resumed."
+    },
+    {
+      "file": "manifest.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: changed_paths under-reports the diff \u2014 the base..head diff also edits tests/test_a_repair_hold_names_its_cause.py, tests/test_reflex_dispatches_one_repair.py and tests/test_repair_skips_out_of_repo_findings.py, none of them named, so the run's own record does not disclose every path it changed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "base 3c4f5cd7..head 29e4f30e adds the resume branch, the bounded retry (REPAIR_RESUME_LIMIT=2) and the finished-turn busy fix; the retry counter is not reset per round.",
+    "done_when": "re-ran at the reviewed head 29e4f30e: the node gate tests/test_the_reflex_resumes_an_unpromoted_run.py (6) and the sibling repair gates pass green, and the node's declared negative control reproduces.",
+    "goal": "the node resumes an unpromoted finding-bearing implement run instead of dispatching a repair node, and now bounds the retry; read recovery.py dispatch_repair_for_run and _repair_resume_advice.",
+    "manifest": "status complete, commits and landing present; changed_paths under-reports the diff; the gate log header names an earlier revision.",
+    "write_paths": "the node edited recovery.py, the new test and the evidence fragment as declared, but the diff also edits three sibling test files not named in changed_paths."
+  },
+  "justifications": {
+    "durability": "the retry bound is not per-round \u2014 the attempt counter is cumulative, so every round after the first is exhausted after one resume, and the exhaustion reason hardcodes 'twice' while the bound is REPAIR_RESUME_LIMIT.",
+    "evidence": "two arms run independently: base 35 passed and head 39 passed (both EXIT=0), so zero added failures; the node gate and its negative control are on disk; but the new cap test covers only the first round, which the cross-round probe falsifies.",
+    "fit": "the change matches plan section 3's ruling that a repair of an unpromoted run is a resume of that run, and the finished-turn busy fix keeps the retry reachable.",
+    "goal_fidelity": "the primary deliverable lands and works at this head: dispatch_repair_for_run resumes an unpromoted finding-bearing implement run with the composed findings as advice through resumption._resume, records status resumed with the round id, and dispatches no node.",
+    "scope_discipline": "the manifest's changed_paths names three paths, yet the diff edits three further sibling test files (tests/test_a_repair_hold_names_its_cause.py, tests/test_reflex_dispatches_one_repair.py, tests/test_repair_skips_out_of_repo_findings.py); the record does not disclose what the diff shows."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 3c4f5cd72081bed2cb7d4d55c605d6fcc7a4f556\nreviewed_head_sha: 29e4f30e4785c92381b55b4e5924867a25ea1da6\nVERDICT goal: the node resumes an unpromoted finding-bearing implement run instead of dispatching a repair node, and now bounds the retry; read recovery.py dispatch_repair_for_run and _repair_resume_advice.\nVERDICT done_when: re-ran at the reviewed head 29e4f30e: the node gate tests/test_the_reflex_resumes_an_unpromoted_run.py (6) and the sibling repair gates pass green, and the node's declared negative control reproduces.\nVERDICT write_paths: the node edited recovery.py, the new test and the evidence fragment as declared, but the diff also edits three sibling test files not named in changed_paths.\nVERDICT manifest: status complete, commits and landing present; changed_paths under-reports the diff; the gate log header names an earlier revision.\nVERDICT diff: base 3c4f5cd7..head 29e4f30e adds the resume branch, the bounded retry (REPAIR_RESUME_LIMIT=2) and the finished-turn busy fix; the retry counter is not reset per round.\nVERDICT call_sites: verified the one production call site dispatch_repair_for_run.\nCALL_SITES: reckon/crew/recovery.py:2267\n\nSCORE goal_fidelity: 18\nSCORE evidence: 16\nSCORE scope_discipline: 13\nSCORE durability: 13\nSCORE fit: 18\n\nJUSTIFICATION goal_fidelity: the primary deliverable lands and works at this head: dispatch_repair_for_run resumes an unpromoted finding-bearing implement run with the composed findings as advice through resumption._resume, records status resumed with the round id, and dispatches no node.\nJUSTIFICATION evidence: two arms run independently: base 35 passed and head 39 passed (both EXIT=0), so zero added failures; the node gate and its negative control are on disk; but the new cap test covers only the first round, which the cross-round probe falsifies.\nJUSTIFICATION scope_discipline: the manifest's changed_paths names three paths, yet the diff edits three further sibling test files (tests/test_a_repair_hold_names_its_cause.py, tests/test_reflex_dispatches_one_repair.py, tests/test_repair_skips_out_of_repo_findings.py); the record does not disclose what the diff shows.\nJUSTIFICATION durability: the retry bound is not per-round \u2014 the attempt counter is cumulative, so every round after the first is exhausted after one resume, and the exhaustion reason hardcodes 'twice' while the bound is REPAIR_RESUME_LIMIT.\nJUSTIFICATION fit: the change matches plan section 3's ruling that a repair of an unpromoted run is a resume of that run, and the finished-turn busy fix keeps the retry reachable.\n\nFINDING reckon/crew/recovery.py:1886 follow-on: the resume attempt counter is cumulative across rounds, not per-round \u2014 _record_repair_dispatch increments the pointer's repair_dispatch.attempt without regard to round_id, and dispatch_repair_for_run:2301 reads it as prior for the same round. So REPAIR_RESUME_LIMIT=2 yields two resumes only for the run's first round; once the reviewed head moves, the new round's first resume records attempt 3, and the next sweep finds prior >= 2 and marks it exhausted after a single resume. Reproduced: with a second review at an advanced head, round two resumed once, not twice (attempt 5, status exhausted) \u2014 review-probe-crossround.log.\nFINDING reckon/crew/recovery.py:2306 follow-on: the exhaustion reason is the literal 'the round was resumed twice without answering its findings' while the bound is REPAIR_RESUME_LIMIT; and it is written for a round whose prior outcome may be a refusal rather than a resume, so the recorded cause can misstate how many times the round was actually resumed.\nFINDING manifest.md:8 follow-on: changed_paths under-reports the diff \u2014 the base..head diff also edits tests/test_a_repair_hold_names_its_cause.py, tests/test_reflex_dispatches_one_repair.py and tests/test_repair_skips_out_of_repo_findings.py, none of them named, so the run's own record does not disclose every path it changed.\n",
+  "review_run_id": "r-20261001T040114942083-review-of-the-reflex-resumes-an-unpromoted-run",
+  "reviewed_base_sha": "3c4f5cd72081bed2cb7d4d55c605d6fcc7a4f556",
+  "reviewed_head_sha": "29e4f30e4785c92381b55b4e5924867a25ea1da6",
+  "reviewed_run_id": "r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run",
+  "reviewer_run_id": "r-20261001T040114942083-review-of-the-reflex-resumes-an-unpromoted-run",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.053640+00:00",
+  "total": 78
+}

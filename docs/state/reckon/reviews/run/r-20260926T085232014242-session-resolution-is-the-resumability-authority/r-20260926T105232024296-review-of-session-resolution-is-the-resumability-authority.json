@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/cli.py:3148",
+    "reckon/crew/directory.py:70",
+    "reckon/crew/obligations.py:99",
+    "reckon/crew/promotion.py:2743",
+    "reckon/crew/promotion.py:3536",
+    "reckon/crew/query.py:166",
+    "reckon/crew/query.py:211",
+    "reckon/crew/runs.py:1019",
+    "reckon/crew/resumption.py:1113",
+    "reckon/mcp_views.py:1221"
+  ],
+  "completed_at": "2026-09-26T12:07:15.694Z",
+  "dispatched_at": "2026-09-26T10:52:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "4178",
+      "text": "an abandoned run whose manifest is recovery-derived and whose session resolves in the pointer, stream or ledger loses its arm-specific advice: the composed \"review <manifest> and replace it with a worker-written manifest\" (recovery.py:4030-4032) is overwritten by the generic \"--advice continue\", and no test covers that arm's next_action under a resolved session, so the loss is silent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit by commit; f64e3fa9 adds the reading set and the disposal-arm remedy with two tests (recovery.py:162, recovery.py:4141, recovery.py:4178, tests/test_crew_recover.py:745), and 993e6e37 adds the plan comment, the evidence anchor and one figure, touching no plan meta line.",
+    "done_when": "the done-when names tests/test_crew_recover.py, a temporary config home with the real home asserted untouched, and a base arm; the manifest records the base reproduction (the two added cases failed at 3e6115fb) and the four-file gate, and my independent re-run of tests/test_crew_recover.py at 993e6e37 passed 18 of 18.",
+    "goal": "the node's goal is that every resumability reader in crew recovery keys on the resolved session; reckon/crew/recovery.py:4141 reads the resolution through RESUMPTION_READING_CLASSIFICATIONS for the stopped and abandoned arms, and no read of the raw session_id field remains anywhere in the head module.",
+    "manifest": "read at the report store for this node; it states the fix, the two added cases green at head and red at base, the gate at 12 failed/213 passed base against 12 failed/215 passed head with identical failure ids, the ruff deltas, and the declared negative control, and it names its logs on disk.",
+    "write_paths": "read the manifest's declared write paths (reckon/crew/recovery.py, tests/test_crew_recover.py, the evidence archive, the figures directory, the plan page); git diff 3e6115fb..993e6e37 touches exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_recover.py:745 fails when the decision keys on the raw field again (my independent mutation: 1 failed, 1 passed, the verb assertion red at tests/test_crew_recover.py:772), but no test pins the derived-manifest arm's advice, so that half of the change is unguarded.",
+    "evidence": "the gate is recorded with both arms and identical failure-id sets and my re-run of tests/test_crew_recover.py at 993e6e37 passed 18 of 18, while the abandoned arm's separate base reproduction is disclosed as not run.",
+    "fit": "the new set at reckon/crew/recovery.py:162 sits beside ACTIONABLE_RECOVERY_CLASSIFICATIONS with a mechanism comment and the added tests follow the file's existing fixture idiom.",
+    "goal_fidelity": "reckon/crew/recovery.py:4141 makes the stopped and abandoned arms consult the resolver and the module holds no raw session_id read, but the new block (recovery.py:4178) overwrites one arm's own composed advice.",
+    "scope_discipline": "every path in git diff 3e6115fb..993e6e37 lies inside the declared write paths, but the same diff changes the abandoned arm's next_action beyond the disposal-advice repair the goal implies (recovery.py:4180 against recovery.py:4032)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every resumability reader in crew recovery keys on the resolved session; reckon/crew/recovery.py:4141 reads the resolution through RESUMPTION_READING_CLASSIFICATIONS for the stopped and abandoned arms, and no read of the raw session_id field remains anywhere in the head module.\nVERDICT done_when: the done-when names tests/test_crew_recover.py, a temporary config home with the real home asserted untouched, and a base arm; the manifest records the base reproduction (the two added cases failed at 3e6115fb) and the four-file gate, and my independent re-run of tests/test_crew_recover.py at 993e6e37 passed 18 of 18.\nVERDICT write_paths: read the manifest's declared write paths (reckon/crew/recovery.py, tests/test_crew_recover.py, the evidence archive, the figures directory, the plan page); git diff 3e6115fb..993e6e37 touches exactly those five paths and nothing else.\nVERDICT manifest: read at the report store for this node; it states the fix, the two added cases green at head and red at base, the gate at 12 failed/213 passed base against 12 failed/215 passed head with identical failure ids, the ruff deltas, and the declared negative control, and it names its logs on disk.\nVERDICT diff: read commit by commit; f64e3fa9 adds the reading set and the disposal-arm remedy with two tests (recovery.py:162, recovery.py:4141, recovery.py:4178, tests/test_crew_recover.py:745), and 993e6e37 adds the plan comment, the evidence anchor and one figure, touching no plan meta line.\nCALL_SITES: reckon/cli.py:3148, reckon/crew/directory.py:70, reckon/crew/obligations.py:99, reckon/crew/promotion.py:2743, reckon/crew/promotion.py:3536, reckon/crew/query.py:166, reckon/crew/query.py:211, reckon/crew/runs.py:1019, reckon/crew/resumption.py:1113, reckon/mcp_views.py:1221\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:4141 makes the stopped and abandoned arms consult the resolver and the module holds no raw session_id read, but the new block (recovery.py:4178) overwrites one arm's own composed advice.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is recorded with both arms and identical failure-id sets and my re-run of tests/test_crew_recover.py at 993e6e37 passed 18 of 18, while the abandoned arm's separate base reproduction is disclosed as not run.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in git diff 3e6115fb..993e6e37 lies inside the declared write paths, but the same diff changes the abandoned arm's next_action beyond the disposal-advice repair the goal implies (recovery.py:4180 against recovery.py:4032).\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_crew_recover.py:745 fails when the decision keys on the raw field again (my independent mutation: 1 failed, 1 passed, the verb assertion red at tests/test_crew_recover.py:772), but no test pins the derived-manifest arm's advice, so that half of the change is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: the new set at reckon/crew/recovery.py:162 sits beside ACTIONABLE_RECOVERY_CLASSIFICATIONS with a mechanism comment and the added tests follow the file's existing fixture idiom.\nFINDING reckon/crew/recovery.py:4178 an abandoned run whose manifest is recovery-derived and whose session resolves in the pointer, stream or ledger loses its arm-specific advice: the composed \"review <manifest> and replace it with a worker-written manifest\" (recovery.py:4030-4032) is overwritten by the generic \"--advice continue\", and no test covers that arm's next_action under a resolved session, so the loss is silent.\n",
+  "review_run_id": "r-20260926T105232024296-review-of-session-resolution-is-the-resumability-authority",
+  "reviewed_base_sha": "3e6115fb99660b6934ffb503056800d37cb8d4ce",
+  "reviewed_head_sha": "993e6e373e9698d2a1d1e9a6c021bc491ee8700b",
+  "reviewed_run_id": "r-20260926T085232014242-session-resolution-is-the-resumability-authority",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T11:57:51.301144+00:00",
+  "total": 86
+}

@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f249ccb5ae9463d39bd3d3ffaee268b60e57c7b3",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:8803",
+    "reckon/crew/dispatch.py:9308",
+    "reckon/crew/promotion.py:6564"
+  ],
+  "completed_at": "2026-10-01T09:22:11.324Z",
+  "dispatched_at": "2026-10-01T09:15:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "9308",
+      "severity": "follow-on",
+      "text": "follow-on: _carry_fence_unprotected recomposes fence_unprotected_paths from the attempt's own fence, but the sibling field fenced is written only by primary dispatch (reckon/crew/dispatch.py:5540), so a cli run lane-changed to an in-harness backend keeps fenced:true on its pointer and committed ledger row beside an absent removed-list. The staleness is pre-existing (neither resume_plan nor change_lane ever set fenced) and the landed change does not introduce it, but the two fields now describe different attempts within one record."
+    }
+  ],
+  "head_log_revision": "a25d996c53b0c3b3f5c00424909124f6dbac1216",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against f249ccb5; a25d996c adds 25 lines to reckon/crew/dispatch.py (the _carry_fence_unprotected helper plus fence_config=config and its three call sites), 9 to reckon/crew/promotion.py, and the 413-line new test file, and 2b435cb adds only the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_unprotected_paths_reach_every_launch.py's three cases and the declared negative control; the manifest records the node gate 3 passed and the base and head importer arms.",
+    "goal": "the goal is that a removed protected default is honoured and recorded on the resume and lane-change launch paths and on the committed ledger row; at head 2b435cb resume_plan (reckon/crew/dispatch.py:8785) and change_lane (reckon/crew/dispatch.py:9174) now pass fence_config=config and _carry_fence_unprotected (reckon/crew/dispatch.py:8662) records the removed list on the pointer, with promotion (reckon/crew/promotion.py:6564) copying it onto the row.",
+    "manifest": "read; status complete, commits a25d996c and 2b435cb over base f249ccb5, node gate 3 passed, and the base and head importer arms each 14 failed / 1309 passed / 1 error with identical failing ids.",
+    "write_paths": "read the manifest's declared write paths; every path in the diff (reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_unprotected_paths_reach_every_launch.py, docs/evidence/fragments/a-worker-cannot-write-your-home/unprotected-paths-reach-every-launch.html) is inside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log drops the fence_config argument from the resume path and tests/test_unprotected_paths_reach_every_launch.py::test_case_1_a_resumed_run_leaves_the_default_writable fails on the sealed-default assertion at tests/test_unprotected_paths_reach_every_launch.py:266.",
+    "evidence": "the node gate tests/test_unprotected_paths_reach_every_launch.py is recorded 3 passed in node-gate.log at revision a25d996c, and negative-control.log applies the declared mutation and shows case 1 reddening with EXIT=1.",
+    "fit": "the helper mirrors the primary-dispatch condition at reckon/crew/dispatch.py:5547 and follows the surrounding pointer-mutation idiom; the new names carry no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:8785 and reckon/crew/dispatch.py:9174 pass fence_config=config into the same plan builder primary dispatch calls at reckon/crew/dispatch.py:5515, and _carry_fence_unprotected at reckon/crew/dispatch.py:8662 records the removed list exactly as the primary path does at :5543.",
+    "scope_discipline": "every path in the two commits' diff (reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_unprotected_paths_reach_every_launch.py, the evidence fragment) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a removed protected default is honoured and recorded on the resume and lane-change launch paths and on the committed ledger row; at head 2b435cb resume_plan (reckon/crew/dispatch.py:8785) and change_lane (reckon/crew/dispatch.py:9174) now pass fence_config=config and _carry_fence_unprotected (reckon/crew/dispatch.py:8662) records the removed list on the pointer, with promotion (reckon/crew/promotion.py:6564) copying it onto the row.\nVERDICT done_when: the done_when names tests/test_unprotected_paths_reach_every_launch.py's three cases and the declared negative control; the manifest records the node gate 3 passed and the base and head importer arms.\nVERDICT write_paths: read the manifest's declared write paths; every path in the diff (reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_unprotected_paths_reach_every_launch.py, docs/evidence/fragments/a-worker-cannot-write-your-home/unprotected-paths-reach-every-launch.html) is inside them.\nVERDICT manifest: read; status complete, commits a25d996c and 2b435cb over base f249ccb5, node gate 3 passed, and the base and head importer arms each 14 failed / 1309 passed / 1 error with identical failing ids.\nVERDICT diff: read commit by commit against f249ccb5; a25d996c adds 25 lines to reckon/crew/dispatch.py (the _carry_fence_unprotected helper plus fence_config=config and its three call sites), 9 to reckon/crew/promotion.py, and the 413-line new test file, and 2b435cb adds only the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:8803, reckon/crew/dispatch.py:9308, reckon/crew/promotion.py:6564\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:8785 and reckon/crew/dispatch.py:9174 pass fence_config=config into the same plan builder primary dispatch calls at reckon/crew/dispatch.py:5515, and _carry_fence_unprotected at reckon/crew/dispatch.py:8662 records the removed list exactly as the primary path does at :5543.\nSCORE evidence: 19\nJUSTIFICATION evidence: the node gate tests/test_unprotected_paths_reach_every_launch.py is recorded 3 passed in node-gate.log at revision a25d996c, and negative-control.log applies the declared mutation and shows case 1 reddening with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two commits' diff (reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_unprotected_paths_reach_every_launch.py, the evidence fragment) is inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log drops the fence_config argument from the resume path and tests/test_unprotected_paths_reach_every_launch.py::test_case_1_a_resumed_run_leaves_the_default_writable fails on the sealed-default assertion at tests/test_unprotected_paths_reach_every_launch.py:266.\nSCORE fit: 19\nJUSTIFICATION fit: the helper mirrors the primary-dispatch condition at reckon/crew/dispatch.py:5547 and follows the surrounding pointer-mutation idiom; the new names carry no plan, ticket or version identifier.\nFINDING reckon/crew/dispatch.py:9308 follow-on: _carry_fence_unprotected recomposes fence_unprotected_paths from the attempt's own fence, but the sibling field fenced is written only by primary dispatch (reckon/crew/dispatch.py:5540), so a cli run lane-changed to an in-harness backend keeps fenced:true on its pointer and committed ledger row beside an absent removed-list; the staleness is pre-existing and not introduced here, but the two fields now describe different attempts within one record.",
+  "review_run_id": "r-20261001T091514314865-review-of-unprotected-paths-reach-every-launch",
+  "reviewed_base_sha": "f249ccb5ae9463d39bd3d3ffaee268b60e57c7b3",
+  "reviewed_head_sha": "2b435cb653a4b389fa48611ab56980c61a227471",
+  "reviewed_run_id": "r-20261001T082649945254-unprotected-paths-reach-every-launch",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T091514314865-review-of-unprotected-paths-reach-every-launch",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T11:20:00+00:00",
+  "total": 96
+}

@@ -1,0 +1,44 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T19:33:11.734941+00:00",
+  "findings": [
+    {
+      "file": "lane-wave-merged-head-attribution.md",
+      "line": "19",
+      "text": "the done_when asks for the full suite's pass/fail totals and a cause per failing id, but only the ~660-test prefix (15.6% of 4228) is observable because both runs hung at the documented sequential stall (exit 143); the report discloses completed=false and its scope, yet the bottom line (line 83) is easy to over-read as a whole-suite verdict when ~3,500 tests are unobserved and attributed as neither passing nor failing."
+    },
+    {
+      "file": "lane-wave-merged-head-attribution.md",
+      "line": "54",
+      "text": "the thirteen 'pre-existing (un-isolated)' ids rest on their presence in both trees' conduction-prone big-run prefix; the attempt to reproduce them in isolation (batchB.HEAD.log) timed out at 85% (exit 124) without a summary, so their mechanism is unconfirmed \u2014 the claim that none is wave-introduced is logically sound (the base predates the wave's only code change f26287e) but the environment-vs-code split among the thirteen is an open question the report labels honestly."
+    }
+  ],
+  "justifications": {
+    "durability": "nothing in the repository changed so no committed test can guard this one-shot measurement; its reproducibility is carried by preserved artifacts (parse_prefix.py, prefix_flags.json, collect.*.txt) and by the still-green committed gates (tests/test_binding_window_inference.py, the plan byte-identity schema gate) that any wave regression would trip first.",
+    "evidence": "the gate is recorded not claimed \u2014 both full-suite runs sit on disk with exit 143 at the documented stall (after.1b59345.log) and the isolation rerun reproduces exactly the five environment rows (batchA.HEAD.log: 5 failed/1371 passed/4 skipped in 39.12s), and a fresh run of tests/test_binding_window_inference.py plus tests/test_lane_evidence.py at the merged head passes 9/9.",
+    "fit": "the report and its artifacts use descriptive names free of plan/gate/version labels and no changelog prose (parse_prefix.py, prefix_flags.json, collect.head.txt), and the method follows the repository's documented sequential-stall recovery idiom by mapping -q char positions to collect-only nodeids rather than inventing a new harness.",
+    "goal_fidelity": "the report attributes all 18 observable failing ids at the merged head with a cause category whose counts sum to 18 (lane-wave-merged-head-attribution.md:54) and marks the full suite not-run (lane-wave-merged-head-attribution.md:19) rather than claiming a completion it did not reach.",
+    "scope_discipline": "the reviewed worktree at 1b59345 carries no authored commits (read-only role) and the only written paths are the declared report and the run manifest/logs under the crew reports directory, with collect.head.txt and collect.base.txt at 4230/4225 lines matching the stated 4228/4227 collection counts."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the report attributes all 18 observable failing ids at the merged head with a cause category whose counts sum to 18 (lane-wave-merged-head-attribution.md:54) and marks the full suite not-run (lane-wave-merged-head-attribution.md:19) rather than claiming a completion it did not reach.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is recorded not claimed \u2014 both full-suite runs sit on disk with exit 143 at the documented stall (after.1b59345.log) and the isolation rerun reproduces exactly the five environment rows (batchA.HEAD.log: 5 failed/1371 passed/4 skipped in 39.12s), and a fresh run of tests/test_binding_window_inference.py plus tests/test_lane_evidence.py at the merged head passes 9/9.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree at 1b59345 carries no authored commits (read-only role) and the only written paths are the declared report and the run manifest/logs under the crew reports directory, with collect.head.txt and collect.base.txt at 4230/4225 lines matching the stated 4228/4227 collection counts.\nSCORE durability: 14\nJUSTIFICATION durability: nothing in the repository changed so no committed test can guard this one-shot measurement; its reproducibility is carried by preserved artifacts (parse_prefix.py, prefix_flags.json, collect.*.txt) and by the still-green committed gates (tests/test_binding_window_inference.py, the plan byte-identity schema gate) that any wave regression would trip first.\nSCORE fit: 18\nJUSTIFICATION fit: the report and its artifacts use descriptive names free of plan/gate/version labels and no changelog prose (parse_prefix.py, prefix_flags.json, collect.head.txt), and the method follows the repository's documented sequential-stall recovery idiom by mapping -q char positions to collect-only nodeids rather than inventing a new harness.\nFINDING lane-wave-merged-head-attribution.md:19 the done_when asks for the full suite's pass/fail totals and a cause per failing id, but only the ~660-test prefix (15.6% of 4228) is observable because both runs hung at the documented sequential stall (exit 143); the report discloses completed=false and its scope, yet the bottom line (line 83) is easy to over-read as a whole-suite verdict when ~3,500 tests are unobserved and attributed as neither passing nor failing.\nFINDING lane-wave-merged-head-attribution.md:54 the thirteen 'pre-existing (un-isolated)' ids rest on their presence in both trees' conduction-prone big-run prefix; the attempt to reproduce them in isolation (batchB.HEAD.log) timed out at 85% (exit 124) without a summary, so their mechanism is unconfirmed \u2014 the claim that none is wave-introduced is logically sound (the base predates the wave's only code change f26287e) but the environment-vs-code split among the thirteen is an open question the report labels honestly.\n",
+  "review_run_id": "r-20260914T193311734941-rev-attribution-report",
+  "reviewed_base": "1b5934554cecc8550489a54ba95c9c4841a16066",
+  "reviewed_commit": null,
+  "reviewed_run_id": "r-20260914T163318285945-merged-head-attribution-for-this-wave",
+  "reviewer_run_id": "r-20260914T193311734941-rev-attribution-report",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T21:40:00.000000+00:00",
+  "total": 87
+}

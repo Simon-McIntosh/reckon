@@ -1,0 +1,117 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:5146",
+    "reckon/crew/promotion.py:3917",
+    "reckon/crew/promotion.py:3639",
+    "reckon/crew/promotion.py:3699",
+    "reckon/crew/recovery.py:551"
+  ],
+  "completed_at": "2026-09-29T20:40:37.805Z",
+  "dispatched_at": "2026-09-29T19:59:22Z",
+  "findings": [
+    {
+      "file": "tests/test_a_live_worker_still_owes_its_review.py",
+      "line": "160",
+      "text": "assert promoted[\"record\"][\"review_waiver\"] == {\"reason\": _WAIVED} compares the row against the same literal the test passed in, so it holds whatever the gate does with that waiver; the regression guard rests on the refusal assertions at :143-153 rather than on this line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183613683581-a-live-worker-still-owes-its-review/manifest.md",
+      "line": "12",
+      "text": "measurement_module names the interpreter /home/ITER/mcintos/Code/reckon/.venv/bin/python instead of the module under test as imported, whose value the run printed as /tmp/s22lw/base/reckon/crew/promotion.py in the base log's own header, so a reader taking this field cannot tell which module the base arm imported."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-live-worker-still-owes-its-review.html",
+      "line": "66",
+      "text": "the fragment calls the population \"the test files that import reckon.crew.promotion\", but the import scan it describes misses tests/test_crew_repository_from_the_project.py, which imports that module dynamically at line 30 and calls promotion_module.complete at line 271; the omission cannot redden that case because its call is refused on the mount mismatch at reckon/crew/promotion.py:3859-3862 ahead of the gate, so the defect is in the roster's claim rather than in the measured delta."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3726",
+      "text": "the refusal now reads \"is classified running because no complete independent review is stored\" for a deferred delivery, which asserts that the missing review is why the run is classified running, where running is reached from the run's live process and the review store has no part in it."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the four commits against base 60708b078: 296c44a3 the gate arm and the new case, 87053d06 the fragment, 219fe1d7 the refusal wording and three fixture waivers, b63fe49d the fragment's update; the last commit touches only that fragment, so the arm run at 219fe1d71 measures the code that landed.",
+    "done_when": "the done-when asks for the five named ledger cases green at head with no assertion of theirs changed, a new case proving refusal and waiver on a delivered live-worker run, a named negative control, both arms as JSON with completed true and literal commands, and a fragment; the manifest records all of it and I reconciled both arms against their own logs.",
+    "goal": "the node's goal is that complete() derive a run's review obligation from the delivery it promotes rather than from the live pointer's classification, so a delivered run whose worker is still alive owes its tier's review; reckon/crew/promotion.py:3619-3624 adds that delivery arm and tests/test_a_live_worker_still_owes_its_review.py:143-161 shows the no-waiver refusal and the waived admission.",
+    "manifest": "read; it records four commits, both arms with completed true and literal commands, the negative control, the fragment and an explicit note that the closed-gate full-suite set is unpaired; the one field that misreports is measurement_module at line 12.",
+    "write_paths": "read the seven paths the manifest declares; the diff's six files all sit inside them, and the three test files beyond the original fence are exactly the ones the coordinator's resume advice widened the fence to."
+  },
+  "justifications": {
+    "durability": "tests/test_a_live_worker_still_owes_its_review.py:143-153 fails if the delivered arm is removed, which the recorded negative control demonstrates with DID NOT RAISE CrewError, though the echo assertion at line 160 is not independent of the value it checks.",
+    "evidence": "the two arms recorded as JSON reconcile with their own logs (logs/gate-base-60708b078-with-ledger.log ends EXIT=1 with 5 failed and 465 passed, logs/gate-head-219fe1d71.log ends EXIT=0 with 471 passed), so the done-when's measure is measured rather than claimed, though the manifest's measurement_module field at line 12 names the interpreter.",
+    "fit": "reckon/crew/promotion.py:3611-3615 keeps the module's lazy-import idiom and :3700-3726 its docstring-plus-keyword-argument shape, and neither the new test nor the diff carries a plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:3619-3624 makes the delivered-with-a-live-process run owe its tier's review, which is the goal sentence verbatim, and the new case proves both the refusal and the waiver.",
+    "scope_discipline": "every path in the diff against 60708b078 is inside the manifest's declared scope, three of them by the coordinator's explicit widening, and no plan file, index or figure was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that complete() derive a run's review obligation from the delivery it promotes rather than from the live pointer's classification, so a delivered run whose worker is still alive owes its tier's review; reckon/crew/promotion.py:3619-3624 adds that delivery arm and tests/test_a_live_worker_still_owes_its_review.py:143-161 shows the no-waiver refusal and the waived admission.\nVERDICT done_when: the done-when asks for the five named ledger cases green at head with no assertion of theirs changed, a new case proving refusal and waiver on a delivered live-worker run, a named negative control, both arms as JSON with completed true and literal commands, and a fragment; the manifest records all of it and I reconciled both arms against their own logs.\nVERDICT write_paths: read the seven paths the manifest declares; the diff's six files all sit inside them, and the three test files beyond the original fence are exactly the ones the coordinator's resume advice widened the fence to.\nVERDICT manifest: read; it records four commits, both arms with completed true and literal commands, the negative control, the fragment and an explicit note that the closed-gate full-suite set is unpaired; the one field that misreports is measurement_module at line 12.\nVERDICT diff: read the four commits against base 60708b078: 296c44a3 the gate arm and the new case, 87053d06 the fragment, 219fe1d7 the refusal wording and three fixture waivers, b63fe49d the fragment's update; the last commit touches only that fragment, so the arm run at 219fe1d71 measures the code that landed.\nCALL_SITES: reckon/cli.py:5146, reckon/crew/promotion.py:3917, reckon/crew/promotion.py:3639, reckon/crew/promotion.py:3699, reckon/crew/recovery.py:551\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3619-3624 makes the delivered-with-a-live-process run owe its tier's review, which is the goal sentence verbatim, and the new case proves both the refusal and the waiver.\nSCORE evidence: 18\nJUSTIFICATION evidence: the two arms recorded as JSON reconcile with their own logs (logs/gate-base-60708b078-with-ledger.log ends EXIT=1 with 5 failed and 465 passed, logs/gate-head-219fe1d71.log ends EXIT=0 with 471 passed), so the done-when's measure is measured rather than claimed, though the manifest's measurement_module field at line 12 names the interpreter.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff against 60708b078 is inside the manifest's declared scope, three of them by the coordinator's explicit widening, and no plan file, index or figure was touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_live_worker_still_owes_its_review.py:143-153 fails if the delivered arm is removed, which the recorded negative control demonstrates with DID NOT RAISE CrewError, though the echo assertion at line 160 is not independent of the value it checks.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion.py:3611-3615 keeps the module's lazy-import idiom and :3700-3726 its docstring-plus-keyword-argument shape, and neither the new test nor the diff carries a plan, ticket or version identifier.\nFINDING tests/test_a_live_worker_still_owes_its_review.py:160 assert promoted[\"record\"][\"review_waiver\"] == {\"reason\": _WAIVED} compares the row against the same literal the test passed in, so it holds whatever the gate does with that waiver; the regression guard rests on the refusal assertions at :143-153 rather than on this line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183613683581-a-live-worker-still-owes-its-review/manifest.md:12 measurement_module names the interpreter /home/ITER/mcintos/Code/reckon/.venv/bin/python instead of the module under test as imported, whose value the run printed as /tmp/s22lw/base/reckon/crew/promotion.py in the base log's own header, so a reader taking this field cannot tell which module the base arm imported.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-live-worker-still-owes-its-review.html:66 the fragment calls the population \"the test files that import reckon.crew.promotion\", but the import scan it describes misses tests/test_crew_repository_from_the_project.py, which imports that module dynamically at line 30 and calls promotion_module.complete at line 271; the omission cannot redden that case because its call is refused on the mount mismatch at reckon/crew/promotion.py:3859-3862 ahead of the gate, so the defect is in the roster's claim rather than in the measured delta.\nFINDING reckon/crew/promotion.py:3726 the refusal now reads \"is classified running because no complete independent review is stored\" for a deferred delivery, which asserts that the missing review is why the run is classified running, where running is reached from the run's live process and the review store has no part in it.\n",
+  "review_run_id": "r-20260929T195906221317-review-of-a-live-worker-still-owes-its-review",
+  "reviewed_base_sha": "60708b078c03a99e1c9d45504b7693483704dc9d",
+  "reviewed_changed_paths": [
+    "reckon/crew/promotion.py",
+    "tests/test_a_live_worker_still_owes_its_review.py",
+    "tests/test_crew_promotion.py",
+    "tests/test_ledger.py",
+    "tests/test_promotion_release.py",
+    "docs/evidence/fragments/the-suite-is-green-at-head/a-live-worker-still-owes-its-review.html"
+  ],
+  "reviewed_commits": [
+    "296c44a3c",
+    "87053d06b",
+    "219fe1d71",
+    "b63fe49df"
+  ],
+  "reviewed_diffstat": "6 files changed, 293 insertions(+), 7 deletions(-)",
+  "reviewed_done_when": "the five tests/test_ledger.py cases pass at head without editing them; a new tests/test_a_live_worker_still_owes_its_review.py promotes a delivered run with a provably live pid: refused with no review and no waiver, admitted with the waiver; the named negative control restores review_required's classification-only reading and makes the no-waiver case promote unreviewed; the gate is every test file that imports reckon.crew.promotion run with -n 8 at base and at head; both arms recorded as JSON with completed true and a literal command, each log ending EXIT=<code>; the head arm adds no failure id; a fragment records the change",
+  "reviewed_goal": "complete() in reckon/crew/promotion.py decides whether a run owes a review from the delivery it promotes (a terminal manifest, the passing verdict, the run's review tier), so a run whose worker process is still alive owes the review its tier requires",
+  "reviewed_head_sha": "b63fe49df652c1e961c3598b6aae33d75941a596",
+  "reviewed_manifest": {
+    "bytes": 11270,
+    "last_modified": "2026-09-29T19:57:47.458197+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183613683581-a-live-worker-still-owes-its-review/manifest.md"
+  },
+  "reviewed_node": "a-live-worker-still-owes-its-review",
+  "reviewed_plan": "the-suite-is-green-at-head",
+  "reviewed_run_id": "r-20260929T183613683581-a-live-worker-still-owes-its-review",
+  "reviewed_suite_fields": {
+    "after_suite": true,
+    "baseline_suite": true
+  },
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-live-worker-still-owes-its-review",
+  "reviewed_write_paths": [
+    "reckon/crew/promotion.py",
+    "tests/test_a_live_worker_still_owes_its_review.py",
+    "tests/test_ledger.py",
+    "tests/test_crew_promotion.py",
+    "tests/test_promotion_release.py",
+    "docs/evidence/fragments/the-suite-is-green-at-head/a-live-worker-still-owes-its-review.html",
+    "docs/figures/the-suite-is-green-at-head/a-live-worker-still-owes-its-review"
+  ],
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-a-live-worker-still-owes-its-review",
+  "reviewer_run_id": "r-20260929T195906221317-review-of-a-live-worker-still-owes-its-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T20:31:32.466467+00:00",
+  "total": 94
+}

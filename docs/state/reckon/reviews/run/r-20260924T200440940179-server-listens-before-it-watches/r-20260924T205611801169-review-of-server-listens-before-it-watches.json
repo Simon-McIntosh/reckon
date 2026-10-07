@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:473 serve_main",
+    "reckon/serve.py:3112 ThreadingHTTPServer construction in main",
+    "reckon/serve.py:3114 start_fleet_change_watch"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T20:56:11.801169+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/the-page-paints-from-an-index.html",
+      "line": "111",
+      "text": "the landed record's evidence anchor href /reckon/plans/the-page-paints-from-an-index-landed resolves to nothing (no such file under docs/plans and the served route returns no resource), so the citation 404s; the record is served at /reckon/evidence/archive/the-page-paints-from-an-index-landed.html, the form the sibling links use."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "217",
+      "text": "armed_roots is added as advertised surface with no caller at head \u2014 nothing under reckon/, tests/ or the SPA reads it \u2014 while docs/plans/the-page-paints-from-an-index.html:84 and the evidence record both describe it as reporting which roots are covered, so either wire it or drop it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 02e2757d; caa09a7c changes reckon/serve.py (+50/-13) and adds the test file, fb655659 is docs-only (189 insertions across three files), and no path lies outside the declared write paths.",
+    "done_when": "the measure is mounts.json answering 200 within 2 s of launch while watch construction is held slow; tests/test_server_listens_before_it_watches.py:167 asserts exactly that, and the recorded control run (2 failed, 1 passed in 57 s) shows it reddens when the watch is armed before serving.",
+    "goal": "the goal is that the served entry point binds and answers before the fleet change watch is armed; reckon/serve.py:3112 constructs the ThreadingHTTPServer ahead of the start_fleet_change_watch call at reckon/serve.py:3114, and the watch now arms one tree at a time on its reader thread (reckon/serve.py:236-251).",
+    "manifest": "read; status complete with commits caa09a7c and fb655659, the focused gate result 3 passed in 21.12 s, the executed control, and two pre-existing failures attributed to a concurrent node.",
+    "write_paths": "read the manifest's five declared paths; the diff touches reckon/serve.py, tests/test_server_listens_before_it_watches.py, docs/plans/the-page-paints-from-an-index.html, docs/evidence/archive/the-page-paints-from-an-index-landed.html and docs/figures/the-page-paints-from-an-index/startup-bind-and-arm.svg, every one inside the declared scope."
+  },
+  "justifications": {
+    "durability": "reinstating the regression reddens tests/test_server_listens_before_it_watches.py:167 (proved by the executed control), the arm-completion assertion at tests/test_server_listens_before_it_watches.py:192 compares the armed set against the test's own mounts and fails if arming stalls or covers the wrong trees, and the close-during-arming block at reckon/serve.py:247-251 has no direct test.",
+    "evidence": "green.log's header names the revision, the command and 3 passed, and caa09a7c..fb655659 leaves reckon/serve.py and tests/ byte-identical (diff --stat empty), so the receipt covers the reviewed code; the manifest's 21.12 s is not the logged figure (20.86 s) and no preserved log names caa09a7c.",
+    "fit": "the lock at reckon/serve.py:211, the contextlib.suppress at reckon/serve.py:273 and the LOGGER.warning at reckon/serve.py:245 match idiom already used at reckon/serve.py:315 and reckon/serve.py:858, and the added lines carry no plan label, version or tracker reference.",
+    "goal_fidelity": "reckon/serve.py:3112 binds and listens before the arm at reckon/serve.py:3114, and tests/test_server_listens_before_it_watches.py:167 shows the port answering inside 2 s while a tree is still unarmed, the residual being the pre-existing pre-serve work (socket.getfqdn and the print block) that still precedes serve_forever.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, with reckon/serve.py:217 armed_roots the one addition nothing in the tree reads (FINDING)."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260924T200440940179-server-listens-before-it-watches, diff 02e2757d..fb655659 read in the reviewed worktree.\n\nVERDICT goal: the goal is that the served entry point binds and answers before the fleet change watch is armed; reckon/serve.py:3112 constructs the ThreadingHTTPServer ahead of the start_fleet_change_watch call at reckon/serve.py:3114, and the watch now arms one tree at a time on its reader thread (reckon/serve.py:236-251).\nVERDICT done_when: the measure is mounts.json answering 200 within 2 s of launch while watch construction is held slow; tests/test_server_listens_before_it_watches.py:167 asserts exactly that, and the recorded control run (2 failed, 1 passed in 57 s) shows it reddens when the watch is armed before serving.\nVERDICT write_paths: read the manifest's five declared paths; the diff touches reckon/serve.py, tests/test_server_listens_before_it_watches.py, docs/plans/the-page-paints-from-an-index.html, docs/evidence/archive/the-page-paints-from-an-index-landed.html and docs/figures/the-page-paints-from-an-index/startup-bind-and-arm.svg, every one inside the declared scope.\nVERDICT manifest: read; status complete with commits caa09a7c and fb655659, the focused gate result 3 passed in 21.12 s, the executed control, and two pre-existing failures attributed to a concurrent node.\nVERDICT diff: read commit by commit against base 02e2757d; caa09a7c changes reckon/serve.py (+50/-13) and adds the test file, fb655659 is docs-only (189 insertions across three files), and no path lies outside the declared write paths.\nCALL_SITES: reckon/cli.py:473 serve_main, reckon/serve.py:3112 ThreadingHTTPServer construction in main, reckon/serve.py:3114 start_fleet_change_watch\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:3112 binds and listens before the arm at reckon/serve.py:3114, and tests/test_server_listens_before_it_watches.py:167 shows the port answering inside 2 s while a tree is still unarmed, the residual being the pre-existing pre-serve work (socket.getfqdn and the print block) that still precedes serve_forever.\nSCORE evidence: 17\nJUSTIFICATION evidence: green.log's header names the revision, the command and 3 passed, and caa09a7c..fb655659 leaves reckon/serve.py and tests/ byte-identical (diff --stat empty), so the receipt covers the reviewed code; the manifest's 21.12 s is not the logged figure (20.86 s) and no preserved log names caa09a7c.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, with reckon/serve.py:217 armed_roots the one addition nothing in the tree reads (FINDING).\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression reddens tests/test_server_listens_before_it_watches.py:167 (proved by the executed control), the arm-completion assertion at tests/test_server_listens_before_it_watches.py:192 compares the armed set against the test's own mounts and fails if arming stalls or covers the wrong trees, and the close-during-arming block at reckon/serve.py:247-251 has no direct test.\nSCORE fit: 19\nJUSTIFICATION fit: the lock at reckon/serve.py:211, the contextlib.suppress at reckon/serve.py:273 and the LOGGER.warning at reckon/serve.py:245 match idiom already used at reckon/serve.py:315 and reckon/serve.py:858, and the added lines carry no plan label, version or tracker reference.\nFINDING docs/plans/the-page-paints-from-an-index.html:111 the landed record's evidence anchor href /reckon/plans/the-page-paints-from-an-index-landed resolves to nothing (no such file under docs/plans and the served route returns no resource), so the citation 404s; the record is served at /reckon/evidence/archive/the-page-paints-from-an-index-landed.html, the form the sibling links use.\nFINDING reckon/serve.py:217 armed_roots is added as advertised surface with no caller at head \u2014 nothing under reckon/, tests/ or the SPA reads it \u2014 while docs/plans/the-page-paints-from-an-index.html:84 and the evidence record both describe it as reporting which roots are covered, so either wire it or drop it.\n",
+  "review_run_id": "r-20260924T205611801169-review-of-server-listens-before-it-watches",
+  "reviewed_base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+  "reviewed_head_sha": "fb655659ba67c353e89e581dea6421febec2a88f",
+  "reviewed_run_id": "r-20260924T200440940179-server-listens-before-it-watches",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T22:01:06.554630+00:00",
+  "total": 91
+}

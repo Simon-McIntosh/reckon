@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run records no baseline_suite/after_suite pair, so this review ran the two arms itself over the 60 test modules importing reckon.serve; base 6205b507 carries 4 FAILED ids, head b99d7d6 carries 2, and the set difference is empty, so the change adds no failure.",
+  "added_failures_source": {
+    "after_suite": {
+      "command": "cd /tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1/head && RECKON_HOME=/tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1/home-after TMPDIR=/tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1 PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1/head /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest <61 test modules importing reckon.serve> -p no:cacheprovider -q --basetemp=/tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1/bt-after",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_spa_module_scope.py::test_inlined_bundle_renders_from_a_file_url_without_reference_errors",
+        "tests/test_typed_resources.py::test_spa_graph_uses_typed_navigation_identity"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/after_suite.log",
+      "revision": "b99d7d618ac26988e0318fa1a32d173be667a48d"
+    },
+    "baseline_suite": {
+      "command": "cd /tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1/base && RECKON_HOME=/tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1/home-base2 TMPDIR=/tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1 PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1/base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest <60 test modules importing reckon.serve> -p no:cacheprovider -q --basetemp=/tmp/reckon-crew-scratch/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/rv-discovery-j4a1/bt-base2",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 4,
+      "failure_ids": [
+        "tests/test_serve_figure_rows.py::test_discovery_cache_signature_changes_when_a_figure_is_added",
+        "tests/test_spa_module_scope.py::test_inlined_bundle_renders_from_a_file_url_without_reference_errors",
+        "tests/test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type",
+        "tests/test_typed_resources.py::test_spa_graph_uses_typed_navigation_identity"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak/baseline_suite.log",
+      "revision": "6205b507ba60faa1ed72981cc16c41d72b380930"
+    },
+    "derivation": "set(after failure_ids) - set(baseline failure_ids) over the FAILED lines the two arms print; both head failures are present at base, so the added set is empty and the two base-only failures (test_tag_inventory, test_serve_figure_rows) are the repair the change makes."
+  },
+  "completed_at": "2026-10-01T16:14:28.190Z",
+  "dispatched_at": "2026-10-01T15:57:33Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T154558701626-the-discovery-memo-does-not-leak/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the run's gate-head.log and gate-negative-control.log headers name revision 6205b507 in the '# revision:' line while the tree they ran in carried the head change uncommitted, and the evidence fragment labels that arm 'Head 6205b507', so a reader cannot reconcile the head arm with reviewed head b99d7d6 from the log alone; the post-commit repro logs (repro-leak.log, repro-fixed.log) do name b99d7d6."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "3739",
+      "severity": "follow-on",
+      "text": "follow-on: _SIGNATURE_TTL_S is a module global that serve.main assigns (reckon/serve.py:3739, global declared at :3729) and never restores; tests/test_served_code_drift.py runs serve.main and is the true leaker, outside this node's write scope, so the suite-wide conftest restore contains it without repairing the mutator - a local restore in that file, or in serve.main, would be the precise fix, as the reviewed manifest itself records."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit: conftest autouse restore, one new subprocess-driven case, one evidence fragment.",
+    "done_when": "met: gate 14 passed EXIT=0, negative control red EXIT=1, both reproduced independently.",
+    "goal": "met: the discovery-memo leak is repaired at b99d7d6 and the true leaker was named over the brief's two candidates.",
+    "leak_source": "verified: tests/test_served_code_drift.py leaks via serve.main at reckon/serve.py:3739; the two brief-named candidates do not leak (9 passed and 7 passed when each runs before the entry-point file).",
+    "manifest": "readable: status complete, commit and logs named; no baseline_suite/after_suite pair recorded.",
+    "write_paths": "clean: three changed paths, all inside the declared fence."
+  },
+  "justifications": {
+    "durability": "the new case reddens when the restore is removed (negative control EXIT=1) and is what forces the fix to be present, and it drives a real child pytest process and asserts on the entry-point's own refusal message rather than restating a rule; held back because the restore is a suite-wide net that leaves the actual mutator live - serve.main assigns reckon.serve._SIGNATURE_TTL_S at reckon/serve.py:3739 and never restores it, so the underlying defect remains and is only compensated, and the fixture cleans a leak only insofar as each test's entry value is the clean one.",
+    "evidence": "I ran the two arms myself over the 60 test modules that import reckon.serve (base 6205b507: 4 failed/712 passed/26 skipped/3 errors; head b99d7d6: 2 failed/718 passed/26 skipped), re-derived added_failure_count 0 from the FAILED lines of both logs, and reproduced the negative control independently (RECKON_TEST_SKIP_DISCOVERY_MEMO_RESTORE=1: the new case fails, EXIT=1); docked because the run's own gate-head.log and gate-negative-control.log both name revision 6205b507 in their header while the tree carried the uncommitted head content, so the recorded head arm is not reconcilable with reviewed head b99d7d6 from the log alone, and because the run records no baseline_suite/after_suite pair so its added-failure count is unmeasured from its own record (this review supplied the pair).",
+    "fit": "the conftest fixture and the new test both carry mechanism docstrings, name no plan, sprint or ticket identifier, and the commit is conventional with a body and no attribution; the new case follows the file's existing subprocess-driven idiom; not 20 because an autouse conftest fixture imports reckon.serve for every test in the suite to contain a defect local to one file, and a targeted restore in tests/test_served_code_drift.py or in serve.main would be the more precise layer - the manifest itself names that as its follow-on.",
+    "goal_fidelity": "the node's goal is to repair the discovery-memo leak that reddened a file in its cluster; it reproduced the leak (tests/test_served_code_drift.py then tests/test_server_listens_before_it_watches.py in one process, 26 passed/3 errors EXIT=1 at base 6205b507), corrected the brief by naming tests/test_served_code_drift.py as the true leaker rather than the two candidates it was handed, and the suite-wide restore moves the base-arm reds to green: test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type and tests/test_serve_figure_rows.py::test_discovery_cache_signature_changes_when_a_figure_is_added both fail at base and pass at head; not 20 because the repair compensates for the mutator rather than fixing it.",
+    "scope_discipline": "git diff --name-status 6205b507 b99d7d6 lists exactly three paths, tests/conftest.py (M), tests/test_discovery_memo_does_not_leak.py (A) and docs/evidence/fragments/the-suite-is-green-at-head/the-discovery-memo-does-not-leak.html (A), all inside the declared write paths; the reviewed worktree is clean at head and no plan, sprint or index file is touched."
+  },
+  "node": "review-of-the-discovery-memo-does-not-leak",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node repaired the discovery-memo leak that reddened a file in its cluster; it reproduced it independently (26 passed/3 errors EXIT=1 at base) and corrected the brief by naming tests/test_served_code_drift.py as the leaker rather than the two candidate files, and the two base-arm reds (test_tag_inventory tag-inventory, test_serve_figure_rows discovery-cache-signature) pass at head.\nVERDICT done_when: the run's declared measure is a parsed passing gate plus a red negative control; gate-head.log reads 14 passed EXIT=0 and gate-negative-control.log reads 1 failed/13 passed EXIT=1 with FAILED tests/test_discovery_memo_does_not_leak.py::test_a_served_case_leaves_no_live_discovery_memo_for_a_later_test, and I reproduced both directions in scratch trees.\nVERDICT write_paths: git diff --name-status 6205b507 b99d7d6 lists exactly three paths, tests/conftest.py, tests/test_discovery_memo_does_not_leak.py and the node's fragment, all inside the declared fence; worktree clean at head, no plan or index file touched.\nVERDICT manifest: read at the run directory; status complete, commit b99d7d6 named, four logs named, the negative-control path recorded, and the true leaker named in evidence_inputs; the manifest records no baseline_suite/after_suite pair, so its added-failure count is unmeasured from its own record.\nVERDICT diff: read at b99d7d6 against base 6205b507; conftest.py gains the autouse restore_discovery_memo_ttl fixture (26 lines), the new test runs test_served_code_drift.py then test_server_listens_before_it_watches.py in one child process (113 lines), and a 50-line evidence fragment is added.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node's goal is to repair the discovery-memo leak that reddened a file in its cluster; it reproduced the leak (tests/test_served_code_drift.py then tests/test_server_listens_before_it_watches.py in one process, 26 passed/3 errors EXIT=1 at base 6205b507), corrected the brief by naming tests/test_served_code_drift.py as the true leaker rather than the two candidates it was handed, and the suite-wide restore moves the base-arm reds to green: test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type and tests/test_serve_figure_rows.py::test_discovery_cache_signature_changes_when_a_figure_is_added both fail at base and pass at head; not 20 because the repair compensates for the mutator rather than fixing it.\nSCORE evidence: 17\nJUSTIFICATION evidence: I ran the two arms myself over the 60 test modules that import reckon.serve (base 6205b507: 4 failed/712 passed/26 skipped/3 errors; head b99d7d6: 2 failed/718 passed/26 skipped), re-derived added_failure_count 0 from the FAILED lines of both logs, and reproduced the negative control independently (RECKON_TEST_SKIP_DISCOVERY_MEMO_RESTORE=1: the new case fails, EXIT=1); docked because the run's own gate-head.log and gate-negative-control.log both name revision 6205b507 in their header while the tree carried the uncommitted head content, so the recorded head arm is not reconcilable with reviewed head b99d7d6 from the log alone, and because the run records no baseline_suite/after_suite pair so its added-failure count is unmeasured from its own record (this review supplied the pair).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 6205b507 b99d7d6 lists exactly three paths, tests/conftest.py (M), tests/test_discovery_memo_does_not_leak.py (A) and docs/evidence/fragments/the-suite-is-green-at-head/the-discovery-memo-does-not-leak.html (A), all inside the declared write paths; the reviewed worktree is clean at head and no plan, sprint or index file is touched.\nSCORE durability: 17\nJUSTIFICATION durability: the new case reddens when the restore is removed (negative control EXIT=1) and is what forces the fix to be present, and it drives a real child pytest process and asserts on the entry-point's own refusal message rather than restating a rule; held back because the restore is a suite-wide net that leaves the actual mutator live - serve.main assigns reckon.serve._SIGNATURE_TTL_S at reckon/serve.py:3739 and never restores it, so the underlying defect remains and is only compensated, and the fixture cleans a leak only insofar as each test's entry value is the clean one.\nSCORE fit: 18\nJUSTIFICATION fit: the conftest fixture and the new test both carry mechanism docstrings, name no plan, sprint or ticket identifier, and the commit is conventional with a body and no attribution; the new case follows the file's existing subprocess-driven idiom; not 20 because an autouse conftest fixture imports reckon.serve for every test in the suite to contain a defect local to one file, and a targeted restore in tests/test_served_code_drift.py or in serve.main would be the more precise layer - the manifest itself names that as its follow-on.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T154558701626-the-discovery-memo-does-not-leak/gate-head.log:1 the run's gate-head.log and gate-negative-control.log headers name revision 6205b507 in the '# revision:' line while the tree they ran in carried the head change uncommitted, and the evidence fragment labels that arm 'Head 6205b507', so a reader cannot reconcile the head arm with reviewed head b99d7d6 from the log alone; the post-commit repro logs (repro-leak.log, repro-fixed.log) do name b99d7d6.\nFINDING reckon/serve.py:3739 follow-on: _SIGNATURE_TTL_S is a module global that serve.main assigns (reckon/serve.py:3739, global declared at :3729) and never restores; tests/test_served_code_drift.py runs serve.main and is the true leaker, outside this node's write scope, so the suite-wide conftest restore contains it without repairing the mutator - a local restore in that file, or in serve.main, would be the precise fix, as the reviewed manifest itself records.\nreviewed_base_sha: 6205b507ba60faa1ed72981cc16c41d72b380930\nreviewed_head_sha: b99d7d618ac26988e0318fa1a32d173be667a48d\n",
+  "review_run_id": "r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak",
+  "reviewed_base_note": "base 6205b507 and head b99d7d6 are parent and child in the reviewed worktree; both arms ran in archived scratch trees under TMPDIR, the base extracted from 6205b507 and the head from b99d7d6, and each arm log's header names its revision, tree, imported reckon.serve.__file__ and resolved cwd.",
+  "reviewed_base_sha": "6205b507ba60faa1ed72981cc16c41d72b380930",
+  "reviewed_commits": [
+    "b99d7d618ac26988e0318fa1a32d173be667a48d"
+  ],
+  "reviewed_head_sha": "b99d7d618ac26988e0318fa1a32d173be667a48d",
+  "reviewed_manifest": {
+    "bytes": 4330,
+    "status": "complete"
+  },
+  "reviewed_run_id": "r-20261001T154558701626-the-discovery-memo-does-not-leak",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T16:20:00+00:00",
+  "total": 91
+}

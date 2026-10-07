@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "completed_at": "2026-10-04T23:31:37.033Z",
+  "dispatched_at": "2026-10-04T23:24:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "68",
+      "severity": "follow-on",
+      "text": "follow-on: PLAN_REVIEW_RUBRICS is re-exported here but no module or test reads it (grep over reckon/ and tests/; review.py:647 is the only user), so the alias is dead and it is a second public name introduced in review.py beside the moved parser; drop the alias or route a caller through it."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the re-exported parser is reached by reckon/crew/plan_review.py:821 and the three test call sites; no caller outside plan_review.py imports review.parse_plan_review_report directly.",
+    "diff": "read against b09a1ccf7: git diff --stat is 4 files, +189/-129; commit 9790ecf13 moves the three regexes, _report_rubric_items, _parse_finding and parse_review_report into review.py (renamed with a _PLAN_ prefix) and adds the single-owner invariant test plus the shared-reader parse test; nothing else changes at runtime.",
+    "done_when": "verified by independent re-run and static check: plan_review.py defines no re.compile for RUBRIC/FINDING (only the unrelated _BLOB_RE at plan_review.py:141) and carries none of _RUBRIC_LINE_RE/_FINDING_LINE_RE/_FINDING_TAIL_RE; review.py owns both parsers over _review_text_lines; the gate is 48 passed EXIT=0; the negative control deleting _review_text_lines is 5 failed EXIT=1 with a parse case red in each named file.",
+    "goal": "\u00a79's deliverable is met: the plan-report grammar moved into reckon/crew/review.py beside parse_review as parse_plan_review_report, and plan_review.py imports the parser rather than defining its own regexes; the parsed shape the store consumes is unchanged.",
+    "manifest": "read: status complete; baseline_suite and after_suite are both null (the reviewed manifest names no arm logs), so added_failure_count is unmeasured; negative_control_log is the bare path to negative_control.log; test_logs names gate.log.",
+    "write_paths": "verified: git diff --name-only b09a1ccf7..9790ecf13 is exactly reckon/crew/plan_review.py, reckon/crew/review.py, tests/test_plan_review_dispatch.py and tests/test_review_plan_command.py; the reviewed worktree at 9790ecf13 is clean."
+  },
+  "justifications": {
+    "durability": "the commit carries a conventional subject and a body with no attribution, plan label or version number; the new tests are durable under tests/; the gate and negative-control logs are durable under the run directory and the manifest was written incrementally; deducted one because the node declared an evidence-fragment write path it did not use, so its declared set and its written set differ.",
+    "evidence": "the gate I re-ran independently is 48 passed EXIT=0 (matching gate.log), the negative control is a genuine red EXIT=1 with a parse case failing in each named file, and I confirmed the single-owner invariant by grep and the byte-identity by diffing the moved block against base; deducted one because the byte-identity is shown by the moved source rather than a stored pre/post diff artifact and the reviewed run carries no armed suite pair, so its added-failure count is unmeasured.",
+    "fit": "the grammar moves to the module that already owns reviewer-text parsing and both parsers share one _review_text_lines reader, and plan_review.py keeps only store-side logic, so the defect the design review named is removed rather than mirrored; deducted two because review.py gains a second public name (PLAN_REVIEW_RUBRICS) beyond the moved parser and plan_review.py re-exports it though no caller reads it, a dead alias against the brief's interface budget.",
+    "goal_fidelity": "every clause of \u00a79's done-when holds at 9790ecf13: the grammar regexes and their item resolution left plan_review.py for review.py, parse_plan_review_report and PLAN_REVIEW_RUBRICS are re-exported under the names callers use, the two test files keep their assertions (only additions), and the moved logic is textually identical to base so the parsed record is unchanged.",
+    "scope_discipline": "the diff is exactly the four declared paths with 189 insertions and 129 deletions, all outside files untouched, and the reviewed worktree is clean; the evidence-fragment path among the node's declared write paths was not needed and no stray file was written."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a79 asks that the plan-report grammar (RUBRIC and FINDING lines) move into reckon/crew/review.py beside parse_review, that plan_review.py define no report-grammar regex, that both parsers share one line reader, that the two test files keep their assertions, and that a fixture report parse byte-for-byte identically; at head parse_plan_review_report lives in review.py and plan_review.py re-exports it.\nVERDICT done_when: plan_review.py defines no re.compile for RUBRIC or FINDING (only the unrelated _BLOB_RE) and has no _RUBRIC_LINE_RE/_FINDING_LINE_RE/_FINDING_TAIL_RE attributes; review.py owns parse_review and parse_plan_review_report over one _review_text_lines reader; the moved regexes and parse body are textually identical to base, so a fixture parses identically; deleting _review_text_lines reddens a parse case in each named file (negative_control.log, 5 failed EXIT=1).\nVERDICT write_paths: git diff --name-only b09a1ccf7..9790ecf13 is exactly reckon/crew/plan_review.py, reckon/crew/review.py, tests/test_plan_review_dispatch.py and tests/test_review_plan_command.py; the reviewed worktree at 9790ecf13 is clean.\nVERDICT manifest: read; status complete; the reviewed manifest names no baseline_suite or after_suite arm (both null), so added_failure_count is unmeasured rather than zero; negative_control_log names negative_control.log.\nVERDICT diff: read against b09a1ccf7; the single commit 9790ecf13 moves the grammar and adds the single-owner test and the shared-reader parse test, and nothing else changes at runtime.\nCALL_SITES: reckon/crew/plan_review.py:821 and tests/test_plan_review_dispatch.py:152, :177 and tests/test_review_plan_command.py:516 read parse_review_report through the plan_review re-export.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every clause of \u00a79's done-when holds at 9790ecf13: the grammar regexes and their item resolution left plan_review.py for review.py, parse_plan_review_report and PLAN_REVIEW_RUBRICS are re-exported under the names callers use, the two test files keep their assertions (only additions), and the moved logic is textually identical to base so the parsed record is unchanged.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate I re-ran independently is 48 passed EXIT=0 (matching gate.log), the negative control is a genuine red EXIT=1 with a parse case failing in each named file (test_a_report_with_two_findings_parses_to_two_findings and test_the_report_grammar_parses_through_the_shared_review_reader), and I confirmed the single-owner invariant by grep and the byte-identity by diffing the moved block against base; deducted one because the byte-identity is shown by the moved source rather than a stored pre/post diff artifact and the reviewed run carries no armed suite pair, so its added-failure count is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is exactly the four declared paths with 189 insertions and 129 deletions, all outside files untouched, and the reviewed worktree is clean; the evidence-fragment path among the node's declared write paths was not needed and no stray file was written.\nSCORE durability: 19\nJUSTIFICATION durability: the commit carries a conventional subject and a body with no attribution, plan label or version number; the new tests are durable; the gate and negative-control logs are durable under the run directory and the manifest was written incrementally; deducted one because the node declared an evidence-fragment write path it did not use, so its declared set and its written set differ.\nSCORE fit: 18\nJUSTIFICATION fit: the grammar moves to the module that already owns reviewer-text parsing and both parsers share one _review_text_lines reader, and plan_review.py keeps only store-side logic, so the defect the design review named is removed rather than mirrored; deducted two because review.py gains a second public name (PLAN_REVIEW_RUBRICS) beyond the moved parser and plan_review.py re-exports it though no caller in reckon/ or tests/ reads it, a dead alias against the brief's interface budget.\nFINDING reckon/crew/plan_review.py:68 follow-on: PLAN_REVIEW_RUBRICS is re-exported here but no module or test reads it \u2014 review.py:647 is the only user of the name \u2014 so the alias is dead, and it is a second public name in review.py beside the moved parser; drop the alias or route a caller through it.",
+  "review_run_id": "r-20261004T232409066390-review-of-plan-review-parser-beside-parse-review",
+  "reviewed_base_sha": "b09a1ccf71322aee71f64752db4730309917e9e0",
+  "reviewed_commits": [
+    "9790ecf138c210bec195d0924a12a0fcafc6c5c1"
+  ],
+  "reviewed_head_sha": "9790ecf138c210bec195d0924a12a0fcafc6c5c1",
+  "reviewed_run_id": "r-20261004T231624708849-plan-review-parser-beside-parse-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T23:29:16.473421+00:00",
+  "total": 96
+}

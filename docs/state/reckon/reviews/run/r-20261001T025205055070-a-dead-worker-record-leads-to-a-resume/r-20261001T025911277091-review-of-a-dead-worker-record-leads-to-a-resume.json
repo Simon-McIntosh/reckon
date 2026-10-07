@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count 0 derived from the reviewed run's own gate logs: head-gate.log records 22 passed with zero FAILED ids, so no test id is added; the base arm (base-deadworker.log) reddens the single stale test_a_dead_worker_record_lets_the_repair_compose, which the head passes. An independent base/head arm over the same two files reproduces 1 failed/21 passed at base against 22 passed at head. The reviewed manifest names no baseline_suite/after_suite pair, so read_review reports this count as unmeasured.",
+  "backend": "clive",
+  "base_log_revision": "a14e3bc1",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T03:13:48.795Z",
+  "dispatched_at": "2026-10-01T02:59:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T025205055070-a-dead-worker-record-leads-to-a-resume/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run names its gate logs under test_logs rather than baseline_suite/after_suite, so reckon.crew.review.annotate_review_of_run finds no suite pair and reports the added-failure count unmeasured; the stored 0 here is derived from the reviewed run's own logs (head-gate.log 22 passed, so zero failing ids) and corroborated by an independent base/head arm, but a reader that annotates will show the count as unmeasured until the run records the suite fields."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T025205055070-a-dead-worker-record-leads-to-a-resume/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when requires the node to delete every /tmp directory it created and list it in artifacts, and the manifest's artifacts field names only the three gate logs; /tmp/adead (the measurement scratch tree) is in fact gone, so the cleanup happened but the required listing is absent from the record."
+    },
+    {
+      "file": "tests/test_reflex_dispatches_one_repair.py",
+      "line": "583",
+      "severity": "follow-on",
+      "text": "follow-on: the node's negative control forces _worker_record_liveness True, routing the round to the busy-guard refusal, so it reddens the case at the first assertion (report[\"resumed\"] raises KeyError) but exercises neither the advice-content check (:591) nor the no-dispatch check (:594); those two hold only against the real composition with the resume stubbed, so a regression that dispatched as well as resumed would be caught, but one that resumed with an empty brief would not be falsified by the given control."
+    }
+  ],
+  "head_log_revision": "8f401698c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against base a14e3bc1; the case's docstring is rewritten, `resumed = _stub_resume(monkeypatch)` is added, and the two dispatch assertions (`report[\"dispatched\"] is True`, the REPAIR_NODE_PREFIX check) are replaced by four resume assertions; no other line changes.",
+    "done_when": "the emitted done-when names the case to update, the stubbed resume, the two test files and an EXIT line per log; the manifest carries both, the two-file arms reproduce (head 22 passed EXIT=0, base 1 failed/21 passed EXIT=1), and added_failure_count is 0, but the required /tmp deletion listing is absent from artifacts and the manifest names no baseline_suite/after_suite pair.",
+    "goal": "make the dead-worker-record case in tests/test_reflex_dispatches_one_repair.py assert the resume the reflex performs; at head that case (:562) stubs the resume entry point and asserts the composed findings arrive as one resume of the reviewed run.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T025205055070-a-dead-worker-record-leads-to-a-resume/manifest.md; status complete, commit 8f401698c over base a14e3bc1, head-gate.log (22 passed) and base-deadworker.log (1 failed) named with revisions, negative-control.log named with EXIT=1, measurement_module/measurement_cwd provenance present.",
+    "write_paths": "the manifest declares tests/test_reflex_dispatches_one_repair.py plus an evidence fragment and figures dir; git diff --stat a14e3bc1..8f401698c touches exactly the test file and nothing else."
+  },
+  "justifications": {
+    "durability": "the case now mirrors production: it names the reviewed run, checks all three content-derived finding ids appear in the advice, and asserts no node was dispatched, so a regression that reverted to dispatch or dropped a finding from the brief would redden it. The node's negative control forces _worker_record_liveness True, which routes the round to the busy-guard refusal and reddens the case at the first assertion only, leaving the advice-content and no-dispatch assertions demonstrated by construction against the real composition.",
+    "evidence": "genuine and falsifiable: I re-ran the node's own two-file gate in the reviewed worktree at 8f401698c (22 passed, EXIT=0, reviewer-head-gate.log) and the same two files at base a14e3bc1 in a /tmp scratch tree (1 failed/21 passed, EXIT=1, reviewer-base-gate.log), the base failure being the stale test_a_dead_worker_record_lets_the_repair_compose; the store's own reader over the two logs gives added_failure_count 0, and a positive control injecting one FAILED id returns 1. The node's negative control reddens the case. Weakness: the reviewed run's manifest names test_logs rather than baseline_suite/after_suite, so read_review reports the count unmeasured; and the manifest's artifacts field names the three logs but not the /tmp directories the done-when required it to print and list.",
+    "fit": "the docstring is rewritten to state the mechanism (the run already owns the worktree and the commit claim a new node would be refused for), the helper is the file's existing _stub_resume, and no plan, phase, ticket or version label appears in the change.",
+    "goal_fidelity": "the goal is to make the dead-worker case assert the resume the reflex now performs; the landed case stubs resumption._resume via the file's _stub_resume, asserts report[\"resumed\"] is True, one resume of RUN_ID whose advice names every finding id, and calls == [], which is exactly the goal. The production resume branch is real (reckon/crew/recovery.py at head calls resumption_module._resume at :2273 and returns resumed True at :2304); base a14e3bc1 already carried it, so the change is test alignment rather than new coverage.",
+    "scope_discipline": "git diff --stat a14e3bc1..8f401698c is exactly one file, tests/test_reflex_dispatches_one_repair.py (+18/-8), a declared write path, with no source file touched and the reviewed worktree clean at head."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-a-dead-worker-record-leads-to-a-resume",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: make the dead-worker-record case in tests/test_reflex_dispatches_one_repair.py assert the resume the reflex performs; at head that case (:562) stubs the resume entry point and asserts the composed findings arrive as one resume of the reviewed run.\nVERDICT done_when: the emitted done-when names the case to update, the stubbed resume, the two test files and an EXIT line per log; the manifest carries both, the two-file arms reproduce (head 22 passed EXIT=0, base 1 failed/21 passed EXIT=1), and added_failure_count is 0, but the required /tmp deletion listing is absent from artifacts and the manifest names no baseline_suite/after_suite pair.\nVERDICT write_paths: the manifest declares tests/test_reflex_dispatches_one_repair.py plus an evidence fragment and figures dir; git diff --stat a14e3bc1..8f401698c touches exactly the test file and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T025205055070-a-dead-worker-record-leads-to-a-resume/manifest.md; status complete, commit 8f401698c over base a14e3bc1, head-gate.log (22 passed) and base-deadworker.log (1 failed) named with revisions, negative-control.log named with EXIT=1, measurement_module/measurement_cwd provenance present.\nVERDICT diff: read against base a14e3bc1; the case's docstring is rewritten, `resumed = _stub_resume(monkeypatch)` is added, and the two dispatch assertions (`report[\"dispatched\"] is True`, the REPAIR_NODE_PREFIX check) are replaced by four resume assertions; no other line changes.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the goal is to make the dead-worker case assert the resume the reflex now performs; the landed case stubs resumption._resume via the file's _stub_resume, asserts report[\"resumed\"] is True, one resume of RUN_ID whose advice names every finding id, and calls == [], which is exactly the goal. The production resume branch is real (reckon/crew/recovery.py at head calls resumption_module._resume at :2273 and returns resumed True at :2304); base a14e3bc1 already carried it, so the change is test alignment rather than new coverage.\nSCORE evidence: 18\nJUSTIFICATION evidence: genuine and falsifiable: I re-ran the node's own two-file gate in the reviewed worktree at 8f401698c (22 passed, EXIT=0, reviewer-head-gate.log) and the same two files at base a14e3bc1 in a /tmp scratch tree (1 failed/21 passed, EXIT=1, reviewer-base-gate.log), the base failure being the stale test_a_dead_worker_record_lets_the_repair_compose; the store's own reader over the two logs gives added_failure_count 0, and a positive control injecting one FAILED id returns 1. The node's negative control reddens the case. Weakness: the reviewed run's manifest names test_logs rather than baseline_suite/after_suite, so read_review reports the count unmeasured; and the manifest's artifacts field names the three logs but not the /tmp directories the done-when required it to print and list.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a14e3bc1..8f401698c is exactly one file, tests/test_reflex_dispatches_one_repair.py (+18/-8), a declared write path, with no source file touched and the reviewed worktree clean at head.\nSCORE durability: 18\nJUSTIFICATION durability: the case now mirrors production: it names the reviewed run, checks all three content-derived finding ids appear in the advice, and asserts no node was dispatched, so a regression that reverted to dispatch or dropped a finding from the brief would redden it. The node's negative control forces _worker_record_liveness True, which routes the round to the busy-guard refusal and reddens the case at the first assertion only, leaving the advice-content and no-dispatch assertions demonstrated by construction against the real composition.\nSCORE fit: 20\nJUSTIFICATION fit: the docstring is rewritten to state the mechanism (the run already owns the worktree and the commit claim a new node would be refused for), the helper is the file's existing _stub_resume, and no plan, phase, ticket or version label appears in the change.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T025205055070-a-dead-worker-record-leads-to-a-resume/manifest.md:11 follow-on: the reviewed run names its gate logs under test_logs rather than baseline_suite/after_suite, so reckon.crew.review.annotate_review_of_run finds no suite pair and reports the added-failure count unmeasured; the stored 0 here is derived from the reviewed run's own logs (head-gate.log 22 passed, so zero failing ids) and corroborated by an independent base/head arm, but a reader that annotates will show the count as unmeasured until the run records the suite fields.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T025205055070-a-dead-worker-record-leads-to-a-resume/manifest.md:16 follow-on: the done-when requires the node to delete every /tmp directory it created and list it in artifacts, and the manifest's artifacts field names only the three gate logs; /tmp/adead (the measurement scratch tree) is in fact gone, so the cleanup happened but the required listing is absent from the record.\nFINDING tests/test_reflex_dispatches_one_repair.py:583 follow-on: the node's negative control forces _worker_record_liveness True, routing the round to the busy-guard refusal, so it reddens the case at the first assertion (report[\"resumed\"] raises KeyError) but exercises neither the advice-content check (:591) nor the no-dispatch check (:594); those two hold only against the real composition with the resume stubbed, so a regression that dispatched as well as resumed would be caught, but one that resumed with an empty brief would not be falsified by the given control.\nreviewed_base_sha: a14e3bc15d509b7ab94f21c011227478001995b1\nreviewed_head_sha: 8f401698c741430162c985c629b17b3d311b528e\n",
+  "review_run_id": "r-20261001T025911277091-review-of-a-dead-worker-record-leads-to-a-resume",
+  "reviewed_base_sha": "a14e3bc15d509b7ab94f21c011227478001995b1",
+  "reviewed_head_sha": "8f401698c741430162c985c629b17b3d311b528e",
+  "reviewed_run_id": "r-20261001T025205055070-a-dead-worker-record-leads-to-a-resume",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T025911277091-review-of-a-dead-worker-record-leads-to-a-resume",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T03:11:13.833167+00:00",
+  "total": 96
+}

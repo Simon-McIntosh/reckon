@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:3929",
+    "reckon/cli.py:5103"
+  ],
+  "completed_at": "2026-09-29T05:23:45.556Z",
+  "dispatched_at": "2026-09-29T05:00:37Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-reports-its-velocity/velocity-view-is-served-on-the-cli.html",
+      "line": "102",
+      "text": "the base-arm row, repeated at :114, attributes the three base failures to the read view having no velocity branch as well as the command line having no velocity command, but the branch is present at 2309c8b9 (reckon/mcp.py:3951) and the base log's own traceback shows the mcp._crew call at tests/test_crew_velocity_cli.py:176 returning before the failure lands in _cli at :177, so the base arm measured only the absent command and a reader who takes the row for the pre-change state is told the read view's surface was absent too."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "e5f575ea adds 62 lines to reckon/cli.py for the command, 148 to reckon/velocity.py for OPTIONAL_BLOCKS and view() plus the three prints moved to stderr, and reduces reckon/mcp.py by 113 lines to a thin call at :3929, with the 244-line test file; 94835372 adds only the fragment and the figure, so the head arm at e5f575ea covers the landed code; the MCP branch's unknown-project refusal changes from a raised CrewError to the ok:false payload both surfaces now share, which the goal's one-composition rule implies.",
+    "done_when": "the done-when asks for the command line's options and refusals, tests/test_crew_velocity_cli.py synthesising under tmp_path and asserting parity over a default call and a cells page plus a by-name refusal of a missing --since, the three test files at exit 0, armed suite JSON whose logs open with revision, tree and command, and the declared control observed to fail; all of that is on disk \u2014 gate-base.log 3 failed exit 1, gate-head.log 15 passed exit 0, negative-control.log repeating the declared string verbatim at 1 failed exit 1 \u2014 with the single exception that the landing record's account of why the base arm failed is contradicted by its own log (FINDING).",
+    "goal": "the goal is that reckon crew velocity serves the same velocity view as crew(view=\"velocity\") through one composition function; at the head reckon/cli.py:5103 calls velocity_module.view and reckon/mcp.py:3929 calls the same function, defined at reckon/velocity.py:2281, which owns the window parsing, the mount resolution, the default summary and the cells paging \u2014 one composition, two surfaces.",
+    "manifest": "both suite fields are armed JSON on one line, revisions 2309c8b9 and e5f575ea matching their own logs at 3 and 0 failures, negative_control_log the bare path whose first line repeats the declared mutation verbatim and whose summary is 1 failed/exit 1, test_logs naming the logs on disk, and the scratch base arm naming measurement_module and measurement_cwd \u2014 the derivation adds 0 failures over those two logs, so the head arm adds nothing to the base arm's three.",
+    "write_paths": "the fence is reckon/cli.py, reckon/velocity.py, reckon/mcp.py, tests/test_crew_velocity_cli.py, the velocity-view-is-served-on-the-cli fragment and its figure directory; git diff --stat 2309c8b9..94835372 lists exactly those six paths and no seventh, and the worktree is clean at the head."
+  },
+  "justifications": {
+    "durability": "the cells-page parity case at tests/test_crew_velocity_cli.py:236 reddens on the declared mutation, shown live in negative-control.log, so the guard is not merely present; marked one short because the parity pair compares two entry points into one composition, so a defect inside velocity.view alone would leave both sides equal \u2014 the composition's own content is asserted by tests/test_crew_velocity_view.py in the same gate.",
+    "evidence": "the three arms are on disk with revision, tree, command and EXIT on line 1 and the manifest's counts match them exactly, marked two short because the fragment's base-arm row and paragraph state a cause its own log contradicts (FINDING).",
+    "fit": "crew_velocity mirrors crew_ledger's shape at reckon/cli.py:5086 (ClickException carrying the detail, _emit for the sorted JSON), and OPTIONAL_BLOCKS at reckon/velocity.py:2261 is the module's own public copy of the set the MCP branch previously kept private.",
+    "goal_fidelity": "reckon/velocity.py:2281 holds the moved composition and both surfaces are single calls into it (reckon/mcp.py:3929, reckon/cli.py:5103), marked one short because the MCP read's unknown-project refusal now returns an ok:false payload where it previously raised crew_module.CrewError, a surface change the goal implies but does not name.",
+    "scope_discipline": "git diff --stat 2309c8b9..94835372 returns the six declared paths and nothing else, and no hunk reaches beyond the composition and the command it was dispatched to add."
+  },
+  "node": "review-of-velocity-view-is-served-on-the-cli",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T043051500563-velocity-view-is-served-on-the-cli\n(plan reckon:the-fleet-reports-its-velocity \u00a72; node velocity-view-is-served-on-the-cli; role implement; spec guided)\nreviewed_base_sha: 2309c8b9b96a34be5f1a3abb15a74973b7fab2b7\nreviewed_head_sha: 94835372a0ebd4e7ea6a094e44fae5d02642f7d7\nRead at the head: the source node's dispatch prompt (goal, done-when, fence, declared negative control), manifest.md, the two commits against the base with their stat and bodies, the full diff of reckon/cli.py, reckon/mcp.py, reckon/velocity.py and tests/test_crew_velocity_cli.py, the base/head/control gate logs, the evidence fragment and the call-path figure; the reviewed worktree reads clean at 94835372.\nRe-derived in this node's own turn: the added-failure set over the two arm logs the manifest names, by calling reckon.crew.review.added_failures_from_gate_logs on gate-base.log and gate-head.log, which returns 0 added ids (the base arm carries the three new tests, the head arm carries none); and the base revision's own sources read at 2309c8b9 (reckon/mcp.py:3951, reckon/cli.py) to check what the base arm was measuring.\nVERDICT goal: the goal is that reckon crew velocity serves the same velocity view as crew(view=\"velocity\") through one composition function; at the head reckon/cli.py:5103 calls velocity_module.view and reckon/mcp.py:3929 calls the same function, defined at reckon/velocity.py:2281, which owns the window parsing, the mount resolution, the default summary and the cells paging \u2014 one composition, two surfaces.\nVERDICT done_when: the done-when asks for the command line's options and refusals, tests/test_crew_velocity_cli.py synthesising under tmp_path and asserting parity over a default call and a cells page plus a by-name refusal of a missing --since, the three test files at exit 0, armed suite JSON whose logs open with revision, tree and command, and the declared control observed to fail; all of that is on disk \u2014 gate-base.log 3 failed exit 1, gate-head.log 15 passed exit 0, negative-control.log repeating the declared string verbatim at 1 failed exit 1 \u2014 with the single exception that the landing record's account of why the base arm failed is contradicted by its own log (FINDING).\nVERDICT write_paths: the fence is reckon/cli.py, reckon/velocity.py, reckon/mcp.py, tests/test_crew_velocity_cli.py, the velocity-view-is-served-on-the-cli fragment and its figure directory; git diff --stat 2309c8b9..94835372 lists exactly those six paths and no seventh, and the worktree is clean at the head.\nVERDICT manifest: both suite fields are armed JSON on one line, revisions 2309c8b9 and e5f575ea matching their own logs at 3 and 0 failures, negative_control_log the bare path whose first line repeats the declared mutation verbatim and whose summary is 1 failed/exit 1, test_logs naming the logs on disk, and the scratch base arm naming measurement_module and measurement_cwd \u2014 the derivation adds 0 failures over those two logs, so the head arm adds nothing to the base arm's three.\nVERDICT diff: e5f575ea adds 62 lines to reckon/cli.py for the command, 148 to reckon/velocity.py for OPTIONAL_BLOCKS and view() plus the three prints moved to stderr, and reduces reckon/mcp.py by 113 lines to a thin call at :3929, with the 244-line test file; 94835372 adds only the fragment and the figure, so the head arm at e5f575ea covers the landed code; the MCP branch's unknown-project refusal changes from a raised CrewError to the ok:false payload both surfaces now share, which the goal's one-composition rule implies.\nCALL_SITES: reckon/mcp.py:3929, reckon/cli.py:5103\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/velocity.py:2281 holds the moved composition and both surfaces are single calls into it (reckon/mcp.py:3929, reckon/cli.py:5103), marked one short because the MCP read's unknown-project refusal now returns an ok:false payload where it previously raised crew_module.CrewError, a surface change the goal implies but does not name.\nSCORE evidence: 18\nJUSTIFICATION evidence: the three arms are on disk with revision, tree, command and EXIT on line 1 and the manifest's counts match them exactly, marked two short because the fragment's base-arm row and paragraph state a cause its own log contradicts (FINDING).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2309c8b9..94835372 returns the six declared paths and nothing else, and no hunk reaches beyond the composition and the command it was dispatched to add.\nSCORE durability: 19\nJUSTIFICATION durability: the cells-page parity case at tests/test_crew_velocity_cli.py:236 reddens on the declared mutation, shown live in negative-control.log, so the guard is not merely present; marked one short because the parity pair compares two entry points into one composition, so a defect inside velocity.view alone would leave both sides equal \u2014 the composition's own content is asserted by tests/test_crew_velocity_view.py in the same gate.\nSCORE fit: 19\nJUSTIFICATION fit: crew_velocity mirrors crew_ledger's shape at reckon/cli.py:5086 (ClickException carrying the detail, _emit for the sorted JSON), and OPTIONAL_BLOCKS at reckon/velocity.py:2261 is the module's own public copy of the set the MCP branch previously kept private.\nFINDING docs/evidence/fragments/the-fleet-reports-its-velocity/velocity-view-is-served-on-the-cli.html:102 the base-arm row, repeated at :114, attributes the three base failures to the read view having no velocity branch as well as the command line having no velocity command, but the branch is present at 2309c8b9 (reckon/mcp.py:3951) and the base log's own traceback shows the mcp._crew call at tests/test_crew_velocity_cli.py:176 returning before the failure lands in _cli at :177, so the base arm measured only the absent command and a reader who takes the row for the pre-change state is told the read view's surface was absent too.",
+  "review_run_id": "r-20260929T050019972975-review-of-velocity-view-is-served-on-the-cli",
+  "reviewed_base_sha": "2309c8b9b96a34be5f1a3abb15a74973b7fab2b7",
+  "reviewed_head_sha": "94835372a0ebd4e7ea6a094e44fae5d02642f7d7",
+  "reviewed_run_id": "r-20260929T043051500563-velocity-view-is-served-on-the-cli",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "host": "98dci4-clu-2018.iter.org",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T050019972975-review-of-velocity-view-is-served-on-the-cli",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T05:16:40.429399+00:00",
+  "total": 95
+}

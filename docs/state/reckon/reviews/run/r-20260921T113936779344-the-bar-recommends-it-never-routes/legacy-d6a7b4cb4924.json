@@ -1,0 +1,106 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "reckon/crew/bar.py",
+      "line": "111",
+      "text": "every node more than NEAR_BAR_BAND below the bar is hold at any fill, including the maximally prescribed node (score 0.0) at a full window \u2014 asserted as intended at tests/test_bar.py:90 \u2014 while the module's own docstring at reckon/crew/bar.py:4-6 says prescribed work \"belongs on the free lane, which is not\" finite, and the plan requires \"a node recommended to the free lane is asserted to be prescribed\" (docs/plans/a-window-paces-the-lane.html:176); no outcome this implementation can return ever recommends a node to the free lane, so that clause of the section has no counterpart in the diff and the module's own stated contract is contradicted by its hold region."
+    },
+    {
+      "file": "docs/plans/a-window-paces-the-lane.html",
+      "line": "230",
+      "text": "the landing record and the evidence anchor both state \"The declared mutation inverts the bar\", and the red log's first line matches that; the control declared for this node on its run's live pointer is \"make the bar ignore its window-state argument and return send for every window; tests/test_bar.py must fail\". These are different mutations with different reddening signatures, so the log on file does not evidence the declared control. Applied myself in a scratch copy whose resolution probe named the scratch module, the declared mutation reddens the file: 7 failed, 6 passed, exit 1 (declared-mutation-rerun.log). So the tests are sensitive and the declaration is achievable, but nothing on file shows that declaration firing, and the same claim is repeated at docs/evidence/archive/a-window-paces-the-lane-landed.html:56."
+    },
+    {
+      "file": "tests/test_bar.py",
+      "line": "141",
+      "text": "the assertion that the result carries no routing is a blocklist of ten current fleet lane names over the string values of one constructed instance, so a caller-facing field carrying a lane spelling outside that list would pass it, and the type's own field names are never asserted on."
+    },
+    {
+      "file": "reckon/crew/bar.py",
+      "line": "142",
+      "text": "the clamp branch is exercised by no case: a fill outside zero to one is folded silently into the domain, so a window past its ceiling reads as a full window rather than as a state the caller cannot express, and a regression that removed the clamp would not redden any of the 13 tests."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against c968046a \u2014 d21b09d7 adds reckon/crew/bar.py (146 lines) and tests/test_bar.py (198 lines), 9aac7d3e adds a landing record to the plan and a new cumulative evidence anchor; nothing is modified or deleted anywhere in the diff.",
+    "done_when": "read the eight clauses in full from the reviewed pointer; each maps onto a named case in tests/test_bar.py (lines 44, 54, 71, 80, 94, 103, 113, 131, 158, 168, 178) and I re-ran the node's own gate myself at the reviewed head \u2014 13 passed, exit 0 \u2014 so seven of the eight clauses are asserted on the page, and the eighth, the declared negative control, is not (see FINDING docs/plans/a-window-paces-the-lane.html:230).",
+    "goal": "read node.goal on the reviewed run's pointer \u2014 \"a continuous bar over window state returns one of three recommendations for a node's open-endedness score, and never selects a routing itself\"; that is what reckon/crew/bar.py:80 delivers, a smoothstep bar over the fill with three outcomes and no field naming a lane or backend (reckon/crew/bar.py:99-120), so the goal as dispatched is met; the plan's free-lane clause is the gap (see FINDING docs/plans/a-window-paces-the-lane.html:176).",
+    "manifest": "read at the reviewed run directory; its test claim (13 passed, exit 0) I reproduced independently, and its negative_control_log claim \u2014 \"declared mutation verbatim on its first line\" \u2014 is false, because the first line records a bar inversion while the pointer's declared control is a window-independent bar (see FINDING docs/plans/a-window-paces-the-lane.html:230).",
+    "write_paths": "the four declared paths \u2014 reckon/crew/bar.py, tests/test_bar.py, docs/plans/a-window-paces-the-lane.html, docs/evidence/archive/a-window-paces-the-lane-landed.html \u2014 are exactly the four paths of `git diff c968046a..9aac7d3e`, 476 insertions and 0 deletions; no sprint, index or state file is touched."
+  },
+  "justifications": {
+    "durability": "the reviewed node's declared mutation reddens tests/test_bar.py at 7 failed and 6 passed when I applied it in a scratch copy (declared-mutation-rerun.log), while the clamp branch at reckon/crew/bar.py:142 is reached by none of the 13 cases.",
+    "evidence": "the gate at tests/test_bar.py:71 is a 201-point strict-monotonicity assertion and I reproduced the node's recorded 13 passed exit 0, but the negative-control evidence on file at the reviewed run's negative-control.log proves a different mutation than the one declared for it.",
+    "fit": "reckon/crew/bar.py:48 uses the frozen-dataclass idiom that the surrounding crew modules use, and no symbol, filename or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/bar.py:80 returns one of the three outcomes over a continuous bar and carries no routing, the dispatched goal exactly, with the plan's free-lane clause left with no counterpart in the outcome set.",
+    "scope_discipline": "every path in `git diff c968046a..9aac7d3e` is one of the four declared write paths and the change is insert-only, with the plan-version and plan-modified meta lines untouched."
+  },
+  "measure_verdicts": [
+    {
+      "clause": "one pure function of window state and a score parameter, never read from prescription.py",
+      "evidence": "tests/test_bar.py:44 asserts exactly one public function in the module, and :54-68 honours two score literals and greps the module's import lines for prescription; the module's only imports are __future__ and dataclasses, so no import could reach prescription.",
+      "verdict": "asserts"
+    },
+    {
+      "clause": "monotonic across the whole window domain sampled at many points rather than at transitions",
+      "evidence": "tests/test_bar.py:71-77 samples 201 points over zero to one and asserts strict increase pairwise, which a constant or a wobbly bar fails.",
+      "verdict": "asserts"
+    },
+    {
+      "clause": "asserted at both extremes",
+      "evidence": "tests/test_bar.py:80-91 asserts bar 0.0 and 1.0 at the two ends and that the verdicts differ between an empty and a service-full window.",
+      "verdict": "asserts"
+    },
+    {
+      "clause": "each of the three recommendations returned at its own boundary, asserted separately",
+      "evidence": "three separate cases at tests/test_bar.py:94, :103 and :113 pin send at margin zero, split at the band edge and hold far below it, and :120 asserts all three outcomes are reachable and distinct.",
+      "verdict": "asserts"
+    },
+    {
+      "clause": "the return value is asserted to be a recommendation carrying no backend name, so a caller cannot read a routing out of it",
+      "evidence": "tests/test_bar.py:131-155 checks every string-valued dataclass field of one instance against a ten-token lane blocklist, so the narrow claim holds for the fleet's current spelling; the closing claim is broader than the assertion, which reads values rather than the type's field names.",
+      "verdict": "asserts in part"
+    },
+    {
+      "clause": "an orchestrator override in each direction is asserted to be recorded on the result rather than refused",
+      "evidence": "tests/test_bar.py:158 overrides a hold toward send and :168 overrides a send toward hold, and both assert verdict, override, effective and overridden are carried on the result.",
+      "verdict": "asserts"
+    },
+    {
+      "clause": "one fixed node and score is asserted to move from send to hold as the window fills",
+      "evidence": "tests/test_bar.py:178 holds score at 0.50 and asserts send, split, hold at fills 0.00, 0.55 and 1.00, with the three bar values asserted at :192.",
+      "verdict": "asserts"
+    },
+    {
+      "clause": "the declared mutation is applied to a scratch copy, the named test is observed to FAIL, and that log is written to the negative control path",
+      "evidence": "the log exists at the right path, a mutation does redden the named case there, and the resolution check shows the scratch module; but the mutation it records is an inversion of the bar while the control declared on the run's pointer is a bar that ignores its window-state argument, so the scratch copy, the named case and the log are all real while the mutation they evidence is not the declared one.",
+      "verdict": "appears"
+    }
+  ],
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read node.goal on the reviewed run's pointer \u2014 \"a continuous bar over window state returns one of three recommendations for a node's open-endedness score, and never selects a routing itself\"; that is what reckon/crew/bar.py:80 delivers, a smoothstep bar over the fill with three outcomes and no field naming a lane or backend (reckon/crew/bar.py:99-120), so the goal as dispatched is met; the plan's free-lane clause is the gap (see FINDING docs/plans/a-window-paces-the-lane.html:176).\nVERDICT done_when: read the eight clauses in full from the reviewed pointer; each maps onto a named case in tests/test_bar.py (lines 44, 54, 71, 80, 94, 103, 113, 131, 158, 168, 178) and I re-ran the node's own gate myself at the reviewed head \u2014 13 passed, exit 0 \u2014 so seven of the eight clauses are asserted on the page, and the eighth, the declared negative control, is not (see FINDING docs/plans/a-window-paces-the-lane.html:230).\nVERDICT write_paths: the four declared paths \u2014 reckon/crew/bar.py, tests/test_bar.py, docs/plans/a-window-paces-the-lane.html, docs/evidence/archive/a-window-paces-the-lane-landed.html \u2014 are exactly the four paths of `git diff c968046a..9aac7d3e`, 476 insertions and 0 deletions; no sprint, index or state file is touched.\nVERDICT manifest: read at the reviewed run directory; its test claim (13 passed, exit 0) I reproduced independently, and its negative_control_log claim \u2014 \"declared mutation verbatim on its first line\" \u2014 is false, because the first line records a bar inversion while the pointer's declared control is a window-independent bar (see FINDING docs/plans/a-window-paces-the-lane.html:230).\nVERDICT diff: read commit by commit against c968046a \u2014 d21b09d7 adds reckon/crew/bar.py (146 lines) and tests/test_bar.py (198 lines), 9aac7d3e adds a landing record to the plan and a new cumulative evidence anchor; nothing is modified or deleted anywhere in the diff.\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/bar.py:80 returns one of the three outcomes over a continuous bar and carries no routing, the dispatched goal exactly, with the plan's free-lane clause left with no counterpart in the outcome set.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate at tests/test_bar.py:71 is a 201-point strict-monotonicity assertion and I reproduced the node's recorded 13 passed exit 0, but the negative-control evidence on file at the reviewed run's negative-control.log proves a different mutation than the one declared for it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff c968046a..9aac7d3e` is one of the four declared write paths and the change is insert-only, with the plan-version and plan-modified meta lines untouched.\nSCORE durability: 18\nJUSTIFICATION durability: the reviewed node's declared mutation reddens tests/test_bar.py at 7 failed and 6 passed when I applied it in a scratch copy (declared-mutation-rerun.log), while the clamp branch at reckon/crew/bar.py:142 is reached by none of the 13 cases.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/bar.py:48 uses the frozen-dataclass idiom that the surrounding crew modules use, and no symbol, filename or comment carries a plan, sprint or ticket identifier.\nFINDING reckon/crew/bar.py:111 every node more than NEAR_BAR_BAND below the bar is hold at any fill, including the maximally prescribed node (score 0.0) at a full window \u2014 asserted as intended at tests/test_bar.py:90 \u2014 while the module's own docstring at reckon/crew/bar.py:4-6 says prescribed work \"belongs on the free lane, which is not\" finite, and the plan requires \"a node recommended to the free lane is asserted to be prescribed\" (docs/plans/a-window-paces-the-lane.html:176); no outcome this implementation can return ever recommends a node to the free lane, so that clause of the section has no counterpart in the diff and the module's own stated contract is contradicted by its hold region.\nFINDING docs/plans/a-window-paces-the-lane.html:230 the landing record and the evidence anchor both state \"The declared mutation inverts the bar\", and the red log's first line matches that; the control declared for this node on its run's live pointer is \"make the bar ignore its window-state argument and return send for every window; tests/test_bar.py must fail\". These are different mutations with different reddening signatures, so the log on file does not evidence the declared control. Applied myself in a scratch copy whose resolution probe named the scratch module, the declared mutation reddens the file: 7 failed, 6 passed, exit 1 (declared-mutation-rerun.log). So the tests are sensitive and the declaration is achievable, but nothing on file shows that declaration firing, and the same claim is repeated at docs/evidence/archive/a-window-paces-the-lane-landed.html:56.\nFINDING tests/test_bar.py:141 the assertion that the result carries no routing is a blocklist of ten current fleet lane names over the string values of one constructed instance, so a caller-facing field carrying a lane spelling outside that list would pass it, and the type's own field names are never asserted on.\nFINDING reckon/crew/bar.py:142 the clamp branch is exercised by no case: a fill outside zero to one is folded silently into the domain, so a window past its ceiling reads as a full window rather than as a state the caller cannot express, and a regression that removed the clamp would not redden any of the 13 tests.\nMEASURE 1: asserts \u2014 \"one pure function of window state and a score parameter, never read from prescription.py\": tests/test_bar.py:44 asserts exactly one public function in the module, and :54-68 honours two score literals and greps the module's import lines for prescription; the module's only imports are __future__ and dataclasses, so no import could reach prescription.\nMEASURE 2: asserts \u2014 \"monotonic across the whole window domain sampled at many points rather than at transitions\": tests/test_bar.py:71-77 samples 201 points over zero to one and asserts strict increase pairwise, which a constant or a wobbly bar fails.\nMEASURE 3: asserts \u2014 \"asserted at both extremes\": tests/test_bar.py:80-91 asserts bar 0.0 and 1.0 at the two ends and that the verdicts differ between an empty and a service-full window.\nMEASURE 4: asserts \u2014 \"each of the three recommendations returned at its own boundary, asserted separately\": three separate cases at tests/test_bar.py:94, :103 and :113 pin send at margin zero, split at the band edge and hold far below it, and :120 asserts all three outcomes are reachable and distinct.\nMEASURE 5: asserts in part \u2014 \"the return value is asserted to be a recommendation carrying no backend name, so a caller cannot read a routing out of it\": tests/test_bar.py:131-155 checks every string-valued dataclass field of one instance against a ten-token lane blocklist, so the narrow claim holds for the fleet's current spelling; the closing claim is broader than the assertion, which reads values rather than the type's field names.\nMEASURE 6: asserts \u2014 \"an orchestrator override in each direction is asserted to be recorded on the result rather than refused\": tests/test_bar.py:158 overrides a hold toward send and :168 overrides a send toward hold, and both assert verdict, override, effective and overridden are carried on the result.\nMEASURE 7: asserts \u2014 \"one fixed node and score is asserted to move from send to hold as the window fills\": tests/test_bar.py:178 holds score at 0.50 and asserts send, split, hold at fills 0.00, 0.55 and 1.00, with the three bar values asserted at :192.\nMEASURE 8: appears \u2014 \"the declared mutation is applied to a scratch copy, the named test is observed to FAIL, and that log is written to the negative control path\": the log exists at the right path, a mutation does redden the named case there, and the resolution check shows the scratch module; but the mutation it records is an inversion of the bar while the control declared on the run's pointer is a bar that ignores its window-state argument, so the scratch copy, the named case and the log are all real while the mutation they evidence is not the declared one.",
+  "review_run_id": "legacy-d6a7b4cb4924",
+  "review_run_id_source": "derived",
+  "reviewed_base": "c968046a2043cfe883fca6aec2a8570fb9c338e9",
+  "reviewed_base_sha": "c968046a2043cfe883fca6aec2a8570fb9c338e9",
+  "reviewed_commit": "9aac7d3e1e58945876b9fe18d06cb195e5b79842",
+  "reviewed_head_sha": "9aac7d3e1e58945876b9fe18d06cb195e5b79842",
+  "reviewed_run_id": "r-20260921T113936779344-the-bar-recommends-it-never-routes",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-21T14:07:24.546952+00:00",
+  "total": 84
+}

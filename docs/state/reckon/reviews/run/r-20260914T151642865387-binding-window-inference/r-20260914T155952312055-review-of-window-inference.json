@@ -1,0 +1,44 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T15:59:52.312055+00:00",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "text": "the after_suite records revision f26287e as the passing run, but at that revision the suite cannot run: reckon/run_store.py at f26287e has no stamp_refusal (reproduced here as AttributeError: 'RunStore' object has no attribute 'stamp_refusal' against the committed tree alone). The 9-test pass was obtained on a transiently-provisioned run_store, which the manifest discloses under evidence_inputs; at the merged head (the stamping API is on main) the full gate does reproduce, so this is a recording-fidelity note rather than a change defect \u2014 a reader must know the listed revision is not where the 9 passed."
+    },
+    {
+      "file": "reckon/crew/lane_evidence.py",
+      "line": "1",
+      "text": "the module docstring states the file's concern as shape-conditioned lane evidence ('This module never ranks, selects, or recommends a lane') and says nothing about the binding-window inference that now shares the file, so the declared purpose is narrower than the module's contents."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_binding_window_inference.py guards every state the measure names: the 5h/weekly, 30h/short, and single/undetermined verdicts, plus cross-lane isolation and an unparseable refused_at being skipped \u2014 each verified at the merged head for this review (9 passed, 0.60s), so a regression in infer_binding_window fails tests rather than surfacing silently; nothing yet consumes the verdict, which the run correctly records as a follow_on.",
+    "evidence": "the manifest's numbers independently reproduce: merged-head gate 9 passed / 0 failed (5 inference + 4 chassis) and base chassis 4 passed, delta 0, re-run in a scratch merged-head overlay of the reviewed commit over the current run_store; the three named states are asserted against stamps written and read back through RunStore.refusal_stamps, not literals; the sole caveat is the after_suite revision label (see finding), and the ~5h band edges (4h/3.5h/6.5h) appear only in the run's REPL evidence, not in committed tests.",
+    "fit": "infer_binding_window follows the module idiom \u2014 a dict verdict carrying a stated reason, module-scope named constants (SHORT_WINDOW_HOURS, RESET_CROSSING_TOLERANCE) a surface can tune, and _moment mirroring the existing _number guard style \u2014 and is parameterized per lane though only spark needs it in production; the one seam is the module docstring that has not absorbed the new concern.",
+    "goal_fidelity": "all three states the measure requires are asserted exactly: two refusals 5h apart report weekly with pairs[0].reset_crossed True, two 30h apart report short, and a single refusal reports undetermined rather than guessing \u2014 the state a surface is most tempted to fake is asserted outright, and stamps are read from the real store API a later surface would read.",
+    "scope_discipline": "commit f26287e changes exactly the two declared write paths \u2014 reckon/crew/lane_evidence.py (+94) and tests/test_binding_window_inference.py (+114), 208 insertions, no other file touched (reckon/run_store.py untouched in the commit); path and content naming checks on both files find no plan, sprint or version labels and no changelog prose."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all three states the measure requires are asserted exactly: two refusals 5h apart report weekly with pairs[0].reset_crossed True, two 30h apart report short, and a single refusal reports undetermined rather than guessing \u2014 the state a surface is most tempted to fake is asserted outright, and stamps are read from the real store API a later surface would read.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's numbers independently reproduce: merged-head gate 9 passed / 0 failed (5 inference + 4 chassis) and base chassis 4 passed, delta 0, re-run in a scratch merged-head overlay of the reviewed commit over the current run_store; the three named states are asserted against stamps written and read back through RunStore.refusal_stamps, not literals; the sole caveat is the after_suite revision label (see finding), and the ~5h band edges (4h/3.5h/6.5h) appear only in the run's REPL evidence, not in committed tests.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit f26287e changes exactly the two declared write paths \u2014 reckon/crew/lane_evidence.py (+94) and tests/test_binding_window_inference.py (+114), 208 insertions, no other file touched (reckon/run_store.py untouched in the commit); path and content naming checks on both files find no plan, sprint or version labels and no changelog prose.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_binding_window_inference.py guards every state the measure names: the 5h/weekly, 30h/short, and single/undetermined verdicts, plus cross-lane isolation and an unparseable refused_at being skipped \u2014 each verified at the merged head for this review (9 passed, 0.60s), so a regression in infer_binding_window fails tests rather than surfacing silently; nothing yet consumes the verdict, which the run correctly records as a follow_on.\nSCORE fit: 17\nJUSTIFICATION fit: infer_binding_window follows the module idiom \u2014 a dict verdict carrying a stated reason, module-scope named constants (SHORT_WINDOW_HOURS, RESET_CROSSING_TOLERANCE) a surface can tune, and _moment mirroring the existing _number guard style \u2014 and is parameterized per lane though only spark needs it in production; the one seam is the module docstring that has not absorbed the new concern.\nFINDING manifest.md:20 the after_suite records revision f26287e as the passing run, but at that revision the suite cannot run: reckon/run_store.py at f26287e has no stamp_refusal (reproduced here as AttributeError: 'RunStore' object has no attribute 'stamp_refusal' against the committed tree alone). The 9-test pass was obtained on a transiently-provisioned run_store, which the manifest discloses under evidence_inputs; at the merged head (the stamping API is on main) the full gate does reproduce, so this is a recording-fidelity note rather than a change defect \u2014 a reader must know the listed revision is not where the 9 passed.\nFINDING reckon/crew/lane_evidence.py:1 the module docstring states the file's concern as shape-conditioned lane evidence ('This module never ranks, selects, or recommends a lane') and says nothing about the binding-window inference that now shares the file, so the declared purpose is narrower than the module's contents.\n",
+  "review_run_id": "r-20260914T155952312055-review-of-window-inference",
+  "reviewed_base": "dfac43df399b58658d449090aea5068e34f10690",
+  "reviewed_commit": "f26287ebeba4c4890f0965d2eb9f18c281743d26",
+  "reviewed_run_id": "r-20260914T151642865387-binding-window-inference",
+  "reviewer_run_id": "r-20260914T155952312055-review-of-window-inference",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T16:32:17.000000+00:00",
+  "total": 92
+}

@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0 by id, measured by the reviewing run with reckon.crew.review.added_failures_from_gate_logs: head ids read from the reviewed run's own logs/suite-wide-after.log; base ids from a base arm the review took at 99455576 (git archive, tests/test_recovery_state_typing.py), recorded in the reviewing run's logs/base-arm.log and logs/head-gate-rerun.log. The same three pre-existing ids fail either side. The standard read-time annotation reports unmeasured because the reviewed manifest's baseline_suite names no gate log path.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:_watch_verdict",
+    "reckon/crew/recovery.py:watch_follow"
+  ],
+  "completed_at": "2026-09-26T22:59:33.398Z",
+  "dispatched_at": "2026-09-26T21:43:16Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/manifest.md",
+      "line": "19",
+      "text": "baseline_suite and after_suite are prose, while the manifest's own contract (prompt.txt:121-122) requires JSON carrying log_path and failure_ids, so the store's annotate_review_of_run (reckon/crew/review.py:848) reports the run's added-failure count unmeasured at read time, and this review reconstructed it from the head gate log plus its own base arm instead."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/logs/gate-green.log",
+      "line": "1",
+      "text": "the gate logs carry no header naming the revision, tree or command that produced them, as the manifest's own contract (prompt.txt:116) requires, so a later reader cannot bind the recorded results to the revision they measured without trusting the manifest's word."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read all three commits against base 99455576 -- ecc6d4c9 lands _attempt_started_seconds and the minimum-of-clocks reading, cc187c66 records it in the plan, 52f221c1 corrects the evidence page's log citation -- 377 insertions across five files, all inside the declared scope.",
+    "done_when": "the measured claim is that the just-resumed case reads working with only a predecessor's stream on disk; that measure is asserted at tests/test_resume_is_aged_from_its_own_start.py:189 and :191, and the recorded gate (logs/gate-green.log, 4 passed in 0.54s) was reproduced by this review at head 52f221c1 in a scratch tree (logs/head-gate-rerun.log in the reviewing run: 3 failed, 20 passed).",
+    "goal": "the node goal is that the classifier age a resumed run from its own attempt and never from an earlier attempt's stream; the landed reading at reckon/crew/recovery.py:2938 takes the minimum of the stream quiet time and the attempt clock, and the defect case reads working at tests/test_resume_is_aged_from_its_own_start.py:168.",
+    "manifest": "read; it records the gate results and a negative control whose first line repeats the declared mutation, but its baseline_suite and after_suite are prose rather than machine-readable fields, so the store's read-time annotation reports this run's added-failure count as unmeasured (verified through reckon/crew/review.py:848; the count quoted in the record is this review's own reconstruction, see added_failures_note).",
+    "write_paths": "the reviewed manifest declares five write paths -- reckon/crew/recovery.py, tests/test_resume_is_aged_from_its_own_start.py, docs/plans/the-fleet-counters-count-the-fleet.html, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html, docs/figures/the-fleet-counters-count-the-fleet -- and git diff --name-only 99455576 52f221c1 lists exactly those five files and nothing else."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log records the declared mutation reddening three of the four cases (just-resumed, recorded attempt clock, record beats pointer) with the fourth (own quiet log still stalls) green in both directions, and the mutation is reinstated by tests/test_resume_is_aged_from_its_own_start.py:57, so the assertions fail on the regression they guard.",
+    "evidence": "the gate is named and its result recorded (logs/gate-green.log: 4 passed) and was reproduced at exact head 52f221c1 in this review's logs/head-gate-rerun.log, but the manifest's suite fields are prose and the gate logs carry no header naming the revision they measured, so the added-failure annotation reads unmeasured.",
+    "fit": "ATTEMPT_RECORD_NAME (reckon/crew/recovery.py:2869) and _attempt_started_seconds (reckon/crew/recovery.py:2872) name the mechanism in the module's existing style, and no diff path, symbol or comment carries a plan, stage or version label.",
+    "goal_fidelity": "reckon/crew/recovery.py:2938 returns min(quiet, launch) and reckon/crew/recovery.py:2881-2892 reads the attempt clock from the pointer's attempt_started_at or the run's attempt record, which makes the resumed-with-old-stream defect at tests/test_resume_is_aged_from_its_own_start.py:168-191 read working; without an attempt clock the reading falls back to the launch window, the only clock such a run has.",
+    "scope_discipline": "git diff --name-only 99455576 52f221c1 lists exactly the five declared write paths -- implementation, test, plan page, landed-evidence page and figure -- and no other file."
+  },
+  "node": "review-of-resume-is-aged-from-its-own-start",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the classifier age a resumed run from its own attempt and never from an earlier attempt's stream; the landed reading at reckon/crew/recovery.py:2938 takes the minimum of the stream quiet time and the attempt clock, and the defect case reads working at tests/test_resume_is_aged_from_its_own_start.py:168.\nVERDICT done_when: the measured claim is that the just-resumed case reads working with only a predecessor's stream on disk; that measure is asserted at tests/test_resume_is_aged_from_its_own_start.py:189 and :191, and the recorded gate (logs/gate-green.log, 4 passed in 0.54s) was reproduced by this review at head 52f221c1 in a scratch tree (logs/head-gate-rerun.log in the reviewing run: 3 failed, 20 passed).\nVERDICT write_paths: the reviewed manifest declares five write paths -- reckon/crew/recovery.py, tests/test_resume_is_aged_from_its_own_start.py, docs/plans/the-fleet-counters-count-the-fleet.html, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html, docs/figures/the-fleet-counters-count-the-fleet -- and git diff --name-only 99455576 52f221c1 lists exactly those five files and nothing else.\nVERDICT manifest: read; it records the gate results and a negative control whose first line repeats the declared mutation, but its baseline_suite and after_suite are prose rather than machine-readable fields, so the store's read-time annotation reports this run's added-failure count as unmeasured (verified through reckon/crew/review.py:848; the count quoted in the record is this review's own reconstruction, see added_failures_note).\nVERDICT diff: read all three commits against base 99455576 -- ecc6d4c9 lands _attempt_started_seconds and the minimum-of-clocks reading, cc187c66 records it in the plan, 52f221c1 corrects the evidence page's log citation -- 377 insertions across five files, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery.py:_watch_verdict, reckon/crew/recovery.py:watch_follow\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2938 returns min(quiet, launch) and reckon/crew/recovery.py:2881-2892 reads the attempt clock from the pointer's attempt_started_at or the run's attempt record, which makes the resumed-with-old-stream defect at tests/test_resume_is_aged_from_its_own_start.py:168-191 read working; without an attempt clock the reading falls back to the launch window, the only clock such a run has.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is named and its result recorded (logs/gate-green.log: 4 passed) and was reproduced at exact head 52f221c1 in this review's logs/head-gate-rerun.log, but the manifest's suite fields are prose and the gate logs carry no header naming the revision they measured, so the added-failure annotation reads unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 99455576 52f221c1 lists exactly the five declared write paths -- implementation, test, plan page, landed-evidence page and figure -- and no other file.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.log records the declared mutation reddening three of the four cases (just-resumed, recorded attempt clock, record beats pointer) with the fourth (own quiet log still stalls) green in both directions, and the mutation is reinstated by tests/test_resume_is_aged_from_its_own_start.py:57, so the assertions fail on the regression they guard.\nSCORE fit: 19\nJUSTIFICATION fit: ATTEMPT_RECORD_NAME (reckon/crew/recovery.py:2869) and _attempt_started_seconds (reckon/crew/recovery.py:2872) name the mechanism in the module's existing style, and no diff path, symbol or comment carries a plan, stage or version label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/manifest.md:19 baseline_suite and after_suite are prose, while the manifest's own contract (prompt.txt:121-122) requires JSON carrying log_path and failure_ids, so the store's annotate_review_of_run (reckon/crew/review.py:848) reports the run's added-failure count unmeasured at read time, and this review reconstructed it from the head gate log plus its own base arm instead.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/logs/gate-green.log:1 the gate logs carry no header naming the revision, tree or command that produced them, as the manifest's own contract (prompt.txt:116) requires, so a later reader cannot bind the recorded results to the revision they measured without trusting the manifest's word.",
+  "review_run_id": "r-20260926T214257278233-review-of-resume-is-aged-from-its-own-start",
+  "reviewed_base_sha": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "reviewed_head_sha": "52f221c1856cf8f2d0a43471af1b3bf93930bf2f",
+  "reviewed_run_id": "r-20260926T205123615258-resume-is-aged-from-its-own-start",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T22:48:50.478410+00:00",
+  "total": 93
+}

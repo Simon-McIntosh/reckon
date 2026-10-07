@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_fleet_lane_carries_the_dispatch_environment.py::test_a_dispatch_confirms_its_supervisor_reached_the_run",
+    "tests/test_follow_observes_other_sessions.py::test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate",
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_dead_owner_in_the_environment_is_isolated",
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_with_nothing_new_draws_the_fleet"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 4 failing test(s) not retired by name (tests/test_fleet_lane_carries_the_dispatch_environment.py::test_a_dispatch_confirms_its_supervisor_reached_the_run, tests/test_follow_observes_other_sessions.py::test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate, tests/test_follower_rearm_shows_nothing_twice.py::test_a_dead_owner_in_the_environment_is_isolated, tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_with_nothing_new_draws_the_fleet)",
+  "base_log_revision": "531027092cec6e94ef32f4ab83a4c84eb3f7b1c5",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:1579"
+  ],
+  "completed_at": "2026-10-01T09:11:19.642Z",
+  "dispatched_at": "2026-10-01T09:03:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-dispatch-result-matches-its-launch.html",
+      "line": "32",
+      "severity": "follow-on",
+      "text": "follow-on: the record omits section 6's member-reading clause \u2014 which dispatch launched r-20260923T025720725298 and whether its named --member was dropped \u2014 so the substitution is unrefuted in the record even though that run's prompt carries no --member."
+    },
+    {
+      "file": "tests/test_dispatch_result_matches_launch.py",
+      "line": "476",
+      "severity": "follow-on",
+      "text": "follow-on: the contract-validation assertion checks a literal substring of the validation message, so a wording change reddens a durability test that is not about wording."
+    }
+  ],
+  "head_log_revision": "bb9bd6769dda5c3d0ac560e09c7e5e0c7f673486",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "commit by commit the diff composes the contract-validation refusal as ok:false with error and detail, adds detail to the competence-refusal emits on dispatch and shadow, and adds the 566-line gate file.",
+    "done_when": "the gate the worker ran asserts the done_when \u2014 the new file drives a stub-backed dispatch through the post-launch paths and asserts a result either names the launched run or leaves no pointer, worktree or live worker.",
+    "goal": "the landed change fixes the dry-run contract-validation refusal to carry error and detail, adds detail to the dry-run competence-refusal, and adds tests/test_dispatch_result_matches_launch.py driving the post-launch refusals, the survival check, an unresolvable member, and every ok:false the dispatch command emits.",
+    "manifest": "the manifest records commits, gate logs, a valid negative control and a base/head failure pair; it is silent on section 6's separate member-reading clause.",
+    "write_paths": "the diff touches reckon/cli.py, tests/test_dispatch_result_matches_launch.py and the declared evidence fragment; reckon/crew/dispatch.py was declared and not needed."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_result_matches_launch.py:295 and :314 drive the two post-launch mechanisms through the real unwind and fail if the pre-fix ordering returns (logs/negative-control-mutation.log reddens both at 2 failed EXIT=1, ids absent from the head arm), :348 and :364 pin the survival check to opposite records, :275 is a positive control that the refusal assertions' reads see a present run, and :146 asserts the real live directory is untouched; but the wording coupling at :476 makes the contract-validation case redden on a validation-message edit rather than a regression.",
+    "evidence": "the reviewed run's own arm logs support the gate \u2014 logs/new-test-at-base-source.log reads 3 failed 19 passed over base cli.py with the contract-validation and two competence-refusal ids, logs/head-focused.log reads 22 passed at head (independently reproduced here: 22 passed in 28.01s), and logs/base-arm.log and logs/head-arm.log yield four added and four removed failing ids by an independent comm of their FAILED lines; the four head-only ids pass in logs/head-only-ids-isolated.log, and the head arm ran on bb9bd676 content rather than the final head 634d7d3c, disclosed in the evidence fragment.",
+    "fit": "reckon/cli.py:922 sits beside _emit at :917 and speaks the module's refusal voice, the dry-run success branch's hardcoded ok:true at :1586 is equivalent to the old resolution.validation.ok now that :1567 handles the false arm, and the comments explain the mechanism rather than a ticket.",
+    "goal_fidelity": "reckon/cli.py:922 renders the contract-validation findings as a refusal detail and reckon/cli.py:1567 emits it with error contract-validation, which is the defect section 6 names, and tests/test_dispatch_result_matches_launch.py:385 verifies the unresolvable member is refused rather than auto-derived; but section 6 separately requires the record to say which dispatch launched r-20260923T025720725298 and whether its named --member was dropped, and neither the manifest nor docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-dispatch-result-matches-its-launch.html:32 states it, although that run's prompt.txt contains zero occurrences of clive-rev-6 so the substitution reading was available and left unrecorded.",
+    "scope_discipline": "git diff 531027092..634d7d3c touches exactly three files, all among the declared write paths \u2014 reckon/cli.py, tests/test_dispatch_result_matches_launch.py and the evidence fragment \u2014 at 700 insertions and 5 deletions, with no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the landed change fixes the dry-run contract-validation refusal to carry error and detail, adds detail to the dry-run competence-refusal, and adds tests/test_dispatch_result_matches_launch.py driving the post-launch refusals, the survival check, an unresolvable member, and every ok:false the dispatch command emits.\nVERDICT done_when: the gate the worker ran asserts the done_when \u2014 the new file drives a stub-backed dispatch through the post-launch paths and asserts a result either names the launched run or leaves no pointer, worktree or live worker.\nVERDICT write_paths: the diff touches reckon/cli.py, tests/test_dispatch_result_matches_launch.py and the declared evidence fragment; reckon/crew/dispatch.py was declared and not needed.\nVERDICT manifest: the manifest records commits, gate logs, a valid negative control and a base/head failure pair; it is silent on section 6's separate member-reading clause.\nVERDICT diff: commit by commit the diff composes the contract-validation refusal as ok:false with error and detail, adds detail to the competence-refusal emits on dispatch and shadow, and adds the 566-line gate file.\nCALL_SITES: reckon/cli.py:1579\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/cli.py:922 renders the contract-validation findings as a refusal detail and reckon/cli.py:1567 emits it with error contract-validation, which is the defect section 6 names, and tests/test_dispatch_result_matches_launch.py:385 verifies the unresolvable member is refused rather than auto-derived; but section 6 separately requires the record to say which dispatch launched r-20260923T025720725298 and whether its named --member was dropped, and neither the manifest nor docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-dispatch-result-matches-its-launch.html:32 states it, although that run's prompt.txt contains zero occurrences of clive-rev-6 so the substitution reading was available and left unrecorded.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's own arm logs support the gate \u2014 logs/new-test-at-base-source.log reads 3 failed 19 passed over base cli.py with the contract-validation and two competence-refusal ids, logs/head-focused.log reads 22 passed at head (independently reproduced here: 22 passed in 28.01s), and logs/base-arm.log and logs/head-arm.log yield four added and four removed failing ids by an independent comm of their FAILED lines; the four head-only ids pass in logs/head-only-ids-isolated.log, and the head arm ran on bb9bd676 content rather than the final head 634d7d3c, disclosed in the evidence fragment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 531027092..634d7d3c touches exactly three files, all among the declared write paths \u2014 reckon/cli.py, tests/test_dispatch_result_matches_launch.py and the evidence fragment \u2014 at 700 insertions and 5 deletions, with no unrelated edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_result_matches_launch.py:295 and :314 drive the two post-launch mechanisms through the real unwind and fail if the pre-fix ordering returns (logs/negative-control-mutation.log reddens both at 2 failed EXIT=1, ids absent from the head arm), :348 and :364 pin the survival check to opposite records, :275 is a positive control that the refusal assertions' reads see a present run, and :146 asserts the real live directory is untouched; but the wording coupling at :476 makes the contract-validation case redden on a validation-message edit rather than a regression.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/cli.py:922 sits beside _emit at :917 and speaks the module's refusal voice, the dry-run success branch's hardcoded ok:true at :1586 is equivalent to the old resolution.validation.ok now that :1567 handles the false arm, and the comments explain the mechanism rather than a ticket.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-dispatch-result-matches-its-launch.html:32 follow-on: the record omits section 6's member-reading clause \u2014 which dispatch launched r-20260923T025720725298 and whether its named --member was dropped \u2014 so the substitution is unrefuted in the record even though that run's prompt carries no --member.\nFINDING tests/test_dispatch_result_matches_launch.py:476 follow-on: the contract-validation assertion checks a literal substring of the validation message, so a wording change reddens a durability test that is not about wording.",
+  "review_run_id": "r-20261001T090238701710-review-of-a-dispatch-result-matches-its-launch",
+  "reviewed_base_sha": "531027092cec6e94ef32f4ab83a4c84eb3f7b1c5",
+  "reviewed_head_sha": "634d7d3cdc636a229183954711c3d4b8a63d631f",
+  "reviewed_run_id": "r-20261001T081548169030-a-dispatch-result-matches-its-launch",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T090238701710-review-of-a-dispatch-result-matches-its-launch",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T09:09:05.643704+00:00",
+  "total": 5
+}

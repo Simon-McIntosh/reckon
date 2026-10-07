@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_require_gate_evidence",
+    "reckon/crew/promotion.py:_resolve_commits"
+  ],
+  "completed_at": "2026-10-01T07:10:24.929Z",
+  "dispatched_at": "2026-10-01T06:59:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "929",
+      "severity": "follow-on",
+      "text": "follow-on: the declared-citation refusal still words the same unresolvable-identifier complaint \"does not resolve to an object\", while the presented refusal at :877 and the resolver at :2229 now say \"commit object\" and a fourth site at :6596 says \"does not resolve to a commit\"; the manifest discloses this as a follow-on because tests/test_commitless_review_promotes.py:543 and :567 pin the declared wording, outside this node's fence, so the guard still refuses one defect in three vocabularies."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T064209008996-presented-refusal-keeps-its-wording/logs/base-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base-arm log omits the module.__file__ and cwd header lines that head-arm.log:2-3 carry, although the done-when requires them only for a measurement run in a scratch tree and both arms here ran in the same worktree; a reader comparing the two arms must reconstruct that the base ran at the worktree's base revision rather than a scratch export to read the asymmetry."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "exactly the six-line reword claimed - the f-string fragments at promote.py:877-878 changed from \"does not resolve to an object in the run repository\" to \"does not resolve to a commit object in the run repository\", the {tree} interpolation and the join over unresolved_presented untouched, so the refusal still fires by value where the presentation is read and still needs a readable tree.",
+    "done_when": "met - base arm 6c1e00cb reproduces the red (1 failed, EXIT=1, the promotion case red on the wording mismatch), head arm 1bdd1bfb is 52 passed EXIT=0 with no failure id, the declared mutation reddens the same case, and the four companion test files stay green.",
+    "goal": "the dispatch goal is met exactly as written - tests/test_crew.py::test_promotion_refuses_a_commit_that_names_no_object expected a CrewError matching \"does not resolve to a commit object\", and the presented-commit refusal at reckon/crew/promotion.py:877 now contains that phrase, matching the resolver at promotion.py:2229, with behaviour untouched.",
+    "manifest": "complete and honest - baseline_suite and after_suite carry literal absolute commands, completed true and matching failure ids; added_failure_count 0 with empty added_failure_ids derives from the logs, and the residue (declared-citation refusal still on \"object\" wording) is disclosed under follow_ons rather than hidden.",
+    "write_paths": "within the granted scope - only reckon/crew/promotion.py (source) and docs/evidence/fragments/crew-runtime-positive-controls/presented-refusal-keeps-its-wording.html changed; tests/test_crew.py and tests/test_control_gate_repairs.py are untouched, the latter not needed because the reworded message keeps its value-and-tree assertions satisfied."
+  },
+  "justifications": {
+    "durability": "The guarded thing is made to happen and the refusal shown - the base arm exhibits the old wording producing the mismatch and the control makes the same case red again, while tests/test_control_gate_repairs.py::test_a_presented_sha_that_resolves_to_no_object_is_refused_by_value keeps asserting the value appears in the refusal; docked two because the control and the base arm exercise one source state, so durability rests on a single discriminating test_crew case rather than an independent observation.",
+    "evidence": "I independently re-ran the head gate at 397b38ca (52 passed, EXIT=0) and reproduced the base failure from the base blob in a scratch tree (1 failed, EXIT=1, \"Expected regex: 'does not resolve to a commit object'\"), the three arm logs carry revision-on-line-one and a bare EXIT= line, and added_failures_from_gate_logs over the two logs returns (0, []); docked two because the base arm's log omits the module.__file__/cwd header lines the head arm prints, and the declared mutation restores exactly the base source state so the control re-shows the base failure rather than probing a new edge.",
+    "fit": "The node is small by the contract (12 changed lines, one landing line, a fragment, no figure) and follows the delta idiom - a focused five-file gate measured at base and head with the failure-id set compared rather than absolute green; one dock for the base-arm header shape differing from the head arm's, which asks a reader to infer which revision the base log measured from its first line alone.",
+    "goal_fidelity": "The named regression is repaired with the exact phrase the older refusal at reckon/crew/promotion.py:2229 uses, the test is not loosened, and the behaviour is preserved; one dock because the guard's refusal family now carries three spellings (presented/resolver \"commit object\", declared at promotion.py:929 \"an object\", target-head at promotion.py:6596 \"a commit\") so the wider one-vocabulary aim is only partly achieved.",
+    "scope_discipline": "Exactly one source file and one evidence fragment changed; the reviewed worktree is clean at 397b38ca and I verified the mutation was reverted (line 877 reads \"commit object\" at HEAD); ruff check reports the identical three pre-existing findings at base and head and ruff format reports only pre-existing hunks at promotion.py:1944, none in the changed 874-884 region."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the dispatch goal is met exactly as written - tests/test_crew.py::test_promotion_refuses_a_commit_that_names_no_object expected a CrewError matching \"does not resolve to a commit object\", and the presented-commit refusal at reckon/crew/promotion.py:877 now contains that phrase, matching the resolver at promotion.py:2229, with behaviour untouched.\nVERDICT done_when: met - base arm 6c1e00cb reproduces the red (1 failed, EXIT=1, the promotion case red on the wording mismatch), head arm 1bdd1bfb is 52 passed EXIT=0 with no failure id, the declared mutation reddens the same case, and the four companion test files stay green.\nVERDICT write_paths: within the granted scope - only reckon/crew/promotion.py (source) and docs/evidence/fragments/crew-runtime-positive-controls/presented-refusal-keeps-its-wording.html changed; tests/test_crew.py and tests/test_control_gate_repairs.py are untouched, the latter not needed because the reworded message keeps its value-and-tree assertions satisfied.\nVERDICT manifest: complete and honest - baseline_suite and after_suite carry literal absolute commands, completed true and matching failure ids; added_failure_count 0 with empty added_failure_ids derives from the logs, and the residue (declared-citation refusal still on \"object\" wording) is disclosed under follow_ons rather than hidden.\nVERDICT diff: exactly the six-line reword claimed - the f-string fragments at promote.py:877-878 changed from \"does not resolve to an object in the run repository\" to \"does not resolve to a commit object in the run repository\", the {tree} interpolation and the join over unresolved_presented untouched, so the refusal still fires by value where the presentation is read and still needs a readable tree.\nCALL_SITES: reckon/crew/promotion.py:_require_gate_evidence, reckon/crew/promotion.py:_resolve_commits\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The named regression is repaired with the exact phrase the older refusal at reckon/crew/promotion.py:2229 uses, the test is not loosened, and the behaviour is preserved; one dock because the guard's refusal family now carries three spellings (presented/resolver \"commit object\", declared at promotion.py:929 \"an object\", target-head at promotion.py:6596 \"a commit\") so the wider one-vocabulary aim is only partly achieved.\nSCORE evidence: 18\nJUSTIFICATION evidence: I independently re-ran the head gate at 397b38ca (52 passed, EXIT=0) and reproduced the base failure from the base blob in a scratch tree (1 failed, EXIT=1, \"Expected regex: 'does not resolve to a commit object'\"), the three arm logs carry revision-on-line-one and a bare EXIT= line, and added_failures_from_gate_logs over the two logs returns (0, []); docked two because the base arm's log omits the module.__file__/cwd header lines the head arm prints, and the declared mutation restores exactly the base source state so the control re-shows the base failure rather than probing a new edge.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Exactly one source file and one evidence fragment changed; the reviewed worktree is clean at 397b38ca and I verified the mutation was reverted (line 877 reads \"commit object\" at HEAD); ruff check reports the identical three pre-existing findings at base and head and ruff format reports only pre-existing hunks at promotion.py:1944, none in the changed 874-884 region.\nSCORE durability: 18\nJUSTIFICATION durability: The guarded thing is made to happen and the refusal shown - the base arm exhibits the old wording producing the mismatch and the control makes the same case red again, while tests/test_control_gate_repairs.py::test_a_presented_sha_that_resolves_to_no_object_is_refused_by_value keeps asserting the value appears in the refusal; docked two because the control and the base arm exercise one source state, so durability rests on a single discriminating test_crew case rather than an independent observation.\nSCORE fit: 19\nJUSTIFICATION fit: The node is small by the contract (12 changed lines, one landing line, a fragment, no figure) and follows the delta idiom - a focused five-file gate measured at base and head with the failure-id set compared rather than absolute green; one dock for the base-arm header shape differing from the head arm's, which asks a reader to infer which revision the base log measured from its first line alone.\nFINDING reckon/crew/promotion.py:929 follow-on: the declared-citation refusal still words the same unresolvable-identifier complaint \"does not resolve to an object\", while the presented refusal at :877 and the resolver at :2229 now say \"commit object\" and a fourth site at :6596 says \"does not resolve to a commit\"; the manifest discloses this as a follow-on because tests/test_commitless_review_promotes.py:543 and :567 pin the declared wording, outside this node's fence, so the guard still refuses one defect in three vocabularies.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T064209008996-presented-refusal-keeps-its-wording/logs/base-arm.log:1 follow-on: the base-arm log omits the module.__file__ and cwd header lines that head-arm.log:2-3 carry, although the done-when requires them only for a measurement run in a scratch tree and both arms here ran in the same worktree; a reader comparing the two arms must reconstruct that the base ran at the worktree's base revision rather than a scratch export to read the asymmetry.\n",
+  "review_run_id": "r-20261001T065917791299-review-of-presented-refusal-keeps-its-wording",
+  "reviewed_base_sha": "6c1e00cbf81a4204936617c139c44f6319fc6ac3",
+  "reviewed_head_sha": "397b38ca5f91b5d3c75208f19e8a2a79abfb72b3",
+  "reviewed_run_id": "r-20261001T064209008996-presented-refusal-keeps-its-wording",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T07:09:03.615198+00:00",
+  "total": 94
+}

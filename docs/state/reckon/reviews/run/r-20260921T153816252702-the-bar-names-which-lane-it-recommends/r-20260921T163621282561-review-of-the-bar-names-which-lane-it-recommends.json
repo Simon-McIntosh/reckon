@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:36:21.282561+00:00",
+  "findings": [
+    {
+      "file": "tests/test_bar.py",
+      "line": "136",
+      "text": "the case named for distinctness cannot fail when two of the four verdict labels are collapsed to one value, because it compares the observed set to set(RECOMMENDATIONS) built from the same constants and the separate len(RECOMMENDATIONS) == 4 check reads the tuple rather than its values; measured here by setting SEND_LOCAL = \"send-metered\" in a scratch copy, where this case stayed green and only tests/test_bar.py::test_every_node_offered_the_free_lane_is_prescribed reddened (1 failed, 18 passed), so the property the case is named for has no assertion of its own."
+    },
+    {
+      "file": "reckon/crew/bar.py",
+      "line": "53",
+      "text": "the near-bar band's stated remedy is unreachable at the top of the window domain: at fill 1.0 the bar is 1.0, so no node clears it and \"each of which clears the bar\" cannot hold for a split pair, yet split is still returned for scores 0.85-1.0 (14 of 101 sampled scores at that fill) and the band also carries the score non-monotonicity above, in which a more open-ended node is held where a less open-ended one is split."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against base 35b5b86a; ea8d38f5 adds the 181-line module and the 283-line gate, 4aa549a6 adds the plan record, one SVG and the evidence archive, and the two code files are identical at the merged head (git diff ea8d38f5 0559eb35 over both paths is empty).",
+    "done_when": "all ten clauses have cases in tests/test_bar.py; the two the first implementation inverted are asserted at :140 (a maximally prescribed node is send-local at every fill, full window included) and :156 (a maximally open-ended node at that same full window is hold, and explicitly neither send); the declared mutation was re-applied by this reviewer to a scratch copy of ea8d38f5 and reddened exactly the three tests the node's own red log names.",
+    "goal": "the goal is a continuous bar over window state that names which lane it recommends and never holds a prescribed node; reckon/crew/bar.py:149 returns send-local for a score at or below PRESCRIBED_MAX before the submission, and an independent 201-fill sweep from 0.0 to 1.0 inclusive at score 0.0 read the verdict set {'send-local'} only, at the merged head 0559eb35.",
+    "manifest": "read; it names ea8d38f5 and 4aa549a6, records the gate and the red log by path, and its evidence_inputs carry the four verdicts, the 201-fill sweep and the fixed-fill score sweep, each of which this review re-measured independently rather than accepting.",
+    "write_paths": "declared scope is reckon/crew/bar.py, tests/test_bar.py, docs/plans/a-window-paces-the-lane.html, docs/figures/a-window-paces-the-lane/ and docs/evidence/archive/a-window-paces-the-lane-landed.html; ea8d38f5 carries two files and 4aa549a6 three, every one inside the fence, and nothing outside it was touched."
+  },
+  "justifications": {
+    "durability": "the gate reddens under the first implementation's policy restored (4 failed), under the node's declared mutation (3 failed), under the full-window clause dropped (2 failed), under a collapse of the two send labels (1 failed), under a backend field added (1 failed) and under the clamp deleted (1 failed).",
+    "evidence": "every clause of the done_when has a case and every mutation this reviewer applied reddened a test, but the assertion named for distinctness at tests/test_bar.py:136-137 compares the observed set against a set built from the same constants, so it cannot fail for a collapsed vocabulary.",
+    "fit": "naming checks over both files are clean, ruff check and ruff format --check pass on reckon/crew/bar.py and tests/test_bar.py, and the module follows the pure-function and frozen-dataclass idiom of reckon/crew/review.py:62.",
+    "goal_fidelity": "reckon/crew/bar.py:141 returns one of four separately named verdicts and the prescribed clause at :149 is consulted before the bar, which is the goal's two halves exactly.",
+    "scope_discipline": "the five changed paths across ea8d38f5 and 4aa549a6 are all inside the declared write paths, and the 464 code lines carry nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a continuous bar over window state that names which lane it recommends and never holds a prescribed node; reckon/crew/bar.py:149 returns send-local for a score at or below PRESCRIBED_MAX before the submission, and an independent 201-fill sweep from 0.0 to 1.0 inclusive at score 0.0 read the verdict set {'send-local'} only, at the merged head 0559eb35.\nVERDICT done_when: all ten clauses have cases in tests/test_bar.py; the two the first implementation inverted are asserted at :140 (a maximally prescribed node is send-local at every fill, full window included) and :156 (a maximally open-ended node at that same full window is hold, and explicitly neither send); the declared mutation was re-applied by this reviewer to a scratch copy of ea8d38f5 and reddened exactly the three tests the node's own red log names.\nVERDICT write_paths: declared scope is reckon/crew/bar.py, tests/test_bar.py, docs/plans/a-window-paces-the-lane.html, docs/figures/a-window-paces-the-lane/ and docs/evidence/archive/a-window-paces-the-lane-landed.html; ea8d38f5 carries two files and 4aa549a6 three, every one inside the fence, and nothing outside it was touched.\nVERDICT manifest: read; it names ea8d38f5 and 4aa549a6, records the gate and the red log by path, and its evidence_inputs carry the four verdicts, the 201-fill sweep and the fixed-fill score sweep, each of which this review re-measured independently rather than accepting.\nVERDICT diff: read both commits against base 35b5b86a; ea8d38f5 adds the 181-line module and the 283-line gate, 4aa549a6 adds the plan record, one SVG and the evidence archive, and the two code files are identical at the merged head (git diff ea8d38f5 0559eb35 over both paths is empty).\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/bar.py:141 returns one of four separately named verdicts and the prescribed clause at :149 is consulted before the bar, which is the goal's two halves exactly.\nSCORE evidence: 19\nJUSTIFICATION evidence: every clause of the done_when has a case and every mutation this reviewer applied reddened a test, but the assertion named for distinctness at tests/test_bar.py:136-137 compares the observed set against a set built from the same constants, so it cannot fail for a collapsed vocabulary.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five changed paths across ea8d38f5 and 4aa549a6 are all inside the declared write paths, and the 464 code lines carry nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the gate reddens under the first implementation's policy restored (4 failed), under the node's declared mutation (3 failed), under the full-window clause dropped (2 failed), under a collapse of the two send labels (1 failed), under a backend field added (1 failed) and under the clamp deleted (1 failed).\nSCORE fit: 20\nJUSTIFICATION fit: naming checks over both files are clean, ruff check and ruff format --check pass on reckon/crew/bar.py and tests/test_bar.py, and the module follows the pure-function and frozen-dataclass idiom of reckon/crew/review.py:62.\n\nMeasured independently at the merged head 0559eb35, by this reviewer:\n\nThe inversion is gone as behaviour, not as a rename. The first implementation (d21b09d7) had no prescription branch at all: its verdict was margin >= 0 -> send, margin >= -0.15 -> split, else hold, and its own gate asserted the inverted policy at tests/test_bar.py:90-91 of that commit -- recommend(1.0, 0.0).verdict == HOLD and recommend(1.0, 1.0).verdict == SEND. Swept over the same 21x21 (fill, score) grid, the two modules disagree on 322 of 441 cells (73%), and both named points have flipped: (fill 1.0, score 0.0) hold -> send-local, (fill 1.0, score 1.0) send -> hold. Restoring the first implementation's policy into the delivered module reddens tests/test_bar.py::test_send_local_is_returned_at_its_own_boundary, ::test_all_four_outcomes_are_reachable_and_distinct, ::test_a_maximally_prescribed_node_is_never_held_at_any_fill and ::test_hold_is_decided_by_the_score_with_the_fill_held_constant (4 failed, 15 passed), so the defect cannot be reintroduced without the gate reporting it.\n\nHold is decided by the score at a fixed fill, and its reachability has a fill floor. Holding the fill at 0.85 and sweeping only the score (101 samples), hold spans scores 0.26-0.78 and is absent at both ends; no fill in the 21-point grid holds every sampled score, because a score at or below PRESCRIBED_MAX is send-local at any fill. Hold first becomes reachable at fill >= 0.435, where the bar reads 0.403 -- below that the window has too much room for a prescribed-above node to be refused, which is the bar being a function of window state at all, as the section requires. At a full window the vertex is missed: scores 0.90 and 0.95 are split while 1.00 is held, so the score axis is non-monotone in the last band.\n\nFINDING tests/test_bar.py:136 the case named for distinctness cannot fail when two of the four verdict labels are collapsed to one value, because it compares the observed set to set(RECOMMENDATIONS) built from the same constants and the separate len(RECOMMENDATIONS) == 4 check reads the tuple rather than its values; measured here by setting SEND_LOCAL = \"send-metered\" in a scratch copy, where this case stayed green and only tests/test_bar.py::test_every_node_offered_the_free_lane_is_prescribed reddened (1 failed, 18 passed), so the property the case is named for has no assertion of its own.\nFINDING reckon/crew/bar.py:53 the near-bar band's stated remedy is unreachable at the top of the window domain: at fill 1.0 the bar is 1.0, so no node clears it and \"each of which clears the bar\" cannot hold for a split pair, yet split is still returned for scores 0.85-1.0 (14 of 101 sampled scores at that fill) and the band also carries the score non-monotonicity above, in which a more open-ended node is held where a less open-ended one is split.\n",
+  "review_run_id": "r-20260921T163621282561-review-of-the-bar-names-which-lane-it-recommends",
+  "reviewed_base_sha": "35b5b86abde1bb2f0f13b69834b8fb02c79882a6",
+  "reviewed_commits": [
+    "ea8d38f519eb843c7e35b4dd105ebc04f709f4be",
+    "4aa549a6ec6706f62691ea1d0c5aff71467b46b0"
+  ],
+  "reviewed_head_sha": "0559eb3526547c5d0570e8aa12f1dc19fee346bb",
+  "reviewed_run_id": "r-20260921T153816252702-the-bar-names-which-lane-it-recommends",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/the-bar-names-which-lane-it-recommends",
+  "reviewer": "review-of-the-bar-names-which-lane-it-recommends",
+  "reviewer_checks_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T163621282561-review-of-the-bar-names-which-lane-it-recommends/mutation-matrix.log",
+  "reviewer_run_id": "r-20260921T163621282561-review-of-the-bar-names-which-lane-it-recommends",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:07:08.999733+00:00",
+  "total": 98
+}

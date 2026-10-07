@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:install-skills",
+    "reckon/agent_context.py:_discover_skills"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T01:27:11.069742+00:00",
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "543",
+      "text": "the pin \"registers enough members to meet it\" is satisfied only by the negation that retires the rule, so it passes whether a coordinator is told to register members or not and its test name describes a rule the skill no longer carries; rewriting it needs test scope, which this node did not hold."
+    },
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "79",
+      "text": "\"Member scarcity never qualifies \u2014 register one\" survives in the file the node corrected, so the skill still carries a registration instruction beside the \"register none\" rule landed at SKILL.md:643."
+    },
+    {
+      "file": "skills/reckon-build/references/sprint-orchestration.md",
+      "line": "228",
+      "text": "\"meet the target by registering members\" tells the coordinator the opposite of the rule landed at SKILL.md:642-650; pre-existing and outside the reviewed node's declared write paths, but the landed change turns it into a live contradiction inside the same fixed read set."
+    },
+    {
+      "file": "skills/reckon-build/references/sprint-orchestration.md",
+      "line": "118",
+      "text": "\"a busy roster is grounds to register another member\", with line 128-129's \"members are registered on demand\", is the same contradiction class and the same pre-existing status, now standing against the corrected rule."
+    },
+    {
+      "file": "skills/reckon-build/references/sprint-orchestration.md",
+      "line": "687",
+      "text": "\"register a fresh roster member if every existing one is busy\" is the same class again, unaddressed and outside the node's fence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; 8b04081b carries exactly the four corrections (+20/-9 in skills/reckon-build/SKILL.md, +3/-3 in skills/reckon-build/references/conditional-guidance.md) and 3ad9da2d appends only (+64/0 to the evidence archive, +3/0 to the plan), so both cumulative records gain their anchored sections and lose nothing.",
+    "done_when": "the measure is the four corrected sites plus tests/test_skill_contracts.py green at head with the fixed-read-set estimate under FIXED_READ_SET_TOKEN_BUDGET and the pair stated; using the test's own formula I reproduced 14,339 at base 76baf0f8 and 14,446 at head 3ad9da2d against the 15,000 bound (headroom 554), and re-ran the two tests that gate these passages from the reviewed tree (2 passed, EXIT=0), while items (1), (3) and (4) carry no assertion in that gate and rest on my own reading of the head text.",
+    "goal": "the goal is that the four findings of the build-skill extraction review are corrected in the skill and its conditional reference, and at the reviewed head each of the four sites is corrected \u2014 the duplicate clause reads once (skills/reckon-build/SKILL.md:651, one occurrence of \"unverified work\" against two at base), the pointer at skills/reckon-build/references/conditional-guidance.md:19-21 names sprint-orchestration.md \u00a712 whose heading stands at skills/reckon-build/references/sprint-orchestration.md:701, the concurrency passage at SKILL.md:642-650 carries the disposable-worker rule, and the restored test-worker step stands at SKILL.md:780-783.",
+    "manifest": "read; it records 55 passed at the corrective commit 8b04081b and 55 at base 76baf0f8 with both log paths named, the estimate pair, the vacuous-pin caveat and two test-scope follow-ons; I opened both logs and each ends \"55 passed\" with EXIT=0, and the base-arm estimate it states matches my own recomputation.",
+    "write_paths": "the five declared paths are skills/reckon-build/SKILL.md, skills/reckon-build/references/conditional-guidance.md, docs/plans/reckon-skill-overhaul.html, docs/evidence/archive/reckon-skill-overhaul-landed.html and docs/figures/reckon-skill-overhaul; `git diff --name-only 76baf0f8..3ad9da2d` returns exactly four files, every one inside that set, with the figures directory unused."
+  },
+  "justifications": {
+    "durability": "reverting any of the four corrections leaves tests/test_skill_contracts.py green, because the pin at tests/test_skill_contracts.py:543 now holds through the negation that retires the rule and the dedupe, the pointer and the restored step have no assertion at all.",
+    "evidence": "tests/test_skill_contracts.py passed 55 at the corrective commit 8b04081b and at base 76baf0f8, and the 14,339 to 14,446 estimate pair reproduced exactly under the test's own formula, but the gate asserts only the estimate and generic contracts for the four corrected sentences, which rest on the node's findings-verified.log (item 2 only) and my reading.",
+    "fit": "the corrected passage keeps the section's bold-rule voice, the pointer follows the sibling idiom at skills/reckon-build/references/conditional-guidance.md:154 and quotes the reference's own heading text, and no plan label, version name or author attribution was introduced.",
+    "goal_fidelity": "all four findings are corrected at the cited head lines, but the rule landed at skills/reckon-build/SKILL.md:643 is contradicted by skills/reckon-build/SKILL.md:79 and by four passages of the reference the skill hands readers to, so the file still carries registration instructions beside the corrected rule.",
+    "scope_discipline": "`git diff --numstat 76baf0f8..3ad9da2d` (64/0, 3/0, 20/9, 3/3) lists four files, all inside the five declared write paths, and the two cumulative records are appended to, carrying no deletion."
+  },
+  "node": "review-of-build-skill-review-findings-closed",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260925T005352374696-build-skill-review-findings-closed,\nread at its landed head 3ad9da2d against base 76baf0f8.\n\nVERDICT goal: the goal is that the four findings of the build-skill extraction review are corrected in the skill and its conditional reference, and at the reviewed head each of the four sites is corrected \u2014 the duplicate clause reads once (skills/reckon-build/SKILL.md:651, one occurrence of \"unverified work\" against two at base), the pointer at skills/reckon-build/references/conditional-guidance.md:19-21 names sprint-orchestration.md \u00a712 whose heading stands at skills/reckon-build/references/sprint-orchestration.md:701, the concurrency passage at SKILL.md:642-650 carries the disposable-worker rule, and the restored test-worker step stands at SKILL.md:780-783.\nVERDICT done_when: the measure is the four corrected sites plus tests/test_skill_contracts.py green at head with the fixed-read-set estimate under FIXED_READ_SET_TOKEN_BUDGET and the pair stated; using the test's own formula I reproduced 14,339 at base 76baf0f8 and 14,446 at head 3ad9da2d against the 15,000 bound (headroom 554), and re-ran the two tests that gate these passages from the reviewed tree (2 passed, EXIT=0), while items (1), (3) and (4) carry no assertion in that gate and rest on my own reading of the head text.\nVERDICT write_paths: the five declared paths are skills/reckon-build/SKILL.md, skills/reckon-build/references/conditional-guidance.md, docs/plans/reckon-skill-overhaul.html, docs/evidence/archive/reckon-skill-overhaul-landed.html and docs/figures/reckon-skill-overhaul; `git diff --name-only 76baf0f8..3ad9da2d` returns exactly four files, every one inside that set, with the figures directory unused.\nVERDICT manifest: read; it records 55 passed at the corrective commit 8b04081b and 55 at base 76baf0f8 with both log paths named, the estimate pair, the vacuous-pin caveat and two test-scope follow-ons; I opened both logs and each ends \"55 passed\" with EXIT=0, and the base-arm estimate it states matches my own recomputation.\nVERDICT diff: read commit by commit; 8b04081b carries exactly the four corrections (+20/-9 in skills/reckon-build/SKILL.md, +3/-3 in skills/reckon-build/references/conditional-guidance.md) and 3ad9da2d appends only (+64/0 to the evidence archive, +3/0 to the plan), so both cumulative records gain their anchored sections and lose nothing.\nCALL_SITES: reckon/cli.py:install-skills, reckon/agent_context.py:_discover_skills\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: all four findings are corrected at the cited head lines, but the rule landed at skills/reckon-build/SKILL.md:643 is contradicted by skills/reckon-build/SKILL.md:79 and by four passages of the reference the skill hands readers to, so the file still carries registration instructions beside the corrected rule.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_skill_contracts.py passed 55 at the corrective commit 8b04081b and at base 76baf0f8, and the 14,339 to 14,446 estimate pair reproduced exactly under the test's own formula, but the gate asserts only the estimate and generic contracts for the four corrected sentences, which rest on the node's findings-verified.log (item 2 only) and my reading.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --numstat 76baf0f8..3ad9da2d` (64/0, 3/0, 20/9, 3/3) lists four files, all inside the five declared write paths, and the two cumulative records are appended to, carrying no deletion.\nSCORE durability: 12\nJUSTIFICATION durability: reverting any of the four corrections leaves tests/test_skill_contracts.py green, because the pin at tests/test_skill_contracts.py:543 now holds through the negation that retires the rule and the dedupe, the pointer and the restored step have no assertion at all.\nSCORE fit: 17\nJUSTIFICATION fit: the corrected passage keeps the section's bold-rule voice, the pointer follows the sibling idiom at skills/reckon-build/references/conditional-guidance.md:154 and quotes the reference's own heading text, and no plan label, version name or author attribution was introduced.\nFINDING tests/test_skill_contracts.py:543 the pin \"registers enough members to meet it\" is satisfied only by the negation that retires the rule, so it passes whether a coordinator is told to register members or not and its test name describes a rule the skill no longer carries; rewriting it needs test scope, which this node did not hold.\nFINDING skills/reckon-build/SKILL.md:79 \"Member scarcity never qualifies \u2014 register one\" survives in the file the node corrected, so the skill still carries a registration instruction beside the \"register none\" rule landed at SKILL.md:643.\nFINDING skills/reckon-build/references/sprint-orchestration.md:228 \"meet the target by registering members\" tells the coordinator the opposite of the rule landed at SKILL.md:642-650; pre-existing and outside the reviewed node's declared write paths, but the landed change turns it into a live contradiction inside the same fixed read set.\nFINDING skills/reckon-build/references/sprint-orchestration.md:118 \"a busy roster is grounds to register another member\", with line 128-129's \"members are registered on demand\", is the same contradiction class and the same pre-existing status, now standing against the corrected rule.\nFINDING skills/reckon-build/references/sprint-orchestration.md:687 \"register a fresh roster member if every existing one is busy\" is the same class again, unaddressed and outside the node's fence.",
+  "review_run_id": "r-20260925T012711069742-review-of-build-skill-review-findings-closed",
+  "reviewed_base_sha": "76baf0f849be2c249d2eca6e9fdd4de911435042",
+  "reviewed_head_sha": "3ad9da2d32680565ec5a2b1ffb76bc28cadd8987",
+  "reviewed_run_id": "r-20260925T005352374696-build-skill-review-findings-closed",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T01:52:44.728747+00:00",
+  "total": 80
+}

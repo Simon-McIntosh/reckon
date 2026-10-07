@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/serve.py:1221 (the document index serves the plan and evidence docs; the research JSON and figure are read by no runtime module)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T09:28:04.965136+00:00",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_lifetime_probe.py",
+      "line": "514",
+      "text": "the \"real pointer directory\" guard resolves _config_home() at call time, which the suite's RECKON_HOME fixture points at a pytest temporary tree (tests/conftest.py:112), so it inspects a directory the probe never writes to and the done-when clause \"asserts on the real pointer directory being untouched\" is unmeasured; the artifact records that path with null mtimes (docs/research/data/dispatch-lifetime.json:677-679) while the landed record claims the mtime was recorded before and after (docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:103)."
+    },
+    {
+      "file": "docs/research/data/dispatch-lifetime.json",
+      "line": "60",
+      "text": "candidate_holders[0] cites reckon/crew/routing.py:243 with enclosing_function \"_create_worktree\", but line 243 sits inside _git; the enclosing name is supplied by the caller at tests/test_dispatch_lifetime_probe.py:481 rather than measured, so the artifact can carry a wrong function attribution while the gate stays green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044807192716-dispatch-lifetime-probe/manifest.md",
+      "line": "2",
+      "text": "orientation_base_sha d6817708a55941eafa2e1522ec63b3197268d541 resolves to no object in the repository, so the record's own line cannot be used to compute the reviewed diff; the true base, parent of 69ddff47, is d6817708a55941eafa2e1522ec63b3197265d541."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit; the change is the harness, the artifact, the figure and the two landed docs, and the committed artifact's per-trial repositories match the harness delivered in 31fbcfb7.",
+    "done_when": "read against the section's clauses \u2014 the process trees with roles and the three signals' marker results are recorded (docs/research/data/dispatch-lifetime.json:117,245,373,437,501) and the pre-launch citation resolves at reckon/crew/routing.py:880, but the \"real pointer directory being untouched\" clause has no working instrument (tests/test_dispatch_lifetime_probe.py:514; artifact:677).",
+    "goal": "the node goal is a recorded measurement of what holds reckon crew dispatch open after its worker launches and whether the worker survives the dispatch process dying; docs/research/data/dispatch-lifetime.json:23-53 records both, with no post-launch holder (0.088-0.211 s) and a marker in all five trials.",
+    "manifest": "read; it names the four commits, the single-test 320 s gate with its log and EXIT=0, a failure attribution and two follow-ons, but its orientation_base_sha at line 2 resolves to no object.",
+    "write_paths": "the four commits' diffstat covers exactly the five declared paths and nothing else, 1625 insertions (git diff --stat d6817708..3e684cc5); the node fence is prompt.txt:47-52."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_lifetime_probe.py:772 reddens if a post-launch await is reinstated and the marker control at :747 catches an unaimed instrument, but the guard at :744 cannot fail and the citations recorded at :481 are never asserted to resolve.",
+    "evidence": "the gate is the artifact's own generator and records 1 passed in 320.01s with EXIT=0, but the done-when's real-pointer-directory clause is measured against a pytest temporary tree (tests/test_dispatch_lifetime_probe.py:514) and the landed record's claim about its mtime (docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:103) is contradicted by docs/research/data/dispatch-lifetime.json:678-679.",
+    "fit": "the module follows the surrounding test idiom and the established plans/evidence/figures layout with the project-absolute figure src, with residue at docs/research/data/dispatch-lifetime.json:62 and tests/test_dispatch_lifetime_probe.py:769.",
+    "goal_fidelity": "docs/research/data/dispatch-lifetime.json:16 states the measured absence of a post-launch holder and substitutes the pre-launch blocking call at reckon/crew/routing.py:880, but the plan's six-minute observation is not reproduced and no holding path is named.",
+    "scope_discipline": "the diff d6817708..3e684cc5 touches exactly the five fenced paths listed at prompt.txt:47-52 and the plan edit leaves plan-version and plan-modified untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a recorded measurement of what holds reckon crew dispatch open after its worker launches and whether the worker survives the dispatch process dying; docs/research/data/dispatch-lifetime.json:23-53 records both, with no post-launch holder (0.088-0.211 s) and a marker in all five trials.\nVERDICT done_when: read against the section's clauses \u2014 the process trees with roles and the three signals' marker results are recorded (docs/research/data/dispatch-lifetime.json:117,245,373,437,501) and the pre-launch citation resolves at reckon/crew/routing.py:880, but the \"real pointer directory being untouched\" clause has no working instrument (tests/test_dispatch_lifetime_probe.py:514; artifact:677).\nVERDICT write_paths: the four commits' diffstat covers exactly the five declared paths and nothing else, 1625 insertions (git diff --stat d6817708..3e684cc5); the node fence is prompt.txt:47-52.\nVERDICT manifest: read; it names the four commits, the single-test 320 s gate with its log and EXIT=0, a failure attribution and two follow-ons, but its orientation_base_sha at line 2 resolves to no object.\nVERDICT diff: read commit by commit; the change is the harness, the artifact, the figure and the two landed docs, and the committed artifact's per-trial repositories match the harness delivered in 31fbcfb7.\nCALL_SITES: reckon/serve.py:1221 (the document index serves the plan and evidence docs; the research JSON and figure are read by no runtime module)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/research/data/dispatch-lifetime.json:16 states the measured absence of a post-launch holder and substitutes the pre-launch blocking call at reckon/crew/routing.py:880, but the plan's six-minute observation is not reproduced and no holding path is named.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate is the artifact's own generator and records 1 passed in 320.01s with EXIT=0, but the done-when's real-pointer-directory clause is measured against a pytest temporary tree (tests/test_dispatch_lifetime_probe.py:514) and the landed record's claim about its mtime (docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:103) is contradicted by docs/research/data/dispatch-lifetime.json:678-679.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff d6817708..3e684cc5 touches exactly the five fenced paths listed at prompt.txt:47-52 and the plan edit leaves plan-version and plan-modified untouched.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_dispatch_lifetime_probe.py:772 reddens if a post-launch await is reinstated and the marker control at :747 catches an unaimed instrument, but the guard at :744 cannot fail and the citations recorded at :481 are never asserted to resolve.\nSCORE fit: 17\nJUSTIFICATION fit: the module follows the surrounding test idiom and the established plans/evidence/figures layout with the project-absolute figure src, with residue at docs/research/data/dispatch-lifetime.json:62 and tests/test_dispatch_lifetime_probe.py:769.\nFINDING tests/test_dispatch_lifetime_probe.py:514 the \"real pointer directory\" guard resolves _config_home() at call time, which the suite's RECKON_HOME fixture points at a pytest temporary tree (tests/conftest.py:112), so it inspects a directory the probe never writes to and the done-when clause \"asserts on the real pointer directory being untouched\" is unmeasured; the artifact records that path with null mtimes (docs/research/data/dispatch-lifetime.json:677-679) while the landed record claims the mtime was recorded before and after (docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:103).\nFINDING docs/research/data/dispatch-lifetime.json:60 candidate_holders[0] cites reckon/crew/routing.py:243 with enclosing_function \"_create_worktree\", but line 243 sits inside _git; the enclosing name is supplied by the caller at tests/test_dispatch_lifetime_probe.py:481 rather than measured, so the artifact can carry a wrong function attribution while the gate stays green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044807192716-dispatch-lifetime-probe/manifest.md:2 orientation_base_sha d6817708a55941eafa2e1522ec63b3197268d541 resolves to no object in the repository, so the record's own line cannot be used to compute the reviewed diff; the true base, parent of 69ddff47, is d6817708a55941eafa2e1522ec63b3197265d541.",
+  "review_run_id": "r-20260923T092804965136-review-of-dispatch-lifetime-probe",
+  "reviewed_base_sha": "d6817708a55941eafa2e1522ec63b3197265d541",
+  "reviewed_head_sha": "3e684cc5796822dfb39f2a971e9e7014fdf5d4c5",
+  "reviewed_run_id": "r-20260923T044807192716-dispatch-lifetime-probe",
+  "reviewer": {
+    "effort": "exact",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260923T092804965136-review-of-dispatch-lifetime-probe",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T10:36:17.769603+00:00",
+  "total": 80
+}

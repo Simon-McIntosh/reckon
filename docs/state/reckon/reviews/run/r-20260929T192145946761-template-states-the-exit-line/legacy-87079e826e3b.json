@@ -1,0 +1,110 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:848",
+    "reckon/crew/promotion.py:892",
+    "reckon/crew/promotion.py:1175",
+    "reckon/crew/review.py:778"
+  ],
+  "completed_at": "2026-09-29T19:57:28.202Z",
+  "dispatched_at": "2026-09-29T19:22:08Z",
+  "findings": [
+    {
+      "file": "logs/after_suite.log",
+      "line": "1",
+      "text": "first line is \"label: head\" and logs/baseline_suite.log:1 is \"label: baseline\", so review.recorded_log_revision - which reads only the first line - returns None for both arms and the stored review's base_log_revision and head_log_revision stay null, even though the template's existing test_logs clause says a gate log's first line names the revision it ran at; the revision sits on line 2, so the count cannot be tied to a commit from the record alone."
+    },
+    {
+      "file": "logs/after_suite.log",
+      "line": "2",
+      "text": "the head arm's log names revision 37b00cfafb0bb1e3a6b85e06fa69b0f623da1e09 while the reviewed head is 4a75003ac610f004a464dc886353f946fa273937 - the docs-only fragment commit landed after the gate ran - so the arm that carries the head failure list does not name the reviewed head."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read 37b00cfaf (reckon/crew/prompts.py 3 lines changed, tests/test_brief_prompt.py +55/-3) and 4a75003ac (the evidence fragment) against base 52a910d2; the three template lines carry exactly the clauses the followup asks for and the four new cases read the composed contract and the snapshot literal.",
+    "done_when": "the done-when asks the template clauses, assertions on the composed contract and the snapshot literal in tests/test_brief_prompt.py, the named negative control reddening the new assertions, a base and after arm at base and head with completed true and literal commands and bare EXIT lines, no added failure id, and a fragment; I re-ran tests/test_brief_prompt.py against the exported reviewed head in a scratch tree and got 23 passed (logs/review-focused-head.log), and the reviewed manifest records base 6 failed/234 passed and head 6 failed/238 passed with the same six ids, both logs ending EXIT=1.",
+    "goal": "the goal is the followup f-crpc-the-template-states-the-exit-line-and-literal-commands, that the manifest template in reckon/crew/prompts.py state a negative-control log ends with a bare exit line and that each suite arm's command is the literal command that ran; at 4a75003ac610f004a464dc886353f946fa273937 the negative_control_log line reads \"The log's last line is a bare line reading `EXIT=` followed by the exit code\" and both suite arm lines read \"command is the literal command that ran, with absolute paths and no angle-bracket placeholder\", which is the followup's two clauses, on the two lines it named.",
+    "manifest": "read at 16986 bytes; it carries orientation, status complete, both commits, changed_paths, a landing line naming lines 570 and 572-573 of prompts.py, the gate command with absolute paths and no placeholder, both suite arms as JSON with completed true, failure ids and per-arm log paths, the negative control path and note, artifacts, evidence_inputs and follow_ons.",
+    "write_paths": "the two commits touch reckon/crew/prompts.py, tests/test_brief_prompt.py and docs/evidence/fragments/crew-runtime-positive-controls/template-states-the-exit-line.html, which are three of the four granted paths (the figure directory holds no file, which the dispatch's \"no figure\" sentence requires); git status in the reviewed worktree is clean and no path outside the grant was touched."
+  },
+  "justifications": {
+    "durability": "the mutation that restores the three former template lines turns the two composed-contract cases and the byte-identity case red on my own run of the reviewed head, so the clauses are load-bearing rather than pinned prose; the command clause names only the angle-bracket placeholder of the three shapes gate_command_prose refuses (promotion.py:1188-1201), so a worker writing an ellipsis or a parenthetical prose selection is still refused by a rule the template does not carry.",
+    "evidence": "I re-derived added_failure_count 0 from the reviewed run's own baseline_suite and after_suite logs with review.added_failures_from_gate_logs and got the same six ids on both sides, and the negative control reproduces independently (3 failed, 20 passed with the former lines restored: logs/review-mutation.log); against that, both arm logs put \"label:\" on line 1 so review.recorded_log_revision returns None for each and the record's base_log_revision and head_log_revision are null, and the head arm names 37b00cfaf rather than the reviewed head 4a75003ac.",
+    "fit": "the four cases reuse the file's existing helpers (_compose, _flat, _arm_line) and its rule-constant idiom, the new comments state the mechanism rather than a plan label, and the changed files carry no new ruff finding (3 findings at base, 3 at head, both already formatted: /tmp/rv-ruff).",
+    "goal_fidelity": "the followup's two clauses sit on exactly the lines it named in reckon/crew/prompts.py (570, 572-573), and the four new cases in tests/test_brief_prompt.py hold them on the composed contract and the snapshot literal; I re-ran the file at the reviewed head and all 23 cases pass (logs/review-focused-head.log).",
+    "scope_discipline": "commits 37b00cfaf and 4a75003ac touch only reckon/crew/prompts.py, tests/test_brief_prompt.py and the node's own fragment inside the granted fragment path; no plan meta line, project index or sprint state is touched and the reviewed worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is the followup f-crpc-the-template-states-the-exit-line-and-literal-commands, that the manifest template in reckon/crew/prompts.py state a negative-control log ends with a bare exit line and that each suite arm's command is the literal command that ran; at 4a75003ac610f004a464dc886353f946fa273937 the negative_control_log line reads \"The log's last line is a bare line reading `EXIT=` followed by the exit code\" and both suite arm lines read \"command is the literal command that ran, with absolute paths and no angle-bracket placeholder\", which is the followup's two clauses, on the two lines it named.\nVERDICT done_when: the done-when asks the template clauses, assertions on the composed contract and the snapshot literal in tests/test_brief_prompt.py, the named negative control reddening the new assertions, a base and after arm at base and head with completed true and literal commands and bare EXIT lines, no added failure id, and a fragment; I re-ran tests/test_brief_prompt.py against the exported reviewed head in a scratch tree and got 23 passed (logs/review-focused-head.log), and the reviewed manifest records base 6 failed/234 passed and head 6 failed/238 passed with the same six ids, both logs ending EXIT=1.\nVERDICT write_paths: the two commits touch reckon/crew/prompts.py, tests/test_brief_prompt.py and docs/evidence/fragments/crew-runtime-positive-controls/template-states-the-exit-line.html, which are three of the four granted paths (the figure directory holds no file, which the dispatch's \"no figure\" sentence requires); git status in the reviewed worktree is clean and no path outside the grant was touched.\nVERDICT manifest: read at 16986 bytes; it carries orientation, status complete, both commits, changed_paths, a landing line naming lines 570 and 572-573 of prompts.py, the gate command with absolute paths and no placeholder, both suite arms as JSON with completed true, failure ids and per-arm log paths, the negative control path and note, artifacts, evidence_inputs and follow_ons.\nVERDICT diff: read 37b00cfaf (reckon/crew/prompts.py 3 lines changed, tests/test_brief_prompt.py +55/-3) and 4a75003ac (the evidence fragment) against base 52a910d2; the three template lines carry exactly the clauses the followup asks for and the four new cases read the composed contract and the snapshot literal.\nVERDICT call_sites: I read the readers the clauses mirror - promotion._EXIT_RECORD and _recorded_exit_status (promotion.py:848, 892), gate_command_prose (promotion.py:1175) and review.recorded_log_revision (review.py:778); the exit-line clause matches the fullmatch on the last non-blank line and the command clause names the angle-bracket shape gate_command_prose refuses; against the actual head, recorded_log_revision returns None for both arm logs because their first line carries a label instead of the revision.\nCALL_SITES: reckon/crew/promotion.py:848, reckon/crew/promotion.py:892, reckon/crew/promotion.py:1175, reckon/crew/review.py:778\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the followup's two clauses sit on exactly the lines it named in reckon/crew/prompts.py (570, 572-573), and the four new cases in tests/test_brief_prompt.py hold them on the composed contract and the snapshot literal; I re-ran the file at the reviewed head and all 23 cases pass (logs/review-focused-head.log).\nSCORE evidence: 17\nJUSTIFICATION evidence: I re-derived added_failure_count 0 from the reviewed run's own baseline_suite and after_suite logs with review.added_failures_from_gate_logs and got the same six ids on both sides, and the negative control reproduces independently (3 failed, 20 passed with the former lines restored: logs/review-mutation.log); against that, both arm logs put \"label:\" on line 1 so review.recorded_log_revision returns None for each and the record's base_log_revision and head_log_revision are null, and the head arm names 37b00cfaf rather than the reviewed head 4a75003ac.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commits 37b00cfaf and 4a75003ac touch only reckon/crew/prompts.py, tests/test_brief_prompt.py and the node's own fragment inside the granted fragment path; no plan meta line, project index or sprint state is touched and the reviewed worktree is clean.\nSCORE durability: 18\nJUSTIFICATION durability: the mutation that restores the three former template lines turns the two composed-contract cases and the byte-identity case red on my own run of the reviewed head, so the clauses are load-bearing rather than pinned prose; the command clause names only the angle-bracket placeholder of the three shapes gate_command_prose refuses (promotion.py:1188-1201), so a worker writing an ellipsis or a parenthetical prose selection is still refused by a rule the template does not carry.\nSCORE fit: 19\nJUSTIFICATION fit: the four cases reuse the file's existing helpers (_compose, _flat, _arm_line) and its rule-constant idiom, the new comments state the mechanism rather than a plan label, and the changed files carry no new ruff finding (3 findings at base, 3 at head, both already formatted: /tmp/rv-ruff).\nFINDING logs/after_suite.log:1 first line is \"label: head\" and logs/baseline_suite.log:1 is \"label: baseline\", so review.recorded_log_revision - which reads only the first line - returns None for both arms and the stored review's base_log_revision and head_log_revision stay null, even though the template's existing test_logs clause says a gate log's first line names the revision it ran at; the revision sits on line 2, so the count cannot be tied to a commit from the record alone.\nFINDING logs/after_suite.log:2 the head arm's log names revision 37b00cfafb0bb1e3a6b85e06fa69b0f623da1e09 while the reviewed head is 4a75003ac610f004a464dc886353f946fa273937 - the docs-only fragment commit landed after the gate ran - so the arm that carries the head failure list does not name the reviewed head.\n",
+  "review_evidence": {
+    "head_gate_re_run": {
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T195927507772-review-of-template-states-the-exit-line/logs/review-focused-head.log",
+      "result": "23 passed in 0.23s",
+      "tree": "/tmp/rev-exit-line-head (git archive of 4a75003ac)"
+    },
+    "mutation": {
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T195927507772-review-of-template-states-the-exit-line/logs/review-mutation.log",
+      "result": "3 failed, 20 passed - the two composed-contract cases and the byte-identity case",
+      "what": "the three former template lines restored in a scratch copy of reckon/crew/prompts.py at the reviewed head"
+    }
+  },
+  "review_run_id": "legacy-87079e826e3b",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "52a910d2c4d31cf979cf17db242ecc7a98ad4470",
+  "reviewed_changed_paths": [
+    "reckon/crew/prompts.py",
+    "tests/test_brief_prompt.py",
+    "docs/evidence/fragments/crew-runtime-positive-controls/template-states-the-exit-line.html"
+  ],
+  "reviewed_commits": [
+    "37b00cfaf",
+    "4a75003ac"
+  ],
+  "reviewed_diffstat": "37b00cfaf 2 files changed, 55 insertions(+), 6 deletions(-); 4a75003ac 1 file added",
+  "reviewed_done_when": "The negative_control_log line of the composed worker contract says the log's last line is a bare line reading EXIT= followed by the exit code. The baseline_suite and after_suite lines say command is the literal command that ran, with absolute paths and no angle-bracket placeholder. tests/test_brief_prompt.py asserts both on the composed contract, and its snapshot literal matches. The named negative control (restore the three former template lines) fails the new assertions. The gate is tests/test_brief_prompt.py plus every test file that imports reckon.crew.prompts, run at base and at head. Both suite arms are recorded as JSON carrying completed true and a literal command, and each log ends with the bare exit line. The head arm adds no failure id. An evidence fragment at docs/evidence/fragments/crew-runtime-positive-controls/template-states-the-exit-line.html records the change. The turn ends once the manifest reads complete.",
+  "reviewed_goal": "The worker manifest template in reckon/crew/prompts.py states that a negative-control log ends with a bare exit line, with each suite arm's command recorded as the literal command that ran (followup f-crpc-the-template-states-the-exit-line-and-literal-commands).",
+  "reviewed_head_sha": "4a75003ac610f004a464dc886353f946fa273937",
+  "reviewed_manifest": {
+    "bytes": 16986,
+    "last_modified": "2026-09-29T19:56:01.706300+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T192145946761-template-states-the-exit-line/manifest.md",
+    "sha256": "b571df039e88c69fe3cd8a1c26a6e9db554edb8ed09c30fea0de3636cebf5744"
+  },
+  "reviewed_node": "template-states-the-exit-line",
+  "reviewed_plan": "crew-runtime-positive-controls",
+  "reviewed_run_id": "r-20260929T192145946761-template-states-the-exit-line",
+  "reviewed_suite_fields": {},
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/template-states-the-exit-line",
+  "reviewed_write_paths": [
+    "reckon/crew/prompts.py",
+    "tests/test_brief_prompt.py",
+    "docs/evidence/fragments/crew-runtime-positive-controls/template-states-the-exit-line.html",
+    "docs/figures/crew-runtime-positive-controls/template-states-the-exit-line"
+  ],
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash",
+    "node": "review-of-template-states-the-exit-line",
+    "run_id": "r-20260929T195927507772-review-of-template-states-the-exit-line"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T20:40:14.481244+00:00",
+  "total": 94
+}

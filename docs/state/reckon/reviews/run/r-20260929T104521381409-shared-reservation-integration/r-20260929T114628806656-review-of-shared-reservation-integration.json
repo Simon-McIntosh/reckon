@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_shadow_cli_routes_the_candidate_and_derives_the_node"
+  ],
+  "added_failures_source": "derived from the reviewed run's own baseline_suite and after_suite gate logs (s21-suite-base.log, s21-suite-merged.log) through the store's own instrument: annotate_review_of_run returns added_failure_count 1 and the shadow-CLI id; controls recorded in review-evidence-derivation.log and review-evidence-mutation.log were a positive control (32 base ids and 33 head ids parse), an absence control (0, []) and a mutation control that deletes one FAILED line from a copy of the base text and is reported as added; the reviewed node retires the id by name in its manifest's landing line, so the total is not capped.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T12:37:47.209Z",
+  "dispatched_at": "2026-09-29T11:46:42Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-shared-reservation-integration.md",
+      "line": "35",
+      "text": "the header-repair paragraph says the corrected probe's output \"was added to each header, and the note in the log records this\"; only s21-suite-merged-noresv.log carries the probe output (lines 7-9) and none of the three arm logs contains a note, so a reader checking the base or merged header finds a crashed probe's traceback where the report says the output was added."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104521381409-shared-reservation-integration/manifest.md",
+      "line": "12",
+      "text": "measurement_module cites \"(from each log's header lines)\" for probes only one of the three logs carries; s21-suite-base.log:6-10 and s21-suite-merged.log:6-10 hold the AttributeError traceback of the inline `import reckon.crew.dispatch as d` probe instead."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104521381409-shared-reservation-integration/manifest.md",
+      "line": "15",
+      "text": "the after_suite command names /tmp/sri-targets-base.txt as its target list, but that file holds 92 lines while the arm ran 93 targets (the 93-file list is /tmp/sri-targets-merged.txt); with both files node-local, the only durable denotation of the population is the grep derivation in the report."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104521381409-shared-reservation-integration/manifest.md",
+      "line": "16",
+      "text": "failure_attribution maps tests/test_follow_observes_other_sessions.py::test_a_follower_without_observed_sessions_behaves_exactly_as_today to f6c8ebab, while the report:88 says that timing-sensitive id is \"not attributed\", so a reader of the ledger alone would credit the merge with a failure the node's own analysis declines to attribute."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node changed no repository file, so its diff against 6d528821 is empty; the merge it measured (f6c8ebab, first parent 4568a555, only incoming commit ba07b277) touches only reckon/crew/dispatch.py (13+/9-) and reckon/crew/placement.py (77+/53-) among product sources, and the failing test's reached frames at reckon/crew/promotion.py:3445/3701 lie outside it \u2014 `git diff 4568a555 f6c8ebab -- reckon/crew/promotion.py` is empty.",
+    "done_when": "every clause of the done_when is met \u2014 the report is 11846 bytes (under 200 KB), measures f6c8ebab against 4568a555, gives the population derivation with its counts (93 import-grep hits, 4 from-import hits, union 94), each arm log ends EXIT= with the required headers, the added id's assertion and its unreached diff line are quoted, the /tmp readings (20628536 KB, 20017736 KB, 18686588 KB) are recorded above the 5 GB floor, and every basetemp and scratch tree deletion is logged \u2014 except that the population is listed as a re-runnable grep derivation at a pinned revision rather than as an enumerated file list, the exact 92- and 93-file target lists surviving only in node-local /tmp.",
+    "goal": "the goal is to measure the failures the shared-reservation merge added across the tests importing dispatch or placement, and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-shared-reservation-integration.md answers it with 1 added id (tests/test_crew.py::test_shadow_cli_routes_the_candidate_and_derives_the_node), 0 recovered and 32 pre-existing.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104521381409-shared-reservation-integration/manifest.md; it records both primary arms' exits, counts and full 32- and 33-id lists, which match the logs exactly, but two provenance fields do not survive checking (measurement_module cites each log's header lines that two headers do not carry, and failure_attribution attributes an id the report declines to attribute), and its after_suite command names the base target-list file for a 93-target arm (see FINDING lines).",
+    "write_paths": "the reviewed node's declared write path was its report alone; its worktree is clean at 6d528821 (git status --porcelain empty) and the only other writes are the arm, focus and cleanup logs inside its own run directory."
+  },
+  "justifications": {
+    "durability": "the measurement is re-derivable from the record through the store's own instrument, but the exact arm target lists live only in node-local /tmp and the manifest's after_suite command misnames the 92-line list for its 93-target arm.",
+    "evidence": "re-deriving the count independently with reckon/crew/review.py:955's annotate_review_of_run over the manifest's own baseline_suite and after_suite logs returns added_failure_count 1 with the same id, so the measurement holds, but the report:35 header-repair sentence asserts a repair two of three arm logs do not show and a note no log contains.",
+    "fit": "the report and manifest follow the run-directory conventions, and no name the naming rules forbid is introduced.",
+    "goal_fidelity": "the report at s21-shared-reservation-integration.md:1 measures the merge against its first parent over the derived 94-file population and states the added (1), recovered (0) and pre-existing (32) sets.",
+    "scope_discipline": "the reviewed worktree is clean at its dispatch base 6d528821 and every write it made is its declared report path or a log under its own run directory."
+  },
+  "node": "review-of-shared-reservation-integration",
+  "project": "reckon",
+  "raw_text": "An independent review of r-20260929T104521381409-shared-reservation-integration (role test, spec exact, plan the-fleet-shares-one-allocation \u00a72), read from the reviewed run's report, manifest, gate, cleanup and focus logs, and from git at f6c8ebab in the reviewed worktree.\n\nVERDICT goal: the goal is to measure the failures the shared-reservation merge added across the tests importing dispatch or placement, and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-shared-reservation-integration.md answers it with 1 added id (tests/test_crew.py::test_shadow_cli_routes_the_candidate_and_derives_the_node), 0 recovered and 32 pre-existing.\nVERDICT done_when: every clause of the done_when is met \u2014 the report is 11846 bytes (under 200 KB), measures f6c8ebab against 4568a555, gives the population derivation with its counts (93 import-grep hits, 4 from-import hits, union 94), each arm log ends EXIT= with the required headers, the added id's assertion and its unreached diff line are quoted, the /tmp readings (20628536 KB, 20017736 KB, 18686588 KB) are recorded above the 5 GB floor, and every basetemp and scratch tree deletion is logged \u2014 except that the population is listed as a re-runnable grep derivation at a pinned revision rather than as an enumerated file list, the exact 92- and 93-file target lists surviving only in node-local /tmp.\nVERDICT write_paths: the reviewed node's declared write path was its report alone; its worktree is clean at 6d528821 (git status --porcelain empty) and the only other writes are the arm, focus and cleanup logs inside its own run directory.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104521381409-shared-reservation-integration/manifest.md; it records both primary arms' exits, counts and full 32- and 33-id lists, which match the logs exactly, but two provenance fields do not survive checking (measurement_module cites each log's header lines that two headers do not carry, and failure_attribution attributes an id the report declines to attribute), and its after_suite command names the base target-list file for a 93-target arm (see FINDING lines).\nVERDICT diff: the node changed no repository file, so its diff against 6d528821 is empty; the merge it measured (f6c8ebab, first parent 4568a555, only incoming commit ba07b277) touches only reckon/crew/dispatch.py (13+/9-) and reckon/crew/placement.py (77+/53-) among product sources, and the failing test's reached frames at reckon/crew/promotion.py:3445/3701 lie outside it \u2014 `git diff 4568a555 f6c8ebab -- reckon/crew/promotion.py` is empty.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the report at s21-shared-reservation-integration.md:1 measures the merge against its first parent over the derived 94-file population and states the added (1), recovered (0) and pre-existing (32) sets.\nSCORE evidence: 17\nJUSTIFICATION evidence: re-deriving the count independently with reckon/crew/review.py:955's annotate_review_of_run over the manifest's own baseline_suite and after_suite logs returns added_failure_count 1 with the same id, so the measurement holds, but the report:35 header-repair sentence asserts a repair two of three arm logs do not show and a note no log contains.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at its dispatch base 6d528821 and every write it made is its declared report path or a log under its own run directory.\nSCORE durability: 18\nJUSTIFICATION durability: the measurement is re-derivable from the record through the store's own instrument, but the exact arm target lists live only in node-local /tmp and the manifest's after_suite command misnames the 92-line list for its 93-target arm.\nSCORE fit: 20\nJUSTIFICATION fit: the report and manifest follow the run-directory conventions, and no name the naming rules forbid is introduced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-shared-reservation-integration.md:35 the header-repair paragraph says the corrected probe's output \"was added to each header, and the note in the log records this\"; only s21-suite-merged-noresv.log carries the probe output (lines 7-9) and none of the three arm logs contains a note, so a reader checking the base or merged header finds a crashed probe's traceback where the report says the output was added.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104521381409-shared-reservation-integration/manifest.md:12 measurement_module cites \"(from each log's header lines)\" for probes only one of the three logs carries; s21-suite-base.log:6-10 and s21-suite-merged.log:6-10 hold the AttributeError traceback of the inline `import reckon.crew.dispatch as d` probe instead.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104521381409-shared-reservation-integration/manifest.md:15 the after_suite command names /tmp/sri-targets-base.txt as its target list, but that file holds 92 lines while the arm ran 93 targets (the 93-file list is /tmp/sri-targets-merged.txt); with both files node-local, the only durable denotation of the population is the grep derivation in the report.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104521381409-shared-reservation-integration/manifest.md:16 failure_attribution maps tests/test_follow_observes_other_sessions.py::test_a_follower_without_observed_sessions_behaves_exactly_as_today to f6c8ebab, while the report:88 says that timing-sensitive id is \"not attributed\", so a reader of the ledger alone would credit the merge with a failure the node's own analysis declines to attribute.",
+  "review_run_id": "r-20260929T114628806656-review-of-shared-reservation-integration",
+  "reviewed_base_sha": "6d528821ab6b1866727e7f3e3ac4dfbdd394a7a4",
+  "reviewed_head_sha": "6d528821ab6b1866727e7f3e3ac4dfbdd394a7a4",
+  "reviewed_run_id": "r-20260929T104521381409-shared-reservation-integration",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T114628806656-review-of-shared-reservation-integration",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T12:30:58.800533+00:00",
+  "total": 95
+}

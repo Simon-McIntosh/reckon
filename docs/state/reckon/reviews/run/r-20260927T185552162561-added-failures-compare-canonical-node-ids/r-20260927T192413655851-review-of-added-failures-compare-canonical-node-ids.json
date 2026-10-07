@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T185552162561-added-failures-compare-canonical-node-ids/logs/base-arm-scratch.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T185552162561-added-failures-compare-canonical-node-ids/logs/head-arm-gate.log"
+  ],
+  "added_failures_note": "measured by the reviewing run through the production path (review.added_failures_from_gate_logs over the reviewed run's own two gate logs returns 0 added ids; select_review_for_head annotates 0 and leaves the total uncapped at 100 on a synthetic record); recorded in the stored record because the reviewed manifest is delivered to the crews reports directory, outside the reviewed run's directory, so the read-time annotation cannot derive it. Both gate logs are named above.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:_review_for_promotion",
+    "reckon/crew/recovery.py:_stored_review",
+    "reckon/crew/recovery.py:select_review_for_head",
+    "reckon/crew/review.py:read_review",
+    "reckon/crew/review.py:annotate_added_failures",
+    "reckon/crew/review.py:_pytest_failure_ids"
+  ],
+  "completed_at": "2026-09-28T05:16:06.202Z",
+  "dispatched_at": "2026-09-27T19:24:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "510",
+      "text": "the reduction anchors on the last component named tests, so two distinct ids whose paths differ only in a prefix that itself contains a tests component (tests/x.py::t against pkg/tests/x.py::t) collapse to one id and an addition under one spelling is not counted when the other is in the base log; unreachable in this repository, where every test file lives under the single top-level tests/ directory, but it is a silent under-count in the direction opposite to the defect being fixed."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "659",
+      "text": "_retires_id matches retirement prose verbatim against ids that are now canonicalised, so prose that spelled an id with the prefix a shifted head arm printed no longer retires it; no instance is measured and the reviewed manifest declares this under follow_ons, so it is recorded here to travel with the record rather than as a live defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against f70c1e1b \u2014 55471aba adds canonical_node_id and routes _pytest_failure_ids through it in reckon/crew/review.py plus the one new test file, and d2beb55a appends one landing-record section with its figure generator and png and one .r-comment in the plan, whose plan-* meta lines are byte-identical base to head.",
+    "done_when": "the gate asserts the done_when's measure quantitatively \u2014 14 passed in one invocation of the two measured files at the head, the scratch base arm at f70c1e1b is 8 failed / 6 passed with all eight failures confined to the new file, the base arm's own output records the demanded reproduction (assert 1 == 0 on the same-test-two-forms case), and the six ids that passed at base pass again as their own exit-0 gate.",
+    "goal": "the goal is that the added-failures count compares pytest node ids in one canonical repository-relative form so a test logged under another working directory is not counted as added, and reckon/crew/review.py:510-553 lands exactly that \u2014 my own probe over the production added_failures_from_gate_logs reads the same test under an absolute and a ../../ worktree spelling as 0 added at d2beb55a, where the module at f70c1e1b reads 1 (and reads 3 on the three-id incident shape).",
+    "manifest": "the manifest delivered to the crews reports directory names its four gate logs and their counts (14 passed; 8 failed / 6 passed; exit 0; 8 of 9 red) and reports ruff as prose with no ruff log on disk, which my own ruff check reproduces at 0 findings on both staged paths against 0 at base.",
+    "write_paths": "the five declared write paths are reckon/crew/review.py, tests/test_review_node_id_canonical_form.py, the landing-record HTML, the figures directory and the plan HTML, and git diff --name-only f70c1e1b..d2beb55a is set-equal to the manifest's six changed files with every one of them inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_review_node_id_canonical_form.py:71 fails with assert 1 == 0 when the canonicalisation call is reverted (the declared negative control reddens 8 of 9 cases), while the one case that stays green (:136) is the behaviour the mutation leaves unchanged.",
+    "evidence": "the head gate log's own header (logs/head-arm-gate.log:1-5) names revision 55471aba, the tree, module.__file__, the cwd and the command, its 14-passed result reproduces in my re-run, and the declared negative control's first line is byte-identical to the declaration string with 8 of 9 cases red.",
+    "fit": "reckon/crew/review.py:510 names the mechanism (canonical_node_id, no plan, ticket or version label), the private anchor constant carries a why-comment, and the docstring style matches the surrounding module's authored-rationale idiom.",
+    "goal_fidelity": "canonical_node_id at reckon/crew/review.py:510 reduces the path before the first :: to the sub-path from the last tests component with separators normalised and returns the :: segments untouched, and both sides of the difference at :553 read through it, so the goal holds for every id this repository's gate logs can print; the reserve is the collision limit named in the first finding.",
+    "scope_discipline": "every path in git diff --name-only f70c1e1b..d2beb55a is inside the five declared write paths and set-equal to the manifest's changed_paths, and the plan change is one appended .r-comment with plan-* meta lines byte-identical base to head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the added-failures count compares pytest node ids in one canonical repository-relative form so a test logged under another working directory is not counted as added, and reckon/crew/review.py:510-553 lands exactly that \u2014 my own probe over the production added_failures_from_gate_logs reads the same test under an absolute and a ../../ worktree spelling as 0 added at d2beb55a, where the module at f70c1e1b reads 1 (and reads 3 on the three-id incident shape).\nVERDICT done_when: the gate asserts the done_when's measure quantitatively \u2014 14 passed in one invocation of the two measured files at the head, the scratch base arm at f70c1e1b is 8 failed / 6 passed with all eight failures confined to the new file, the base arm's own output records the demanded reproduction (assert 1 == 0 on the same-test-two-forms case), and the six ids that passed at base pass again as their own exit-0 gate.\nVERDICT write_paths: the five declared write paths are reckon/crew/review.py, tests/test_review_node_id_canonical_form.py, the landing-record HTML, the figures directory and the plan HTML, and git diff --name-only f70c1e1b..d2beb55a is set-equal to the manifest's six changed files with every one of them inside that fence.\nVERDICT manifest: the manifest delivered to the crews reports directory names its four gate logs and their counts (14 passed; 8 failed / 6 passed; exit 0; 8 of 9 red) and reports ruff as prose with no ruff log on disk, which my own ruff check reproduces at 0 findings on both staged paths against 0 at base.\nVERDICT diff: read commit by commit against f70c1e1b \u2014 55471aba adds canonical_node_id and routes _pytest_failure_ids through it in reckon/crew/review.py plus the one new test file, and d2beb55a appends one landing-record section with its figure generator and png and one .r-comment in the plan, whose plan-* meta lines are byte-identical base to head.\nCALL_SITES: reckon/crew/promotion.py:_review_for_promotion, reckon/crew/recovery.py:_stored_review, reckon/crew/recovery.py:select_review_for_head, reckon/crew/review.py:read_review, reckon/crew/review.py:annotate_added_failures, reckon/crew/review.py:_pytest_failure_ids\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: canonical_node_id at reckon/crew/review.py:510 reduces the path before the first :: to the sub-path from the last tests component with separators normalised and returns the :: segments untouched, and both sides of the difference at :553 read through it, so the goal holds for every id this repository's gate logs can print; the reserve is the collision limit named in the first finding.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate log's own header (logs/head-arm-gate.log:1-5) names revision 55471aba, the tree, module.__file__, the cwd and the command, its 14-passed result reproduces in my re-run, and the declared negative control's first line is byte-identical to the declaration string with 8 of 9 cases red.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-only f70c1e1b..d2beb55a is inside the five declared write paths and set-equal to the manifest's changed_paths, and the plan change is one appended .r-comment with plan-* meta lines byte-identical base to head.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_node_id_canonical_form.py:71 fails with assert 1 == 0 when the canonicalisation call is reverted (the declared negative control reddens 8 of 9 cases), while the one case that stays green (:136) is the behaviour the mutation leaves unchanged.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review.py:510 names the mechanism (canonical_node_id, no plan, ticket or version label), the private anchor constant carries a why-comment, and the docstring style matches the surrounding module's authored-rationale idiom.\nFINDING reckon/crew/review.py:510 the reduction anchors on the last component named tests, so two distinct ids whose paths differ only in a prefix that itself contains a tests component (tests/x.py::t against pkg/tests/x.py::t) collapse to one id and an addition under one spelling is not counted when the other is in the base log; unreachable in this repository, where every test file lives under the single top-level tests/ directory, but it is a silent under-count in the direction opposite to the defect being fixed.\nFINDING reckon/crew/review.py:659 _retires_id matches retirement prose verbatim against ids that are now canonicalised, so prose that spelled an id with the prefix a shifted head arm printed no longer retires it; no instance is measured and the reviewed manifest declares this under follow_ons, so it is recorded here to travel with the record rather than as a live defect.",
+  "review_run_id": "r-20260927T192413655851-review-of-added-failures-compare-canonical-node-ids",
+  "reviewed_base_sha": "f70c1e1b04e7a47f06e4551df2f4a36424176c68",
+  "reviewed_head_sha": "d2beb55ab127751d587db80189bb3b872d09d1c3",
+  "reviewed_run_id": "r-20260927T185552162561-added-failures-compare-canonical-node-ids",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T05:02:33.236697+00:00",
+  "total": 94
+}

@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:46:24.508Z",
+  "dispatched_at": "2026-10-05T13:41:20Z",
+  "findings": [
+    {
+      "anchor": "reckon/mcp_views.py:2092",
+      "id": "reuse_search-1",
+      "reason": "the measure must be broadened to cover `select(`/`find(` heading lookups (or the enumerator's rewrite of `_authored_section_headings` made the assertion), else the consolidation completes with a second walker and the section's own \"underscored at every review\" defect recurs.",
+      "text": "the instrument the done-when runs, as the section specifies it (`find_all` with a heading-tag argument, a `<h2` regex, `_H2_OPEN_RE`, under `reckon/`), cannot see `soup.select(\"h2[id], section[id]\")`, the heading walk inside `_authored_section_headings` that the section names as one to consolidate; the same clause set instead newly reports `reckon/crew/dispatch.py:334` (`find_all(re.compile(r\"^h[1-6]$\"))`), a walker the section never mentions \u2014 so the done-when \"runs the instrument at the head and requires it to report only the owner\" can pass green with `_authored_section_headings`'s walk surviving, and the stated count of nine places is not what the stated clauses produce (they report thirteen sites across eight files, mcp_views absent, dispatch.py present)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:162",
+      "id": "duplicate_owner-1",
+      "reason": "extend `_authored_prose`/`_AuthoredProseParser` to yield per-section prose (it already walks the boundaries) so one owner computes a section's authored content, instead of pairing the span enumerator's offsets with the prose parser's rules.",
+      "text": "the per-section digest is stated to read the span enumerator for a section's extent while applying \"the same prose rules and the same landed-card exclusion\", but those rules live in `_authored_prose`/`_AuthoredProseParser` (plan_review.py:257, class at :162), which already tracks section and landed-card boundaries via `_section_is_card`, `_card_depth` and `_heading_depth`; the document unit (\"everything authored outside any section\") must also know section boundaries, so this parser would have to learn them independently of the enumerator \u2014 two owners of \"a section's authored content\" whose notions of a section must agree before a digest is stable; the owner to extend is `_AuthoredProseParser`, not a second reconciliation of two parsers",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "326251f40e2338924c2e4638e453786b9d7dc3e34a50eb77e5f0abbc861dda86",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 68,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T134102304504-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "f9755d6727ce200a74e2e1bb10ea5081b0a0acd6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design consolidates nine heading walkers behind one raw-text enumerator whose interface is identity, heading text and replaced span, which is a smaller interface than the behaviour it hides.",
+    "duplicate_owner": "a finding \u2014 the per-section authored content would be computed from two owners that each track section boundaries rather than one.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 names its one added public definition (the coverage predicate) and states in its own text why nothing is retired, and reuses the existing plan-review-missing family so no refusal family is added.",
+    "reuse_search": "a finding \u2014 the plan cites the owners it extends (`_StructuredSectionSpanParser`, `_section_heading`/`_section_body_end`, `_authored_section_headings`, `plan_fingerprint`/`_authored_prose`, `_fingerprint_forms`), but the search instrument it makes the done-when run cannot see one of the walkers it names, and newly reports one it does not.",
+    "thin_wrapper": "pass \u2014 no thin layer is added; \u00a716 states it extends the prose-digest owner rather than adding a second walker, and extends `_section_heading`/`_section_body_end` rather than forking the collapse span."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.912132+00:00"
+}

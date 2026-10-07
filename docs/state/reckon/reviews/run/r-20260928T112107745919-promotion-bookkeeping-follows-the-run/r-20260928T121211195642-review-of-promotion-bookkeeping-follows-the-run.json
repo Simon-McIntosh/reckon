@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absence_control": "a missing log returns (None, []) \u2014 unmeasured, never a measured zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T112107745919-promotion-bookkeeping-follows-the-run/head-arm.log",
+    "arms_green": "both arm logs end green with exit 0 over the same two regression files (26 passed at base, 31 at head with the new file added), so nothing the base arm ran was red at head",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T112107745919-promotion-bookkeeping-follows-the-run/base-arm.log",
+    "count_derivation": "set difference of FAILED/ERROR node ids over the reviewed run's own base-arm.log and head-arm.log, computed with review.added_failures_from_gate_logs (review run log logs-added-failures-derivation.log:12); the reviewed manifest's baseline_suite/after_suite hold prose, so annotate_review_of_run resolves no log and renders this count unmeasured in the read-time view while the stored record keeps it",
+    "positive_control": {
+      "count": 1,
+      "ids": [
+        "tests/test_bookkeeping_follows_the_run.py::test_a_checkout_past_the_merge_is_measured_when_no_changed_path_differs"
+      ],
+      "log_as_head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T112107745919-promotion-bookkeeping-follows-the-run/negative-control/negative-control.log",
+      "mutation": "the reviewed run's own negative-control log (exact-equality checkout check restored) taken as the head arm: the extractor sees exactly the one failing node, so it is not blind"
+    },
+    "store_view": "read through read_review, annotate_review_of_run overwrites the stored count with the manifest-derived reading (None) and adds added_failures_note; the stored count and this source block survive on disk, which is why they are recorded here"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:4598 (crew_complete -> crew.complete)",
+    "reckon/cli.py:4696 (crew_verify_gate -> record_gate_rerun_at_integrated_revision)"
+  ],
+  "completed_at": "2026-09-28T12:49:04.730Z",
+  "dispatched_at": "2026-09-28T12:12:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "965",
+      "text": "the added _revision_is_ancestor is dead code: a module-level _revision_is_ancestor already exists at :5233 and Python binds the later definition, so the call at :1137 reaches that one (measured: promotion._revision_is_ancestor.__code__.co_firstlineno is 5233) and the added function can never execute, and the executed helper also raises CrewError on a git fault where the added one would answer False, so what a reader reviews is not what runs."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1194",
+      "text": "the ladder refuses an unknown scope only when changed_paths is None (:1185), but _paths_differing_between returns None both for that route and when its git probe fails (:1007); on the probe-failure route differing is None while changed_paths is set, so the ladder falls to reason = None at :1205 and the gate runs on a checkout whose path comparison was never taken, while the report prints \"changed_paths_differing\": [] at :1151 \u2014 a measured empty \u2014 contradicting the helper's own docstring at :988 that an unknown scope is not an empty one."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1185",
+      "text": "the refusal for a checkout past the merge whose run paths are unknown has no test: the only verify-gate tests always cite a resolvable commit (tests/test_bookkeeping_follows_the_run.py:267), so this branch can be deleted without the suite noticing even though it is the branch the fail-open at :1205 bypasses."
+    },
+    {
+      "file": "tests/test_bookkeeping_follows_the_run.py",
+      "line": "238",
+      "text": "the arm that claims a run with no stored review is still refused writes its pointer with the defaults role=\"implement\" and node_id=\"node-a\" (:100, :103), so it exercises the generic non-passing-gate refusal at reckon/crew/promotion.py:3052 rather than the review-run refusal at :3060, which the new file never reaches."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T112107745919-promotion-bookkeeping-follows-the-run/manifest.md",
+      "line": "21",
+      "text": "the reviewed manifest's baseline_suite/after_suite lines hold prose rather than armed JSON, so review._gate_log_path returns the whole sentence as a log path and the store's read-time derivation reports the run unmeasured (added_failure_count None, note \"unmeasured: the reviewed manifest names no base gate log\"), disarming the added-failure annotation and the score cap for every reader even though the run's own arm logs show zero added failures."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 3c7e7872; the code half is the three narrowings in reckon/crew/promotion.py (the corrective attempt kind at :4175, the review outcome default at :3029, the descending-checkout ladder at :1129) plus the two flag help texts in reckon/cli.py, and the document half is additive.",
+    "done_when": "the done-when at docs/plans/a-refusal-is-about-the-work.html:81 names a test per narrowing and a verify-gate run two ledger commits past the merge, which tests/test_bookkeeping_follows_the_run.py:331 exercises; both its arms assert the tree is measured only when no changed path differs.",
+    "goal": "the plan section's deliverable at docs/plans/a-refusal-is-about-the-work.html:74 is three narrowings \u2014 a corrective run promotes with impl_move exempt, a review run's --outcome defaults to its stored review, and verify-gate accepts a descending checkout when no changed path differs \u2014 and commit 0ff4101a lands all three in reckon/crew/promotion.py, with the section's --repairs element declared deferred in the reviewed manifest's follow_ons line.",
+    "manifest": "read; it records the new test file at 5 passed and the base arm at 26 passed with both logs named, but its baseline_suite/after_suite lines hold prose rather than armed JSON, so the review store's read-time derivation reports the run unmeasured instead of zero.",
+    "write_paths": "the reviewed manifest declares six write paths and git show --stat 0ff4101a lists exactly those six files, so the diff stayed inside the fence."
+  },
+  "justifications": {
+    "durability": "each narrowing's accepted path reddens on reversion (tests/test_bookkeeping_follows_the_run.py:141, :204, :331) and the negative control proves :331 fails when the acceptance is removed, but the unknown-paths refusal at reckon/crew/promotion.py:1185 has no test and the arm at tests/test_bookkeeping_follows_the_run.py:238 never reaches the review-run refusal.",
+    "evidence": "tests/test_bookkeeping_follows_the_run.py:331 asserts the exact two-commits-past case the done-when names and the manifest records 5 passed with both arms logged, but the suite fields hold prose so the store cannot derive the run's added-failure count, and two extra suite claims in the manifest name no log.",
+    "fit": "the change follows the module's idiom (the attempt-kind frozenset at reckon/crew/promotion.py:4175, the local recovery import at :3049) and the naming checks are clean, but it adds a second module-level _revision_is_ancestor at :965 beside the existing one at :5233.",
+    "goal_fidelity": "each of the three narrowings named at docs/plans/a-refusal-is-about-the-work.html:74 is implemented at reckon/crew/promotion.py:4221, :3030 and :1194, and only the section's --repairs element is deferred, so the section is not yet fully delivered.",
+    "scope_discipline": "git show --stat 0ff4101a touches exactly the six files the reviewed manifest declares as write paths, so nothing outside the fence changed; the deduction is that the added helper at reckon/crew/promotion.py:965 duplicates a capability the module already carried."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan section's deliverable at docs/plans/a-refusal-is-about-the-work.html:74 is three narrowings \u2014 a corrective run promotes with impl_move exempt, a review run's --outcome defaults to its stored review, and verify-gate accepts a descending checkout when no changed path differs \u2014 and commit 0ff4101a lands all three in reckon/crew/promotion.py, with the section's --repairs element declared deferred in the reviewed manifest's follow_ons line.\nVERDICT done_when: the done-when at docs/plans/a-refusal-is-about-the-work.html:81 names a test per narrowing and a verify-gate run two ledger commits past the merge, which tests/test_bookkeeping_follows_the_run.py:331 exercises; both its arms assert the tree is measured only when no changed path differs.\nVERDICT write_paths: the reviewed manifest declares six write paths and git show --stat 0ff4101a lists exactly those six files, so the diff stayed inside the fence.\nVERDICT manifest: read; it records the new test file at 5 passed and the base arm at 26 passed with both logs named, but its baseline_suite/after_suite lines hold prose rather than armed JSON, so the review store's read-time derivation reports the run unmeasured instead of zero.\nVERDICT diff: read commit by commit against base 3c7e7872; the code half is the three narrowings in reckon/crew/promotion.py (the corrective attempt kind at :4175, the review outcome default at :3029, the descending-checkout ladder at :1129) plus the two flag help texts in reckon/cli.py, and the document half is additive.\nCALL_SITES: reckon/cli.py:4598 (crew_complete -> crew.complete), reckon/cli.py:4696 (crew_verify_gate -> record_gate_rerun_at_integrated_revision)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: each of the three narrowings named at docs/plans/a-refusal-is-about-the-work.html:74 is implemented at reckon/crew/promotion.py:4221, :3030 and :1194, and only the section's --repairs element is deferred, so the section is not yet fully delivered.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_bookkeeping_follows_the_run.py:331 asserts the exact two-commits-past case the done-when names and the manifest records 5 passed with both arms logged, but the suite fields hold prose so the store cannot derive the run's added-failure count, and two extra suite claims in the manifest name no log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 0ff4101a touches exactly the six files the reviewed manifest declares as write paths, so nothing outside the fence changed; the deduction is that the added helper at reckon/crew/promotion.py:965 duplicates a capability the module already carried.\nSCORE durability: 13\nJUSTIFICATION durability: each narrowing's accepted path reddens on reversion (tests/test_bookkeeping_follows_the_run.py:141, :204, :331) and the negative control proves :331 fails when the acceptance is removed, but the unknown-paths refusal at reckon/crew/promotion.py:1185 has no test and the arm at tests/test_bookkeeping_follows_the_run.py:238 never reaches the review-run refusal.\nSCORE fit: 13\nJUSTIFICATION fit: the change follows the module's idiom (the attempt-kind frozenset at reckon/crew/promotion.py:4175, the local recovery import at :3049) and the naming checks are clean, but it adds a second module-level _revision_is_ancestor at :965 beside the existing one at :5233.\nFINDING reckon/crew/promotion.py:965 the added _revision_is_ancestor is dead code: a module-level _revision_is_ancestor already exists at :5233 and Python binds the later definition, so the call at :1137 reaches that one (measured: promotion._revision_is_ancestor.__code__.co_firstlineno is 5233) and the added function can never execute, and the executed helper also raises CrewError on a git fault where the added one would answer False, so what a reader reviews is not what runs.\nFINDING reckon/crew/promotion.py:1194 the ladder refuses an unknown scope only when changed_paths is None (:1185), but _paths_differing_between returns None both for that route and when its git probe fails (:1007); on the probe-failure route differing is None while changed_paths is set, so the ladder falls to reason = None at :1205 and the gate runs on a checkout whose path comparison was never taken, while the report prints \"changed_paths_differing\": [] at :1151 \u2014 a measured empty \u2014 contradicting the helper's own docstring at :988 that an unknown scope is not an empty one.\nFINDING reckon/crew/promotion.py:1185 the refusal for a checkout past the merge whose run paths are unknown has no test: the only verify-gate tests always cite a resolvable commit (tests/test_bookkeeping_follows_the_run.py:267), so this branch can be deleted without the suite noticing even though it is the branch the fail-open at :1205 bypasses.\nFINDING tests/test_bookkeeping_follows_the_run.py:238 the arm that claims a run with no stored review is still refused writes its pointer with the defaults role=\"implement\" and node_id=\"node-a\" (:100, :103), so it exercises the generic non-passing-gate refusal at reckon/crew/promotion.py:3052 rather than the review-run refusal at :3060, which the new file never reaches.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T112107745919-promotion-bookkeeping-follows-the-run/manifest.md:21 the reviewed manifest's baseline_suite/after_suite lines hold prose rather than armed JSON, so review._gate_log_path returns the whole sentence as a log path and the store's read-time derivation reports the run unmeasured (added_failure_count None, note \"unmeasured: the reviewed manifest names no base gate log\"), disarming the added-failure annotation and the score cap for every reader even though the run's own arm logs show zero added failures.\n",
+  "review_run_id": "r-20260928T121211195642-review-of-promotion-bookkeeping-follows-the-run",
+  "reviewed_base_sha": "3c7e7872770f5ed4997e270e40d0aac9fdab6bbd",
+  "reviewed_head_sha": "0ff4101a794365933ed087eff2cbdaa744ffbc97",
+  "reviewed_run_id": "r-20260928T112107745919-promotion-bookkeeping-follows-the-run",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 13,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T12:44:14.521145+00:00",
+  "total": 79
+}

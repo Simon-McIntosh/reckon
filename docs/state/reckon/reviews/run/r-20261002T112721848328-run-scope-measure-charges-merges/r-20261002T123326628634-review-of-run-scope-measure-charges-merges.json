@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "11a90cb44c8b642f9e0a6452e448186bdbf67211",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:4225",
+    "reckon/crew/promotion.py:6813"
+  ],
+  "completed_at": "2026-10-02T12:55:25.149Z",
+  "dispatched_at": "2026-10-02T12:33:50Z",
+  "findings": [
+    {
+      "file": "gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate and head arm are logged at 1f8af738c, one commit behind the promoted head 100411f27; the trailing commit is docs-only so the code measured is identical, but the gate was not re-run at the exact promoted revision."
+    }
+  ],
+  "head_log_revision": "1f8af738c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 11a90cb44: 1f8af738c changes only promotion.py, the modified test and the new test; 100411f27 adds only the evidence fragment, so the code is identical at 1f8af738c and at the head 100411f27.",
+    "done_when": "the dossier's three residuals are each asserted. tests/test_run_scope_measure_nets_churn.py:127 and :160 pin the merge-only content and path charge with expectations from the fixture's own git diff; tests/test_promotion_scope_counts_only_the_runs_commits.py:209 replaces the vacuous commits==cited assertion with a changed_lines expectation from git; tests/test_run_scope_measure_nets_churn.py:209 pins the netting against self-cancelled churn. The base arm reproduces the two merge-only failures at 11a90cb44, so those tests fail before the repair.",
+    "goal": "the node's goal is to make a merges-only citation charge the merged content and to net changed_lines per run. reckon/crew/promotion.py:190-196 falls back to the cited merges when no non-merge commit remains, and the net scoped diff at promotion.py:237-239 reads one diff over the measured commits, so a run whose work reached the record inside a merge is charged, never refused or recorded as zero. This is the \"measured through its first parent\" branch the plan's done_when names beside refusal.",
+    "manifest": "read; it records the head arm 66 passed / 0 failed EXIT=0, the base arm 2 failed / 64 passed EXIT=0 on the two merge-only cases, the negative control 2 failed / 12 passed EXIT=1, and both baseline_suite and after_suite completed with the failure counts it states.",
+    "write_paths": "the reviewed manifest declares reckon/crew/promotion.py, tests/test_run_scope_measure_nets_churn.py, tests/test_promotion_scope_counts_only_the_runs_commits.py and the evidence fragment; git diff --name-status 11a90cb44 100411f27 lists exactly those four, so the diff stays inside the fence."
+  },
+  "justifications": {
+    "durability": "the declared mutation (per-commit summing restored) reddens tests/test_run_scope_measure_nets_churn.py:209 and tests/test_promotion_scope_counts_only_the_runs_commits.py:286, and the base arm reddens the two merge-only cases, so each repaired behaviour has an assertion that fails on the regression.",
+    "evidence": "the gate names tests/test_run_scope_measure_nets_churn.py and its result is recorded in the manifest, but the head arm and gate run at 1f8af738c, one commit behind the promoted head 100411f27 (docs-only), so the gate was not re-run at the exact head.",
+    "fit": "the change follows the surrounding promotion.py idiom and introduces only mechanism-named symbols (_committed_scope, measured) with no plan or sprint label.",
+    "goal_fidelity": "promotion.py:190-196 charges a merges-only citation through each merge's first parent and promotion.py:237-239 keeps changed_lines one net diff, so the goal's first and second residuals hold, and the third (test independence) is honoured at tests/test_promotion_scope_counts_only_the_runs_commits.py:209.",
+    "scope_discipline": "every path in git diff --name-status 11a90cb44 100411f27 is inside the manifest's declared write paths and nothing else changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a merges-only citation charge the merged content and to net changed_lines per run. reckon/crew/promotion.py:190-196 falls back to the cited merges when no non-merge commit remains, and the net scoped diff at promotion.py:237-239 reads one diff over the measured commits, so a run whose work reached the record inside a merge is charged, never refused or recorded as zero. This is the \"measured through its first parent\" branch the plan's done_when names beside refusal.\nVERDICT done_when: the dossier's three residuals are each asserted. tests/test_run_scope_measure_nets_churn.py:127 and :160 pin the merge-only content and path charge with expectations from the fixture's own git diff; tests/test_promotion_scope_counts_only_the_runs_commits.py:209 replaces the vacuous commits==cited assertion with a changed_lines expectation from git; tests/test_run_scope_measure_nets_churn.py:209 pins the netting against self-cancelled churn. The base arm reproduces the two merge-only failures at 11a90cb44, so those tests fail before the repair.\nVERDICT write_paths: the reviewed manifest declares reckon/crew/promotion.py, tests/test_run_scope_measure_nets_churn.py, tests/test_promotion_scope_counts_only_the_runs_commits.py and the evidence fragment; git diff --name-status 11a90cb44 100411f27 lists exactly those four, so the diff stays inside the fence.\nVERDICT manifest: read; it records the head arm 66 passed / 0 failed EXIT=0, the base arm 2 failed / 64 passed EXIT=0 on the two merge-only cases, the negative control 2 failed / 12 passed EXIT=1, and both baseline_suite and after_suite completed with the failure counts it states.\nVERDICT diff: read commit by commit against 11a90cb44: 1f8af738c changes only promotion.py, the modified test and the new test; 100411f27 adds only the evidence fragment, so the code is identical at 1f8af738c and at the head 100411f27.\nCALL_SITES: reckon/crew/promotion.py:4225, reckon/crew/promotion.py:6813\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:190-196 charges a merges-only citation through each merge's first parent and promotion.py:237-239 keeps changed_lines one net diff, so the goal's first and second residuals hold, and the third (test independence) is honoured at tests/test_promotion_scope_counts_only_the_runs_commits.py:209.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names tests/test_run_scope_measure_nets_churn.py and its result is recorded in the manifest, but the head arm and gate run at 1f8af738c, one commit behind the promoted head 100411f27 (docs-only), so the gate was not re-run at the exact head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-status 11a90cb44 100411f27 is inside the manifest's declared write paths and nothing else changed.\nSCORE durability: 19\nJUSTIFICATION durability: the declared mutation (per-commit summing restored) reddens tests/test_run_scope_measure_nets_churn.py:209 and tests/test_promotion_scope_counts_only_the_runs_commits.py:286, and the base arm reddens the two merge-only cases, so each repaired behaviour has an assertion that fails on the regression.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the surrounding promotion.py idiom and introduces only mechanism-named symbols (_committed_scope, measured) with no plan or sprint label.\nFINDING gate-head.log:1 follow-on: the gate and head arm are logged at 1f8af738c, one commit behind the promoted head 100411f27; the trailing commit is docs-only so the code measured is identical, but the gate was not re-run at the exact promoted revision.",
+  "review_run_id": "r-20261002T123326628634-review-of-run-scope-measure-charges-merges",
+  "reviewed_base_sha": "11a90cb44c8b642f9e0a6452e448186bdbf67211",
+  "reviewed_head_sha": "100411f27d5cc9d2db4afa7b5104ead0b7b90fbf",
+  "reviewed_run_id": "r-20261002T112721848328-run-scope-measure-charges-merges",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T123326628634-review-of-run-scope-measure-charges-merges",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:47:27.229842+00:00",
+  "total": 97
+}

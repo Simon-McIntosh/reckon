@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ca3a120f87249d8a01c53a878350f9cd075b532c",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:3676"
+  ],
+  "completed_at": "2026-10-02T22:14:22.321Z",
+  "dispatched_at": "2026-10-02T22:06:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T213705240861-section-record-moves-between-declarations/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: section 9's prose names the dotted set section_declarations.<id> as the refusing write and as the done-when check, but the dotted form already moved the record at the base revision (it is the positive control in the test file) and the reproduced refusal belongs to the whole-map form on manifest.md:20; the node repaired the actually-refusing path, but the plan's done-when check is one that passes at the base, so the plan wording should be corrected."
+    }
+  ],
+  "head_log_revision": "5ee83e3e0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against ca3a120f8 - b9bee4167 extracts the existing dotted lookup into _move_section_record and adds the whole-map branch that moves every entry's record before assigning the map; 5ee83e3e0 adds a trailing newline; ec04b4cbf adds the evidence fragment only, no code.",
+    "done_when": "tests/test_section_record_moves_between_declarations.py copies one-typesafe-model-picker into a temp docs tree, reproduces the refusal at the base (gate-base.log: 5 failed red, 3 failed with schema_validation \"sections['s5'].status: 'deferred' disagrees with section declaration 'implementable'\"), moves section 5 between deferred and implementable in one versioned write each way, and the negative control restores the setter's old lookup and reddens those same three ids.",
+    "goal": "the section-9 deliverable holds at head ec04b4cbf - reckon/_store.py:2442-2450 makes the whole-map form set section_declarations move each entry's typed record through reckon/_store.py:2217 _move_section_record, so the plan that refused its own write on one-typesafe-model-picker section 5 now round-trips.",
+    "manifest": "read; status complete, commits b9bee4167, 5ee83e3e0, ec04b4cbf, baseline_suite ca3a120f8 3 failed/122 passed EXIT=1 completed, after_suite 5ee83e3e0 125 passed EXIT=0 completed, negative control 3 failed/2 passed EXIT=1, with module.__file__ and cwd recorded for the scratch base arm.",
+    "write_paths": "the three commits touch reckon/_store.py, tests/test_section_record_moves_between_declarations.py, tests/fixtures/section_record_transition/one-typesafe-model-picker.html and docs/evidence/fragments/plan-writes-are-not-fenced/section-record-moves-between-declarations.html, all inside the declared write paths; _schema.py, _plan_html.py, tests/test_edit_plan_section_writes.py and docs/figures were fenced to the node but not needed."
+  },
+  "justifications": {
+    "durability": "at base the three whole-map assertions redden with the schema refusal (gate-base.log), and the declared mutation restoring the old record lookup reddens the same three ids (negative-control.log), so the assertions fail if the branch regresses; each assertion reads _statuses from the mutated file rather than the value passed in.",
+    "evidence": "the gate asserts the done_when - gate-base.log records the reproduced refusal and 3 failed/122 passed EXIT=1, gate-head.log records 125 passed EXIT=0, and my own re-run of tests/test_section_record_moves_between_declarations.py at ec04b4cbf read 5 passed EXIT=0.",
+    "fit": "reckon/_store.py:2217 _move_section_record matches the surrounding lookup-then-assign idiom and is named by mechanism, and the three commit subjects are conventional with bodies and no forbidden identifier.",
+    "goal_fidelity": "reckon/_store.py:2442-2450 moves every entry's typed record through the same lookup the dotted form uses, so set section_declarations lands a plan whose records agree with its declaration map at head ec04b4cbf.",
+    "scope_discipline": "the diff of ca3a120f8..ec04b4cbf touches only paths inside the manifest's declared write paths, and the ec04b4cbf commit is documentation only."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ca3a120f87249d8a01c53a878350f9cd075b532c\nreviewed_head_sha: ec04b4cbf7ec8099b126e465397892eaddfdc1e7\nVERDICT goal: the section-9 deliverable holds at head ec04b4cbf - reckon/_store.py:2442-2450 makes the whole-map form set section_declarations move each entry's typed record through reckon/_store.py:2217 _move_section_record, so the plan that refused its own write on one-typesafe-model-picker section 5 now round-trips.\nVERDICT done_when: tests/test_section_record_moves_between_declarations.py copies one-typesafe-model-picker into a temp docs tree, reproduces the refusal at the base (gate-base.log: 5 failed red, 3 failed with schema_validation \"sections['s5'].status: 'deferred' disagrees with section declaration 'implementable'\"), moves section 5 between deferred and implementable in one versioned write each way, and the negative control restores the setter's old lookup and reddens those same three ids.\nVERDICT write_paths: the three commits touch reckon/_store.py, tests/test_section_record_moves_between_declarations.py, tests/fixtures/section_record_transition/one-typesafe-model-picker.html and docs/evidence/fragments/plan-writes-are-not-fenced/section-record-moves-between-declarations.html, all inside the declared write paths; _schema.py, _plan_html.py, tests/test_edit_plan_section_writes.py and docs/figures were fenced to the node but not needed.\nVERDICT manifest: read; status complete, commits b9bee4167, 5ee83e3e0, ec04b4cbf, baseline_suite ca3a120f8 3 failed/122 passed EXIT=1 completed, after_suite 5ee83e3e0 125 passed EXIT=0 completed, negative control 3 failed/2 passed EXIT=1, with module.__file__ and cwd recorded for the scratch base arm.\nVERDICT diff: read commit by commit against ca3a120f8 - b9bee4167 extracts the existing dotted lookup into _move_section_record and adds the whole-map branch that moves every entry's record before assigning the map; 5ee83e3e0 adds a trailing newline; ec04b4cbf adds the evidence fragment only, no code.\nCALL_SITES: reckon/mcp.py:3676\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:2442-2450 moves every entry's typed record through the same lookup the dotted form uses, so set section_declarations lands a plan whose records agree with its declaration map at head ec04b4cbf.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate asserts the done_when - gate-base.log records the reproduced refusal and 3 failed/122 passed EXIT=1, gate-head.log records 125 passed EXIT=0, and my own re-run of tests/test_section_record_moves_between_declarations.py at ec04b4cbf read 5 passed EXIT=0.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff of ca3a120f8..ec04b4cbf touches only paths inside the manifest's declared write paths, and the ec04b4cbf commit is documentation only.\nSCORE durability: 19\nJUSTIFICATION durability: at base the three whole-map assertions redden with the schema refusal (gate-base.log), and the declared mutation restoring the old record lookup reddens the same three ids (negative-control.log), so the assertions fail if the branch regresses; each assertion reads _statuses from the mutated file rather than the value passed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_store.py:2217 _move_section_record matches the surrounding lookup-then-assign idiom and is named by mechanism, and the three commit subjects are conventional with bodies and no forbidden identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T213705240861-section-record-moves-between-declarations/manifest.md:20 follow-on: section 9's prose names the dotted set section_declarations.<id> as the refusing write and as the done-when check, but the dotted form already moved the record at the base revision (it is the positive control in the test file) and the reproduced refusal belongs to the whole-map form on manifest.md:20; the node repaired the actually-refusing path, but the plan's done-when check is one that passes at the base, so the plan wording should be corrected.",
+  "review_run_id": "r-20261002T220528782430-review-of-section-record-moves-between-declarations",
+  "reviewed_base_sha": "ca3a120f87249d8a01c53a878350f9cd075b532c",
+  "reviewed_head_sha": "ec04b4cbf7ec8099b126e465397892eaddfdc1e7",
+  "reviewed_run_id": "r-20261002T213705240861-section-record-moves-between-declarations",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T22:12:36.772492+00:00",
+  "total": 91
+}

@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:2872",
+    "reckon/mcp.py:3007",
+    "reckon/_plan_html.py:1255",
+    "reckon/tags.py:123",
+    "reckon/roadmap.py:148"
+  ],
+  "completed_at": "2026-09-29T10:40:26.025Z",
+  "dispatched_at": "2026-09-29T09:57:54Z",
+  "findings": [
+    {
+      "file": "logs/base-suite.log",
+      "line": "4",
+      "text": "the module.__file__ header line names the reviewed worktree's reckon/_schema.py while line 2 of the same log and manifest.md:12 both name /tmp/schema-mirrors-base-arm, and a probe of the logged command shape imports the /tmp copy with impl_source absent from PlanState, so this header line states a module the base arm did not measure \u2014 it repeats the head arm's probe value verbatim."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read d1215780a08186e65e11ea3fe6e069fdb4ee83e0 against base afe8c2c99995bb2c15204d39707041796e50eaa1; it adds IMPL_SOURCE_ENUM and a PlanState.impl_source field to reckon/_schema.py and the nine-line impl_source property to the regenerated docs/_shared/plan.schema.json, 21 added lines, every path inside the declared scope.",
+    "done_when": "the done_when names a logged base reproduction, a passing head run, a 0-added-failure arm pair, same-commit schema regeneration with its generating command named, and an executed negative control with every log headed revision/tree/command and ending EXIT=; logs/base-gate.log, logs/head-gate.log, logs/base-suite.log, logs/head-suite.log and logs/negative-control.log carry all of those and each ends EXIT=, except that the base arm's module.__file__ header line is false (FINDING below).",
+    "goal": "the node's goal is to carry impl_source on the typed plan model so canonical_dump mirrors read_state; the landed commit declares PlanState.impl_source at reckon/_schema.py:1239 with the two values read_state writes at reckon/_plan_html.py:459 and 1384, and the keystone id that fails at the base passes at the reviewed head.",
+    "manifest": "read at manifest.md; it reports status complete, one commit, both arms with their failure ids and log paths, the schema generating command, the negative-control note and the measurement pair of a scratch-tree arm, and its measurement_module line contradicts the base arm's own header line (FINDING below).",
+    "write_paths": "the declared write paths are reckon/_schema.py, docs/_shared/plan.schema.json, docs/evidence/fragments/the-suite-is-green-at-head/schema-mirrors-impl-source.html and docs/figures/the-suite-is-green-at-head/schema-mirrors-impl-source; the commit changes only the first two, and the unused two are exactly the fragment and figure its dispatch bars because the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "removing impl_source from a copy of head reddens tests/test_schema.py::test_canonical_dump_equals_read_state[full] with the same missing item (logs/negative-control.log), and tests/test_impl_is_computed.py:97,174,219 pin read_state's two values to the advertised enum, though the guard is pre-existing and only the [full] parametrisation exercises it.",
+    "evidence": "the five logs carry every done_when check and all end EXIT=, and I re-derived 0 added failures from the two arms' own logs and reproduced the named id green at the committed head (logs/target-test-head.log), but logs/base-suite.log:4 names the wrong tree as the module under test (FINDING below).",
+    "fit": "the declaration matches the file's own enum-field idiom \u2014 reckon/_schema.py:1099 and 1100 give status and roi the same Field(default, json_schema_extra=_enum(...)) shape \u2014 and IMPL_SOURCE_ENUM carries no version, ticket or plan identifier.",
+    "goal_fidelity": "canonical_dump now carries impl_source for the full fixture \u2014 the base reproduction at logs/base-gate.log is exactly the missing {'impl_source': 'authored'} item \u2014 and I regenerated docs/_shared/plan.schema.json from the reviewed model at the reviewed head and diffed it byte-identical to the committed copy.",
+    "scope_discipline": "the commit touches only reckon/_schema.py and docs/_shared/plan.schema.json of the four declared paths, and the two untouched paths are the fragment and figure the dispatch bars when the done-when names no artifact."
+  },
+  "node": "schema-mirrors-impl-source",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry impl_source on the typed plan model so canonical_dump mirrors read_state; the landed commit declares PlanState.impl_source at reckon/_schema.py:1239 with the two values read_state writes at reckon/_plan_html.py:459 and 1384, and the keystone id that fails at the base passes at the reviewed head.\nVERDICT done_when: the done_when names a logged base reproduction, a passing head run, a 0-added-failure arm pair, same-commit schema regeneration with its generating command named, and an executed negative control with every log headed revision/tree/command and ending EXIT=; logs/base-gate.log, logs/head-gate.log, logs/base-suite.log, logs/head-suite.log and logs/negative-control.log carry all of those and each ends EXIT=, except that the base arm's module.__file__ header line is false (FINDING below).\nVERDICT write_paths: the declared write paths are reckon/_schema.py, docs/_shared/plan.schema.json, docs/evidence/fragments/the-suite-is-green-at-head/schema-mirrors-impl-source.html and docs/figures/the-suite-is-green-at-head/schema-mirrors-impl-source; the commit changes only the first two, and the unused two are exactly the fragment and figure its dispatch bars because the done-when names no artifact.\nVERDICT manifest: read at manifest.md; it reports status complete, one commit, both arms with their failure ids and log paths, the schema generating command, the negative-control note and the measurement pair of a scratch-tree arm, and its measurement_module line contradicts the base arm's own header line (FINDING below).\nVERDICT diff: read d1215780a08186e65e11ea3fe6e069fdb4ee83e0 against base afe8c2c99995bb2c15204d39707041796e50eaa1; it adds IMPL_SOURCE_ENUM and a PlanState.impl_source field to reckon/_schema.py and the nine-line impl_source property to the regenerated docs/_shared/plan.schema.json, 21 added lines, every path inside the declared scope.\nCALL_SITES: reckon/serve.py:2872, reckon/mcp.py:3007, reckon/_plan_html.py:1255, reckon/tags.py:123, reckon/roadmap.py:148\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: canonical_dump now carries impl_source for the full fixture \u2014 the base reproduction at logs/base-gate.log is exactly the missing {'impl_source': 'authored'} item \u2014 and I regenerated docs/_shared/plan.schema.json from the reviewed model at the reviewed head and diffed it byte-identical to the committed copy.\nSCORE evidence: 17\nJUSTIFICATION evidence: the five logs carry every done_when check and all end EXIT=, and I re-derived 0 added failures from the two arms' own logs and reproduced the named id green at the committed head (logs/target-test-head.log), but logs/base-suite.log:4 names the wrong tree as the module under test (FINDING below).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only reckon/_schema.py and docs/_shared/plan.schema.json of the four declared paths, and the two untouched paths are the fragment and figure the dispatch bars when the done-when names no artifact.\nSCORE durability: 19\nJUSTIFICATION durability: removing impl_source from a copy of head reddens tests/test_schema.py::test_canonical_dump_equals_read_state[full] with the same missing item (logs/negative-control.log), and tests/test_impl_is_computed.py:97,174,219 pin read_state's two values to the advertised enum, though the guard is pre-existing and only the [full] parametrisation exercises it.\nSCORE fit: 20\nJUSTIFICATION fit: the declaration matches the file's own enum-field idiom \u2014 reckon/_schema.py:1099 and 1100 give status and roi the same Field(default, json_schema_extra=_enum(...)) shape \u2014 and IMPL_SOURCE_ENUM carries no version, ticket or plan identifier.\nFINDING logs/base-suite.log:4 the module.__file__ header line names the reviewed worktree's reckon/_schema.py while line 2 of the same log and manifest.md:12 both name /tmp/schema-mirrors-base-arm, and a probe of the logged command shape imports the /tmp copy with impl_source absent from PlanState, so this header line states a module the base arm did not measure \u2014 it repeats the head arm's probe value verbatim.",
+  "review_run_id": "r-20260929T095737201409-review-of-schema-mirrors-impl-source",
+  "reviewed_base_sha": "afe8c2c99995bb2c15204d39707041796e50eaa1",
+  "reviewed_head_sha": "d1215780a08186e65e11ea3fe6e069fdb4ee83e0",
+  "reviewed_run_id": "r-20260929T093822937492-schema-mirrors-impl-source",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T095737201409-review-of-schema-mirrors-impl-source",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T10:35:19.026798+00:00",
+  "total": 96
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs via the store's own added_failures_from_gate_logs: both fields name /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/canonical-id-controls/reference.log (14 passed, 0 failed, exit 0), so the set difference over FAILED/ERROR node ids is empty",
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T06:03:24.483Z",
+  "dispatched_at": "2026-10-01T05:40:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T051546429759-canonical-id-controls/manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest `tests:` field names the gate with an unsubstituted angle-bracket placeholder (`PYTHONPATH=<scratch>/base \u2026 --basetemp=<scratch>/bt-reference`) rather than the literal command that ran, which the evidence contract forbids of that field; the literal command is recoverable from baseline_suite/after_suite and from each log's own header, so the record is not misleading but the field is not self-contained."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/canonical-id-controls/report.md",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: report.md states that each log records the mutated source text asserted present-in-copy, but each control log carries the mutation only as a description on its header line (`# mutation: \u2026`), not the asserted source text; the brief asks to assert the mutated source text present, and that assertion is not itself evidenced in the logs. The mutation's effect is however visible in each log's failure signature (control1 `assert 1 == 0`, control2 3 failed, control3 `assert 5 == 90`), so a reader is not misled about the control firing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T051546429759-canonical-id-controls/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite name the same reference arm log and command, so the pair carries no base-vs-head population and a reader comparing the two fields learns nothing about a change; this is correct for a node that changed nothing, but it is the degenerate case of a field pair whose semantics are base-vs-head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "no diff: this node changed no repository file. `git diff --stat ab8f11cea HEAD -- tests/test_review_node_id_canonical_form.py reckon/crew/review.py` is empty and `git status --porcelain` is clean, so there is no landed change to review commit by commit; the review reads the node's measurement artefacts instead.",
+    "done_when": "the done-when names three controls and their required failing cases, the assertion that each mutation applied by checking the mutated source text in the scratch copy, a passing reference arm, and a verdict per followup; report.md:11-50 states each control's outcome, the failing ids and EXIT, and closes with a verdict for each followup, and I reproduced all three controls plus the reference arm independently.",
+    "goal": "the goal is to execute, at main, the three negative controls that decide whether f-ssp-added-failures-normalise-node-ids and f-ssp-canonical-id-edges are truly met, changing nothing in the repository; run r-20261001T051546429759 does exactly that \u2014 its report.md records each control's named case failing under its mutation and the reference arm passing, verdicts met for both followups (reports/reckon/s22-coord/canonical-id-controls/report.md:44-50).",
+    "manifest": "read; status complete; commits none and changed_paths none because the role is read-only; tests records the reference arm EXIT=0 and the three controls EXIT=1 with the named cases failing; baseline_suite and after_suite both name the reference arm's log_path (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/canonical-id-controls/reference.log, 0 failures); negative_control_log names control1-canonical-returns-input.log; follow_ons records one fenced-out check-manifest strictness note (manifest.md:10,16,17,21,23).",
+    "write_paths": "declared scope is the manifest, report and logs under /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/canonical-id-controls, with the repository read-only; only report.md and four logs land there and git status --porcelain in the reviewed base tree is empty, so nothing was written outside the scope."
+  },
+  "justifications": {
+    "durability": "the control cases are genuine inverse tests: each mutation changes real behaviour of reckon/crew/review.py in a scratch copy and the count cases redden as the inverse of the guard \u2014 I reinstated all three mutations at ab8f11cea myself and each failed the named case (11 failed/3 passed, 3 failed/11 passed, 1 failed/13 passed), so the guards have teeth; the missing half is that the logs record the mutation as a description rather than the asserted source text the brief asks for.",
+    "evidence": "the gate is recorded, not claimed: each log carries revision, tree, module.__file__, cwd, command and a bare EXIT= line, and I re-ran both the reference arm (14 passed, EXIT=0) and all three controls at ab8f11cea with matching counts; two points off because baseline_suite and after_suite both name the same reference log (no base/head population) and the manifest tests field carries a <scratch> placeholder.",
+    "fit": "the artefacts follow the repository's log-header idiom (revision/tree/module.__file__/cwd/command then EXIT=) and name no plan, sprint or ticket token; two points off for the report's overstated claim about what the logs record, which is a fidelity slip in the write-up rather than the measurement.",
+    "goal_fidelity": "the brief's measure is exactly the three controls with their named failing cases plus a passing reference arm and a verdict per followup; report.md:11-50 states each control's outcome and the two followup verdicts (both MET), and my independent reproduction confirms every named case fails under its own mutation.",
+    "scope_discipline": "the node is read-only and stayed so: no repository file differs between ab8f11cea and HEAD for tests/test_review_node_id_canonical_form.py or reckon/crew/review.py, git status is clean, and the only writes land under the declared report directory; nothing the goal does not imply was produced."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: executes the three named negative controls at main without changing the repository; report verdicts both followups MET.\nVERDICT done_when: three controls each make their named case fail under the mutation, reference arm passes, verdict per followup stated in report.md.\nVERDICT write_paths: only report.md and four logs land under the declared report dir; repository unchanged.\nVERDICT manifest: status complete; baseline_suite and after_suite both point at reference.log (0 failures); negative_control_log named; one follow-on recorded.\nVERDICT diff: none \u2014 no repository file changed, so there is no landed diff to read.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 18\n",
+  "review_run_id": "r-20261001T054030894070-review-of-canonical-id-controls",
+  "reviewed_base_sha": "ab8f11cea649964ef3cbae09efc7bd7eccca0bf0",
+  "reviewed_head_sha": "ab8f11cea649964ef3cbae09efc7bd7eccca0bf0",
+  "reviewed_run_id": "r-20261001T051546429759-canonical-id-controls",
+  "reviewer_run_id": "r-20261001T054030894070-review-of-canonical-id-controls",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T05:56:42.399416+00:00",
+  "total": 92
+}

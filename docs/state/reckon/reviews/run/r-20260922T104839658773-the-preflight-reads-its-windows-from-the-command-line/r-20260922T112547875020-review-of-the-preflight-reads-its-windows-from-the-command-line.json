@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:963",
+    "reckon/mcp.py:3242"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T11:25:47.875020+00:00",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "1962",
+      "text": "the source selection takes the receipt whenever the receipt yields any usable clock and consults the stream only as a fallback, where the plan's \u00a76 entry point states one reading built from the freshest of the two; a receipt older than a stream reading therefore shadows it, and a receipt carrying only window_minutes 10080 discards a newer stream reading that observed the five-hour clock, so the group reports an unknown clock and an older age than the freshest recorded evidence supports. The rule is disclosed in the docstring and the landed record as the dialect fork, so this is a divergence to record rather than a hidden one, and today the two dialects are near-disjoint in production, which bounds but does not remove it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 70f23383; 767 insertions and 5 deletions, and except for the respelled assertion at tests/test_preflight_pace.py:317 every deletion is a line the addition itself replaces.",
+    "done_when": "the fence names six added cases, a real workstation capture and a red control; the six exist at tests/test_preflight_pace.py:743-943, I re-ran the named gate at the reviewed head myself (27 passed, exit 0), the capture shows codex-sub observed with its seven_day utilisation 0.31 and an age, and the control log is red at the named case.",
+    "goal": "the goal is that the pre-flight command and the budget MCP view report each declared group's clocks, allowance and admitted ready set from recorded receipts and streams; reckon/budget.py:1898 resolves one reading per declared member and both surfaces pass it, which the emitted payload of the workstation run confirms.",
+    "manifest": "read; it records the gate, the base-copy regression control, the workstation run and the declared mutation, and every figure I checked against the artefacts agrees.",
+    "write_paths": "read the manifest's eight declared paths; the diff touches reckon/budget.py, reckon/cli.py, reckon/mcp.py, tests/test_preflight_pace.py and the three documentation paths, and reckon/mcp_views.py needed no change, which the manifest explains rather than leaves silent."
+  },
+  "justifications": {
+    "durability": "each added case names the code change that reddens it \u2014 bypassing the source at reckon/cli.py:963 (shown red in the control log), dropping the member filter at reckon/budget.py:1940, or reading an unnamed window length as a figure at reckon/budget.py:2011 \u2014 but tests/test_preflight_pace.py:777 and :783 assert presence only, so an age of zero or a wrongly typed verdict would still pass.",
+    "evidence": "I re-ran `pytest -q tests/test_preflight_pace.py` in the clean reviewed worktree at fd4a158f (27 passed, exit 0) and opened the workstation capture and the red control log, so the measure is recorded and reproducible, though the command-line cases reach the ledger through the checkout path rather than the RECKON_HOME the fence names.",
+    "fit": "the addition matches the module's idiom \u2014 a module-level constant map at reckon/budget.py:1888 and private helpers beside group_pace \u2014 and no added name, comment or docstring carries a plan label or ticket reference.",
+    "goal_fidelity": "reckon/cli.py:963 and reckon/mcp.py:3242 both supply the recorded source and a ready set, but the selection at reckon/budget.py:1962 prefers any receipt reading over a stream reading where the plan states the freshest of the two.",
+    "scope_discipline": "every changed path is inside the manifest's declared scope and the three documentation paths are pure insertions (107/63/41, no deletions), with the only pre-existing-test edit being the respelling at tests/test_preflight_pace.py:317 that the node's own measure asks for."
+  },
+  "project": "reckon",
+  "raw_text": "REVISION: fd4a158f\nVERDICT goal: the goal is that the pre-flight command and the budget MCP view report each declared group's clocks, allowance and admitted ready set from recorded receipts and streams; reckon/budget.py:1898 resolves one reading per declared member and both surfaces pass it, which the emitted payload of the workstation run confirms.\nVERDICT done_when: the fence names six added cases, a real workstation capture and a red control; the six exist at tests/test_preflight_pace.py:743-943, I re-ran the named gate at the reviewed head myself (27 passed, exit 0), the capture shows codex-sub observed with its seven_day utilisation 0.31 and an age, and the control log is red at the named case.\nVERDICT write_paths: read the manifest's eight declared paths; the diff touches reckon/budget.py, reckon/cli.py, reckon/mcp.py, tests/test_preflight_pace.py and the three documentation paths, and reckon/mcp_views.py needed no change, which the manifest explains rather than leaves silent.\nVERDICT manifest: read; it records the gate, the base-copy regression control, the workstation run and the declared mutation, and every figure I checked against the artefacts agrees.\nVERDICT diff: read commit by commit against 70f23383; 767 insertions and 5 deletions, and except for the respelled assertion at tests/test_preflight_pace.py:317 every deletion is a line the addition itself replaces.\nCALL_SITES: reckon/cli.py:963, reckon/mcp.py:3242\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/cli.py:963 and reckon/mcp.py:3242 both supply the recorded source and a ready set, but the selection at reckon/budget.py:1962 prefers any receipt reading over a stream reading where the plan states the freshest of the two.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran `pytest -q tests/test_preflight_pace.py` in the clean reviewed worktree at fd4a158f (27 passed, exit 0) and opened the workstation capture and the red control log, so the measure is recorded and reproducible, though the command-line cases reach the ledger through the checkout path rather than the RECKON_HOME the fence names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path is inside the manifest's declared scope and the three documentation paths are pure insertions (107/63/41, no deletions), with the only pre-existing-test edit being the respelling at tests/test_preflight_pace.py:317 that the node's own measure asks for.\nSCORE durability: 18\nJUSTIFICATION durability: each added case names the code change that reddens it \u2014 bypassing the source at reckon/cli.py:963 (shown red in the control log), dropping the member filter at reckon/budget.py:1940, or reading an unnamed window length as a figure at reckon/budget.py:2011 \u2014 but tests/test_preflight_pace.py:777 and :783 assert presence only, so an age of zero or a wrongly typed verdict would still pass.\nSCORE fit: 19\nJUSTIFICATION fit: the addition matches the module's idiom \u2014 a module-level constant map at reckon/budget.py:1888 and private helpers beside group_pace \u2014 and no added name, comment or docstring carries a plan label or ticket reference.\nFINDING reckon/budget.py:1962 the source selection takes the receipt whenever the receipt yields any usable clock and consults the stream only as a fallback, where the plan's \u00a76 entry point states one reading built from the freshest of the two; a receipt older than a stream reading therefore shadows it, and a receipt carrying only window_minutes 10080 discards a newer stream reading that observed the five-hour clock, so the group reports an unknown clock and an older age than the freshest recorded evidence supports. The rule is disclosed in the docstring and the landed record as the dialect fork, so this is a divergence to record rather than a hidden one, and today the two dialects are near-disjoint in production, which bounds but does not remove it.",
+  "review_run_id": "r-20260922T112547875020-review-of-the-preflight-reads-its-windows-from-the-command-line",
+  "reviewed_revision": "fd4a158f",
+  "reviewed_run_id": "r-20260922T104839658773-the-preflight-reads-its-windows-from-the-command-line",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260922T112547875020-review-of-the-preflight-reads-its-windows-from-the-command-line",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T11:40:15.154768+00:00",
+  "total": 92
+}

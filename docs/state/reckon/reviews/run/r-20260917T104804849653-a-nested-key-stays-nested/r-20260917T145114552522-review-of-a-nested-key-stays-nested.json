@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T14:51:14.552522+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "302",
+      "text": "the block-continuation test still treats any indented line as part of the open block, so in a wholly indented manifest, the case the new docstring at reckon/crew/reports.py:250 says the least-indented-column rule exists to preserve, the fields are themselves indented and every field after a block-scalar one is folded into its value: parsing a \"  status: complete\" line, a \"  tests: |\" line, a four-space \"    seven passed\" line, a \"  commits: [\"cafebabe\"]\" line and a \"  changed_paths: [\"reckon/crew/reports.py\"]\" line returns tests equal to \"seven passed\\ncommits: [\"cafebabe\"]\\nchanged_paths: [\"reckon/crew/reports.py\"]\" with commits empty and changed_paths empty, silently dropping the promotion-visible commits field; identical at base 78897196 and at the reviewed head (probe-extra.log), so it is not a regression but it bounds the preservation the change documents, and the remedy is to continue an open block only when the line's indent exceeds manifest_indent."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_manifest_nested_keys.py:30-55 fails against the base reader on all three hoisting shapes, reproduced independently through a base-revision shadow tree and matching the node's baseline logs, so a regression is caught; the least-indented-column rule introduced at reckon/crew/reports.py:265, however, has no case of its own.",
+    "evidence": "the gate receipt the done-when asks for is recorded rather than claimed, since the done-when names tests/test_manifest_nested_keys.py and its prescribed four-file cohort is logged at runs/r-20260917T104804849653-a-nested-key-stays-nested/baseline-gate.log as 4 failed and 222 passed at base 78897196 and at after-gate.log as 1 failed and 225 passed at the changed reader with only the pre-existing tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion remaining, and my own re-run of tests/test_manifest_nested_keys.py at the merged head 09615744 gives 7 passed with every required positive control re-derived in review-verify.log.",
+    "fit": "the edited function at reckon/crew/reports.py:247-300 keeps the module's shape, the column anchor computed once before the loop and the per-line predicate otherwise unchanged, and ruff reports the same two pre-existing findings in the file at base and at head with none added.",
+    "goal_fidelity": "reckon/crew/reports.py:265-287 accepts a text field only at the least-indented recognised manifest field's column, and my own probes of the three hoisting shapes against base 78897196 (a nested commit under an inline-valued parent, under an indented-only parent, and with no top-level value written at all) return the nested pair or a lone nested sha while the reviewed head returns the real top-level value or an empty list; the one shape that still surfaces a nested-looking sha is an all-indented manifest whose child sits at its parent's own column, which indentation carries no signal to distinguish and which is unchanged from base.",
+    "scope_discipline": "git diff --stat 78897196 cad0f2a5 changes exactly reckon/crew/reports.py plus docs/evidence/archive/crew-observability-truth-landed.html and docs/plans/crew-observability-truth.html, every one inside the node's four-path fence, with tests/test_manifest_nested_keys.py deliberately left untouched and neither plan-version nor plan-modified edited."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:265-287 accepts a text field only at the least-indented recognised manifest field's column, and my own probes of the three hoisting shapes against base 78897196 (a nested commit under an inline-valued parent, under an indented-only parent, and with no top-level value written at all) return the nested pair or a lone nested sha while the reviewed head returns the real top-level value or an empty list; the one shape that still surfaces a nested-looking sha is an all-indented manifest whose child sits at its parent's own column, which indentation carries no signal to distinguish and which is unchanged from base.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate receipt the done-when asks for is recorded rather than claimed, since the done-when names tests/test_manifest_nested_keys.py and its prescribed four-file cohort is logged at runs/r-20260917T104804849653-a-nested-key-stays-nested/baseline-gate.log as 4 failed and 222 passed at base 78897196 and at after-gate.log as 1 failed and 225 passed at the changed reader with only the pre-existing tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion remaining, and my own re-run of tests/test_manifest_nested_keys.py at the merged head 09615744 gives 7 passed with every required positive control re-derived in review-verify.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 78897196 cad0f2a5 changes exactly reckon/crew/reports.py plus docs/evidence/archive/crew-observability-truth-landed.html and docs/plans/crew-observability-truth.html, every one inside the node's four-path fence, with tests/test_manifest_nested_keys.py deliberately left untouched and neither plan-version nor plan-modified edited.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_manifest_nested_keys.py:30-55 fails against the base reader on all three hoisting shapes, reproduced independently through a base-revision shadow tree and matching the node's baseline logs, so a regression is caught; the least-indented-column rule introduced at reckon/crew/reports.py:265, however, has no case of its own.\nSCORE fit: 20\nJUSTIFICATION fit: the edited function at reckon/crew/reports.py:247-300 keeps the module's shape, the column anchor computed once before the loop and the per-line predicate otherwise unchanged, and ruff reports the same two pre-existing findings in the file at base and at head with none added.\nFINDING reckon/crew/reports.py:302 the block-continuation test still treats any indented line as part of the open block, so in a wholly indented manifest, the case the new docstring at reckon/crew/reports.py:250 says the least-indented-column rule exists to preserve, the fields are themselves indented and every field after a block-scalar one is folded into its value: parsing a \"  status: complete\" line, a \"  tests: |\" line, a four-space \"    seven passed\" line, a \"  commits: [\"cafebabe\"]\" line and a \"  changed_paths: [\"reckon/crew/reports.py\"]\" line returns tests equal to \"seven passed\\ncommits: [\"cafebabe\"]\\nchanged_paths: [\"reckon/crew/reports.py\"]\" with commits empty and changed_paths empty, silently dropping the promotion-visible commits field; identical at base 78897196 and at the reviewed head (probe-extra.log), so it is not a regression but it bounds the preservation the change documents, and the remedy is to continue an open block only when the line's indent exceeds manifest_indent.\n",
+  "review_run_id": "r-20260917T145114552522-review-of-a-nested-key-stays-nested",
+  "reviewed_base_sha": "78897196abf1d38994daf51781d5e52220f22f95",
+  "reviewed_commits": [
+    "0d3c6cf556441394823aa64a4ba95e3988335133",
+    "cad0f2a5f61b75bb0e2e8ac3944bbbc14034612c"
+  ],
+  "reviewed_head_sha": "cad0f2a5f61b75bb0e2e8ac3944bbbc14034612c",
+  "reviewed_run_id": "r-20260917T104804849653-a-nested-key-stays-nested",
+  "reviewer_run_id": "r-20260917T145114552522-review-of-a-nested-key-stays-nested",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T15:58:18.450620+00:00",
+  "total": 99
+}

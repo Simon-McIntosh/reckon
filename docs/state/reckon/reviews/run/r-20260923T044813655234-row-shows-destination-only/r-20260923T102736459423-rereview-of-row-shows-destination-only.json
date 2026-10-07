@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:_ticker_grid",
+    "reckon/crew/recovery.py:format_watch_transition",
+    "reckon/crew/query.py:_rendered_row"
+  ],
+  "commits_read": [
+    "868ca4f5",
+    "9b5458a1",
+    "db30997d",
+    "c336aae85c10ef1321b03f47b1a7a040b243a001"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T10:27:36.459423+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html",
+      "line": "41",
+      "text": "the caption and the landing record state the reason clause's room as 42 and 55 columns while the figure script they publish computes and labels 48 and 61 (docs/figures/a-monitor-row-reads-at-a-glance/row_column_budget.py:51 derives it as 180 minus leading 61, state 27 or 14, and trailing 44), so the published figure does not show the measurement its own caption describes and a reader cannot tell which row either number belongs to."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "888",
+      "text": "a baseline row renders the marker word and the state with no separator, so the row carries the single token nowworking and neither the marker nor the state has a word boundary on it \u2014 the read-at-a-glance property the marker replaced the bullet for; one separator column would restore it out of the thirteen this change recovered."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against d6817708 \u2014 868ca4f5 is the ticker change, 9b5458a1 and c336aae8 the test updates, db30997d the plan record \u2014 and the cumulative evidence record gained 119 lines with zero deletions, so the shared anchor was spliced rather than overwritten.",
+    "done_when": "the measure names a transition row carrying unpromoted once with neither working nor an arrow, a baseline row carrying now immediately before its state, and a reason room at least thirteen columns wider; I rendered both revisions myself and each clause holds \u2014 MIN_WIDTH 139 to 126, room 34 to 47 on my event and 42 to 55 on the node's, and the head transition row shows unpromoted once with working and the arrow both absent.",
+    "goal": "the node goal is a follower row that renders only the state a run moved into, with a baseline row marked by the word now; reckon/crew/ticker.py:888 emits the marker cell and the destination state and nothing of the source, and reckon/crew/ticker.py:222 is the word the baseline branch puts in that cell.",
+    "manifest": "read; it states per-file passed and failed counts at base and head with added failures 0, names its declared negative control and the failure text it produced, records the two pre-existing failures as pre-existing with their ids, and reports its own four-hour fence overrun as a blocker rather than hiding it.",
+    "write_paths": "the manifest declares nine paths and `git diff --numstat d6817708 c336aae8` lists eight changed files, every one inside that fence, with the two declared-but-untouched test files correctly absent from the diff."
+  },
+  "justifications": {
+    "durability": "the manifest's recorded negative control (restore the from-state cell and the arrow) reddens nine tests, and the added assertions (tests/test_crew_ticker.py:193, tests/test_crew_watch_stream.py:140, tests/test_crew_ticker_layout.py:253) compare rendered rows and pane bytes against literals rather than against a value the test handed the code, so each names the change that would falsify it.",
+    "evidence": "the gate's quantitative claims reproduce on my own reads \u2014 MIN_WIDTH 139 to 126 at reckon/crew/ticker.py:310 and a thirteen-column room gain on both my event and the node's \u2014 while the published figure's own arithmetic gives 48 and 61 against the caption's 42 and 55, and tests/test_crew.py is reported incomplete rather than finished.",
+    "fit": "the new constants are named by mechanism \u2014 BASELINE_MARKER, MARKER and STATE_REGION at reckon/crew/ticker.py:222-229, with the why stated in the comment above them \u2014 and no plan label, version or ticket reference appears in any staged path or symbol; the caption mismatch below is the deduction.",
+    "goal_fidelity": "reckon/crew/ticker.py:888 renders the marker cell and the destination state alone, which is the goal's first clause, and the baseline branch fills that cell with BASELINE_MARKER (reckon/crew/ticker.py:222), which is the second; the fused token a baseline row renders costs it the remainder.",
+    "scope_discipline": "`git diff --numstat d6817708 c336aae8` lists exactly the manifest's eight changed files under the nine declared paths, and the cumulative record at docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html gained 119 lines with zero deletions."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a follower row that renders only the state a run moved into, with a baseline row marked by the word now; reckon/crew/ticker.py:888 emits the marker cell and the destination state and nothing of the source, and reckon/crew/ticker.py:222 is the word the baseline branch puts in that cell.\nVERDICT done_when: the measure names a transition row carrying unpromoted once with neither working nor an arrow, a baseline row carrying now immediately before its state, and a reason room at least thirteen columns wider; I rendered both revisions myself and each clause holds \u2014 MIN_WIDTH 139 to 126, room 34 to 47 on my event and 42 to 55 on the node's, and the head transition row shows unpromoted once with working and the arrow both absent.\nVERDICT write_paths: the manifest declares nine paths and `git diff --numstat d6817708 c336aae8` lists eight changed files, every one inside that fence, with the two declared-but-untouched test files correctly absent from the diff.\nVERDICT manifest: read; it states per-file passed and failed counts at base and head with added failures 0, names its declared negative control and the failure text it produced, records the two pre-existing failures as pre-existing with their ids, and reports its own four-hour fence overrun as a blocker rather than hiding it.\nVERDICT diff: read commit by commit against d6817708 \u2014 868ca4f5 is the ticker change, 9b5458a1 and c336aae8 the test updates, db30997d the plan record \u2014 and the cumulative evidence record gained 119 lines with zero deletions, so the shared anchor was spliced rather than overwritten.\nCALL_SITES: reckon/cli.py:_ticker_grid, reckon/crew/recovery.py:format_watch_transition, reckon/crew/query.py:_rendered_row\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:888 renders the marker cell and the destination state alone, which is the goal's first clause, and the baseline branch fills that cell with BASELINE_MARKER (reckon/crew/ticker.py:222), which is the second; the fused token a baseline row renders costs it the remainder.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate's quantitative claims reproduce on my own reads \u2014 MIN_WIDTH 139 to 126 at reckon/crew/ticker.py:310 and a thirteen-column room gain on both my event and the node's \u2014 while the published figure's own arithmetic gives 48 and 61 against the caption's 42 and 55, and tests/test_crew.py is reported incomplete rather than finished.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --numstat d6817708 c336aae8` lists exactly the manifest's eight changed files under the nine declared paths, and the cumulative record at docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html gained 119 lines with zero deletions.\nSCORE durability: 18\nJUSTIFICATION durability: the manifest's recorded negative control (restore the from-state cell and the arrow) reddens nine tests, and the added assertions (tests/test_crew_ticker.py:193, tests/test_crew_watch_stream.py:140, tests/test_crew_ticker_layout.py:253) compare rendered rows and pane bytes against literals rather than against a value the test handed the code, so each names the change that would falsify it.\nSCORE fit: 17\nJUSTIFICATION fit: the new constants are named by mechanism \u2014 BASELINE_MARKER, MARKER and STATE_REGION at reckon/crew/ticker.py:222-229, with the why stated in the comment above them \u2014 and no plan label, version or ticket reference appears in any staged path or symbol; the caption mismatch below is the deduction.\nFINDING docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html:41 the caption and the landing record state the reason clause's room as 42 and 55 columns while the figure script they publish computes and labels 48 and 61 (docs/figures/a-monitor-row-reads-at-a-glance/row_column_budget.py:51 derives it as 180 minus leading 61, state 27 or 14, and trailing 44), so the published figure does not show the measurement its own caption describes and a reader cannot tell which row either number belongs to.\nFINDING reckon/crew/ticker.py:888 a baseline row renders the marker word and the state with no separator, so the row carries the single token nowworking and neither the marker nor the state has a word boundary on it \u2014 the read-at-a-glance property the marker replaced the bullet for; one separator column would restore it out of the thirteen this change recovered.",
+  "review_run_id": "r-20260923T102736459423-rereview-of-row-shows-destination-only",
+  "reviewed_base": "d6817708a55941eafa2e1522ec63b3197265d541",
+  "reviewed_base_sha": "d6817708a55941eafa2e1522ec63b3197265d541",
+  "reviewed_commit": "c336aae85c10ef1321b03f47b1a7a040b243a001",
+  "reviewed_head_sha": "c336aae85c10ef1321b03f47b1a7a040b243a001",
+  "reviewed_run_id": "r-20260923T044813655234-row-shows-destination-only",
+  "reviewer_run_id": "r-20260923T102736459423-rereview-of-row-shows-destination-only",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T10:46:59.060369+00:00",
+  "total": 89
+}

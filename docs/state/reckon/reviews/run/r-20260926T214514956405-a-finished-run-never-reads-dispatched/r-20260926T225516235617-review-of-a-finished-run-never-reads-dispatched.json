@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0 by id, measured by this review with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own two gate arms: the pre-fix arm at gate.log:42 as base and the fixed arm at gate.log:219 as head. Both arms report the same five pre-existing ids and no id appears only at head. The store's read-time annotation reports this run's count unmeasured because the reviewed manifest's baseline_suite and after_suite are prose naming no log path (reckon/crew/review.py:870-875); the count stored here is this review's own measurement, logged in the reviewing run at logs/added-failures.log.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery.py:classify_pointer",
+    "reckon/crew/recovery.py:_watch_snapshot",
+    "reckon/crew/runs.py:list_live",
+    "reckon/crew/runs.py:drain",
+    "reckon/crew/runs.py:_watch_event",
+    "reckon/crew/promotion.py:complete"
+  ],
+  "completed_at": "2026-09-26T23:47:03.648Z",
+  "dispatched_at": "2026-09-26T22:55:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214514956405-a-finished-run-never-reads-dispatched/gate.log",
+      "line": "8",
+      "text": "the cause the run names at the top of its gate log is the cause its fix removes: the terminal-report guard `manifest_status in TERMINAL_MANIFEST_STATUSES and alive is not True` and the worker-record guard `worker_alive is True` (gate.log:8-13) are exactly the two expressions the landed diff replaces at reckon/crew/recovery.py:2800-2805, and the control's restored block (swap_phase_arbiter.py:17-25) is a byte-exact copy of those guards, so restoring the named cause returns the dispatched rendering and no residual route to it remains on this path."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214514956405-a-finished-run-never-reads-dispatched/manifest.md",
+      "line": "21",
+      "text": "baseline_suite and after_suite are prose while the node's own contract (prompt.txt:128-129) specifies armed-only JSON carrying log_path and failure_ids, so the store's annotate_review_of_run (reckon/crew/review.py:870-875) reads this run's added-failure count as unmeasured and any reader of the stored review sees an unmeasured count beside a gate that measured it; the fields are optional on an unarmed run, so the repair is to write the specified shape or omit them."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 7e6f8a5a; 09442fb6 replaces the two arbiter guards at reckon/crew/recovery.py:2800-2805 and adds the 286-line test module, f6832b1b appends the landing note to the plan, the landed-evidence anchor and one figure, and the pair is 374 insertions across five files, all inside the declared scope.",
+    "done_when": "the measure names the input that produced dispatched, its reproduction on both arbiter arms and a control that restores the cause; gate.log:8-13 names the two guards, gate.log:42 and :219 run the same file set against the pre-fix and fixed arbiters with zero added failures by id (measured in this review, logs/added-failures.log), and negative-control.log:153 reddens 5 of the 7 new checks with the guards reinstated, the two green ones being the declared controls at tests/test_a_finished_run_never_reads_dispatched.py:207 and :232.",
+    "goal": "the node goal is that a run whose manifest reads complete never renders as dispatched in the follower; the landed arbiter returns working-or-complete for a terminal report (reckon/crew/recovery.py:2800-2801) and working for any worker record that answers at all (:2804), so the pre-spawn label is unreachable once a delivery or a spawned worker exists, and the follower's own emitted sequence is asserted at tests/test_a_finished_run_never_reads_dispatched.py:284-286.",
+    "manifest": "read; it records both gate arms, the negative control with the declared string verbatim and the gate commands, but its baseline_suite and after_suite fields (manifest.md:21-22) are prose while the node's own contract (prompt.txt:128-129) specifies armed-only JSON carrying log_path and failure_ids, so the store's read-time annotation (reckon/crew/review.py:870-875) finds no log to read and this run's added-failure count reads unmeasured.",
+    "write_paths": "the declared write paths are reckon/crew/recovery.py, reckon/crew/ticker.py, tests/test_a_finished_run_never_reads_dispatched.py, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html, docs/figures/the-fleet-counters-count-the-fleet and docs/plans/the-fleet-counters-count-the-fleet.html; git diff --name-only 7e6f8a5a f6832b1b lists exactly five files, all inside that declaration, with reckon/crew/ticker.py untouched."
+  },
+  "justifications": {
+    "durability": "negative-control.log:153 reddens 5 of the 7 checks when the byte-exact pre-fix guards (swap_phase_arbiter.py:17-25) are restored, with the module sha verified unchanged at negative-control.log:156, so the assertions bind on the code the fix changed.",
+    "evidence": "gate.log:38-40 names the module, the tree and the command and both arms hold the same 11 files, but the prose suite fields (manifest.md:21-22) leave the store's annotation unmeasured, so this review re-measured 0 added failures by id from the run's own gate.log arms (logs/added-failures.log).",
+    "fit": "the guarded reading matches the classifier's own deferred-outcome pairing at reckon/crew/recovery.py:3607, the docstring at recovery.py:2781-2796 states the mechanism, and no changed path, symbol or comment carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery.py:2800-2805 returns working or complete for a terminal report and working for any answering worker record, so the follower sequence asserted at tests/test_a_finished_run_never_reads_dispatched.py:284 carries no dispatched after working.",
+    "scope_discipline": "git diff --name-only 7e6f8a5a f6832b1b lists exactly five files, every one inside the declared write paths, and the declared reckon/crew/ticker.py is untouched."
+  },
+  "node": "review-of-a-finished-run-never-reads-dispatched",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a run whose manifest reads complete never renders as dispatched in the follower; the landed arbiter returns working-or-complete for a terminal report (reckon/crew/recovery.py:2800-2801) and working for any worker record that answers at all (:2804), so the pre-spawn label is unreachable once a delivery or a spawned worker exists, and the follower's own emitted sequence is asserted at tests/test_a_finished_run_never_reads_dispatched.py:284-286.\nVERDICT done_when: the measure names the input that produced dispatched, its reproduction on both arbiter arms and a control that restores the cause; gate.log:8-13 names the two guards, gate.log:42 and :219 run the same file set against the pre-fix and fixed arbiters with zero added failures by id (measured in this review, logs/added-failures.log), and negative-control.log:153 reddens 5 of the 7 new checks with the guards reinstated, the two green ones being the declared controls at tests/test_a_finished_run_never_reads_dispatched.py:207 and :232.\nVERDICT write_paths: the declared write paths are reckon/crew/recovery.py, reckon/crew/ticker.py, tests/test_a_finished_run_never_reads_dispatched.py, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html, docs/figures/the-fleet-counters-count-the-fleet and docs/plans/the-fleet-counters-count-the-fleet.html; git diff --name-only 7e6f8a5a f6832b1b lists exactly five files, all inside that declaration, with reckon/crew/ticker.py untouched.\nVERDICT manifest: read; it records both gate arms, the negative control with the declared string verbatim and the gate commands, but its baseline_suite and after_suite fields (manifest.md:21-22) are prose while the node's own contract (prompt.txt:128-129) specifies armed-only JSON carrying log_path and failure_ids, so the store's read-time annotation (reckon/crew/review.py:870-875) finds no log to read and this run's added-failure count reads unmeasured.\nVERDICT diff: read commit by commit against 7e6f8a5a; 09442fb6 replaces the two arbiter guards at reckon/crew/recovery.py:2800-2805 and adds the 286-line test module, f6832b1b appends the landing note to the plan, the landed-evidence anchor and one figure, and the pair is 374 insertions across five files, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery.py:classify_pointer, reckon/crew/recovery.py:_watch_snapshot, reckon/crew/runs.py:list_live, reckon/crew/runs.py:drain, reckon/crew/runs.py:_watch_event, reckon/crew/promotion.py:complete\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2800-2805 returns working or complete for a terminal report and working for any answering worker record, so the follower sequence asserted at tests/test_a_finished_run_never_reads_dispatched.py:284 carries no dispatched after working.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log:38-40 names the module, the tree and the command and both arms hold the same 11 files, but the prose suite fields (manifest.md:21-22) leave the store's annotation unmeasured, so this review re-measured 0 added failures by id from the run's own gate.log arms (logs/added-failures.log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 7e6f8a5a f6832b1b lists exactly five files, every one inside the declared write paths, and the declared reckon/crew/ticker.py is untouched.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log:153 reddens 5 of the 7 checks when the byte-exact pre-fix guards (swap_phase_arbiter.py:17-25) are restored, with the module sha verified unchanged at negative-control.log:156, so the assertions bind on the code the fix changed.\nSCORE fit: 19\nJUSTIFICATION fit: the guarded reading matches the classifier's own deferred-outcome pairing at reckon/crew/recovery.py:3607, the docstring at recovery.py:2781-2796 states the mechanism, and no changed path, symbol or comment carries a plan, stage or ticket label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214514956405-a-finished-run-never-reads-dispatched/gate.log:8 the cause the run names at the top of its gate log is the cause its fix removes: the terminal-report guard `manifest_status in TERMINAL_MANIFEST_STATUSES and alive is not True` and the worker-record guard `worker_alive is True` (gate.log:8-13) are exactly the two expressions the landed diff replaces at reckon/crew/recovery.py:2800-2805, and the control's restored block (swap_phase_arbiter.py:17-25) is a byte-exact copy of those guards, so restoring the named cause returns the dispatched rendering and no residual route to it remains on this path.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214514956405-a-finished-run-never-reads-dispatched/manifest.md:21 baseline_suite and after_suite are prose while the node's own contract (prompt.txt:128-129) specifies armed-only JSON carrying log_path and failure_ids, so the store's annotate_review_of_run (reckon/crew/review.py:870-875) reads this run's added-failure count as unmeasured and any reader of the stored review sees an unmeasured count beside a gate that measured it; the fields are optional on an unarmed run, so the repair is to write the specified shape or omit them.\n",
+  "review_run_id": "r-20260926T225516235617-review-of-a-finished-run-never-reads-dispatched",
+  "reviewed_base_sha": "7e6f8a5a386800037100e60ec070a66e7ca31595",
+  "reviewed_head_sha": "f6832b1b3f9e5f3d7568e079d191d95a0d5a7caa",
+  "reviewed_run_id": "r-20260926T214514956405-a-finished-run-never-reads-dispatched",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T23:36:19.051710+00:00",
+  "total": 94
+}

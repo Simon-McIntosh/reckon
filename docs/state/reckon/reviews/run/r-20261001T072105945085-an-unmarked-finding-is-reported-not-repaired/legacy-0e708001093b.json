@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py",
+    "reckon/crew/repair.py"
+  ],
+  "completed_at": "2026-10-01T07:56:22.557Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "an-unmarked-finding-is-reported-not-repaired",
+      "recorded_at": "2026-10-01T07:48:15.830006+00:00"
+    },
+    "evidence": {
+      "kind": "folded",
+      "node": "an-unmarked-finding-is-reported-not-repaired",
+      "recorded_at": "2026-10-01T07:47:37.375603+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-01T07:21:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "168",
+      "severity": "blocking",
+      "text": "blocking: _record_predates_unmarked_refusal keys the classification on the review record's own storage timestamp, and store_review stamps that field with the current moment, so from UNMARKED_SEVERITY_REFUSED_FROM (2026-10-01T07:14:36+00:00) onward every finding that lacks a severity is classified unmarked and dropped from the repair. The premise stated at repair.py:44 (the store refuses a review carrying a finding with no severity) is not enforced by store_review, which accepts an unmarked finding and stamps it now, so such a finding on a newly-stored record is not there by omission and the change silently discards a finding a reviewer did raise. Measured: the six sibling repair suites pass 39, fail 0 at the parent 16434dd94 and fail 14 at the reviewed head 1e6d4503f, including tests/test_review_findings_compose_a_repair.py::test_a_findings_review_composes_one_repair_node, the plan section 3 acceptance test that drives a three-finding stored review and asserts one repair node is composed. The brief ran only two files and left the wider population to merge, so this is the state the coordinator's merge-time gate now inherits rather than a file the node was told to run."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "52",
+      "severity": "follow-on",
+      "text": "follow-on: UNMARKED_SEVERITY_REFUSED_FROM names a write-time refusal that is advisory rather than enforced, and the classification it feeds is duplicated in reckon/crew/reports.py, where _severity_stated judges a value outside the declared vocabulary as absent (unmarked) while repair._finding_kind judges the same value a follow-on. Each carries a fixed instant in product source that only one of them reads. Take the severity decision from the one place that already makes it (reckon/crew/reports.py _severity_stated), or enforce the refusal the constant names, so the two readers cannot disagree about which findings are unmarked."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "423 insertions and 31 deletions across the three declared paths; the classification change in repair.py is the cause of the 14 sibling failures.",
+    "done_when": "the node's done-when named two test files; both pass (10 passed EXIT=0) and the negative control reddens exactly the three post-audit cases, so the named check is met as written; the unmet bar is the blast radius the brief deferred to the merge-time population.",
+    "goal": "the dispatched goal is the one the diff addresses and it is implemented as written; the premise the brief supplied (a write-time refusal of unmarked findings) is only advisory in the tree, and the guard built on it over-fires on every newly-stored record, so the plan section 3 deliverable is not met at head.",
+    "manifest": "the delivered manifest reads complete, its landing line matches the diff, and it declares the mutation its check must fail against because this node writes a check; baseline_suite/after_suite are absent by design because the brief ran only the named files, which is why the review's added-failure derivation reads unmeasured.",
+    "write_paths": "all three declared paths are present in commit 1e6d4503f and no other path is touched."
+  },
+  "justifications": {
+    "durability": "the change is committed at 1e6d4503f with a two-part message describing the mechanism, but the landed tree is not sound \u2014 it turns 14 sibling tests red \u2014 so the claim the commit records does not survive on the branch it landed on.",
+    "evidence": "the declared gate is honest and reproducible (gate.log 10 passed EXIT=0; negative-control.log 3 failed 7 passed EXIT=1, reddening exactly the three post-audit cases), and the brief named only the two files run and deferred the wider population to merge; it is docked because the change's real blast radius was never measured and is large: the same six sibling suites pass 39, fail 0 at the parent 16434dd94 (gate-base.log) and fail 14 at the reviewed head 1e6d4503f (gate-head.log).",
+    "fit": "the new code is mechanism-named and well-commented and the classification is centralised within repair.py, but it duplicates the severity decision that already lives in reckon/crew/reports.py (_severity_stated, _unmarked_findings_in_record), and the two disagree for an out-of-vocabulary severity value.",
+    "goal_fidelity": "the node implemented the dispatched goal faithfully \u2014 on a record stamped at or after UNMARKED_SEVERITY_REFUSED_FROM an absent severity is classified unmarked and reported rather than repaired (reckon/crew/repair.py:168 _record_predates_unmarked_refusal, reckon/crew/repair.py:224 unmarked_findings) \u2014 and the boundary it used matches the audit's landing commit 1c2b49fca (09:14:36+02:00 = 07:14:36Z); it is docked because the landed change contradicts the plan's own section 3 contract at head.",
+    "scope_discipline": "commit 1e6d4503f touches exactly the three declared write paths (reckon/crew/repair.py, reckon/crew/recovery.py, tests/test_an_unmarked_finding_is_reported_not_repaired.py), its parent equals the manifest's orientation_base_sha 16434dd947e15f0ce35a6f05dcf69fa72323c52e, and the worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: the node implemented the dispatched goal faithfully \u2014 on a record stamped at or after UNMARKED_SEVERITY_REFUSED_FROM an absent severity is classified unmarked and reported rather than repaired (reckon/crew/repair.py:168 _record_predates_unmarked_refusal, reckon/crew/repair.py:224 unmarked_findings) \u2014 and the boundary it used matches the audit's landing commit 1c2b49fca (09:14:36+02:00 = 07:14:36Z); it is docked because the landed change contradicts the plan's own section 3 contract at head.\nSCORE evidence: 12\nJUSTIFICATION evidence: the declared gate is honest and reproducible (gate.log 10 passed EXIT=0; negative-control.log 3 failed 7 passed EXIT=1, reddening exactly the three post-audit cases), and the brief named only the two files run and deferred the wider population to merge; it is docked because the change's real blast radius was never measured and is large: the same six sibling suites pass 39, fail 0 at the parent 16434dd94 (gate-base.log) and fail 14 at the reviewed head 1e6d4503f (gate-head.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 1e6d4503f touches exactly the three declared write paths (reckon/crew/repair.py, reckon/crew/recovery.py, tests/test_an_unmarked_finding_is_reported_not_repaired.py), its parent equals the manifest's orientation_base_sha 16434dd947e15f0ce35a6f05dcf69fa72323c52e, and the worktree is clean at head.\nSCORE durability: 9\nJUSTIFICATION durability: the change is committed at 1e6d4503f with a two-part message describing the mechanism, but the landed tree is not sound \u2014 it turns 14 sibling tests red \u2014 so the claim the commit records does not survive on the branch it landed on.\nSCORE fit: 12\nJUSTIFICATION fit: the new code is mechanism-named and well-commented and the classification is centralised within repair.py, but it duplicates the severity decision that already lives in reckon/crew/reports.py (_severity_stated, _unmarked_findings_in_record), and the two disagree for an out-of-vocabulary severity value.\nFINDING reckon/crew/repair.py:168 blocking: _record_predates_unmarked_refusal keys the classification on the review record's own storage timestamp, and store_review stamps that field with the current moment, so from UNMARKED_SEVERITY_REFUSED_FROM (2026-10-01T07:14:36+00:00) onward every finding that lacks a severity is classified unmarked and dropped from the repair. The premise stated at repair.py:44 (the store refuses a review carrying a finding with no severity) is not enforced by store_review, which accepts an unmarked finding and stamps it now, so such a finding on a newly-stored record is not there by omission and the change silently discards a finding a reviewer did raise. Measured: the six sibling repair suites pass 39, fail 0 at the parent 16434dd94 and fail 14 at the reviewed head 1e6d4503f, including tests/test_review_findings_compose_a_repair.py::test_a_findings_review_composes_one_repair_node, the plan section 3 acceptance test that drives a three-finding stored review and asserts one repair node is composed. The brief ran only two files and left the wider population to merge, so this is the state the coordinator's merge-time gate now inherits rather than a file the node was told to run.\nFINDING reckon/crew/repair.py:52 follow-on: UNMARKED_SEVERITY_REFUSED_FROM names a write-time refusal that is advisory rather than enforced, and the classification it feeds is duplicated in reckon/crew/reports.py, where _severity_stated judges a value outside the declared vocabulary as absent (unmarked) while repair._finding_kind judges the same value a follow-on. Each carries a fixed instant in product source that only one of them reads. Take the severity decision from the one place that already makes it (reckon/crew/reports.py _severity_stated), or enforce the refusal the constant names, so the two readers cannot disagree about which findings are unmarked.\nVERDICT goal: the dispatched goal is the one the diff addresses and it is implemented as written; the premise the brief supplied (a write-time refusal of unmarked findings) is only advisory in the tree, and the guard built on it over-fires on every newly-stored record, so the plan section 3 deliverable is not met at head.\nVERDICT done_when: the node's done-when named two test files; both pass (10 passed EXIT=0) and the negative control reddens exactly the three post-audit cases, so the named check is met as written; the unmet bar is the blast radius the brief deferred to the merge-time population.\nVERDICT write_paths: all three declared paths are present in commit 1e6d4503f and no other path is touched.\nVERDICT manifest: the delivered manifest reads complete, its landing line matches the diff, and it declares the mutation its check must fail against because this node writes a check; baseline_suite/after_suite are absent by design because the brief ran only the named files, which is why the review's added-failure derivation reads unmeasured.\nVERDICT diff: 423 insertions and 31 deletions across the three declared paths; the classification change in repair.py is the cause of the 14 sibling failures.\nCALL_SITES: reckon/crew/recovery.py, reckon/crew/repair.py",
+  "review_run_id": "legacy-0e708001093b",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "16434dd947e15f0ce35a6f05dcf69fa72323c52e",
+  "reviewed_head_sha": "1e6d4503f1645f1b5a6c17d68b401c47bd53bb34",
+  "reviewed_run_id": "r-20261001T072105945085-an-unmarked-finding-is-reported-not-repaired",
+  "scores": {
+    "durability": 9,
+    "evidence": 12,
+    "fit": 12,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T07:47:34.081150+00:00",
+  "total": 67
+}

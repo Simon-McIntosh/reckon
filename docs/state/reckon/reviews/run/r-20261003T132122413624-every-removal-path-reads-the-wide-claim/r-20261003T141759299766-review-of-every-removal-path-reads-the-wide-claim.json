@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py::dispatch"
+  ],
+  "completed_at": "2026-10-03T14:33:01.693Z",
+  "dispatched_at": "2026-10-03T14:18:26Z",
+  "findings": [
+    {
+      "file": "tests/test_every_removal_path_reads_the_wide_claim.py",
+      "line": "301",
+      "severity": "follow-on",
+      "text": "follow-on: the owns-target derivation excludes reckon/crew/promotion.py::_release_run_workspace, a removal path that still decides via the phase-gated claim at promotion.py:6141, so section 45's 'every path that removes or reclaims' is not literally enforced; the node names this in its manifest and fragment follow-on."
+    },
+    {
+      "file": "tests/test_every_removal_path_reads_the_wide_claim.py",
+      "line": "174",
+      "severity": "follow-on",
+      "text": "follow-on: the enumeration walks only ast.parse(source).body module-level functions and matches only the adjacent pair 'worktree','remove', so a removal path defined as a class method, or one issuing a dynamically-built argv, is not enumerated and would not be caught by this guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits - a38b4591e swaps _live_worktree_claims for _live_pointer_worktrees in _remove_worktree and drops the now-unused import, and 9ba32dacf adds the 92-line evidence fragment; no other path is touched.",
+    "done_when": "the done-when asks that every removal path read the wide claim, that the proof be a caller-derived enumeration, and that a scratch copy restoring the phase-gated read redden the parked-run case; tests/test_every_removal_path_reads_the_wide_claim.py:189 derives the 4 paths by parsing the package, and the declared control reddens 2 ids, leaving the fenced-out promotion release path as the sole gap.",
+    "goal": "the node's goal was to make every reckon removal path decide liveness through the wide live claim so a run parked between turns keeps its worktree; reckon/crew/routing.py:2040 (_remove_worktree) now reads _live_pointer_worktrees, and all three reclaim paths in routing.py read it, but promotion.py::_release_run_workspace still reads the phase-gated claim and reads are outside the enforced population.",
+    "manifest": "read; status complete, commits a38b4591e records the fix and 9ba32dacf the fragment, the base/head arms and the negative control are recorded with log paths, and measurement_module names the base scratch copy of routing.py.",
+    "write_paths": "the manifest declares reckon/crew/routing.py, the new test file and the evidence fragment; git diff dad58ac67448e92eeeb1820c4eeee3345bc78f2c..9ba32dacf49547b9a69d253318c379cfb1b8b112 names exactly those three and the worktree is clean."
+  },
+  "justifications": {
+    "durability": "the source-parsing guard at tests/test_every_removal_path_reads_the_wide_claim.py:189 fails a new reclaim path that reads the phase-gated claim, but the scan walks only module-level defs and only the literal 'worktree','remove' pair, so a class-method or dynamic-argv removal path escapes it.",
+    "evidence": "the run's own arm and control logs (base-arm-dad58ac67.log: 2 failed, 297 passed; head-arm-working-tree.log: 299 passed) record the measure, and an independent re-run of the new file at head returned 3 passed while a scratch restoring the phase-gated read reddened the scanner case at tests/test_every_removal_path_reads_the_wide_claim.py:303.",
+    "fit": "the change reuses the existing _live_pointer_worktrees helper and its docstring idiom at reckon/crew/routing.py:1000, the commits carry conventional subjects with bodies, and the fragment follows the reckon-type=evidence layout citing #s45.",
+    "goal_fidelity": "the core defect is repaired at reckon/crew/routing.py:2040, but section 45's wording 'every path that removes or reclaims' is broader than the enforced population, which excludes the phase-gated release path at reckon/crew/promotion.py:6141.",
+    "scope_discipline": "git diff --name-only dad58ac67..9ba32dacf returns exactly routing.py, the new test and the fragment, and the reviewed worktree is clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal was to make every reckon removal path decide liveness through the wide live claim so a run parked between turns keeps its worktree; reckon/crew/routing.py:2040 (_remove_worktree) now reads _live_pointer_worktrees, and all three reclaim paths in routing.py read it, but promotion.py::_release_run_workspace still reads the phase-gated claim and reads are outside the enforced population.\nVERDICT done_when: the done-when asks that every removal path read the wide claim, that the proof be a caller-derived enumeration, and that a scratch copy restoring the phase-gated read redden the parked-run case; tests/test_every_removal_path_reads_the_wide_claim.py:189 derives the 4 paths by parsing the package, and the declared control reddens 2 ids, leaving the fenced-out promotion release path as the sole gap.\nVERDICT write_paths: the manifest declares reckon/crew/routing.py, the new test file and the evidence fragment; git diff dad58ac67448e92eeeb1820c4eeee3345bc78f2c..9ba32dacf49547b9a69d253318c379cfb1b8b112 names exactly those three and the worktree is clean.\nVERDICT manifest: read; status complete, commits a38b4591e records the fix and 9ba32dacf the fragment, the base/head arms and the negative control are recorded with log paths, and measurement_module names the base scratch copy of routing.py.\nVERDICT diff: read both commits - a38b4591e swaps _live_worktree_claims for _live_pointer_worktrees in _remove_worktree and drops the now-unused import, and 9ba32dacf adds the 92-line evidence fragment; no other path is touched.\nCALL_SITES: reckon/crew/dispatch.py::dispatch\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the core defect is repaired at reckon/crew/routing.py:2040, but section 45's wording 'every path that removes or reclaims' is broader than the enforced population, which excludes the phase-gated release path at reckon/crew/promotion.py:6141.\nSCORE evidence: 18\nJUSTIFICATION evidence: the run's own arm and control logs (base-arm-dad58ac67.log: 2 failed, 297 passed; head-arm-working-tree.log: 299 passed) record the measure, and an independent re-run of the new file at head returned 3 passed while a scratch restoring the phase-gated read reddened the scanner case at tests/test_every_removal_path_reads_the_wide_claim.py:303.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only dad58ac67..9ba32dacf returns exactly routing.py, the new test and the fragment, and the reviewed worktree is clean.\nSCORE durability: 16\nJUSTIFICATION durability: the source-parsing guard at tests/test_every_removal_path_reads_the_wide_claim.py:189 fails a new reclaim path that reads the phase-gated claim, but the scan walks only module-level defs and only the literal 'worktree','remove' pair, so a class-method or dynamic-argv removal path escapes it.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses the existing _live_pointer_worktrees helper and its docstring idiom at reckon/crew/routing.py:1000, the commits carry conventional subjects with bodies, and the fragment follows the reckon-type=evidence layout citing #s45.\nFINDING tests/test_every_removal_path_reads_the_wide_claim.py:301 follow-on: the owns-target derivation excludes reckon/crew/promotion.py::_release_run_workspace, a removal path that still decides via the phase-gated claim at promotion.py:6141, so section 45's 'every path that removes or reclaims' is not literally enforced; the node names this in its manifest and fragment follow-on.\nFINDING tests/test_every_removal_path_reads_the_wide_claim.py:174 follow-on: the enumeration walks only ast.parse(source).body module-level functions and matches only the adjacent pair 'worktree','remove', so a removal path defined as a class method, or one issuing a dynamically-built argv, is not enumerated and would not be caught by this guard.",
+  "review_run_id": "r-20261003T141759299766-review-of-every-removal-path-reads-the-wide-claim",
+  "reviewed_base_sha": "dad58ac67448e92eeeb1820c4eeee3345bc78f2c",
+  "reviewed_head_sha": "9ba32dacf49547b9a69d253318c379cfb1b8b112",
+  "reviewed_run_id": "r-20261003T132122413624-every-removal-path-reads-the-wide-claim",
+  "reviewer_run_id": "r-20261003T141759299766-review-of-every-removal-path-reads-the-wide-claim",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T14:28:53.055054+00:00",
+  "total": 89
+}

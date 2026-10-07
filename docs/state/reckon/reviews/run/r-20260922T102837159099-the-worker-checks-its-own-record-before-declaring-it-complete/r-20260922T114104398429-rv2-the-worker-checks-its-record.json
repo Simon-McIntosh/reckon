@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 2,
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3709",
+    "reckon/crew.py:150"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T11:41:04.398429+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base aa267565 commit by commit; 914533ad adds the constant, its composition with run_id and the nine prompt-reading tests, and ca0b4164 appends 200 insertions across the plan, the cumulative evidence record and a separate figure, with the docs half carrying no deletion.",
+    "done_when": "read the done_when in the node's prompt.txt and the gate it names; gate_after.log (13 passed, EXIT=0) and gate_base.log (4 passed, EXIT=0) each name their revision, tree and command on the first line, and my re-run of tests/test_worker_prompt_contract.py at the worktree head returned 13 passed.",
+    "goal": "read the goal in the node's prompt.txt against the landed constant at reckon/crew/prompts.py:103-118 and its composition at reckon/crew/prompts.py:230-236; the composed worker prompt requires the worker to run the check against the run's own id and repair what it reports before setting a terminal value, which is the goal's deliverable.",
+    "manifest": "read the manifest in the run directory; it records status complete, both suite counts, the declared mutation with its log, the self-check receipt and the boundary of what the write-time verb judges.",
+    "write_paths": "read the five declared paths in the manifest; the two commits touch exactly five paths and every one of them is inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_prompt_contract.py:144-219 reads the composed prompt against literals rather than the constant it composes from, masking the slot reddens exactly the nine new tests while the four pre-existing ones stay green (negative_control.log, ....FFFFFFFFF), and the no-run-id fallback path is pinned only to the extent that the command survives.",
+    "evidence": "the gate the done_when names ran 4 passed at base aa267565 (gate_base.log, a git archive of HEAD) and 13 passed after (gate_after.log), both recorded in the manifest, and the declared mutation log's first line matches the live pointer's negative_control string character for character and reddens 9 of 13.",
+    "fit": "reckon/crew/prompts.py:91-102 carries the constant in the module's own CONTRACT_* idiom with its rationale comment, and the tests extend the phrase-reading pattern already at tests/test_worker_prompt_contract.py:82-120.",
+    "goal_fidelity": "reckon/crew/prompts.py:105-118 states the command against the run's own id and both field rules, and this reviewer's own composed prompt carries the block with its run id at r-20260922T114104398429-rv2-the-worker-checks-its-record/prompt.txt:58-62, so the contract reaches a real worker as an executable line.",
+    "scope_discipline": "both commits touch only the five declared write paths, the plan and evidence diffs are insertions-only with plan-version 96 and plan-modified unchanged either side of ca0b4164, and the node closed nothing it does not own."
+  },
+  "model": "deepseek-v4.1-flash",
+  "prior_review_note": "the earlier review of this run ended at manifest status in-progress and stored no record; there is no prior verdict to carry",
+  "prior_review_run_id": "r-20260922T105516293231-review-of-the-worker-checks-its-own-record-before-declaring-it-complete",
+  "project": "reckon",
+  "raw_text": "REVISION: ca0b416419c4789a3f806a6c8e328f2c83324b55\nVERDICT goal: read the goal in the node's prompt.txt against the landed constant at reckon/crew/prompts.py:103-118 and its composition at reckon/crew/prompts.py:230-236; the composed worker prompt requires the worker to run the check against the run's own id and repair what it reports before setting a terminal value, which is the goal's deliverable.\nVERDICT done_when: read the done_when in the node's prompt.txt and the gate it names; gate_after.log (13 passed, EXIT=0) and gate_base.log (4 passed, EXIT=0) each name their revision, tree and command on the first line, and my re-run of tests/test_worker_prompt_contract.py at the worktree head returned 13 passed.\nVERDICT write_paths: read the five declared paths in the manifest; the two commits touch exactly five paths and every one of them is inside the declared set.\nVERDICT manifest: read the manifest in the run directory; it records status complete, both suite counts, the declared mutation with its log, the self-check receipt and the boundary of what the write-time verb judges.\nVERDICT diff: read both commits against base aa267565 commit by commit; 914533ad adds the constant, its composition with run_id and the nine prompt-reading tests, and ca0b4164 appends 200 insertions across the plan, the cumulative evidence record and a separate figure, with the docs half carrying no deletion.\nCALL_SITES: reckon/crew/dispatch.py:3709, reckon/crew.py:150\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:105-118 states the command against the run's own id and both field rules, and this reviewer's own composed prompt carries the block with its run id at r-20260922T114104398429-rv2-the-worker-checks-its-record/prompt.txt:58-62, so the contract reaches a real worker as an executable line.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate the done_when names ran 4 passed at base aa267565 (gate_base.log, a git archive of HEAD) and 13 passed after (gate_after.log), both recorded in the manifest, and the declared mutation log's first line matches the live pointer's negative_control string character for character and reddens 9 of 13.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only the five declared write paths, the plan and evidence diffs are insertions-only with plan-version 96 and plan-modified unchanged either side of ca0b4164, and the node closed nothing it does not own.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_worker_prompt_contract.py:144-219 reads the composed prompt against literals rather than the constant it composes from, masking the slot reddens exactly the nine new tests while the four pre-existing ones stay green (negative_control.log, ....FFFFFFFFF), and the no-run-id fallback path is pinned only to the extent that the command survives.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/prompts.py:91-102 carries the constant in the module's own CONTRACT_* idiom with its rationale comment, and the tests extend the phrase-reading pattern already at tests/test_worker_prompt_contract.py:82-120.",
+  "review_run_id": "r-20260922T114104398429-rv2-the-worker-checks-its-record",
+  "reviewed_base_sha": "aa267565830f08144840d73ca6d8cb90af2af2a3",
+  "reviewed_head_sha": "ca0b416419c4789a3f806a6c8e328f2c83324b55",
+  "reviewed_revision": "ca0b416419c4789a3f806a6c8e328f2c83324b55",
+  "reviewed_run_id": "r-20260922T102837159099-the-worker-checks-its-own-record-before-declaring-it-complete",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T12:05:07.495165+00:00",
+  "total": 96
+}

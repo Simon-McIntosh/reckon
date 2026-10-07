@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b8e5f58882ce01eec2d066a63c653392b6dcc809",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/_store.py:897 plan_headings",
+    "reckon/_store.py:893 _plan_html.section_record_id",
+    "reckon/doccheck.py:1329 _plan_html.machinery_kind",
+    "reckon/mcp_views.py:25 plan_headings import",
+    "reckon/crew/routing.py:29 plan_headings import",
+    "reckon/crew/dispatch.py:31 plan_headings import",
+    "reckon/evidence.py:64 _plan_html.plan_headings",
+    "reckon/crew/promotion.py:3582 section_anchor",
+    "reckon/crew/plan_review.py:212 machinery_kind",
+    "reckon/roadmap.py:2946 section_record_id"
+  ],
+  "completed_at": "2026-10-05T22:52:28Z",
+  "dispatched_at": "2026-10-05T22:07:44Z",
+  "findings": [],
+  "head_log_revision": "d085d29fbf6cc193b311601f83fe1ca851972a23",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read one by one: 5777c1402 is the source refactor over fourteen files, d085d29f is the heading-id presence fix, a594b918 and a9668f9b add only docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/one-raw-text-section-reader.html, so the gated source at d085d29f equals the source at head a9668f9b.",
+    "done_when": "I reproduced the done-when's greps at head a9668f9b: grep -n on the twelve retired _store regex/helper names returns nothing, grep 'from reckon._store|import _store' reckon/_plan_html.py returns nothing, grep -rn 'def landed_section_ids' reckon/ is one line in reckon/_plan_html.py, grep -cE 'r\"<section' reckon/_store.py is 0, grep -rn '\"data-reckon\"' reckon/ is the single constant at reckon/_plan_html.py:45, grep -rn 'def section_record_id|def section_id_candidates|def section_anchor' reckon/ names all three in reckon/_plan_html.py only, and interface_counts at the head reports public_definitions 1480 against 1478 at base; grep 'section-landed' returns three lines, one constant at reckon/_plan_html.py:46 plus two docstrings, matching the done-when's outside-docstrings qualifier.",
+    "goal": "The node's goal is one raw-text section reader on reckon/_plan_html.py:356 plan_headings over the generalised span parser, reached by every heading walk, card recogniser and identity derivation; at head the package's heading consumers (reckon/_store.py:897,1572,1597,1602, reckon/doccheck.py:984,1059, reckon/mcp_views.py:2090, reckon/crew/routing.py:2449, reckon/crew/dispatch.py:316, reckon/evidence.py:64, reckon/crew/plan_review.py:212) all call plan_headings, and section_record_id/section_id_candidates/section_anchor/landed_section_ids have one owner at reckon/_plan_html.py:69,85,90,381.",
+    "manifest": "read; it records the frozen baseline 350 passed EXIT=0 and head 382 passed EXIT=0, the negative control 1 failed EXIT=1, and its changed_paths match the diff exactly.",
+    "write_paths": "the declared scope is eighteen paths; git diff --name-only b8e5f588..a9668f9b lists fourteen, every one inside the declaration, with nothing added outside it."
+  },
+  "justifications": {
+    "durability": "restoring a soup.find_all walk in reckon/doccheck.py reddens tests/test_one_raw_text_section_reader.py:226 as the negative control shows (negative-control.log EXIT=1), and tests/test_one_raw_text_section_reader.py:87 compares structured_section_spans against an independently written reference parser.",
+    "evidence": "I reproduced the done-when greps, the 1478->1480 public_definitions census and the named gate test (tests/test_one_raw_text_section_reader.py 32 passed EXIT=0), and the reviewed manifest records baseline 350 and head 382 EXIT=0.",
+    "fit": "the moved functions sit on reckon/_plan_html.py beside the parser that owns them, the record type stays module-private (_PlanHeadingRecord), and no plan or stage label appears in the changed source or tests.",
+    "goal_fidelity": "reckon/_plan_html.py:356 plan_headings is the one heading reader over the private span parser and every consumer I listed reaches it, with the identity functions owned only there.",
+    "reuse": "the change consolidates the store's soup heading walks and four inline identity derivations onto the existing parser owner rather than adding a second reader, and tests/test_one_raw_text_section_reader.py:311 asserts the four moved functions have exactly one definition.",
+    "scope_discipline": "git diff --name-only b8e5f588..a9668f9b lists fourteen paths all inside the eighteen declared write paths, and the two post-gate commits touch only the evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is one raw-text section reader on reckon/_plan_html.py:356 plan_headings over the generalised span parser, reached by every heading walk, card recogniser and identity derivation; at head the package's heading consumers (reckon/_store.py:897,1572,1597,1602, reckon/doccheck.py:984,1059, reckon/mcp_views.py:2090, reckon/crew/routing.py:2449, reckon/crew/dispatch.py:316, reckon/evidence.py:64, reckon/crew/plan_review.py:212) all call plan_headings, and section_record_id/section_id_candidates/section_anchor/landed_section_ids have one owner at reckon/_plan_html.py:69,85,90,381.\nVERDICT done_when: I reproduced the done-when's greps at head a9668f9b: grep -n on the twelve retired _store regex/helper names returns nothing, grep 'from reckon._store|import _store' reckon/_plan_html.py returns nothing, grep -rn 'def landed_section_ids' reckon/ is one line in reckon/_plan_html.py, grep -cE 'r\"<section' reckon/_store.py is 0, grep -rn '\"data-reckon\"' reckon/ is the single constant at reckon/_plan_html.py:45, grep -rn 'def section_record_id|def section_id_candidates|def section_anchor' reckon/ names all three in reckon/_plan_html.py only, and interface_counts at the head reports public_definitions 1480 against 1478 at base; grep 'section-landed' returns three lines, one constant at reckon/_plan_html.py:46 plus two docstrings, matching the done-when's outside-docstrings qualifier.\nVERDICT write_paths: the declared scope is eighteen paths; git diff --name-only b8e5f588..a9668f9b lists fourteen, every one inside the declaration, with nothing added outside it.\nVERDICT manifest: read; it records the frozen baseline 350 passed EXIT=0 and head 382 passed EXIT=0, the negative control 1 failed EXIT=1, and its changed_paths match the diff exactly.\nVERDICT diff: read one by one: 5777c1402 is the source refactor over fourteen files, d085d29f is the heading-id presence fix, a594b918 and a9668f9b add only docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/one-raw-text-section-reader.html, so the gated source at d085d29f equals the source at head a9668f9b.\nCALL_SITES: reckon/_store.py:897 plan_headings, reckon/_store.py:893 _plan_html.section_record_id, reckon/doccheck.py:1329 _plan_html.machinery_kind, reckon/mcp_views.py:25 plan_headings import, reckon/crew/routing.py:29 plan_headings import, reckon/crew/dispatch.py:31 plan_headings import, reckon/evidence.py:64 _plan_html.plan_headings, reckon/crew/promotion.py:3582 section_anchor, reckon/crew/plan_review.py:212 machinery_kind, reckon/roadmap.py:2946 section_record_id\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:356 plan_headings is the one heading reader over the private span parser and every consumer I listed reaches it, with the identity functions owned only there.\nSCORE evidence: 20\nJUSTIFICATION evidence: I reproduced the done-when greps, the 1478->1480 public_definitions census and the named gate test (tests/test_one_raw_text_section_reader.py 32 passed EXIT=0), and the reviewed manifest records baseline 350 and head 382 EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only b8e5f588..a9668f9b lists fourteen paths all inside the eighteen declared write paths, and the two post-gate commits touch only the evidence fragment.\nSCORE durability: 20\nJUSTIFICATION durability: restoring a soup.find_all walk in reckon/doccheck.py reddens tests/test_one_raw_text_section_reader.py:226 as the negative control shows (negative-control.log EXIT=1), and tests/test_one_raw_text_section_reader.py:87 compares structured_section_spans against an independently written reference parser.\nSCORE fit: 20\nJUSTIFICATION fit: the moved functions sit on reckon/_plan_html.py beside the parser that owns them, the record type stays module-private (_PlanHeadingRecord), and no plan or stage label appears in the changed source or tests.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change consolidates the store's soup heading walks and four inline identity derivations onto the existing parser owner rather than adding a second reader, and tests/test_one_raw_text_section_reader.py:311 asserts the four moved functions have exactly one definition.\n",
+  "review_run_id": "legacy-ca5eba63519d",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "b8e5f58882ce01eec2d066a63c653392b6dcc809",
+  "reviewed_head_sha": "a9668f9b6bb39e9ebcdfbcc78df29f53f3850388",
+  "reviewed_run_id": "r-20261005T220708879636-one-raw-text-section-reader",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T22:57:20.254556+00:00",
+  "total": 120
+}

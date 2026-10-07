@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "0f5941a18ae161c9746a3296ce35f759d3c444ba",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T06:06:22.274Z",
+  "dispatched_at": "2026-10-04T06:02:24Z",
+  "findings": [],
+  "head_log_revision": "8bc0e2250ddd9f5908810d81dabff9b424aba063",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site: the change is confined to tests/conftest.py (test fixtures and helpers) and the new test module, neither of which reckon runtime code imports.",
+    "diff": "read commit by commit (0f0483569 helpers and test, 8bc0e2250 evidence); preserve_seat_records now writes a home field via _mirror_seat_record and watcher_record_pids reads it through _record_home with the record's own directory as fallback, and _set_aside_seat_record_mirror merges with copytree(dirs_exist_ok=True) instead of replacing the aside.",
+    "done_when": "the done-when is a test that arms a stub producer whose RECKON_HOME lies in a tree pruned before session end and asserts the session-end path signals it; tests/test_the_session_reap_signals_a_pruned_producer.py:93 asserts reapable_watch_pids returns the pid and that signal_worker ends the stub by SIGTERM, the base arm reproduces assert [] == [pid] and the missing earlier-cycle record (2 failed EXIT=1), and the head arm is 2 passed EXIT=0, re-run independently at 8bc0e2250.",
+    "goal": "\u00a718's goal is that a mirrored seat record can be signalled by the session-end reap; preserve_seat_records writes the home each record was written under into the copy and watcher_record_pids reads it through _record_home, so a record whose original tree the prune removed still resolves to the producer's own RECKON_HOME (tests/conftest.py:283-361).",
+    "manifest": "read; it states commits 8bc0e2250 (evidence) and 0f0483569 (helpers and test), baseline 70 passed + 1 skipped EXIT=0, after 72 passed + 1 skipped EXIT=0, new module head 2 passed EXIT=0, and negative control 2 failed EXIT=1; every log path it names exists and its header line names the revision quoted.",
+    "write_paths": "the diff 0f5941a18..8bc0e2250 touches exactly three files, each a declared write path: tests/conftest.py, tests/test_the_session_reap_signals_a_pruned_producer.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/the-session-reap-can-signal-a-pruned-producer.html (the declared docs/figures directory was not used)."
+  },
+  "justifications": {
+    "durability": "reverting either half reddens the gate: the base arm's derived-home conftest fails test one on assert [] == [pid], and its aside-replacing conftest fails test two on the missing first-home record, so the guard fails closed if the home field or the merge is removed; the test reads the reap's own pid list rather than a value it supplied.",
+    "evidence": "tests/test_the_session_reap_signals_a_pruned_producer.py:93 asserts the session-end pid list contains the stub and that signal_worker terminates it by SIGTERM; the base arm reproduces assert [] == [3077891] and the missing alpha-00.lock, 2 failed EXIT=1, against a head arm of 2 passed EXIT=0, and I re-ran the head module independently at 8bc0e2250 for 2 passed.",
+    "fit": "the new names state their mechanism (_SEAT_RECORD_HOME_FIELD, _mirror_seat_record, _record_home) and carry no plan, phase or ticket label; the mirrored-record home field is documented where it is written and read, and the change reuses the existing watch_record_dirs/preserve_seat_records idiom rather than adding a parallel path.",
+    "goal_fidelity": "preserve_seat_records writes the home the record was written under into each mirror and watcher_record_pids resolves a record's home from that field (falling back to directory.parent.parent for an original), so reapable_watch_pids binds the mirrored record to the live producer's RECKON_HOME and the session-end reap signals it; the second gap \u00a718 names, the aside replacing itself, is closed by merging each cycle into the existing aside.",
+    "scope_discipline": "the diff 0f5941a18..8bc0e2250 changes three files, all declared write paths, 270 insertions and 16 deletions, and every change serves the \u00a718 done-when: the home field, its reader, the aside merge, the two tests, and the evidence record."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a718's goal is that a mirrored seat record can be signalled by the session-end reap; preserve_seat_records writes the home each record was written under into the copy and watcher_record_pids reads it through _record_home, so a record whose original tree the prune removed still resolves to the producer's own RECKON_HOME (tests/conftest.py:283-361).\nVERDICT done_when: the done-when is a test that arms a stub producer whose RECKON_HOME lies in a tree pruned before session end and asserts the session-end path signals it; tests/test_the_session_reap_signals_a_pruned_producer.py:93 asserts reapable_watch_pids returns the pid and that signal_worker ends the stub by SIGTERM, the base arm reproduces assert [] == [pid] and the missing earlier-cycle record (2 failed EXIT=1), and the head arm is 2 passed EXIT=0, re-run independently at 8bc0e2250.\nVERDICT write_paths: the diff 0f5941a18..8bc0e2250 touches exactly three files, each a declared write path: tests/conftest.py, tests/test_the_session_reap_signals_a_pruned_producer.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/the-session-reap-can-signal-a-pruned-producer.html (the declared docs/figures directory was not used).\nVERDICT manifest: read; it states commits 8bc0e2250 (evidence) and 0f0483569 (helpers and test), baseline 70 passed + 1 skipped EXIT=0, after 72 passed + 1 skipped EXIT=0, new module head 2 passed EXIT=0, and negative control 2 failed EXIT=1; every log path it names exists and its header line names the revision quoted.\nVERDICT diff: read commit by commit (0f0483569 helpers and test, 8bc0e2250 evidence); preserve_seat_records now writes a home field via _mirror_seat_record and watcher_record_pids reads it through _record_home with the record's own directory as fallback, and _set_aside_seat_record_mirror merges with copytree(dirs_exist_ok=True) instead of replacing the aside.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: preserve_seat_records writes the home the record was written under into each mirror and watcher_record_pids resolves a record's home from that field (falling back to directory.parent.parent for an original), so reapable_watch_pids binds the mirrored record to the live producer's RECKON_HOME and the session-end reap signals it; the second gap \u00a718 names, the aside replacing itself, is closed by merging each cycle into the existing aside.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_session_reap_signals_a_pruned_producer.py:93 asserts the session-end pid list contains the stub and that signal_worker terminates it by SIGTERM; the base arm reproduces assert [] == [3077891] and the missing alpha-00.lock, 2 failed EXIT=1, against a head arm of 2 passed EXIT=0, and I re-ran the head module independently at 8bc0e2250 for 2 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 0f5941a18..8bc0e2250 changes three files, all declared write paths, 270 insertions and 16 deletions, and every change serves the \u00a718 done-when: the home field, its reader, the aside merge, the two tests, and the evidence record.\nSCORE durability: 19\nJUSTIFICATION durability: reverting either half reddens the gate: the base arm's derived-home conftest fails test one on assert [] == [pid], and its aside-replacing conftest fails test two on the missing first-home record, so the guard fails closed if the home field or the merge is removed; the test reads the reap's own pid list rather than a value it supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the new names state their mechanism (_SEAT_RECORD_HOME_FIELD, _mirror_seat_record, _record_home) and carry no plan, phase or ticket label; the mirrored-record home field is documented where it is written and read, and the change reuses the existing watch_record_dirs/preserve_seat_records idiom rather than adding a parallel path.\n",
+  "review_run_id": "r-20261004T060208055013-review-of-the-session-reap-can-signal-a-pruned-producer",
+  "reviewed_base_sha": "0f5941a18ae161c9746a3296ce35f759d3c444ba",
+  "reviewed_head_sha": "8bc0e2250ddd9f5908810d81dabff9b424aba063",
+  "reviewed_run_id": "r-20261004T054838861930-the-session-reap-can-signal-a-pruned-producer",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T06:05:21+00:00",
+  "total": 96
+}

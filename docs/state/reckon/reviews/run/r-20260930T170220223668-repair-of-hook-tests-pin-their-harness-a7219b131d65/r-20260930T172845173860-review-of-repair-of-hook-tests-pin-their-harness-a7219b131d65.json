@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "the reviewed run's own baseline_suite and after_suite logs (base-arm.log at 1f88db44c, head-arm.log at afbb6722b), read through annotate_review_of_run; both logs carry zero FAILED/ERROR ids, and a positive control on a known-failure log returns its ids",
+  "base_log_revision": "1f88db44c126f4bf96fca139f995ff3678c7bdee",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T17:47:12.108Z",
+  "dispatched_at": "2026-09-30T17:29:03Z",
+  "findings": [],
+  "head_log_revision": "afbb6722bae2aca8815ca8b93b1260beb4e20cd6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit afbb6722b (one new case plus the wrapper helper it needs, +98 in the test file) and commit dac8c3862 (the 65-line evidence fragment) against base a7219b131; reckon/hooks/coordinator_obligations.py is byte-identical across the range, so the change adds a test for the existing fallback and alters no production code.",
+    "done_when": "the measure is that the manifest names every finding by id as acted <id>: <commit> with none left unanswered; its evidence_inputs line carries acted f25306429f5: afbb6722b, acted fc315d2dea3: afbb6722b and acted f7a5753e6b8: afbb6722b, and I verified each named artefact rather than reading the line alone.",
+    "goal": "the goal is to answer the three findings the review of r-20260930T163600050453-hook-tests-pin-their-harness raised; commit afbb6722b adds the case at tests/test_coordinator_obligations_hook.py:596 that drives the CLAUDE_PID-absent ancestry walk, the run's manifest now names its arms under the canonical suite fields, and head-arm.log:1 names the revision it measured, so every finding is answered by an artefact I read.",
+    "manifest": "read; both arms sit under baseline_suite and after_suite with the literal command that ran and absolute log paths, its test_logs all exist on disk, and the three findings are named by id with the commit that answered them.",
+    "write_paths": "declared tests/test_coordinator_obligations_hook.py, the node's fragment under docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/, and its figure directory; git diff a7219b131d650b3982667fae11b90132ba6a26d9..dac8c3862552f92b6ed02b2426f09c7af4023808 changes exactly the first two paths (+98 and +65) and names no third."
+  },
+  "justifications": {
+    "durability": "neutering the ancestry fallback in a scratch tree reds the new case alone (mutant-fallback.log, 1 failed, EXIT=1) and its assertion compares the hook's emitted checklist against an expectation built from the fixture's own constants rather than a value the drive passes in \u2014 deducted because the declared negative control reverts the commit and collects nothing (EXIT=4), so the biting mutation lives in a separate log.",
+    "evidence": "base-arm.log and head-arm.log record 39 passed and 40 passed over the same three hook files with zero FAILED lines on either side, the declared control and the mutant are on disk, and I re-ran the named case at the reviewed head (1 passed) \u2014 deducted because the base arm's header names 1f88db44c, one commit behind this run's base a7219b131, so the pair spans two changes and is harmless only because the head log records no failures at all.",
+    "fit": "the wrapper helper follows the file's existing module-private-helper and docstring idiom beside tests/test_coordinator_obligations_hook.py:411, the commits carry conventional subjects with bodies, and the diff carries no plan label, version number or attribution.",
+    "goal_fidelity": "tests/test_coordinator_obligations_hook.py:596 drives the hook with CLAUDE_PID removed under a claude-named ancestor and asserts the injected checklist, so the branch f7a5753e6b8 named is now reached, while the manifest's suite fields answer fc315d2dea3 and head-arm.log:1 answers f25306429f5.",
+    "scope_discipline": "the two commits change only the declared test file and the declared evidence fragment, with nothing leaving the declared paths and no figure or extra artefact written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to answer the three findings the review of r-20260930T163600050453-hook-tests-pin-their-harness raised; commit afbb6722b adds the case at tests/test_coordinator_obligations_hook.py:596 that drives the CLAUDE_PID-absent ancestry walk, the run's manifest now names its arms under the canonical suite fields, and head-arm.log:1 names the revision it measured, so every finding is answered by an artefact I read.\nVERDICT done_when: the measure is that the manifest names every finding by id as acted <id>: <commit> with none left unanswered; its evidence_inputs line carries acted f25306429f5: afbb6722b, acted fc315d2dea3: afbb6722b and acted f7a5753e6b8: afbb6722b, and I verified each named artefact rather than reading the line alone.\nVERDICT write_paths: declared tests/test_coordinator_obligations_hook.py, the node's fragment under docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/, and its figure directory; git diff a7219b131d650b3982667fae11b90132ba6a26d9..dac8c3862552f92b6ed02b2426f09c7af4023808 changes exactly the first two paths (+98 and +65) and names no third.\nVERDICT manifest: read; both arms sit under baseline_suite and after_suite with the literal command that ran and absolute log paths, its test_logs all exist on disk, and the three findings are named by id with the commit that answered them.\nVERDICT diff: read commit afbb6722b (one new case plus the wrapper helper it needs, +98 in the test file) and commit dac8c3862 (the 65-line evidence fragment) against base a7219b131; reckon/hooks/coordinator_obligations.py is byte-identical across the range, so the change adds a test for the existing fallback and alters no production code.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_coordinator_obligations_hook.py:596 drives the hook with CLAUDE_PID removed under a claude-named ancestor and asserts the injected checklist, so the branch f7a5753e6b8 named is now reached, while the manifest's suite fields answer fc315d2dea3 and head-arm.log:1 answers f25306429f5.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-arm.log and head-arm.log record 39 passed and 40 passed over the same three hook files with zero FAILED lines on either side, the declared control and the mutant are on disk, and I re-ran the named case at the reviewed head (1 passed) \u2014 deducted because the base arm's header names 1f88db44c, one commit behind this run's base a7219b131, so the pair spans two changes and is harmless only because the head log records no failures at all.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change only the declared test file and the declared evidence fragment, with nothing leaving the declared paths and no figure or extra artefact written.\nSCORE durability: 19\nJUSTIFICATION durability: neutering the ancestry fallback in a scratch tree reds the new case alone (mutant-fallback.log, 1 failed, EXIT=1) and its assertion compares the hook's emitted checklist against an expectation built from the fixture's own constants rather than a value the drive passes in \u2014 deducted because the declared negative control reverts the commit and collects nothing (EXIT=4), so the biting mutation lives in a separate log.\nSCORE fit: 20\nJUSTIFICATION fit: the wrapper helper follows the file's existing module-private-helper and docstring idiom beside tests/test_coordinator_obligations_hook.py:411, the commits carry conventional subjects with bodies, and the diff carries no plan label, version number or attribution.",
+  "review_run_id": "r-20260930T172845173860-review-of-repair-of-hook-tests-pin-their-harness-a7219b131d65",
+  "reviewed_base_sha": "a7219b131d650b3982667fae11b90132ba6a26d9",
+  "reviewed_head_sha": "dac8c3862552f92b6ed02b2426f09c7af4023808",
+  "reviewed_run_id": "r-20260930T170220223668-repair-of-hook-tests-pin-their-harness-a7219b131d65",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T17:43:45.878095+00:00",
+  "total": 97
+}

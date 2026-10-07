@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_dispatch_spawns_through_the_fleet.py::test_an_unacknowledged_fifo_refuses_leaving_no_pointer_or_worktree"
+  ],
+  "added_failures_note": "set difference over the reviewed run's own baseline_suite (16 ids, gate-base.log) and after_suite (17 ids, gate-head.log): the single added id is tests/test_dispatch_spawns_through_the_fleet.py::test_an_unacknowledged_fifo_refuses_leaving_no_pointer_or_worktree, whose assertion elapsed < FLEET_ACK_CEILING (10.0s) at tests/test_dispatch_spawns_through_the_fleet.py:370 is a wall-clock bound that measured 28.17s under xdist -n 8 load; I re-ran it alone at the reviewed head and it passed in 5.09s, so it is a load flake and not the reviewed change's defect.",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4668",
+    "reckon/cli.py:1330",
+    "reckon/crew/promotion.py:5985"
+  ],
+  "completed_at": "2026-09-30T19:49:22.490Z",
+  "dispatched_at": "2026-09-30T19:39:26Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183505187178-the-fence-fails-closed/gate-base.log",
+      "line": "1",
+      "text": "the done_when requires every gate log to be headed with its revision, but this log's first line names the module under test and its revision line sits at line 4, so the production reader (reckon/crew/review.py:793 reads lines[0]) records the base arm's revision as null and the added-failure count cannot be tied to the base commit."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183505187178-the-fence-fails-closed/gate-head.log",
+      "line": "1",
+      "text": "the head arm ran on the worktree before the change was committed, so its first line names the base revision 3b6313801 while the manifest's after_suite.revision records the head 4cc24938d; a reader deriving the arm's revision from the log header gets the base revision for the head measurement."
+    }
+  ],
+  "head_log_revision": "3b63138018b9e0e8d061a587dcc5009b4c3e3bba",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production call sites reckon/crew/dispatch.py:4668, reckon/cli.py:1330 and reckon/crew/promotion.py:5985.",
+    "diff": "read commit by commit; 4cc24938d adds the capability probe at reckon/_backends.py:1933, the fail-closed block at reckon/crew/dispatch.py:4661, the --no-fence option at reckon/cli.py:1330, the fence_waiver field on LaunchPlan and as_dict at reckon/_backends.py:340/:350, and the ledger copy at reckon/crew/promotion.py:5985.",
+    "done_when": "the done_when names six cases, a base/head gate over the dispatch-importing files and an executed negative control; the manifest records all of them, I re-ran the named file at head (6 passed) and the added-failing id alone (1 passed in 5.09s), and both gate arms end EXIT= (16 and 17 FAILED), though neither arm's log header names the revision it measured.",
+    "goal": "the node goal is to refuse a CLI worker's dispatch before any worktree exists when the fence cannot be built, with --no-fence REASON as the recorded way through; reckon/crew/dispatch.py:4668 calls the capability probe before the pace is composed and raises there, ahead of _create_worktree at reckon/crew/dispatch.py:4942.",
+    "manifest": "read; it records commits 4cc24938d and 423bdf97b, both arm figures, the per-case results, the negative-control log and its cause, and the one added id as a load flake.",
+    "write_paths": "the diff 3b6313801..423bdf97b changes five declared product/test files plus the evidence fragment, all inside the manifest's declared write paths; the unused docs/figures directory is correctly left unwritten."
+  },
+  "justifications": {
+    "durability": "tests/test_the_fence_fails_closed.py:196 reddens if the fence check is removed, and the negative control at tests/test_the_fence_fails_closed.py:405 forces the check to succeed while bwrap is hidden and reaches the worktree spy, showing the guard fires.",
+    "evidence": "both gate arms end EXIT= with 16 and 17 FAILED lines and the negative control ends EXIT=1, but the base log's first line names no revision (recorded_log_revision returns null) and the head log's first line names the base revision rather than the head the manifest records, so neither arm's revision is readable from its own header; the arms also add one failing id rather than none.",
+    "fit": "fence_capability_problem at reckon/_backends.py:1950 follows the module's injectable-probe idiom and no added symbol, comment or commit message names a plan, version or ticket.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4668 refuses with the missing capability named (bwrap absent, or the probe's own failure text) and reckon/crew/dispatch.py:5170 records the --no-fence reason on the run, matching the goal; the refusal precedes _create_worktree at reckon/crew/dispatch.py:4942.",
+    "scope_discipline": "every path in git diff 3b6313801..423bdf97b is one of the manifest's declared write paths and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a CLI worker's dispatch before any worktree exists when the fence cannot be built, with --no-fence REASON as the one recorded way through; reckon/crew/dispatch.py:4668 calls _backends.fence_capability_problem() before the pace is composed and raises there, and reckon/crew/dispatch.py:4942 shows _create_worktree is reached only afterward, so the refusal precedes the worktree, pointer and run directory.\nVERDICT done_when: the done_when names six cases in tests/test_the_fence_fails_closed.py plus a base/head gate over the dispatch-importing test files and an executed negative control; the manifest records all of them, I re-ran the named file at head (6 passed) and the single added-failing id alone (1 passed in 5.09s), and both gate-log arms end EXIT=1 with 16 and 17 FAILED lines.\nVERDICT write_paths: the diff %s..%s changes reckon/crew/dispatch.py, reckon/cli.py, reckon/_backends.py, reckon/crew/promotion.py, tests/test_the_fence_fails_closed.py and the evidence fragment, every one inside the manifest's declared write paths; the unused docs/figures directory is correctly left unwritten because the done-when names no figure.\nVERDICT manifest: read; it records commits 4cc24938d and 423bdf97b, the base and head arm figures (16 failed/1714 passed and 17 failed/1719 passed), the per-case results, the negative-control log and its cause, and the one added id as a load flake.\nVERDICT diff: read commit by commit; 4cc24938d adds _probe_user_namespace and fence_capability_problem at reckon/_backends.py:1933, the fail-closed block at reckon/crew/dispatch.py:4661, the --no-fence option at reckon/cli.py:1330, the fence_waiver field on LaunchPlan and its as_dict at reckon/_backends.py:340 and :350, and the ledger copy at reckon/crew/promotion.py:5985; 423bdf97b cites the change commit from the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:4668, reckon/cli.py:1330, reckon/crew/promotion.py:5985\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4668 refuses with the missing capability named (bwrap absent, or the probe's own failure text) and reckon/crew/dispatch.py:5170 records the --no-fence reason on the run, matching the goal exactly.\nSCORE evidence: 15\nJUSTIFICATION evidence: both arms end EXIT= with their FAILED lines and the negative control ends EXIT=1, but the base log's first line names no revision so the production reader (reckon/crew/review.py:793 reads lines[0]) records base_log_revision null, the head log's first line names the base revision 3b6313801 rather than the head the manifest's after_suite.revision records, and the arms add one failing id rather than none.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 3b6313801..423bdf97b is one of the manifest's declared write paths and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_fence_fails_closed.py:196 (case 1) reddens if the fence check is removed, and the negative control at tests/test_the_fence_fails_closed.py:405 forces the check to succeed while bwrap is hidden and reaches the worktree spy, showing the guard fires.\nSCORE fit: 18\nJUSTIFICATION fit: fence_capability_problem at reckon/_backends.py:1950 follows the module's injectable-probe idiom and no added symbol, comment or commit message names a plan, version or ticket.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183505187178-the-fence-fails-closed/gate-base.log:1 the done_when requires every gate log to be headed with its revision, but this log's first line names the module under test and its revision line sits at line 4, so the production reader (reckon/crew/review.py:793 reads lines[0]) records the base arm's revision as null and the added-failure count cannot be tied to the base commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183505187178-the-fence-fails-closed/gate-head.log:1 the head arm ran on the worktree before the change was committed, so its first line names the base revision 3b6313801 while the manifest's after_suite.revision records the head 4cc24938d; a reader deriving the arm's revision from the log header gets the base revision for the head measurement.\n",
+  "review_run_id": "r-20260930T193911413878-review-of-the-fence-fails-closed",
+  "reviewed_base_sha": "3b63138018b9e0e8d061a587dcc5009b4c3e3bba",
+  "reviewed_head_sha": "423bdf97b0cba65f3c52f7acbfce00c23e4e5715",
+  "reviewed_run_id": "r-20260930T183505187178-the-fence-fails-closed",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T19:47:01.673494+00:00",
+  "total": 90
+}

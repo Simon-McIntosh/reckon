@@ -1,0 +1,104 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest arms rather than from its prose: baseline_suite /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/logs/baseline-arm-suite.log (22 failed) against after_suite /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/logs/head-arm-suite.log (21 failed); canonicalising the pytest ids leaves nothing added in either direction, so the annotation reports a measured zero rather than an unmeasured value",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:987 (_keep_run_files_identical called from write)",
+    "reckon/crew/routing.py:1715",
+    "reckon/crew/promotion.py:1612",
+    "reckon/crew/promotion.py:4297"
+  ],
+  "completed_at": "2026-09-29T14:36:03.642Z",
+  "dispatched_at": "2026-09-29T13:40:40Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "993",
+      "text": "the restore runs on a snapshot taken before this write's own envelope attempt, so a writer that loses its version race puts back the file it captured before the winner had written \u2014 the winner's committed row is then replaced by the loser's stale copy, the per-run file and the aggregate disagree, and every later read of the whole project is refused. Reproduced by forcing the interleaving (two writers prepared from one revision; the first rewrites its file, the second rewrites the file and commits, the first then hits its version conflict) and run under the same schedule against both revisions: at the base the project stays readable, at head ledger.load refuses with \"run ... differs between .../crew.json and .../runs/...json; refusing to ...\" (08-race-head.log) against the base's readable outcome (09-race-base.log). The window is narrow, but the ledger exists precisely because writers share it, and the resulting refusal is the state the ordering exists to prevent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit (1f87d481 builds the files-first ordering, _replace_run_file and _restore_run_files, the reordered write and the two new tests; f1b9e06f lands the evidence fragment and the rewritten test assertion); the writer uses a sibling temp file plus os.replace, which is the store's own atomic-write idiom.",
+    "done_when": "the done-when asks that the disagreement the repair claims to remove is gone at head; the single-writer path is green and falsifier-tested, but the interleaving reproduced in this record's finding reaches the disagreement anyway, so the measure is met only for one writer at a time.",
+    "goal": "the node's goal was to keep a run's per-run file and the aggregate in step across a ledger write; reckon/ledger.py:987 makes the file copy consistent before the envelope advances, and the two new tests assert the two failure directions (an unwritable run file leaves the project readable; a refused envelope puts the run file back), with 01-head-test-file-rerun.log recording 4 passed EXIT=0 for that file at f1b9e06f.",
+    "manifest": "read in full; it names both commits, both arms, twelve targeted logs and a negative control, and it now carries the baseline_suite/after_suite pair the prior record asked for; the derived count above comes from those two arms, not from the manifest's prose.",
+    "write_paths": "the manifest declares reckon/ledger.py, tests/test_ledger_write_keeps_run_files.py and one evidence fragment under the plan's docs tree; the diff a55213dd..f1b9e06f touches exactly those three (3 files, +220 -15) and nothing outside them moved."
+  },
+  "justifications": {
+    "durability": "the single-writer defect the prior record found is genuinely repaired and falsifier-tested (logs 01, 02, 03), but the restore puts back a snapshot taken before a competing writer's commit, so one two-writer schedule reaches the unreadable state the repair was written to remove \u2014 measured as the differential between 08-race-head.log and 09-race-base.log.",
+    "evidence": "both arms are recorded under full commands with their revisions, file counts, failure counts and exit codes, and the added-failure figure in this record is derived from them by the store's own function rather than read from the manifest's prose; the earlier placeholdered arm no longer carries the claim.",
+    "fit": "the helpers reuse the module's existing atomic-write shape (sibling temp plus os.replace) and its serialize_run/run_path pair, the restore is documented at the branch that needs it, and no forbidden name or changelog reference was introduced; the deduction is for the unconditional restore, which is a fit defect as much as a durability one.",
+    "goal_fidelity": "the ordering change is what the goal names, verified by the two new tests and by this review's own mutation checks; it is short of full marks because the end state the landing text claims \u2014 a reader never handed the disagreement \u2014 does not hold under the two-writer schedule recorded as this record's finding.",
+    "scope_discipline": "every path in the diff is inside the declared write paths and the diff contains no fixture edit; the mutation and race experiments in the reviewing run were carried out in scratch trees under /tmp, so the reviewed worktree took no residue from the review."
+  },
+  "node": "review-of-ledger-write-keeps-run-files",
+  "prior_findings_resolution": [
+    {
+      "evidence": "reckon/ledger.py:987 rewrites the per-run files before the envelope advances and :993/:1003 restore them on a version conflict and on any other exception; the reviewing run's mutation logs 02-mutation-residue.log and 03-mutation-restore-removed.log each redden the guard test when the corresponding half is removed",
+      "prior_finding": {
+        "file": "reckon/ledger.py",
+        "line": 930,
+        "text": "the per-run repair runs after the aggregate envelope is already written and there is no rollback, so a per-run file that cannot be made writable leaves the aggregate advanced, the file stale and the next ledger.load refusing the project"
+      },
+      "prior_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T092802902599-ledger-write-keeps-run-files.at-a55213dd9c2c0c89c0b082bcc79c709fb7eeae09.json",
+      "resolution": "resolved"
+    },
+    {
+      "evidence": "the assertion was replaced by a before/after comparison of tests/test_ledger_write_keeps_run_files.py:74 _tree(repo); 02-mutation-residue.log shows it failing on a real residue",
+      "prior_finding": {
+        "file": "tests/test_ledger_write_keeps_run_files.py",
+        "line": 95,
+        "text": "the isolation assertion cannot fail for the reason it names: the repository's autouse fixture already points the reviewed home at a temporary directory"
+      },
+      "resolution": "resolved"
+    },
+    {
+      "evidence": "the placeholdered log is untouched, but the zero-added claim now rests on the manifest's baseline_suite/after_suite pair, whose logs carry full commands and are the arms re-read for this record",
+      "prior_finding": {
+        "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/logs/07-base-arm-targeted.log",
+        "line": 2,
+        "text": "the header command carries placeholders instead of the command that ran, so the arm carrying the zero-added-failure claim cannot be replayed from its own receipt"
+      },
+      "resolution": "resolved in substance"
+    },
+    {
+      "evidence": "the manifest carries both gate-log objects with log_path, revision, counts and exit codes; the store's read-time annotation returns added_failure_count 0 for this run",
+      "prior_finding": {
+        "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/manifest.md",
+        "line": 15,
+        "text": "the manifest names its logs only under a test_logs list, so the store finds no baseline_suite and no after_suite and reports the added-failure count as unmeasured"
+      },
+      "resolution": "resolved"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T092802902599-ledger-write-keeps-run-files\n(plan the-suite-is-green-at-head, section 2; reviewed node ledger-write-keeps-run-files)\nReviewed revisions: base a55213dd9c2c0c89c0b082bcc79c709fb7eeae09, head f1b9e06f33fb876704eec453a7264d02a362fccf\nReviewing run: r-20260929T134023333221-review-of-ledger-write-keeps-run-files\nDerived added failures: 0, from the reviewed run's own arms. The manifest's baseline_suite names /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/logs/baseline-arm-suite.log (revision a55213dd, 101 files, 22 failed, EXIT=1) and after_suite names /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/logs/head-arm-suite.log (the a55213dd worktree with the repair applied, 21 failed, EXIT=1); the store's own added_failures_from_gate_logs returns count 0 with both directions empty once the pytest ids are canonicalised, and the single base-only id is tests/test_crew.py::test_shadow_derives_the_committed_node_at_the_revision_base, a test the diff does not touch.\nResolution of the prior record's finding 1 (reckon/ledger.py:930, the per-run repair ran after the aggregate was already written, with no rollback): resolved at head. reckon/ledger.py:987 rewrites the per-run files before the envelope advances, and both failure branches put the review's captured files back \u2014 reckon/ledger.py:993 for a version conflict and reckon/ledger.py:1003 for any other exception. Both halves are falsified rather than assumed: 02-mutation-residue.log reddens the guard test when the sibling temp file is left behind instead of replaced, and 03-mutation-restore-removed.log reddens it when the restore is deleted.\nResolution of the prior record's finding 2 (tests/test_ledger_write_keeps_run_files.py:95, an assertion true by construction under the repository's autouse temporary-home fixture): resolved at head. The RECKON_HOME claim is gone; the test compares _tree(repo) (tests/test_ledger_write_keeps_run_files.py:74) before and after, and 02-mutation-residue.log shows that comparison failing on a real residue, so the assertion can now fail for the reason it names.\nResolution of the prior record's finding 3 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/logs/07-base-arm-targeted.log:2, a header command carrying placeholders): resolved in substance. That log is unchanged, but the zero-added claim no longer rests on it \u2014 the manifest's baseline_suite/after_suite pair carries the two full-command logs, both re-read for this record.\nResolution of the prior record's finding 4 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/manifest.md:15, no baseline_suite and no after_suite, so the store found nothing to derive from): resolved at head. The manifest carries both gate-log objects with log_path, revision, file and failure counts and exit codes, and the store's read-time annotation now reports added_failure_count 0 instead of unmeasured.\nThe dimensions below score the repair plus the anomaly the reordering opens, which is this record's finding.\n\nVERDICT goal: the node's goal was to keep a run's per-run file and the aggregate in step across a ledger write; reckon/ledger.py:987 makes the file copy consistent before the envelope advances, and the two new tests assert the two failure directions (an unwritable run file leaves the project readable; a refused envelope puts the run file back), with 01-head-test-file-rerun.log recording 4 passed EXIT=0 for that file at f1b9e06f.\nVERDICT done_when: the done-when asks that the disagreement the repair claims to remove is gone at head; the single-writer path is green and falsifier-tested, but the interleaving reproduced in this record's finding reaches the disagreement anyway, so the measure is met only for one writer at a time.\nVERDICT write_paths: the manifest declares reckon/ledger.py, tests/test_ledger_write_keeps_run_files.py and one evidence fragment under the plan's docs tree; the diff a55213dd..f1b9e06f touches exactly those three (3 files, +220 -15) and nothing outside them moved.\nVERDICT manifest: read in full; it names both commits, both arms, twelve targeted logs and a negative control, and it now carries the baseline_suite/after_suite pair the prior record asked for; the derived count above comes from those two arms, not from the manifest's prose.\nVERDICT diff: read commit by commit (1f87d481 builds the files-first ordering, _replace_run_file and _restore_run_files, the reordered write and the two new tests; f1b9e06f lands the evidence fragment and the rewritten test assertion); the writer uses a sibling temp file plus os.replace, which is the store's own atomic-write idiom.\nVERDICT call_sites: the modified helpers are reached only from write (reckon/ledger.py:987) and from each other (reckon/ledger.py:863, :993, :1003); write itself has three production callers, below.\nCALL_SITES: reckon/ledger.py:987 (_keep_run_files_identical called from write), reckon/crew/routing.py:1715, reckon/crew/promotion.py:1612, reckon/crew/promotion.py:4297\n\nSCORE durability: 14\nJUSTIFICATION durability: the single-writer defect the prior record found is genuinely repaired and falsifier-tested (logs 01, 02, 03), but the restore puts back a snapshot taken before a competing writer's commit, so one two-writer schedule reaches the unreadable state the repair was written to remove \u2014 measured as the differential between 08-race-head.log and 09-race-base.log.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms are recorded under full commands with their revisions, file counts, failure counts and exit codes, and the added-failure figure in this record is derived from them by the store's own function rather than read from the manifest's prose; the earlier placeholdered arm no longer carries the claim.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers reuse the module's existing atomic-write shape (sibling temp plus os.replace) and its serialize_run/run_path pair, the restore is documented at the branch that needs it, and no forbidden name or changelog reference was introduced; the deduction is for the unconditional restore, which is a fit defect as much as a durability one.\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the ordering change is what the goal names, verified by the two new tests and by this review's own mutation checks; it is short of full marks because the end state the landing text claims \u2014 a reader never handed the disagreement \u2014 does not hold under the two-writer schedule recorded as this record's finding.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths and the diff contains no fixture edit; the mutation and race experiments in the reviewing run were carried out in scratch trees under /tmp, so the reviewed worktree took no residue from the review.\n\nFINDING reckon/ledger.py:993 the restore runs on a snapshot taken before this write's own envelope attempt, so a writer that loses its version race puts back the file it captured before the winner had written \u2014 the winner's committed row is then replaced by the loser's stale copy, the per-run file and the aggregate disagree, and every later read of the whole project is refused. Reproduced by forcing the interleaving (two writers prepared from one revision; the first rewrites its file, the second rewrites the file and commits, the first then hits its version conflict) and run under the same schedule against both revisions: at the base the project stays readable, at head ledger.load refuses with \"run ... differs between .../crew.json and .../runs/...json; refusing to ...\" (08-race-head.log) against the base's readable outcome (09-race-base.log). The window is narrow, but the ledger exists precisely because writers share it, and the resulting refusal is the state the ordering exists to prevent.\n",
+  "residual_observations": [
+    "logs/07-base-arm-targeted.log still carries its placeholdered header; the arm it names is superseded by the manifest's own suite pair, so the residue is cosmetic and confined to that file"
+  ],
+  "review_run_id": "r-20260929T134023333221-review-of-ledger-write-keeps-run-files",
+  "reviewed_base_sha": "a55213dd9c2c0c89c0b082bcc79c709fb7eeae09",
+  "reviewed_head_sha": "f1b9e06f33fb876704eec453a7264d02a362fccf",
+  "reviewed_run_id": "r-20260929T092802902599-ledger-write-keeps-run-files",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T134023333221-review-of-ledger-write-keeps-run-files",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T14:30:48.724423+00:00",
+  "total": 86
+}

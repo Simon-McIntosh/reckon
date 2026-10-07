@@ -1,0 +1,113 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after_suite": {
+      "command": "env -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/scratch-arm-ids-reduce PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/scratch-arm-ids-reduce TMPDIR=/tmp /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rf -n 6 --timeout=300 --basetemp=/tmp/rcq3-head-bt <33 review-importing files>",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 5,
+      "failure_ids": [
+        "tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input",
+        "tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it",
+        "tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it",
+        "tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger",
+        "tests/test_ledger.py::test_promotion_refuses_a_merge_conflicted_ledger"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163733029191-scratch-arm-ids-reduce/logs/gate-head.log",
+      "revision": "41a8a4f03a57fef555f3c2c7410f332e28800fa5"
+    },
+    "baseline_suite": {
+      "command": "env -C /tmp/rcq3-base-scratch-arm-ids PYTHONPATH=/tmp/rcq3-base-scratch-arm-ids TMPDIR=/tmp /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rf -n 6 --timeout=300 --basetemp=/tmp/rcq3-base-bt <32 review-importing files>",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 5,
+      "failure_ids": [
+        "tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input",
+        "tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it",
+        "tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it",
+        "tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger",
+        "tests/test_ledger.py::test_promotion_refuses_a_merge_conflicted_ledger"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163733029191-scratch-arm-ids-reduce/logs/gate-base.log",
+      "revision": "467c0aabed19f7e2adee6e3a5f74d41f4067a3f6"
+    },
+    "derivation": "set(after failure_ids) - set(baseline failure_ids) over the FAILED lines the reviewed run's own two gate logs print, each arm reduced against the working directory its own suite command records; both logs print the same five tests/test_ledger.py ids, so the head arm adds none"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/review.py:1125 read_review -> annotate_review_of_run",
+    "reached from reckon/crew/recovery.py:308",
+    "311 and reckon/crew/repair.py:320"
+  ],
+  "completed_at": "2026-09-29T17:36:38.806Z",
+  "dispatched_at": "2026-09-29T17:16:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "562",
+      "text": "_strip_recorded_directory matches the leading components of an id against the tail of the recorded directory, so the reduction is keyed on that directory's basename alone and a scratch tree named like a leading component of a test id reduces a genuine repository-relative id -- measured at the reviewed head, canonical_node_id('pkg/tests/x.py::t', '/tmp/pkg') returns 'tests/x.py::t', which merges a package's own test into the repository's tests/ spelling, the direction that hides a real added failure and the one the node's own pkg/tests case exists to prevent, which cannot catch it because its fixture tree is named rcq2-base."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1087",
+      "text": "_arm_directory returns the manifest's measurement_cwd for an arm whose suite record names no command -- measured at the reviewed head as /tmp/rcq2-base for both baseline_suite and after_suite on a manifest carrying only measurement_cwd -- so a base arm's scratch tree can be attributed to the head arm and reduce that arm's ids, which is the attribution the function's own docstring says is withheld (\"the arm that ran elsewhere is left without one rather than given its sibling's tree\"); the promotion path requires command in each suite observation, but the review annotation reads whatever manifest is on disk."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit: 41a8a4f03 carries the directory-aware reduction, its three helpers and 179 lines of test; 444a37379 carries the 139-line evidence fragment recording the reproduction, the rule, both arms and the control; the added lines introduce no plan label, ticket reference or author attribution (the sole hit in the naming scan is the noqa: S108 ruff selector, which is a rule code rather than a deliverable id), ruff check reports no findings on either changed code path at head or on the base copy of review.py, and ruff format --check reports both files already formatted.",
+    "done_when": "every part of the done-when holds -- the scratch-prefix case drives the production read path with a synthesised manifest and derives its prefixed spelling from the recorded directory in both shapes (env -C and measurement_cwd) and reads 0 added with the total uncapped; the pkg/tests case keeps a real added failure distinct (1 added, tests/test_gate.py::test_alpha); the declared negative control turns the first case red, which I reproduced myself at the reviewed head in an isolated copy (3 passed unmutated, then 2 failed 1 passed exit 1 with assert 2 == 0 after the body swap, tree restored byte-identically, sha256 8b2538d7 both sides); the gate names exactly the 33 test files that import reckon.crew.review at head (the base arm's 32 plus the new file, with no importer missing from the command and no non-importer inside it) and the head arm adds no failure id; the evidence fragment is committed in 444a37379 and the manifest reads complete.",
+    "goal": "the goal is that canonical_node_id reduce a leading id component naming the arm's own recorded working directory, so a base arm run from a scratch tree compares its failure ids in repository-relative form; commit 41a8a4f03 gives canonical_node_id an arm_directory, adds _strip_recorded_directory (reckon/crew/review.py:562) which removes the longest leading run matching the tail of that directory, reads that directory per arm through _arm_directory (reckon/crew/review.py:1087) from the arm's own env -C target or attributed measurement_cwd, and threads it through both consumers (_pytest_failure_ids and _retires_id), and measured on the cited live run's own manifest and logs the pre-fix module -- byte-identical to the reviewed base's review.py at blob ec7ab2321 -- reports 2 added failures from the rcq2-base/-prefixed base log where the head reports 0 [], so the reduction does the job the goal names; the residual is the two over-reduction paths the findings carry.",
+    "manifest": "the manifest's claims check out against the artefacts -- both gate logs print the five identical FAILED ids in tests/test_ledger.py and end 5 failed 468 passed (base) and 5 failed 471 passed (head), both suite fields are JSON carrying completed true, each log's header names its revision, tree, command, the imported reckon/crew/review.py and the resolved cwd, the added set re-derives as 0 [] through the production function, both commit shas resolve in the reviewed worktree, and the cited reproduction run exists under its full id r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death -- the manifest cites that id without its -d6dcefb34b0e suffix -- whose base log really prints FAILED rcq2-base/tests/test_session_lives_on_its_run.py::... against the head log's tests/... spelling.",
+    "write_paths": "git diff --name-status 467c0aab..444a37379 lists exactly the three declared paths -- reckon/crew/review.py, tests/test_scratch_arm_ids_reduce.py and docs/evidence/fragments/scoring-should-stop-a-promotion/scratch-arm-ids-reduce.html -- with no fourth file, no plan, sprint or project-index edit, and the reviewed worktree clean at head; the five tests/test_ledger.py failures are recorded as follow-ons rather than repaired outside the fence."
+  },
+  "justifications": {
+    "durability": "the guard fires -- reverting canonical_node_id's body reddens exactly the two scratch-prefix parametrisations with assert 2 == 0 while the pkg/tests case stays green, which I reproduced myself -- and the test derives its prefixed spelling from the recorded directory rather than writing a literal, so it cannot pass by matching a constant; it is not 20 because neither case covers the two over-reduction paths the findings name, and the manifest-only measurement_cwd branch is exercised by a command that mentions the path, so the fallback that attributes one directory to both arms is untested.",
+    "evidence": "the gate is real and I re-derived it independently -- 32 files at base and 33 at head, five identical FAILED ids, added 0 [] through the production function reading the reviewed run's own manifest, whose suite JSONs I checked against the logs' FAILED lines and summary lines, and I re-performed the declared negative control in an isolated copy of the head tree (2 failed, 1 passed, exit 1, assert 2 == 0) with the mutation's own line report matching the log the node stored; it is not 20 because the two gate arms' logs carry no scratch prefix, so they exercise the reduction only as the identity, and the base arm's scratch tree is gone from /tmp, leaving the base measurement reproducible only by re-exporting the base revision.",
+    "fit": "the reduction sits inside the canonicalisation the module already owns, the helpers reuse the manifest field readers, the test drives the production entry point under a temporary RECKON_HOME with no state outside the repository, the fragment carries the docs-project, reckon-type and plan-slug meta its readers parse, and the code is ruff-clean and formatted at both revisions; it is not 20 because _arm_directory does in the no-command case the attribution its own docstring says it withholds.",
+    "goal_fidelity": "the reduction is delivered where the plan needs it -- review records are annotated through this path, and the phantom it removes is measured on the real run the fragment cites -- but the reduction keys on the basename of the recorded directory, so a scratch tree named like a leading component of a test id mis-reduces a genuine id in the direction that hides an added failure.",
+    "scope_discipline": "the two commits change exactly the three declared paths and nothing else, the reviewed worktree is clean at head, no plan, sprint or index state is touched, and the five pre-existing tests/test_ledger.py failures are passed on as follow-ons instead of repaired outside the node's fence."
+  },
+  "negative_control": {
+    "declared": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163733029191-scratch-arm-ids-reduce/logs/negative-control.log",
+    "observed": "reviewer re-ran the declared mutation in an isolated copy of the head tree: 3 passed unmutated, then 2 failed, 1 passed, exit 1 with AssertionError: assert 2 == 0 on both scratch-prefix parametrisations, the pkg/tests case green, and the mutated file restored byte-identically"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that canonical_node_id reduce a leading id component naming the arm's own recorded working directory, so a base arm run from a scratch tree compares its failure ids in repository-relative form; commit 41a8a4f03 gives canonical_node_id an arm_directory, adds _strip_recorded_directory (reckon/crew/review.py:562) which removes the longest leading run matching the tail of that directory, reads that directory per arm through _arm_directory (reckon/crew/review.py:1087) from the arm's own env -C target or attributed measurement_cwd, and threads it through both consumers (_pytest_failure_ids and _retires_id), and measured on the cited live run's own manifest and logs the pre-fix module -- byte-identical to the reviewed base's review.py at blob ec7ab2321 -- reports 2 added failures from the rcq2-base/-prefixed base log where the head reports 0 [], so the reduction does the job the goal names; the residual is the two over-reduction paths the findings carry.\nVERDICT done_when: every part of the done-when holds -- the scratch-prefix case drives the production read path with a synthesised manifest and derives its prefixed spelling from the recorded directory in both shapes (env -C and measurement_cwd) and reads 0 added with the total uncapped; the pkg/tests case keeps a real added failure distinct (1 added, tests/test_gate.py::test_alpha); the declared negative control turns the first case red, which I reproduced myself at the reviewed head in an isolated copy (3 passed unmutated, then 2 failed 1 passed exit 1 with assert 2 == 0 after the body swap, tree restored byte-identically, sha256 8b2538d7 both sides); the gate names exactly the 33 test files that import reckon.crew.review at head (the base arm's 32 plus the new file, with no importer missing from the command and no non-importer inside it) and the head arm adds no failure id; the evidence fragment is committed in 444a37379 and the manifest reads complete.\nVERDICT write_paths: git diff --name-status 467c0aab..444a37379 lists exactly the three declared paths -- reckon/crew/review.py, tests/test_scratch_arm_ids_reduce.py and docs/evidence/fragments/scoring-should-stop-a-promotion/scratch-arm-ids-reduce.html -- with no fourth file, no plan, sprint or project-index edit, and the reviewed worktree clean at head; the five tests/test_ledger.py failures are recorded as follow-ons rather than repaired outside the fence.\nVERDICT manifest: the manifest's claims check out against the artefacts -- both gate logs print the five identical FAILED ids in tests/test_ledger.py and end 5 failed 468 passed (base) and 5 failed 471 passed (head), both suite fields are JSON carrying completed true, each log's header names its revision, tree, command, the imported reckon/crew/review.py and the resolved cwd, the added set re-derives as 0 [] through the production function, both commit shas resolve in the reviewed worktree, and the cited reproduction run exists under its full id r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death -- the manifest cites that id without its -d6dcefb34b0e suffix -- whose base log really prints FAILED rcq2-base/tests/test_session_lives_on_its_run.py::... against the head log's tests/... spelling.\nVERDICT diff: read commit by commit: 41a8a4f03 carries the directory-aware reduction, its three helpers and 179 lines of test; 444a37379 carries the 139-line evidence fragment recording the reproduction, the rule, both arms and the control; the added lines introduce no plan label, ticket reference or author attribution (the sole hit in the naming scan is the noqa: S108 ruff selector, which is a rule code rather than a deliverable id), ruff check reports no findings on either changed code path at head or on the base copy of review.py, and ruff format --check reports both files already formatted.\nVERDICT call_sites: reckon/crew/review.py:1125 read_review returns annotate_review_of_run(record, reviewed_run_id), and read_review is the production reader reached from reckon/crew/recovery.py:308,311 and reckon/crew/repair.py:320, so every stored review record -- including the one this review writes for this run -- is annotated with the added-failure count derived through the changed code, while the promotion's own suite-delta gate (reckon/crew/promotion.py:4029 ledger.added_failure_ids over the manifest's recorded failure_ids) compares recorded sets verbatim and is unaffected by the spelling this change reduces.\nCALL_SITES: reckon/crew/review.py:1125 read_review -> annotate_review_of_run, reached from reckon/crew/recovery.py:308,311 and reckon/crew/repair.py:320\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the reduction is delivered where the plan needs it -- review records are annotated through this path, and the phantom it removes is measured on the real run the fragment cites -- but the reduction keys on the basename of the recorded directory, so a scratch tree named like a leading component of a test id mis-reduces a genuine id in the direction that hides an added failure.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate is real and I re-derived it independently -- 32 files at base and 33 at head, five identical FAILED ids, added 0 [] through the production function reading the reviewed run's own manifest, whose suite JSONs I checked against the logs' FAILED lines and summary lines, and I re-performed the declared negative control in an isolated copy of the head tree (2 failed, 1 passed, exit 1, assert 2 == 0) with the mutation's own line report matching the log the node stored; it is not 20 because the two gate arms' logs carry no scratch prefix, so they exercise the reduction only as the identity, and the base arm's scratch tree is gone from /tmp, leaving the base measurement reproducible only by re-exporting the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change exactly the three declared paths and nothing else, the reviewed worktree is clean at head, no plan, sprint or index state is touched, and the five pre-existing tests/test_ledger.py failures are passed on as follow-ons instead of repaired outside the node's fence.\nSCORE durability: 18\nJUSTIFICATION durability: the guard fires -- reverting canonical_node_id's body reddens exactly the two scratch-prefix parametrisations with assert 2 == 0 while the pkg/tests case stays green, which I reproduced myself -- and the test derives its prefixed spelling from the recorded directory rather than writing a literal, so it cannot pass by matching a constant; it is not 20 because neither case covers the two over-reduction paths the findings name, and the manifest-only measurement_cwd branch is exercised by a command that mentions the path, so the fallback that attributes one directory to both arms is untested.\nSCORE fit: 19\nJUSTIFICATION fit: the reduction sits inside the canonicalisation the module already owns, the helpers reuse the manifest field readers, the test drives the production entry point under a temporary RECKON_HOME with no state outside the repository, the fragment carries the docs-project, reckon-type and plan-slug meta its readers parse, and the code is ruff-clean and formatted at both revisions; it is not 20 because _arm_directory does in the no-command case the attribution its own docstring says it withholds.\nFINDING reckon/crew/review.py:562 _strip_recorded_directory matches the leading components of an id against the tail of the recorded directory, so the reduction is keyed on that directory's basename alone and a scratch tree named like a leading component of a test id reduces a genuine repository-relative id -- measured at the reviewed head, canonical_node_id('pkg/tests/x.py::t', '/tmp/pkg') returns 'tests/x.py::t', which merges a package's own test into the repository's tests/ spelling, the direction that hides a real added failure and the one the node's own pkg/tests case exists to prevent, which cannot catch it because its fixture tree is named rcq2-base.\nFINDING reckon/crew/review.py:1087 _arm_directory returns the manifest's measurement_cwd for an arm whose suite record names no command -- measured at the reviewed head as /tmp/rcq2-base for both baseline_suite and after_suite on a manifest carrying only measurement_cwd -- so a base arm's scratch tree can be attributed to the head arm and reduce that arm's ids, which is the attribution the function's own docstring says is withheld (\"the arm that ran elsewhere is left without one rather than given its sibling's tree\"); the promotion path requires command in each suite observation, but the review annotation reads whatever manifest is on disk.\nreviewed_base_sha: 467c0aabed19f7e2adee6e3a5f74d41f4067a3f6\nreviewed_head_sha: 444a37379542db4c34a60a0cd43ab39c77bdadd4",
+  "review_run_id": "r-20260929T171631048409-review-of-scratch-arm-ids-reduce",
+  "reviewed_base_sha": "467c0aabed19f7e2adee6e3a5f74d41f4067a3f6",
+  "reviewed_commits": [
+    "444a37379542db4c34a60a0cd43ab39c77bdadd4"
+  ],
+  "reviewed_head_sha": "444a37379542db4c34a60a0cd43ab39c77bdadd4",
+  "reviewed_manifest": {
+    "bytes": 7344,
+    "last_modified": "2026-09-29T19:15:07.420540+02:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163733029191-scratch-arm-ids-reduce/manifest.md",
+    "sha256": "9bb3b039b5e9c3cf12b7fb03e5bf40e9ee0298a2edeb98d6ddfbe68f491688fa"
+  },
+  "reviewed_run_id": "r-20260929T163733029191-scratch-arm-ids-reduce",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/scratch-arm-ids-reduce",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-scratch-arm-ids-reduce",
+  "reviewer_run_id": "r-20260929T171631048409-review-of-scratch-arm-ids-reduce",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T17:30:28.971562+00:00",
+  "total": 95
+}

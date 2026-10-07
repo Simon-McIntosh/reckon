@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T23:12:10.666Z",
+  "dispatched_at": "2026-10-04T23:08:15Z",
+  "findings": [
+    {
+      "anchor": "plan.html:1014 (\u00a716)",
+      "id": "reuse_search-1",
+      "reason": "\u00a716 should state whether it extends the strand-release owner (a bounded write-side release) or is superseded by it, rather than adding a third pointer-lifecycle rule.",
+      "text": "\u00a716 proposes that a plan-review dispatch refused at admission \"remove the pointer on refusal\", but does not cite the strand-release mechanism that already releases exactly this pointer class: `_stranded_launch` (`reckon/crew/recovery.py:6600`) and `_discard_stranded_review` (`reckon/crew/recovery.py:1329`), landed at `29e85041d` on 2026-10-03, before this section was written. The \u00a716 symptom run (`r-20261004T213154691561-plan-review-of-a-live-worker-can-be-reached`: pointer at phase `starting`, no `attempt.json`, no supervisor, no pid) is the same pre-spawn-no-evidence shape `_stranded_launch` already recognises, and the plan-review branch of `dispatch_review_for_run` already calls it (`reckon/crew/recovery.py:2389`). Two release paths that disagree on what a pre-spawn pointer means is the defect the section exists to remove.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:3280",
+      "id": "deep_module-1",
+      "reason": "\u00a73 should name the supervisor's own module so its interface is the spec and the three run-directory records, not a dozen dispatch-private helpers in a file with a known backlog.",
+      "text": "the per-run supervisor hides substantial behaviour (boundary snapshot, detached spawn, worker wait, signal handling, exit record), but the design gives it no module boundary: the body is `_supervisor_command` inside `dispatch.py` (12,638 lines), reachable only through `supervisor_main.py`, and surrounded by `_supervisor_spec` (:9516), `_supervisor_argv` (:9577), `_start_supervisor` (:9807), `_spawn_detached_supervisor` (:9843), `_spawn_through_fleet` (:9728), `_confirm_supervisor_survived` (:9476) and `_write_boundary_tree_snapshot` (:10053) \u2014 plus a second supervisor in `fleet_supervisor.py`. The complexity is real and the interface (the spec in, the run-directory records out) would be smaller than what it hides, but it is never packaged as one.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:9614",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a710 should resolve the record through `fleet_supervisor.state_directory` rather than forking the path resolver, or the fleet delegation silently falls back to a fork on any host that sets the override.",
+      "text": "`_fleet_record_path` re-derives the fleet record path from `RECKON_FLEET_RECORD` or `XDG_STATE_HOME/.local/state/fleet/record.json`, but the owner, `state_directory` (`reckon/crew/fleet_supervisor.py:253`), resolves it from `FLEET_STATE_DIR` (default `~/.local/state/fleet`), and `fleet_node.py:306` reads the record through that owner. A batch step started with `FLEET_STATE_DIR` set \u2014 the override the supervisor documents and `fleet_supervisor` tests use \u2014 publishes its record there, so dispatch reads the default path, finds no record, and forks a supervisor the session step then reaps. That is the exact failure \u00a710 exists to remove, and the plan's \u00a710 \"reckon half\" adds this second resolver without naming the owner.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "353e5aab9cafcadeaccddcdef3525a96b1b7d6e30de62a352ca2186aaf5c32d2",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 157,
+  "project": "reckon",
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T00:22:04.136012+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T00:22:10.003941+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T00:21:57.115608+00:00"
+    }
+  },
+  "review_run_id": "r-20261004T230803646424-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "91dcfc7f581187b9fc126093b2c6ea8ab214f3fe",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the per-run supervisor's substantial behaviour is spread across `supervisor_main.py` and ~9 dispatch-private helpers with no module boundary.",
+    "duplicate_owner": "a finding \u2014 `dispatch._fleet_record_path` forks the fleet-record path resolver already owned by `fleet_supervisor.state_directory`.",
+    "reuse_search": "a finding \u2014 \u00a716 adds admission-time release of a plan-review launch pointer without citing the strand-release owner that already releases that pointer class.",
+    "thin_wrapper": "pass \u2014 the one thin layer, `supervisor_main.py`, states why the launch cannot extend dispatch's entry point (dispatch is already imported, so running it as `-m` re-executes it and opens stderr with runpy's warning)."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T00:20:02.316572+00:00"
+}

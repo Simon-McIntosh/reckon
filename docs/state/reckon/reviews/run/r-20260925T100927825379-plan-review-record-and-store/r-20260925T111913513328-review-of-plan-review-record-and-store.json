@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T11:19:13.513328+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "123-129",
+      "text": "A valid addition of the named plan-effort-hours scalar to the real legacy docs/plans/reckon-mcp-plan.html:15-21 changes the fingerprint because parsing also changes effort_calibrated; D1 must either exclude that derived transition or document it as semantic, and the missing real-plan test leaves the boundary unguarded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "8877d879..98cbbaeb adds the plan_review module and focused tests plus the declared evidence, figure and plan landing; no production caller is present in the target head.",
+    "done_when": "the source manifest records five named tests passing at gate-plan-review-store.log, including the metadata-only, two-version, re-review, refusal and recurrence cases; real-plan-html-fingerprint.log checks target-head HTML.",
+    "goal": "reckon/crew/plan_review.py:1-482 implements the requested plan-review record, durable store, fingerprint, response and recurrence functions; the real-plan check also exercises its D1 join.",
+    "manifest": "the source manifest is complete at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/manifest.md, names b906f66b and 98cbbaeb, the green gate and its red mutation control.",
+    "write_paths": "the manifest declares the module, focused test, cumulative evidence anchor, figure directory and plan; the target diff changes exactly those five paths."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_store.py:81-135 guards the fixture exclusion set and its mutation red, but no committed test parses a real legacy plan or catches the derived calibration transition.",
+    "evidence": "the worker's gate-plan-review-store.log records 5 passed and negative-control-plan-review-store.log records the intended mutation red, while real-plan-html-fingerprint.log finds all present named scalars stable but exposes the legacy effort-hours transition.",
+    "fit": "reckon/crew/plan_review.py:52-53 reuses the existing plan parser and review-store root, and lines 238-245 retain the repository's atomic-write idiom without a forbidden name.",
+    "goal_fidelity": "reckon/crew/plan_review.py:114-245 provides the D1 fingerprint and atomic version/blob-keyed store, while reckon/crew/plan_review.py:399-482 provides response and recurrence handling; a legacy-plan metadata edge remains.",
+    "scope_discipline": "the target diff is limited to the five paths declared by the source manifest, with the cumulative evidence record and plan landing included."
+  },
+  "model": "review",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 8877d879d647a6f570e66f69fa20977f7d6b1f91\nreviewed_head_sha: 98cbbaebce793549c991032719af6dceeeb5cbfa\nVERDICT goal: reckon/crew/plan_review.py:1-482 implements the requested plan-review record, durable store, fingerprint, response and recurrence functions; the real-plan check also exercises its D1 join.\nVERDICT done_when: the source manifest records five named tests passing at gate-plan-review-store.log, including the metadata-only, two-version, re-review, refusal and recurrence cases; real-plan-html-fingerprint.log checks target-head HTML.\nVERDICT write_paths: the manifest declares the module, focused test, cumulative evidence anchor, figure directory and plan; the target diff changes exactly those five paths.\nVERDICT manifest: the source manifest is complete at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/manifest.md, names b906f66b and 98cbbaeb, the green gate and its red mutation control.\nVERDICT diff: 8877d879..98cbbaeb adds the plan_review module and focused tests plus the declared evidence, figure and plan landing; no production caller is present in the target head.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:114-245 provides the D1 fingerprint and atomic version/blob-keyed store, while reckon/crew/plan_review.py:399-482 provides response and recurrence handling; a legacy-plan metadata edge remains.\nSCORE evidence: 14\nJUSTIFICATION evidence: the worker's gate-plan-review-store.log records 5 passed and negative-control-plan-review-store.log records the intended mutation red, while real-plan-html-fingerprint.log finds all present named scalars stable but exposes the legacy effort-hours transition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the target diff is limited to the five paths declared by the source manifest, with the cumulative evidence record and plan landing included.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_plan_review_store.py:81-135 guards the fixture exclusion set and its mutation red, but no committed test parses a real legacy plan or catches the derived calibration transition.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/plan_review.py:52-53 reuses the existing plan parser and review-store root, and lines 238-245 retain the repository's atomic-write idiom without a forbidden name.\nFINDING reckon/crew/plan_review.py:123-129 A valid addition of the named plan-effort-hours scalar to the real legacy docs/plans/reckon-mcp-plan.html:15-21 changes the fingerprint because parsing also changes effort_calibrated; D1 must either exclude that derived transition or document it as semantic, and the missing real-plan test leaves the boundary unguarded.\n",
+  "review_run_id": "r-20260925T111913513328-review-of-plan-review-record-and-store",
+  "reviewed_base_sha": "8877d879d647a6f570e66f69fa20977f7d6b1f91",
+  "reviewed_head_sha": "98cbbaebce793549c991032719af6dceeeb5cbfa",
+  "reviewed_run_id": "r-20260925T100927825379-plan-review-record-and-store",
+  "reviewer": "review-of-plan-review-record-and-store",
+  "reviewer_run_id": "r-20260925T111913513328-review-of-plan-review-record-and-store",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:31:28.101125+00:00",
+  "total": 85
+}

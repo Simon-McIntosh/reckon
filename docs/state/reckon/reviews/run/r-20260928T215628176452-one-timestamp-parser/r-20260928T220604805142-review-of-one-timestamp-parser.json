@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-28T22:24:29.882Z",
+  "dispatched_at": "2026-09-28T22:06:20Z",
+  "emission_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T220604805142-review-of-one-timestamp-parser/review-emission.log",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/one-timestamp-parser.html",
+      "line": "41",
+      "text": "the census claim does not reproduce: an AST scan at the reviewed head finds 52 functions in reckon/ calling fromisoformat, and eight of them appear nowhere in the inventory - reckon/crew/dispatch.py:2670 _lane_age_seconds, reckon/crew/pace_replay.py:409 _read, reckon/crew/recovery.py:3630 _seconds_since_dispatch, reckon/crew/ticker.py:1128 row_moment, reckon/serve.py:654 completion_key (nested in _finished_crew_rows), reckon/velocity.py:116 stamp, and the date-only reckon/velocity.py:1858 measure - so the batches omit seven timestamp parsers, which is the duplicate the plan exists to retire; the sentence also claims the list was found with git grep at this node's head, where that grep returns 64 lines across 34 files."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T215628176452-one-timestamp-parser/manifest.md",
+      "line": "7",
+      "text": "the second entry of the commits field, da5147b1b0bb9d71e6a17d1c8b37f4b41f0e6c9a, names no object in this tree (git cat-file -t reports it cannot get object info); the evidence commit is da5147b1e6832a1b248ebbcd62e6ea2af1cc4192, so a coordinator copying that sha for a promotion remedy gets nothing, and recovery._canonical_commits drops the entry and cites one commit where the run landed two."
+    },
+    {
+      "file": "reckon/_timestamps.py",
+      "line": "1",
+      "text": "the module summary reads \"every module that reads a timber\", a typo for timestamp."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against a928b6be: 95c56533 adds reckon/_timestamps.py (74 lines) and tests/test_timestamps_parse_utc.py (105), and da5147b1 adds the fragment (103) and its SVG (55); 337 insertions, 0 deletions, no production caller touched.",
+    "done_when": "the fence's measure is recorded in the run's own evidence - 15 passed at exit 0 (head-arm.log) and a declared mutation that reddens three assertions (negative-control.log, EXIT=1) - but its inventory clause does not hold: the 44 functions the manifest and fragment carry are 52 at the reviewed head.",
+    "goal": "the node goal asks for reckon/_timestamps.py:parse_utc to fix the shapes the duplicated callers meet, and the landed module implements all of them at reckon/_timestamps.py:36 with each policy stated in its docstring.",
+    "manifest": "read; it records the gate command and result, both armed arms, the negative control log and the batch inventory, and its commits field at manifest.md:7 names da5147b1b0bb9d71e6a17d1c8b37f4b41f0e6c9a, which resolves to no object in this tree.",
+    "write_paths": "read from manifest.md:3 and checked against git diff --name-status a928b6be..da5147b1; all four changed paths are inside the declared scope."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows three assertions reddening under the declared mutation, though the Z substitution at reckon/_timestamps.py:66 is not what test_z_suffix_returns_aware_utc proves and the lowercase z it does serve has no test.",
+    "evidence": "the arms and the negative control are recorded at base-arm.log, head-arm.log and negative-control.log, but the inventory clause fails on re-measurement (docs/evidence/fragments/a-worker-reuses-before-it-writes/one-timestamp-parser.html:41).",
+    "fit": "the module follows the surrounding private-module idiom of reckon/_timestamps.py:29-33 and carries no forbidden name, but its one-line summary at reckon/_timestamps.py:1 reads \"timber\" for timestamp.",
+    "goal_fidelity": "reckon/_timestamps.py:36 implements the six shapes the goal names, though the population it is written for is 52 callers and not the 44 the node states.",
+    "scope_discipline": "git diff --name-status a928b6be..da5147b1 lists only the four declared write paths, and nothing outside them was touched."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal asks for reckon/_timestamps.py:parse_utc to fix the shapes the duplicated callers meet, and the landed module implements all of them at reckon/_timestamps.py:36 with each policy stated in its docstring.\nVERDICT done_when: the fence's measure is recorded in the run's own evidence - 15 passed at exit 0 (head-arm.log) and a declared mutation that reddens three assertions (negative-control.log, EXIT=1) - but its inventory clause does not hold: the 44 functions the manifest and fragment carry are 52 at the reviewed head.\nVERDICT write_paths: read from manifest.md:3 and checked against git diff --name-status a928b6be..da5147b1; all four changed paths are inside the declared scope.\nVERDICT manifest: read; it records the gate command and result, both armed arms, the negative control log and the batch inventory, and its commits field at manifest.md:7 names da5147b1b0bb9d71e6a17d1c8b37f4b41f0e6c9a, which resolves to no object in this tree.\nVERDICT diff: read commit by commit against a928b6be: 95c56533 adds reckon/_timestamps.py (74 lines) and tests/test_timestamps_parse_utc.py (105), and da5147b1 adds the fragment (103) and its SVG (55); 337 insertions, 0 deletions, no production caller touched.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_timestamps.py:36 implements the six shapes the goal names, though the population it is written for is 52 callers and not the 44 the node states.\nSCORE evidence: 13\nJUSTIFICATION evidence: the arms and the negative control are recorded at base-arm.log, head-arm.log and negative-control.log, but the inventory clause fails on re-measurement (docs/evidence/fragments/a-worker-reuses-before-it-writes/one-timestamp-parser.html:41).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status a928b6be..da5147b1 lists only the four declared write paths, and nothing outside them was touched.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control.log shows three assertions reddening under the declared mutation, though the Z substitution at reckon/_timestamps.py:66 is not what test_z_suffix_returns_aware_utc proves and the lowercase z it does serve has no test.\nSCORE fit: 17\nJUSTIFICATION fit: the module follows the surrounding private-module idiom of reckon/_timestamps.py:29-33 and carries no forbidden name, but its one-line summary at reckon/_timestamps.py:1 reads \"timber\" for timestamp.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/one-timestamp-parser.html:41 the census claim does not reproduce: an AST scan at the reviewed head finds 52 functions in reckon/ calling fromisoformat, and eight of them appear nowhere in the inventory - reckon/crew/dispatch.py:2670 _lane_age_seconds, reckon/crew/pace_replay.py:409 _read, reckon/crew/recovery.py:3630 _seconds_since_dispatch, reckon/crew/ticker.py:1128 row_moment, reckon/serve.py:654 completion_key (nested in _finished_crew_rows), reckon/velocity.py:116 stamp, and the date-only reckon/velocity.py:1858 measure - so the batches omit seven timestamp parsers, which is the duplicate the plan exists to retire; the sentence also claims the list was found with git grep at this node's head, where that grep returns 64 lines across 34 files.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T215628176452-one-timestamp-parser/manifest.md:7 the second entry of the commits field, da5147b1b0bb9d71e6a17d1c8b37f4b41f0e6c9a, names no object in this tree (git cat-file -t reports it cannot get object info); the evidence commit is da5147b1e6832a1b248ebbcd62e6ea2af1cc4192, so a coordinator copying that sha for a promotion remedy gets nothing, and recovery._canonical_commits drops the entry and cites one commit where the run landed two.\nFINDING reckon/_timestamps.py:1 the module summary reads \"every module that reads a timber\", a typo for timestamp.",
+  "review_run_id": "r-20260928T220604805142-review-of-one-timestamp-parser",
+  "reviewed_base_sha": "a928b6bea518166c335cec08b7ebec88b143d732",
+  "reviewed_head_sha": "da5147b1e6832a1b248ebbcd62e6ea2af1cc4192",
+  "reviewed_run_id": "r-20260928T215628176452-one-timestamp-parser",
+  "reviewer_run_id": "r-20260928T220604805142-review-of-one-timestamp-parser",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T22:18:58Z",
+  "total": 84
+}

@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-25T13:20:39.269Z",
+  "dispatched_at": "2026-09-25T12:28:02Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/install.py",
+      "line": "85",
+      "text": "the worker Stop command ignores the script_path argument, so a caller that names a script path gets a Stop array naming two different checkouts' scripts, while the evidence page and the plan text claim the snippet always names the scripts of the checkout that composed it, and no test covers that branch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 15fa121b; 0a1ccdec is the product change and 1545f049 the docs landing, and a grep of every module under reckon/ at the head finds no production importer of reckon/hooks/install.py.",
+    "done_when": "the measure names both Stop entries, the independent path computation, the mutation turning the path case red and zero added failures against the dispatch base; after-hooks-gate.log carries 64 passed at 0a1ccdec with rev, tree, cwd and module header lines, and the reviewer recheck at 1545f049 reproduces 11 passed with reckon.hooks.install resolving inside the reviewed worktree.",
+    "goal": "the goal -- the installed snippet carries the worker Stop hook beside the coordinator hooks, with every command path pinned against the repository files -- is landed at reckon/hooks/install.py:89-92 (the Stop array holds two entries) and tests/test_hook_installer.py:125-139, which recomputes both script paths from the test file's own location rather than from the installer's helper.",
+    "manifest": "read; status complete with the gate 63 passed at base 15fa121b against 64 passed at 0a1ccdec, and every claim spot-checked holds, including the cited reports/reckon/s22-coord/hook-install/worker-entries.json, which names the same worker Stop command the snippet emits.",
+    "write_paths": "the five declared paths are reckon/hooks/install.py, tests/test_hook_installer.py, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html, docs/figures/an-orchestrator-cannot-forget-its-obligations and docs/plans/an-orchestrator-cannot-forget-its-obligations.html, and the diff touches exactly those five (34/17, 50/4, 30/0, 58/0 and 6/0 added and removed lines)."
+  },
+  "justifications": {
+    "durability": "the added path case at tests/test_hook_installer.py:136, which was shown red on the declared mutation, fails if the coordinator path moves, while the branch at reckon/hooks/install.py:85 has no test and the merge case at tests/test_hook_installer.py:176 compares the merged document against a fresh snippet, so it cannot fail on a snippet regression by itself.",
+    "evidence": "after-hooks-gate.log:1 records rev, tree, cwd, module and the real settings fingerprint at 64 passed, and the recheck log reproduces 11 passed at 1545f049 with the module resolved inside the reviewed worktree.",
+    "fit": "reckon/hooks/install.py:47-48 names both scripts through constants in the module's existing idiom, and the changed paths pass the repository naming checks with no banned label.",
+    "goal_fidelity": "reckon/hooks/install.py:89-92 carries both Stop entries and tests/test_hook_installer.py:136 pins both paths against files resolved from the test file, but the pinning holds only for the default call, because the override at reckon/hooks/install.py:82 reaches the coordinator command and not the worker one.",
+    "scope_discipline": "every file in the diff lies inside the declared write paths, and the three documentation files are additions only (30/0, 58/0 and 6/0 lines) with no plan-version or plan-modified edit and a clean worktree at the head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal -- the installed snippet carries the worker Stop hook beside the coordinator hooks, with every command path pinned against the repository files -- is landed at reckon/hooks/install.py:89-92 (the Stop array holds two entries) and tests/test_hook_installer.py:125-139, which recomputes both script paths from the test file's own location rather than from the installer's helper.\nVERDICT done_when: the measure names both Stop entries, the independent path computation, the mutation turning the path case red and zero added failures against the dispatch base; after-hooks-gate.log carries 64 passed at 0a1ccdec with rev, tree, cwd and module header lines, and the reviewer recheck at 1545f049 reproduces 11 passed with reckon.hooks.install resolving inside the reviewed worktree.\nVERDICT write_paths: the five declared paths are reckon/hooks/install.py, tests/test_hook_installer.py, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html, docs/figures/an-orchestrator-cannot-forget-its-obligations and docs/plans/an-orchestrator-cannot-forget-its-obligations.html, and the diff touches exactly those five (34/17, 50/4, 30/0, 58/0 and 6/0 added and removed lines).\nVERDICT manifest: read; status complete with the gate 63 passed at base 15fa121b against 64 passed at 0a1ccdec, and every claim spot-checked holds, including the cited reports/reckon/s22-coord/hook-install/worker-entries.json, which names the same worker Stop command the snippet emits.\nVERDICT diff: read commit by commit against 15fa121b; 0a1ccdec is the product change and 1545f049 the docs landing, and a grep of every module under reckon/ at the head finds no production importer of reckon/hooks/install.py.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/install.py:89-92 carries both Stop entries and tests/test_hook_installer.py:136 pins both paths against files resolved from the test file, but the pinning holds only for the default call, because the override at reckon/hooks/install.py:82 reaches the coordinator command and not the worker one.\nSCORE evidence: 20\nJUSTIFICATION evidence: after-hooks-gate.log:1 records rev, tree, cwd, module and the real settings fingerprint at 64 passed, and the recheck log reproduces 11 passed at 1545f049 with the module resolved inside the reviewed worktree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every file in the diff lies inside the declared write paths, and the three documentation files are additions only (30/0, 58/0 and 6/0 lines) with no plan-version or plan-modified edit and a clean worktree at the head.\nSCORE durability: 19\nJUSTIFICATION durability: the added path case at tests/test_hook_installer.py:136, which was shown red on the declared mutation, fails if the coordinator path moves, while the branch at reckon/hooks/install.py:85 has no test and the merge case at tests/test_hook_installer.py:176 compares the merged document against a fresh snippet, so it cannot fail on a snippet regression by itself.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/hooks/install.py:47-48 names both scripts through constants in the module's existing idiom, and the changed paths pass the repository naming checks with no banned label.\nFINDING reckon/hooks/install.py:85 the worker Stop command ignores the script_path argument, so a caller that names a script path gets a Stop array naming two different checkouts' scripts, while the evidence page and the plan text claim the snippet always names the scripts of the checkout that composed it, and no test covers that branch.\n",
+  "review_run_id": "r-20260925T122746943672-review-of-installer-carries-the-worker-stop-hook",
+  "reviewed_base_sha": "15fa121bd7bca9ab3551a88564fc3f29f8e70bf7",
+  "reviewed_head_sha": "1545f049b69b30e6acb9c1784496b4ba22203e63",
+  "reviewed_run_id": "r-20260925T114234476907-installer-carries-the-worker-stop-hook",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:08:13.340351+00:00",
+  "total": 98
+}

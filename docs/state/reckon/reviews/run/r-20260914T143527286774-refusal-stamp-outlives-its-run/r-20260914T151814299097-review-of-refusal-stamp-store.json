@@ -1,0 +1,44 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T15:18:14.299097+00:00",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "6",
+      "text": "the manifest records the committed revision as 979805eb70b55e17dc1a135740a2e92d03be7dd2, which does not resolve; the actual HEAD is 979805e1d460e5c46a15d466d64d4a674c8e3405 (the after_suite field does name the resolvable short form 979805e), so a reader following the recorded full id finds no object."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": "127",
+      "text": "the comment says \"The three companion tables have stable shapes of their own\" but the change added a fourth table (refusals), leaving the count stale in the module's own schema description."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_run_store.py:1045 test_a_failed_stamp_write_leaves_the_run_append_unaffected fails if the stamp transaction no longer leaves the run append untouched, and the outlive/accumulate tests at :969/:1013 fail if survivorship or both-readings regress.",
+    "evidence": "the gate is tests/test_run_store.py; base b48887e (25 tests, byte-identical to the worktree base for both scoped files) vs head 979805e (28 tests) was independently re-run for this review with 28 passed / 0 failed, and the three new tests each assert one done-when concern.",
+    "fit": "the new refusals table (reckon/run_store.py:129) and the stamp/read methods mirror the companion-table idiom and the append payload encoding, but the module comment at :127 still calls them \"three companion tables\" after adding a fourth.",
+    "goal_fidelity": "tests/test_run_store.py:969 test_a_rate_limit_refusal_stamp_outlives_its_run_directory stamps a refusal, reclaims the run directory, and reads both times back through a fresh store handle, matching the measure \"a refusal outlives the run it killed\".",
+    "scope_discipline": "git diff d07b79d..HEAD touches exactly the two declared write paths reckon/run_store.py and tests/test_run_store.py, no other file changed, and no new symbol carries a plan identifier."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_run_store.py:969 test_a_rate_limit_refusal_stamp_outlives_its_run_directory stamps a refusal, reclaims the run directory, and reads both times back through a fresh store handle, matching the measure \"a refusal outlives the run it killed\".\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is tests/test_run_store.py; base b48887e (25 tests, byte-identical to the worktree base for both scoped files) vs head 979805e (28 tests) was independently re-run for this review with 28 passed / 0 failed, and the three new tests each assert one done-when concern.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff d07b79d..HEAD touches exactly the two declared write paths reckon/run_store.py and tests/test_run_store.py, no other file changed, and no new symbol carries a plan identifier.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_run_store.py:1045 test_a_failed_stamp_write_leaves_the_run_append_unaffected fails if the stamp transaction no longer leaves the run append untouched, and the outlive/accumulate tests at :969/:1013 fail if survivorship or both-readings regress.\nSCORE fit: 17\nJUSTIFICATION fit: the new refusals table (reckon/run_store.py:129) and the stamp/read methods mirror the companion-table idiom and the append payload encoding, but the module comment at :127 still calls them \"three companion tables\" after adding a fourth.\nFINDING manifest.md:6 the manifest records the committed revision as 979805eb70b55e17dc1a135740a2e92d03be7dd2, which does not resolve; the actual HEAD is 979805e1d460e5c46a15d466d64d4a674c8e3405 (the after_suite field does name the resolvable short form 979805e), so a reader following the recorded full id finds no object.\nFINDING reckon/run_store.py:127 the comment says \"The three companion tables have stable shapes of their own\" but the change added a fourth table (refusals), leaving the count stale in the module's own schema description.\n",
+  "review_run_id": "r-20260914T151814299097-review-of-refusal-stamp-store",
+  "reviewed_base": "d07b79db24aa4f479472b40ed99ebf9c5dc5942f",
+  "reviewed_commit": "979805e1d460e5c46a15d466d64d4a674c8e3405",
+  "reviewed_run_id": "r-20260914T143527286774-refusal-stamp-outlives-its-run",
+  "reviewer_run_id": "r-20260914T151814299097-review-of-refusal-stamp-store",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T15:47:28.693035+00:00",
+  "total": 93
+}

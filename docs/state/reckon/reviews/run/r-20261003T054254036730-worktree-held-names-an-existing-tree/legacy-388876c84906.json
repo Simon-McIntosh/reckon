@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T054254036730-worktree-held-names-an-existing-tree/head-arm.log",
+  "base_log_revision": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T054254036730-worktree-held-names-an-existing-tree/base-arm3.log",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:820 in obligations()",
+    "reckon/crew/obligation_snapshot.py:747 in fleet_state()"
+  ],
+  "completed_at": "2026-10-03T06:02:21.771Z",
+  "dispatched_at": "2026-10-03T05:43:16Z",
+  "findings": [
+    {
+      "file": "tests/test_worktree_held_names_an_existing_tree.py",
+      "line": "88",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture hand-builds the worktree_retention and release sub-maps rather than driving the real promotion path, so a change to how reckon/crew/promotion.py writes release.worktree_released would leave these cases green while the release guard silently stopped firing; the module docstring's 'built by the ledger's own constructor' oversells it, since the constructor covers only the top-level record."
+    }
+  ],
+  "head_log_revision": "c8164115fac5488f70c3008af3c3b67a79212ab7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read e2a8eac against 9b66ff8a commit by commit; c8164115f adds path.is_dir() to the registered-worktree set and a release.worktree_released skip in _held_worktrees_by_session plus the new test file, and e2a8eac30 adds the evidence fragment; no other path changes.",
+    "done_when": "the done_when names a deleted-tree case, a kept-tree case and a negative control dropping the on-disk check; tests/test_worktree_held_names_an_existing_tree.py carries the deleted-tree case (with Git still listing the path asserted as a positive control), the kept-tree case and a release case, and negative-control.log records the deleted-tree case failing once the check is dropped (1 failed, EXIT=1).",
+    "goal": "the node goal is to raise worktree-held only for a worktree directory that exists on disk and that no promotion record shows released; reckon/crew/obligations.py:_held_worktrees_by_session now filters Git's registered worktrees by path.is_dir() and skips any matched record whose release.worktree_released is True, so both stated conditions hold.",
+    "manifest": "read against the tree; status complete, commits c8164115f (code and tests) and e2a8eac30 (evidence fragment); baseline_suite 2 failed / 236 passed at 9b66ff8a (EXIT=1, both new cases), after_suite 238 passed at c8164115f (EXIT=0), negative control 1 failed (EXIT=1).",
+    "write_paths": "the manifest declares reckon/crew/obligations.py, tests/test_worktree_held_names_an_existing_tree.py and an evidence fragment; git diff --stat 9b66ff8a..e2a8eac touches exactly those three paths, all inside the grant, and the reviewed worktree is clean at e2a8eac."
+  },
+  "justifications": {
+    "durability": "two guards are each load-bearing and each is pinned by a case that fails when its guard is removed (muting reckon/crew/obligations.py:574-578 reds test_a_promoted_run_whose_tree_was_deleted_is_not_held; removing 623-628 reds test_a_record_showing_the_tree_released_is_not_held), and the release sub-record the test builds matches the shape reckon/crew/promotion.py:6152 writes; cut because the fixture hand-builds the worktree_retention and release sub-maps rather than driving the real promotion path, so the guard's coupling to the producer is untested here.",
+    "evidence": "the done_when's three measures are all present and I reproduced them independently in a scratch tree at e2a8eac (head 238 passed, EXIT=0; base 2 failed/236 passed, EXIT=1; my own is_dir-free mutation reds the deleted-tree case, my release-free mutation reds the released case); cut because the base arm ran the new test file copied into the base tree without the manifest saying so, so a reader must infer the overlay from the failure ids rather than read it stated.",
+    "fit": "the diff mirrors the module's own idioms - the isinstance(..., Mapping) guard at reckon/crew/obligations.py:624 matches the retention guard at 629-631 - and adds no name the repository naming rules forbid; cut because the function docstring at 549-554 and the test module docstring both widen slightly past what the code guarantees.",
+    "goal_fidelity": "both conditions the goal names are implemented at reckon/crew/obligations.py:574-578 (path.is_dir()) and 623-628 (release.worktree_released skip), the base arm reproduces the deleted-tree and released cases as failing (base-arm3.log), and the head arm greens them (238 passed); cut one point because the release verdict is read only as release.worktree_released is True, so any other spelling of a release in a future record would read as held.",
+    "scope_discipline": "two commits touching exactly three paths, all inside the run's declared grant, with the plan, project index and peer paths untouched and the worktree clean at e2a8eac; ruff check and format --check over the two changed Python files report no finding and no reformat; cut one point because the evidence fragment is a declared path the goal does not imply, in-grant but not required by the measure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to raise worktree-held only for a worktree directory that exists on disk and that no promotion record shows released; reckon/crew/obligations.py:_held_worktrees_by_session now filters Git's registered worktrees by path.is_dir() and skips any matched record whose release.worktree_released is True, so both stated conditions hold.\nVERDICT done_when: the done_when names a deleted-tree case, a kept-tree case and a negative control dropping the on-disk check; tests/test_worktree_held_names_an_existing_tree.py carries the deleted-tree case (with Git still listing the path asserted as a positive control), the kept-tree case and a release case, and negative-control.log records the deleted-tree case failing once the check is dropped (1 failed, EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, tests/test_worktree_held_names_an_existing_tree.py and an evidence fragment; git diff --stat 9b66ff8a..e2a8eac touches exactly those three paths, all inside the grant, and the reviewed worktree is clean at e2a8eac.\nVERDICT manifest: read against the tree; status complete, commits c8164115f (code and tests) and e2a8eac30 (evidence fragment); baseline_suite 2 failed / 236 passed at 9b66ff8a (EXIT=1, both new cases), after_suite 238 passed at c8164115f (EXIT=0), negative control 1 failed (EXIT=1).\nVERDICT diff: read e2a8eac against 9b66ff8a commit by commit; c8164115f adds path.is_dir() to the registered-worktree set and a release.worktree_released skip in _held_worktrees_by_session plus the new test file, and e2a8eac30 adds the evidence fragment; no other path changes.\nCALL_SITES: reckon/crew/obligations.py:820 in obligations(), reckon/crew/obligation_snapshot.py:747 in fleet_state()\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both conditions the goal names are implemented at reckon/crew/obligations.py:574-578 (path.is_dir()) and 623-628 (release.worktree_released skip), the base arm reproduces the deleted-tree and released cases as failing (base-arm3.log), and the head arm greens them (238 passed); cut one point because the release verdict is read only as release.worktree_released is True, so any other spelling of a release in a future record would read as held.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's three measures are all present and I reproduced them independently in a scratch tree at e2a8eac (head 238 passed, EXIT=0; base 2 failed/236 passed, EXIT=1; my own is_dir-free mutation reds the deleted-tree case, my release-free mutation reds the released case); cut because the base arm ran the new test file copied into the base tree without the manifest saying so, so a reader must infer the overlay from the failure ids rather than read it stated.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: two commits touching exactly three paths, all inside the run's declared grant, with the plan, project index and peer paths untouched and the worktree clean at e2a8eac; ruff check and format --check over the two changed Python files report no finding and no reformat; cut one point because the evidence fragment is a declared path the goal does not imply, in-grant but not required by the measure.\nSCORE durability: 18\nJUSTIFICATION durability: two guards are each load-bearing and each is pinned by a case that fails when its guard is removed (muting reckon/crew/obligations.py:574-578 reds test_a_promoted_run_whose_tree_was_deleted_is_not_held; removing 623-628 reds test_a_record_showing_the_tree_released_is_not_held), and the release sub-record the test builds matches the shape reckon/crew/promotion.py:6152 writes; cut because the fixture hand-builds the worktree_retention and release sub-maps rather than driving the real promotion path, so the guard's coupling to the producer is untested here.\nSCORE fit: 18\nJUSTIFICATION fit: the diff mirrors the module's own idioms - the isinstance(..., Mapping) guard at reckon/crew/obligations.py:624 matches the retention guard at 629-631 - and adds no name the repository naming rules forbid; cut because the function docstring at 549-554 and the test module docstring both widen slightly past what the code guarantees.\nFINDING tests/test_worktree_held_names_an_existing_tree.py:88 follow-on: the fixture hand-builds the worktree_retention and release sub-maps rather than driving the real promotion path, so a change to how reckon/crew/promotion.py writes release.worktree_released would leave these cases green while the release guard silently stopped firing; the module docstring's 'built by the ledger's own constructor' oversells it, since the constructor covers only the top-level record.",
+  "review_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T060404476608-review-of-worktree-held-names-an-existing-tree/gate/review-head-full.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T060404476608-review-of-worktree-held-names-an-existing-tree/gate/review-mut-a.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T060404476608-review-of-worktree-held-names-an-existing-tree/gate/review-mut-b.log"
+  ],
+  "review_run_id": "legacy-388876c84906",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "reviewed_head_sha": "e2a8eac30b042b8c19f95bc94c294089d1286247",
+  "reviewed_run_id": "r-20261003T054254036730-worktree-held-names-an-existing-tree",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:07.074004+00:00",
+  "total": 92
+}

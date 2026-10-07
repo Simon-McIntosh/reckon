@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_backends.py:2537",
+    "reckon/_backends.py:2548",
+    "reckon/crew/dispatch.py:4799",
+    "reckon/crew/dispatch.py:7618",
+    "reckon/crew/dispatch.py:8002",
+    "reckon/crew/resumption.py:242"
+  ],
+  "completed_at": "2026-09-29T09:53:13.289Z",
+  "dispatched_at": "2026-09-29T08:34:36Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/manifest.md",
+      "line": "20",
+      "text": "the after_suite command carries `<worktree>` and `<15 cited fence files>` placeholders, so the head arm cannot be reproduced from the line a reader lands on; the exact command survives only inside the JSON on the same line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/manifest.md",
+      "line": "20",
+      "text": "its after_suite revision names 409e42c8 while the log it points at opens \"revision: d0f61409ca12ffdffe2cc203df24e31579e7254f\" (the arm was run before the commit), so the log's own header disagrees with the manifest's attribution and a later reader cannot check from the log which revision it measured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/manifest.md",
+      "line": "23",
+      "text": "evidence_inputs cites fence_argv at :2483 and protected_checkouts at :2342; at the reviewed head they are at reckon/_backends.py:2486 and :2345 (protected_paths :2303, the new entry :2330), so both anchors are base-revision line numbers that resolve to the wrong lines at head."
+    },
+    {
+      "file": "tests/test_fence_protects_the_worktree_pool.py",
+      "line": "6",
+      "text": "the docstring names the plan-section label \"\u00a73\", which the repository naming rules ban in source; it should state the mechanism (\"the boundary this change closes\"), as the rest of the file does."
+    },
+    {
+      "file": "tests/test_fence_protects_the_worktree_pool.py",
+      "line": "190",
+      "text": "`@requires_bwrap` marks a test that only composes argv and inspects it (pool.argv() calls launch_plan for its .argv), so on a host without bubblewrap the ordered-bind assertion silently skips although it needs no binary; the same file leaves its other composition-only test at :181 unmarked, and tests/test_a_fenced_worker_can_commit.py marks only the tests that execute (:311) and leaves the composition test at :340 unmarked."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read all three commits against the base \u2014 409e42c8 adds one list entry and its docstring at reckon/_backends.py:2311-2330 plus the new test file, 406641db adds the landing fragment; nothing else changed.",
+    "done_when": "read the reviewed manifest's baseline_suite and after_suite logs (logs/base-arm-fence-files.txt, logs/head-arm-fence-files.txt) and re-derived their delta through reckon.crew.review \u2014 275 passed at both arms, 0 added failures \u2014 and every fence test file the audit report cites is inside the arm's 15-file run.",
+    "goal": "read \u00a73's falsifier in docs/plans/a-worker-cannot-write-your-home.html against the landed change \u2014 reckon/_backends.py:2330 names Code/.reckon-worktrees in protected_paths, and an executed fence run shows a sibling worktree's write refused while the run's own tree is written.",
+    "manifest": "read the reviewed manifest end to end; its result claims check out against the logs it names (275/275, EXIT=0 both arms), while its command placeholders, its head-arm revision attribution and its evidence_inputs line anchors do not (FINDINGS below).",
+    "write_paths": "read the manifest's declared paths (reckon/_backends.py, tests/test_fence_protects_the_worktree_pool.py, the landing fragment) and diffed all three commits against d0f61409; no path outside them."
+  },
+  "justifications": {
+    "durability": "the executed case at tests/test_fence_protects_the_worktree_pool.py:211 fails if the pool leaves the protected set (the declared negative control lands the sibling write) and the ordering assertion at :191 pins the bind order that keeps the own tree writable, but that assertion skips on a bwrap-less host (FINDING below).",
+    "evidence": "the done_when's measure is the cited fence files' base/head arms, both logs report 275 passed / EXIT=0 and the production derivation over them returns 0 added failures, but the head log's own header names the base revision and the manifest's after_suite command is not reproducible (FINDINGS below), so the result is sound and its recorded attribution is not.",
+    "fit": "the fixtures and helpers mirror tests/test_a_fenced_worker_can_commit.py, but the docstring at tests/test_fence_protects_the_worktree_pool.py:6 carries a plan-section label the repository naming rules forbid in source (FINDING below).",
+    "goal_fidelity": "reckon/_backends.py:2330 puts the pool in the protected set and the file's declared pool line is the only source of the seal; re-running the composed fence at head shows the own tree written and the sibling refused \"Read-only file system\", which is exactly the falsifier \u00a73 states.",
+    "scope_discipline": "the entire diff against d0f61409 is one added list entry plus docstring in reckon/_backends.py:2311-2330, the new tests/test_fence_protects_the_worktree_pool.py, and one landing fragment \u2014 all inside the declared write paths."
+  },
+  "node": "review-of-fence-protects-the-worktree-pool",
+  "project": "reckon",
+  "raw_text": "# Independent review \u2014 r-20260929T075119343538-fence-protects-the-worktree-pool\n\nreviewed_base_sha: d0f61409ca12ffdffe2cc203df24e31579e7254f\nreviewed_head_sha: 406641db37dfbf409c98d8d3d713d055f4355086\n\nVERDICT goal: read \u00a73's falsifier in docs/plans/a-worker-cannot-write-your-home.html against the landed change \u2014 reckon/_backends.py:2330 names Code/.reckon-worktrees in protected_paths, and an executed fence run shows a sibling worktree's write refused while the run's own tree is written.\nVERDICT done_when: read the reviewed manifest's baseline_suite and after_suite logs (logs/base-arm-fence-files.txt, logs/head-arm-fence-files.txt) and re-derived their delta through reckon.crew.review \u2014 275 passed at both arms, 0 added failures \u2014 and every fence test file the audit report cites is inside the arm's 15-file run.\nVERDICT write_paths: read the manifest's declared paths (reckon/_backends.py, tests/test_fence_protects_the_worktree_pool.py, the landing fragment) and diffed all three commits against d0f61409; no path outside them.\nVERDICT manifest: read the reviewed manifest end to end; its result claims check out against the logs it names (275/275, EXIT=0 both arms), while its command placeholders, its head-arm revision attribution and its evidence_inputs line anchors do not (FINDINGS below).\nVERDICT diff: read all three commits against the base \u2014 409e42c8 adds one list entry and its docstring at reckon/_backends.py:2311-2330 plus the new test file, 406641db adds the landing fragment; nothing else changed.\nCALL_SITES: reckon/_backends.py:2537, reckon/_backends.py:2548, reckon/crew/dispatch.py:4799, reckon/crew/dispatch.py:7618, reckon/crew/dispatch.py:8002, reckon/crew/resumption.py:242\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2330 puts the pool in the protected set and the file's declared pool line is the only source of the seal; re-running the composed fence at head shows the own tree written and the sibling refused \"Read-only file system\", which is exactly the falsifier \u00a73 states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done_when's measure is the cited fence files' base/head arms, both logs report 275 passed / EXIT=0 and the production derivation over them returns 0 added failures, but the head log's own header names the base revision and the manifest's after_suite command is not reproducible (FINDINGS below), so the result is sound and its recorded attribution is not.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the entire diff against d0f61409 is one added list entry plus docstring in reckon/_backends.py:2311-2330, the new tests/test_fence_protects_the_worktree_pool.py, and one landing fragment \u2014 all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the executed case at tests/test_fence_protects_the_worktree_pool.py:211 fails if the pool leaves the protected set (the declared negative control lands the sibling write) and the ordering assertion at :191 pins the bind order that keeps the own tree writable, but that assertion skips on a bwrap-less host (FINDING below).\nSCORE fit: 17\nJUSTIFICATION fit: the fixtures and helpers mirror tests/test_a_fenced_worker_can_commit.py, but the docstring at tests/test_fence_protects_the_worktree_pool.py:6 carries a plan-section label the repository naming rules forbid in source (FINDING below).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/manifest.md:20 the after_suite command carries `<worktree>` and `<15 cited fence files>` placeholders, so the head arm cannot be reproduced from the line a reader lands on; the exact command survives only inside the JSON on the same line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/manifest.md:20 its after_suite revision names 409e42c8 while the log it points at opens \"revision: d0f61409ca12ffdffe2cc203df24e31579e7254f\" (the arm was run before the commit), so the log's own header disagrees with the manifest's attribution and a later reader cannot check from the log which revision it measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/manifest.md:23 evidence_inputs cites fence_argv at :2483 and protected_checkouts at :2342; at the reviewed head they are at reckon/_backends.py:2486 and :2345 (protected_paths :2303, the new entry :2330), so both anchors are base-revision line numbers that resolve to the wrong lines at head.\nFINDING tests/test_fence_protects_the_worktree_pool.py:6 the docstring names the plan-section label \"\u00a73\", which the repository naming rules ban in source; it should state the mechanism (\"the boundary this change closes\"), as the rest of the file does.\nFINDING tests/test_fence_protects_the_worktree_pool.py:190 `@requires_bwrap` marks a test that only composes argv and inspects it (pool.argv() calls launch_plan for its .argv), so on a host without bubblewrap the ordered-bind assertion silently skips although it needs no binary; the same file leaves its other composition-only test at :181 unmarked, and tests/test_a_fenced_worker_can_commit.py marks only the tests that execute (:311) and leaves the composition test at :340 unmarked.",
+  "review_run_id": "r-20260929T083422457612-review-of-fence-protects-the-worktree-pool",
+  "reviewed_base_sha": "d0f61409ca12ffdffe2cc203df24e31579e7254f",
+  "reviewed_head_sha": "406641db37dfbf409c98d8d3d713d055f4355086",
+  "reviewed_run_id": "r-20260929T075119343538-fence-protects-the-worktree-pool",
+  "reviewer": "review-of-fence-protects-the-worktree-pool",
+  "reviewer_run_id": "r-20260929T083422457612-review-of-fence-protects-the-worktree-pool",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T09:39:51.836773+00:00",
+  "total": 92
+}

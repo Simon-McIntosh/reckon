@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:49:40.683Z",
+  "dispatched_at": "2026-10-05T16:45:06Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:954",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name `store_delivered_report` as the owner that carries `section_digests` into the stored record (or make the sidecar the predicate's store), else the migration path runs uncovered and every dispatch is refused.",
+      "text": "\u00a716 writes the `section_digests` mapping through the composer into the review sidecar (`write_review_sidecar`, `reckon/crew/plan_review.py:848`, called at `reckon/crew/recovery.py:587`) but specifies the coverage predicate reads the section digests from the union of stored reviews enumerated by `list_plan_reviews` (`reckon/crew/plan_review.py:668`). Those are two different stores, and `store_delivered_report` builds its record from an explicit field dict that does not include `section_digests`, so the key never reaches the reader the predicate names \u2014 the predicate would find every outstanding section uncovered.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f0cd4685d3c0efc51ebd30c4e929ab085f7ce075d1d83c7f81a81e4ecfc36d46",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 92,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T164448859416-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "86f9e0fc518b9260ece7304702ceb12e29ecf71a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 hides the identity derivation, the per-section prose bucketing and the three recognised digest forms behind one private function, `_section_digests`, while explicitly holding the public `plan_fingerprint` interface fixed; \u00a717 hides the raw-text span walk behind one public reader, `plan_headings`, over the private parser. \u00a717 is net consolidation (nine private store helpers and `landed_section_ids` re-homed, no new scanner), which adds depth rather than surface.",
+    "duplicate_owner": "a finding \u2014 \u00a716 leaves the owner of the `section_digests` record ambiguous between the review sidecar and the stored review record, and the reader it names (`list_plan_reviews`) is not the store the writer it names (`write_review_sidecar`) writes to.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23. \u00a717 adds one public definition (`plan_headings`) and names its offset (the `landed_section_ids` move, family unchanged); \u00a716 retires the public `legacy` parameter and adds none; \u00a718 adds none and retires promotion's private reader. Net +1 public definition, each section accounting for its own surface; no CLI option, MCP view or refusal family is added (\u00a716 explicitly reuses `plan-review-missing`).",
+    "reuse_search": "pass \u2014 the three sections cite and I verified the existing machinery they extend: `_StructuredSectionSpanParser` and `structured_section_spans` (`reckon/_plan_html.py:44,94`), `section_record_id`/`section_id_candidates` (`reckon/crew/routing.py:215,234`), `landed_section_ids` (`reckon/_store.py:1034`), the nine store helpers, `promotion._plan_remaining_sections` (`reckon/crew/promotion.py:7236`), `roadmap.implementable_sections` (`reckon/roadmap.py:106`), `doccheck._implementable_section_ids` (`reckon/doccheck.py:1014`), `list_plan_reviews`/`read_plan_review` (`reckon/crew/plan_review.py:668,618`), `interface_counts.read_trees`/`definitions`/`_staged_writes` (`reckon/interface_counts.py:47,65`), and the three section-spelling grammars (`routing._SECTION_IDENTITY`, `evidence._section_key`, `ledger.normalize_section`).",
+    "thin_wrapper": "pass \u2014 every new layer is an extension of an existing owner rather than a parallel one: \u00a718 extends `roadmap.implementable_sections` in place and deletes `promotion._plan_remaining_sections`; \u00a717 rewrites heading walks onto the parser instead of adding a scanner; \u00a716's coverage predicate is one module-private join over two existing readers with no walk of its own. The one thin public projection, `plan_headings`, states its reason (five cross-package consumers, so the private parser cannot be exposed directly)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.844746+00:00"
+}

@@ -1,0 +1,166 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T02:48:13.333Z",
+  "dispatched_at": "2026-10-07T02:42:54Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py:82",
+      "id": "duplicate_owner-1",
+      "reason": "the host's whole complexity is already a solved, tested mechanism one module over; the plan should extend `fleet_supervisor` (or extract its request-loop + service-supervisor into a shared module) rather than fork a parallel supervisor that drifts.",
+      "text": "the plan's session host (\u00a73\u2013\u00a74) adds a second request-FIFO supervisor beside the one the codebase already owns: `REQUEST_FIFO_NAME = \"requests\"` (fleet_supervisor.py:82), the FIFO served one-request-per-line by `serve()` (fleet_supervisor.py:1277, `os.mkfifo` at 1298), parsed by `parse_request` (fleet_supervisor.py:1166), dispatched by `handle_line` (fleet_supervisor.py:1221); `runtime_directory()` resolves the runtime dir with an override then a node-local default (fleet_supervisor.py:244-250) exactly as \u00a73's `$XDG_RUNTIME_DIR`/`/run/user/<uid>`/`$TMPDIR` chain does; `DeclaredServices` (fleet_supervisor.py:595) supervises children with restart backoff (`FIRST_BACKOFF_SECONDS`/`BACKOFF_CAP_SECONDS` at 193-194, `next_backoff` at 524, `supervise_once`/`supervise_loop` at 759/791) exactly as \u00a74's \"restarted with backoff from 1 to 60 seconds\" does; `publish_record` (fleet_supervisor.py:305) writes the very kind of pid record \u00a74 places under `~/.config/reckon/crew/session-hosts/`; and `_reexec` (fleet_supervisor.py:1174) reproduces the exec-into-a-fresh-image move \u00a73 makes with `reckon crew host`. The plan names none of these.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:9649",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a75 should reuse the existing FIFO client and its open-for-write liveness probe, or state why the fleet request channel cannot carry the session-host request.",
+      "text": "the same duplication reaches into dispatch: `FLEET_FIFO_NAME = \"requests\"` (dispatch.py:9649), the non-blocking FIFO write `_write_fleet_request` (dispatch.py:9725) and the request/ack round trip `_spawn_through_fleet` (dispatch.py:9769-9792) own the client side of a session-scoped request FIFO already; \u00a75 adds a *second* FIFO-write-then-poll path in the same file against the session host, with its own liveness test (\"its FIFO has a reader, which a non-blocking open for writing tests\") that duplicates `_write_fleet_request`'s `O_NONBLOCK | O_WRONLY` probe (dispatch.py:9735-9742). `_start_watch_producer` (dispatch.py:1163) already routes its spawn *through* this FIFO rather than adding a parallel one.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py:1",
+      "id": "reuse_search-1",
+      "reason": "naming the existing supervisor(s) forces the extend-vs-fork decision \u00a74 currently makes silently, and \u00a78's \"one idle shell process\" census should attribute against the existing supervisor records too.",
+      "text": "the plan's \u00a73\u2013\u00a74 search is unrecorded: it cites no prior-art file for the host, and the closest owners are `reckon/crew/fleet_supervisor.py` (request FIFO + DeclaredServices + record), `reckon/crew/paid_lanes.py:750` (`systemd_user_dir`, `render_service_unit` at 774 \u2014 the codebase's existing \"supervise a long-lived process\" mechanism) and `reckon/crew/supervisor_main.py:1` (one detached per-run supervisor as a module main). A plan that adds a supervised background process without citing what it searched fails the reuse map the review exists to make unfailable.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "plugins/crew-host/bin/crew-host:1 (plan \u00a73)",
+      "id": "deep_module-1",
+      "reason": "the entry point should create and hand over the open FIFO descriptor (or exec first, then read) so exactly one code path owns the wire format and the timeout.",
+      "text": "the FIFO is read by two readers in two languages: the shell entry point \"blocks reading the FIFO with a 60-second timeout\" until the first request and then execs `reckon crew host` (\u00a73), and `reckon crew host` \"reads one JSON request per line from the FIFO\" thereafter (\u00a74). One protocol, one queue, two implementations, joined at an exec whose only contract is \"wait, then hand off\" \u2014 a lost write that lands between the shell's last read and the Python command's first read is unobservable. The behaviour is not hidden behind a smaller interface; it is split across a seam.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:917 (plan \u00a75)",
+      "id": "thin_wrapper-1",
+      "reason": "either extend an existing attach/observe verb to address the host, or state in \u00a75 why none of the three can, so the operator does not learn a fourth way to do one thing.",
+      "text": "`reckon crew host request` \"sends the same request by hand, which is how a coordinator adds an observed session\", but the codebase already attaches sessions through the `crew` command group (cli.py:917): `crew follow --observe-session` (cli.py:4714), `crew attach` (cli.py:2661) and `crew observe` (cli.py:2693) exist precisely to bring a session's delivery up on demand. The plan adds a fourth entry point for that intent without saying why `--observe-session` on the existing follower cannot carry it.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the plan must account for the surface it adds in its own text \u2014 naming what the host verb supersedes, or why the fallback and the host both need a first-class surface.",
+      "text": "public_definitions 1489, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 adds the `crew host` verb and \u00a75 adds both the `crew host request` sub-verb and a new `delivery: \"host\"` payload value, and neither section names anything it retires or merges, or states that nothing can be. \u00a77 relocates re-arm guidance but deletes no interface surface; the fallback Monitor path is kept *in addition to* the host, so the CLI and payload families only grow.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a24b7425cd46a86f10209e5dc14a1d9a4c64c9274944e762ee80c7b7f14d8a3d",
+  "plan_slug": "a-follower-lives-as-long-as-its-session",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-07T02:54:26.815351+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "deep_module-1",
+      "reason": "",
+      "when": "2026-10-07T02:54:34.593782+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "",
+      "when": "2026-10-07T02:54:41.362697+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-07T02:54:48.829488+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-07T02:54:55.854201+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "fleet_supervisor runs once per SLURM allocation and is absent on login nodes, starts services as their own session leaders with logged output, and cannot hold the plugin monitor's stdout that a follower must write to; \u00a74 now records this and reuses its next_backoff instead",
+      "when": "2026-10-07T02:55:03.590522+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T02:54:34.593782+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "fleet_supervisor runs once per SLURM allocation and is absent on login nodes, starts services as their own session leaders with logged output, and cannot hold the plugin monitor's stdout that a follower must write to; \u00a74 now records this and reuses its next_backoff instead",
+      "when": "2026-10-07T02:55:03.590522+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T02:54:55.854201+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T02:54:48.829488+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T02:54:26.815351+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T02:54:41.362697+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-follower-lives-as-long-as-its-session.v3.json",
+  "review_run_id": "r-20261007T024225808394-plan-review-of-a-follower-lives-as-long-as-its-session",
+  "reviewed_blob_sha": "ef281b464f26a1d97b50d4786d870b39e0722b35",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 one behaviour (read one request per line from the session's FIFO) is implemented twice, in `plugins/crew-host/bin/crew-host` (\u00a73) and in `reckon crew host` (\u00a74), across a shell/Python seam rather than behind one module.",
+    "duplicate_owner": "a finding \u2014 the session host re-implements the placement/runtime-directory resolver, the request-FIFO protocol, child supervision with backoff, the pid record and the owner-liveness check already owned by `reckon/crew/fleet_supervisor.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1489, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 and \u00a75 add two CLI verbs (`crew host`, `crew host request`) and \u00a75 adds a `delivery` payload value, and no section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites reuse for \u00a75 (`_coordinator_runtime`, the `WATCHER_LOAD_BOUND_SECONDS` bound) and \u00a76 (the hooks installer's worktree refusal) but searched for **no** existing machinery for the host process it adds in \u00a73\u2013\u00a74; `reckon/crew/fleet_supervisor.py` already implements request-FIFO reading, runtime-directory resolution, supervised children with 1\u219260 s backoff and a published record.",
+    "thin_wrapper": "a finding \u2014 `reckon crew host request` (\u00a75) is a CLI over the same FIFO-write path dispatch itself uses, and the plan gives no reason the existing attach/observe machinery cannot carry it."
+  },
+  "section_digests": {
+    "_document": "5a6b3ffaf2261b7661ecc9d6f36a737e769655471d6e8938fbadea6cea978975",
+    "s1": "a4eeecaff9300863f1a6f28d4f659a0977a7583ac703af75654ddf0622bd81d4",
+    "s2": "9bfd8818e985de3f437fdd5e23a6fee7554e8e6120540395690c8298e3753a9d",
+    "s3": "5011cd25bb121d873925fef738f0d432388e811a4b9a6b546bf5c6dbde0798f5",
+    "s4": "a7b73652df06d8be866720b29e62387c023c3824865ff4df8feaf108d3a82944",
+    "s5": "cc1695d2252ce8684d5ba52b13975c2910d1ebb7b35a76c1ced51b3acc669755",
+    "s6": "4bf0b7b395e457032a487eaf31648524f4d66db2a9c44430eab3aee86cc8fb76",
+    "s7": "0d6675d1195c6589e2e249ebfcdb5cf482defdf0e825e5d15f4103a4f7f67e91",
+    "s8": "ca7a34dda6bd027351a194135ccf3d9c7982d74fb66e1e8868d154b13f7b614c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T02:53:00.933196+00:00"
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "codex",
+  "commits_read": [
+    "1d3935b03c22f450cb2c0254148b007c113fb5bf",
+    "d9f0343d0de873a652e1ea83057350d0ea8db38f"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T11:39:04.787370+00:00",
+  "findings": [
+    {
+      "file": "tests/test_binding_window.py",
+      "line": "95",
+      "text": "the undetermined case is merely guarded against named-window and Boolean-field regressions, not made unreachable as a verdict: the assertion scans verdict.values(), while the returned non-empty mapping itself is truthy; an independent single-stamp probe produced binding_window=undetermined, no Boolean values, and bool(verdict)=True, so a caller using if budget.binding_window(...) can still consume the undetermined result as a positive verdict."
+    },
+    {
+      "file": "docs/plans/burn-is-visible-before-it-bites.html",
+      "line": "308",
+      "text": "the landing record is tagged data-section=_top even though the node contract requires the worker to append its record to its own plan section and the manifest says it appended the comment to section 5; section-scoped readers therefore cannot identify this record as section 5 evidence from its semantic binding."
+    },
+    {
+      "file": "docs/plans/burn-is-visible-before-it-bites.html",
+      "line": "29",
+      "text": "the record commit changes plan-modified and plan-version from 2026-09-15 and 33 to 2026-09-21 and 34 despite the dispatch contract explicitly forbidding the worker from editing those meta lines; a server-authored change still lands in the worker diff and recreates the shared-plan conflict the fence was written to prevent."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commits 1d3935b0 and d9f0343d against base 1d2e70cc; the code delegates to the existing inference and adds five focused tests, while the documentation commit misbinds the landing comment to _top and changes two forbidden plan meta lines.",
+    "done_when": "read prompt.txt, the focused and negative-control receipts, and independently reran tests/test_binding_window.py for 5 passed; weekly, short, undetermined and lane isolation are asserted, but the claim that undetermined cannot be consumed as a verdict is only tested over mapping values and not over the truthy mapping itself.",
+    "goal": "read prompt.txt: reckon/budget.py now reads the refusal stamps written through _stamp_refusal and reports weekly, short or undetermined for the requested lane, satisfying the stated functional goal.",
+    "manifest": "read the completed manifest and its three named logs; it records both commits, all four changed paths, a 5-pass new-file gate, a 60-pass/1-pre-existing-failure focused batch, and a declared negative control that failed exactly the two undetermined assertions.",
+    "write_paths": "read the four exclusive paths in prompt.txt and compared them with the base-to-head diff; every changed file is declared, although the plan file carries forbidden meta-line changes and the landing comment is semantically attached to _top rather than section 5."
+  },
+  "justifications": {
+    "durability": "tests/test_binding_window.py:64-111 guards all three reported states and lane isolation and its declared mutation fails two cases, but line 95 cannot fail when the undetermined mapping remains truthy and is consumed wholesale as a verdict.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T102155554126-binding-window-inferred-from-two-refusals/negative-control.log records 2 failed and 3 passed for the declared mutation and an independent rerun recorded 5 passed, but the no-verdict claim is evidenced only by scanning direct field values.",
+    "fit": "reckon/budget.py:494-525 follows the surrounding lazy-import and durable-store idiom and delegates rather than duplicating inference logic, while docs/plans/burn-is-visible-before-it-bites.html:308 attaches a section-5 landing record to _top instead of its owning section.",
+    "goal_fidelity": "reckon/budget.py:494-525 exposes the previously unreachable inference through the module that owns the refusal writer and filters through infer_binding_window for the requested lane; the three required outcomes are independently green.",
+    "scope_discipline": "the 1d2e70cc..d9f0343d diff changes exactly the four declared files, but docs/plans/burn-is-visible-before-it-bites.html:29-30 changes meta lines the dispatch contract explicitly reserved from worker edits."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read prompt.txt: reckon/budget.py now reads the refusal stamps written through _stamp_refusal and reports weekly, short or undetermined for the requested lane, satisfying the stated functional goal.\nVERDICT done_when: read prompt.txt, the focused and negative-control receipts, and independently reran tests/test_binding_window.py for 5 passed; weekly, short, undetermined and lane isolation are asserted, but the claim that undetermined cannot be consumed as a verdict is only tested over mapping values and not over the truthy mapping itself.\nVERDICT write_paths: read the four exclusive paths in prompt.txt and compared them with the base-to-head diff; every changed file is declared, although the plan file carries forbidden meta-line changes and the landing comment is semantically attached to _top rather than section 5.\nVERDICT manifest: read the completed manifest and its three named logs; it records both commits, all four changed paths, a 5-pass new-file gate, a 60-pass/1-pre-existing-failure focused batch, and a declared negative control that failed exactly the two undetermined assertions.\nVERDICT diff: read commits 1d3935b0 and d9f0343d against base 1d2e70cc; the code delegates to the existing inference and adds five focused tests, while the documentation commit misbinds the landing comment to _top and changes two forbidden plan meta lines.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/budget.py:494-525 exposes the previously unreachable inference through the module that owns the refusal writer and filters through infer_binding_window for the requested lane; the three required outcomes are independently green.\nSCORE evidence: 18\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T102155554126-binding-window-inferred-from-two-refusals/negative-control.log records 2 failed and 3 passed for the declared mutation and an independent rerun recorded 5 passed, but the no-verdict claim is evidenced only by scanning direct field values.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the 1d2e70cc..d9f0343d diff changes exactly the four declared files, but docs/plans/burn-is-visible-before-it-bites.html:29-30 changes meta lines the dispatch contract explicitly reserved from worker edits.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_binding_window.py:64-111 guards all three reported states and lane isolation and its declared mutation fails two cases, but line 95 cannot fail when the undetermined mapping remains truthy and is consumed wholesale as a verdict.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/budget.py:494-525 follows the surrounding lazy-import and durable-store idiom and delegates rather than duplicating inference logic, while docs/plans/burn-is-visible-before-it-bites.html:308 attaches a section-5 landing record to _top instead of its owning section.\nFINDING tests/test_binding_window.py:95 the undetermined case is merely guarded against named-window and Boolean-field regressions, not made unreachable as a verdict: the assertion scans verdict.values(), while the returned non-empty mapping itself is truthy; an independent single-stamp probe produced binding_window=undetermined, no Boolean values, and bool(verdict)=True, so a caller using if budget.binding_window(...) can still consume the undetermined result as a positive verdict.\nFINDING docs/plans/burn-is-visible-before-it-bites.html:308 the landing record is tagged data-section=_top even though the node contract requires the worker to append its record to its own plan section and the manifest says it appended the comment to section 5; section-scoped readers therefore cannot identify this record as section 5 evidence from its semantic binding.\nFINDING docs/plans/burn-is-visible-before-it-bites.html:29 the record commit changes plan-modified and plan-version from 2026-09-15 and 33 to 2026-09-21 and 34 despite the dispatch contract explicitly forbidding the worker from editing those meta lines; a server-authored change still lands in the worker diff and recreates the shared-plan conflict the fence was written to prevent.\n",
+  "review_run_id": "r-20260921T113904787370-review-of-binding-window-inferred-from-two-refusals",
+  "reviewed_base_sha": "1d2e70ccbaa9252cfcaf6cbf2020df78f3ffc11b",
+  "reviewed_head_sha": "d9f0343d0de873a652e1ea83057350d0ea8db38f",
+  "reviewed_run_id": "r-20260921T102155554126-binding-window-inferred-from-two-refusals",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T11:45:49Z",
+  "total": 90,
+  "undetermined_case_verdict": {
+    "classification": "merely_unchecked_as_a_whole_result",
+    "detail": "The mapping contains no Boolean field and names binding_window as undetermined, but bool(result) is true; callers can still consume the whole mapping as a positive verdict."
+  }
+}

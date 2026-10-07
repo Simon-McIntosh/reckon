@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "attempt": 1,
+  "backend": "clive",
+  "base_log_revision": "18d9e07b05c3f97376022e77f072caa1740310ee",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery.py:672",
+    "reckon/crew/recovery.py:3229",
+    "reckon/crew/promotion.py:6298",
+    "reckon/crew/obligations.py:252",
+    "reckon/crew/obligations.py:589",
+    "reckon/cli.py:4755"
+  ],
+  "completed_at": "2026-10-03T01:25:13.727Z",
+  "dispatched_at": "2026-10-03T01:12:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/reclaimed-run-review-keys-on-its-own-head/reckon/cli.py",
+      "line": "4753",
+      "severity": "follow-on",
+      "text": "a reclaimed run's review still resolves the shared checkout's HEAD in two readers that call recovery._reviewed_run_head directly instead of recovery._review_head_and_tree: cli.py:4753 (the disposition command, when the run has a live pointer) sets head = _reviewed_run_head(pointer) with tree = _review_tree(pointer), which for a reclaimed run is the repository, so it returns the checkout HEAD; obligations.py:592 (the sub-floor dimension duty) does the same. Demonstrated at the reviewed head on a record whose worktree path is gone and whose manifest cites the run head by nine characters (see the review manifest checkpoint): _review_head_and_tree returned the run head while _reviewed_run_head returned the checkout HEAD. This contradicts the section's 'must never resolve to the shared checkout's HEAD' and the landing record's claim that every reader resolves one head. The fix is outside this node's write scope (cli.py and obligations.py), so it is reported as a follow-on."
+    }
+  ],
+  "head_log_revision": "2b8f0e7a4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites of select_review_for_head (recovery.py:672, recovery.py:3229, promotion.py:6298, obligations.py:252, obligations.py:589, cli.py:4755) and the direct _reviewed_run_head callers cli.py:4753 and obligations.py:592.",
+    "diff": "read commit by commit against 18d9e07b0; 12d47494d adds _resolve_abbreviated_commit, the abbreviation branch in _record_carried_head, _worktree_reclaimed, the _review_head_and_tree empty-head reading, the compose refusal and the two new cases; 34289331b adds the empty-head early return in select_review_for_head and updates the superseded pin; 2b8f0e7a4 moves review_head_move's head to _run_head_for_review; ac63f16df and 44d0e8c1c are the evidence fragment.",
+    "done_when": "first clause holds end to end: the nine-character citation resolves to the run's commit, asserted by test_an_abbreviated_commit_entry_keys_the_review_on_the_run_head (resolved == run_head, != later_head), and I reproduced the same resolution at the reviewed head; second clause holds for the compose path: select_review_for_head refuses an empty head, _review_head_and_tree returns ('', None) for a reclaimed no-head record, and dispatch_review_for_run refuses with a reason naming the missing head, asserted by test_a_reclaimed_run_with_no_resolvable_head_composes_no_review and confirmed by the sweep. The negative control reddens exactly the head-arm-passing nine-character case. One gap: the second clause's absolute ('must never resolve to the shared checkout's HEAD') is not held by every reader; see finding.",
+    "goal": "the node's goal is that a reclaimed run's review key on its own head rather than the shared checkout's HEAD; recovery._record_carried_head now resolves an abbreviated commits: entry of seven or more hex characters through the run's repository (rev-parse --verify <entry>^{commit}), and _review_head_and_tree returns (_record_carried_head(record), None) for a run whose worktree path is gone, so _run_head_for_review resolves the run's own revision instead of the checkout's.",
+    "manifest": "read; status complete, commits 12d47494d..44d0e8c1c, baseline_suite and after_suite both present with completed true and failure_count 0, negative_control_log a bare path, and the negative-control deviation disclosed honestly in negative_control_note (the mutated case resolves to empty, not the checkout HEAD the section names).",
+    "write_paths": "git diff --numstat 18d9e07b0..44d0e8c1c lists exactly the four declared paths - reckon/crew/recovery.py 97/24, tests/test_reclaimed_run_review_head.py 213/0, tests/test_rereview_keeps_its_lane.py 13/7, docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html 37/0 - insert/delete as expected; the source change is confined to _record_carried_head, _review_head_and_tree, _run_head_for_review, review_head_move, select_review_for_head and the compose refusal."
+  },
+  "justifications": {
+    "durability": "the two new cases build a temporary repository, a reclaimed worktree path and a manifest and the negative control falsifies the abbreviation resolution, so the fixed surfaces are guarded; but no test exercises the two readers that bypass _review_head_and_tree, so a regression there would be green.",
+    "evidence": "the base and head gate logs are present, completed and match their summaries (168 passed EXIT=0; 170 passed, 1 skipped EXIT=0), the negative control is valid (1 failed 1 passed, EXIT=1, a head-arm-passing id), and I reproduced both the focused pass and the mutation; but the landing record and the evidence fragment assert that no reader can hold a different answer, which the residual _reviewed_run_head readers falsify.",
+    "fit": "the helpers follow the module's subprocess/rev-parse idiom with mechanism docstrings and no plan or ticket names, but the change adds a parallel resolver beside _reviewed_run_head rather than repairing the resolver the cli and obligations readers already call, which is why those two were left behind.",
+    "goal_fidelity": "the core goal is met for the reflex and the head-move carry-forward, but the section's absolute that a reclaimed run must never resolve to the shared checkout's HEAD is not held by every reader.",
+    "scope_discipline": "numstat lists exactly the four declared paths, the tests/test_rereview_keeps_its_lane.py edit is inside the coordinator-granted scope, and no plan or index file is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reclaimed run's review key on its own head rather than the shared checkout's HEAD; recovery._record_carried_head now resolves an abbreviated commits: entry of seven or more hex characters through the run's repository (rev-parse --verify <entry>^{commit}), and _review_head_and_tree returns (_record_carried_head(record), None) for a run whose worktree path is gone, so _run_head_for_review resolves the run's own revision instead of the checkout's.\nVERDICT done_when: first clause holds end to end: the nine-character citation resolves to the run's commit, asserted by test_an_abbreviated_commit_entry_keys_the_review_on_the_run_head (resolved == run_head, != later_head), and I reproduced the same resolution at the reviewed head; second clause holds for the compose path: select_review_for_head refuses an empty head, _review_head_and_tree returns ('', None) for a reclaimed no-head record, and dispatch_review_for_run refuses with a reason naming the missing head, asserted by test_a_reclaimed_run_with_no_resolvable_head_composes_no_review and confirmed by the sweep. The negative control reddens exactly the head-arm-passing nine-character case. One gap: the second clause's absolute ('must never resolve to the shared checkout's HEAD') is not held by every reader; see finding.\nVERDICT write_paths: git diff --numstat 18d9e07b0..44d0e8c1c lists exactly the four declared paths - reckon/crew/recovery.py 97/24, tests/test_reclaimed_run_review_head.py 213/0, tests/test_rereview_keeps_its_lane.py 13/7, docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html 37/0 - insert/delete as expected; the source change is confined to _record_carried_head, _review_head_and_tree, _run_head_for_review, review_head_move, select_review_for_head and the compose refusal.\nVERDICT manifest: read; status complete, commits 12d47494d..44d0e8c1c, baseline_suite and after_suite both present with completed true and failure_count 0, negative_control_log a bare path, and the negative-control deviation disclosed honestly in negative_control_note (the mutated case resolves to empty, not the checkout HEAD the section names).\nVERDICT diff: read commit by commit against 18d9e07b0; 12d47494d adds _resolve_abbreviated_commit, the abbreviation branch in _record_carried_head, _worktree_reclaimed, the _review_head_and_tree empty-head reading, the compose refusal and the two new cases; 34289331b adds the empty-head early return in select_review_for_head and updates the superseded pin; 2b8f0e7a4 moves review_head_move's head to _run_head_for_review; ac63f16df and 44d0e8c1c are the evidence fragment.\nCALL_SITES: reckon/crew/recovery.py:672, reckon/crew/recovery.py:3229, reckon/crew/promotion.py:6298, reckon/crew/obligations.py:252, reckon/crew/obligations.py:589, reckon/cli.py:4755\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the core goal is met for the reflex and the head-move carry-forward, but the section's absolute that a reclaimed run must never resolve to the shared checkout's HEAD is not held by every reader.\nSCORE evidence: 16\nJUSTIFICATION evidence: the base and head gate logs are present, completed and match their summaries (168 passed EXIT=0; 170 passed, 1 skipped EXIT=0), the negative control is valid (assert '' == run_head, 1 failed 1 passed EXIT=1, a head-arm-passing id), and I reproduced both the focused pass and the mutation; but the landing record and the evidence fragment assert that no reader can hold a different answer, which the residual _reviewed_run_head readers falsify.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: numstat lists exactly the four declared paths, the tests/test_rereview_keeps_its_lane.py edit is inside the coordinator-granted scope, and no plan or index file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: the two new cases build a temporary repository, a reclaimed worktree path and a manifest and the negative control falsifies the abbreviation resolution, so the fixed surfaces are guarded; but no test exercises the two readers that bypass _review_head_and_tree, so the one-resolver claim is unenforced and a regression there would be green.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow the module's subprocess/rev-parse idiom with mechanism docstrings and no plan or ticket names, but the change adds a parallel resolver (_review_head_and_tree) beside _reviewed_run_head rather than repairing the resolver the cli and obligations readers already call, which is why those two readers were left behind.\nFINDING follow-on: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/reclaimed-run-review-keys-on-its-own-head/reckon/cli.py:4753 a reclaimed run's review still resolves the shared checkout's HEAD in two readers that call recovery._reviewed_run_head directly instead of recovery._review_head_and_tree: cli.py:4753 (the disposition command, when the run has a live pointer) sets head = _reviewed_run_head(pointer) with tree = _review_tree(pointer), which for a reclaimed run is the repository, so it returns the checkout HEAD; obligations.py:592 (the sub-floor dimension duty) does the same. Demonstrated at the reviewed head on a record whose worktree path is gone and whose manifest cites the run head by nine characters: _review_head_and_tree returned the run head c16fe802... while _reviewed_run_head returned the checkout HEAD 459a819a... This contradicts the section's 'must never resolve to the shared checkout's HEAD' and the landing record's claim that every reader resolves one head; a stored review keyed on the checkout HEAD can still be accepted by the disposition command. The fix is outside this node's write scope (cli.py and obligations.py), so it is reported as a follow-on.\nREVISION: 44d0e8c1c6465376c47b53035bd67adc6275c4e2",
+  "review_run_id": "r-20261003T011148438890-review-of-reclaimed-run-review-keys-on-its-own-head",
+  "reviewed_base_sha": "18d9e07b05c3f97376022e77f072caa1740310ee",
+  "reviewed_head_sha": "44d0e8c1c6465376c47b53035bd67adc6275c4e2",
+  "reviewed_revision": "44d0e8c1c6465376c47b53035bd67adc6275c4e2",
+  "reviewed_run_id": "r-20261002T222352532588-reclaimed-run-review-keys-on-its-own-head",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.591303+00:00",
+  "total": 85
+}

@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "codex",
+  "commits_read": [
+    "51589acde2aba08be2d2ab036f7113acc65a1df2"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T13:29:56.598276+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064149757128-promotion-refuses-unreviewed/negative-control.log",
+      "line": "1",
+      "text": "the exact declared mutation is present after a `mutation: ` prefix, but the node's done-when requires the FIRST LINE to repeat the quoted mutation string verbatim; the plan and evidence prose therefore overstate the receipt, even though the promotion validator accepts the declaration as a substring."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T071520460860-declared-mutation-reddens-the-refusal-test/manifest.md",
+      "line": "14",
+      "text": "the manifest's unmutated and mutated receipt paths `/tmp/nc-unmutated.log` and `/tmp/nc-mutated.log` are volatile scratch files; the durable red log carries only the unmutated count and not the full green receipt, so a later cleanup can erase the detailed positive control."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit 51589acde2aba08be2d2ab036f7113acc65a1df2 against base cf14b3c5c99aefe88e865d09974e6647fb84e99a: it adds only the declared plan comment and the evidence section, both documenting the branch-deletion run and its two failing tests; the source code remains unchanged.",
+    "done_when": "re-ran the named check at the review head unmutated: 6 passed, exit 0 in head-gate.log; materialised the review head in a scratch tree, deleted the complete if-unreviewed refusal branch, and re-ran it: 2 failed and 4 passed, exit 1 in mutated-gate.log, with the same two failure ids named by the source receipt; the source receipt's first-line verbatim requirement is the one contract miss.",
+    "goal": "read the source prompt and manifest: the declared mutation is deletion of the refusal branch in _require_review_waiver, and the delivered red log records that deletion's test result; the independent scratch replay confirms the guarded refusal is load-bearing.",
+    "manifest": "read the completed source manifest: it records base cf14b3c5, commit 51589ac, two documentation paths plus two durable log paths, 6-pass and 2-fail/4-pass counts, matching test logs, byte-identical source hashes before and after, and a clean worktree; its claim that the first log line is verbatim is contradicted by line 1's `mutation: ` prefix, and its detailed test logs point into /tmp.",
+    "write_paths": "git diff --name-status cf14b3c5c99aefe88e865d09974e6647fb84e99a 51589acde2aba08be2d2ab036f7113acc65a1df2 lists exactly docs/evidence/archive/scoring-should-stop-a-promotion-landed.html and docs/plans/scoring-should-stop-a-promotion.html, both within the four declared paths; the source worktree is clean."
+  },
+  "justifications": {
+    "durability": "the source commit durably records the mutation evidence in both the plan and cumulative archive, and the persistent red log is available; the independent head-gate.log and mutated-gate.log are durable in this review run, but the source manifest's detailed /tmp receipts are not durable and no automated test asserts the evidence record's exact first line.",
+    "evidence": "the named test was independently run twice: head-gate.log records 6 passed at a7723e07, while mutated-gate.log records the branch deletion and 2 failed, 4 passed with the exact failure ids; the source red receipt also contains the same 2 failures, but its line 1 adds `mutation: ` instead of repeating the declared string verbatim.",
+    "fit": "the commit uses the existing cumulative evidence and plan-comment idiom, chooses a table for the mutation/result mapping, preserves the prior equivalent-mutation log, and introduces no source or test changes; the prose is mechanically consistent with the observed 6/0 and 2/4 counts except for the overstated verbatim claim.",
+    "goal_fidelity": "the source node performed the exact declared branch deletion in a scratch copy and its refusal test reddened; the independent replay at the later review head reaches the same two guard-sensitive tests, so the delivered evidence answers the node's goal rather than merely repeating the earlier flag-forcing mutation.",
+    "scope_discipline": "the source commit contains exactly two insertions-only documentation changes inside its declared write paths; the external log paths are explicitly declared, plan metadata is untouched, both source and review worktrees are clean, and the source commit has a conventional subject and body."
+  },
+  "model": "gpt-5",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source prompt and manifest: the declared mutation is deletion of the refusal branch in _require_review_waiver, and the delivered red log records that deletion's test result; the independent scratch replay confirms the guarded refusal is load-bearing.\nVERDICT done_when: re-ran the named check at the review head unmutated: 6 passed, exit 0 in head-gate.log; materialised the review head in a scratch tree, deleted the complete if-unreviewed refusal branch, and re-ran it: 2 failed and 4 passed, exit 1 in mutated-gate.log, with the same two failure ids named by the source receipt; the source receipt's first-line verbatim requirement is the one contract miss.\nVERDICT write_paths: git diff --name-status cf14b3c5c99aefe88e865d09974e6647fb84e99a 51589acde2aba08be2d2ab036f7113acc65a1df2 lists exactly docs/evidence/archive/scoring-should-stop-a-promotion-landed.html and docs/plans/scoring-should-stop-a-promotion.html, both within the four declared paths; the source worktree is clean.\nVERDICT manifest: read the completed source manifest: it records base cf14b3c5, commit 51589ac, two documentation paths plus two durable log paths, 6-pass and 2-fail/4-pass counts, matching test logs, byte-identical source hashes before and after, and a clean worktree; its claim that the first log line is verbatim is contradicted by line 1's `mutation: ` prefix, and its detailed test logs point into /tmp.\nVERDICT diff: read commit 51589acde2aba08be2d2ab036f7113acc65a1df2 against base cf14b3c5c99aefe88e865d09974e6647fb84e99a: it adds only the declared plan comment and the evidence section, both documenting the branch-deletion run and its two failing tests; the source code remains unchanged.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the source node performed the exact declared branch deletion in a scratch copy and its refusal test reddened; the independent replay at the later review head reaches the same two guard-sensitive tests, so the delivered evidence answers the node's goal rather than merely repeating the earlier flag-forcing mutation.\nSCORE evidence: 18\nJUSTIFICATION evidence: the named test was independently run twice: head-gate.log records 6 passed at a7723e07, while mutated-gate.log records the branch deletion and 2 failed, 4 passed with the exact failure ids; the source red receipt also contains the same 2 failures, but its line 1 adds `mutation: ` instead of repeating the declared string verbatim.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the source commit contains exactly two insertions-only documentation changes inside its declared write paths; the external log paths are explicitly declared, plan metadata is untouched, both source and review worktrees are clean, and the source commit has a conventional subject and body.\nSCORE durability: 17\nJUSTIFICATION durability: the source commit durably records the mutation evidence in both the plan and cumulative archive, and the persistent red log is available; the independent head-gate.log and mutated-gate.log are durable in this review run, but the source manifest's detailed /tmp receipts are not durable and no automated test asserts the evidence record's exact first line.\nSCORE fit: 19\nJUSTIFICATION fit: the commit uses the existing cumulative evidence and plan-comment idiom, chooses a table for the mutation/result mapping, preserves the prior equivalent-mutation log, and introduces no source or test changes; the prose is mechanically consistent with the observed 6/0 and 2/4 counts except for the overstated verbatim claim.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064149757128-promotion-refuses-unreviewed/negative-control.log:1 the exact declared mutation is present after a `mutation: ` prefix, but the node's done-when requires the FIRST LINE to repeat the quoted mutation string verbatim; the plan and evidence prose therefore overstate the receipt, even though the promotion validator accepts the declaration as a substring.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T071520460860-declared-mutation-reddens-the-refusal-test/manifest.md:14 the manifest's unmutated and mutated receipt paths `/tmp/nc-unmutated.log` and `/tmp/nc-mutated.log` are volatile scratch files; the durable red log carries only the unmutated count and not the full green receipt, so a later cleanup can erase the detailed positive control.",
+  "review_run_id": "r-20260921T132956598276-review-of-declared-mutation-reddens-the-refusal-test",
+  "reviewed_base_sha": "cf14b3c5c99aefe88e865d09974e6647fb84e99a",
+  "reviewed_head_sha": "51589acde2aba08be2d2ab036f7113acc65a1df2",
+  "reviewed_run_id": "r-20260921T071520460860-declared-mutation-reddens-the-refusal-test",
+  "reviewer_head_sha": "a7723e0718d1cfa909c7c42bc79c4d4251082035",
+  "reviewer_run_id": "r-20260921T132956598276-review-of-declared-mutation-reddens-the-refusal-test",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T13:36:49+00:00",
+  "total": 94
+}

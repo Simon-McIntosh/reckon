@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:5326 (ledger.build_record)",
+    "reckon/crew/promotion.py:5441 (run[\"review_tier\"] = review_tier)"
+  ],
+  "completed_at": "2026-09-28T20:26:33.478Z",
+  "dispatched_at": "2026-09-28T20:13:56Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger_declares_the_review_tier.py",
+      "line": "4",
+      "text": "the docstring records \"nineteen committed rows under docs/state/reckon/runs already carry it\", a total that grows with every promotion, so a reader takes a stale snapshot as a present fact; the count reproduces at ba1a26e4 (git grep -l '\"review_tier\"' ba1a26e4 -- docs/state/reckon/runs lists 19 files), and a derived or command-stated figure would not rot \u2014 the sibling evidence fragment can carry the dated number because it is a record, but source prose is read as current."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against ba1a26e4; 106e0c16 adds the schema key and the new test, 45f54d6c adds the build_record setdefault with its comment, and 0f3f1dc7 adds only the evidence fragment and the figure.",
+    "done_when": "the fence names tests/test_ledger_declares_the_review_tier.py asserting the declared-field check finds no undeclared key on a row carrying review_tier; tests/test_ledger_declares_the_review_tier.py:58 and :89 assert exactly that, and the head arm log records 98 passed / 1 skipped / EXIT=0 across the three named files.",
+    "goal": "the goal is to declare the review_tier ledger field promotion writes; reckon/ledger.py:143 declares it in RECORD_FIELDS beside \"review\", and reckon/ledger.py:1522 carries it on every built record, which is the field reckon/crew/promotion.py:5441 writes on each promotion.",
+    "manifest": "read; it records both arms as armed JSON with revision, command, log path, failure_count 0 and empty failure_ids, names the base-arm tree and measurement module/cwd, and gives the negative-control log as a bare path with its EXIT=1 and both FAILED ids.",
+    "write_paths": "read the manifest's four declared paths against the diff; `git diff --stat ba1a26e4..0f3f1dc7` returns exactly reckon/ledger.py, tests/test_ledger_declares_the_review_tier.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/ledger-declares-the-review-tier.html and the figure directory, 240 insertions and no deletions."
+  },
+  "justifications": {
+    "durability": "the negative control reddens tests/test_ledger_declares_the_review_tier.py:58 and :89, so the declaration is guarded, while the build_record emission rests on the pre-existing subset assertions at tests/test_ledger.py:810, :873 and :1832 rather than on any assertion this node added, and the mount-liveness check at :84 is satisfied by the key the test itself set.",
+    "evidence": "head-arm.log names revision 45f54d6c, tree, command, module and cwd and records 98 passed / 1 skipped / EXIT=0, base-arm.log records 96 passed / 1 skipped / EXIT=0 at ba1a26e4, and both new cases fail (EXIT=1) under the declared mutation in negative-control-removing-review-tier.log.",
+    "fit": "the comment at reckon/ledger.py:1518-1521 matches the setdefault block it joins and the test imports tests/test_record_fields_declare_every_key.py:_promoted_ledger_key_union rather than copying the mounted-ledger walk, but the module docstring at tests/test_ledger_declares_the_review_tier.py:4 states a row count that grows with every promotion.",
+    "goal_fidelity": "reckon/ledger.py:143 declares \"review_tier\" and reckon/ledger.py:1522 emits it via setdefault, so the key reckon/crew/promotion.py:5441 writes is both declared and always carried.",
+    "scope_discipline": "`git diff --stat ba1a26e4..0f3f1dc7` returns the four declared paths and nothing else, and the change adds no capability the goal does not name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to declare the review_tier ledger field promotion writes; reckon/ledger.py:143 declares it in RECORD_FIELDS beside \"review\", and reckon/ledger.py:1522 carries it on every built record, which is the field reckon/crew/promotion.py:5441 writes on each promotion.\nVERDICT done_when: the fence names tests/test_ledger_declares_the_review_tier.py asserting the declared-field check finds no undeclared key on a row carrying review_tier; tests/test_ledger_declares_the_review_tier.py:58 and :89 assert exactly that, and the head arm log records 98 passed / 1 skipped / EXIT=0 across the three named files.\nVERDICT write_paths: read the manifest's four declared paths against the diff; `git diff --stat ba1a26e4..0f3f1dc7` returns exactly reckon/ledger.py, tests/test_ledger_declares_the_review_tier.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/ledger-declares-the-review-tier.html and the figure directory, 240 insertions and no deletions.\nVERDICT manifest: read; it records both arms as armed JSON with revision, command, log path, failure_count 0 and empty failure_ids, names the base-arm tree and measurement module/cwd, and gives the negative-control log as a bare path with its EXIT=1 and both FAILED ids.\nVERDICT diff: read commit by commit against ba1a26e4; 106e0c16 adds the schema key and the new test, 45f54d6c adds the build_record setdefault with its comment, and 0f3f1dc7 adds only the evidence fragment and the figure.\nCALL_SITES: reckon/crew/promotion.py:5326 (ledger.build_record), reckon/crew/promotion.py:5441 (run[\"review_tier\"] = review_tier)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:143 declares \"review_tier\" and reckon/ledger.py:1522 emits it via setdefault, so the key reckon/crew/promotion.py:5441 writes is both declared and always carried.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm.log names revision 45f54d6c, tree, command, module and cwd and records 98 passed / 1 skipped / EXIT=0, base-arm.log records 96 passed / 1 skipped / EXIT=0 at ba1a26e4, and both new cases fail (EXIT=1) under the declared mutation in negative-control-removing-review-tier.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --stat ba1a26e4..0f3f1dc7` returns the four declared paths and nothing else, and the change adds no capability the goal does not name.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control reddens tests/test_ledger_declares_the_review_tier.py:58 and :89, so the declaration is guarded, while the build_record emission rests on the pre-existing subset assertions at tests/test_ledger.py:810, :873 and :1832 rather than on any assertion this node added, and the mount-liveness check at :84 is satisfied by the key the test itself set.\nSCORE fit: 16\nJUSTIFICATION fit: the comment at reckon/ledger.py:1518-1521 matches the setdefault block it joins and the test imports tests/test_record_fields_declare_every_key.py:_promoted_ledger_key_union rather than copying the mounted-ledger walk, but the module docstring at tests/test_ledger_declares_the_review_tier.py:4 states a row count that grows with every promotion.\nFINDING tests/test_ledger_declares_the_review_tier.py:4 the docstring records \"nineteen committed rows under docs/state/reckon/runs already carry it\", a total that grows with every promotion, so a reader takes a stale snapshot as a present fact; the count reproduces at ba1a26e4 (git grep -l '\"review_tier\"' ba1a26e4 -- docs/state/reckon/runs lists 19 files), and a derived or command-stated figure would not rot \u2014 the sibling evidence fragment can carry the dated number because it is a record, but source prose is read as current.",
+  "review_run_id": "r-20260928T201342483600-review-of-ledger-declares-the-review-tier",
+  "reviewed_base_sha": "ba1a26e4275b4f105c6e3050d1d7d6177383f0db",
+  "reviewed_head_sha": "0f3f1dc702495cdbcf692cdc03367ac36a7e9fd2",
+  "reviewed_run_id": "r-20260928T193826072520-ledger-declares-the-review-tier",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T20:22:51.811841+00:00",
+  "total": 89
+}

@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "422d114dce724c0aabb5861d19acf0ab47be53d2",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:classify_pointer",
+    "reckon/crew/recovery.py:_watch_verdict",
+    "reckon/crew/recovery.py:watch_ticker"
+  ],
+  "completed_at": "2026-10-03T15:46:46.106Z",
+  "dispatched_at": "2026-10-03T15:30:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "10421",
+      "severity": "follow-on",
+      "text": "follow-on: _recorded_transition_spend reports spend_measured_stream_count and spend_unmeasured_stream_count as None unconditionally, so a promoted transition's stream census is unknown even though the pre-promotion fold measured it and the plan's controlled pair read a non-zero stream count; consistent with the unknown-versus-zero measure, but the figure is now permanently unreadable from the transition."
+    },
+    {
+      "file": "tests/test_the_departure_row_says_how_and_what_it_spent.py",
+      "line": "85",
+      "severity": "follow-on",
+      "text": "follow-on: the four departure words pinned here are promoted, discarded, stopped and withdrawn, while the plan section names its dispositions landed, discarded, stopped and superseded; the mapping withdrawn<->superseded is not written down, so a reader reconciling the plan vocabulary against the emitted word finds no 'superseded'."
+    }
+  ],
+  "head_log_revision": "ddab3b65c937fc60297f7b54b6c8f4ca88b2b240",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 422d114dce shows ddab3b65 rewriting _promote_record_holds and _ledger_run_id_reader to read row['commits'] and adding _recorded_transition_spend with its call in _watch_transition, adjusting four pre-existing tests to give their fixture rows a commits list, and adding the new measure file; 2583015c adds the evidence fragment and no source.",
+    "done_when": "The done-when names tests/test_the_departure_row_says_how_and_what_it_spent.py passing at head plus base and head arms over the population; the committed code at ddab3b65 runs the seven-file population at 83 passed against a base of 3 failed/80 passed, all three failures inside the new measure file, and the negative control reddens the no-commit and missing-spend assertions, so every departure-word test file in the population passes at head and no failing id is added.",
+    "goal": "The node's aim is that a departure row states how the run left and carries the spend its ledger row already resolved: recovery.py:_watch_transition reads the row's throughput through _recorded_transition_spend so a promoted transition keeps its wall time, token total and rate, and both _promote_record_holds and _ledger_run_id_reader now select promoted only from a row that records commits.",
+    "manifest": "read; status complete, commits ddab3b65 and 2583015c, baseline_suite 3 failed/80 passed and after_suite 83 passed with completed true, negative_control_log named and the three control failure ids explicit, and every run-id and sha in the manifest resolves here; the after_suite revision is the code commit ddab3b65 while the run tip 2583015c adds only the evidence fragment, which is correct for a code gate.",
+    "write_paths": "read; the diff touches reckon/crew/recovery.py, the new tests/test_the_departure_row_says_how_and_what_it_spent.py, four pre-existing test files and the evidence fragment, all inside the seven declared paths, and the two declared paths test_ticker_reads_cleanly.py and test_transition_extraction.py are unchanged."
+  },
+  "justifications": {
+    "durability": "the four-word selection, the commitless-promotion refusal and the promoted-spend equality; the negative control runs the base source against the new tests and reddens exactly the no-commit and missing-spend assertions the head arm passes.",
+    "evidence": "both arms are recorded with revision headers and EXIT lines and re-derived here to added_failure_count 0, and re-running the seven-file population at reviewed head 2583015c in a scratch tree gives 83 passed EXIT=0 while ruff reports 10 findings in recovery.py at both base and head and none in the new test.",
+    "fit": "the new helper follows the surrounding _spend_facts idiom and no changed name or test filename carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "recovery.py:_recorded_transition_spend copies the committed row's throughput into the promoted transition and _promote_record_holds, called from classify_pointer (recovery.py:8786) and _watch_verdict (recovery.py:9349), plus _ledger_run_id_reader called from watch_ticker (recovery.py:10733) now require row['commits'], so the departure words and the promoted spend both come from the recorded outcome the goal names.",
+    "scope_discipline": "every path in the diff is inside the declared write paths and the change adds no field or file the node goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's aim is that a departure row states how the run left and carries the spend its ledger row already resolved: recovery.py:_watch_transition reads the row's throughput through _recorded_transition_spend so a promoted transition keeps its wall time, token total and rate, and both _promote_record_holds and _ledger_run_id_reader now select promoted only from a row that records commits.\nVERDICT done_when: The done-when names tests/test_the_departure_row_says_how_and_what_it_spent.py passing at head plus base and head arms over the population; the committed code at ddab3b65 runs the seven-file population at 83 passed against a base of 3 failed/80 passed, all three failures inside the new measure file, and the negative control reddens the no-commit and missing-spend assertions, so every departure-word test file in the population passes at head and no failing id is added.\nVERDICT write_paths: read; the diff touches reckon/crew/recovery.py, the new tests/test_the_departure_row_says_how_and_what_it_spent.py, four pre-existing test files and the evidence fragment, all inside the seven declared paths, and the two declared paths test_ticker_reads_cleanly.py and test_transition_extraction.py are unchanged.\nVERDICT manifest: read; status complete, commits ddab3b65 and 2583015c, baseline_suite 3 failed/80 passed and after_suite 83 passed with completed true, negative_control_log named and the three control failure ids explicit, and every run-id and sha in the manifest resolves here; the after_suite revision is the code commit ddab3b65 while the run tip 2583015c adds only the evidence fragment, which is correct for a code gate.\nVERDICT diff: read commit by commit against base 422d114dce shows ddab3b65 rewriting _promote_record_holds and _ledger_run_id_reader to read row['commits'] and adding _recorded_transition_spend with its call in _watch_transition, adjusting four pre-existing tests to give their fixture rows a commits list, and adding the new measure file; 2583015c adds the evidence fragment and no source.\nCALL_SITES: reckon/crew/recovery.py:classify_pointer, reckon/crew/recovery.py:_watch_verdict, reckon/crew/recovery.py:watch_ticker\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery.py:_recorded_transition_spend copies the committed row's throughput into the promoted transition and _promote_record_holds, called from classify_pointer (recovery.py:8786) and _watch_verdict (recovery.py:9349), plus _ledger_run_id_reader called from watch_ticker (recovery.py:10733) now require row['commits'], so the departure words and the promoted spend both come from the recorded outcome the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: both arms are recorded with revision headers and EXIT lines and re-derived here to added_failure_count 0, and re-running the seven-file population at reviewed head 2583015c in a scratch tree gives 83 passed EXIT=0 while ruff reports 10 findings in recovery.py at both base and head and none in the new test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths and the change adds no field or file the node goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the four-word selection, the commitless-promotion refusal and the promoted-spend equality; the negative control runs the base source against the new tests and reddens exactly the no-commit and missing-spend assertions the head arm passes.\nSCORE fit: 19\nJUSTIFICATION fit: the new helper follows the surrounding _spend_facts idiom and no changed name or test filename carries a plan, sprint or ticket identifier.\nFINDING reckon/crew/recovery.py:10421 follow-on: _recorded_transition_spend reports spend_measured_stream_count and spend_unmeasured_stream_count as None unconditionally, so a promoted transition's stream census is unknown even though the pre-promotion fold measured it and the plan's controlled pair read a non-zero stream count; consistent with the unknown-versus-zero measure, but the figure is now permanently unreadable from the transition.\nFINDING tests/test_the_departure_row_says_how_and_what_it_spent.py:85 follow-on: the four departure words pinned here are promoted, discarded, stopped and withdrawn, while the plan section names its dispositions landed, discarded, stopped and superseded; the mapping withdrawn<->superseded is not written down, so a reader reconciling the plan vocabulary against the emitted word finds no 'superseded'.\n",
+  "review_run_id": "r-20261003T153012983874-review-of-the-departure-row-says-how-and-what-it-spent",
+  "reviewed_base_sha": "422d114dce724c0aabb5861d19acf0ab47be53d2",
+  "reviewed_head_sha": "2583015ce90874711cdb4a814e3da102729a8148",
+  "reviewed_run_id": "r-20261003T145430612690-the-departure-row-says-how-and-what-it-spent",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T15:45:00Z",
+  "total": 96
+}

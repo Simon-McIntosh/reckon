@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "added_failures_source": {
+    "note": "the reviewed manifest names no baseline_suite or after_suite field, so both gate logs resolve to none and the count is unmeasured rather than zero"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/repair.py:review_findings",
+    "reckon/crew/review.py:annotate_review_of_run",
+    "reckon/crew/review.py:store_review"
+  ],
+  "completed_at": "2026-09-29T16:53:04.644Z",
+  "dispatched_at": "2026-09-29T16:34:19Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "29 added lines of HTML fragment, plus the two corrected lines of report.md. No source, test or schema file is touched anywhere in the commit, so there is no behaviour to exercise and the gate owed is the reproduction of the two figures, which the run's logs/reproduction.log performs and which this review has re-performed independently.",
+    "done_when": "the measure is that both corrections are in place and checkable, and they are. md5sum and sha256sum over the two scratch trees reproduce cb41f9ff.../73b81ef3... as md5 and 6d19f6b2.../75fe118e... as sha256, and the same sha256 come out of git show d0f0c9ab:reckon/crew/promotion.py and git show 09d4deea:reckon/crew/promotion.py, so the digest claim no longer depends on the scratch trees surviving. Recounting the 39 neither-arm-completed rows gives baseline recorded-but-not-complete 23, baseline absent 16, sum 39; and the whole-population counters in comparison.json partition 108 exactly (68 both + 0 baseline-only + 1 after-only + 39 neither), which is what makes 24 a population marginal rather than the within-subset figure the report previously printed.",
+    "goal": "the node's goal is to answer the two findings the strict-arms refusal-impact review recorded against report.md, and both are answered and both are right. Finding fbd864b260e asked for the true module digests and report.md now states sha256 6d19f6b2... (main) and 75fe118e... (repair); I recomputed both digests over the two scratch trees still on disk (/tmp/arms-tree-main, /tmp/arms-tree-repair) and again over the git objects d0f0c9ab and 09d4deea, and all four agree, with the old values reproducing exactly as md5. Finding f9a0f21b1bd asked for the completion census to be read inside the subset it names, and the sentence now reads 23 recorded-with-not-complete plus 16 absent, which I recounted from the run's own comparison.json neither-arm-completed rows and which sums to the 39 it is scoped to.",
+    "manifest": "the delivered manifest is readable and passes its own write-time audit, with reckon crew check-manifest reporting ok true and no findings. It answers both findings by id with the commit that answered them, which is the repair contract's own convention, and it declares no negative control with a reason that holds for this node, whose write paths reach no test file. It carries no baseline_suite or after_suite, so this review stores the added-failure count as unmeasured rather than as a measured zero.",
+    "write_paths": "commit fd61db69 touches exactly one path, docs/evidence/fragments/crew-runtime-positive-controls/repair-of-strict-arms-refusal-impact-1af8e33fd252.html, 29 insertions and no deletions, and the assigned worktree is clean at head. The report itself is a crew artifact outside version control at its declared reports path, and the two corrected lines are there at lines 12-14 and 46-48. No plan, sprint, index or frontend state is in the diff, and the figures path the brief declared is not used, which the manifest states rather than leaving as an unexplained omission."
+  },
+  "justifications": {
+    "durability": "the correction is durable where it is landed in git and reproducible where it is not, but the report.md lines can drift again with nothing to redden, and the census counters that produced the original mis-scope stay mixed-scope in arms_compare.py, which the report's corrected prose works around rather than fixes.",
+    "evidence": "report.md lives outside version control, so the durable half is the git-landed fragment, which names both finding ids and both figures; the remaining exposure is that the corrected lines are only as durable as the file, and the figures are re-derivable from the git objects and the surviving scratch trees, so the claim survives the artifact.",
+    "fit": "the node answered each finding by id with a commit, declared no negative control with a reason that matches a docs-only write scope, and kept the fragment in the docs/evidence/fragments convention with the plan meta tags its readers parse.",
+    "goal_fidelity": "both findings are answered and both answers check out under instruments this review ran itself, the digests from two independent sources of truth and the census from the run's own recorded rows, and the node reported rather than touched the two off-scope items it noticed.",
+    "scope_discipline": "one commit, one declared path, a clean worktree, and the two off-scope items, the earlier run's manifest label and the mixed-scope census counters in arms_compare.py, are recorded as follow-ons instead of being fixed outside the fence."
+  },
+  "negative_control": {
+    "declared": "none: this node's write paths are two review records and reach no test path, so no red log is owed"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to answer the two findings the strict-arms refusal-impact review recorded against report.md, and both are answered and both are right. Finding fbd864b260e asked for the true module digests and report.md now states sha256 6d19f6b2... (main) and 75fe118e... (repair); I recomputed both digests over the two scratch trees still on disk (/tmp/arms-tree-main, /tmp/arms-tree-repair) and again over the git objects d0f0c9ab and 09d4deea, and all four agree, with the old values reproducing exactly as md5. Finding f9a0f21b1bd asked for the completion census to be read inside the subset it names, and the sentence now reads 23 recorded-with-not-complete plus 16 absent, which I recounted from the run's own comparison.json neither-arm-completed rows and which sums to the 39 it is scoped to.\nVERDICT done_when: the measure is that both corrections are in place and checkable, and they are. md5sum and sha256sum over the two scratch trees reproduce cb41f9ff.../73b81ef3... as md5 and 6d19f6b2.../75fe118e... as sha256, and the same sha256 come out of git show d0f0c9ab:reckon/crew/promotion.py and git show 09d4deea:reckon/crew/promotion.py, so the digest claim no longer depends on the scratch trees surviving. Recounting the 39 neither-arm-completed rows gives baseline recorded-but-not-complete 23, baseline absent 16, sum 39; and the whole-population counters in comparison.json partition 108 exactly (68 both + 0 baseline-only + 1 after-only + 39 neither), which is what makes 24 a population marginal rather than the within-subset figure the report previously printed.\nVERDICT write_paths: commit fd61db69 touches exactly one path, docs/evidence/fragments/crew-runtime-positive-controls/repair-of-strict-arms-refusal-impact-1af8e33fd252.html, 29 insertions and no deletions, and the assigned worktree is clean at head. The report itself is a crew artifact outside version control at its declared reports path, and the two corrected lines are there at lines 12-14 and 46-48. No plan, sprint, index or frontend state is in the diff, and the figures path the brief declared is not used, which the manifest states rather than leaving as an unexplained omission.\nVERDICT manifest: the delivered manifest is readable and passes its own write-time audit, with reckon crew check-manifest reporting ok true and no findings. It answers both findings by id with the commit that answered them, which is the repair contract's own convention, and it declares no negative control with a reason that holds for this node, whose write paths reach no test file. It carries no baseline_suite or after_suite, so this review stores the added-failure count as unmeasured rather than as a measured zero.\nVERDICT diff: 29 added lines of HTML fragment, plus the two corrected lines of report.md. No source, test or schema file is touched anywhere in the commit, so there is no behaviour to exercise and the gate owed is the reproduction of the two figures, which the run's logs/reproduction.log performs and which this review has re-performed independently.\nCALL_SITES: reckon/crew/repair.py:review_findings, reckon/crew/review.py:annotate_review_of_run, reckon/crew/review.py:store_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both findings are answered and both answers check out under instruments this review ran itself, the digests from two independent sources of truth and the census from the run's own recorded rows, and the node reported rather than touched the two off-scope items it noticed.\nSCORE evidence: 19\nJUSTIFICATION evidence: report.md lives outside version control, so the durable half is the git-landed fragment, which names both finding ids and both figures; the remaining exposure is that the corrected lines are only as durable as the file, and the figures are re-derivable from the git objects and the surviving scratch trees, so the claim survives the artifact.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: one commit, one declared path, a clean worktree, and the two off-scope items, the earlier run's manifest label and the mixed-scope census counters in arms_compare.py, are recorded as follow-ons instead of being fixed outside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: the correction is durable where it is landed in git and reproducible where it is not, but the report.md lines can drift again with nothing to redden, and the census counters that produced the original mis-scope stay mixed-scope in arms_compare.py, which the report's corrected prose works around rather than fixes.\nSCORE fit: 19\nJUSTIFICATION fit: the node answered each finding by id with a commit, declared no negative control with a reason that matches a docs-only write scope, and kept the fragment in the docs/evidence/fragments convention with the plan meta tags its readers parse.\nreviewed_base_sha: 439b76fab1d866b650c724bd83fd5f0b4bdf8ec4\nreviewed_head_sha: fd61db69c1829bfba1044bc700b1506505b3b1d0\n",
+  "review_run_id": "r-20260929T163357787466-review-of-repair-of-strict-arms-refusal-impact-1af8e33fd252",
+  "reviewed_base_note": "base 439b76fa and head fd61db69 are one commit apart; the commit lands the evidence fragment, and the report.md lines it corrects are outside git at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/strict-arms-refusal-impact/report.md",
+  "reviewed_base_sha": "439b76fab1d866b650c724bd83fd5f0b4bdf8ec4",
+  "reviewed_commits": [
+    "fd61db69c1829bfba1044bc700b1506505b3b1d0"
+  ],
+  "reviewed_head_sha": "fd61db69c1829bfba1044bc700b1506505b3b1d0",
+  "reviewed_manifest": {
+    "bytes": 3638,
+    "last_modified": "2026-09-29T18:33:21.570138+02:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T162400736424-repair-of-strict-arms-refusal-impact-1af8e33fd252/manifest.md",
+    "sha256": "582f1221b450f9b316a59f2b94703263aaa62791508914a18ed8626f2bee7104"
+  },
+  "reviewed_run_id": "r-20260929T162400736424-repair-of-strict-arms-refusal-impact-1af8e33fd252",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-strict-arms-refusal-impact-1af8e33fd252",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-repair-of-strict-arms-refusal-impact-1af8e33fd252",
+  "reviewer_run_id": "r-20260929T163357787466-review-of-repair-of-strict-arms-refusal-impact-1af8e33fd252",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T16:49:40.872985+00:00",
+  "total": 96
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite = logs/base-cases-1.txt (53a72f8c, 2 failures: tests/test_landing_contract_and_gate_agree.py::test_every_default_role_agrees_with_the_promotion_gate and ::test_a_test_role_with_an_out_of_repository_report_path_gains_no_landing_paths, both the new file's cases red on the unfixed base) and after_suite = logs/head-arm-6.txt (113 passed, 0 failures); added ids = head_ids - base_ids = empty, count 0. The base arm's two failures are the new guard's own cases, which the landed change turns green, so no failure is added at the head.",
+  "artifacts": "reckon/crew/prompts.py:496 can_land = bool(writable) and role_may_write_repository_paths(node.role); tests/test_landing_contract_and_gate_agree.py new, base arm 2 failed EXIT=1, head arm 113 passed EXIT=0, negative control 2 failed EXIT=1.",
+  "backend": "deepseek-v4.1-flash",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_compose_dispatch_prompt"
+  ],
+  "completed_at": "2026-10-02T14:55:14.300Z",
+  "dispatched_at": "2026-10-02T14:36:38Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/landing-contract-follows-the-promotion-gate.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the base-arm bullet attributes the phrase 'the new cases copied into the unfixed tree' and its 111 passed to logs/base-arm-3.txt, but that log's own first line states the new test file does not exist there (base-arm-3.txt: 'git archive extraction; the new test file does not exist here', 111 passed EXIT=0); the copy-in arm named by the manifest's baseline_suite is logs/base-cases-1.txt, 2 failed EXIT=1. The fragment collapses two distinct base arms into one line, so a reader reconciling the sentence against the log it cites finds the description and the named log disagree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read all three commits against base 53a72f8c: reckon/crew/prompts.py:492-496 resolves writable then gates can_land on role_may_write_repository_paths, the closure-limit emission at prompts.py:520 following can_land; tests/test_landing_contract_follows_the_grant.py renames one case to test_a_writable_verifier_reads_no_landing_contract and flips the carrier assertions absent; tests/test_crew_prompts.py reads the shipped role vocabulary filtered by the predicate; a new tests/test_landing_contract_and_gate_agree.py and a 53-line docs fragment.",
+    "done_when": "the done_when's declared mutation (prompt gate back on capability, promotion gate left on role) is exactly what negative-control-2.txt reinstates, and the manifest records the declared failing case: base arm 2 failed EXIT=1, head arm 113 passed EXIT=0, control 2 failed EXIT=1.",
+    "goal": "the node's goal is that one criterion governs the landing contract and the promotion gate; reckon/crew/prompts.py:496 composes can_land from writability and role_may_write_repository_paths, the predicate the promotion refusal reads.",
+    "manifest": "read; status complete with commits bef172dd5 (code), c202587b2 (test), 3d24d168a (docs fragment), populated baseline_suite (2 failed) and after_suite (0 failed) with inline failure_ids, negative_control_log and four test_logs.",
+    "write_paths": "the manifest declares five changed paths; git diff --name-only 53a72f8c99784e731660beecee07f8dc5ed745a4..3d24d168a87862e7f3be69b2cca9d859ce301558 lists exactly those five and no other."
+  },
+  "justifications": {
+    "durability": "the declared mutation was reinstated (can_land = bool(writable), the role limb removed, promotion gate left on role) and reddened tests/test_landing_contract_and_gate_agree.py::test_every_default_role_agrees_with_the_promotion_gate and ::test_a_test_role_with_an_out_of_repository_report_path_gains_no_landing_paths, both green at head (logs/negative-control-2.txt).",
+    "evidence": "the manifest records each arm to a named log whose first line carries revision, tree and command: logs/base-cases-1.txt 2 failed EXIT=1, logs/head-arm-6.txt 113 passed EXIT=0, logs/negative-control-2.txt 2 failed EXIT=1.",
+    "fit": "reckon/crew/prompts.py:496 reuses the existing role_may_write_repository_paths predicate, whose docstring at reckon/crew/node.py:717 states one spelling serves both the dispatch validation and the promotion refusal, and no new symbol or comment carries a plan label.",
+    "goal_fidelity": "reckon/crew/prompts.py:496 now reads role_may_write_repository_paths, the same predicate the promotion refusal reads at reckon/crew/promotion.py:6819, so one criterion governs both surfaces.",
+    "scope_discipline": "git diff --name-only at 53a72f8c..3d24d168 lists exactly reckon/crew/prompts.py, tests/test_crew_prompts.py, tests/test_landing_contract_and_gate_agree.py, tests/test_landing_contract_follows_the_grant.py and the evidence fragment, the five the manifest declares, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one criterion governs the landing contract and the promotion gate; reckon/crew/prompts.py:496 composes can_land from writability and role_may_write_repository_paths, the predicate the promotion refusal reads.\nVERDICT done_when: the done_when's declared mutation (prompt gate back on capability, promotion gate left on role) is exactly what negative-control-2.txt reinstates, and the manifest records the declared failing case: base arm 2 failed EXIT=1, head arm 113 passed EXIT=0, control 2 failed EXIT=1.\nVERDICT write_paths: the manifest declares five changed paths; git diff --name-only 53a72f8c99784e731660beecee07f8dc5ed745a4..3d24d168a87862e7f3be69b2cca9d859ce301558 lists exactly those five and no other.\nVERDICT manifest: read; status complete with commits bef172dd5 (code), c202587b2 (test), 3d24d168a (docs fragment), populated baseline_suite (2 failed) and after_suite (0 failed) with inline failure_ids, negative_control_log and four test_logs.\nVERDICT diff: read all three commits against base 53a72f8c: reckon/crew/prompts.py:492-496 resolves writable then gates can_land on role_may_write_repository_paths, the closure-limit emission at prompts.py:520 following can_land; tests/test_landing_contract_follows_the_grant.py renames one case to test_a_writable_verifier_reads_no_landing_contract and flips the carrier assertions absent; tests/test_crew_prompts.py reads the shipped role vocabulary filtered by the predicate; a new tests/test_landing_contract_and_gate_agree.py and a 53-line docs fragment.\nCALL_SITES: reckon/crew/dispatch.py:_compose_dispatch_prompt\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:496 now reads role_may_write_repository_paths, the same predicate the promotion refusal reads at reckon/crew/promotion.py:6819, so one criterion governs both surfaces.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records each arm to a named log whose first line carries revision, tree and command: logs/base-cases-1.txt 2 failed EXIT=1, logs/head-arm-6.txt 113 passed EXIT=0, logs/negative-control-2.txt 2 failed EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only at 53a72f8c..3d24d168 lists exactly reckon/crew/prompts.py, tests/test_crew_prompts.py, tests/test_landing_contract_and_gate_agree.py, tests/test_landing_contract_follows_the_grant.py and the evidence fragment, the five the manifest declares, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the declared mutation was reinstated (can_land = bool(writable), the role limb removed, promotion gate left on role) and reddened tests/test_landing_contract_and_gate_agree.py::test_every_default_role_agrees_with_the_promotion_gate and ::test_a_test_role_with_an_out_of_repository_report_path_gains_no_landing_paths, both green at head (logs/negative-control-2.txt).\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/prompts.py:496 reuses the existing role_may_write_repository_paths predicate, whose docstring at reckon/crew/node.py:717 states one spelling serves both the dispatch validation and the promotion refusal, and no new symbol or comment carries a plan label.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/landing-contract-follows-the-promotion-gate.html:24 follow-on: the base-arm bullet attributes the phrase 'the new cases copied into the unfixed tree' and its 111 passed to logs/base-arm-3.txt, but that log's own first line states the new test file does not exist there (base-arm-3.txt: 'git archive extraction; the new test file does not exist here', 111 passed EXIT=0); the copy-in arm named by the manifest's baseline_suite is logs/base-cases-1.txt, 2 failed EXIT=1. The fragment collapses two distinct base arms into one line, so a reader reconciling the sentence against the log it cites finds the description and the named log disagree.\nreviewed_base_sha: 53a72f8c99784e731660beecee07f8dc5ed745a4\nreviewed_head_sha: 3d24d168a87862e7f3be69b2cca9d859ce301558\n",
+  "review_run_id": "r-20261002T143602600565-review-of-landing-contract-follows-the-promotion-gate",
+  "reviewed_base_sha": "53a72f8c99784e731660beecee07f8dc5ed745a4",
+  "reviewed_head_sha": "3d24d168a87862e7f3be69b2cca9d859ce301558",
+  "reviewed_run_id": "r-20261002T130336379164-landing-contract-follows-the-promotion-gate",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T14:46:19Z",
+  "total": 95
+}

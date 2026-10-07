@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:4403 the audit tool call into _audit",
+    "reckon/mcp.py:4044 the view re-entry into _audit",
+    "reckon/mcp.py:4258 the lifecycle pass the same audit runs over the corpus"
+  ],
+  "completed_at": "2026-09-25T16:38:55.096Z",
+  "dispatched_at": "2026-09-25T16:06:36Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T151610097315-mcp-validation-reads-through-memo/negative-control.log",
+      "line": "37",
+      "text": "the last line reads EXIT=0 although the run above it failed two tests, so the receipt's own final status contradicts its red result and a later check keying on the exit line would read the control as green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base 311bfc62: e2045fc6 replaces the loop's direct read_text plus from_html with the memoized _audit_plan_state and adds seven focused checks, and 30a75b95 appends the plan landing record, the evidence section and the before/after figure.",
+    "done_when": "the measure names a warm audit median under 5 s over three interleaved base and head runs with every log kept, findings identical as sorted sets, and no added failures in the named mcp and audit tests; base-audit-1..3.log hold 5.47/5.42/5.53 s (median 5.519) and head-audit-1..3.log 0.89/0.83/0.86 s (median 0.914), all eight findings files carry byte-identical 155-entry sets, and gate-base.log reads 74 passed against gate-head.log 81 passed with zero failures.",
+    "goal": "the node goal is that the MCP validation loop reads each plan through the memoized parse; reckon/mcp.py:3969 adds _audit_plan_state and reckon/mcp.py:4100 routes the loop's per-plan read through it.",
+    "manifest": "read; it records both commits, a real gate command carrying its 81 and 74 results, and twelve log paths that exist on disk and match their stated contents.",
+    "write_paths": "the manifest declares reckon/mcp.py, tests/test_mcp_validation_reads_through_memo.py, the evidence archive, the figures directory and the plan page, and diff 311bfc62..30a75b95 touches exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_mcp_validation_reads_through_memo.py:108 and :126 count from_html calls and both red on the declared mutation while the other five checks stay green, and :156, :173 and :197 red if the stat key, the invalidation or the deep copy is removed.",
+    "evidence": "the six audit logs, both gate logs and the pinned mounts and frozen config are on disk and I reproduced the head arm independently at 0.900 s with 155 findings, but the timing instrument is mcp._audit rather than the CLI path the measure names, and negative-control.log:37 misstates its own run.",
+    "fit": "reckon/mcp.py:3969 follows the file_memo idiom used by _read_plan_text at reckon/_plan_html.py:1184, naming its memo kind and deep-copy contract, and the diff introduces no banned name or plan label.",
+    "goal_fidelity": "reckon/mcp.py:4100 now reads each plan through _audit_plan_state, whose body at reckon/mcp.py:3985 is from_html over the shared memoized text read, and an instrumented recheck at the reviewed head measured 182 parses on the cold audit against 0 on the warm one.",
+    "scope_discipline": "every path in git diff --stat 311bfc62..30a75b95 lies inside the five declared write paths, and the plan page edit appends the landing block without touching the version or modified metas."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the MCP validation loop reads each plan through the memoized parse; reckon/mcp.py:3969 adds _audit_plan_state and reckon/mcp.py:4100 routes the loop's per-plan read through it.\nVERDICT done_when: the measure names a warm audit median under 5 s over three interleaved base and head runs with every log kept, findings identical as sorted sets, and no added failures in the named mcp and audit tests; base-audit-1..3.log hold 5.47/5.42/5.53 s (median 5.519) and head-audit-1..3.log 0.89/0.83/0.86 s (median 0.914), all eight findings files carry byte-identical 155-entry sets, and gate-base.log reads 74 passed against gate-head.log 81 passed with zero failures.\nVERDICT write_paths: the manifest declares reckon/mcp.py, tests/test_mcp_validation_reads_through_memo.py, the evidence archive, the figures directory and the plan page, and diff 311bfc62..30a75b95 touches exactly those five paths and nothing else.\nVERDICT manifest: read; it records both commits, a real gate command carrying its 81 and 74 results, and twelve log paths that exist on disk and match their stated contents.\nVERDICT diff: read both commits against base 311bfc62: e2045fc6 replaces the loop's direct read_text plus from_html with the memoized _audit_plan_state and adds seven focused checks, and 30a75b95 appends the plan landing record, the evidence section and the before/after figure.\nCALL_SITES: reckon/mcp.py:4403 the audit tool call into _audit, reckon/mcp.py:4044 the view re-entry into _audit, reckon/mcp.py:4258 the lifecycle pass the same audit runs over the corpus\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp.py:4100 now reads each plan through _audit_plan_state, whose body at reckon/mcp.py:3985 is from_html over the shared memoized text read, and an instrumented recheck at the reviewed head measured 182 parses on the cold audit against 0 on the warm one.\nSCORE evidence: 18\nJUSTIFICATION evidence: the six audit logs, both gate logs and the pinned mounts and frozen config are on disk and I reproduced the head arm independently at 0.900 s with 155 findings, but the timing instrument is mcp._audit rather than the CLI path the measure names, and negative-control.log:37 misstates its own run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 311bfc62..30a75b95 lies inside the five declared write paths, and the plan page edit appends the landing block without touching the version or modified metas.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_mcp_validation_reads_through_memo.py:108 and :126 count from_html calls and both red on the declared mutation while the other five checks stay green, and :156, :173 and :197 red if the stat key, the invalidation or the deep copy is removed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/mcp.py:3969 follows the file_memo idiom used by _read_plan_text at reckon/_plan_html.py:1184, naming its memo kind and deep-copy contract, and the diff introduces no banned name or plan label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T151610097315-mcp-validation-reads-through-memo/negative-control.log:37 the last line reads EXIT=0 although the run above it failed two tests, so the receipt's own final status contradicts its red result and a later check keying on the exit line would read the control as green.\n",
+  "review_run_id": "r-20260925T160621131916-review-of-mcp-validation-reads-through-memo",
+  "reviewed_base_sha": "311bfc6256b029cafd9934a013452d41c192ea48",
+  "reviewed_head_sha": "30a75b959c95b910f725458d154ae6c726535db2",
+  "reviewed_run_id": "r-20260925T151610097315-mcp-validation-reads-through-memo",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T16:26:19Z",
+  "total": 96
+}

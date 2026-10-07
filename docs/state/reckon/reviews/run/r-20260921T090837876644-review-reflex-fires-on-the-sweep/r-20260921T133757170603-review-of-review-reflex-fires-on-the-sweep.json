@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T13:37:57.170603+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "1191",
+      "text": "A sweep whose only review outcome is a refusal or an awaiting-lane result is omitted from the append-only recovery log: the write condition counts ordinary work in `considered` and review dispatches, but ignores `reviews.refused` and `reviews.awaiting_lane`. The source test's refusal case also dispatches the first review, so its successful dispatch satisfies that condition and cannot show the omission. This contradicts lines 1187-1190, which say the append-only log retains refusals for recovery; the per-writer status record carries only counts and is overwritten by the next sweep."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Commit 53d40c57 is an ancestor of the assigned review head. Its functional changes invoke the review pass from `sweep`, carry the unreconciled-runs waiver, retain the actual refusal report instead of a generator, expose review counts per writer, and add the focused test module.",
+    "done_when": "The independently rerun focused suite passed 9 of 9 cases. It covers dispatch from scoring, a second sweep dispatching no duplicate, continuation after a refusal, the unreconciled-runs waiver, the same run refusing without that waiver, a JSON-serializable refusal report, the rendered command, legacy review-node inertness, and per-writer outcome counts.",
+    "goal": "Read \u00a73 of docs/plans/scoring-should-stop-a-promotion.html, the source manifest, and the source diff. `resumption.sweep` now calls `dispatch_awaiting_reviews` after the resume pass, placing the automatic review on the existing sweep path rather than requiring a coordinator command.",
+    "manifest": "The source manifest records a corrected terminal status, commit 53d40c57, the focused 9-pass receipt, the declared negative control, the 18-failure cohort before and after, explicit follow-ons, and the source-run artifacts.",
+    "write_paths": "`git diff --name-only 53d40c57^ 53d40c57` lists exactly the five declared paths: recovery.py, resumption.py, the new sweep test, the plan record, and the evidence record."
+  },
+  "justifications": {
+    "durability": "The repair correctly makes refusal entries JSON-serializable and leaves a review-dispatch status on the source pointer, but resumption.py:1191 drops a review-only refusal or lane wait from the append-only recovery history. A later status write can therefore erase the only sweep-level evidence of that outcome.",
+    "evidence": "Independent execution of tests/test_review_reflex_sweep.py passed 9/9 in 42.29 seconds. The source negative-control receipt names withholding `unreconciled_override`, fails 3 of the 9 cases, then restores recovery.py byte-identically; its 15-file cohort remains 18 failed and 166 passed. The score is reduced because that focused refusal scenario does not test append-only retention when no review dispatch succeeds.",
+    "fit": "The change reuses the existing resumption surface rather than introducing another caller and keeps a dry run non-mutating. It remains deliberately narrow: review routing still uses the pre-existing local route, which the plan and source manifest identify as separate work rather than claiming it closed here.",
+    "goal_fidelity": "The change supplies the caller \u00a73 requires at resumption.py:1157-1171, and existing follower and MCP callers both reach `resumption.sweep`; the direct sweep assertion records the issued dispatch rather than inferring it from a silent review run.",
+    "scope_discipline": "The source commit changes only the five paths declared in its manifest, and the source commit is reachable from the reviewed head. The unclosed competing-lane route and two-review seat collision are explicitly retained as fenced follow-ons rather than silently folded into this node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read \u00a73 of docs/plans/scoring-should-stop-a-promotion.html, the source manifest, and the source diff. `resumption.sweep` now calls `dispatch_awaiting_reviews` after the resume pass, placing the automatic review on the existing sweep path rather than requiring a coordinator command.\nVERDICT done_when: The independently rerun focused suite passed 9 of 9 cases. It covers dispatch from scoring, a second sweep dispatching no duplicate, continuation after a refusal, the unreconciled-runs waiver, the same run refusing without that waiver, a JSON-serializable refusal report, the rendered command, legacy review-node inertness, and per-writer outcome counts.\nVERDICT write_paths: `git diff --name-only 53d40c57^ 53d40c57` lists exactly the five declared paths: recovery.py, resumption.py, the new sweep test, the plan record, and the evidence record.\nVERDICT manifest: The source manifest records a corrected terminal status, commit 53d40c57, the focused 9-pass receipt, the declared negative control, the 18-failure cohort before and after, explicit follow-ons, and the source-run artifacts.\nVERDICT diff: Commit 53d40c57 is an ancestor of the assigned review head. Its functional changes invoke the review pass from `sweep`, carry the unreconciled-runs waiver, retain the actual refusal report instead of a generator, expose review counts per writer, and add the focused test module.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The change supplies the caller \u00a73 requires at resumption.py:1157-1171, and existing follower and MCP callers both reach `resumption.sweep`; the direct sweep assertion records the issued dispatch rather than inferring it from a silent review run.\nSCORE evidence: 18\nJUSTIFICATION evidence: Independent execution of tests/test_review_reflex_sweep.py passed 9/9 in 42.29 seconds. The source negative-control receipt names withholding `unreconciled_override`, fails 3 of the 9 cases, then restores recovery.py byte-identically; its 15-file cohort remains 18 failed and 166 passed. The score is reduced because that focused refusal scenario does not test append-only retention when no review dispatch succeeds.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The source commit changes only the five paths declared in its manifest, and the source commit is reachable from the reviewed head. The unclosed competing-lane route and two-review seat collision are explicitly retained as fenced follow-ons rather than silently folded into this node.\nSCORE durability: 14\nJUSTIFICATION durability: The repair correctly makes refusal entries JSON-serializable and leaves a review-dispatch status on the source pointer, but resumption.py:1191 drops a review-only refusal or lane wait from the append-only recovery history. A later status write can therefore erase the only sweep-level evidence of that outcome.\nSCORE fit: 17\nJUSTIFICATION fit: The change reuses the existing resumption surface rather than introducing another caller and keeps a dry run non-mutating. It remains deliberately narrow: review routing still uses the pre-existing local route, which the plan and source manifest identify as separate work rather than claiming it closed here.\nFINDING reckon/crew/resumption.py:1191 A sweep whose only review outcome is a refusal or an awaiting-lane result is omitted from the append-only recovery log: the write condition counts ordinary work in `considered` and review dispatches, but ignores `reviews.refused` and `reviews.awaiting_lane`. The source test's refusal case also dispatches the first review, so its successful dispatch satisfies that condition and cannot show the omission. This contradicts lines 1187-1190, which say the append-only log retains refusals for recovery; the per-writer status record carries only counts and is overwritten by the next sweep.\n",
+  "review_run_id": "r-20260921T133757170603-review-of-review-reflex-fires-on-the-sweep",
+  "reviewed_base_sha": "39bbc7c939e3c857c43e4a2d5b96fc9d470815fe",
+  "reviewed_evidence_sha": "53d40c57cb3526f3eb707d8e14f3472c92d28ab2",
+  "reviewed_head_sha": "6fabdf820bde2dd1a2fb84b6bac66b8a77c55eb8",
+  "reviewed_run_head_sha": "53d40c57cb3526f3eb707d8e14f3472c92d28ab2",
+  "reviewed_run_id": "r-20260921T090837876644-review-reflex-fires-on-the-sweep",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T13:47:54+00:00",
+  "total": 88
+}

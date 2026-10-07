@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "commits_read": [
+    "9ea06319d9807d61bc31b912183e2efadbea4336",
+    "91ee994748af6a46c9ee8a76bdbb318a45345634"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T12:56:36.263057+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+      "line": "613",
+      "text": "the section evidence never names reckon/flight.py, so the plan's requirement that the node state why the existing endpoints reader could not be reused is unaddressed in the record; non-duplication is verifiable from the diff, which reads no endpoints document at all \u2014 the endpoints declaration serves only as the opt-in gate \u2014 and reproduction.log exhibits the gap through probe_availability, so this is a record-completeness gap rather than a duplicated surface."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read 9ea06319 and 91ee9947 commit by commit against 26d6df25: 538 insertions across reckon/crew/serving_origin.py, tests/test_serving_origin.py, the landed summary at docs/plans/crew-runtime-positive-controls.html:523 and the section evidence at docs/evidence/archive/crew-runtime-positive-controls-landed.html:613; the mutation line is absent at HEAD while def check_serving_origin is present.",
+    "done_when": "read prompt.txt:82-83 and tests/test_serving_origin.py: an answering origin returns serving with the launcher path, the origin and a received request (lines 74-90); a connection refusal names both path and origin (93-105); a backend declaring no endpoints document returns not-applicable without querying (108-114); the timeout is honoured against an origin that never answers, with request arrival asserted before the verdict (117-130); every origin is supplied by the test on loopback; negative-control.log:1 repeats the declared mutation verbatim, and its eight failures are exactly the cases that read the origin after discovery rather than cases the mutation cannot reach; the retained initial gate.log (4 failed, 19 passed, 23.42s) is the load-sensitive timing quartet and is disclosed rather than hidden.",
+    "goal": "read prompt.txt:24-25 and the section's done-when; reckon/crew/serving_origin.py:31 check_serving_origin returns status, launcher_path, origin, answered, timeout_seconds, elapsed_seconds, timed_out, http_status, probe_path and detail, so a resolved launcher is named together with the origin it selects.",
+    "manifest": "read manifest.md; it names commits 9ea06319 and 91ee9947, all four changed paths, the focused 23-pass gate on all_debug, the eight-failure declared mutation and its removal, the disclosed initial login-node run, and the two follow-ons (a documented side-effect-free launcher origin query; the dispatch owner's wiring).",
+    "write_paths": "read prompt.txt:47-51 and compared with the source diff; exactly the four declared paths changed between 26d6df25 and 91ee9947, both commits fall inside them, and the source worktree reports clean."
+  },
+  "justifications": {
+    "durability": "negative-control.log records 8 failures including tests/test_serving_origin.py:90 and 139, so an implementation that returned serving without probing the origin fails the gate.",
+    "evidence": "tests/test_serving_origin.py:117-130 asserts the never-answering origin received the request before the timeout verdict, negative-control.log:1 repeats the declared mutation with 8 failed and 15 passed, and restored-gate.log records the 23-pass restoration.",
+    "fit": "reckon/crew/serving_origin.py:64-83 returns documented dict receipts in the idiom of reckon/flight.py:830, the two new files raise no plan-label, version or changelog-prose hit under the naming checks, and the /v1/models default is a caller-overridable choice the node documents during handoff rather than a lane assumption.",
+    "goal_fidelity": "reckon/crew/serving_origin.py:31-178 lands the reachability result the goal names, but the section's prior-art clause asking the node to state why reckon/flight.py's existing endpoints reader could not be reused is not stated in the landed record, although the diff shows no second document reader.",
+    "scope_discipline": "git diff --stat 26d6df25..91ee9947 lists exactly the four declared paths, and docs/plans/crew-runtime-positive-controls.html:523 appends only the landing paragraph, leaving the plan-version and plan-modified meta lines untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read prompt.txt:24-25 and the section's done-when; reckon/crew/serving_origin.py:31 check_serving_origin returns status, launcher_path, origin, answered, timeout_seconds, elapsed_seconds, timed_out, http_status, probe_path and detail, so a resolved launcher is named together with the origin it selects.\nVERDICT done_when: read prompt.txt:82-83 and tests/test_serving_origin.py: an answering origin returns serving with the launcher path, the origin and a received request (lines 74-90); a connection refusal names both path and origin (93-105); a backend declaring no endpoints document returns not-applicable without querying (108-114); the timeout is honoured against an origin that never answers, with request arrival asserted before the verdict (117-130); every origin is supplied by the test on loopback; negative-control.log:1 repeats the declared mutation verbatim, and its eight failures are exactly the cases that read the origin after discovery rather than cases the mutation cannot reach; the retained initial gate.log (4 failed, 19 passed, 23.42s) is the load-sensitive timing quartet and is disclosed rather than hidden.\nVERDICT write_paths: read prompt.txt:47-51 and compared with the source diff; exactly the four declared paths changed between 26d6df25 and 91ee9947, both commits fall inside them, and the source worktree reports clean.\nVERDICT manifest: read manifest.md; it names commits 9ea06319 and 91ee9947, all four changed paths, the focused 23-pass gate on all_debug, the eight-failure declared mutation and its removal, the disclosed initial login-node run, and the two follow-ons (a documented side-effect-free launcher origin query; the dispatch owner's wiring).\nVERDICT diff: read 9ea06319 and 91ee9947 commit by commit against 26d6df25: 538 insertions across reckon/crew/serving_origin.py, tests/test_serving_origin.py, the landed summary at docs/plans/crew-runtime-positive-controls.html:523 and the section evidence at docs/evidence/archive/crew-runtime-positive-controls-landed.html:613; the mutation line is absent at HEAD while def check_serving_origin is present.\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/serving_origin.py:31-178 lands the reachability result the goal names, but the section's prior-art clause asking the node to state why reckon/flight.py's existing endpoints reader could not be reused is not stated in the landed record, although the diff shows no second document reader.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_serving_origin.py:117-130 asserts the never-answering origin received the request before the timeout verdict, negative-control.log:1 repeats the declared mutation with 8 failed and 15 passed, and restored-gate.log records the 23-pass restoration.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 26d6df25..91ee9947 lists exactly the four declared paths, and docs/plans/crew-runtime-positive-controls.html:523 appends only the landing paragraph, leaving the plan-version and plan-modified meta lines untouched.\nSCORE durability: 20\nJUSTIFICATION durability: negative-control.log records 8 failures including tests/test_serving_origin.py:90 and 139, so an implementation that returned serving without probing the origin fails the gate.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/serving_origin.py:64-83 returns documented dict receipts in the idiom of reckon/flight.py:830, the two new files raise no plan-label, version or changelog-prose hit under the naming checks, and the /v1/models default is a caller-overridable choice the node documents during handoff rather than a lane assumption.\nFINDING docs/evidence/archive/crew-runtime-positive-controls-landed.html:613 the section evidence never names reckon/flight.py, so the plan's requirement that the node state why the existing endpoints reader could not be reused is unaddressed in the record; non-duplication is verifiable from the diff, which reads no endpoints document at all \u2014 the endpoints declaration serves only as the opt-in gate \u2014 and reproduction.log exhibits the gap through probe_availability, so this is a record-completeness gap rather than a duplicated surface.",
+  "review_run_id": "r-20260921T125636263057-review-of-launcher-is-checked-against-a-serving-origin",
+  "reviewed_base_sha": "26d6df25680ac385446f9db0c86f339ddb57fece",
+  "reviewed_head_sha": "91ee994748af6a46c9ee8a76bdbb318a45345634",
+  "reviewed_run_id": "r-20260921T123858966184-launcher-is-checked-against-a-serving-origin",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T13:43:55.657688+00:00",
+  "total": 96
+}

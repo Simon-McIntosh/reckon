@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1721",
+    "reckon/cli.py:987"
+  ],
+  "completed_at": "2026-10-03T06:39:12.752Z",
+  "dispatched_at": "2026-10-03T06:29:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "7708",
+      "severity": "follow-on",
+      "text": "remove_worker_scratch prints to stdout at :7708, :7712 and :7719 and is reachable from the promotion path, which no test on this node's gate drives; it is outside this node's stated measure of more than one document or non-JSON text but would corrupt a caller that parsed its output."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2933",
+      "severity": "follow-on",
+      "text": "the peer-channel entry prints its own JSON document to stdout at :2933; it is a second stdout entry point, not on crew_dispatch's call path, and this node may not edit it."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "1721",
+      "severity": "follow-on",
+      "text": "the launch path's config-error outcome emits no JSON document at all (empty stdout), a zero-document shape outside this node's stated measure; a caller that parses stdout reads a failure of a different kind than the section describes."
+    }
+  ],
+  "head_log_revision": "74bb83d47eda07c01c390ab8dd9e77cb830c4a43",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/cli.py:1721 applies _holds_stdout_for_one_document to crew_dispatch; reckon/cli.py:987 is _emit, whose getattr(sys.stdout, 'payload_stream', sys.stdout) reaches the held-aside stream.",
+    "diff": "read 74bb83d4 and 7c41483e against base 9b66ff8a; cli.py adds _OneDocumentStdout, _single_document_stdout and _holds_stdout_for_one_document with a payload_stream read in _emit, the test file adds the reproduction, docs adds the landed fragment.",
+    "done_when": "section 29's done_when is met by tests/test_dispatch_stdout_is_one_document.py, which drives eight outcome paths through click's CliRunner with stdout and stderr captured separately and asserts json.loads(stdout) parses.",
+    "goal": "the node goal \u2014 one decodable document on stdout whatever code beneath the command prints \u2014 is met by the stdout-notice channel applied to crew_dispatch, with the payload reaching the caller through the held-aside stream.",
+    "manifest": "read; it records base 3 failed/229 passed/1 skipped and head 1 failed/231 passed/1 skipped with named logs, a base survey of the stdout writers beneath the command, and an executed negative control with its red log.",
+    "write_paths": "read the manifest's declared paths; both commits touch only reckon/cli.py, tests/test_dispatch_stdout_is_one_document.py and the docs fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "the guard is structural \u2014 it wraps the whole click command rather than a block of its body \u2014 and tests/test_dispatch_stdout_is_one_document.py asserts both halves (stdout parses, the injected notice lands on stderr and not stdout); logs/negative-control.log reddens the presence case at base with json.decoder.JSONDecodeError, and an independent probe confirms print, click.echo and sys.stdout.write all reach the notice channel.",
+    "evidence": "base-arm.log (revision 9b66ff8a) records 3 failed/229 passed/1 skipped at EXIT=1 and head-arm-2.log (revision 74bb83d4) records 1 failed/231 passed/1 skipped at EXIT=1, the head failure being an id the base already fails, so added_failure_count is 0; an independent base extraction with the test file added reproduces the presence-case JSONDecodeError, and the head extraction passes it.",
+    "fit": "the wrapper follows the module's existing single-emission idiom around _emit rather than adding a second JSON path, and _emit's getattr(sys.stdout, 'payload_stream', sys.stdout) is a small implicit protocol on the stream object.",
+    "goal_fidelity": "the node goal is a caller's json.loads(stdout) seeing exactly one document; crew_dispatch is wrapped by _holds_stdout_for_one_document (reckon/cli.py:1721) so every write beneath the command forwards to stderr while _emit (reckon/cli.py:987) writes the single payload to the real stdout, and an independent run of the new test file at the reviewed head passes 8/8.",
+    "scope_discipline": "the two commits touch only reckon/cli.py, tests/test_dispatch_stdout_is_one_document.py and the docs evidence fragment, all inside the manifest's declared write paths, and the only failure the head arm carries was failing at base too."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal \u2014 one decodable document on stdout whatever code beneath the command prints \u2014 is met by the stdout-notice channel applied to crew_dispatch, with the payload reaching the caller through the held-aside stream.\nVERDICT done_when: section 29's done_when is met by tests/test_dispatch_stdout_is_one_document.py, which drives eight outcome paths through click's CliRunner with stdout and stderr captured separately and asserts json.loads(stdout) parses.\nVERDICT write_paths: read the manifest's declared paths; both commits touch only reckon/cli.py, tests/test_dispatch_stdout_is_one_document.py and the docs fragment, all inside them.\nVERDICT manifest: read; it records base 3 failed/229 passed/1 skipped and head 1 failed/231 passed/1 skipped with named logs, a base survey of the stdout writers beneath the command, and an executed negative control with its red log.\nVERDICT diff: read 74bb83d4 and 7c41483e against base 9b66ff8a; cli.py adds _OneDocumentStdout, _single_document_stdout and _holds_stdout_for_one_document with a payload_stream read in _emit, the test file adds the reproduction, docs adds the landed fragment.\nVERDICT call_sites: reckon/cli.py:1721 applies _holds_stdout_for_one_document to crew_dispatch; reckon/cli.py:987 is _emit, whose getattr(sys.stdout, 'payload_stream', sys.stdout) reaches the held-aside stream.\nCALL_SITES: reckon/cli.py:1721, reckon/cli.py:987\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node goal is a caller's json.loads(stdout) seeing exactly one document; crew_dispatch is wrapped by _holds_stdout_for_one_document (reckon/cli.py:1721) so every write beneath the command forwards to stderr while _emit (reckon/cli.py:987) writes the single payload to the real stdout, and an independent run of the new test file at the reviewed head passes 8/8.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-arm.log (revision 9b66ff8a) records 3 failed/229 passed/1 skipped at EXIT=1 and head-arm-2.log (revision 74bb83d4) records 1 failed/231 passed/1 skipped at EXIT=1, the head failure being an id the base already fails, so added_failure_count is 0; an independent base extraction with the test file added reproduces the presence-case JSONDecodeError, and the head extraction passes it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/cli.py, tests/test_dispatch_stdout_is_one_document.py and the docs evidence fragment, all inside the manifest's declared write paths, and the only failure the head arm carries was failing at base too.\nSCORE durability: 19\nJUSTIFICATION durability: the guard is structural \u2014 it wraps the whole click command rather than a block of its body \u2014 and tests/test_dispatch_stdout_is_one_document.py asserts both halves (stdout parses, the injected notice lands on stderr and not stdout); logs/negative-control.log reddens the presence case at base with json.decoder.JSONDecodeError, and an independent probe confirms print, click.echo and sys.stdout.write all reach the notice channel.\nSCORE fit: 18\nJUSTIFICATION fit: the wrapper follows the module's existing single-emission idiom around _emit rather than adding a second JSON path, and _emit's getattr(sys.stdout, 'payload_stream', sys.stdout) is a small implicit protocol on the stream object.\nFINDING reckon/crew/dispatch.py:7708 follow-on: remove_worker_scratch prints to stdout at :7708, :7712 and :7719 and is reachable from the promotion path, which no test on this node's gate drives; it is outside this node's stated measure of more than one document or non-JSON text but would corrupt a caller that parsed its output.\nFINDING reckon/crew/dispatch.py:2933 follow-on: the peer-channel entry prints its own JSON document to stdout at :2933; it is a second stdout entry point, not on crew_dispatch's call path, and this node may not edit it.\nFINDING reckon/cli.py:1721 follow-on: the launch path's config-error outcome emits no JSON document at all (empty stdout), a zero-document shape outside this node's stated measure; a caller that parses stdout reads a failure of a different kind than the section describes.\nreviewed_base_sha: 9b66ff8a768e734c9e39da17f846cca1ca6c94d6\nreviewed_head_sha: 7c41483ec0d10129f55ff49b38e10c0a4961efda\n",
+  "review_run_id": "r-20261003T062906986007-review-of-dispatch-stdout-is-one-document",
+  "reviewed_base_sha": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "reviewed_head_sha": "7c41483ec0d10129f55ff49b38e10c0a4961efda",
+  "reviewed_run_id": "r-20261003T054853253343-dispatch-stdout-is-one-document",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T06:35:28.331692+00:00",
+  "total": 94
+}

@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:launch_search_path",
+    "reckon/crew/dispatch.py:_persisted_worker_environment",
+    "reckon/worker_shims/git"
+  ],
+  "completed_at": "2026-09-26T11:54:03.553Z",
+  "dispatched_at": "2026-09-26T10:40:04Z",
+  "findings": [
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "287",
+      "text": "an allowlisted verb's tail is never inspected, so a writing option is forwarded and the shim writes where a mutating verb would be refused: `git -C <other> log --oneline --output=<other>/ESCAPE-log.txt` exits 0 and writes 29 bytes into the other checkout, `show --output` writes 118 bytes, and `--output=<home>/ESCAPE-home.txt` writes into the home directory, which the fence leaves writable outside the paths it names (reckon/_backends.py:2026-2039) \u2014 the module's own rule at lines 61-63 keeps fsck out for exactly this reason."
+    },
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "489",
+      "text": "a read-only verb aimed at another checkout is forwarded with no target check, and status rewrites that repository's index: one forwarded `git -C <other> status --porcelain` moved the index sha256 from 492366fbf530a668 to 0517aa22a63d96a9 under a stale stat cache, so the claim at line 454 that nothing was changed and that status passes everywhere does not hold for a verb that refreshes the index it reads."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 7f97afda; the new shim module, its entry script, the dispatch PATH change and the two test files are all inside the declared scope.",
+    "done_when": "the measure's arms are each reproduced \u2014 the named suite passes at the reviewed head (15 passed in 6.93s, tests/test_git_shim_checks_the_resolved_repo.py), the same verb inside the worktree succeeds, no run id leaves the shim transparent, and a plain -C <other> is refused; the arm reading read-only verbs pass everywhere is measured false (finding 2).",
+    "goal": "read the followup f-awcwyh-git-shim-checks-the-resolved-repo and the landed module; the shim re-decides at execution time from the repository the invocation resolves to rather than from the command text, and the refusal fires on a mutating verb against another checkout (probe C1: exit 97, other HEAD 53f1c71e unchanged).",
+    "manifest": "read; it records the gate commands with their results, fourteen log paths, the negative controls and the two prior review rounds; its gate head 4aa785dc is docs-only-equal to the reviewed head a370c5be.",
+    "write_paths": "the manifest's declared paths were compared with the diff's file set; 24 files on each side, equal, nothing outside the declared scope."
+  },
+  "justifications": {
+    "durability": "each landed gap has a test that drives the real shim through a shell and is red before its fix (tests/test_git_shim_checks_the_resolved_repo.py:162, :339, :370, :404), and each fails on the reinstated bypass.",
+    "evidence": "the gate reproduces at the reviewed head and carries a red-at-base arm, but no arm probes a writing option on an allowlisted verb, which is where the write escapes.",
+    "fit": "reckon/worker_git_shim.py:1-31 explains the mechanism and the reason for an allowlist, and the new names carry no plan, sprint or version label.",
+    "goal_fidelity": "reckon/worker_git_shim.py:287 returns an allowlisted verb as read-only without reading its tail, so the target probe never runs for it and the write at an option is forwarded.",
+    "scope_discipline": "the diff's 24 paths equal the manifest's declared set exactly, so nothing outside the declared write paths was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the followup f-awcwyh-git-shim-checks-the-resolved-repo and the landed module; the shim re-decides at execution time from the repository the invocation resolves to rather than from the command text, and the refusal fires on a mutating verb against another checkout (probe C1: exit 97, other HEAD 53f1c71e unchanged).\nVERDICT done_when: the measure's arms are each reproduced \u2014 the named suite passes at the reviewed head (15 passed in 6.93s, tests/test_git_shim_checks_the_resolved_repo.py), the same verb inside the worktree succeeds, no run id leaves the shim transparent, and a plain -C <other> is refused; the arm reading read-only verbs pass everywhere is measured false (finding 2).\nVERDICT write_paths: the manifest's declared paths were compared with the diff's file set; 24 files on each side, equal, nothing outside the declared scope.\nVERDICT manifest: read; it records the gate commands with their results, fourteen log paths, the negative controls and the two prior review rounds; its gate head 4aa785dc is docs-only-equal to the reviewed head a370c5be.\nVERDICT diff: read commit by commit against base 7f97afda; the new shim module, its entry script, the dispatch PATH change and the two test files are all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:launch_search_path, reckon/crew/dispatch.py:_persisted_worker_environment, reckon/worker_shims/git\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/worker_git_shim.py:287 returns an allowlisted verb as read-only without reading its tail, so the target probe never runs for it and the write at an option is forwarded.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate reproduces at the reviewed head and carries a red-at-base arm, but no arm probes a writing option on an allowlisted verb, which is where the write escapes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's 24 paths equal the manifest's declared set exactly, so nothing outside the declared write paths was touched.\nSCORE durability: 18\nJUSTIFICATION durability: each landed gap has a test that drives the real shim through a shell and is red before its fix (tests/test_git_shim_checks_the_resolved_repo.py:162, :339, :370, :404), and each fails on the reinstated bypass.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/worker_git_shim.py:1-31 explains the mechanism and the reason for an allowlist, and the new names carry no plan, sprint or version label.\nFINDING reckon/worker_git_shim.py:287 an allowlisted verb's tail is never inspected, so a writing option is forwarded and the shim writes where a mutating verb would be refused: `git -C <other> log --oneline --output=<other>/ESCAPE-log.txt` exits 0 and writes 29 bytes into the other checkout, `show --output` writes 118 bytes, and `--output=<home>/ESCAPE-home.txt` writes into the home directory, which the fence leaves writable outside the paths it names (reckon/_backends.py:2026-2039) \u2014 the module's own rule at lines 61-63 keeps fsck out for exactly this reason.\nFINDING reckon/worker_git_shim.py:489 a read-only verb aimed at another checkout is forwarded with no target check, and status rewrites that repository's index: one forwarded `git -C <other> status --porcelain` moved the index sha256 from 492366fbf530a668 to 0517aa22a63d96a9 under a stale stat cache, so the claim at line 454 that nothing was changed and that status passes everywhere does not hold for a verb that refreshes the index it reads.\n",
+  "review_run_id": "r-20260926T103945566003-review-of-git-shim-checks-the-resolved-repo",
+  "reviewed_base_sha": "7f97afdaf6dfe2a3da3445bc8b8b229b552d36f3",
+  "reviewed_head_sha": "a370c5be68aa58e1dd6da83756ac24dee319e2f8",
+  "reviewed_run_id": "r-20260926T062814328352-git-shim-checks-the-resolved-repo",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T11:44:51.385367+00:00",
+  "total": 89
+}

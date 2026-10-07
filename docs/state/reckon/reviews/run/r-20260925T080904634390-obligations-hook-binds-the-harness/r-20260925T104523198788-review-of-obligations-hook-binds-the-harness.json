@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/runs.py:list_followers",
+    "reckon/crew/obligations.py:obligations"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T10:45:23.198788+00:00",
+  "findings": [
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": "303",
+      "text": "the no-follower case runs the hook in prompt mode only, so the measure's \"both modes exit 0 with no output when ... no follower is registered\" is half-asserted; the stop-mode half resolves through the shared early return at reckon/hooks/coordinator_obligations.py:365 and is silent today, but a change that made the stop mode emit before that return, or resolve it differently, would pass the suite unnoticed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against the base; 71dc9972 adds the hook, baba32ac its subprocess census, 8da04fb0 the evidence anchor, the figure and one plan comment, and no hunk falls outside the declared scope.",
+    "done_when": "read the dispatch measure and the gate it names; tests/test_coordinator_obligations_hook.py drives the script as a subprocess over a synthesised config home and compares the emitted JSON in full with only the two wall-clock ages normalised, but its no-follower case drives prompt mode alone (line 305) where the measure says both modes.",
+    "goal": "the goal is a harness hook with a prompt mode injecting the obligations checklist and a stop mode blocking a turn while duties remain; reckon/hooks/coordinator_obligations.py:313 emits exactly those two shapes, the prompt one carrying additionalContext and the stop one a decision block.",
+    "manifest": "read; it records three commits, seven passing cases, four logs, 84 passed at the base against 91 at the head, the declared mutant, and it discloses both the installer half and the acknowledged case as belonging elsewhere.",
+    "write_paths": "the declared paths are the hook, its test, the plan page, the figures directory and the shared evidence record, and every path in the diff at 8da04fb0 lies inside them."
+  },
+  "justifications": {
+    "durability": "making the stop mode ignore stop_hook_active reddens exactly the continuation case and no other (1 failed, 6 passed in negative-control-stop-hook-active.log) and the checklist assertions rest on a hand-composed expectation rather than the code's own output, but the no-follower silence has no stop-mode assertion and the two age values are normalised out of the comparison.",
+    "evidence": "the gate's result is recorded in gate-hook-tests.log, corroborated by measurement-hooks-base.log and measurement-hooks-head.log (84 and 91 passed, module paths printed) and by negative-control-stop-hook-active.log, and those logs were read rather than taken from the manifest, but the measure's \"both modes ... no follower is registered\" clause is asserted for one mode only at tests/test_coordinator_obligations_hook.py:305.",
+    "fit": "both new files pass ruff check and ruff format, sit beside the existing hooks with no banned plan or ticket labels, and the only idiom tension is that reckon/hooks/__init__.py:1-6 still describes a standalone stdlib-only convention this module departs from by importing reckon.crew.runs and reckon.crew.obligations.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:46 carries the authority line verbatim as the section words it and line 317 guards the stop block on stop_hook_active, so both modes match the goal, with detail that the section's acknowledgement wording is unmet because the obligations view has no acknowledgement concept yet and the stop block therefore fires on every outstanding duty.",
+    "scope_discipline": "the five paths in the diff -- reckon/hooks/coordinator_obligations.py, tests/test_coordinator_obligations_hook.py, docs/plans/an-orchestrator-cannot-forget-its-obligations.html, the figure and the evidence record -- are the five declared paths, and the plan page's meta lines were not touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a harness hook with a prompt mode injecting the obligations checklist and a stop mode blocking a turn while duties remain; reckon/hooks/coordinator_obligations.py:313 emits exactly those two shapes, the prompt one carrying additionalContext and the stop one a decision block.\nVERDICT done_when: read the dispatch measure and the gate it names; tests/test_coordinator_obligations_hook.py drives the script as a subprocess over a synthesised config home and compares the emitted JSON in full with only the two wall-clock ages normalised, but its no-follower case drives prompt mode alone (line 305) where the measure says both modes.\nVERDICT write_paths: the declared paths are the hook, its test, the plan page, the figures directory and the shared evidence record, and every path in the diff at 8da04fb0 lies inside them.\nVERDICT manifest: read; it records three commits, seven passing cases, four logs, 84 passed at the base against 91 at the head, the declared mutant, and it discloses both the installer half and the acknowledged case as belonging elsewhere.\nVERDICT diff: read commit by commit against the base; 71dc9972 adds the hook, baba32ac its subprocess census, 8da04fb0 the evidence anchor, the figure and one plan comment, and no hunk falls outside the declared scope.\nCALL_SITES: reckon/crew/runs.py:list_followers, reckon/crew/obligations.py:obligations\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:46 carries the authority line verbatim as the section words it and line 317 guards the stop block on stop_hook_active, so both modes match the goal, with detail that the section's acknowledgement wording is unmet because the obligations view has no acknowledgement concept yet and the stop block therefore fires on every outstanding duty.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate's result is recorded in gate-hook-tests.log, corroborated by measurement-hooks-base.log and measurement-hooks-head.log (84 and 91 passed, module paths printed) and by negative-control-stop-hook-active.log, and those logs were read rather than taken from the manifest, but the measure's \"both modes ... no follower is registered\" clause is asserted for one mode only at tests/test_coordinator_obligations_hook.py:305.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths in the diff -- reckon/hooks/coordinator_obligations.py, tests/test_coordinator_obligations_hook.py, docs/plans/an-orchestrator-cannot-forget-its-obligations.html, the figure and the evidence record -- are the five declared paths, and the plan page's meta lines were not touched.\nSCORE durability: 17\nJUSTIFICATION durability: making the stop mode ignore stop_hook_active reddens exactly the continuation case and no other (1 failed, 6 passed in negative-control-stop-hook-active.log) and the checklist assertions rest on a hand-composed expectation rather than the code's own output, but the no-follower silence has no stop-mode assertion and the two age values are normalised out of the comparison.\nSCORE fit: 18\nJUSTIFICATION fit: both new files pass ruff check and ruff format, sit beside the existing hooks with no banned plan or ticket labels, and the only idiom tension is that reckon/hooks/__init__.py:1-6 still describes a standalone stdlib-only convention this module departs from by importing reckon.crew.runs and reckon.crew.obligations.\nFINDING tests/test_coordinator_obligations_hook.py:303 the no-follower case runs the hook in prompt mode only, so the measure's \"both modes exit 0 with no output when ... no follower is registered\" is half-asserted; the stop-mode half resolves through the shared early return at reckon/hooks/coordinator_obligations.py:365 and is silent today, but a change that made the stop mode emit before that return, or resolve it differently, would pass the suite unnoticed.\n",
+  "review_run_id": "r-20260925T104523198788-review-of-obligations-hook-binds-the-harness",
+  "reviewed_base_sha": "d8f13a61645724d29abdbaa12ae2327d1d60de1e",
+  "reviewed_head_sha": "8da04fb075c37b371ec88931c2629fb6cb42b42e",
+  "reviewed_run_id": "r-20260925T080904634390-obligations-hook-binds-the-harness",
+  "reviewer": "review-of-obligations-hook-binds-the-harness",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:40:27.694294+00:00",
+  "total": 90
+}

@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/lane_context.py:220",
+    "reckon/crew/picker/snapshot.py:61",
+    "reckon/crew/dispatch.py:5467"
+  ],
+  "completed_at": "2026-10-02T20:43:13.513Z",
+  "dispatched_at": "2026-10-02T20:24:01Z",
+  "findings": [],
+  "head_log_revision": "da098452916e17f6debfab8f21536396c5f82edc",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit da098452916e17f6debfab8f21536396c5f82edc against base e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef: 4 files, 194 insertions and 3 deletions, all inside the declared scope.",
+    "done_when": "the done_when requires the structured field, a rewording test that fails at base, and a green head gate with zero added failure ids; the manifest records head 24 passed EXIT=0 (head-gate.log) and base arm 2 failed EXIT=1 (base-arm.log), and I reproduced both independently.",
+    "goal": "the node's goal is to gate local worker slots on a structured window flag rather than a source-label substring, and reckon/crew/dispatch.py:5389 computes rests_on_observed_window while reckon/crew/run_time_profile.py:426 reads it as the gate, which is exactly that deliverable.",
+    "manifest": "read; it states tests 24 passed EXIT=0 and names head-gate.log, base-arm.log and negative-control.log, with baseline_suite and after_suite recorded in the armed-JSON shape.",
+    "write_paths": "the manifest declares five paths; the diff (git show da0984529 --stat) touches exactly four of them \u2014 reckon/crew/dispatch.py, reckon/crew/run_time_profile.py, tests/test_run_time_profile.py and the evidence fragment \u2014 the fifth being an unused figures directory with no file."
+  },
+  "justifications": {
+    "durability": "the two tests added in tests/test_run_time_profile.py fail at the base revision and redden again under the declared mutation (review-negative-control-rerun.log), so they genuinely guard the gate; docked one because the new field's own contract \u2014 true for the session and new-session shares, false for headroom and the unknown decision \u2014 has no direct assertion, both tests reaching it through local_lane_load's global-slot path.",
+    "evidence": "the done_when's arms are recorded and independently reproduced \u2014 I re-ran the head gate at da0984529 (24 passed, EXIT=0), the head tests against the base modules (2 failed, EXIT=1) and the declared negative control with the substring gate restored (same 2 ids, EXIT=1), and after_suite's failure_ids is empty so the added-failure count is a measured zero.",
+    "fit": "the field is added at both return sites (reckon/crew/dispatch.py:5301 for the unknown decision and :5424 for the measured and held path), the docstring and inline comment state the mechanism and the position invariant, the commit body is complete and conventional, and no name or comment carries a plan label.",
+    "goal_fidelity": "reckon/crew/run_time_profile.py:424-426 gates worker_slots on allowance[\"rests_on_observed_window\"] and drops the substring match, and reckon/crew/dispatch 5389 sets the flag true exactly when a slot figure came from the block whose observed_seconds is positive, so the landed change does what the goal states.",
+    "scope_discipline": "the diff touches exactly the four declared paths, adds only the one field to production code, and grep finds no remaining \"worker slots in source\" gate anywhere in reckon/, so nothing the goal does not imply was carried."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to gate local worker slots on a structured window flag rather than a source-label substring, and reckon/crew/dispatch.py:5389 computes rests_on_observed_window while reckon/crew/run_time_profile.py:426 reads it as the gate, which is exactly that deliverable.\nVERDICT done_when: the done_when requires the structured field, a rewording test that fails at base, and a green head gate with zero added failure ids; the manifest records head 24 passed EXIT=0 (head-gate.log) and base arm 2 failed EXIT=1 (base-arm.log), and I reproduced both independently.\nVERDICT write_paths: the manifest declares five paths; the diff (git show da0984529 --stat) touches exactly four of them \u2014 reckon/crew/dispatch.py, reckon/crew/run_time_profile.py, tests/test_run_time_profile.py and the evidence fragment \u2014 the fifth being an unused figures directory with no file.\nVERDICT manifest: read; it states tests 24 passed EXIT=0 and names head-gate.log, base-arm.log and negative-control.log, with baseline_suite and after_suite recorded in the armed-JSON shape.\nVERDICT diff: read the single commit da098452916e17f6debfab8f21536396c5f82edc against base e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef: 4 files, 194 insertions and 3 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/picker/lane_context.py:220, reckon/crew/picker/snapshot.py:61, reckon/crew/dispatch.py:5467\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/run_time_profile.py:424-426 gates worker_slots on allowance[\"rests_on_observed_window\"] and drops the substring match, and reckon/crew/dispatch 5389 sets the flag true exactly when a slot figure came from the block whose observed_seconds is positive, so the landed change does what the goal states.\nSCORE evidence: 20\nJUSTIFICATION evidence: the done_when's arms are recorded and independently reproduced \u2014 I re-ran the head gate at da0984529 (24 passed, EXIT=0), the head tests against the base modules (2 failed, EXIT=1) and the declared negative control with the substring gate restored (same 2 ids, EXIT=1), and after_suite's failure_ids is empty so the added-failure count is a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the four declared paths, adds only the one field to production code, and grep finds no remaining \"worker slots in source\" gate anywhere in reckon/, so nothing the goal does not imply was carried.\nSCORE durability: 19\nJUSTIFICATION durability: the two tests added in tests/test_run_time_profile.py fail at the base revision and redden again under the declared mutation (review-negative-control-rerun.log), so they genuinely guard the gate; docked one because the new field's own contract \u2014 true for the session and new-session shares, false for headroom and the unknown decision \u2014 has no direct assertion, both tests reaching it through local_lane_load's global-slot path.\nSCORE fit: 20\nJUSTIFICATION fit: the field is added at both return sites (reckon/crew/dispatch.py:5301 for the unknown decision and :5424 for the measured and held path), the docstring and inline comment state the mechanism and the position invariant, the commit body is complete and conventional, and no name or comment carries a plan label.",
+  "review_run_id": "legacy-1c66634de620",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef",
+  "reviewed_head_sha": "da098452916e17f6debfab8f21536396c5f82edc",
+  "reviewed_run_id": "r-20261002T202331013825-lane-slot-gate-reads-a-flag",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T21:11:29.143030+00:00",
+  "total": 99
+}

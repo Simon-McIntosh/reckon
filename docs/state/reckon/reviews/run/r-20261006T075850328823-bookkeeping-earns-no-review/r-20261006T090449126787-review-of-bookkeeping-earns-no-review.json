@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:52",
+    "reckon/crew/promotion.py:3581",
+    "reckon/crew/promotion.py:7227"
+  ],
+  "completed_at": "2026-10-06T09:17:45.164Z",
+  "dispatched_at": "2026-10-06T09:05:10Z",
+  "findings": [],
+  "head_log_revision": "40cd93771",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read against base 2cd27490e; the single commit 40cd93771 deletes the 33-line _without_run_comments definition, deletes the three statements in test_comment_filters_share_the_run_identity_rule that called it, and rewrites the surviving docstring's reference to a run-comment recognition below that no longer exists; no other hunk, and the deleted symbol has no production caller at the base to lose.",
+    "done_when": "the reviewed run's done-when was verified by the prior review at 2cd27490e, and this delta must change no gated behaviour; the head gate gate-f4444907fd9-head.log ran 108 passed EXIT=0 at 40cd93771 over the six named files, and I independently re-ran tests/test_one_reader_of_remaining_work.py together with tests/test_bookkeeping_earns_no_review.py at the run worktree head 40cd93771 under the project's own 300s timeout, recording 31 passed in 155.96s EXIT=0.",
+    "goal": "the commit retires the production-dead _without_run_comments that the prior review flagged at find f4444907fd9; at base 2cd27490e git grep finds only its definition at reckon/crew/plan_review.py:228 and the sole test caller at tests/test_one_reader_of_remaining_work.py:163, and the commit deletes the function and the three statements that called it, while keeping _is_run_comment and RUN_COMMENT_PREFIX, which promotion imports at reckon/crew/promotion.py:52 to mint (3581) and recognise (7227) the landing comments it writes, exactly as the commit message states.",
+    "manifest": "read; status complete, commits 1b61eb101, 2cd27490e and 40cd9377, the tests line and after_suite point at gate-f4444907fd9-head.log (108 passed EXIT=0 at 40cd93771), negative_control_log names negative-control.log, and it adds a follow_ons entry recording the sweep test's 143.88s cost; it declares after_suite but no baseline_suite, so the added-failure count is unmeasured, never zero.",
+    "write_paths": "the reviewed manifest declares eight write paths and its changed_paths names tests/test_one_reader_of_remaining_work.py; this delta's diff 2cd27490e..40cd93771 touches exactly reckon/crew/plan_review.py and tests/test_one_reader_of_remaining_work.py, the second authorized by the coordinator's own resume instruction that named the file outside the declared scope and accepted it at promotion, so nothing is written outside a granted path."
+  },
+  "justifications": {
+    "durability": "a private dead symbol is removed at source with git as the version store, the commit carries a conventional subject and a body naming what was deleted and what was kept and why, and the removal is verifiable by grep; deducted one because the reviewed run's own evidence trail needed two coordinator resumes before a readable head gate log existed, so a reader meets a truncated gate-f4444907fd9.log beside the good one.",
+    "evidence": "the head gate gate-f4444907fd9-head.log ran 108 passed EXIT=0 at 40cd93771 and I independently re-ran tests/test_one_reader_of_remaining_work.py with tests/test_bookkeeping_earns_no_review.py at the run worktree head (31 passed, EXIT=0); deducted two because the reviewed manifest declares after_suite but no baseline_suite, so added_failure_count is unmeasured, and the delta adds no test of its own.",
+    "fit": "the deletion keeps the single owner of the run-comment grammar (RUN_COMMENT_PREFIX) in plan_review with its recogniser beside it, removes the second normaliser that had drifted out of use, and the surviving docstring describes only the mechanism that remains.",
+    "goal_fidelity": "git grep _without_run_comments at 40cd93771 finds no reference under reckon/ or tests/ (only historical docs/evidence archive prose mentions it), while promotion.py:52 still imports RUN_COMMENT_PREFIX and _is_run_comment with live uses at 3581 and 7227, so the dead symbol is gone and the live ones are kept, which is the commit's whole claim.",
+    "reuse": "the commit removes a duplicate normaliser rather than reimplementing it elsewhere, so _without_comments_and_followups is now the sole state normaliser and no new reader or spelling of the report layout is added.",
+    "scope_discipline": "the diff 2cd27490e..40cd93771 touches exactly the two files the commit message names, the deletion is confined to the flagged symbol and the assertions that drove it, and the edit to the test file was explicitly authorized by the coordinator's resume instruction rather than taken unilaterally."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the commit retires the production-dead _without_run_comments that the prior review flagged at find f4444907fd9; at base 2cd27490e git grep finds only its definition at reckon/crew/plan_review.py:228 and the sole test caller at tests/test_one_reader_of_remaining_work.py:163, and the commit deletes the function and the three statements that called it, while keeping _is_run_comment and RUN_COMMENT_PREFIX, which promotion imports at reckon/crew/promotion.py:52 to mint (3581) and recognise (7227) the landing comments it writes, exactly as the commit message states.\nVERDICT done_when: the reviewed run's done-when was verified by the prior review at 2cd27490e, and this delta must change no gated behaviour; the head gate gate-f4444907fd9-head.log ran 108 passed EXIT=0 at 40cd93771 over the six named files, and I independently re-ran tests/test_one_reader_of_remaining_work.py together with tests/test_bookkeeping_earns_no_review.py at the run worktree head 40cd93771 under the project's own 300s timeout, recording 31 passed in 155.96s EXIT=0.\nVERDICT write_paths: the reviewed manifest declares eight write paths and its changed_paths names tests/test_one_reader_of_remaining_work.py; this delta's diff 2cd27490e..40cd93771 touches exactly reckon/crew/plan_review.py and tests/test_one_reader_of_remaining_work.py, the second authorized by the coordinator's own resume instruction that named the file outside the declared scope and accepted it at promotion, so nothing is written outside a granted path.\nVERDICT manifest: read; status complete, commits 1b61eb101, 2cd27490e and 40cd9377, the tests line and after_suite point at gate-f4444907fd9-head.log (108 passed EXIT=0 at 40cd93771), negative_control_log names negative-control.log, and it adds a follow_ons entry recording the sweep test's 143.88s cost; it declares after_suite but no baseline_suite, so the added-failure count is unmeasured, never zero.\nVERDICT diff: read against base 2cd27490e; the single commit 40cd93771 deletes the 33-line _without_run_comments definition, deletes the three statements in test_comment_filters_share_the_run_identity_rule that called it, and rewrites the surviving docstring's reference to a run-comment recognition below that no longer exists; no other hunk, and the deleted symbol has no production caller at the base to lose.\nCALL_SITES: reckon/crew/promotion.py:52, reckon/crew/promotion.py:3581, reckon/crew/promotion.py:7227\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: git grep _without_run_comments at 40cd93771 finds no reference under reckon/ or tests/ (only historical docs/evidence archive prose mentions it), while promotion.py:52 still imports RUN_COMMENT_PREFIX and _is_run_comment with live uses at 3581 and 7227, so the dead symbol is gone and the live ones are kept, which is the commit's whole claim.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate gate-f4444907fd9-head.log ran 108 passed EXIT=0 at 40cd93771 and I independently re-ran tests/test_one_reader_of_remaining_work.py with tests/test_bookkeeping_earns_no_review.py at the run worktree head (31 passed, EXIT=0); deducted two because the reviewed manifest declares after_suite but no baseline_suite, so added_failure_count is unmeasured, and the delta adds no test of its own.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 2cd27490e..40cd93771 touches exactly the two files the commit message names, the deletion is confined to the flagged symbol and the assertions that drove it, and the edit to the test file was explicitly authorized by the coordinator's resume instruction rather than taken unilaterally.\nSCORE durability: 19\nJUSTIFICATION durability: a private dead symbol is removed at source with git as the version store, the commit carries a conventional subject and a body naming what was deleted and what was kept and why, and the removal is verifiable by grep; deducted one because the reviewed run's own evidence trail needed two coordinator resumes before a readable head gate log existed, so a reader meets a truncated gate-f4444907fd9.log beside the good one.\nSCORE fit: 19\nJUSTIFICATION fit: the deletion keeps the single owner of the run-comment grammar (RUN_COMMENT_PREFIX) in plan_review with its recogniser beside it, removes the second normaliser that had drifted out of use, and the surviving docstring describes only the mechanism that remains.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit removes a duplicate normaliser rather than reimplementing it elsewhere, so _without_comments_and_followups is now the sole state normaliser and no new reader or spelling of the report layout is added.\nreviewed_base_sha: 2cd27490e3adea60a03b47e786d3047b172cdb37\nreviewed_head_sha: 40cd937714a4334e8249f49e5a2bdf45416e5399\n",
+  "review_run_id": "r-20261006T090449126787-review-of-bookkeeping-earns-no-review",
+  "reviewed_base_sha": "2cd27490e3adea60a03b47e786d3047b172cdb37",
+  "reviewed_head_sha": "40cd937714a4334e8249f49e5a2bdf45416e5399",
+  "reviewed_run_id": "r-20261006T075850328823-bookkeeping-earns-no-review",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T09:15:50.657071+00:00",
+  "total": 116
+}

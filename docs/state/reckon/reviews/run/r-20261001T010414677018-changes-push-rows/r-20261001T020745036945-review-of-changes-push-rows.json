@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "06d56ae87f8a51c2f163ddd1f7853a89955afcd7",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:Handler._serve_index",
+    "reckon/serve.py:Handler._serve_changes",
+    "docs/ui/state-loader.js:watchProjectStateChanges"
+  ],
+  "completed_at": "2026-10-01T02:17:35.321Z",
+  "dispatched_at": "2026-10-01T02:08:03Z",
+  "findings": [],
+  "fix_confirmations": [
+    {
+      "evidence": "tests/test_changes_push_rows.py:40 reads '#: The time the change stream must answer within: a rewrite is reported with its row inside it.' \u2014 the bound is named by mechanism and the plan-section locator '\u00a75' is gone.",
+      "fix": "the comment names a mechanism",
+      "status": "confirmed"
+    },
+    {
+      "evidence": "docs/ui/state-loader.js:661-672 routes every event shape through refetchDerived(), removing the immediate onChange?.() digest-only branch; a burst of four events (two pushed-row, two digest-only) costs one refetch. New case test_a_mixed_burst_costs_one_background_refetch passes at head and reddens when the handler is reverted to the two-branch form.",
+      "fix": "a mixed burst costs one refetch",
+      "status": "confirmed"
+    },
+    {
+      "evidence": "docs/ui/state-loader.js:162-175 filters removed keys out of state.arrival.pending and recomputes byKind/total/receipt only when the count changed. New case test_a_row_removed_before_its_reveal_leaves_the_arrival_count passes at head and reddens when the prune block is removed.",
+      "fix": "a deleted pending arrival is pruned",
+      "status": "confirmed"
+    },
+    {
+      "evidence": "tests/test_changes_push_rows.py:492 waits SETTLE_WAIT_MS (= _CHANGE_SETTLE_MS + 400, read from the loader source at line 46) instead of the literal 400 ms; restoring 400 reddens test_a_digest_only_event_falls_back_to_the_refetch.",
+      "fix": "the settle wait reads the constant",
+      "status": "confirmed"
+    },
+    {
+      "evidence": "the run manifest's commits line now names 398e19c3da18c4a6e6b191036167395d971d1096, and all four named shas resolve via git cat-file -t.",
+      "fix": "the prior blocking finding (a fabricated head sha)",
+      "status": "confirmed"
+    }
+  ],
+  "head_log_revision": "ca4e07b8b034031f7bd0307657b64aff8bebe879",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 398e19c3d; 267f54280 changes docs/ui/state-loader.js and tests/test_changes_push_rows.py, ca4e07b8b changes only the evidence fragment.",
+    "done_when": "the node's measure is the parsed review; this record scores all five dimensions in 0..20 and carries added_failure_count 0 / added_failure_ids [] derived from the reviewed run's own baseline_suite (06d56ae8: 1 failed) and after_suite (ca4e07b8b: 1 failed) logs.",
+    "goal": "read plan reckon:the-page-paints-from-an-index \u00a75 and the node manifest; the four review fixes named by the dispatch are each present at head ca4e07b8b and each confirmed against the code and by mutation.",
+    "manifest": "read; its commits line now names four shas that all resolve, including the corrected head 398e19c3da18c4a6e6b191036167395d971d1096, and its baseline/after suite JSON objects name log paths that reproduce.",
+    "write_paths": "read the manifest's declared paths; the fix diff's three changed paths are all inside them."
+  },
+  "justifications": {
+    "durability": "the fixes are carried by two new committed cases that run the real state-loader.js under node with a recording fetch and fail when the fix is reverted; the previously-uncovered paths \u2014 a deleted-before-reveal arrival and a burst mixing pushed rows with digest-only events \u2014 now each have a decided-id assertion, and the settle wait reads CHANGE_SETTLE_MS from the source rather than a literal.",
+    "evidence": "both gate arms reproduce exactly \u2014 base 06d56ae8 1 failed/25 passed/2 skipped EXIT=1 and head ca4e07b8b 1 failed/33 passed/2 skipped EXIT=1, the same pre-existing id \u2014 and each code fix is falsified by mutation on a scratch copy (all 8 cases green unmutated; reverting the shared-refetch handler reddens test_a_mixed_burst_costs_one_background_refetch, removing the pending prune reddens test_a_row_removed_before_its_reveal_leaves_the_arrival_count, and restoring the literal 400 ms wait reddens test_a_digest_only_event_falls_back_to_the_refetch). One point withheld: the \u00a75 ten-flow latency distribution (0.45\u20130.48 s vs the 2 s bound) remains the worker's own measurement, not re-measured here.",
+    "fit": "the new test names are mechanism-based (test_a_mixed_burst_costs_one_background_refetch, test_a_row_removed_before_its_reveal_leaves_the_arrival_count), the loader comment states why an unknown row is an arrival and why every event shape shares the one refetch, the fixed source comment at tests/test_changes_push_rows.py:40 no longer cites a plan section, and no plan slug, sprint or ticket id appears in any symbol or comment.",
+    "goal_fidelity": "the node's measure is to confirm four fixes on run r-20261001T010414677018 at head ca4e07b8b; all four are present and each verified \u2014 the test comment at tests/test_changes_push_rows.py:40 now names the bound by mechanism rather than the plan section, the loader's change handler (state-loader.js:668) routes every event shape through the one settle refetch so a mixed burst costs one, the removal path (state-loader.js:162) prunes a removed key from state.arrival.pending and recomputes byKind/total/receipt, and the digest-only case (tests/test_changes_push_rows.py:492) waits SETTLE_WAIT_MS derived from CHANGE_SETTLE_MS; the prior blocking finding (a fabricated head sha) is also corrected.",
+    "scope_discipline": "git diff --numstat 398e19c3d ca4e07b8b names three files \u2014 docs/ui/state-loader.js (34 lines), tests/test_changes_push_rows.py (83), docs/evidence/fragments/the-page-paints-from-an-index/changes-push-rows.html (30) \u2014 every one inside the node's declared write scope; no plan, index or sprint state was edited, and the two fix commits are conventional with bodies."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the node's measure is to confirm four fixes on run r-20261001T010414677018 at head ca4e07b8b; all four are present and each verified \u2014 the test comment at tests/test_changes_push_rows.py:40 now names the bound by mechanism rather than the plan section, the loader's change handler (state-loader.js:668) routes every event shape through the one settle refetch so a mixed burst costs one, the removal path (state-loader.js:162) prunes a removed key from state.arrival.pending and recomputes byKind/total/receipt, and the digest-only case (tests/test_changes_push_rows.py:492) waits SETTLE_WAIT_MS derived from CHANGE_SETTLE_MS; the prior blocking finding (a fabricated head sha) is also corrected.\nSCORE evidence: 19\nJUSTIFICATION evidence: both gate arms reproduce exactly \u2014 base 06d56ae8 1 failed/25 passed/2 skipped EXIT=1 and head ca4e07b8b 1 failed/33 passed/2 skipped EXIT=1, the same pre-existing id \u2014 and each code fix is falsified by mutation on a scratch copy (all 8 cases green unmutated; reverting the shared-refetch handler reddens test_a_mixed_burst_costs_one_background_refetch, removing the pending prune reddens test_a_row_removed_before_its_reveal_leaves_the_arrival_count, and restoring the literal 400 ms wait reddens test_a_digest_only_event_falls_back_to_the_refetch). One point withheld: the \u00a75 ten-flow latency distribution (0.45\u20130.48 s vs the 2 s bound) remains the worker's own measurement, not re-measured here.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 398e19c3d ca4e07b8b names three files \u2014 docs/ui/state-loader.js (34 lines), tests/test_changes_push_rows.py (83), docs/evidence/fragments/the-page-paints-from-an-index/changes-push-rows.html (30) \u2014 every one inside the node's declared write scope; no plan, index or sprint state was edited, and the two fix commits are conventional with bodies.\nSCORE durability: 20\nJUSTIFICATION durability: the fixes are carried by two new committed cases that run the real state-loader.js under node with a recording fetch and fail when the fix is reverted; the previously-uncovered paths \u2014 a deleted-before-reveal arrival and a burst mixing pushed rows with digest-only events \u2014 now each have a decided-id assertion, and the settle wait reads CHANGE_SETTLE_MS from the source rather than a literal.\nSCORE fit: 20\nJUSTIFICATION fit: the new test names are mechanism-based (test_a_mixed_burst_costs_one_background_refetch, test_a_row_removed_before_its_reveal_leaves_the_arrival_count), the loader comment states why an unknown row is an arrival and why every event shape shares the one refetch, the fixed source comment at tests/test_changes_push_rows.py:40 no longer cites a plan section, and no plan slug, sprint or ticket id appears in any symbol or comment.\nVERDICT goal: read plan reckon:the-page-paints-from-an-index \u00a75 and the node manifest; the four review fixes named by the dispatch are each present at head ca4e07b8b and each confirmed against the code and by mutation.\nVERDICT done_when: the node's measure is the parsed review; this record scores all five dimensions in 0..20 and carries added_failure_count 0 / added_failure_ids [] derived from the reviewed run's own baseline_suite (06d56ae8: 1 failed) and after_suite (ca4e07b8b: 1 failed) logs.\nVERDICT write_paths: read the manifest's declared paths; the fix diff's three changed paths are all inside them.\nVERDICT manifest: read; its commits line now names four shas that all resolve, including the corrected head 398e19c3da18c4a6e6b191036167395d971d1096, and its baseline/after suite JSON objects name log paths that reproduce.\nVERDICT diff: read commit by commit against 398e19c3d; 267f54280 changes docs/ui/state-loader.js and tests/test_changes_push_rows.py, ca4e07b8b changes only the evidence fragment.\nCALL_SITES: reckon/serve.py:Handler._serve_index, reckon/serve.py:Handler._serve_changes, docs/ui/state-loader.js:watchProjectStateChanges\nreviewed_base_sha: 06d56ae87f8a51c2f163ddd1f7853a89955afcd7\nreviewed_head_sha: ca4e07b8b034031f7bd0307657b64aff8bebe879\n",
+  "review_run_id": "r-20261001T020745036945-review-of-changes-push-rows",
+  "reviewed_base_sha": "06d56ae87f8a51c2f163ddd1f7853a89955afcd7",
+  "reviewed_commit": "ca4e07b8b034031f7bd0307657b64aff8bebe879",
+  "reviewed_head_sha": "ca4e07b8b034031f7bd0307657b64aff8bebe879",
+  "reviewed_run_id": "r-20261001T010414677018-changes-push-rows",
+  "reviewer_run_id": "r-20261001T020745036945-review-of-changes-push-rows",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T02:38:00.000000+00:00",
+  "total": 99
+}

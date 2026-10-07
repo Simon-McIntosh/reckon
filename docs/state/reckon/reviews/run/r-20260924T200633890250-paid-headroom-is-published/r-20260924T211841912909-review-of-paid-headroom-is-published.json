@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/budget.py:_published_windows",
+    "reckon/budget.py:preflight",
+    "reckon/cli.py:964",
+    "reckon/mcp.py:3497",
+    "reckon/crew/paid_lanes.py:main"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T21:18:41.912909+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "522",
+      "text": "python -m reckon.crew.paid_lanes --once never reads its command line: the __main__ stanza calls main() with no argv and main() reads a missing argv as an empty list, so --path, --project and --checkout-path are inert. Measured from the reviewed tree: with --once --path /tmp/paid-lanes-probe.json the command wrote /home/ITER/mcintos/public/reckon/paid-lanes.json carrying 10 accounts, every window unknown, exit 0, and never created the named path; the same call in-process with --project reckon produced observations for 6 of 10 accounts from the receipt, rollout and stream sources, so the gathering works and only the argv plumbing is broken. The deferred five-minute timer runs exactly this form, so the deployment the evidence record leaves open cannot publish a reading for any backend."
+    },
+    {
+      "file": "reckon/budget.py",
+      "line": "1476",
+      "text": "the document-reading branch is unreachable from production: reckon/cli.py:964 and reckon/mcp.py:3497 both pass windows=recorded_windows(...), so the published document has no production reader at this head and the plan's \"Preflight and dispatch read that document\" is not yet true; this is the declared out-of-scope boundary, recorded as a follow-on and material to whether the section's done-when is met."
+    },
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "382",
+      "text": "gather_sources, the production gatherer every command reading comes from, is reached by no test: the gate's \"a reading for each of the three backends\" is asserted against Candidate objects the test injects at tests/test_paid_lanes_document.py:113, so a regression in the receipt, rollout or stream wiring reddens nothing."
+    },
+    {
+      "file": "reckon/budget.py",
+      "line": "1471",
+      "text": "a library call now reads a workstation-global file: absent an explicit windows argument budget.preflight reads ~/public/reckon/paid-lanes.json, and 51 calls in tests/test_budget.py plus 6 in tests/test_coordinator_reserve.py pass no windows and isolate nothing, so their result depends on a file outside the repository under test; a document naming those backends moved no test result when I measured it (identical FAILED sets with a document naming alpha and beta), so the exposure is latent rather than currently biting."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from base 02e2757d; db50a1e3 adds reckon/crew/paid_lanes.py (523 lines), 36 lines in reckon/budget.py and 293 test lines, and 559e9fe7 adds the plan paragraph (11 insertions, no deletions), the cumulative evidence record and the figure.",
+    "done_when": "the done_when names tests/test_paid_lanes_document.py for four document-level properties plus a zero-added-failure suite delta; the manifest records that gate and its result, re-running it from the reviewed tree reproduces 6 passed in 0.39s, and the recorded base/head FAILED sets are identical.",
+    "goal": "the goal is paid-backend headroom published as one document the pre-flight reads; reckon/crew/paid_lanes.py:234 composes it and reckon/budget.py:1476 reads it, but the shipped command cannot name a project, so the document its documented invocation publishes carries a reading for no backend.",
+    "manifest": "read; it records the gate command and result, the three log paths, the negative control's mutation and red output, and the base/head suite results; every claim I rechecked (gate result, failure sets, commit list, tree cleanliness) held.",
+    "write_paths": "the six declared paths hold every path either commit touches, verified with git show --numstat over 02e2757d..559e9fe7, and the reviewed worktree is clean at its head."
+  },
+  "justifications": {
+    "durability": "the four document properties carry litmus-tested assertions, but reckon/crew/paid_lanes.py:382 (gather_sources) is reached by no test and the untested entry point carries a live defect.",
+    "evidence": "tests/test_paid_lanes_document.py:246 pins the document-to-pre-flight agreement and its negative control reddens it, but tests/test_paid_lanes_document.py:288 hands main() an argv list, so no test can see the command-line path the record's own invocation names.",
+    "fit": "reckon/crew/paid_lanes.py:74 reuses window_reading and the pre-flight's own readers and follows the module idiom, and the four new constants duplicate budget.py:1596-1597 rather than sharing them, a nit rather than a defect.",
+    "goal_fidelity": "reckon/crew/paid_lanes.py:523 calls main() with no arguments, so the documented python -m reckon.crew.paid_lanes --once publishes ten accounts whose every window is unknown, measured from the reviewed tree.",
+    "scope_discipline": "every path in both commits lies inside the six declared write paths, and the plan paragraph is 11 insertions with the meta lines reverted as follow_ons records."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is paid-backend headroom published as one document the pre-flight reads; reckon/crew/paid_lanes.py:234 composes it and reckon/budget.py:1476 reads it, but the shipped command cannot name a project, so the document its documented invocation publishes carries a reading for no backend.\nVERDICT done_when: the done_when names tests/test_paid_lanes_document.py for four document-level properties plus a zero-added-failure suite delta; the manifest records that gate and its result, re-running it from the reviewed tree reproduces 6 passed in 0.39s, and the recorded base/head FAILED sets are identical.\nVERDICT write_paths: the six declared paths hold every path either commit touches, verified with git show --numstat over 02e2757d..559e9fe7, and the reviewed worktree is clean at its head.\nVERDICT manifest: read; it records the gate command and result, the three log paths, the negative control's mutation and red output, and the base/head suite results; every claim I rechecked (gate result, failure sets, commit list, tree cleanliness) held.\nVERDICT diff: read commit by commit from base 02e2757d; db50a1e3 adds reckon/crew/paid_lanes.py (523 lines), 36 lines in reckon/budget.py and 293 test lines, and 559e9fe7 adds the plan paragraph (11 insertions, no deletions), the cumulative evidence record and the figure.\nCALL_SITES: reckon/budget.py:_published_windows, reckon/budget.py:preflight, reckon/cli.py:964, reckon/mcp.py:3497, reckon/crew/paid_lanes.py:main\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/paid_lanes.py:523 calls main() with no arguments, so the documented python -m reckon.crew.paid_lanes --once publishes ten accounts whose every window is unknown, measured from the reviewed tree.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_paid_lanes_document.py:246 pins the document-to-pre-flight agreement and its negative control reddens it, but tests/test_paid_lanes_document.py:288 hands main() an argv list, so no test can see the command-line path the record's own invocation names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in both commits lies inside the six declared write paths, and the plan paragraph is 11 insertions with the meta lines reverted as follow_ons records.\nSCORE durability: 11\nJUSTIFICATION durability: the four document properties carry litmus-tested assertions, but reckon/crew/paid_lanes.py:382 (gather_sources) is reached by no test and the untested entry point carries a live defect.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/paid_lanes.py:74 reuses window_reading and the pre-flight's own readers and follows the module idiom, and the four new constants duplicate budget.py:1596-1597 rather than sharing them, a nit rather than a defect.\nFINDING reckon/crew/paid_lanes.py:522 python -m reckon.crew.paid_lanes --once never reads its command line: the __main__ stanza calls main() with no argv and main() reads a missing argv as an empty list, so --path, --project and --checkout-path are inert. Measured from the reviewed tree: with --once --path /tmp/paid-lanes-probe.json the command wrote /home/ITER/mcintos/public/reckon/paid-lanes.json carrying 10 accounts, every window unknown, exit 0, and never created the named path; the same call in-process with --project reckon produced observations for 6 of 10 accounts from the receipt, rollout and stream sources, so the gathering works and only the argv plumbing is broken. The deferred five-minute timer runs exactly this form, so the deployment the evidence record leaves open cannot publish a reading for any backend.\nFINDING reckon/budget.py:1476 the document-reading branch is unreachable from production: reckon/cli.py:964 and reckon/mcp.py:3497 both pass windows=recorded_windows(...), so the published document has no production reader at this head and the plan's \"Preflight and dispatch read that document\" is not yet true; this is the declared out-of-scope boundary, recorded as a follow-on and material to whether the section's done-when is met.\nFINDING reckon/crew/paid_lanes.py:382 gather_sources, the production gatherer every command reading comes from, is reached by no test: the gate's \"a reading for each of the three backends\" is asserted against Candidate objects the test injects at tests/test_paid_lanes_document.py:113, so a regression in the receipt, rollout or stream wiring reddens nothing.\nFINDING reckon/budget.py:1471 a library call now reads a workstation-global file: absent an explicit windows argument budget.preflight reads ~/public/reckon/paid-lanes.json, and 51 calls in tests/test_budget.py plus 6 in tests/test_coordinator_reserve.py pass no windows and isolate nothing, so their result depends on a file outside the repository under test; a document naming those backends moved no test result when I measured it (identical FAILED sets with a document naming alpha and beta), so the exposure is latent rather than currently biting.\n",
+  "review_run_id": "r-20260924T211841912909-review-of-paid-headroom-is-published",
+  "reviewed_base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+  "reviewed_head_sha": "559e9fe7524a98ee06d485692f4b7b8dc41159c4",
+  "reviewed_run_id": "r-20260924T200633890250-paid-headroom-is-published",
+  "scores": {
+    "durability": 11,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T22:04:38.275513+00:00",
+  "total": 75
+}

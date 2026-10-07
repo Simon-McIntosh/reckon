@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:3168 (the rev-parse --is-inside-work-tree probe in the promotion path reached through crew.complete at promotion.py:4525)"
+  ],
+  "completed_at": "2026-10-01T19:55:24.982Z",
+  "dispatched_at": "2026-10-01T19:46:22Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit d0bce02d3 against base 2c49c0457; 17 added lines in tests/test_crew_promotion.py (the GIT_CEILING_DIRECTORIES setenv, the rev-parse --is-inside-work-tree probe and its assertion) plus a 26-line evidence fragment, 43 insertions over two files.",
+    "done_when": "the done_when names tests/test_crew_promotion.py::test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written run with --basetemp inside a scratch git repository, its HEAD sha unchanged before and after, and a negative control that drops the ceiling; the manifest records the pass (gate.log \"1 passed in 1.28s\", EXIT=0), the unchanged scratch HEAD (gate.log lines 11-12) and the red control (negative-control.log \"1 failed\", EXIT=1), and I re-read both logs and every figure reproduces.",
+    "goal": "read the reviewed node's goal at its prompt (\"The non-git promotion test can never reach an enclosing repository\"); the landed change sets GIT_CEILING_DIRECTORIES to the non-git root's parent at tests/test_crew_promotion.py:1635 and asserts git discovery reports no work tree at that root, so an enclosing checkout can no longer answer for it.",
+    "manifest": "read the reviewed manifest at its run directory; its tests, test_logs, negative_control_log, artifacts and evidence_inputs fields state each command, log path and result, and the reviewed node delivered status complete with the landing in d0bce02d3.",
+    "write_paths": "the manifest declares tests/test_crew_promotion.py, the fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/nongit-promotion-test-stays-outside-a-repo.html and an unused figures directory; the diff touches the first two and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the probe assertion at tests/test_crew_promotion.py:1645 fails when the ceiling it guards is removed, shown red by negative-control.log (1 failed, EXIT=1), and it compares git's own output against the literal \"true\" rather than a value the test itself passed in.",
+    "evidence": "the named test is run with --basetemp inside a scratch repository (gate.log line 6) and records 1 passed/EXIT=0 with the scratch HEAD unchanged before and after (gate.log lines 11-12), and the declared negative control reddens the same probe (negative-control.log EXIT=1) so the gate is not vacuous.",
+    "fit": "the monkeypatch.setenv plus subprocess probe follow the surrounding test idiom in tests/test_crew_promotion.py, the comment at :1633 states the mechanism rather than a ticket, and the commit message is a conventional subject with a body.",
+    "goal_fidelity": "tests/test_crew_promotion.py:1635 pins GIT_CEILING_DIRECTORIES to root.parent and the probe at :1638 asserts git run at that root reports no work tree, which is exactly the goal's \"can never reach an enclosing repository\".",
+    "scope_discipline": "git diff --stat 2c49c0457..d0bce02d3 touches only tests/test_crew_promotion.py and the declared evidence fragment, both inside the three declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the reviewed node's goal at its prompt (\"The non-git promotion test can never reach an enclosing repository\"); the landed change sets GIT_CEILING_DIRECTORIES to the non-git root's parent at tests/test_crew_promotion.py:1635 and asserts git discovery reports no work tree at that root, so an enclosing checkout can no longer answer for it.\nVERDICT done_when: the done_when names tests/test_crew_promotion.py::test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written run with --basetemp inside a scratch git repository, its HEAD sha unchanged before and after, and a negative control that drops the ceiling; the manifest records the pass (gate.log \"1 passed in 1.28s\", EXIT=0), the unchanged scratch HEAD (gate.log lines 11-12) and the red control (negative-control.log \"1 failed\", EXIT=1), and I re-read both logs and every figure reproduces.\nVERDICT write_paths: the manifest declares tests/test_crew_promotion.py, the fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/nongit-promotion-test-stays-outside-a-repo.html and an unused figures directory; the diff touches the first two and nothing outside them.\nVERDICT manifest: read the reviewed manifest at its run directory; its tests, test_logs, negative_control_log, artifacts and evidence_inputs fields state each command, log path and result, and the reviewed node delivered status complete with the landing in d0bce02d3.\nVERDICT diff: read commit d0bce02d3 against base 2c49c0457; 17 added lines in tests/test_crew_promotion.py (the GIT_CEILING_DIRECTORIES setenv, the rev-parse --is-inside-work-tree probe and its assertion) plus a 26-line evidence fragment, 43 insertions over two files.\nCALL_SITES: reckon/crew/promotion.py:3168 (the rev-parse --is-inside-work-tree probe in the promotion path reached through crew.complete at promotion.py:4525)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_crew_promotion.py:1635 pins GIT_CEILING_DIRECTORIES to root.parent and the probe at :1638 asserts git run at that root reports no work tree, which is exactly the goal's \"can never reach an enclosing repository\".\nSCORE evidence: 18\nJUSTIFICATION evidence: the named test is run with --basetemp inside a scratch repository (gate.log line 6) and records 1 passed/EXIT=0 with the scratch HEAD unchanged before and after (gate.log lines 11-12), and the declared negative control reddens the same probe (negative-control.log EXIT=1) so the gate is not vacuous.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2c49c0457..d0bce02d3 touches only tests/test_crew_promotion.py and the declared evidence fragment, both inside the three declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the probe assertion at tests/test_crew_promotion.py:1645 fails when the ceiling it guards is removed, shown red by negative-control.log (1 failed, EXIT=1), and it compares git's own output against the literal \"true\" rather than a value the test itself passed in.\nSCORE fit: 18\nJUSTIFICATION fit: the monkeypatch.setenv plus subprocess probe follow the surrounding test idiom in tests/test_crew_promotion.py, the comment at :1633 states the mechanism rather than a ticket, and the commit message is a conventional subject with a body.",
+  "review_run_id": "r-20261001T194602627106-review-of-nongit-promotion-test-stays-outside-a-repo",
+  "reviewed_base_sha": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+  "reviewed_head_sha": "d0bce02d325eaf2452c96feb8fc6e60cb73e9deb",
+  "reviewed_run_id": "r-20261001T191748706279-nongit-promotion-test-stays-outside-a-repo",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T19:53:39.424958+00:00",
+  "total": 92
+}

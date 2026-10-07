@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/resumption.py:1236",
+    "reckon/crew/recovery.py:1354",
+    "reckon/crew/recovery.py:5931"
+  ],
+  "completed_at": "2026-09-28T05:13:44.298Z",
+  "dispatched_at": "2026-09-28T04:44:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/crew-observability-truth-landed.html",
+      "line": "2562",
+      "text": "the new anchor links the recognition-key figure instead of embedding it with an img element as every sibling anchor in the same file does, so the record's reader sees a link where the comparable records show the graphic."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read one revision at a time against the base; 8e967b0e replaces the node-id key with _review_subject and _review_head_covers and records the composed head, f411b002 introduces the test file, and 8df14c0d is the landed record.",
+    "done_when": "All four clauses are asserted through recovery.dispatch_awaiting_reviews by tests/test_reflex_keys_on_reviewed_run_and_head.py; the two assertions the change makes true are red in the base arm, and the hand-dispatched clause is reddened by the declared negative control.",
+    "goal": "The goal is pair-keyed recognition of a standing review; reckon/crew/recovery.py:896 matches live pointers on the reviewed run and the head they read and selects the stored record at that head, while no comparison uses the reviewer's minted node id.",
+    "manifest": "read; it records the three gate arms with revision and counts, the negative control with its verbatim mutation, the check and format deltas, and the two pre-existing reds attributed to 53d40c57 with an isolation log.",
+    "write_paths": "`git diff --stat 99455576..8df14c0d` lists exactly the five declared paths (reckon/crew/recovery.py, the new test file, the plan, the evidence anchor, the figure) and no meta line of the plan is touched."
+  },
+  "justifications": {
+    "durability": "the base arm reds test_a_run_resumed_to_a_new_head_gets_one_review_and_a_second_sweep_none and test_the_composed_done_when_names_the_added_failure_derivation, and the declared mutation reddens the hand-dispatched case; the brief assertions rebuild their expected path through review.review_path, the helper the composition also uses.",
+    "evidence": "the base, head and exit-0 arms and the equal check counts are on disk under the run's reports logs, and I re-derived the same rule multiset and format site from logs/ruff-delta-rehost.log; the composed-done-when clause is asserted by substring presence only.",
+    "fit": "the helpers extend the module's idiom and reuse same_revision, but docs/evidence/archive/crew-observability-truth-landed.html:2562 links the figure where the ten sibling anchors in the same file embed theirs.",
+    "goal_fidelity": "reckon/crew/recovery.py:896 keys on the pair and its only node-id read is the documented last-resort subject resolution at reckon/crew/recovery.py:876 when a pointer names no store path.",
+    "scope_discipline": "`git diff --stat 99455576..8df14c0d` lists exactly the five declared paths and the plan's plan-version and plan-modified metas are unchanged in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is pair-keyed recognition of a standing review; reckon/crew/recovery.py:896 matches live pointers on the reviewed run and the head they read and selects the stored record at that head, while no comparison uses the reviewer's minted node id.\nVERDICT done_when: All four clauses are asserted through recovery.dispatch_awaiting_reviews by tests/test_reflex_keys_on_reviewed_run_and_head.py; the two assertions the change makes true are red in the base arm, and the hand-dispatched clause is reddened by the declared negative control.\nVERDICT write_paths: `git diff --stat 99455576..8df14c0d` lists exactly the five declared paths (reckon/crew/recovery.py, the new test file, the plan, the evidence anchor, the figure) and no meta line of the plan is touched.\nVERDICT manifest: read; it records the three gate arms with revision and counts, the negative control with its verbatim mutation, the check and format deltas, and the two pre-existing reds attributed to 53d40c57 with an isolation log.\nVERDICT diff: read one revision at a time against the base; 8e967b0e replaces the node-id key with _review_subject and _review_head_covers and records the composed head, f411b002 introduces the test file, and 8df14c0d is the landed record.\nCALL_SITES: reckon/crew/resumption.py:1236, reckon/crew/recovery.py:1354, reckon/crew/recovery.py:5931\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:896 keys on the pair and its only node-id read is the documented last-resort subject resolution at reckon/crew/recovery.py:876 when a pointer names no store path.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base, head and exit-0 arms and the equal check counts are on disk under the run's reports logs, and I re-derived the same rule multiset and format site from logs/ruff-delta-rehost.log; the composed-done-when clause is asserted by substring presence only.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 99455576..8df14c0d` lists exactly the five declared paths and the plan's plan-version and plan-modified metas are unchanged in the diff.\nSCORE durability: 18\nJUSTIFICATION durability: the base arm reds test_a_run_resumed_to_a_new_head_gets_one_review_and_a_second_sweep_none and test_the_composed_done_when_names_the_added_failure_derivation, and the declared mutation reddens the hand-dispatched case; the brief assertions rebuild their expected path through review.review_path, the helper the composition also uses.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers extend the module's idiom and reuse same_revision, but docs/evidence/archive/crew-observability-truth-landed.html:2562 links the figure where the ten sibling anchors in the same file embed theirs.\nFINDING docs/evidence/archive/crew-observability-truth-landed.html:2562 the new anchor links the recognition-key figure instead of embedding it with an img element as every sibling anchor in the same file does, so the record's reader sees a link where the comparable records show the graphic.\n",
+  "review_run_id": "r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head",
+  "reviewed_base_sha": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "reviewed_head_sha": "8df14c0da1ad70c9995b2b5838b6f49c246cc724",
+  "reviewed_run_id": "r-20260926T205155928540-reflex-keys-on-reviewed-run-and-head",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T05:10:31.756541+00:00",
+  "total": 92
+}

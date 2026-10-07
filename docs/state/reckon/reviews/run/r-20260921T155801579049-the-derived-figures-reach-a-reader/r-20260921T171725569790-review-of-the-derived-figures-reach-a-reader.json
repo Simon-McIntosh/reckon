@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:3164",
+    "reckon/mcp.py:3323",
+    "reckon/ledger.py:1823"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T17:17:25.569790+00:00",
+  "findings": [
+    {
+      "file": "tests/test_derived_figures_reach_a_reader.py",
+      "line": "215",
+      "text": "the case named for the filter-order property asserts width 2 for both plan=alpha rows, which is exactly what a post-filter count also produces, since both alpha rows are the covering pair; measured, full-set and alpha-only both give early=2 and disagreeing=2, so a future move of the derivation below the plan/since/limit selection would pass this case, and a discriminating fixture needs a selected row overlapped only by an unselected one."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit against base f6ff6c375e8be0cbf5a1eb6af99cfb80bd85317a, where f10e0585 gives read_records the with_figures default at reckon/ledger.py:1835, opts reckon/ledger.py:1823 out of it, and rewires reckon/cli.py:3164, and d85b59b9 adds only the plan record, the evidence anchor and one figure.",
+    "done_when": "The done-when names four assertions in tests/test_derived_figures_reach_a_reader.py plus a mutation red log, and I read the file and both logs and re-ran the file at head myself, observing 9 passed in 2.67s against the recorded 9 passed in 2.17s.",
+    "goal": "The goal is to wire summary.run_rows into the committed-run read surfaces so per-node wall time and width-at-start reach a reader, and the landing does that at reckon/ledger.py:1856-1858 with both per-row surfaces reaching it, reckon/cli.py:3164 and the crew view at reckon/mcp.py:3323 registered as the crew tool at reckon/mcp.py:4121.",
+    "manifest": "Read in full, and its numbers reproduce against the logs I read (9 green, 9 red under the verbatim mutation, 5 failed and 167 passed at base against 5 failed and 176 passed at head over the same seven files), while its blockers section measures its two caveats rather than assuming them.",
+    "write_paths": "The manifest declares seven paths and git show --stat over f10e0585 and d85b59b9 lists six changed paths, every one inside that fence, including docs/figures/work-does-not-fall-to-the-coordinator/derived-figures-reach-the-read-surfaces.svg under a directory-granted path, with the reviewed worktree clean at d85b59b9."
+  },
+  "justifications": {
+    "durability": "the declared mutation, returning stored rows in place of derived ones, reddens all nine cases in tests/test_derived_figures_reach_a_reader.py, and the static case at line 251 reddens if the wiring is removed again.",
+    "evidence": "tests/test_derived_figures_reach_a_reader.py:131,158,178 enter through both surfaces for the three done-when claims and the recorded mutation reddens all nine, but the case at line 202 measures less than its docstring claims.",
+    "fit": "the keyword flag with a documented default and the lazy import at reckon/ledger.py:1856 match the module's idiom and no new name carries a plan label, but the records read now loads the ledger twice, once in read_records and again through run_rows and runs.",
+    "goal_fidelity": "reckon/ledger.py:1858 derives wall time and width for every row a records read returns, so both surfaces at reckon/cli.py:3164 and reckon/mcp.py:3323 hand a reader the figures rather than the stored field.",
+    "scope_discipline": "git show --stat over both commits lists six paths, each inside the manifest's declared fence, with the figure inside the directory-granted docs/figures/work-does-not-fall-to-the-coordinator and reckon/mcp_views.py deliberately untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to wire summary.run_rows into the committed-run read surfaces so per-node wall time and width-at-start reach a reader, and the landing does that at reckon/ledger.py:1856-1858 with both per-row surfaces reaching it, reckon/cli.py:3164 and the crew view at reckon/mcp.py:3323 registered as the crew tool at reckon/mcp.py:4121.\nVERDICT done_when: The done-when names four assertions in tests/test_derived_figures_reach_a_reader.py plus a mutation red log, and I read the file and both logs and re-ran the file at head myself, observing 9 passed in 2.67s against the recorded 9 passed in 2.17s.\nVERDICT write_paths: The manifest declares seven paths and git show --stat over f10e0585 and d85b59b9 lists six changed paths, every one inside that fence, including docs/figures/work-does-not-fall-to-the-coordinator/derived-figures-reach-the-read-surfaces.svg under a directory-granted path, with the reviewed worktree clean at d85b59b9.\nVERDICT manifest: Read in full, and its numbers reproduce against the logs I read (9 green, 9 red under the verbatim mutation, 5 failed and 167 passed at base against 5 failed and 176 passed at head over the same seven files), while its blockers section measures its two caveats rather than assuming them.\nVERDICT diff: Read commit by commit against base f6ff6c375e8be0cbf5a1eb6af99cfb80bd85317a, where f10e0585 gives read_records the with_figures default at reckon/ledger.py:1835, opts reckon/ledger.py:1823 out of it, and rewires reckon/cli.py:3164, and d85b59b9 adds only the plan record, the evidence anchor and one figure.\nCALL_SITES: reckon/cli.py:3164, reckon/mcp.py:3323, reckon/ledger.py:1823\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1858 derives wall time and width for every row a records read returns, so both surfaces at reckon/cli.py:3164 and reckon/mcp.py:3323 hand a reader the figures rather than the stored field.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_derived_figures_reach_a_reader.py:131,158,178 enter through both surfaces for the three done-when claims and the recorded mutation reddens all nine, but the case at line 202 measures less than its docstring claims.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat over both commits lists six paths, each inside the manifest's declared fence, with the figure inside the directory-granted docs/figures/work-does-not-fall-to-the-coordinator and reckon/mcp_views.py deliberately untouched.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation, returning stored rows in place of derived ones, reddens all nine cases in tests/test_derived_figures_reach_a_reader.py, and the static case at line 251 reddens if the wiring is removed again.\nSCORE fit: 18\nJUSTIFICATION fit: the keyword flag with a documented default and the lazy import at reckon/ledger.py:1856 match the module's idiom and no new name carries a plan label, but the records read now loads the ledger twice, once in read_records and again through run_rows and runs.\nFINDING tests/test_derived_figures_reach_a_reader.py:215 the case named for the filter-order property asserts width 2 for both plan=alpha rows, which is exactly what a post-filter count also produces, since both alpha rows are the covering pair; measured, full-set and alpha-only both give early=2 and disagreeing=2, so a future move of the derivation below the plan/since/limit selection would pass this case, and a discriminating fixture needs a selected row overlapped only by an unselected one.\n",
+  "review_run_id": "r-20260921T171725569790-review-of-the-derived-figures-reach-a-reader",
+  "reviewed_base_sha": "f6ff6c375e8be0cbf5a1eb6af99cfb80bd85317a",
+  "reviewed_commits": [
+    "f10e058564443bdee727ef8b4339ce5c06879180",
+    "d85b59b9a24866288262e0e2cc3669e13ad9bbe3"
+  ],
+  "reviewed_head_sha": "d85b59b9a24866288262e0e2cc3669e13ad9bbe3",
+  "reviewed_run_id": "r-20260921T155801579049-the-derived-figures-reach-a-reader",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-derived-figures-reach-a-reader",
+  "reviewer": "review-of-the-derived-figures-reach-a-reader",
+  "reviewer_independent_checks": [
+    "gate file re-run at head d85b59b9 with the shared interpreter: 9 passed in 2.67s",
+    "filtered-width fixture measured both ways: full-set and alpha-only both give early=2, disagreeing=2",
+    "attribution and naming sweep over both commit messages and the diff: no AI attribution, no plan or version label"
+  ],
+  "reviewer_run_id": "r-20260921T171725569790-review-of-the-derived-figures-reach-a-reader",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:38:57.561257+00:00",
+  "total": 92
+}

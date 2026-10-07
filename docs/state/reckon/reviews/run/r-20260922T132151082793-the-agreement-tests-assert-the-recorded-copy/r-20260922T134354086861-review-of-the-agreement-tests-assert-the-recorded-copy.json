@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_preserve_cited_gate_log",
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T13:43:54.086861+00:00",
+  "findings": [
+    {
+      "file": "tests/test_crew_gate_log_agrees.py",
+      "line": "146",
+      "text": "the four retargeted cases are red in any tree that lacks the copy step: commit 54d0a8d2 is not an ancestor of the node's head 2b5195ba nor of main e80f0132, so merging this change alone leaves the file at 4 failed / 13 passed (reproduced on the node's own head in a scratch export) until the cited-gate-log preservation lands, and 54d0a8d2 must merge with or before this node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit - e1dbe859 carries the helper, the run_dir import and the four retargets in tests/test_crew_gate_log_agrees.py, 2b5195ba carries the evidence anchor, the landing record and the figure, and the production function the assertions pin is reckon/crew/promotion.py:_preserve_cited_gate_log as committed in 54d0a8d2, which is not an ancestor of the node's head.",
+    "done_when": "the done-when names the four case ids, the pair they must assert, the file passing against a tree carrying commit 54d0a8d2, the unmodified unreadable-citation case, and the mutation's red log; I reproduced every leg in my own scratch export of the node's head - 4 failed / 13 passed at base, 17 passed with 54d0a8d2's reckon/crew/promotion.py applied, 4 failed under the mutation, and the unreadable-citation case alone 1 passed.",
+    "goal": "the goal asks for the four gate-log agreement assertions to cite the recorded copy promotion writes; tests/test_crew_gate_log_agrees.py:135-149 adds _assert_cites_the_recorded_copy and the four cases at :233, :271, :438 and :497 each call it, so no case still compares the row against the caller-supplied path.",
+    "manifest": "read; it names both commits, the three gate logs with their paths, the dependency caveat that 54d0a8d2 is not an ancestor at its base, and the merged-head follow-on, and its negative_control_log is a bare path whose log repeats the mutation verbatim on its first line.",
+    "write_paths": "git diff --numstat 8b1b31e6..2b5195ba lists exactly the four declared paths (tests 23/6, evidence anchor 112/1, plan 26/0, figure 83/0, all insertions-only on the plan page) and the source worktree is clean at 2b5195ba."
+  },
+  "justifications": {
+    "durability": "the declared mutation at reckon/crew/promotion.py returning dict(gate_check) in place of the copied path reddens exactly the four retargeted cases (tests/test_crew_gate_log_agrees.py:146) and leaves the unreadable-citation case green in my own run, so each added assertion fails when the guarantee it pins is removed.",
+    "evidence": "every figure reproduces under my own instrument in a scratch export of the node's head (4 failed / 13 passed at base 8b1b31e6, 17 passed with 54d0a8d2's promotion.py, 4 failed under the declared mutation, unreadable-citation case 1 passed) and each gate log carries a revision/tree/command header, with the deduction that the green figure holds only against the unmerged 54d0a8d2 rather than at the node's own head.",
+    "fit": "the helper follows the file's existing underscore-prefixed helper idiom and states the mechanism rather than any plan label, with the deduction that record is annotated as bare dict at tests/test_crew_gate_log_agrees.py:136.",
+    "goal_fidelity": "tests/test_crew_gate_log_agrees.py:135-149 resolves record[\"gate_check\"][\"log_path\"], asserts it lies inside run_dir(run_id) with bytes equal to the cited source, and all four retargeted cases call it.",
+    "scope_discipline": "numstat 8b1b31e6..2b5195ba lists exactly the four declared paths in the run's fence, nothing outside them, and the source worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "REVISION: 2b5195ba70443f8884799d1243c5990457c18ad2\nVERDICT goal: the goal asks for the four gate-log agreement assertions to cite the recorded copy promotion writes; tests/test_crew_gate_log_agrees.py:135-149 adds _assert_cites_the_recorded_copy and the four cases at :233, :271, :438 and :497 each call it, so no case still compares the row against the caller-supplied path.\nVERDICT done_when: the done-when names the four case ids, the pair they must assert, the file passing against a tree carrying commit 54d0a8d2, the unmodified unreadable-citation case, and the mutation's red log; I reproduced every leg in my own scratch export of the node's head - 4 failed / 13 passed at base, 17 passed with 54d0a8d2's reckon/crew/promotion.py applied, 4 failed under the mutation, and the unreadable-citation case alone 1 passed.\nVERDICT write_paths: git diff --numstat 8b1b31e6..2b5195ba lists exactly the four declared paths (tests 23/6, evidence anchor 112/1, plan 26/0, figure 83/0, all insertions-only on the plan page) and the source worktree is clean at 2b5195ba.\nVERDICT manifest: read; it names both commits, the three gate logs with their paths, the dependency caveat that 54d0a8d2 is not an ancestor at its base, and the merged-head follow-on, and its negative_control_log is a bare path whose log repeats the mutation verbatim on its first line.\nVERDICT diff: read commit by commit - e1dbe859 carries the helper, the run_dir import and the four retargets in tests/test_crew_gate_log_agrees.py, 2b5195ba carries the evidence anchor, the landing record and the figure, and the production function the assertions pin is reckon/crew/promotion.py:_preserve_cited_gate_log as committed in 54d0a8d2, which is not an ancestor of the node's head.\nCALL_SITES: reckon/crew/promotion.py:_preserve_cited_gate_log, reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_gate_log_agrees.py:135-149 resolves record[\"gate_check\"][\"log_path\"], asserts it lies inside run_dir(run_id) with bytes equal to the cited source, and all four retargeted cases call it.\nSCORE evidence: 19\nJUSTIFICATION evidence: every figure reproduces under my own instrument in a scratch export of the node's head (4 failed / 13 passed at base 8b1b31e6, 17 passed with 54d0a8d2's promotion.py, 4 failed under the declared mutation, unreadable-citation case 1 passed) and each gate log carries a revision/tree/command header, with the deduction that the green figure holds only against the unmerged 54d0a8d2 rather than at the node's own head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: numstat 8b1b31e6..2b5195ba lists exactly the four declared paths in the run's fence, nothing outside them, and the source worktree is clean.\nSCORE durability: 20\nJUSTIFICATION durability: the declared mutation at reckon/crew/promotion.py returning dict(gate_check) in place of the copied path reddens exactly the four retargeted cases (tests/test_crew_gate_log_agrees.py:146) and leaves the unreadable-citation case green in my own run, so each added assertion fails when the guarantee it pins is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the helper follows the file's existing underscore-prefixed helper idiom and states the mechanism rather than any plan label, with the deduction that record is annotated as bare dict at tests/test_crew_gate_log_agrees.py:136.\nFINDING tests/test_crew_gate_log_agrees.py:146 the four retargeted cases are red in any tree that lacks the copy step: commit 54d0a8d2 is not an ancestor of the node's head 2b5195ba nor of main e80f0132, so merging this change alone leaves the file at 4 failed / 13 passed (reproduced on the node's own head in a scratch export) until the cited-gate-log preservation lands, and 54d0a8d2 must merge with or before this node.\n",
+  "review_run_id": "r-20260922T134354086861-review-of-the-agreement-tests-assert-the-recorded-copy",
+  "reviewed_revision": "2b5195ba70443f8884799d1243c5990457c18ad2",
+  "reviewed_run_id": "r-20260922T132151082793-the-agreement-tests-assert-the-recorded-copy",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T14:17:49.095771+00:00",
+  "total": 98
+}

@@ -1,0 +1,51 @@
+{
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T17:11:23.774985+00:00",
+  "findings": [
+    {
+      "file": "tests/test_manifest_block_indent.py",
+      "line": 98,
+      "text": "the comment says the orphaned left-of-column body line is dropped 'which is how a body line left of the column was already treated', but at base the indent-2 body line in this very specimen was folded into the tests value, not dropped (my base probe: tests='seven passed\\ncommits:\\n- abc1234\\nchanged_paths:\\n- a.py', commits=[]); only column-zero lines behaved as claimed, so the sentence describes new behaviour as continuity on the exact boundary this change moves."
+    },
+    {
+      "file": "docs/evidence/archive/crew-observability-truth-landed.html",
+      "line": 1142,
+      "text": "the evidence record repeats the same 'was already treated' continuity claim about a body line left of the field column, which the base revision's measured reading refutes for the specimen the anchor itself tests; the true continuity is only the column-zero case."
+    },
+    {
+      "file": "docs/evidence/archive/crew-observability-truth-landed.html",
+      "line": "1108",
+      "text": "'7 cases, 9 test items, two of them parametrised over three indents' reads as two parametrised items, but exactly one function is parametrised here over three indents (adding two items, 7+2=9); the arithmetic is right and the phrasing is not."
+    },
+    {
+      "file": "tests/test_manifest_block_indent.py",
+      "line": "1",
+      "text": "no case covers a block scalar nested under a parent; my probe confirms base and head behave identically there (parent children dropped, nested block ends correctly, following top-level fields parse) so the repair does not fight the nested-key sibling, but the interplay is bound by probe only, not by a test."
+    }
+  ],
+  "justifications": {
+    "durability": "The property is bound at every indent the domain names: 6 of the new file's 9 items fail at base and pass at cb10aa3c, so a regression of the continuation rule or of the flush fails the gate on its own; the deduction is that no case pins the nested-parent interplay the brief asks about -- my probe shows base and head identical there (a parent's children stay dropped, and a block scalar under a parent ends correctly regardless), so the change does not fight the nested-key sibling, but nothing in the landed suite would notice if a future edit did.",
+    "evidence": "Every numeric and textual claim reproduces independently: the prescribed four-file cohort reads 1 failed / 210 passed at cb10aa3c in my rerun, the same single failure id (test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion) is the only failure at base (1 failed / 201 passed across the three pre-existing files), the new file contributes exactly 9 items of which 6 fail at base, and the base driver (base_run.py) loads the base revision via `git show` without reverting the worktree exactly as the archive at docs/evidence/archive/crew-observability-truth-landed.html:1100 states.",
+    "fit": "The change follows the reader's own idiom -- it reuses the least-indented-field column the nested-key sibling introduced rather than adding a second notion of top level, extracts `_line_indent` symmetrically, and introduces no name the repository naming rules forbid; the deduction is the comment at tests/test_manifest_block_indent.py:98 (copied into the archive at line 1142) claiming a body line left of the column 'was already treated' as dropped, which the base revision refutes for the specimen it tests.",
+    "goal_fidelity": "The goal -- a block scalar in a wholly indented manifest ends where the next field begins -- is delivered by the continuation test `_line_indent(raw) > manifest_indent` at reckon/crew/reports.py:318, and my own nine-case probe (no indent, two, four, tab, block last, body left of the column, nested parent at both placements, commits-shaped body lines) reads 9/9 at cb10aa3c against 4/9 at dbd5cc1a with the base readings matching the done_when's quoted reproduction verbatim.",
+    "scope_discipline": "The two commits (dbd96dbd fix, cb10aa3c record) touch exactly the four declared write paths -- reckon/crew/reports.py +21/-6, tests/test_manifest_block_indent.py +127, the 17-line plan landing at docs/plans/crew-observability-truth.html:621, and the archive anchor -- with no other file in either diff and both commit subjects free of plan identifiers, which is the exact discipline the earlier template-node review flagged as only half applied in the same section."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "REVIEW r-20260917T155903879703-a-block-scalar-ends-where-the-fields-resume at cb10aa3c (base dbd5cc1a)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The goal -- a block scalar in a wholly indented manifest ends where the next field begins -- is delivered by the continuation test `_line_indent(raw) > manifest_indent` at reckon/crew/reports.py:318, and my own nine-case probe (no indent, two, four, tab, block last, body left of the column, nested parent at both placements, commits-shaped body lines) reads 9/9 at cb10aa3c against 4/9 at dbd5cc1a with the base readings matching the done_when's quoted reproduction verbatim.\nSCORE evidence: 20\nJUSTIFICATION evidence: Every numeric and textual claim reproduces independently: the prescribed four-file cohort reads 1 failed / 210 passed at cb10aa3c in my rerun, the same single failure id (test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion) is the only failure at base (1 failed / 201 passed across the three pre-existing files), the new file contributes exactly 9 items of which 6 fail at base, and the base driver (base_run.py) loads the base revision via `git show` without reverting the worktree exactly as the archive at docs/evidence/archive/crew-observability-truth-landed.html:1100 states.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two commits (dbd96dbd fix, cb10aa3c record) touch exactly the four declared write paths -- reckon/crew/reports.py +21/-6, tests/test_manifest_block_indent.py +127, the 17-line plan landing at docs/plans/crew-observability-truth.html:621, and the archive anchor -- with no other file in either diff and both commit subjects free of plan identifiers.\nSCORE durability: 18\nJUSTIFICATION durability: The property is bound at every indent the domain names: 6 of the new file's 9 items fail at base and pass at cb10aa3c, so a regression of the continuation rule or of the flush fails the gate on its own; the deduction is that no case pins the nested-parent interplay the brief asks about -- my probe shows base and head identical there (a parent's children stay dropped, and a block scalar under a parent ends correctly regardless), so the change does not fight the nested-key sibling, but nothing in the landed suite would notice if a future edit did.\nSCORE fit: 18\nJUSTIFICATION fit: The change follows the reader's own idiom -- it reuses the least-indented-field column the nested-key sibling introduced rather than adding a second notion of top level, extracts `_line_indent` symmetrically, and introduces no name the repository naming rules forbid; the deduction is the comment at tests/test_manifest_block_indent.py:98 (copied into the archive at line 1142) claiming a body line left of the column 'was already treated' as dropped, which the base revision refutes for the specimen it tests.\nFINDING tests/test_manifest_block_indent.py:98 the comment says the orphaned left-of-column body line is dropped 'which is how a body line left of the column was already treated', but at base the indent-2 body line in this very specimen was folded into the tests value (tests='seven passed\\ncommits:\\n- abc1234\\nchanged_paths:\\n- a.py', commits=[]), not dropped; only column-zero lines behaved as claimed.\nFINDING docs/evidence/archive/crew-observability-truth-landed.html:1142 the evidence record repeats the same 'was already treated' continuity claim, refuted by the base revision for the specimen the anchor itself tests; the true continuity is only the column-zero case.\nFINDING docs/evidence/archive/crew-observability-truth-landed.html:1108 '7 cases, 9 test items, two of them parametrised over three indents' reads as two parametrised items, but exactly one function is parametrised over three indents (adding two items); the arithmetic is right and the phrasing is not.\nFINDING tests/test_manifest_block_indent.py:1 no case covers a block scalar nested under a parent; my probe confirms base and head behave identically there so the repair does not fight the nested-key sibling, but the interplay is bound by probe only, not by a test.\n",
+  "review_run_id": "r-20260917T171123774985-review-of-a-block-scalar-ends-where-the-fields-resume",
+  "reviewed_base": "dbd5cc1a1adef5134e8a125f7c230ba4509a74c1",
+  "reviewed_commit": "cb10aa3c5b9b5b922d8bfa1a85fa91a64860402c",
+  "reviewed_run_id": "r-20260917T155903879703-a-block-scalar-ends-where-the-fields-resume",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T18:06:30+00:00",
+  "total": 96
+}

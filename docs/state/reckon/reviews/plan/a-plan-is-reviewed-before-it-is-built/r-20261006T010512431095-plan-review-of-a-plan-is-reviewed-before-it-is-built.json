@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T01:10:24.297Z",
+  "dispatched_at": "2026-10-06T01:05:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:167",
+      "id": "deep_module-1",
+      "reason": "the design must specify an order-preserving return (an ordered sequence of `(identity, prose)` slices, not a bare mapping) or the whole-document form's byte-parity requirement is unsatisfiable on the three plans measured.",
+      "text": "the design returns prose \"keyed by identity with the remainder under the document unit\", but `_fingerprint_forms` must join \"the slices' prose in document order, sections and the remainder alike\" and `authored_plan_text` \"joins them in document order\"; measured on this project, 3 of 151 plans carry non-empty authored remainder interleaved between sections (clive-local-workers.html \u2014 5 remainder slices, project-state-fleet-migration.html \u2014 4, sprint-horizon-surface.html \u2014 3), so a single `_document` bucket loses their position and the claimed byte-identity with the deleted parser cannot hold on those plans",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:167",
+      "id": "reuse_search-1",
+      "reason": "an implementer scoping node 2 from this prose would search `plan_review.py` for the skip set and look for a keyword to add, finding neither pending, so the plan must correct its account of what node 1 already delivered before the node is released.",
+      "text": "the plan's own account of what remains is wrong: it says \"the skip set, `_PROSE_SKIP_TAGS`, is owned today by `reckon/crew/plan_review.py` and moves with the job into `reckon/_plan_html.py`, private as before\", but `_PROSE_SKIP_TAGS` is already defined at `reckon/_plan_html.py:1877` and no such name exists in `reckon/crew/plan_review.py`; it likewise says `structured_section_spans` \"gains the keyword `every_marked_element`\", but `reckon/_plan_html.py:418` already carries that keyword (and `skip_landed_cards`)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:148",
+      "id": "thin_wrapper-1",
+      "reason": "add a check that `_prose_slices` no longer exists, or the consolidation ships a second slicer the gate cannot see, which is the drift the design exists to prevent.",
+      "text": "`_prose_slices` is the slicer the design replaces with `section_prose`, and its two consumers (`_section_digests`, `_fingerprint_forms`) are repointed, but no done-when requires `_prose_slices` to be removed; it can survive as a one-line delegator to `section_prose` while every named grep (`def section_prose`, `read_plan_review(`, `stripped_strings`, `_TAG_RE`, `_PROSE_SKIP_TAGS`) still passes",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d9c3c5a17e6565c85ce5237d5c24ad875119ab09c2a05a26ee0ae92b3ff933ab",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 159,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T010512431095-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "b12cee74fde00e0928d9aca625decd2c89b27c44",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the proposed `section_prose` interface, \"keyed by identity with the remainder under the document unit\", cannot carry the document-order whole-document prose the design requires of it, because the remainder does not form one contiguous bucket.",
+    "duplicate_owner": "pass \u2014 the design consolidates the duplicate prose readers (`mcp_views.authored_plan_text`, `mcp_views._section_response`, the `plan_review` slicer) into one owner, `section_prose` on `reckon/_plan_html.py`, and reads `roadmap.implementable_sections` (`reckon/roadmap.py:107`) and `list_plan_reviews` (`reckon/crew/plan_review.py:618`) unchanged rather than re-implementing them.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 names the one public definition it retires (`strip_tags` made private as `_strip_tags`) against the one it adds (`section_prose`), for a net of zero, and \u00a720 adds none, so each adding section accounts for its surface in its own text.",
+    "reuse_search": "a finding \u2014 the plan does cite the machinery it extends, but its account of the prior art for its remaining node is stale: \u00a716 says `_PROSE_SKIP_TAGS` is owned today by `reckon/crew/plan_review.py` and \"moves ... into `reckon/_plan_html.py`\", and that `structured_section_spans` \"gains the keyword `every_marked_element`\", yet both already hold on `reckon/_plan_html.py` (node 1 landed them).",
+    "thin_wrapper": "a finding \u2014 the design repoints `_prose_slices`'s consumers to `section_prose` but names no check that `_prose_slices` is deleted rather than left as a delegator, so a redundant second slicer would pass every named done-when."
+  },
+  "section_digests": {
+    "_document": "81635abc293ac834eb5c88c1b0f17e260d168d764cf05d9f1319483da13d99ea",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "4d4d72db2e296375b5d34e98b97f228bd1d2f670b734294325f7369ab75e2bbd",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d79e31683151df1a56a87dbbfed8e823d115500358f376d349ab3896ca4ee1ee",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.728875+00:00"
+}

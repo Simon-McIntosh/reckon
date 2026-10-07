@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T21:29:59.979Z",
+  "dispatched_at": "2026-10-05T21:26:51Z",
+  "findings": [
+    {
+      "anchor": "a-plan-is-reviewed-before-it-is-built#s16",
+      "id": "deep_module-1",
+      "reason": "the predicate must be specified to recognise a record whose whole-document legacy fingerprint matches the current plan as covering all outstanding sections, or the legacy third form must synthesise section coverage, and a done-when must assert it, because \u00a716's current done-when tests only the section-digest path.",
+      "text": "\u00a716 states a stored review from before this change \"carries no such key and is treated as covering no section, which the legacy whole-document form below keeps from forcing a re-review of an unchanged plan\", but the described predicate joins `roadmap.implementable_sections` to \"the union of section digests across every stored review\", and a pre-change record contributes no section digests, so every outstanding section reads uncovered and the gate refuses an unchanged plan \u2014 the outcome \u00a714's sidecar census exists to prevent",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:147",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name the set's new home and add it to the `_plan_html.py` surface next to the tag expression, or the byte-identity test against the deleted parser cannot be written without a layering violation or a duplicate owner of the skip set.",
+      "text": "\u00a716 makes `strip_tags` \"definitional for the new digest\" and requires it to drop \"the interiors of the elements `_PROSE_SKIP_TAGS` names\", but `_PROSE_SKIP_TAGS` is owned by `reckon/crew/plan_review.py` and \u00a716 neither moves it to `reckon/_plan_html.py` nor names it beside `_TAG_RE` in the done-when grep, so the core-layer stripper would have to import a crew-layer constant (a core\u2192crew layer inversion) or carry a second copy of the set",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2c1b6a3cf140b32fb2934ef0cb25e15eca26a7f07b9d07a817e5c5afe3788cbf",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 133,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T212631878302-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "6c2f2a9069e48803bba87d605cd63495a423b52f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the section-keyed coverage predicate asserted in \u00a716 cannot produce the outcome \u00a716 claims for a pre-change stored record, so the module's contract leaks a decision to its callers.",
+    "duplicate_owner": "a finding \u2014 `strip_tags` must reproduce the deleted parser's skip of `_PROSE_SKIP_TAGS`, a set owned by `reckon/crew/plan_review.py`, and \u00a716 does not name where that set moves, so the core-layer stripper would import from the crew layer or duplicate it.",
+    "interface_budget": "pass \u2014 public_definitions 1478, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition (`strip_tags`) and \u00a717 two (`plan_headings`, the machinery-element predicate), each naming in its own text why the public family cannot shrink (`structured_section_spans` and `landed_section_ids` keep external callers and are re-expressed, not removed; the `legacy` flag is retired from `plan_fingerprint`'s signature), and no CLI option, MCP view or refusal family is added.",
+    "reuse_search": "pass \u2014 every mechanism \u00a716/\u00a717 adds names the existing owner it extends or re-homes: `_StructuredSectionSpanParser`/`structured_section_spans` (reckon/_plan_html.py:41,94), `_TAG_RE`/`count_open_decisions` (_plan_html.py:1506,1525), `section_record_id`/`section_id_candidates` (reckon/crew/routing.py:224,243), `landed_section_ids` (reckon/_store.py:1075), the `_store` heading helpers (_store.py:849-1106), `interface_counts` AST rules (reckon/interface_counts.py:97), `_RESOURCE_SEGMENT_RE`/`is_section_identity` (reckon/_schema.py), `roadmap.implementable_sections` and `recovery._plan_review_pending`; no subsystem is added without a cited owner.",
+    "thin_wrapper": "pass \u2014 `strip_tags` (a public function over `_TAG_RE`) and the machinery-element predicate are not bare forwarders: `strip_tags` adds entity decoding, skip-tag interior removal and whitespace collapse, and the predicate centralises a `data-reckon` test that appears 14 times across 5 files; both state why they are public."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.764742+00:00"
+}

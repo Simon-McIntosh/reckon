@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/flight.py:_probe_lane_document",
+    "reckon/crew/dispatch.py:_dispatch_lane_reading"
+  ],
+  "completed_at": "2026-09-25T13:49:47.926Z",
+  "dispatched_at": "2026-09-25T13:01:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/lane_document.py",
+      "line": "293",
+      "text": "the gate-aware reading reaches no production surface: read_lane_document and read_lane_document_file have no caller outside their own tests, while reckon/flight.py:1098 and reckon/crew/dispatch.py:2400 parse the document themselves and report the engine figure (paired reading of the live document minutes apart: gate-aware 7, flight probe 12, dispatch carry 12), and reckon/mcp_views.py:553 reads no document at all \u2014 so a follow-on that wires the renderer alone still leaves the dispatch path reporting the engine figure."
+    },
+    {
+      "file": "reckon/crew/lane_document.py",
+      "line": "189",
+      "text": "the if and else arms assign the identical reason string, so an open gate's reason reads the same as a congested one; either a distinct reason was intended or the branch is dead."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against the base \u2014 d677269f carries the reader, the declaration and the fixtures, 03fd05b4 the landing record and one plan comment \u2014 nothing outside the declared scope, and the plan comment's -7 reading is backed by the reviewed run's own stream record.",
+    "done_when": "I re-ran the fixtures file at the head (5 passed), re-read the base and after suite logs and the declared negative-control log; three parts of the done-when hold, and the fourth \u2014 crew(view=\"lanes\") showing clive's gate fields \u2014 is recorded unmet in the manifest rather than claimed.",
+    "goal": "I read reckon/crew/lane_document.py at the reviewed head and ran its reader against the recorded 12:42Z shape myself, and the gate arithmetic at :181-192 and the minimum at :284-296 behave exactly as the goal states \u2014 but no production path calls read_lane_document, so the surface the follow-on names cannot see the figures.",
+    "manifest": "read; it records blocked status naming the renderer gap as its blocker, its claims about the reader arithmetic, the declaration's provenance and the base arm all survived my independent re-checks, and its evidence paths resolve.",
+    "write_paths": "git diff --stat a45e7f1d..03fd05b4 names exactly five files, every one inside the six declared write paths, and the reviewed worktree is clean."
+  },
+  "justifications": {
+    "durability": "the new tests' literal congestion assertions redden under both of my in-memory mutations of lane_document.py:181 and :293, so the guard is independent of the code's own arithmetic output.",
+    "evidence": "the fixtures file asserts the congestion case at tests/test_local_headroom_counts_the_gate.py:36-45 and the manifest records the surface check as unmet, which I confirmed at reckon/mcp_views.py:553, so the evidence is honest but cannot demonstrate the surface its done-when names.",
+    "fit": "the helpers follow the module's per-field idiom and the fixtures name the shape they read, with one dead if/else at reckon/crew/lane_document.py:189-192.",
+    "goal_fidelity": "the module does what the goal states and my own run reproduced it, but with read_lane_document unreachable from production the change cannot alter the headroom any reader sees.",
+    "scope_discipline": "every path in the diff sits inside the declared write paths with a clean worktree, and my read of the two commits found nothing staged outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: I read reckon/crew/lane_document.py at the reviewed head and ran its reader against the recorded 12:42Z shape myself, and the gate arithmetic at :181-192 and the minimum at :284-296 behave exactly as the goal states \u2014 but no production path calls read_lane_document, so the surface the follow-on names cannot see the figures.\nVERDICT done_when: I re-ran the fixtures file at the head (5 passed), re-read the base and after suite logs and the declared negative-control log; three parts of the done-when hold, and the fourth \u2014 crew(view=\"lanes\") showing clive's gate fields \u2014 is recorded unmet in the manifest rather than claimed.\nVERDICT write_paths: git diff --stat a45e7f1d..03fd05b4 names exactly five files, every one inside the six declared write paths, and the reviewed worktree is clean.\nVERDICT manifest: read; it records blocked status naming the renderer gap as its blocker, its claims about the reader arithmetic, the declaration's provenance and the base arm all survived my independent re-checks, and its evidence paths resolve.\nVERDICT diff: read both commits against the base \u2014 d677269f carries the reader, the declaration and the fixtures, 03fd05b4 the landing record and one plan comment \u2014 nothing outside the declared scope, and the plan comment's -7 reading is backed by the reviewed run's own stream record.\nCALL_SITES: reckon/flight.py:_probe_lane_document, reckon/crew/dispatch.py:_dispatch_lane_reading\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the module does what the goal states and my own run reproduced it, but with read_lane_document unreachable from production the change cannot alter the headroom any reader sees.\nSCORE evidence: 13\nJUSTIFICATION evidence: the fixtures file asserts the congestion case at tests/test_local_headroom_counts_the_gate.py:36-45 and the manifest records the surface check as unmet, which I confirmed at reckon/mcp_views.py:553, so the evidence is honest but cannot demonstrate the surface its done-when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff sits inside the declared write paths with a clean worktree, and my read of the two commits found nothing staged outside them.\nSCORE durability: 17\nJUSTIFICATION durability: the new tests' literal congestion assertions redden under both of my in-memory mutations of lane_document.py:181 and :293, so the guard is independent of the code's own arithmetic output.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers follow the module's per-field idiom and the fixtures name the shape they read, with one dead if/else at reckon/crew/lane_document.py:189-192.\nFINDING reckon/crew/lane_document.py:293 the gate-aware reading reaches no production surface: read_lane_document and read_lane_document_file have no caller outside their own tests, while reckon/flight.py:1098 and reckon/crew/dispatch.py:2400 parse the document themselves and report the engine figure (paired reading of the live document minutes apart: gate-aware 7, flight probe 12, dispatch carry 12), and reckon/mcp_views.py:553 reads no document at all \u2014 so a follow-on that wires the renderer alone still leaves the dispatch path reporting the engine figure.\nFINDING reckon/crew/lane_document.py:189 the if and else arms assign the identical reason string, so an open gate's reason reads the same as a congested one; either a distinct reason was intended or the branch is dead.\n",
+  "review_run_id": "r-20260925T130110800830-review-of-local-headroom-counts-the-gate",
+  "reviewed_base_sha": "a45e7f1d124ad45985c5154bf8732dba8c656895",
+  "reviewed_head_sha": "03fd05b42b81cd23213844a4beadd6e78c528295",
+  "reviewed_run_id": "r-20260925T124611073262-local-headroom-counts-the-gate",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:44:01.508603+00:00",
+  "total": 82
+}

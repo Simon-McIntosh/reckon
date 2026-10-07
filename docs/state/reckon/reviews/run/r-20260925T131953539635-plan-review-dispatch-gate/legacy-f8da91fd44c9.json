@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2919",
+    "reckon/crew/dispatch.py:3498",
+    "reckon/cli.py:1248",
+    "reckon/crew/dispatch.py:3329"
+  ],
+  "completed_at": "2026-09-26T07:57:57.332Z",
+  "dispatched_at": "2026-09-25T13:20:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1201",
+      "text": "the unanswered-findings refusal is unguarded: no case in tests/test_plan_review_gate.py stores a review whose finding carries no response and expects the refusal, so a regression deleting this branch leaves all eight cases green; I demonstrated the branch does refuse when exercised (reviewer-probe-unanswered.log), which is the delivered test the suite is missing."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "1264",
+      "text": "the dry-run branch catches PlanReviewMissingError and emits {\"error\": \"plan-unavailable\"} for a plan that is readable but unreviewed, while the launch path at :1337 emits \"plan-review-missing\"; an operator diagnosing with --dry-run is pointed at mounts rather than at the composed review, and one refusal class carries two error keys."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/gate-final.log",
+      "line": "1",
+      "text": "the log the manifest cites for the spec gate names no revision, tree or command \u2014 its first line is a pytest progress bar \u2014 so the 8-passed receipt cannot be attributed to a revision, against the brief at lane-change-2-prompt.txt:141; compat-after.log shares the omission while its base arm baseline-suite.log carries the header."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all six commits against fb9c67be commit by commit; the gate, the error class beside PlanVisibilityError, the D23 family, the waiver plumbing in both dispatch paths and the fixture reviews all land inside the fence, the only adjacent work being 22d985c6 repairing the pre-existing plan-review-store.svg entities, argued in its own commit message.",
+    "done_when": "the done_when asks for refusal naming plan and remedy, admission on an answered review, exempt through the same predicate as _is_review_node, the waiver recorded on the pointer, negative control executed, and zero added failures over the three compatibility suites against base; tests/test_plan_review_gate.py holds those cases and my independent re-run at 8f17d808 reproduced 8 passed exit 0, negative-control.log's first line is the declared string with a real FAILED, and baseline-suite.log / compat-after.log read 49 and 50 passed at exit 0.",
+    "goal": "the goal is a build-time gate refusing a dispatch against a plan whose current content has no answered review; require_plan_reviewed at reckon/crew/routing.py:1141 sits beside require_plan_section_visible and is called from plan_dispatch at reckon/crew/dispatch.py:2919 right after the visibility check, and my scratch probe at the reviewed head refused an implement node carrying one unanswered finding, naming the plan and the D23 remedy, then admitted the same node once the finding was declined with a reason.",
+    "manifest": "read manifest.md; reckon crew check-manifest reports ok with no findings, the six commits and every cited log exist on disk, and its lint claim reproduced under the repo's own ruff config \u2014 the three fixture files carry identical check and format status at base and head, the dispatch guard's I001 and reformat hunk pre-existing on both sides.",
+    "write_paths": "the live pointer's node.write_paths carries twelve paths after the coordinator's widen appended reckon/cli.py and the three compatibility suites, and git diff --stat fb9c67be..8f17d808 lists thirteen files with every one of them under those twelve, while the manifest's orientation_write_paths still states the pre-widen eight, so a reader has to reconcile the declaration against the pointer's fence."
+  },
+  "justifications": {
+    "durability": "the refusal, admission, exemption, metadata-only and waiver cases each redden if their branch goes, but the unanswered-findings refusal at reckon/crew/routing.py:1201 has no test, so deleting it leaves all eight cases green.",
+    "evidence": "my re-run reproduced the gate at 8f17d808 and both compat arms are logged, but gate-final.log and compat-after.log name no revision, tree or command on their first lines while the brief at lane-change-2-prompt.txt:141 requires it, and no delivered check exercised the unanswered-findings branch.",
+    "fit": "require_plan_reviewed sits beside require_plan_section_visible at reckon/crew/routing.py:1141 in the same voice, the D23 entry joins DISPATCH_REFUSAL_REMEDIES at reckon/crew/refusals.py:89, the override name mirrors unreconciled_override, and no plan or ticket name reaches the code.",
+    "goal_fidelity": "reckon/crew/routing.py:1141 implements every element the goal names and the refusal demonstrably fires; docked for reckon/cli.py:1266 reporting the same refusal as \"plan-unavailable\" in the dry-run path where the launch path reports \"plan-review-missing\".",
+    "scope_discipline": "every path in the thirteen-file diff is inside the twelve-path fence the live pointer records, cli.py and the three fixtures included via the granted widen; docked because the manifest's declared orientation_write_paths still lists the pre-widen eight."
+  },
+  "project": "reckon",
+  "raw_text": "review of run r-20260925T131953539635-plan-review-dispatch-gate (node plan-review-dispatch-gate)\nbase: fb9c67bea298ca41460894b17cd70c7e904a4785\nhead: 8f17d808aded746dfd3ab5ee0427640bf065a7da\nVERDICT goal: the goal is a build-time gate refusing a dispatch against a plan whose current content has no answered review; require_plan_reviewed at reckon/crew/routing.py:1141 sits beside require_plan_section_visible and is called from plan_dispatch at reckon/crew/dispatch.py:2919 right after the visibility check, and my scratch probe at the reviewed head refused an implement node carrying one unanswered finding, naming the plan and the D23 remedy, then admitted the same node once the finding was declined with a reason.\nVERDICT done_when: the done_when asks for refusal naming plan and remedy, admission on an answered review, exempt through the same predicate as _is_review_node, the waiver recorded on the pointer, negative control executed, and zero added failures over the three compatibility suites against base; tests/test_plan_review_gate.py holds those cases and my independent re-run at 8f17d808 reproduced 8 passed exit 0, negative-control.log's first line is the declared string with a real FAILED, and baseline-suite.log / compat-after.log read 49 and 50 passed at exit 0.\nVERDICT write_paths: the live pointer's node.write_paths carries twelve paths after the coordinator's widen appended reckon/cli.py and the three compatibility suites, and git diff --stat fb9c67be..8f17d808 lists thirteen files with every one of them under those twelve, while the manifest's orientation_write_paths still states the pre-widen eight, so a reader has to reconcile the declaration against the pointer's fence.\nVERDICT manifest: read manifest.md; reckon crew check-manifest reports ok with no findings, the six commits and every cited log exist on disk, and its lint claim reproduced under the repo's own ruff config \u2014 the three fixture files carry identical check and format status at base and head, the dispatch guard's I001 and reformat hunk pre-existing on both sides.\nVERDICT diff: read all six commits against fb9c67be commit by commit; the gate, the error class beside PlanVisibilityError, the D23 family, the waiver plumbing in both dispatch paths and the fixture reviews all land inside the fence, the only adjacent work being 22d985c6 repairing the pre-existing plan-review-store.svg entities, argued in its own commit message.\nCALL_SITES: reckon/crew/dispatch.py:2919, reckon/crew/dispatch.py:3498, reckon/cli.py:1248, reckon/crew/dispatch.py:3329\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1141 implements every element the goal names and the refusal demonstrably fires; docked for reckon/cli.py:1266 reporting the same refusal as \"plan-unavailable\" in the dry-run path where the launch path reports \"plan-review-missing\".\nSCORE evidence: 16\nJUSTIFICATION evidence: my re-run reproduced the gate at 8f17d808 and both compat arms are logged, but gate-final.log and compat-after.log name no revision, tree or command on their first lines while the brief at lane-change-2-prompt.txt:141 requires it, and no delivered check exercised the unanswered-findings branch.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the thirteen-file diff is inside the twelve-path fence the live pointer records, cli.py and the three fixtures included via the granted widen; docked because the manifest's declared orientation_write_paths still lists the pre-widen eight.\nSCORE durability: 15\nJUSTIFICATION durability: the refusal, admission, exemption, metadata-only and waiver cases each redden if their branch goes, but the unanswered-findings refusal at reckon/crew/routing.py:1201 has no test, so deleting it leaves all eight cases green.\nSCORE fit: 18\nJUSTIFICATION fit: require_plan_reviewed sits beside require_plan_section_visible at reckon/crew/routing.py:1141 in the same voice, the D23 entry joins DISPATCH_REFUSAL_REMEDIES at reckon/crew/refusals.py:89, the override name mirrors unreconciled_override, and no plan or ticket name reaches the code.\nFINDING reckon/crew/routing.py:1201 the unanswered-findings refusal is unguarded: no case in tests/test_plan_review_gate.py stores a review whose finding carries no response and expects the refusal, so a regression deleting this branch leaves all eight cases green; I demonstrated the branch does refuse when exercised (reviewer-probe-unanswered.log), which is the delivered test the suite is missing.\nFINDING reckon/cli.py:1264 the dry-run branch catches PlanReviewMissingError and emits {\"error\": \"plan-unavailable\"} for a plan that is readable but unreviewed, while the launch path at :1337 emits \"plan-review-missing\"; an operator diagnosing with --dry-run is pointed at mounts rather than at the composed review, and one refusal class carries two error keys.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/gate-final.log:1 the log the manifest cites for the spec gate names no revision, tree or command \u2014 its first line is a pytest progress bar \u2014 so the 8-passed receipt cannot be attributed to a revision, against the brief at lane-change-2-prompt.txt:141; compat-after.log shares the omission while its base arm baseline-suite.log carries the header.",
+  "review_run_id": "legacy-f8da91fd44c9",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "fb9c67bea298ca41460894b17cd70c7e904a4785",
+  "reviewed_head_sha": "8f17d808aded746dfd3ab5ee0427640bf065a7da",
+  "reviewed_run_id": "r-20260925T131953539635-plan-review-dispatch-gate",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T17:56:42.263814+00:00",
+  "total": 85
+}

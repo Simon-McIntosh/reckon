@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:09:54.802Z",
+  "dispatched_at": "2026-10-05T17:04:48Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:60",
+      "id": "duplicate_owner-1",
+      "reason": "the done-when must name the importer or grep the package for the moved name, otherwise a green gate proves the removal and not the move.",
+      "text": "\u00a717 re-homes `landed_section_ids` from `reckon/_store.py` to `reckon/_plan_html.py`, but its declared done-when only greps those two modules (for the thirteen names and for a reverse import); the existing consumer `reckon/crew/plan_review.py:60` (`from reckon._store import landed_section_ids, write_json_atomically`) is never named as a site to update, so the move leaves a broken import while the stated gate stays green",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:106",
+      "id": "duplicate_owner-2",
+      "reason": "the author must name the one owning module (and the import edge it creates) so the two landing recognisers do not land in two modules and roadmap does not gain an unnamed core dependency.",
+      "text": "\u00a718 hoists the `c-run-` prefix and its recogniser \"to the store\" without naming the module, while the reader that must subtract recorded landings, `roadmap.implementable_sections`, imports `reckon/_plan_html.py` but not `reckon/_store.py`, so the destination the text implies (`reckon/_store.py`) adds a new roadmap\u2192_store edge and puts the second landing recogniser in a different module from the card recogniser \u00a717 placed in `_plan_html.py`",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1643afe369a29f306bfa977cb6e0d978c5ccd2df4e3bad3da68f6966182a1c0f",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 95,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T170432496160-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "c91bd290e56654f39e5514d6743d658ced5fb296",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 and \u00a717 hide section identity, per-section digesting and coverage behind the existing public entry `plan_fingerprint` and one new public reader `plan_headings`, consolidating thirteen private helpers onto one parser instead of spreading new wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a718 re-homes the `c-run-` landing recogniser to \"the store\" while \u00a717 homes the sibling card recogniser in `reckon/_plan_html.py`, and \u00a717's done-when never names `reckon/crew/plan_review.py:60`, the existing importer of the moved name.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716, \u00a717 and \u00a718 each carry an \"Interface accounting\" paragraph naming what they add, move or retire (net +1 public definition, `plan_headings`; no CLI option, MCP view or refusal family), and \u00a716 states the refusal reuses the existing plan-review-missing family rather than adding one.",
+    "reuse_search": "pass \u2014 the design sections search and extend the mechanisms that already do this work (`reckon/_plan_html.py` `_StructuredSectionSpanParser`/`structured_section_spans`, `reckon/_store.py` `landed_section_ids`, `reckon/crew/routing.py` `section_record_id`/`section_id_candidates`, `reckon/roadmap.py` `implementable_sections`, `reckon/crew/plan_review.py` `_fingerprint_forms`, and the `reckon/interface_counts.py` AST census) rather than proposing a parallel scanner.",
+    "thin_wrapper": "pass \u2014 \u00a718 extends the existing owner `roadmap.implementable_sections` and deletes `promotion._plan_remaining_sections` rather than adding a wrapper, and \u00a717 exposes an extended parser rather than wrapping one, so no unjustified thin layer is added."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.839259+00:00"
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:1294",
+    "reckon/crew/recovery.py:1055",
+    "reckon/crew/dispatch.py:3337",
+    "reckon/crew/dispatch.py:3681"
+  ],
+  "completed_at": "2026-09-25T18:50:13.938Z",
+  "dispatched_at": "2026-09-25T18:35:09Z",
+  "findings": [
+    {
+      "file": "tests/test_member_registration_commits.py",
+      "line": "265",
+      "text": "the case test_a_dispatch_naming_no_member_commits_its_registration asserts an unnamed dispatch's member starts with session- and commits a chore(roster) registration row, the exact contract the plan's 2026-09-24 lead ruling retires; the landed change makes it fail and it lies outside this node's fence, so it needs the assertion swap the source manifest names before the section's merged-head gate."
+    },
+    {
+      "file": "tests/test_crew_ephemeral_members.py",
+      "line": "113",
+      "text": "the case test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session asserts both disposable members are rows in crew.json and, at line 146, that a later dispatch reuses its private member, both retired by the same ruling; its task-keyed session assertions still hold, so the adaptation must drop the roster and member-reuse halves and keep the session half."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "one commit against base 7e90064d, itself the pre-fenced test commit; the diff swaps the session-derived identity for the per-run one, removes the roster registration, updates the boundary-baseline comment, and adds the _live_view helper plus two disposable-prefix assertions; the commit content is byte-identical to the worker's tested change.patch (sha256 0ed5c217a4898306...).",
+    "done_when": "the gate's named file tests/test_no_member_dispatch_runs_alone.py is 1 failed / 1 passed at pure base 7e90064d and 2 passed at head ecd1528c in scratch trees I built myself, while the done-when's \"zero added failures\" clause measures unmet at 2 added ids, which the source manifest records rather than hides.",
+    "goal": "the node goal is that a dispatch naming no member runs under its own disposable identity instead of the one session-derived member; reckon/crew/dispatch.py:3681 mints effective_member = member or _disposable_member_id(run_id), the single choke point every unnamed dispatch passes, and the _register_session_member call site is gone.",
+    "manifest": "read; it records both cohort arms with counts and failure ids, the declared negative-control string with its red log, the ruff and format deltas, the read-only .git blocker and follow_ons, and it reports the unmet gate clause instead of fitting the number it was given.",
+    "write_paths": "the declared fence is reckon/crew/dispatch.py, reckon/crew/routing.py, tests/test_no_member_dispatch_runs_alone.py plus three docs paths; git show --stat ecd1528c lists exactly the three code and test files and nothing else."
+  },
+  "justifications": {
+    "durability": "the back-to-back case reddens when the session-derived binding is restored \u2014 the declared control's log fails with member-in-flight on session-b1d9aed7a2e9cff24be1 and my base arm reproduces the same refusal \u2014 so the guard fires, but the roster-bytes and live-home assertions are reached by no red run and the promotion row's member is unpinned, which costs two points.",
+    "evidence": "the manifest's 25-file gate records both arms with failure ids and I reproduced the named file myself (reviewer-base-arm.log 1 failed / 1 passed, reviewer-head-arm.log 2 passed), but the zero-added-failures clause measures false at this head, so the evidence demonstrates the fix plus an unmet integration clause rather than a clean gate.",
+    "fit": "the helper sits beside _session_member_id at reckon/crew/routing.py:1262 and mirrors its shape and docstring style, no forbidden name is introduced, lint and format deltas are zero, and the only loose end is leaving _register_session_member at routing.py:1273 test-only for callers the fence forbids editing.",
+    "goal_fidelity": "every unnamed dispatch \u2014 the CLI at reckon/cli.py:1294, the reflex review at reckon/crew/recovery.py:1055 and the shadow path at reckon/crew/dispatch.py:3337 \u2014 reaches the one mint at dispatch.py:3681, and my own arms show the plan's recorded refusal at base and both launches at head.",
+    "scope_discipline": "the landed commit touches only the three in-fence paths and nothing else, and my recheck shows the ruff finding multiset and the format hunk bodies are unchanged between base and head."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 7e90064d47494cd0f354d96c6aff9ad39c1d97df\nreviewed_head_sha: ecd1528c40223e0a84b2cee08492a8e9a344ff54\nVERDICT goal: the node goal is that a dispatch naming no member runs under its own disposable identity instead of the one session-derived member; reckon/crew/dispatch.py:3681 mints effective_member = member or _disposable_member_id(run_id), the single choke point every unnamed dispatch passes, and the _register_session_member call site is gone.\nVERDICT done_when: the gate's named file tests/test_no_member_dispatch_runs_alone.py is 1 failed / 1 passed at pure base 7e90064d and 2 passed at head ecd1528c in scratch trees I built myself, while the done-when's \"zero added failures\" clause measures unmet at 2 added ids, which the source manifest records rather than hides.\nVERDICT write_paths: the declared fence is reckon/crew/dispatch.py, reckon/crew/routing.py, tests/test_no_member_dispatch_runs_alone.py plus three docs paths; git show --stat ecd1528c lists exactly the three code and test files and nothing else.\nVERDICT manifest: read; it records both cohort arms with counts and failure ids, the declared negative-control string with its red log, the ruff and format deltas, the read-only .git blocker and follow_ons, and it reports the unmet gate clause instead of fitting the number it was given.\nVERDICT diff: one commit against base 7e90064d, itself the pre-fenced test commit; the diff swaps the session-derived identity for the per-run one, removes the roster registration, updates the boundary-baseline comment, and adds the _live_view helper plus two disposable-prefix assertions; the commit content is byte-identical to the worker's tested change.patch (sha256 0ed5c217a4898306...).\nCALL_SITES: reckon/cli.py:1294, reckon/crew/recovery.py:1055, reckon/crew/dispatch.py:3337, reckon/crew/dispatch.py:3681\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every unnamed dispatch \u2014 the CLI at reckon/cli.py:1294, the reflex review at reckon/crew/recovery.py:1055 and the shadow path at reckon/crew/dispatch.py:3337 \u2014 reaches the one mint at dispatch.py:3681, and my own arms show the plan's recorded refusal at base and both launches at head.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's 25-file gate records both arms with failure ids and I reproduced the named file myself (reviewer-base-arm.log 1 failed / 1 passed, reviewer-head-arm.log 2 passed), but the zero-added-failures clause measures false at this head, so the evidence demonstrates the fix plus an unmet integration clause rather than a clean gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the landed commit touches only the three in-fence paths and nothing else, and my recheck shows the ruff finding multiset and the format hunk bodies are unchanged between base and head.\nSCORE durability: 18\nJUSTIFICATION durability: the back-to-back case reddens when the session-derived binding is restored \u2014 the declared control's log fails with member-in-flight on session-b1d9aed7a2e9cff24be1 and my base arm reproduces the same refusal \u2014 so the guard fires, but the roster-bytes and live-home assertions are reached by no red run and the promotion row's member is unpinned, which costs two points.\nSCORE fit: 19\nJUSTIFICATION fit: the helper sits beside _session_member_id at reckon/crew/routing.py:1262 and mirrors its shape and docstring style, no forbidden name is introduced, lint and format deltas are zero, and the only loose end is leaving _register_session_member at routing.py:1273 test-only for callers the fence forbids editing.\nFINDING tests/test_member_registration_commits.py:265 the case test_a_dispatch_naming_no_member_commits_its_registration asserts an unnamed dispatch's member starts with session- and commits a chore(roster) registration row, the exact contract the plan's 2026-09-24 lead ruling retires; the landed change makes it fail and it lies outside this node's fence, so it needs the assertion swap the source manifest names before the section's merged-head gate.\nFINDING tests/test_crew_ephemeral_members.py:113 the case test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session asserts both disposable members are rows in crew.json and, at line 146, that a later dispatch reuses its private member, both retired by the same ruling; its task-keyed session assertions still hold, so the adaptation must drop the roster and member-reuse halves and keep the session half.",
+  "review_run_id": "r-20260925T183457617084-review-of-no-member-dispatch-runs-alone-local",
+  "reviewed_base_sha": "7e90064d47494cd0f354d96c6aff9ad39c1d97df",
+  "reviewed_head_note": "The reviewed content is commit ecd1528c, committed by the coordinator on the worker's behalf after the worker's host mounted the shared .git read-only; I verified the commit's diff against 7e90064d is byte-identical to the worker's tested diff (source run logs/change.patch, sha256 0ed5c217a4898306...). Base 7e90064d is the pre-fenced test commit the node was dispatched to build on.",
+  "reviewed_head_sha": "ecd1528c40223e0a84b2cee08492a8e9a344ff54",
+  "reviewed_run_id": "r-20260925T171703272067-no-member-dispatch-runs-alone-local",
+  "reviewed_tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/no-member-dispatch-runs-alone-local",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T18:47:22.732935+00:00",
+  "total": 94
+}

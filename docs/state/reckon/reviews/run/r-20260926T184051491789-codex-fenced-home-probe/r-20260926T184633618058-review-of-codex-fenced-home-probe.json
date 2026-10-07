@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/_backends.py:2274"
+  ],
+  "completed_at": "2026-09-26T19:07:45.698Z",
+  "dispatched_at": "2026-09-26T18:46:47Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/codex-fenced-home-probe/probe.txt",
+      "line": "3",
+      "text": "line 3 records AGENTS.md's presence and first line but not that its instructions reached the request, which is the first half of the codex pause's exit condition (docs/plans/a-worker-cannot-write-your-home.html:1153); the direct observable exists uncited in the run home at codex-home/sessions/2026/09/26/rollout-2026-09-26T20-41-27-01a0df05-b1be-7ea1-b143-73d82d655957.jsonl, which carries the \"Always banned\" text, so the record alone cannot discharge the condition it was dispatched to settle."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/codex-fenced-home-probe/probe.txt",
+      "line": "5",
+      "text": "the recorded command is the bare write while its quoted output (exit_status=1; error=...; exists_after=no) is produced by the probe_error=$( { printf ...; } 2>&1) capture the run's stream.jsonl shows executing, so a reader who re-runs the line as written gets exit 1 and stderr but none of the recorded fields."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "there is no diff: the worker's own `git rev-parse HEAD` is 97503acc3a78bba202bd1a940e278771ce10ae89 (stream.jsonl item 6), its worktree is clean at that revision today, and the reviewed pair is therefore base=head=97503acc3a78bba202bd1a940e278771ce10ae89.",
+    "done_when": "the done_when names six labelled lines in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/codex-fenced-home-probe/probe.txt; the file holds exactly 6 lines (wc -l), each pairing a command with its output, and the manifest's test_logs cites it as the gate log.",
+    "goal": "the node goal is to record from inside a fenced codex launch what its own run home carries and what it cannot write, and probe.txt lines 1-6 record exactly that, with the launch's own supervisor.json plan.argv independent of the report confirming the composition it ran under (bwrap --ro-bind /home/ITER/mcintos/Code/reckon, --ro-bind /home/ITER/mcintos/.codex, --ro-bind /home/ITER/mcintos/.codex/auth.json onto <run>/codex-home/auth.json, environment CODEX_HOME=<run>/codex-home).",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T184051491789-codex-fenced-home-probe/manifest.md; status complete, tests quotes the six commands at 6/6 with exit_status 0, test_logs cites probe.txt, commits names the base sha 97503acc and states nothing is committed, and `reckon crew check-manifest --run r-20260926T184051491789-codex-fenced-home-probe` re-run by me returns ok:true with no findings.",
+    "write_paths": "the declared scope is probe.txt plus the archive anchor, figures directory and plan file, with the repository declared read-only for this role; the node wrote only probe.txt and its manifest, and changed_paths is empty."
+  },
+  "justifications": {
+    "durability": "this node adds no assertion of its own, so nothing in it reddens if the fence regresses; the composition it observed is pinned at argv level by tests/test_each_run_owns_its_harness_home.py:443 (the operator auth.json ro-bind pair) and tests/test_harness_home_carries_the_operator_config.py:190 (AGENTS.md, a writable config.toml, rules/), so the observed mechanism is guarded even though the probe itself is a one-off record.",
+    "evidence": "I verified every claim outside the report -- both probe paths are absent on disk, codex-home/AGENTS.md's first line matches, codex-home/auth.json is bound read-only by plan.argv, and the run's stream.jsonl carries the EROFS outputs the lines quote -- with two gaps: the first-request link is uncited and probe.txt lines 5-6 record the bare write while their quoted output came from the capture wrapper the stream shows executing.",
+    "fit": "the report follows the dispatched six-labelled-line form (probe.txt:1-6, \"command: ... -- output: ...\"), the manifest keys match the template, and no plan, version, ticket or attribution identifier appears in the artefact.",
+    "goal_fidelity": "probe.txt lines 1-6 cover the six dispatched observables and each is confirmed outside the report (supervisor.json plan.environment.CODEX_HOME, the auth.json --ro-bind pair in plan.argv, codex-home/AGENTS.md's first line on disk), but the home's other carried files (codex-home/config.toml, codex-home/rules/) are not enumerated and line 3 shows AGENTS.md is present in the home rather than that its instructions reached the request.",
+    "scope_discipline": "no commit was made, changed_paths is empty, `git status --short` in the reviewed worktree is empty at 97503acc, and neither /home/ITER/mcintos/Code/reckon/codex_probe.txt nor /home/ITER/mcintos/.codex/codex_probe.txt exists now."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to record from inside a fenced codex launch what its own run home carries and what it cannot write, and probe.txt lines 1-6 record exactly that, with the launch's own supervisor.json plan.argv independent of the report confirming the composition it ran under (bwrap --ro-bind /home/ITER/mcintos/Code/reckon, --ro-bind /home/ITER/mcintos/.codex, --ro-bind /home/ITER/mcintos/.codex/auth.json onto <run>/codex-home/auth.json, environment CODEX_HOME=<run>/codex-home).\nVERDICT done_when: the done_when names six labelled lines in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/codex-fenced-home-probe/probe.txt; the file holds exactly 6 lines (wc -l), each pairing a command with its output, and the manifest's test_logs cites it as the gate log.\nVERDICT write_paths: the declared scope is probe.txt plus the archive anchor, figures directory and plan file, with the repository declared read-only for this role; the node wrote only probe.txt and its manifest, and changed_paths is empty.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T184051491789-codex-fenced-home-probe/manifest.md; status complete, tests quotes the six commands at 6/6 with exit_status 0, test_logs cites probe.txt, commits names the base sha 97503acc and states nothing is committed, and `reckon crew check-manifest --run r-20260926T184051491789-codex-fenced-home-probe` re-run by me returns ok:true with no findings.\nVERDICT diff: there is no diff: the worker's own `git rev-parse HEAD` is 97503acc3a78bba202bd1a940e278771ce10ae89 (stream.jsonl item 6), its worktree is clean at that revision today, and the reviewed pair is therefore base=head=97503acc3a78bba202bd1a940e278771ce10ae89.\nCALL_SITES: reckon/_backends.py:2274\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: probe.txt lines 1-6 cover the six dispatched observables and each is confirmed outside the report (supervisor.json plan.environment.CODEX_HOME, the auth.json --ro-bind pair in plan.argv, codex-home/AGENTS.md's first line on disk), but the home's other carried files (codex-home/config.toml, codex-home/rules/) are not enumerated and line 3 shows AGENTS.md is present in the home rather than that its instructions reached the request.\nSCORE evidence: 17\nJUSTIFICATION evidence: I verified every claim outside the report -- both probe paths are absent on disk, codex-home/AGENTS.md's first line matches, codex-home/auth.json is bound read-only by plan.argv, and the run's stream.jsonl carries the EROFS outputs the lines quote -- with two gaps: the first-request link is uncited and probe.txt lines 5-6 record the bare write while their quoted output came from the capture wrapper the stream shows executing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: no commit was made, changed_paths is empty, `git status --short` in the reviewed worktree is empty at 97503acc, and neither /home/ITER/mcintos/Code/reckon/codex_probe.txt nor /home/ITER/mcintos/.codex/codex_probe.txt exists now.\nSCORE durability: 16\nJUSTIFICATION durability: this node adds no assertion of its own, so nothing in it reddens if the fence regresses; the composition it observed is pinned at argv level by tests/test_each_run_owns_its_harness_home.py:443 (the operator auth.json ro-bind pair) and tests/test_harness_home_carries_the_operator_config.py:190 (AGENTS.md, a writable config.toml, rules/), so the observed mechanism is guarded even though the probe itself is a one-off record.\nSCORE fit: 19\nJUSTIFICATION fit: the report follows the dispatched six-labelled-line form (probe.txt:1-6, \"command: ... -- output: ...\"), the manifest keys match the template, and no plan, version, ticket or attribution identifier appears in the artefact.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/codex-fenced-home-probe/probe.txt:3 line 3 records AGENTS.md's presence and first line but not that its instructions reached the request, which is the first half of the codex pause's exit condition (docs/plans/a-worker-cannot-write-your-home.html:1153); the direct observable exists uncited in the run home at codex-home/sessions/2026/09/26/rollout-2026-09-26T20-41-27-01a0df05-b1be-7ea1-b143-73d82d655957.jsonl, which carries the \"Always banned\" text, so the record alone cannot discharge the condition it was dispatched to settle.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/codex-fenced-home-probe/probe.txt:5 the recorded command is the bare write while its quoted output (exit_status=1; error=...; exists_after=no) is produced by the probe_error=$( { printf ...; } 2>&1) capture the run's stream.jsonl shows executing, so a reader who re-runs the line as written gets exit 1 and stderr but none of the recorded fields.",
+  "review_run_id": "r-20260926T184633618058-review-of-codex-fenced-home-probe",
+  "reviewed_base_sha": "97503acc3a78bba202bd1a940e278771ce10ae89",
+  "reviewed_head_sha": "97503acc3a78bba202bd1a940e278771ce10ae89",
+  "reviewed_run_id": "r-20260926T184051491789-codex-fenced-home-probe",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T19:02:15.995549+00:00",
+  "total": 91
+}

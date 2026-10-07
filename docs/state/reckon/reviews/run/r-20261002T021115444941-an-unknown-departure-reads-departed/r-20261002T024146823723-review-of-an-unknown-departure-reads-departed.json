@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:8150"
+  ],
+  "completed_at": "2026-10-02T02:53:13.385Z",
+  "dispatched_at": "2026-10-02T02:42:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8152",
+      "severity": "follow-on",
+      "text": "the change updated _departure_word's own docstring but left the two surrounding comments on the superseded three-word contract: the fleet_transitions comment says 'failing both, the word is withdrawn' and 'a departure with no project at all still withdraws \u2014 the safe direction' at :8144-8152, and the _departure_recorded_run_ids docstring says 'unknown is answered by the withdrawal word' at :8037. Under the head code a departure with no project resolves to recorded is None and reads departed, so both comments now contradict the behaviour they annotate and mislead the next reader about the contract."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: _departure_word is called only at reckon/crew/recovery.py:8150, inside fleet_transitions, whose production caller is the ticker seat.",
+    "diff": "read one revision at a time against 8652b7e11; 6b7a054075 adds the departed branch, the FLEET_UNPROMOTED_STATES word and the renamed test, acb45d2cb1 reorders the discard check ahead of the unresolvable-ledger return, and 82ad91ec58 is the evidence fragment.",
+    "done_when": "the reviewed node's gate is the five-module run; I re-ran it at head 82ad91ec5 and it reads 67 passed (EXIT=0) while base-arm.log reads 1 failed / 65 passed (EXIT=1), so the departed case the change makes true is red at base and green at head, and the added-failure set difference over the two arms is empty.",
+    "goal": "the decision to give an unknown departure its own non-committal word is implemented in recovery._departure_word and asserted by the renamed and new cases.",
+    "manifest": "read; it records the base, head and two negative-control arms with revision and counts, the reverted mutations, the lint delta, and a follow_on that runs.py's WATCH_* state lists do not name the departure words.",
+    "write_paths": "git diff --stat 8652b7e11..82ad91ec5 lists exactly the five declared paths and no plan meta is in the diff."
+  },
+  "justifications": {
+    "durability": "the four departure words are each covered by a case in tests/test_a_live_run_never_reads_dead.py (promoted and withdrawn in test_a_vanished_run_without_a_ledger_row_is_not_called_promoted, departed in test_a_departure_with_no_ledger_evidence_reads_departed, discarded in test_a_discard_marker_outranks_an_unresolvable_ledger), and I reproduced the declared negative control by loading the branch-removed tree, whose _departure_word('r-x', None) returns withdrawn and fails the guarded assertion (EXIT=1, logs/reviewer-negative-control.log).",
+    "evidence": "the reviewed node's base arm (1 failed / 65 passed, EXIT=1) and head arm (67 passed, EXIT=0) are complete on disk under the run's logs with revision, tree, module.__file__ and command headers; I re-ran the same five-module gate at head 82ad91ec5 and got 67 passed (EXIT=0, logs/reviewer-head-arm.log), and independently exercised the four branches from an isolated import. The manifest's lint delta (it states 10 baseline / 10 head) reads 12 baseline / 10 head under my ruff run over the four changed Python paths, so the 'adds no findings' claim holds while the exact base figure is one the manifest got slightly wrong.",
+    "fit": "the helpers extend the module's idiom and reuse discard_record_path, and the diff introduces no plan label; but the change leaves two comments beside the edited function describing the old contract, so the file now reads inconsistently about its own behaviour.",
+    "goal_fidelity": "the followup decision \u2014 give an unknown departure its own word that neither promises nor withdraws, then assert it \u2014 is implemented: recovery._departure_word at reckon/crew/recovery.py:8075 returns departed only when recorded is None (no reader supplied and the run names no project to resolve one from), promoted only from a recorded row, discarded from a discard marker, and withdrawn from a resolved ledger that records no row.",
+    "scope_discipline": "git diff --stat 8652b7e11875d6e48f9a2419dce4402c603ea8d4..82ad91ec587995d788dffe1da019418c506f0b0f lists exactly five paths (reckon/crew/recovery.py, reckon/crew/ticker.py, tests/test_a_live_run_never_reads_dead.py, tests/test_a_discard_never_reads_promoted.py, one evidence fragment) with no plan meta line touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the decision to give an unknown departure its own non-committal word is implemented in recovery._departure_word and asserted by the renamed and new cases.\nVERDICT done_when: the reviewed node's gate is the five-module run; I re-ran it at head 82ad91ec5 and it reads 67 passed (EXIT=0) while base-arm.log reads 1 failed / 65 passed (EXIT=1), so the departed case the change makes true is red at base and green at head, and the added-failure set difference over the two arms is empty.\nVERDICT write_paths: git diff --stat 8652b7e11..82ad91ec5 lists exactly the five declared paths and no plan meta is in the diff.\nVERDICT manifest: read; it records the base, head and two negative-control arms with revision and counts, the reverted mutations, the lint delta, and a follow_on that runs.py's WATCH_* state lists do not name the departure words.\nVERDICT diff: read one revision at a time against 8652b7e11; 6b7a054075 adds the departed branch, the FLEET_UNPROMOTED_STATES word and the renamed test, acb45d2cb1 reorders the discard check ahead of the unresolvable-ledger return, and 82ad91ec58 is the evidence fragment.\nVERDICT call_sites: verified 1 production call site: _departure_word is called only at reckon/crew/recovery.py:8150, inside fleet_transitions, whose production caller is the ticker seat.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the followup's decision \u2014 give an unknown departure its own word that neither promises nor withdraws, then assert it \u2014 is implemented: recovery._departure_word at reckon/crew/recovery.py:8075 returns departed only when recorded is None (no reader supplied and the run names no project to resolve one from), promoted only from a recorded row, discarded from a discard marker, and withdrawn from a resolved ledger that records no row.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed node's base arm (1 failed / 65 passed, EXIT=1) and head arm (67 passed, EXIT=0) are complete on disk under the run's logs with revision, tree, module.__file__ and command headers; I re-ran the same five-module gate at head 82ad91ec5 and got 67 passed (EXIT=0, logs/reviewer-head-arm.log), independently exercised the four branches from an isolated import, and measured the lint delta at 12 base / 10 head over the four changed Python paths.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 8652b7e11875d6e48f9a2419dce4402c603ea8d4..82ad91ec587995d788dffe1da019418c506f0b0f lists exactly five paths and no plan meta line is touched.\nSCORE durability: 19\nJUSTIFICATION durability: the four words are each covered by a case in tests/test_a_live_run_never_reads_dead.py, and I reproduced the declared negative control by loading the branch-removed tree, whose _departure_word('r-x', None) returns withdrawn and fails the guarded assertion (EXIT=1, logs/reviewer-negative-control.log).\nSCORE fit: 17\nJUSTIFICATION fit: the helpers extend the module's idiom and the diff introduces no plan label, but the change leaves two comments beside the edited function on the old contract, so the file now reads inconsistently about its own behaviour.\nFINDING reckon/crew/recovery.py:8152 follow-on: the change updated _departure_word's own docstring but left the two surrounding comments on the superseded three-word contract \u2014 'failing both, the word is withdrawn' and 'a departure with no project at all still withdraws \u2014 the safe direction' at :8144-8152, and 'unknown is answered by the withdrawal word' at :8037 \u2014 while _departure_word now returns departed for exactly that case, so the next reader is told a departure with no project withdraws when it reads departed.\n",
+  "review_run_id": "r-20261002T024146823723-review-of-an-unknown-departure-reads-departed",
+  "reviewed_base_sha": "8652b7e11875d6e48f9a2419dce4402c603ea8d4",
+  "reviewed_head_sha": "82ad91ec587995d788dffe1da019418c506f0b0f",
+  "reviewed_run_id": "r-20261002T021115444941-an-unknown-departure-reads-departed",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T02:51:05.325067+00:00",
+  "total": 94
+}

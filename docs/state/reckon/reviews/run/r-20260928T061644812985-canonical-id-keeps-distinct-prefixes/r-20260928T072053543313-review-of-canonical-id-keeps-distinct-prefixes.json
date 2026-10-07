@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T061644812985-canonical-id-keeps-distinct-prefixes/logs/head-arm-gate.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T061644812985-canonical-id-keeps-distinct-prefixes/logs/base-arm-scratch.log",
+    "note": "the reviewed manifest names this pair under test_logs rather than under the baseline_suite and after_suite keys the promotion suite-delta check and the review read path scan, so a read-time annotation reports the count unmeasured; this count is the set difference over the two arm logs the run itself recorded, measured in logs/added-failures-derivation.log together with its positive control, where the same function over the same two logs swapped returns the three ids"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:274 select_review_for_head",
+    "reckon/crew/promotion.py:3818",
+    "reckon/crew/review.py:1024 read_review"
+  ],
+  "completed_at": "2026-09-28T08:37:41.533Z",
+  "dispatched_at": "2026-09-28T07:21:09Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T061644812985-canonical-id-keeps-distinct-prefixes/manifest.md",
+      "line": "14",
+      "text": "the manifest names the two arm logs as prose in test_logs rather than under the baseline_suite and after_suite fields the store's read path scans, so annotate_review_of_run reports the added-failure count unmeasured for a run whose own logs measure it as zero, which the derivation over that pair confirms."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "545",
+      "text": "the guard reduces only a spelling opening with an absolute or dot component, so a head arm invoked from a directory above the repository root prints reckon/tests/x.py::t against a base log's tests/x.py::t and reads as an added failure -- the phantom the reduction exists to remove -- capping a sound run's total at the added-failures cap; the same holds for a drive-qualified absolute spelling, whose backslash normalisation at :543 shows it is meant to be handled, and only the ancestor-directory shape is recorded in the landing record as a residual."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "696",
+      "text": "the retirement prose is tokenised on whitespace alone, so a manifest retiring two ids joined by punctuation with no space between them, as in tests/x.py::t1,tests/y.py::t2, retires neither where the previous matcher retired both, which caps the total below the added-failures floor in the direction the plan exists to prevent; measured by calling the landed matcher and the pre-change expression side by side."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base bbd2c059; d444a159 is the code-and-test change (review.py +75/-15, the test file +71) and a2cfcf09 is docs only (the landed evidence record, the figure and a five-line plan comment), with no change outside the declared paths and no hunk beyond the two edges the goal names.",
+    "done_when": "the done_when names three cases in tests/test_review_node_id_canonical_form.py plus a base arm and a declared negative control; logs/base-arm-scratch.log opens with the base revision bbd2c059, the scratch tree and the command and reports 3 failed, 14 passed, exit 1 with the two required cases failing on their own assertions (assert 0 == 1 at :163 and assert 5 == 90 at :211), logs/head-arm-gate.log opens with revision a2cfcf09 and reports 17 passed, exit 0, and logs/negative-control-last-tests-anchor.log repeats the declared mutation verbatim on its first line and reddens the distinct-prefix case with 2 failed, 15 passed, exit 1.",
+    "goal": "the node goal is to close the two edges the earlier review recorded in the canonical pytest node-id reduction; reckon/crew/review.py:518 canonical_node_id now keeps a plain relative spelling whole and reduces only a spelling written from a working directory, through the _CWD_COMPONENTS guard at :545, and reckon/crew/review.py:696 _retires_id compares canonical forms on both sides, so the goal's two named behaviours are both implemented in the landed commit d444a159.",
+    "manifest": "read in full; it reports status complete with commits d444a159 and a2cfcf09, the head gate at 17 passed and the base arm at 3 failed with the negative control red, and it names every log it rests on; it names the two arm logs as prose inside the test_logs line rather than under the baseline_suite and after_suite keys the store's read path scans, which is the defect recorded in the finding below.",
+    "write_paths": "the source node's declared paths are reckon/crew/review.py, tests/test_review_node_id_canonical_form.py, docs/evidence/archive/scoring-should-stop-a-promotion-landed.html, docs/figures/scoring-should-stop-a-promotion and docs/plans/scoring-should-stop-a-promotion.html; the diff of the two commits against bbd2c059 touches exactly those, the figure directory contributing canonical_id_edges.py and canonical_id_edges.png."
+  },
+  "justifications": {
+    "durability": "tests/test_review_node_id_canonical_form.py:151 and :188 redden at the base revision with assert 0 == 1 and assert 5 == 90, both recorded in logs/base-arm-scratch.log, and the negative control shows the guard fires when the anchor is restored; no added assertion compares a value against the same variable the test passed in, and the two residual spellings at :545 and :696 carry no assertion.",
+    "evidence": "logs/base-arm-scratch.log and logs/head-arm-gate.log each open with revision, tree, module.__file__, cwd and the command and measure 3 failed against 0 failed over the same two files, and the negative control's first line carries the declared mutation verbatim, so the measure is recorded rather than claimed.",
+    "fit": "the change follows the module's idiom of a named constant beside its reader (_CWD_COMPONENTS at review.py:515, _PROSE_EDGE_CHARS at :677) with mechanism docstrings in the surrounding voice, and both commits carry conventional subjects with bodies and no attribution.",
+    "goal_fidelity": "reckon/crew/review.py:545 reduces only a spelling opening with an absolute or dot component and :710 compares the retirement prose to the counted id through the same reduction, which is the goal's pair exactly, while the ancestor-directory spelling the old blanket reduction handled no longer reduces (finding at :545).",
+    "scope_discipline": "the diff against bbd2c059 touches exactly the six declared paths, the second commit is docs-only, and the naming scans over the added lines of d444a159 report no plan, sprint, ticket or attribution token."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to close the two edges the earlier review recorded in the canonical pytest node-id reduction; reckon/crew/review.py:518 canonical_node_id now keeps a plain relative spelling whole and reduces only a spelling written from a working directory, through the _CWD_COMPONENTS guard at :545, and reckon/crew/review.py:696 _retires_id compares canonical forms on both sides, so the goal's two named behaviours are both implemented in the landed commit d444a159.\nVERDICT done_when: the done_when names three cases in tests/test_review_node_id_canonical_form.py plus a base arm and a declared negative control; logs/base-arm-scratch.log opens with the base revision bbd2c059, the scratch tree and the command and reports 3 failed, 14 passed, exit 1 with the two required cases failing on their own assertions (assert 0 == 1 at :163 and assert 5 == 90 at :211), logs/head-arm-gate.log opens with revision a2cfcf09 and reports 17 passed, exit 0, and logs/negative-control-last-tests-anchor.log repeats the declared mutation verbatim on its first line and reddens the distinct-prefix case with 2 failed, 15 passed, exit 1.\nVERDICT write_paths: the source node's declared paths are reckon/crew/review.py, tests/test_review_node_id_canonical_form.py, docs/evidence/archive/scoring-should-stop-a-promotion-landed.html, docs/figures/scoring-should-stop-a-promotion and docs/plans/scoring-should-stop-a-promotion.html; the diff of the two commits against bbd2c059 touches exactly those, the figure directory contributing canonical_id_edges.py and canonical_id_edges.png.\nVERDICT manifest: read in full; it reports status complete with commits d444a159 and a2cfcf09, the head gate at 17 passed and the base arm at 3 failed with the negative control red, and it names every log it rests on; it names the two arm logs as prose inside the test_logs line rather than under the baseline_suite and after_suite keys the store's read path scans, which is the defect recorded in the finding below.\nVERDICT diff: read commit by commit against base bbd2c059; d444a159 is the code-and-test change (review.py +75/-15, the test file +71) and a2cfcf09 is docs only (the landed evidence record, the figure and a five-line plan comment), with no change outside the declared paths and no hunk beyond the two edges the goal names.\nCALL_SITES: reckon/crew/recovery.py:274 select_review_for_head, reckon/crew/promotion.py:3818, reckon/crew/review.py:1024 read_review\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:545 reduces only a spelling opening with an absolute or dot component and :710 compares the retirement prose to the counted id through the same reduction, which is the goal's pair exactly, while the ancestor-directory spelling the old blanket reduction handled no longer reduces (finding at :545).\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm-scratch.log and logs/head-arm-gate.log each open with revision, tree, module.__file__, cwd and the command and measure 3 failed against 0 failed over the same two files, and the negative control's first line carries the declared mutation verbatim, so the measure is recorded rather than claimed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff against bbd2c059 touches exactly the six declared paths, the second commit is docs-only, and the naming scans over the added lines of d444a159 report no plan, sprint, ticket or attribution token.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_node_id_canonical_form.py:151 and :188 redden at the base revision with assert 0 == 1 and assert 5 == 90, both recorded in logs/base-arm-scratch.log, and the negative control shows the guard fires when the anchor is restored; no added assertion compares a value against the same variable the test passed in, and the two residual spellings at :545 and :696 carry no assertion.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's idiom of a named constant beside its reader (_CWD_COMPONENTS at review.py:515, _PROSE_EDGE_CHARS at :677) with mechanism docstrings in the surrounding voice, and both commits carry conventional subjects with bodies and no attribution.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T061644812985-canonical-id-keeps-distinct-prefixes/manifest.md:14 the manifest names the two arm logs as prose in test_logs rather than under the baseline_suite and after_suite fields the store's read path scans, so annotate_review_of_run reports the added-failure count unmeasured for a run whose own logs measure it as zero, which the derivation over that pair confirms.\nFINDING reckon/crew/review.py:545 the guard reduces only a spelling opening with an absolute or dot component, so a head arm invoked from a directory above the repository root prints reckon/tests/x.py::t against a base log's tests/x.py::t and reads as an added failure -- the phantom the reduction exists to remove -- capping a sound run's total at the added-failures cap; the same holds for a drive-qualified absolute spelling, whose backslash normalisation at :543 shows it is meant to be handled, and only the ancestor-directory shape is recorded in the landing record as a residual.\nFINDING reckon/crew/review.py:696 the retirement prose is tokenised on whitespace alone, so a manifest retiring two ids joined by punctuation with no space between them, as in tests/x.py::t1,tests/y.py::t2, retires neither where the previous matcher retired both, which caps the total below the added-failures floor in the direction the plan exists to prevent; measured by calling the landed matcher and the pre-change expression side by side.",
+  "review_run_id": "r-20260928T072053543313-review-of-canonical-id-keeps-distinct-prefixes",
+  "reviewed_base_sha": "bbd2c05992fad3867a35f5010bb18f13e8c0d320",
+  "reviewed_head_sha": "a2cfcf09e71bbd795e597901f8366f47356be79d",
+  "reviewed_run_id": "r-20260928T061644812985-canonical-id-keeps-distinct-prefixes",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T07:57:03.391805+00:00",
+  "total": 92
+}

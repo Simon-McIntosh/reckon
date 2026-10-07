@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:2055",
+    "reckon/serve.py:2989"
+  ],
+  "completed_at": "2026-10-04T20:49:03.545Z",
+  "dispatched_at": "2026-10-04T20:43:13Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "688",
+      "severity": "follow-on",
+      "text": "_read_crew_plan_details re-implements the 16384-byte head slice and </head> split and calls the un-memoised read_state, then falls back to parse_meta, leaving two parse routes for one plan file even though an outer memoized(...) wrapper now caches the result per stat."
+    },
+    {
+      "file": "tests/test_a_launched_run_reads_launching_on_crew.py",
+      "line": "133",
+      "severity": "follow-on",
+      "text": "the latency assertion is a wall-clock bound (elapsed < 1.0 s) measured on a shared node; head 0.223 s against base 2.041 s leaves a wide margin, but a loaded host could redden it without a regression."
+    }
+  ],
+  "head_log_revision": "0005242aff72d56e6b8131854440f3d7d2659da1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base f31a38d86: af7577adc short-circuits the recorded phase, a5c209881 populates the latency fixture, 0185df065 reads roster headers and plan head, 43f21cb99 memoises plan navigation, 0005242af requires headers_only on both loaders, the docs commits register the landing, and the fragment's evidence-commit tracks the measured source revision.",
+    "done_when": "verified: tests/test_a_launched_run_reads_launching_on_crew.py:93 writes a pointer with phase=starting and no stream file and asserts the first /crew response carries a launch-phase row, and :107 populates 40 live pointers (streams absent for run-00) and asserts elapsed < 1.0 s. I reproduced the focused file at reviewed head d988b162 against the reviewed worktree: 3 passed EXIT=0.",
+    "goal": "verified: the delta carries both halves of section 3's done-when. reckon/serve.py:753 short-circuits a recorded phase past launch so a run whose worker has not written a stream reads launching or working from the first response, and the latency work (header-only roster read, tail only for unresolved phases, memoised plan navigation) brings GET /crew over 40 live pointers to 0.223 s, against 2.041 s at base. The one point withheld is that the first-response test accepts {'launching','starting','working'} (tests/test_a_launched_run_reads_launching_on_crew.py:103), marginally looser than the done-when's literal launching-or-working.",
+    "manifest": "read: status complete, eight commits, a clean tree checkpoint, the negative control, the focused gate and the serve-importing population; baseline_suite (baseline-suite.log, revision f31a38d86, 5 failures) and after_suite (granted-after-suite.log, revision 0005242af, 0 failures) are both present and completed, so the added-failure count reads as a measured zero.",
+    "write_paths": "verified: git diff --stat f31a38d86..d988b162c6 names reckon/serve.py, tests/test_a_launched_run_reads_launching_on_crew.py, tests/test_crew_route_cost.py and the evidence fragment; all four sit inside the manifest's declared write grants, tests/test_crew_route_cost.py having been recorded there as a granted scope extension."
+  },
+  "justifications": {
+    "durability": "Each half is guarded: the first-response assertion fails with 'idle' when the phase derives from the stream alone (negative control), and the timing assertion fails at 2.041 s when full classification is reinstated (base arm); the new plan-navigation test guards the memoisation's invalidation on a plan-file change. One point withheld: the latency gate is a wall-clock bound (<1.0 s) on a shared node -- a wide margin at 0.223 s, but a loaded host could redden it without a regression.",
+    "evidence": "I reproduced the focused gate at reviewed head myself (3 passed EXIT=0), the declared negative control is a real red log (EXIT=1, test_first_response_shows_a_dispatched_run_without_a_stream fails with 'idle'), and the base timing arm fails at 2.041 s where the head passes at 0.223 s. Both population arms are present and honest: base 5 failures (1 failed + 4 errors, all test_build, attributed to the scratch tree lacking Git metadata), after 0 failures, so the added-failure count is a measured zero.",
+    "fit": "The change extends the existing _crew_rows owner and reads the same classify_pointer judgement; the previous review's two follow-ons are addressed, the unreachable TypeError fallback is gone (headers_only passed directly) and plan navigation is memoised. One point withheld: _read_crew_plan_details still re-implements a 16384-byte head slice plus read_state rather than composing _plan_html's own fast path, leaving two parse routes for one plan file.",
+    "goal_fidelity": "The two halves of section 3's done-when are both implemented and both pinned: a no-stream dispatch reads launching/working from the first response, and the 40-pointer fixture answers in 0.223 s against 2.041 s at base. One point withheld: the first-response assertion permits 'starting' as well as launching/working, a hair looser than the done-when's wording.",
+    "scope_discipline": "git diff --stat f31a38d86..d988b162c6 names exactly reckon/serve.py, tests/test_a_launched_run_reads_launching_on_crew.py, tests/test_crew_route_cost.py and the evidence fragment, every one inside the manifest's declared write grants, with tests/test_crew_route_cost.py recorded as a granted scope extension; the reviewed worktree is clean at HEAD d988b162c6."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: verified: the delta carries both halves of section 3's done-when. reckon/serve.py:753 short-circuits a recorded phase past launch so a run whose worker has not written a stream reads launching or working from the first response, and the latency work (header-only roster read, tail only for unresolved phases, memoised plan navigation) brings GET /crew over 40 live pointers to 0.223 s, against 2.041 s at base. The one point withheld is that the first-response test accepts {'launching','starting','working'} (tests/test_a_launched_run_reads_launching_on_crew.py:103), marginally looser than the done-when's literal launching-or-working.\nVERDICT done_when: verified: tests/test_a_launched_run_reads_launching_on_crew.py:93 writes a pointer with phase=starting and no stream file and asserts the first /crew response carries a launch-phase row, and :107 populates 40 live pointers (streams absent for run-00) and asserts elapsed < 1.0 s. I reproduced the focused file at reviewed head d988b162 against the reviewed worktree: 3 passed EXIT=0.\nVERDICT write_paths: verified: git diff --stat f31a38d86..d988b162c6 names reckon/serve.py, tests/test_a_launched_run_reads_launching_on_crew.py, tests/test_crew_route_cost.py and the evidence fragment; all four sit inside the manifest's declared write grants, tests/test_crew_route_cost.py having been recorded there as a granted scope extension.\nVERDICT manifest: read: status complete, eight commits, a clean tree checkpoint, the negative control, the focused gate and the serve-importing population; baseline_suite (baseline-suite.log, revision f31a38d86, 5 failures) and after_suite (granted-after-suite.log, revision 0005242af, 0 failures) are both present and completed, so the added-failure count reads as a measured zero.\nVERDICT diff: read against base f31a38d86: af7577adc short-circuits the recorded phase, a5c209881 populates the latency fixture, 0185df065 reads roster headers and plan head, 43f21cb99 memoises plan navigation, 0005242af requires headers_only on both loaders, the docs commits register the landing, and the fragment's evidence-commit tracks the measured source revision.\nCALL_SITES: reckon/serve.py:2055, reckon/serve.py:2989\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The two halves of section 3's done-when are both implemented and both pinned: a no-stream dispatch reads launching/working from the first response, and the 40-pointer fixture answers in 0.223 s against 2.041 s at base. One point withheld: the first-response assertion permits 'starting' as well as launching/working, a hair looser than the done-when's wording.\nSCORE evidence: 19\nJUSTIFICATION evidence: I reproduced the focused gate at reviewed head myself (3 passed EXIT=0), the declared negative control is a real red log (EXIT=1, test_first_response_shows_a_dispatched_run_without_a_stream fails with 'idle'), and the base timing arm fails at 2.041 s where the head passes at 0.223 s. Both population arms are present and honest: base 5 failures (1 failed + 4 errors, all test_build, attributed to the scratch tree lacking Git metadata), after 0 failures, so the added-failure count is a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat f31a38d86..d988b162c6 names exactly reckon/serve.py, tests/test_a_launched_run_reads_launching_on_crew.py, tests/test_crew_route_cost.py and the evidence fragment, every one inside the manifest's declared write grants, with tests/test_crew_route_cost.py recorded as a granted scope extension; the reviewed worktree is clean at HEAD d988b162c6.\nSCORE durability: 19\nJUSTIFICATION durability: Each half is guarded: the first-response assertion fails with 'idle' when the phase derives from the stream alone (negative control), and the timing assertion fails at 2.041 s when full classification is reinstated (base arm); the new plan-navigation test guards the memoisation's invalidation on a plan-file change. One point withheld: the latency gate is a wall-clock bound (<1.0 s) on a shared node -- a wide margin at 0.223 s, but a loaded host could redden it without a regression.\nSCORE fit: 18\nJUSTIFICATION fit: The change extends the existing _crew_rows owner and reads the same classify_pointer judgement; the previous review's two follow-ons are addressed, the unreachable TypeError fallback is gone (headers_only passed directly) and plan navigation is memoised. One point withheld: _read_crew_plan_details still re-implements a 16384-byte head slice plus read_state rather than composing _plan_html's own fast path, leaving two parse routes for one plan file.\nFINDING reckon/serve.py:688 follow-on: _read_crew_plan_details re-implements the 16384-byte head slice and </head> split and calls the un-memoised read_state, then falls back to parse_meta, leaving two parse routes for one plan file even though an outer memoized(...) wrapper now caches the result per stat.\nFINDING tests/test_a_launched_run_reads_launching_on_crew.py:133 follow-on: the latency assertion is a wall-clock bound (elapsed < 1.0 s) measured on a shared node; head 0.223 s against base 2.041 s leaves a wide margin, but a loaded host could redden it without a regression.",
+  "review_run_id": "r-20261004T204255333268-review-of-a-launched-run-reads-launching-on-crew",
+  "reviewed_base_sha": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "reviewed_commit": "d988b162c6ae9ac0221567eea68bbd5af89b72f3",
+  "reviewed_commits": [
+    "af7577adca6d791aeb344e1e5a7dbb0f4cbd7102",
+    "2926da4edd859527b69e7de3bddd9ca5c1ec84e1",
+    "a5c2098816b4f7812430e4665d663302a5b49111",
+    "0185df0659596540096394293318244f3e12d4b5",
+    "b8c14c1b21ad612f35c0b4efd3e520c951730660",
+    "43f21cb99d86d749a1463786c264032e72c67089",
+    "0005242aff72d56e6b8131854440f3d7d2659da1",
+    "d988b162c6ae9ac0221567eea68bbd5af89b72f3"
+  ],
+  "reviewed_head_sha": "d988b162c6ae9ac0221567eea68bbd5af89b72f3",
+  "reviewed_run_id": "r-20261004T191242154747-a-launched-run-reads-launching-on-crew",
+  "reviewer_run_id": "r-20261004T204255333268-review-of-a-launched-run-reads-launching-on-crew",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T20:47:48.413197+00:00",
+  "total": 95
+}

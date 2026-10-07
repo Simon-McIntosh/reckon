@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "9d3738c0f653407c1cd6ce3b4b7bf752994a2f79",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:_stored_review (reached from classify_pointer)",
+    "reckon/crew/promotion.py review-waiver path",
+    "reckon/crew/repair.py:402",
+    "reckon/crew/obligations.py:346",
+    "reckon/cli.py:4211"
+  ],
+  "completed_at": "2026-10-01T06:39:51.902Z",
+  "dispatched_at": "2026-10-01T06:25:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1451",
+      "severity": "follow-on",
+      "text": "follow-on: _record_filed_elsewhere parses every record in the project's review store whenever the expected paths are empty, and that miss path is the common case for an unreviewed run \u2014 classify_pointer reaches it per completed pointer per sweep; measured 2.3 ms over this workstation's 1525-record store for one miss, so a fleet of thousands of unreviewed pointers pays seconds per sweep and the cost grows linearly with the store."
+    }
+  ],
+  "head_log_revision": "0e9055192511851495c020b8f2fdbe514d414f9d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 9d3738c0f; 0e9055192 changes review.py and three test files, 93ece3ce8 adds the evidence fragment \u2014 five files, all inside the declared scope, no code outside them.",
+    "done_when": "the gate runs the new and changed test files plus every file matching the four named tokens at base and at head; the manifest records base 10 failed / 347 passed and head 1 failed / 356 passed with 0 added failure ids, and the two new test modules assert the named cases.",
+    "goal": "the node's goal is to land three review-store followups in reckon/crew/review.py \u2014 misfiled-record discovery, a cap note written only when the cap applied, and the revision= header form; reckon/crew/review.py:1431 (_record_filed_elsewhere), :1166 (cap guard) and :553 (_LOGGED_REVISION_RE) carry all three.",
+    "manifest": "read; status complete, commits 0e9055192 and 93ece3ce8, three negative-control logs each ending EXIT=1 with the declared case red, and the pre-existing test_crew.py failure reported under follow_ons rather than repaired.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/review.py, the three test files, the evidence fragment); every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_review_store_finds_a_misfiled_record.py and tests/test_review_counts_added_failures.py fail at the base revision (8 of the base arm's 10 failures are these new cases) and the declared negative control reddens four misfiled cases, so each repair has a guard that names the regression it catches.",
+    "evidence": "the manifest records gates/gate-base.log at 9d3738c0f as 10 failed / 347 passed and gates/gate-head.log at 0e9055192 as 1 failed / 356 passed, and the single head failure is test_crew.py::test_promotion_refuses_a_commit_that_names_no_object, which the base arm also fails, so the added-failure count is zero.",
+    "fit": "the new helper sits beside stored_record as a private function (reckon/crew/review.py:1431) with the module-constant-plus-rationale idiom of ADDED_FAILURES_TOTAL_CAP, and the diff adds no banned name, plan label or version suffix.",
+    "goal_fidelity": "reckon/crew/review.py:1431 finds a record by its own reviewed_run_id and flags it misfiled, :1166 writes the cap note only when the total fell, and :553 accepts the revision= form \u2014 the goal's three items, each with an evidence line.",
+    "scope_discipline": "git diff 9d3738c0f..93ece3ce8 names only reckon/crew/review.py, tests/test_review_store_finds_a_misfiled_record.py, tests/test_review_counts_added_failures.py, tests/test_logged_revision_forms.py and the evidence fragment, every one inside the manifest's declared write paths, and the reviewed worktree is clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to land three review-store followups in reckon/crew/review.py \u2014 misfiled-record discovery, a cap note written only when the cap applied, and the revision= header form; reckon/crew/review.py:1431 (_record_filed_elsewhere), :1166 (cap guard) and :553 (_LOGGED_REVISION_RE) carry all three.\nVERDICT done_when: the gate runs the new and changed test files plus every file matching the four named tokens at base and at head; the manifest records base 10 failed / 347 passed and head 1 failed / 356 passed with 0 added failure ids, and the two new test modules assert the named cases.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/review.py, the three test files, the evidence fragment); every path in the diff is inside them.\nVERDICT manifest: read; status complete, commits 0e9055192 and 93ece3ce8, three negative-control logs each ending EXIT=1 with the declared case red, and the pre-existing test_crew.py failure reported under follow_ons rather than repaired.\nVERDICT diff: read commit by commit against 9d3738c0f; 0e9055192 changes review.py and three test files, 93ece3ce8 adds the evidence fragment \u2014 five files, all inside the declared scope, no code outside them.\nCALL_SITES: reckon/crew/recovery.py:_stored_review (reached from classify_pointer), reckon/crew/promotion.py review-waiver path, reckon/crew/repair.py:402, reckon/crew/obligations.py:346, reckon/cli.py:4211\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1431 finds a record by its own reviewed_run_id and flags it misfiled, :1166 writes the cap note only when the total fell, and :553 accepts the revision= form \u2014 the goal's three items, each with an evidence line.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records gates/gate-base.log at 9d3738c0f as 10 failed / 347 passed and gates/gate-head.log at 0e9055192 as 1 failed / 356 passed, and the single head failure is test_crew.py::test_promotion_refuses_a_commit_that_names_no_object, which the base arm also fails, so the added-failure count is zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9d3738c0f..93ece3ce8 names only reckon/crew/review.py, tests/test_review_store_finds_a_misfiled_record.py, tests/test_review_counts_added_failures.py, tests/test_logged_revision_forms.py and the evidence fragment, every one inside the manifest's declared write paths, and the reviewed worktree is clean.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_store_finds_a_misfiled_record.py and tests/test_review_counts_added_failures.py fail at the base revision (8 of the base arm's 10 failures are these new cases) and the declared negative control reddens four misfiled cases, so each repair has a guard that names the regression it catches.\nSCORE fit: 18\nJUSTIFICATION fit: the new helper sits beside stored_record as a private function (reckon/crew/review.py:1431) with the module-constant-plus-rationale idiom of ADDED_FAILURES_TOTAL_CAP, and the diff adds no banned name, plan label or version suffix.\nFINDING reckon/crew/review.py:1451 follow-on: _record_filed_elsewhere parses every record in the project's review store whenever the expected paths are empty, and that miss path is the common case for an unreviewed run \u2014 classify_pointer reaches it per completed pointer per sweep; measured 2.3 ms over this workstation's 1525-record store for one miss, so a fleet of thousands of unreviewed pointers pays seconds per sweep and the cost grows linearly with the store.",
+  "review_run_id": "r-20261001T062452403284-review-of-review-store-reads",
+  "reviewed_base_sha": "9d3738c0f653407c1cd6ce3b4b7bf752994a2f79",
+  "reviewed_head_sha": "93ece3ce810d20963ffd480c8bd2f6e8588fc1c8",
+  "reviewed_run_id": "r-20261001T050845430771-review-store-reads",
+  "reviewer_run_id": "r-20261001T062452403284-review-of-review-store-reads",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T06:36:57.933331+00:00",
+  "total": 93
+}

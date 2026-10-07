@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived here from the reviewed run's own baseline_suite and after_suite logs (both 11 passed, no FAILED/ERROR ids); review.added_failures_from_gate_logs returned (0, []) with its positive control returning (1, ['tests/y.py::u']); logs/review-added-failures.log. The after arm's own header names the base revision c8087d0bc rather than the change eff7c2b9.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1968 (the crew observe command)",
+    "reckon/crew/recovery.py:8697 (the recovery fold over a run)"
+  ],
+  "completed_at": "2026-10-02T00:27:51.569Z",
+  "dispatched_at": "2026-10-02T00:03:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "8567",
+      "severity": "blocking",
+      "text": "blocking: the orphaned branch overwrites record[\"phase\"] with \"orphaned\" from the raw stream phase and process liveness, bypassing _terminal_phase_survives, so a terminal stored phase the supervisor wrote is replaced when a late observe sees a non-terminal stream and a dead recorded pid; reproduced at head in logs/repro-orphaned-overwrite.log (pointer phase complete, pid 999999999, one live event -> observe returns and stores \"orphaned\"), contradicting the node goal and the helper docstring at dispatch.py:8482."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T233234436223-observe-keeps-a-terminal-stored-phase/logs/head-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the arm's own header names revision c8087d0bc (the base) while the change landed at eff7c2b9, and the manifest's after_suite revision and the fragment at docs/evidence/fragments/a-crew-process-ends-with-its-owner/observe-keeps-a-terminal-stored-phase.html:58 repeat that revision, so the after arm is labelled with the commit it was meant to measure against rather than the one it measured."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit eff7c2b9 against base c8087d0bc; 29 added and 3 removed in reckon/crew/dispatch.py, 141 added test lines and 82 added fragment lines, all inside the declared scope.",
+    "done_when": "the done-when names tests/test_terminal_stored_phase_has_one_writer.py writing a terminal stored phase through the supervisor's writer and observing a non-terminal stream, plus a logged negative control; the module exists and passes (2 passed EXIT=0) and the control log reddens the named case, but the gate's pointer carries pid None so process_alive is None and it never exercises the process_alive-False path where the guard is bypassed.",
+    "goal": "the node goal is that a late observe() fold never replaces a terminal stored phase the supervisor wrote; reckon/crew/dispatch.py:8483 adds _terminal_phase_survives and consults it at both phase-write sites, but the orphaned branch at dispatch.py:8567 still overwrites the stored terminal phase, reproduced below.",
+    "manifest": "read in full; it records the gate 2 passed EXIT=0, base arm 11 passed EXIT=0, the head arm 11 passed EXIT=0 at revision c8087d0bc, and the negative control 1 failed/1 passed EXIT=1, naming all four logs.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_terminal_stored_phase_has_one_writer.py, docs/evidence/fragments/a-crew-process-ends-with-its-owner/observe-keeps-a-terminal-stored-phase.html and a figures path; the diff c8087d0bc..eff7c2b9 touches exactly the first three, and the declared figures path was correctly left empty because the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_terminal_stored_phase_has_one_writer.py:124 fails when _terminal_phase_survives is forced to return False (logs/negative-control.log, 1 failed EXIT=1) and :140 pins the advance behaviour, but the guard is exercised only with pid None, so neither case fails on the process_alive-False bypass at dispatch.py:8567.",
+    "evidence": "logs/gate-new-test.log and my re-run logs/review-gate-head.log both record 2 passed EXIT=0 at head eff7c2b9, and logs/negative-control.log reddens test_a_late_observe_keeps_the_terminal_stored_phase, but logs/head-arm.log:1 and the manifest's after_suite record revision c8087d0bc while the change is eff7c2b9, so the zero-added-failure arm is not tied to the change by its own record.",
+    "fit": "_terminal_phase_survives sits with the module's other phase helpers, reuses the existing _TERMINAL_RUN_PHASES import, and the diff carries no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:8483 keeps a terminal stored phase against a non-terminal observation, but dispatch.py:8567 sets record[\"phase\"] = \"orphaned\" from the raw data[\"process_alive\"] and data[\"phase\"], and my reproduction returns and stores \"orphaned\", so the stated invariant does not hold for a late observe while the recorded pid is dead.",
+    "scope_discipline": "git diff c8087d0bc..eff7c2b9 touches exactly the three declared write paths (reckon/crew/dispatch.py, tests/test_terminal_stored_phase_has_one_writer.py, the evidence fragment) with no unrelated change."
+  },
+  "node": "review-of-observe-keeps-a-terminal-stored-phase",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20261001T233234436223-observe-keeps-a-terminal-stored-phase (plan reckon:a-crew-process-ends-with-its-owner section 10; node observe-keeps-a-terminal-stored-phase).\nreviewed_base_sha: c8087d0bc5cf9f821cee71bed4ea006e7ffa9261\nreviewed_head_sha: eff7c2b9d894284927eee5c5b740ba64a3c795f5\nVERDICT goal: the node goal is that a late observe() fold never replaces a terminal stored phase the supervisor wrote; reckon/crew/dispatch.py:8483 adds _terminal_phase_survives and consults it at both phase-write sites, but the orphaned branch at dispatch.py:8567 still overwrites the stored terminal phase, reproduced below.\nVERDICT done_when: the done-when names tests/test_terminal_stored_phase_has_one_writer.py writing a terminal stored phase through the supervisor's writer and observing a non-terminal stream, plus a logged negative control; the module exists and passes (2 passed EXIT=0) and the control log reddens the named case, but the gate's pointer carries pid None so process_alive is None and it never exercises the process_alive-False path where the guard is bypassed.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_terminal_stored_phase_has_one_writer.py, docs/evidence/fragments/a-crew-process-ends-with-its-owner/observe-keeps-a-terminal-stored-phase.html and a figures path; the diff c8087d0bc..eff7c2b9 touches exactly the first three, and the declared figures path was correctly left empty because the done-when names no artifact.\nVERDICT manifest: read in full; it records the gate 2 passed EXIT=0, base arm 11 passed EXIT=0, the head arm 11 passed EXIT=0 at revision c8087d0bc, and the negative control 1 failed/1 passed EXIT=1, naming all four logs.\nVERDICT diff: read commit eff7c2b9 against base c8087d0bc; 29 added and 3 removed in reckon/crew/dispatch.py, 141 added test lines and 82 added fragment lines, all inside the declared scope.\nCALL_SITES: reckon/cli.py:1968 (the crew observe command), reckon/crew/recovery.py:8697 (the recovery fold over a run)\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:8483 keeps a terminal stored phase against a non-terminal observation, but dispatch.py:8567 sets record[\"phase\"] = \"orphaned\" from the raw data[\"process_alive\"] and data[\"phase\"], and my reproduction (pointer phase complete, dead pid, one live event) returns and stores \"orphaned\", so the stated invariant does not hold for a late observe while the recorded pid is dead.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-new-test.log and my re-run logs/review-gate-head.log both record 2 passed EXIT=0 at head eff7c2b9, and logs/negative-control.log reddens test_a_late_observe_keeps_the_terminal_stored_phase, but logs/head-arm.log:1 and the manifest's after_suite record revision c8087d0bc while the change is eff7c2b9, so the zero-added-failure arm is not tied to the change by its own record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c8087d0bc..eff7c2b9 touches exactly the three declared write paths (reckon/crew/dispatch.py, tests/test_terminal_stored_phase_has_one_writer.py, the evidence fragment) with no unrelated change.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_terminal_stored_phase_has_one_writer.py:124 fails when _terminal_phase_survives is forced to return False (logs/negative-control.log, 1 failed EXIT=1) and :140 pins the advance behaviour, but the guard is exercised only with pid None, so neither case fails on the process_alive-False bypass at dispatch.py:8567.\nSCORE fit: 18\nJUSTIFICATION fit: _terminal_phase_survives sits with the module's other phase helpers, reuses the existing _TERMINAL_RUN_PHASES import, and the diff carries no plan, ticket or version identifier.\nFINDING reckon/crew/dispatch.py:8567 blocking: the orphaned branch overwrites record[\"phase\"] with \"orphaned\" from the raw stream phase and process liveness, bypassing _terminal_phase_survives, so a terminal stored phase the supervisor wrote is replaced when a late observe sees a non-terminal stream and a dead recorded pid; reproduced at head in logs/review-repro-orphaned-overwrite.log (pointer phase complete, pid 999999999, one live event -> observe returns and stores \"orphaned\"), which contradicts the node goal and the helper's own docstring at dispatch.py:8482.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T233234436223-observe-keeps-a-terminal-stored-phase/logs/head-arm.log:1 follow-on: the arm's own header names revision c8087d0bc (the base) while the change landed at eff7c2b9, and the manifest's after_suite revision and the fragment at docs/evidence/fragments/a-crew-process-ends-with-its-owner/observe-keeps-a-terminal-stored-phase.html:58 repeat that revision, so the after arm is labelled with the commit it was meant to measure against rather than the one it measured.",
+  "review_run_id": "r-20261002T000325288419-review-of-observe-keeps-a-terminal-stored-phase",
+  "reviewed_base_sha": "c8087d0bc5cf9f821cee71bed4ea006e7ffa9261",
+  "reviewed_head_sha": "eff7c2b9d894284927eee5c5b740ba64a3c795f5",
+  "reviewed_run_id": "r-20261001T233234436223-observe-keeps-a-terminal-stored-phase",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T000325288419-review-of-observe-keeps-a-terminal-stored-phase",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T00:20:45.741368+00:00",
+  "total": 82
+}

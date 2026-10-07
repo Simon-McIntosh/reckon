@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1391",
+    "reckon/crew/routing.py:1156"
+  ],
+  "completed_at": "2026-09-26T10:41:55.710Z",
+  "dispatched_at": "2026-09-26T09:28:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html",
+      "line": "323",
+      "text": "the parenthetical places the two error-key mappings at 4cf5d6f3's lines 1348 and 1276; at this head they are reckon/cli.py:1397 and reckon/cli.py:1325, so a reader following the citation lands between the branches."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 4b0ccd34; 99 insertions and no deletions, the new case at tests/test_plan_review_gate.py:401.",
+    "done_when": "the done_when's gate is tests/test_plan_review_gate.py with the new case green against base and the control logged; the manifest and logs record 18 passed at the head against 17 at base 4b0ccd34, and the recheck at head 70a3ef80 reproduced 18 passed.",
+    "goal": "the node's goal is one new case asserting the launching dispatch path reports plan-review-missing, and tests/test_plan_review_gate.py:401 is exactly that case.",
+    "manifest": "read; it records both gate runs, the executed control and commits 35da2422 and 70a3ef80, and every figure it states matches the recheck.",
+    "write_paths": "read the declared write paths; the diff's three changed files all lie inside them."
+  },
+  "justifications": {
+    "durability": "the new case fails when the launching branch's key is reverted, as the recheck showed by applying the declared mutation in a scratch tree of 70a3ef80 and watching tests/test_plan_review_gate.py:451 fail with assert 'plan-unavailable' == 'plan-review-missing'.",
+    "evidence": "the gate at tests/test_plan_review_gate.py:401 passed 18 at the reviewed head against 17 at base and the recheck reproduced it there, but the four non-control logs (logs/gate.log, logs/spec-base.log, logs/guard-head.log, logs/guard-base.log) carry no revision or command header, so only the control logs are self-locating.",
+    "fit": "the case mirrors the dry-run case at tests/test_plan_review_gate.py:348 in fixture, monkeypatch and assertions, and its names carry no plan labels or ticket numbers.",
+    "goal_fidelity": "tests/test_plan_review_gate.py:401 drives crew dispatch without --dry-run under plan_review_gate enforce and asserts the plan-review-missing key, which is the goal verbatim.",
+    "scope_discipline": "the only changed paths are tests/test_plan_review_gate.py, docs/plans/a-plan-is-reviewed-before-it-is-built.html:173 and docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html:316, all inside the declared write paths, with no deletions anywhere."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one new case asserting the launching dispatch path reports plan-review-missing, and tests/test_plan_review_gate.py:401 is exactly that case.\nVERDICT done_when: the done_when's gate is tests/test_plan_review_gate.py with the new case green against base and the control logged; the manifest and logs record 18 passed at the head against 17 at base 4b0ccd34, and the recheck at head 70a3ef80 reproduced 18 passed.\nVERDICT write_paths: read the declared write paths; the diff's three changed files all lie inside them.\nVERDICT manifest: read; it records both gate runs, the executed control and commits 35da2422 and 70a3ef80, and every figure it states matches the recheck.\nVERDICT diff: read commit by commit against 4b0ccd34; 99 insertions and no deletions, the new case at tests/test_plan_review_gate.py:401.\nCALL_SITES: reckon/cli.py:1391, reckon/crew/routing.py:1156\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_plan_review_gate.py:401 drives crew dispatch without --dry-run under plan_review_gate enforce and asserts the plan-review-missing key, which is the goal verbatim.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at tests/test_plan_review_gate.py:401 passed 18 at the reviewed head against 17 at base and the recheck reproduced it there, but the four non-control logs (logs/gate.log, logs/spec-base.log, logs/guard-head.log, logs/guard-base.log) carry no revision or command header, so only the control logs are self-locating.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only changed paths are tests/test_plan_review_gate.py, docs/plans/a-plan-is-reviewed-before-it-is-built.html:173 and docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html:316, all inside the declared write paths, with no deletions anywhere.\nSCORE durability: 20\nJUSTIFICATION durability: the new case fails when the launching branch's key is reverted, as the recheck showed by applying the declared mutation in a scratch tree of 70a3ef80 and watching tests/test_plan_review_gate.py:451 fail with assert 'plan-unavailable' == 'plan-review-missing'.\nSCORE fit: 18\nJUSTIFICATION fit: the case mirrors the dry-run case at tests/test_plan_review_gate.py:348 in fixture, monkeypatch and assertions, and its names carry no plan labels or ticket numbers.\nFINDING docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html:323 the parenthetical places the two error-key mappings at 4cf5d6f3's lines 1348 and 1276; at this head they are reckon/cli.py:1397 and reckon/cli.py:1325, so a reader following the citation lands between the branches.",
+  "review_run_id": "r-20260926T092819229022-review-of-launch-path-reports-plan-review-missing",
+  "reviewed_base_sha": "4b0ccd340ed992d28e0fb7accc22f91bba39db6b",
+  "reviewed_head_sha": "70a3ef80fd66147417cb7db9779bb32d7feb0e7e",
+  "reviewed_run_id": "r-20260926T091353695982-launch-path-reports-plan-review-missing",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T09:58:35.427611+00:00",
+  "total": 96
+}

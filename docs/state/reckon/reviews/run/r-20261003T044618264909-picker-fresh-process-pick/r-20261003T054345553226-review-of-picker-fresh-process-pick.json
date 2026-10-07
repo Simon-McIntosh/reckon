@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms, which its manifest names under baseline_suite/after_suite: baseline_suite (revision bd39abcff198175d3bb36ded90c4501d2a1aabe1, log_path .../gate/base.log) reports completed true with failure_count 0 and failure_ids [], and after_suite (revision e8745033048cb67247b6f6cc2bbc4f3ed8b01dac, log_path .../gate/head3.log) reports completed true with failure_count 0 and failure_ids []; the two arms share no failing id, so nothing was added. The arms cover different test sets (base 8 existing picker files, 101 passed; head those plus the new test_picker_fresh_process_pick.py, 108 passed), which is the intended delta; I reproduced the head count (108 passed, EXIT=0) myself. base.log's last line is '101 passed' without an EXIT line, so its exit status reads from the pass summary rather than a recorded code.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T044618264909-picker-fresh-process-pick/gate/head3.log",
+  "base_log_revision": "bd39abcff198175d3bb36ded90c4501d2a1aabe1",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T044618264909-picker-fresh-process-pick/gate/base.log",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/routing.py:2797 routes the instruction-chain manifest through agent_context.cached_context_manifest",
+    "reckon/crew/routing.py:3197 routes shared_verdict_inputs through capabilities.cached_pick_input"
+  ],
+  "completed_at": "2026-10-03T05:53:15.592Z",
+  "dispatched_at": "2026-10-03T05:44:09Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_fresh_process_pick.py",
+      "line": "",
+      "severity": "follow-on",
+      "text": "follow-on: the per-run-file verdict stamp added to routing._verdict_input_stamp has no test; edit a run file in place and assert the cached shared verdict inputs recompute, the same shape the context test covers, to pin its stated purpose."
+    },
+    {
+      "file": "reckon/agent_context.py",
+      "line": "96",
+      "severity": "follow-on",
+      "text": "follow-on: the 'so the stamp and the computation cannot drift' comment overstates the construction; input_paths collects the paths the build's return values name, so a future read not threaded into input_paths would be stamped by nothing."
+    }
+  ],
+  "head_log_revision": "e8745033048cb67247b6f6cc2bbc4f3ed8b01dac",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read e8745033048cb67247b6f6cc2bbc4f3ed8b01dac against 21f99fdee85a0b4c301d8297b151655b8ebecdc7: input_paths added to build_context_manifest, _manifest_file_paths reads it first, _project_instruction_chain returns scanned dirs, _verdict_input_stamp names each run file, cache version 1->2, fragment updated, real-fixture context test added.",
+    "done_when": "the delta's measures are met; I reproduced the head arm (108 passed, EXIT=0) and new-file arm (7 passed, EXIT=0) at e8745033048cb67247b6f6cc2bbc4f3ed8b01dac and a discriminating negative control (EXIT=1).",
+    "goal": "the delta closes the prior review's confirmed staleness gap (config.toml now stamped) and makes the verdict stamp catch an in-place run-file edit; the parent bounded-pick goal is unchanged by this delta.",
+    "manifest": "read; status complete, commits ending e87450330, after_suite 0 failed at e87450330, baseline_suite 0 failed at bd39abcff, negative control 1 failed at 21f99fde under the restored pre-fix stamp.",
+    "write_paths": "one commit touching five paths, all inside the run's declared grant; plan, index and peers untouched."
+  },
+  "justifications": {
+    "durability": "version bump 1->2 is necessary and present so v1 entries cannot stale-hit under the new stamp shape; stamp derived from the built value; verdict stamp glob matches ledger._run_files so add/remove/edit all move it; negative control reproduces; cut for the untested verdict stamp and the drift argument's reliance on future authors.",
+    "evidence": "reproduced the head arm (108 passed EXIT=0) and new-file arm (7 passed EXIT=0) at e8745033048cb67247b6f6cc2bbc4f3ed8b01dac in a scratch tree, plus a discriminating mutation (remove config.toml from input_paths -> added test fails at the config.toml change, EXIT=1); the new equivalence test uses the real build_context_manifest on a fixture repo, closing the prior synthetic-fixture deduction for the context manifest; cut for the untested verdict-input stamp extension and base.log's missing EXIT line.",
+    "fit": "reuses cached_pick_input_stamped and carries the consulted paths in the manifest, so the stamped record is inspectable; minimal diff; cut for the redundant run-dir stamp and the overstated 'cannot drift' docstring.",
+    "goal_fidelity": "closes the confirmed config.toml staleness gap (config.toml now stamped unconditionally; my independent mutation reopens the failure) and corrects the fragment's stale intermediate arm to the delivered head; cut for the fragment's pre-pick/bounded-call table framing (carried from the prior review) and for a 'cannot drift' comment that overstates what assembling input_paths from returned values guarantees.",
+    "scope_discipline": "one commit, five in-grant paths; ruff 12 base -> 12 head over the changed files (adds none); plan, index and peers untouched; worktree clean."
+  },
+  "node": "review-of-picker-fresh-process-pick",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's own goal is to close the prior review's confirmed staleness gap \u2014 the context-manifest cache stamped the paths the built manifest named but omitted agent_root/config.toml, which _read_agent_config reads and which drives budget.limit_bytes, the budget source and the fallback instruction filenames \u2014 and to make the shared verdict-input stamp see an in-place edit of a run file rather than only an add or remove. The fix records every path the build consults as it reads them into manifest['input_paths'] (the agent config unconditionally, the scanned directories, the project chain, the skill roots and the discovered SKILL.md files) and derives the stamp from that record via _manifest_file_paths, so stamp and computation share one source; the verdict stamp now names each run file by name beside the run-directory stamp; PICK_INPUT_CACHE_VERSION is bumped 1 to 2 to retire entries written under the earlier stamp shape. The bounded-pick goal of the parent node is unchanged by this delta.\nVERDICT done_when: the delta's measures are met and I reproduced them independently in a scratch tree extracted at e8745033048cb67247b6f6cc2bbc4f3ed8b01dac: the new-file arm is 7 passed, EXIT=0, and the full head arm is 108 passed, EXIT=0; the added real-fixture equivalence test test_cached_context_manifest_tracks_every_input_it_reads builds the real context manifest on a fixture repository and moves each input in turn, config.toml included, asserting cached equals uncached; my own negative control removes the config.toml line from input_paths and reds that test at the config.toml change alone (1 failed, EXIT=1), so the test discriminates.\nVERDICT write_paths: the reviewed delta is a single commit, e8745033048cb67247b6f6cc2bbc4f3ed8b01dac, touching exactly five paths, every one inside the run's declared grant (reckon/agent_context.py, reckon/capabilities.py, reckon/crew/routing.py, tests/test_picker_fresh_process_pick.py, docs/evidence/fragments/one-typesafe-model-picker/picker-fresh-process-pick.html); the plan, project index and peer paths are untouched and the reviewed worktree is clean at head.\nVERDICT manifest: read against the tree; status complete, commits oldest-first a63d72b8e, 21f99fdee, e87450330, after_suite 0 failed at e87450330 (108 passed), baseline_suite 0 failed at bd39abcff (101 passed), negative control (negative_control2.log) 1 failed at 21f99fde under the restored pre-fix stamp.\nVERDICT diff: read e8745033048cb67247b6f6cc2bbc4f3ed8b01dac against 21f99fdee85a0b4c301d8297b151655b8ebecdc7; the delta adds input_paths to build_context_manifest, makes _manifest_file_paths read input_paths first, and returns the scanned directories from _project_instruction_chain; it adds a per-run-file list to _verdict_input_stamp; it bumps the cache version; it rewrites the fragment's equivalence paragraph and gate line to the delivered head; and it adds the real-fixture context test.\nVERDICT call_sites: verified 2 production call site(s)\nCALL_SITES: reckon/crew/routing.py:2797 routes the instruction-chain manifest through agent_context.cached_context_manifest; reckon/crew/routing.py:3197 routes shared_verdict_inputs through capabilities.cached_pick_input\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the confirmed config.toml staleness gap is closed and verified \u2014 config.toml is now stamped unconditionally and my independent mutation reopens the failure \u2014 and the fragment's stale intermediate arm (106 passed at a63d72b8e) is corrected to the delivered head (108 passed, EXIT=0); deducted because the fragment's phase table still lists pre-pick reads (ledger rows, budget snapshot, template render) in a table framed for the bounded call, a framing carried from the prior review and untouched by this commit, and because the 'cannot drift' comment overstates the guarantee: input_paths is assembled from the values the build returned, so a future read whose result is not threaded into input_paths would stamp nothing.\nSCORE evidence: 17\nJUSTIFICATION evidence: independently reproduced in a scratch tree at e8745033048cb67247b6f6cc2bbc4f3ed8b01dac (new-file 7 passed EXIT=0; full head 108 passed EXIT=0) and I reproduced a discriminating negative control (remove config.toml from input_paths -> the added test fails at the config.toml change, EXIT=1), and the new equivalence test now uses the real build_context_manifest on a fixture repository rather than stubs, closing the prior review's synthetic-fixture deduction for the context manifest; deducted because the verdict-input stamp extension ships with no test of its own (the in-place run-file edit it claims to catch is untested), and because the base arm's log base.log carries no EXIT line, so its exit status rests on the pass summary rather than a recorded code.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: one commit, five paths, all inside the run's declared grant; ruff with the repo's own config reports 12 findings at base over the four source/test files and 12 at head, so the commit adds none; the plan, project index and peer paths are untouched and the fragment is an in-grant evidence path.\nSCORE durability: 17\nJUSTIFICATION durability: the PICK_INPUT_CACHE_VERSION 1->2 bump is required and correct \u2014 without it a v1 entry would re-stamp under the new reader from a value lacking input_paths and could serve stale \u2014 and the stamp is derived from the built value so it tracks the computation; I confirmed the verdict stamp's glob (*.json under runs/) matches ledger._run_files, which load() iterates, so add, remove and in-place edit all move it; the negative control reproduces; deducted because the verdict-input stamp change is untested and because the can't-drift property depends on future authors continuing to thread new reads through input_paths.\nSCORE fit: 18\nJUSTIFICATION fit: the fix reuses the existing cached_pick_input_stamped idiom and threads the consulted paths through the manifest itself, so the record the stamp reads is the same artifact a reader can inspect; the diff is minimal and the fragment update is confined to the two lines the change made stale; deducted because the run-directory stamp is retained redundantly beside the new per-run list, and the 'cannot drift' docstring claims more than the construction guarantees.\nFINDING follow-on tests/test_picker_fresh_process_pick.py the per-run-file verdict stamp added to routing._verdict_input_stamp ships without a test; the same shape the context test covers \u2014 edit a run file in place and assert the cached shared verdict inputs recompute \u2014 would pin it, since the change's whole point is that a directory mtime does not move on an in-place edit.\nFINDING follow-on reckon/agent_context.py the 'so the stamp and the computation cannot drift' comment overstates the construction: input_paths collects the paths the build's return values name, so a new read whose result is not routed into an in-grant input_paths entry (a new manifest field) would be stamped by nothing; naming the invariant 'derived from the paths the returned manifest names' would be accurate.\n",
+  "review_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T054345553226-review-of-picker-fresh-process-pick/gate/review-newfile.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T054345553226-review-of-picker-fresh-process-pick/gate/review-head-full.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T054345553226-review-of-picker-fresh-process-pick/gate/review-negative-control.log"
+  ],
+  "review_run_id": "r-20261003T054345553226-review-of-picker-fresh-process-pick",
+  "reviewed_base_sha": "21f99fdee85a0b4c301d8297b151655b8ebecdc7",
+  "reviewed_head_sha": "e8745033048cb67247b6f6cc2bbc4f3ed8b01dac",
+  "reviewed_run_id": "r-20261003T044618264909-picker-fresh-process-pick",
+  "reviewer_run_id": "r-20261003T054345553226-review-of-picker-fresh-process-pick",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T05:51:47.959138+00:00",
+  "total": 89
+}

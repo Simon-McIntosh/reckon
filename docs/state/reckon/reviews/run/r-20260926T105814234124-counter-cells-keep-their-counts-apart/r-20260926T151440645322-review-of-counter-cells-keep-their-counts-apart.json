@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:format_watch_transition",
+    "reckon/cli.py:_ticker_grid"
+  ],
+  "completed_at": "2026-09-26T16:15:56.146Z",
+  "dispatched_at": "2026-09-26T15:14:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1232",
+      "text": "the _stats docstring still opens \"as a grid whose digits line up\", which this change makes false, since with the two-digit padding gone a one-digit count's digits sit in different screen columns than a two-digit count's, the property tests/test_crew_ticker_layout.py::test_stat_digits_align_across_one_and_two_digit_counts encodes, so the sentence describes retired geometry inside the function that retired it."
+    },
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "272",
+      "text": "the token test's block_ends.add(match.start() + ticker_module.STATS) derives the block's right edge from the same STATS constant the renderer uses, so it cannot redden on the regression its comment names, dropping the trailing pad in the renderer leaving it green, and the pad is in fact guarded only by the gap measured at tests/test_crew_ticker.py:946."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 452b043e, where 1f102e24 gives each counter cell its own one-space separator and drops the two-digit padding in reckon/crew/ticker.py:1246-1262 and brings the three in-fence test files onto that form, and 8d1f9aab appends the plan paragraph, the evidence section and the figure with zero deletions.",
+    "done_when": "the gate's two arms are recorded as required, gate-base.log showing the four guards red at 452b043e (4 failed, 280 passed) and gate-head.log recording 40 passed over the node's three files, but the no-added-failures clause holds only inside the fence, ten out-of-fence pins being red at head, and the clause column the done_when asks be stated in the manifest is measured at 123 and stated in the plan and evidence record instead, asserted at tests/test_ticker_row_is_one_transition.py:391 as at or before 124.",
+    "goal": "the goal is that the counter block keeps its counts apart at any width, and reckon/crew/ticker.py:1246-1262 renders each count unpadded with a one-space separator cell and pads the block to STATS 15, so an independent head-tree render of (10,12,0,0), (99,99,99,99) and (1,0,0,0) reads 10w 12b 0u 0q, 99w 99b 99u 99q and 1w 0b 0u 0q with no abutting pair at any width.",
+    "manifest": "read, and it is complete with both commits named, the base and head arms recorded with their logs and the declared negative control reproduced in negative-control.log, its two record-shape defects being that the head arm sits under after_spec rather than the recognised after_suite key, which is harmless on a run whose suite_command is None, and that the done_when's clause-column figure is not in it.",
+    "write_paths": "the declared write paths are the seven the manifest lists, and git diff --stat 452b043e..8d1f9aab names exactly those seven files and no eighth."
+  },
+  "justifications": {
+    "durability": "the token test and the two-digit scoped case are red at base and red under the declared mutation while the block's trailing pad is held by a gap measured off the row at tests/test_crew_ticker.py:946, but the edge assertion at tests/test_crew_ticker.py:272 cannot fail because the value it checks is recomputed from STATS, which is the finding below.",
+    "evidence": "gate-base.log, gate-head.log and negative-control.log carry revision, command and result for both arms, but the base arm's scratch tree under /tmp is gone, the done_when's clause figure is not in the manifest, and the gate's no-added-failures clause fails repo-wide with the ten red out-of-fence pins disclosed as follow-ons.",
+    "fit": "the rewritten module comment at reckon/crew/ticker.py:333-347 states the mechanism accurately and the separator follows the cells' own idiom, but the _stats docstring at reckon/crew/ticker.py:1232 still claims a digit alignment this change removes.",
+    "goal_fidelity": "reckon/crew/ticker.py:1246-1262 is the goal's whole deliverable and nothing beyond it, and a head-tree render measured 10w 12b 0u 0q at (10,12,0,0) and 99w 99b 99u 99q at (99,99,99,99).",
+    "scope_discipline": "all seven paths of 452b043e..8d1f9aab sit inside the seven declared write paths, and the two docs files are pure appends at +24/-0 and +2/-0, which is the landing record the same dispatch's contract requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the counter block keeps its counts apart at any width, and reckon/crew/ticker.py:1246-1262 renders each count unpadded with a one-space separator cell and pads the block to STATS 15, so an independent head-tree render of (10,12,0,0), (99,99,99,99) and (1,0,0,0) reads 10w 12b 0u 0q, 99w 99b 99u 99q and 1w 0b 0u 0q with no abutting pair at any width.\nVERDICT done_when: the gate's two arms are recorded as required, gate-base.log showing the four guards red at 452b043e (4 failed, 280 passed) and gate-head.log recording 40 passed over the node's three files, but the no-added-failures clause holds only inside the fence, ten out-of-fence pins being red at head, and the clause column the done_when asks be stated in the manifest is measured at 123 and stated in the plan and evidence record instead, asserted at tests/test_ticker_row_is_one_transition.py:391 as at or before 124.\nVERDICT write_paths: the declared write paths are the seven the manifest lists, and git diff --stat 452b043e..8d1f9aab names exactly those seven files and no eighth.\nVERDICT manifest: read, and it is complete with both commits named, the base and head arms recorded with their logs and the declared negative control reproduced in negative-control.log, its two record-shape defects being that the head arm sits under after_spec rather than the recognised after_suite key, which is harmless on a run whose suite_command is None, and that the done_when's clause-column figure is not in it.\nVERDICT diff: read commit by commit against 452b043e, where 1f102e24 gives each counter cell its own one-space separator and drops the two-digit padding in reckon/crew/ticker.py:1246-1262 and brings the three in-fence test files onto that form, and 8d1f9aab appends the plan paragraph, the evidence section and the figure with zero deletions.\nCALL_SITES: reckon/crew/recovery.py:format_watch_transition, reckon/cli.py:_ticker_grid\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1246-1262 is the goal's whole deliverable and nothing beyond it, and a head-tree render measured 10w 12b 0u 0q at (10,12,0,0) and 99w 99b 99u 99q at (99,99,99,99).\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log, gate-head.log and negative-control.log carry revision, command and result for both arms, but the base arm's scratch tree under /tmp is gone, the done_when's clause figure is not in the manifest, and the gate's no-added-failures clause fails repo-wide with the ten red out-of-fence pins disclosed as follow-ons.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all seven paths of 452b043e..8d1f9aab sit inside the seven declared write paths, and the two docs files are pure appends at +24/-0 and +2/-0, which is the landing record the same dispatch's contract requires.\nSCORE durability: 18\nJUSTIFICATION durability: the token test and the two-digit scoped case are red at base and red under the declared mutation while the block's trailing pad is held by a gap measured off the row at tests/test_crew_ticker.py:946, but the edge assertion at tests/test_crew_ticker.py:272 cannot fail because the value it checks is recomputed from STATS, which is the finding below.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten module comment at reckon/crew/ticker.py:333-347 states the mechanism accurately and the separator follows the cells' own idiom, but the _stats docstring at reckon/crew/ticker.py:1232 still claims a digit alignment this change removes.\nFINDING reckon/crew/ticker.py:1232 the _stats docstring still opens \"as a grid whose digits line up\", which this change makes false, since with the two-digit padding gone a one-digit count's digits sit in different screen columns than a two-digit count's, the property tests/test_crew_ticker_layout.py::test_stat_digits_align_across_one_and_two_digit_counts encodes, so the sentence describes retired geometry inside the function that retired it.\nFINDING tests/test_crew_ticker.py:272 the token test's block_ends.add(match.start() + ticker_module.STATS) derives the block's right edge from the same STATS constant the renderer uses, so it cannot redden on the regression its comment names, dropping the trailing pad in the renderer leaving it green, and the pad is in fact guarded only by the gap measured at tests/test_crew_ticker.py:946.",
+  "review_run_id": "r-20260926T151440645322-review-of-counter-cells-keep-their-counts-apart",
+  "reviewed_base_sha": "452b043e1270adbe679bf8791443da116bed4a1e",
+  "reviewed_head_sha": "8d1f9aab5a000ed8f514db18255bea552b3a73ee",
+  "reviewed_run_id": "r-20260926T105814234124-counter-cells-keep-their-counts-apart",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T15:58:06.487322+00:00",
+  "total": 93
+}

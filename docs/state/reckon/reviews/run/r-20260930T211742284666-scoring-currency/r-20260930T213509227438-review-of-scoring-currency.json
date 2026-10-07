@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0 by id, measured by this review with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate logs (gate-lane-selection.log, gate-manifest-2j.log, gate-store-5c.log, gate-prompt-5g.log), all four EXIT=0 with zero FAILED or ERROR ids; the reviewed run is read-only (no code change), so its gates added nothing. The reviewed manifest names no baseline_suite/after_suite field (those appear only in the dispatch template), so the store's read-path annotation reports this run unmeasured; the count stored here is this review's own measurement. Positive control: the same extractor over the same green text plus a FAILED line returns (1, ['tests/test_known_present.py::test_red']), so the reader is shown to see a failure known present.",
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T21:47:08.867Z",
+  "dispatched_at": "2026-09-30T21:35:26Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T211742284666-scoring-currency/logs/repro-5c-live-path.out",
+      "line": "5",
+      "text": "the delivered reproduction log ends in an unhandled traceback \u2014 \"AttributeError: 'NoneType' object has no attribute 'group'\" at <stdin> line 10 \u2014 so the script did not run to completion and the log's last line is a crash rather than a result; the two claims the report cites it for (the review prompt names no revision; the positive control mentions FINDING) printed on lines 1-3 and I confirmed them independently at reckon/crew/prompts/review.md, but a reader opening this log cannot tell what the script intended past line 4."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/scoring-currency/report.md",
+      "line": "1",
+      "text": "the report's content is unguarded \u2014 no test or source reads this file and crew/reports is not a git repository, so a later edit to a verdict or an anchor (including the crashed log named above) would fail nothing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no repository diff for a read-only triage node; the deliverable is report.md and six logs under the run directory, all outside any checkout.",
+    "done_when": "the report triages all seven f-ssp-002 items with a verdict, a settling anchor and a reproducing observation each, and its landing line at report.md:165-167 records the four focused gates green and the read-only reproductions, which is the measure the node names.",
+    "goal": "the node goal is to report which f-ssp-002 items still reproduce at main; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/scoring-currency/report.md:13 tabulates the seven items and each section carries the reproduction the report draws on, so the deliverable is exactly the triage the goal names.",
+    "manifest": "read; the reviewed manifest names status complete, commits none (read-only node), the four gate logs and their results, and the positive controls.",
+    "write_paths": "the node wrote exactly its declared report path plus its own run-directory logs; git -C <reviewed worktree> status --short is empty and no repository file changed."
+  },
+  "justifications": {
+    "durability": "nothing guards the report \u2014 no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/scoring-currency/report.md, and crew/reports is not a git repository, so a later edit to a verdict or an anchor would fail nothing and could silently contradict the tree it describes.",
+    "evidence": "the four gate logs carry a header naming revision e26dc2790, the scratch tree, the command and the module under test, and record 22/22/14/5 passed EXIT=0 (gate-lane-selection.log, gate-manifest-2j.log, gate-store-5c.log, gate-prompt-5g.log); I reproduced the \u00a74b, \u00a72j, \u00a72g and \u00a72i observations independently and confirmed the docs-only claim (git diff 9bd82af6e..e26dc2790 -- reckon/ tests/ is empty); the deduction is that logs/repro-5c-live-path.out ends in an unhandled AttributeError, so that reproduction did not run to completion and its last line is a traceback rather than a result.",
+    "fit": "the report follows the repo's triage-report idiom (a verdict table then a per-item section naming the anchor, the reproduction and the repair starting point) and cites the plan's own section ids as content rather than leaking them into any symbol or filename.",
+    "goal_fidelity": "the report answers its goal item by item \u2014 report.md:13-21 tabulates all seven f-ssp-002 items with a verdict (2 met, 2 partly met, 3 unmet), a settling anchor and a landed-by commit, and each section names the smallest reproduction a repair node starts from; every anchor I re-read resolved (recovery.py:1438/1446/1455/1469/1168, reports.py:1012-1013, review.py:259/913/1250/1387, prompts/review.md:41, review_tiers.py:72, promotion.py:3579).",
+    "scope_discipline": "the reviewed run is read-only \u2014 no repository file changed and the worktree at 9bd82af6e is clean \u2014 and every artifact it produced (report.md and six logs) sits at its declared report path or its own run directory, with the /tmp scratch copy deleted after the logs were copied."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to report which f-ssp-002 items still reproduce at main; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/scoring-currency/report.md:13 tabulates the seven items and each section carries the reproduction the report draws on, so the deliverable is exactly the triage the goal names.\nVERDICT done_when: the report triages all seven f-ssp-002 items with a verdict, a settling anchor and a reproducing observation each, and its landing line at report.md:165-167 records the four focused gates green and the read-only reproductions, which is the measure the node names.\nVERDICT write_paths: the node wrote exactly its declared report path plus its own run-directory logs; git -C <reviewed worktree> status --short is empty and no repository file changed.\nVERDICT manifest: read; the reviewed manifest names status complete, commits none (read-only node), the four gate logs and their results, and the positive controls.\nVERDICT diff: there is no repository diff for a read-only triage node; the deliverable is report.md and six logs under the run directory, all outside any checkout.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the report answers its goal item by item \u2014 report.md:13-21 tabulates all seven f-ssp-002 items with a verdict (2 met, 2 partly met, 3 unmet), a settling anchor and a landed-by commit, and each section names the smallest reproduction a repair node starts from; every anchor I re-read resolved (recovery.py:1438/1446/1455/1469/1168, reports.py:1012-1013, review.py:259/913/1250/1387, prompts/review.md:41, review_tiers.py:72, promotion.py:3579).\nSCORE evidence: 17\nJUSTIFICATION evidence: the four gate logs carry a header naming revision e26dc2790, the scratch tree, the command and the module under test, and record 22/22/14/5 passed EXIT=0 (gate-lane-selection.log, gate-manifest-2j.log, gate-store-5c.log, gate-prompt-5g.log); I reproduced the \u00a74b, \u00a72j, \u00a72g and \u00a72i observations independently and confirmed the docs-only claim (git diff 9bd82af6e..e26dc2790 -- reckon/ tests/ is empty); the deduction is that logs/repro-5c-live-path.out ends in an unhandled AttributeError, so that reproduction did not run to completion and its last line is a traceback rather than a result.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the reviewed run is read-only \u2014 no repository file changed and the worktree at 9bd82af6e is clean \u2014 and every artifact it produced (report.md and six logs) sits at its declared report path or its own run directory, with the /tmp scratch copy deleted after the logs were copied.\nSCORE durability: 5\nJUSTIFICATION durability: nothing guards the report \u2014 no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/scoring-currency/report.md, and crew/reports is not a git repository, so a later edit to a verdict or an anchor would fail nothing and could silently contradict the tree it describes.\nSCORE fit: 18\nJUSTIFICATION fit: the report follows the repo's triage-report idiom (a verdict table then a per-item section naming the anchor, the reproduction and the repair starting point) and cites the plan's own section ids as content rather than leaking them into any symbol or filename.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T211742284666-scoring-currency/logs/repro-5c-live-path.out:5 the delivered reproduction log ends in an unhandled traceback \u2014 \"AttributeError: 'NoneType' object has no attribute 'group'\" at <stdin> line 10 \u2014 so the script did not run to completion and the log's last line is a crash rather than a result; the two claims the report cites it for (the review prompt names no revision; the positive control mentions FINDING) printed on lines 1-3 and I confirmed them independently at reckon/crew/prompts/review.md, but a reader opening this log cannot tell what the script intended past line 4.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/scoring-currency/report.md:1 the report's content is unguarded \u2014 no test or source reads this file and crew/reports is not a git repository, so a later edit to a verdict or an anchor (including the crashed log named above) would fail nothing.\n",
+  "review_run_id": "r-20260930T213509227438-review-of-scoring-currency",
+  "reviewed_base_sha": "9bd82af6e237f4644a90c0e99b912e3c814a992e",
+  "reviewed_head_sha": "9bd82af6e237f4644a90c0e99b912e3c814a992e",
+  "reviewed_run_id": "r-20260930T211742284666-scoring-currency",
+  "scores": {
+    "durability": 5,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T21:44:17.025766+00:00",
+  "total": 78
+}

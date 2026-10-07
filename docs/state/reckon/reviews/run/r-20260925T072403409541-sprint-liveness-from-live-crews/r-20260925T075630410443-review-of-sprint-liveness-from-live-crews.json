@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:56:30.410443+00:00",
+  "findings": [
+    {
+      "file": "tests/test_sprint_liveness.py",
+      "line": "86",
+      "text": "the fixture seeds no stored sprint status anywhere, so the gate cannot tell a pointers-only read from one that also consults the stored marker \u2014 a rewrite that ORs the stored status into the verdict, the stale-marker defect the plan opens with, passes every assertion here \u2014 and the control offered as the guard reads docs/sprints/<id>.html through parse_meta, whose status is a default for this repository's sprint documents (probe: parse_meta of the real docs/sprints/S24.html returns 'draft' while that document's own status block reads 'open'), so its red comes from the stored input being absent rather than from a marker disagreeing with the pointers; seed a sprint document whose stored status is active with no live pointer and assert it reads live false."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 4079c4d2 \u2014 6c92861d adds reckon/sprint_liveness.py and tests/test_sprint_liveness.py, d92277ef adds the landed evidence record, its figure and one plan comment; no other path moves, and both blobs are byte-identical to what main carries after the merge into c6d81e3d.",
+    "done_when": "the gate the done_when names is tests/test_sprint_liveness.py, and it asserts every clause of the measure \u2014 two sprints live with their run and session counts (:144, :147-149), a third whose only pointer is terminal reading false (:157-160), and a no-write window over the synthetic config home and docs tree (:135-141) \u2014 and I reproduced the green at the reviewed head in my own run (recheck-gate.log: 2 passed, module.__file__ inside the reviewed tree).",
+    "goal": "read the node goal (add reckon/sprint_liveness.py deriving each sprint's liveness from the project's live crew pointers) against head d92277ef: reckon/sprint_liveness.py:87 defines sprint_liveness(project, docs_dir, live_records), returning one row per sprint a pointer serves with live, live_runs, live_sessions, last_activity_at and held_runs, so the goal's deliverable is present and does what the goal states.",
+    "manifest": "read the reviewed run's manifest \u2014 it states the gate result at base 4079c4d2, the declared mutation with its log and its failing assertion, both commits, the changed paths, and the plan-comment hand edit it bypassed /reckon-edit for; each of those reproduces at the reviewed head, and the manifest is complete.",
+    "write_paths": "read the five declared write paths against the diff at d92277ef: the module, the test, the evidence record, the figure and the plan HTML comment all lie inside them, and the module-and-test commit 6c92861d is purely additive; the one existing file touched anywhere is docs/plans/a-sprint-is-live-while-a-crew-works-it.html, which is itself a granted path and carries the landing record the flow requires."
+  },
+  "justifications": {
+    "durability": "tests/test_sprint_liveness.py:144 is reddened by the pointers being ignored (reproduced), but the fixture at :86 seeds no stored sprint status, so a rewrite that ORs the stored marker into the verdict \u2014 the defect the plan opens with \u2014 passes the entire gate, and the control offered as the guard cannot be shown to disagree with the pointers (FINDING below).",
+    "evidence": "the gate result is recorded rather than claimed and I reproduced it at the reviewed head, and the reviewed run's own control reproduces both ways in my re-run (recheck-negative-control.log: green when the mutation is no-op'd, 2 failed when applied).",
+    "fit": "the module composes exactly the reuse map's Node A1 targets (classify_pointer, the watch state mapping, list_live) instead of a second vocabulary, and names each set in mechanism terms, e.g. HELD_CLASSIFICATIONS at reckon/sprint_liveness.py:39 with the reason in the comment beside it.",
+    "goal_fidelity": "reckon/sprint_liveness.py:87 returns the per-sprint rows derived only from the pointers, joining a pointer to its sprint through the plan's own plan-sprint meta at :64 and the fleet state vocabulary at :124.",
+    "scope_discipline": "the diff at d92277ef touches only the five declared write paths, the third sprint's terminal pointer is counted nowhere (tests/test_sprint_liveness.py:160 asserts held_runs 0), and the module writes no state of its own."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (add reckon/sprint_liveness.py deriving each sprint's liveness from the project's live crew pointers) against head d92277ef: reckon/sprint_liveness.py:87 defines sprint_liveness(project, docs_dir, live_records), returning one row per sprint a pointer serves with live, live_runs, live_sessions, last_activity_at and held_runs, so the goal's deliverable is present and does what the goal states.\nVERDICT done_when: the gate the done_when names is tests/test_sprint_liveness.py, and it asserts every clause of the measure \u2014 two sprints live with their run and session counts (:144, :147-149), a third whose only pointer is terminal reading false (:157-160), and a no-write window over the synthetic config home and docs tree (:135-141) \u2014 and I reproduced the green at the reviewed head in my own run (recheck-gate.log: 2 passed, module.__file__ inside the reviewed tree).\nVERDICT write_paths: read the five declared write paths against the diff at d92277ef: the module, the test, the evidence record, the figure and the plan HTML comment all lie inside them, and the module-and-test commit 6c92861d is purely additive; the one existing file touched anywhere is docs/plans/a-sprint-is-live-while-a-crew-works-it.html, which is itself a granted path and carries the landing record the flow requires.\nVERDICT manifest: read the reviewed run's manifest \u2014 it states the gate result at base 4079c4d2, the declared mutation with its log and its failing assertion, both commits, the changed paths, and the plan-comment hand edit it bypassed /reckon-edit for; each of those reproduces at the reviewed head, and the manifest is complete.\nVERDICT diff: read commit by commit against base 4079c4d2 \u2014 6c92861d adds reckon/sprint_liveness.py and tests/test_sprint_liveness.py, d92277ef adds the landed evidence record, its figure and one plan comment; no other path moves, and both blobs are byte-identical to what main carries after the merge into c6d81e3d.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/sprint_liveness.py:87 returns the per-sprint rows derived only from the pointers, joining a pointer to its sprint through the plan's own plan-sprint meta at :64 and the fleet state vocabulary at :124.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate result is recorded rather than claimed and I reproduced it at the reviewed head, and the reviewed run's own control reproduces both ways in my re-run (recheck-negative-control.log: green when the mutation is no-op'd, 2 failed when applied).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff at d92277ef touches only the five declared write paths, the third sprint's terminal pointer is counted nowhere (tests/test_sprint_liveness.py:160 asserts held_runs 0), and the module writes no state of its own.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_sprint_liveness.py:144 is reddened by the pointers being ignored (reproduced), but the fixture at :86 seeds no stored sprint status, so a rewrite that ORs the stored marker into the verdict \u2014 the defect the plan opens with \u2014 passes the entire gate, and the control offered as the guard cannot be shown to disagree with the pointers (FINDING below).\nSCORE fit: 18\nJUSTIFICATION fit: the module composes exactly the reuse map's Node A1 targets (classify_pointer, the watch state mapping, list_live) instead of a second vocabulary, and names each set in mechanism terms, e.g. HELD_CLASSIFICATIONS at reckon/sprint_liveness.py:39 with the reason in the comment beside it.\nFINDING tests/test_sprint_liveness.py:86 the fixture seeds no stored sprint status anywhere, so the gate cannot tell a pointers-only read from one that also consults the stored marker \u2014 a rewrite that ORs the stored status into the verdict, the stale-marker defect the plan opens with, passes every assertion here \u2014 and the control offered as the guard reads docs/sprints/<id>.html through parse_meta, whose status is a default for this repository's sprint documents (probe: parse_meta of the real docs/sprints/S24.html returns 'draft' while that document's own status block reads 'open'), so its red comes from the stored input being absent rather than from a marker disagreeing with the pointers; seed a sprint document whose stored status is active with no live pointer and assert it reads live false.",
+  "review_run_id": "r-20260925T075630410443-review-of-sprint-liveness-from-live-crews",
+  "reviewed_base_sha": "4079c4d2099966105269cb6df7a2cda93a5ac002",
+  "reviewed_head_sha": "d92277ef04ecc16b9414eaf80c138f9d9a3aaf0b",
+  "reviewed_run_id": "r-20260925T072403409541-sprint-liveness-from-live-crews",
+  "reviewer": "review-of-sprint-liveness-from-live-crews",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T09:08:59.707278+00:00",
+  "total": 84
+}

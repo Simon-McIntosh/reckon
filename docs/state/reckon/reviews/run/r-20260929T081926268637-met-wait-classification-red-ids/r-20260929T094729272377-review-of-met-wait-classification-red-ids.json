@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:3643",
+    "reckon/mcp_views.py:1378",
+    "reckon/crew/recovery.py:5180",
+    "reckon/cli.py:3009"
+  ],
+  "completed_at": "2026-09-29T10:54:45.892Z",
+  "dispatched_at": "2026-09-29T09:47:51Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "text": "the base_suite and after_suite objects name the same 15 test paths, so the pair reads as one command run twice, but the base arm ran the two edited files in their base forms while the head arm ran their head forms; the source tree is identical between 85b3ad0e and c768040e so the pair is sound, yet a reader cannot reconcile 4 failed at base with 0 failed at head from the manifest alone."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "text": "after_suite.revision is c768040e while the reviewed head is 99321db9, and nothing in the record says the delta between them is the docs-only landing anchor; I verified that it is, 24 added lines in the one fragment, and the promotion check reads only baseline_suite.revision against the dispatch base, so nothing refuses, but a reader comparing the two shas cannot tell whether the head arm covered the reviewed tree."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/met-wait-classification-red-ids.html",
+      "line": "21",
+      "text": "the committed anchor states what was done but names neither commit that moved the behaviour nor the mutation the negative control applies, so the audit question this repair turns on, whether the test or the code moved, is answerable only from the run directory's manifest; the two shas and the reverted fixture would fit the same paragraph."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "39 changed lines across three files. Three fixtures now record an observed end, a launcher host and a pid past /proc/sys/kernel/pid_max, and one assertion is inverted from 'in line' to 'not in line'. I counted the assertions per edited test function with ast at 85b3ad0e and at 99321db9 and got 7, 5 and 5 at both revisions, so none was deleted. The inverted assertion is corroborated by three sibling modules that assert the mark absent: test_ticker_renders_wait_facts, test_ticker_reads_cleanly and test_ticker_row_is_one_transition.",
+    "done_when": "the brief asked for file, line and expected-versus-observed per id, one JSON object per arm, a negative control on a reverted fixture, and a ruff delta over the changed paths. The manifest carries the four ids and both arms under baseline_suite and after_suite, each naming its log_path, failure_count and failure_ids, and the negative control log repeats the declared mutation string on its first line. It states no ruff result; I ran the check myself against the reviewed worktree and it reports no finding, so the one unstated element is supplied here rather than missing from the work.",
+    "goal": "the node's goal was to take four wait-classification ids that fail at main, reproduce each red, and establish from the code, never by bisecting, which change moved the behaviour each asserts. All four are green at the reviewed head, and each is attributed in the manifest's evidence_inputs: e1e31482 to the three met reads and 66c1daae to the aged read. I resolved both citations against the objects rather than the prose. recovery.py carries the clause process_reading == 'process gone' in the met-ready branch at e1e31482, whose subject is to offer a resume only once the worker's process is gone, and that clause is absent at e1e31482^; ticker.py names ATTENTION seven times at 66c1daae^ and zero times at 66c1daae, whose subject is to drop the attention mark and let the reason keep its column. Both directions the node claims are what the two revisions show, so the four reds were stale test text rather than a code defect.",
+    "manifest": "read at manifest.md, sha256 86093ec23cad59808bd8e98c1b7043728329c3c5e24405022ebe906d3cdbf024a, mtime 2026-09-29 11:51:05 +0200. It reports status complete, two commits, both suite arms as one JSON object each carrying log_path and failure_ids, and a negative control whose mutation sits on the red log's first line, with the evidence anchors named as commits. Two record defects are named under FINDING; neither changes the substance of the evidence.",
+    "write_paths": "the declared write paths were the two wait-classification test files, reckon/crew/recovery.py, the evidence fragment and a figures directory. The landed pair changes the two test files and adds the fragment, and no other path moved. recovery.py was left untouched, which is the correct outcome rather than an escape: the surviving contract in tests/test_resume_offer_needs_a_dead_process.py pins a met condition over a live process to a wait and a met condition whose process end is observed to ready, so no single code change satisfies both that module and the stale reads."
+  },
+  "justifications": {
+    "durability": "the fixtures now stand on the process table, which is the authority the reading itself consults, and the aged read keeps its substantive half. The attribution that makes the repair auditable later lives in the manifest alone and not in the committed fragment, which is what the third FINDING records.",
+    "evidence": "the pair is reproducible from the worktree: I re-ran the 15-file gate at 99321db9 and got 201 passed with EXIT=0, and rebuilt the base arm from the head tree with the two edited files at their base forms and got exactly the four named ids red at 4 failed to 197 passed. The forms each arm ran and the docs-only delta between the gate revision and the reviewed head are unstated, which is what FINDING records.",
+    "fit": "the repair matches the contract the code states in place: the recovery met branch withholds a ready offer until the process is observed to have ended, and the ticker module states that a row prints no separate attention mark, so the aged read is answered by its state word rather than by a dropped column.",
+    "goal_fidelity": "four red ids green, each attributed to the commit that moved it, with the code-versus-test direction of both causes checked against the objects themselves.",
+    "scope_discipline": "only the two declared test files and the declared fragment changed. recovery.py was correctly left alone once the tests were shown stale, and the arms wrote nothing outside the run's own logs."
+  },
+  "node": "review-of-met-wait-classification-red-ids",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal was to take four wait-classification ids that fail at main, reproduce each red, and establish from the code, never by bisecting, which change moved the behaviour each asserts. All four are green at the reviewed head, and each is attributed in the manifest's evidence_inputs: e1e31482 to the three met reads and 66c1daae to the aged read. I resolved both citations against the objects rather than the prose. recovery.py carries the clause process_reading == 'process gone' in the met-ready branch at e1e31482, whose subject is to offer a resume only once the worker's process is gone, and that clause is absent at e1e31482^; ticker.py names ATTENTION seven times at 66c1daae^ and zero times at 66c1daae, whose subject is to drop the attention mark and let the reason keep its column. Both directions the node claims are what the two revisions show, so the four reds were stale test text rather than a code defect.\nVERDICT done_when: the brief asked for file, line and expected-versus-observed per id, one JSON object per arm, a negative control on a reverted fixture, and a ruff delta over the changed paths. The manifest carries the four ids and both arms under baseline_suite and after_suite, each naming its log_path, failure_count and failure_ids, and the negative control log repeats the declared mutation string on its first line. It states no ruff result; I ran the check myself against the reviewed worktree and it reports no finding, so the one unstated element is supplied here rather than missing from the work.\nVERDICT write_paths: the declared write paths were the two wait-classification test files, reckon/crew/recovery.py, the evidence fragment and a figures directory. The landed pair changes the two test files and adds the fragment, and no other path moved. recovery.py was left untouched, which is the correct outcome rather than an escape: the surviving contract in tests/test_resume_offer_needs_a_dead_process.py pins a met condition over a live process to a wait and a met condition whose process end is observed to ready, so no single code change satisfies both that module and the stale reads.\nVERDICT manifest: read at manifest.md, sha256 86093ec23cad59808bd8e98c1b7043728329c3c5e24405022ebe906d3cdbf024a, mtime 2026-09-29 11:51:05 +0200. It reports status complete, two commits, both suite arms as one JSON object each carrying log_path and failure_ids, and a negative control whose mutation sits on the red log's first line, with the evidence anchors named as commits. Two record defects are named under FINDING; neither changes the substance of the evidence.\nVERDICT diff: 39 changed lines across three files. Three fixtures now record an observed end, a launcher host and a pid past /proc/sys/kernel/pid_max, and one assertion is inverted from 'in line' to 'not in line'. I counted the assertions per edited test function with ast at 85b3ad0e and at 99321db9 and got 7, 5 and 5 at both revisions, so none was deleted. The inverted assertion is corroborated by three sibling modules that assert the mark absent: test_ticker_renders_wait_facts, test_ticker_reads_cleanly and test_ticker_row_is_one_transition.\nVERDICT call_sites: verified that the classification the met fixtures exercise is reached in production, recovery.py reads it at its own call sites and the row the aged read inspects is printed by the ticker's render, which the CLI builds, so both moved behaviours are read by a surface a reader sees and not only by tests.\nCALL_SITES: reckon/cli.py:3643, reckon/mcp_views.py:1378, reckon/crew/recovery.py:5180, reckon/cli.py:3009\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: four red ids green, each attributed to the commit that moved it, with the code-versus-test direction of both causes checked against the objects themselves.\nSCORE evidence: 18\nJUSTIFICATION evidence: the pair is reproducible from the worktree: I re-ran the 15-file gate at 99321db9 and got 201 passed with EXIT=0, and rebuilt the base arm from the head tree with the two edited files at their base forms and got exactly the four named ids red at 4 failed to 197 passed. The forms each arm ran and the docs-only delta between the gate revision and the reviewed head are unstated, which is what FINDING records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only the two declared test files and the declared fragment changed. recovery.py was correctly left alone once the tests were shown stale, and the arms wrote nothing outside the run's own logs.\nSCORE durability: 18\nJUSTIFICATION durability: the fixtures now stand on the process table, which is the authority the reading itself consults, and the aged read keeps its substantive half. The attribution that makes the repair auditable later lives in the manifest alone and not in the committed fragment, which is what the third FINDING records.\nSCORE fit: 19\nJUSTIFICATION fit: the repair matches the contract the code states in place: the recovery met branch withholds a ready offer until the process is observed to have ended, and the ticker module states that a row prints no separate attention mark, so the aged read is answered by its state word rather than by a dropped column.\nFINDING manifest.md:16 the base_suite and after_suite objects name the same 15 test paths, so the pair reads as one command run twice, but the base arm ran the two edited files in their base forms while the head arm ran their head forms; the source tree is identical between 85b3ad0e and c768040e so the pair is sound, yet a reader cannot reconcile 4 failed at base with 0 failed at head from the manifest alone.\nFINDING manifest.md:17 after_suite.revision is c768040e while the reviewed head is 99321db9, and nothing in the record says the delta between them is the docs-only landing anchor; I verified that it is, 24 added lines in the one fragment, and the promotion check reads only baseline_suite.revision against the dispatch base, so nothing refuses, but a reader comparing the two shas cannot tell whether the head arm covered the reviewed tree.\nFINDING docs/evidence/fragments/crew-observability-truth/met-wait-classification-red-ids.html:21 the committed anchor states what was done but names neither commit that moved the behaviour nor the mutation the negative control applies, so the audit question this repair turns on, whether the test or the code moved, is answerable only from the run directory's manifest; the two shas and the reverted fixture would fit the same paragraph.\nreviewed_base_sha: 85b3ad0ec3fd2ffe2746b4f99a98aaa1a31be11f\nreviewed_head_sha: 99321db9978c1cf5b4fabf0ffb3a4a6e48cd22b7\n",
+  "review_run_id": "r-20260929T094729272377-review-of-met-wait-classification-red-ids",
+  "reviewed_base_sha": "85b3ad0ec3fd2ffe2746b4f99a98aaa1a31be11f",
+  "reviewed_head_sha": "99321db9978c1cf5b4fabf0ffb3a4a6e48cd22b7",
+  "reviewed_run_id": "r-20260929T081926268637-met-wait-classification-red-ids",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T10:38:10.901818+00:00",
+  "total": 94
+}

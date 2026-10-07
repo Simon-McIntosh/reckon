@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T17:46:16.233Z",
+  "dispatched_at": "2026-10-04T17:38:33Z",
+  "findings": [
+    {
+      "anchor": "reckon/mcp_views.py:1549",
+      "id": "deep_module-1",
+      "reason": "the plan should name one deep aggregation whose indexed path is an option of it, so a change to the counted population cannot drift between the roadmap's and routing's readers.",
+      "text": "`section_attempts_by_plan` (full-plan read) and `_section_attempt_count_uncached` (indexed single-plan read, reckon/mcp_views.py:1705) are two aggregators over the same ledger+pointer population, sharing only `_group_section_attempts` and each embedding its own role predicate; the derivation the plan calls \"computed once\" therefore exists twice",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:327",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend the run-outcome owner `reckon/evidence.py` (which already holds `_VERDICT_ROLES` at :275 and whose docstring states a section attempt count reads that same population) instead of forking the aggregation into mcp_views.",
+      "text": "`resolve_section_routing` imports `section_attempt_count` from `reckon/mcp_views.py`, a presentation module, and `reckon/roadmap.py:56` imports `section_attempts_by_plan` from the same place, so core routing and roadmap logic reach into the views layer for a domain aggregate",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:1605",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a714's done-when (\"the three readers count the same population\") is unmet by its own census; the consolidation must name evidence.py:275 as the owner and reach all five literal sites, including the two raw SQL strings.",
+      "text": "the executable-role set `{\"implement\",\"test\"}` is spelled as a bare literal at mcp_views.py:1605, :1643, :1720, :1724 and :1733, plus `_VERDICT_ROLES` (reckon/evidence.py:275) and `_IMPL_MOVE_ENFORCED_ROLES` (reckon/crew/promotion.py:7304, not the ~6910 the plan cites) \u2014 seven sites, against the four \u00a714 names",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_schema.py:936",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should reconcile \u00a71's stored field with \u00a74's derived ruling (drop it, mark it optional and non-authoritative, or rename it), rather than leave two quantities named attempts beside one another.",
+      "text": "`SectionRecord.attempts` is a *required* field whose description reads \"Tool-owned launch count\", while \u00a74's ruling derives the count, reckon/_plan_html.py:379 documents `data-attempts` as \"legacy, not the live count\", and the reader never reads it, so every section record must carry a stored counter nothing writes and the plan calls authoritative",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e90859b15f5c53ddf8ed72f4f9734b6605a3ff93ced605cc51a256ba6ef0d528",
+  "plan_slug": "section-contract-and-computed-impl",
+  "plan_version": 90,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T173819630825-plan-review-of-section-contract-and-computed-impl",
+  "reviewed_blob_sha": "f405a4765c601eb9e71322b3cfe995a3b09808ee",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the attempt-count derivation \u00a74/\u00a713 declare \"computed once in Python\" is two aggregation paths over the same run population in reckon/mcp_views.py, so the plan's one-figure promise is two readers that can drift.",
+    "duplicate_owner": "a finding \u2014 the attempt derivation and the executable-role set are both duplicated outside their existing owner, reckon/evidence.py:275, which already holds the run-outcome population and documents that a section attempt count reads it.",
+    "reuse_search": "pass \u2014 the plan names and extends existing machinery rather than rebuilding it: the section-ref grammar from parse_plan_ref (reckon/_schema.py:274), the depends_on link grammar, CapabilityRequest, unwired_plan_finding, derive_impl_from_sections and gated_sections are all cited as the mechanisms it extends.",
+    "thin_wrapper": "a finding \u2014 SectionRecord.attempts is a required stored field described as the \"Tool-owned launch count\", a value the derived reader explicitly ignores, so the schema mandates a counter nothing writes."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T19:35:16.743448+00:00"
+}

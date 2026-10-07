@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_scopes_view_reads_claim_owners_without_mutating_the_pointer"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "61abcb5df23d0b4a7f713b8c08b27a984379470a",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:5359",
+    "reckon/mcp_budget.py:101"
+  ],
+  "completed_at": "2026-10-04T04:23:12.545Z",
+  "dispatched_at": "2026-10-04T04:13:27Z",
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": "3723",
+      "severity": "follow-on",
+      "text": "follow-on: the fix commit also reformats the lambda in test_opt_in_budget_watchdog_stops_and_records_the_run_phase, a formatting-only edit the goal does not imply that adds an unrelated line to a fix diff."
+    }
+  ],
+  "head_log_revision": "7e69db0534586b80f0f5f89d257d8e1d2e7b273d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read b51177a2c and 768d9cdf6 against 7e69db053; the owner shape is completed and the pinning test repaired, beside an unrelated one-line reformat in tests/test_crew.py.",
+    "done_when": "the node's done_when is a temp-RECKON_HOME and temp-repository file; the increment adds tests/test_the_scopes_view_says_what_it_evaluated.py::test_an_unverdicted_claim_still_lists_a_binding_verdict and repairs the pinning test, but its own two-file arms were stopped mid-run with no result; re-run at head 768d9cdf6 the node file is 8 passed and the pinning test 1 passed.",
+    "goal": "the increment b51177a2c completes the node goal's second clause for the scopes read model; reckon/mcp.py:4386 gives every claim_map owner binding and disposition_reason unconditionally, defaulting an unverdicted claim to binding, and 768d9cdf6 records that in the evidence fragment.",
+    "manifest": "read; it records commits b7c9cb1c8 through 768d9cdf6, the two-file arms stopped with no EXIT line, and the negative control; the head measurement the worker left to the coordinator is supplied below.",
+    "write_paths": "the increment touches exactly the four files the goal names over 7e69db053..768d9cdf6; tests/test_crew.py is inside the widened fence the manifest records."
+  },
+  "justifications": {
+    "durability": "reinstating the conditional \"if binding in claim\" at reckon/mcp.py:4386 makes the stubbed unverdicted claim carry no key and tests/test_the_scopes_view_says_what_it_evaluated.py::test_an_unverdicted_claim_still_lists_a_binding_verdict reddens on owner[\"binding\"].",
+    "evidence": "tests/test_the_scopes_view_says_what_it_evaluated.py::test_an_unverdicted_claim_still_lists_a_binding_verdict exercises the default, and the head measurement the reviewed manifest leaves to the coordinator is supplied by two re-runs recorded under test_logs.",
+    "fit": "the default mirrors claim_disposition's no-recorded-process branch at reckon/crew/node.py:1472, so the read model answers binding where the enforcer rule does.",
+    "goal_fidelity": "reckon/mcp.py:4386 carries binding and disposition_reason on every owner and defaults an unverdicted claim to binding, which is the flag the node goal requires each claim to show.",
+    "scope_discipline": "the diff is confined to the four goal files at reckon/mcp.py:4379, tests/test_crew.py, tests/test_the_scopes_view_says_what_it_evaluated.py and the fragment, with one formatting-only line unrelated to the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment b51177a2c completes the node goal's second clause for the scopes read model; reckon/mcp.py:4386 gives every claim_map owner binding and disposition_reason unconditionally, defaulting an unverdicted claim to binding, and 768d9cdf6 records that in the evidence fragment.\nVERDICT done_when: the node's done_when is a temp-RECKON_HOME and temp-repository file; the increment adds tests/test_the_scopes_view_says_what_it_evaluated.py::test_an_unverdicted_claim_still_lists_a_binding_verdict and repairs the pinning test, but its own two-file arms were stopped mid-run with no result; re-run at head 768d9cdf6 the node file is 8 passed and the pinning test 1 passed.\nVERDICT write_paths: the increment touches exactly the four files the goal names over 7e69db053..768d9cdf6; tests/test_crew.py is inside the widened fence the manifest records.\nVERDICT manifest: read; it records commits b7c9cb1c8 through 768d9cdf6, the two-file arms stopped with no EXIT line, and the negative control; the head measurement the worker left to the coordinator is supplied below.\nVERDICT diff: read b51177a2c and 768d9cdf6 against 7e69db053; the owner shape is completed and the pinning test repaired, beside an unrelated one-line reformat in tests/test_crew.py.\nCALL_SITES: reckon/mcp.py:5359, reckon/mcp_budget.py:101\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:4386 carries binding and disposition_reason on every owner and defaults an unverdicted claim to binding, which is the flag the node goal requires each claim to show.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_the_scopes_view_says_what_it_evaluated.py::test_an_unverdicted_claim_still_lists_a_binding_verdict exercises the default, and the head measurement the reviewed manifest leaves to the coordinator is supplied by two re-runs recorded under test_logs.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff is confined to the four goal files at reckon/mcp.py:4379, tests/test_crew.py, tests/test_the_scopes_view_says_what_it_evaluated.py and the fragment, with one formatting-only line unrelated to the goal.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the conditional \"if binding in claim\" at reckon/mcp.py:4386 makes the stubbed unverdicted claim carry no key and tests/test_the_scopes_view_says_what_it_evaluated.py::test_an_unverdicted_claim_still_lists_a_binding_verdict reddens on owner[\"binding\"].\nSCORE fit: 18\nJUSTIFICATION fit: the default mirrors claim_disposition's no-recorded-process branch at reckon/crew/node.py:1472, so the read model answers binding where the enforcer rule does.\nFINDING tests/test_crew.py:3723 follow-on: the fix commit also reformats the lambda in test_opt_in_budget_watchdog_stops_and_records_the_run_phase, a formatting-only edit the goal does not imply that adds an unrelated line to a fix diff.\nREVIEWED_BASE_SHA: 7e69db0534586b80f0f5f89d257d8e1d2e7b273d\nREVIEWED_HEAD_SHA: 768d9cdf6a5fa0a97391a45dd842ecaea2fc0f77\n",
+  "review_run_id": "r-20261004T041310509290-review-of-the-scopes-view-says-what-it-evaluated",
+  "reviewed_base_sha": "7e69db0534586b80f0f5f89d257d8e1d2e7b273d",
+  "reviewed_head_sha": "768d9cdf6a5fa0a97391a45dd842ecaea2fc0f77",
+  "reviewed_run_id": "r-20261004T030028315026-the-scopes-view-says-what-it-evaluated",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T04:21:15.924638+00:00",
+  "total": 87
+}

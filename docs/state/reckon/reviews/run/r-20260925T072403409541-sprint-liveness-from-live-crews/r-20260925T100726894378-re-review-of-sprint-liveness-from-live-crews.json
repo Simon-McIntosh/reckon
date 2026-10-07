@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T10:07:26.894378+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 4b3f2ca3 and 739175ed commit by commit against d92277ef; the first adds the _store_sprint helper and the third test (50 lines), the second adds the mtime snapshot and comparison to that test (3 lines), and no other path moves.",
+    "done_when": "the done_when names tests/test_sprint_liveness.py; I re-ran it in the reviewed worktree at 739175ed (recheck-gate.log: 3 passed, module.__file__ inside that tree), and its fourth clause \u2014 the declared mutation observed to fail with its log recorded \u2014 now holds twice: the node's own stored-marker control (their negative-control-or.log: 1 failed, 2 passed) and my independent re-application of that OR mutation (recheck-stored-marker-mutation.log: 1 failed, 2 passed, pytest exit 1).",
+    "goal": "read the node goal (add reckon/sprint_liveness.py deriving each sprint's liveness from the project's live crew pointers) at the re-reviewed head 739175ed: reckon/sprint_liveness.py:87 still returns one row per pointer-served sprint with live, live_runs, live_sessions, last_activity_at and held_runs, derived from the pointers alone, and the two commits under re-review add no production path.",
+    "manifest": "read the reviewed run's manifest; it now names all four commits including 4b3f2ca3 and 739175ed, records the gate at 739175ed (3 passed) and the second mutation, and the log files it names exist on disk with the results it states.",
+    "write_paths": "the fix's diff d92277ef..739175ed is 53 added lines in tests/test_sprint_liveness.py alone, inside the node's five declared write paths, and it leaves reckon/sprint_liveness.py untouched because the module already ignored the stored status."
+  },
+  "justifications": {
+    "durability": "tests/test_sprint_liveness.py:227 reddens when liveness ORs the stored marker into the verdict (recheck-stored-marker-mutation.log and negative-control-or.log: 1 failed, 2 passed), with the boundary measured at marker-reader-probe.log: read_sprint_record reads the seeded marker as active while parse_meta on the same document reads the default draft.",
+    "evidence": "tests/test_sprint_liveness.py:220 asserts the seeded marker readable at \"active\" before the verdict at :227, so the control's red comes from a disagreeing marker and is recorded in two logs rather than claimed.",
+    "fit": "the helper at tests/test_sprint_liveness.py:119 seeds and reads through the project's own writer and reader (create_project_state, write_resource, read_sprint_record) instead of hand-building a marker file.",
+    "goal_fidelity": "reckon/sprint_liveness.py:87 is unchanged at the re-reviewed head and still derives every row from the pointers, the two commits under re-review touching only the test file.",
+    "scope_discipline": "the fix is 53 insertions in tests/test_sprint_liveness.py, one of the node's five declared write paths, and touches nothing else (git diff --stat d92277ef 739175ed)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (add reckon/sprint_liveness.py deriving each sprint's liveness from the project's live crew pointers) at the re-reviewed head 739175ed: reckon/sprint_liveness.py:87 still returns one row per pointer-served sprint with live, live_runs, live_sessions, last_activity_at and held_runs, derived from the pointers alone, and the two commits under re-review add no production path.\nVERDICT done_when: the done_when names tests/test_sprint_liveness.py; I re-ran it in the reviewed worktree at 739175ed (recheck-gate.log: 3 passed, module.__file__ inside that tree), and its fourth clause \u2014 the declared mutation observed to fail with its log recorded \u2014 now holds twice: the node's own stored-marker control (their negative-control-or.log: 1 failed, 2 passed) and my independent re-application of that OR mutation (recheck-stored-marker-mutation.log: 1 failed, 2 passed, pytest exit 1).\nVERDICT write_paths: the fix's diff d92277ef..739175ed is 53 added lines in tests/test_sprint_liveness.py alone, inside the node's five declared write paths, and it leaves reckon/sprint_liveness.py untouched because the module already ignored the stored status.\nVERDICT manifest: read the reviewed run's manifest; it now names all four commits including 4b3f2ca3 and 739175ed, records the gate at 739175ed (3 passed) and the second mutation, and the log files it names exist on disk with the results it states.\nVERDICT diff: read 4b3f2ca3 and 739175ed commit by commit against d92277ef; the first adds the _store_sprint helper and the third test (50 lines), the second adds the mtime snapshot and comparison to that test (3 lines), and no other path moves.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/sprint_liveness.py:87 is unchanged at the re-reviewed head and still derives every row from the pointers, the two commits under re-review touching only the test file.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_sprint_liveness.py:220 asserts the seeded marker readable at \"active\" before the verdict at :227, so the control's red comes from a disagreeing marker and is recorded in two logs rather than claimed.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the fix is 53 insertions in tests/test_sprint_liveness.py, one of the node's five declared write paths, and touches nothing else (git diff --stat d92277ef 739175ed).\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_sprint_liveness.py:227 reddens when liveness ORs the stored marker into the verdict (recheck-stored-marker-mutation.log and negative-control-or.log: 1 failed, 2 passed), with the boundary measured at marker-reader-probe.log: read_sprint_record reads the seeded marker as active while parse_meta on the same document reads the default draft.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at tests/test_sprint_liveness.py:119 seeds and reads through the project's own writer and reader (create_project_state, write_resource, read_sprint_record) instead of hand-building a marker file.\n",
+  "review_run_id": "r-20260925T100726894378-re-review-of-sprint-liveness-from-live-crews",
+  "reviewed_base_sha": "4079c4d2099966105269cb6df7a2cda93a5ac002",
+  "reviewed_head_sha": "739175edbba638760822fa1d71f1229d2bdbee26",
+  "reviewed_run_id": "r-20260925T072403409541-sprint-liveness-from-live-crews",
+  "reviewer": "re-review-of-sprint-liveness-from-live-crews",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T10:49:07.567206+00:00",
+  "total": 89
+}

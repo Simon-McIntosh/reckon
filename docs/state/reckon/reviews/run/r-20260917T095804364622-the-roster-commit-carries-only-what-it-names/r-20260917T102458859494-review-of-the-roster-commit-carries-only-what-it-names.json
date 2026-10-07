@@ -1,0 +1,38 @@
+{
+  "absent": [],
+  "backend": "codex",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T10:24:58.859494+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "tests/test_roster_write_commits.py:85-119 permanently recreates the previously invisible dirty-roster sequence and fails if public-b is written or committed instead of refusing and preserving internal-a.",
+    "evidence": "tests/test_roster_write_commits.py:85-119 starts from a temporary repository whose roster already holds uncommitted internal-a; the base receipt fails because no LedgerError is raised, the repaired receipt names internal-a with zero commits, the independent focused rerun passes all 3 tests, and the debug-node cohort retains the same 33 failure identifiers while passes rise from 338 to 339.",
+    "fit": "reckon/ledger.py:705-735 factors the existing checkout discovery without changing its errors, while lines 738-799 use the module's subprocess and LedgerError idioms and introduce no plan-labelled source names.",
+    "goal_fidelity": "reckon/ledger.py:738-799 and 882-925 refuse a committing registration before it writes when the roster is already dirty, name the blocking member, and leave the original registration intact without creating a misleading commit.",
+    "scope_discipline": "The diff from 51c2b9e0d4eae6e94f2a601b8d28925e0308755e through 44e69249191fe5c006a1c3993201a03a6e5eaa2d changes exactly reckon/ledger.py, tests/test_roster_write_commits.py, and the two declared plan-evidence paths."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:738-799 and 882-925 refuse a committing registration before it writes when the roster is already dirty, name the blocking member, and leave the original registration intact without creating a misleading commit.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_roster_write_commits.py:85-119 starts from a temporary repository whose roster already holds uncommitted internal-a; the base receipt fails because no LedgerError is raised, the repaired receipt names internal-a with zero commits, the independent focused rerun passes all 3 tests, and the debug-node cohort retains the same 33 failure identifiers while passes rise from 338 to 339.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff from 51c2b9e0d4eae6e94f2a601b8d28925e0308755e through 44e69249191fe5c006a1c3993201a03a6e5eaa2d changes exactly reckon/ledger.py, tests/test_roster_write_commits.py, and the two declared plan-evidence paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_roster_write_commits.py:85-119 permanently recreates the previously invisible dirty-roster sequence and fails if public-b is written or committed instead of refusing and preserving internal-a.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/ledger.py:705-735 factors the existing checkout discovery without changing its errors, while lines 738-799 use the module's subprocess and LedgerError idioms and introduce no plan-labelled source names.\n",
+  "review_run_id": "r-20260917T102458859494-review-of-the-roster-commit-carries-only-what-it-names",
+  "reviewed_base_sha": "51c2b9e0d4eae6e94f2a601b8d28925e0308755e",
+  "reviewed_commits": [
+    "cf9afcf1bb5467eb7fe10997d0208e03cf277fa3",
+    "c57ec1156a351308f4b49afd7ff71be8caa84b02",
+    "44e69249191fe5c006a1c3993201a03a6e5eaa2d"
+  ],
+  "reviewed_head_sha": "44e69249191fe5c006a1c3993201a03a6e5eaa2d",
+  "reviewed_run_id": "r-20260917T095804364622-the-roster-commit-carries-only-what-it-names",
+  "reviewer_run_id": "r-20260917T102458859494-review-of-the-roster-commit-carries-only-what-it-names",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T10:31:54+00:00",
+  "total": 100
+}

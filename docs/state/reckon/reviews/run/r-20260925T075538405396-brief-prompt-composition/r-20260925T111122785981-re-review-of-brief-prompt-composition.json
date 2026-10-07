@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3815"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T11:11:22.785981+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075538405396-brief-prompt-composition/manifest.md",
+      "line": "7",
+      "text": "the manifest's commits line carried two invented 40-hex shas, e4d70125de5a2dd1a2f2b1a0a5d3f0c6e8f2d0c1 and 2ab372f06a0f1d5a5c6b7e8d9f0a1b2c3d4e5f60, from 11:09:49Z to 11:10:41Z; git cat-file -t refuses both with \"could not get object info\", the worker's own stream shows it wrote them by expanding the 8-char prefixes and detected the fabrication at 11:10:15Z, and the Edit at 11:10:41Z replaced them with the four shas the file names now, each of which resolves to a commit; the defect matters because a coordinator read the fabricated pair and dispatched a review node to chase it, and because a record whose identifiers resolve to nothing is unverifiable by exactly the reader it is written for."
+    },
+    {
+      "file": "tests/test_brief_prompt.py",
+      "line": "129",
+      "text": "the comment \"# The two landing contracts differ only in where the record goes.\" still states destination as the only difference, while the correction commit e4d70125 changed the sibling claim at reckon/crew/prompts.py:90 to \"differ only in where the record goes and whether it is committed\" without updating this line in the same file; a reader checking the two contracts against each other is told the committedness rule is shared when it is one of the two differences."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base e731091f; e4d70125 rewrites BRIEF_LANDING_CONTRACT at reckon/crew/prompts.py:94 to state the run directory is the record's home and is never committed, and adds two tests at tests/test_brief_prompt.py:136 and :149, and 2ab372f0 appends the correction to the evidence anchor and the plan's landed section.",
+    "done_when": "the done_when names tests/test_brief_prompt.py for verbatim carry, fence and manifest retention, the absence of a plan-section read instruction and byte-identity with an empty brief; the manifest records 13 passed exit 0 at e4d70125 and an independent re-run of that module in a scratch copy of the reviewed head reproduced 13 passed exit 0.",
+    "goal": "the node goal is a composer that builds the worker prompt from a brief in place of a plan section, sending the landing record to the run directory; at head 2ab372f0 composition was run with a brief and the brief text arrived verbatim in the task-authority slot, with BRIEF_LANDING_CONTRACT selected at reckon/crew/prompts.py:353.",
+    "manifest": "read in the run directory (mtime 2026-09-25T11:15:12Z, 5822 bytes, sha256 fa91f891784320afee6ccbe986d9a382dcc6f5f7ba599ed37f242bb149f3f8466); its gate, its declared mutation and its two test-log rev headers were reproduced independently; its commits line held two invented shas between 11:09:49Z and 11:10:41Z and now names four shas that each resolve.",
+    "write_paths": "the declared scope is the five paths on the manifest's orientation line, and the two correction commits e4d70125 and 2ab372f0 touch only reckon/crew/prompts.py, tests/test_brief_prompt.py, docs/evidence/archive/a-worker-can-take-a-brief-landed.html and docs/plans/a-worker-can-take-a-brief.html, all inside it."
+  },
+  "justifications": {
+    "durability": "reinstating the removed sentence in a scratch copy of the reviewed head reddens both added tests (2 failed, 11 passed, exit 1) at tests/test_brief_prompt.py:136 and :149, so the guard fires; the assertions are exact-phrase tests, so a paraphrased reintroduction of the same instruction would not be caught.",
+    "evidence": "the gate, the declared mutation and the byte-identity claim were each reproduced from the reviewed head's own tree, but the manifest's commits field asserted two identifiers that resolve to no object, a record defect repaired only after the coordinator read it.",
+    "fit": "the correction keeps the standalone-constant and maskable-slot idiom of its neighbour at reckon/crew/prompts.py:67, but the sibling claim at tests/test_brief_prompt.py:129 was left reading \"differ only in where the record goes\" after reckon/crew/prompts.py:90 gained \"and whether it is committed\".",
+    "goal_fidelity": "reckon/crew/prompts.py:94 now states the record's home and that it is never committed, and a brief prompt composed at head 2ab372f0 contains neither \"into your final commit\" nor \"both go into\", so the false sentence the prior review found is gone and the remaining sentence describes an act git permits.",
+    "scope_discipline": "git show --stat on e4d70125 and 2ab372f0 lists only the four declared paths, and 2ab372f0 appends to the evidence anchor with a single line deleted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a composer that builds the worker prompt from a brief in place of a plan section, sending the landing record to the run directory; at head 2ab372f0 composition was run with a brief and the brief text arrived verbatim in the task-authority slot, with BRIEF_LANDING_CONTRACT selected at reckon/crew/prompts.py:353.\nVERDICT done_when: the done_when names tests/test_brief_prompt.py for verbatim carry, fence and manifest retention, the absence of a plan-section read instruction and byte-identity with an empty brief; the manifest records 13 passed exit 0 at e4d70125 and an independent re-run of that module in a scratch copy of the reviewed head reproduced 13 passed exit 0.\nVERDICT write_paths: the declared scope is the five paths on the manifest's orientation line, and the two correction commits e4d70125 and 2ab372f0 touch only reckon/crew/prompts.py, tests/test_brief_prompt.py, docs/evidence/archive/a-worker-can-take-a-brief-landed.html and docs/plans/a-worker-can-take-a-brief.html, all inside it.\nVERDICT manifest: read in the run directory (mtime 2026-09-25T11:15:12Z, 5822 bytes, sha256 fa91f891784320afee6ccbe986d9a382dcc6f5f7ba599ed37f242bb149f3f8466); its gate, its declared mutation and its two test-log rev headers were reproduced independently; its commits line held two invented shas between 11:09:49Z and 11:10:41Z and now names four shas that each resolve.\nVERDICT diff: read commit by commit against base e731091f; e4d70125 rewrites BRIEF_LANDING_CONTRACT at reckon/crew/prompts.py:94 to state the run directory is the record's home and is never committed, and adds two tests at tests/test_brief_prompt.py:136 and :149, and 2ab372f0 appends the correction to the evidence anchor and the plan's landed section.\nCALL_SITES: reckon/crew/dispatch.py:3815\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:94 now states the record's home and that it is never committed, and a brief prompt composed at head 2ab372f0 contains neither \"into your final commit\" nor \"both go into\", so the false sentence the prior review found is gone and the remaining sentence describes an act git permits.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate, the declared mutation and the byte-identity claim were each reproduced from the reviewed head's own tree, but the manifest's commits field asserted two identifiers that resolve to no object, a record defect repaired only after the coordinator read it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat on e4d70125 and 2ab372f0 lists only the four declared paths, and 2ab372f0 appends to the evidence anchor with a single line deleted.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the removed sentence in a scratch copy of the reviewed head reddens both added tests (2 failed, 11 passed, exit 1) at tests/test_brief_prompt.py:136 and :149, so the guard fires; the assertions are exact-phrase tests, so a paraphrased reintroduction of the same instruction would not be caught.\nSCORE fit: 18\nJUSTIFICATION fit: the correction keeps the standalone-constant and maskable-slot idiom of its neighbour at reckon/crew/prompts.py:67, but the sibling claim at tests/test_brief_prompt.py:129 was left reading \"differ only in where the record goes\" after reckon/crew/prompts.py:90 gained \"and whether it is committed\".\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075538405396-brief-prompt-composition/manifest.md:7 the manifest's commits line carried two invented 40-hex shas, e4d70125de5a2dd1a2f2b1a0a5d3f0c6e8f2d0c1 and 2ab372f06a0f1d5a5c6b7e8d9f0a1b2c3d4e5f60, from 11:09:49Z to 11:10:41Z; git cat-file -t refuses both with \"could not get object info\", the worker's own stream shows it wrote them by expanding the 8-char prefixes and detected the fabrication at 11:10:15Z, and the Edit at 11:10:41Z replaced them with the four shas the file names now, each of which resolves to a commit; the defect matters because a coordinator read the fabricated pair and dispatched a review node to chase it, and because a record whose identifiers resolve to nothing is unverifiable by exactly the reader it is written for.\nFINDING tests/test_brief_prompt.py:129 the comment \"# The two landing contracts differ only in where the record goes.\" still states destination as the only difference, while the correction commit e4d70125 changed the sibling claim at reckon/crew/prompts.py:90 to \"differ only in where the record goes and whether it is committed\" without updating this line in the same file; a reader checking the two contracts against each other is told the committedness rule is shared when it is one of the two differences.",
+  "review_run_id": "r-20260925T111122785981-re-review-of-brief-prompt-composition",
+  "reviewed_base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+  "reviewed_head_sha": "2ab372f021bf852610dc0ffb71ee63833afd28d0",
+  "reviewed_run_id": "r-20260925T075538405396-brief-prompt-composition",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:49:56.260377+00:00",
+  "total": 91
+}

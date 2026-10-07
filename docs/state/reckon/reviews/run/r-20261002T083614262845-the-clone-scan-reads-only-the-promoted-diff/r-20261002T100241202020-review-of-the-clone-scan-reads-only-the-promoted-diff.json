@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "76c09104d359ff4cd8f107532abeb61ec339c9e0",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-10-02T10:21:25.741Z",
+  "dispatched_at": "2026-10-02T10:03:11Z",
+  "findings": [
+    {
+      "file": "reckon/clones.py",
+      "line": "345",
+      "severity": "follow-on",
+      "text": "follow-on: the corpus cache is never pruned, so an entry for every content a file ever had is written on and never evicted, and corpus.json grows without bound across the revisions and worktrees that share the cache root."
+    },
+    {
+      "file": "reckon/clones.py",
+      "line": "327",
+      "severity": "follow-on",
+      "text": "follow-on: head_functions is typed list[Any] and _index declares Iterable[_Function] while it now also receives _CachedFunction, so the type checker cannot catch an interface mismatch between the two window providers."
+    }
+  ],
+  "head_log_revision": "6e7c645a960c429b374563c0471711dda7a444b4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "Read commit by commit against 57dfae0345; 76c09104 adds the digest-keyed cache (+294/-2) and 6e7c645a makes the cache write best-effort and adds the two regression tests (+48/-1), all inside the declared scope.",
+    "done_when": "The done-when asks for a bounded-scan-equals-full-scan test on a synthetic repository plus a negative control; tests/test_the_clone_scan_reads_only_the_promoted_diff.py:85 asserts the warm scan equals the cold scan, :98 counts parses, :135 forces the on-disk round trip, :155 asserts an unwritable cache still reports, and both negative controls are EXIT=1.",
+    "goal": "The node goal is that a promotion's clone scan fingerprints only what the promoted diff touches or reuses cached fingerprints; reckon/clones.py:334 parses a changed file from its head bytes and clones.py:342 serves every other corpus file under the prefixes from a digest-keyed cache, and clone-profile/head-warm.json records functions_in at 1 call against 868 cold.",
+    "manifest": "Read; it records head 6e7c645a with 13 passed against a 7-passed base, two negative controls, and the cold/warm profile pair.",
+    "write_paths": "The declared scope is reckon/clones.py, tests/test_the_clone_scan_reads_only_the_promoted_diff.py, the evidence fragment and the figures dir; both landed commits touch exactly the first two and nothing outside them."
+  },
+  "justifications": {
+    "durability": "negative-control-b reddens test_an_unwritable_cache_directory_still_reports_matches (:155) and negative-control-a reddens test_the_disk_cache_round_trips... (tests/test_the_clone_scan_reads_only_the_promoted_diff.py:135), both green at head.",
+    "evidence": "tests/test_the_clone_scan_reads_only_the_promoted_diff.py:85 asserts the warm scan equals the cold scan, :135 forces the disk round trip and :155 the unwritable cache, and head-clones.log records 13 passed EXIT=0 with both negative controls EXIT=1; docked because clone-profile/head-cold.json still puts the clone scan at 0.61 of wall time (42.60/69.35 s, above the 0.49 baseline), so the win holds only with a warm cache.",
+    "fit": "_CachedFunction at clones.py:155 mirrors the frozen _Function dataclass, but clones.py:327 annotates head_functions as list[Any] and _index still declares Iterable[_Function] while now receiving _CachedFunction.",
+    "goal_fidelity": "reckon/clones.py:334 parses only the changed file and clones.py:342 reads the rest from the digest cache, and clone-profile/head-warm.json records functions_in at 1 call (0.002 s) against 868 cold calls.",
+    "scope_discipline": "the two landed commits touch only reckon/clones.py and tests/test_the_clone_scan_reads_only_the_promoted_diff.py, both declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a promotion's clone scan fingerprints only what the promoted diff touches or reuses cached fingerprints; reckon/clones.py:334 parses a changed file from its head bytes and clones.py:342 serves every other corpus file under the prefixes from a digest-keyed cache, and clone-profile/head-warm.json records functions_in at 1 call against 868 cold.\nVERDICT done_when: The done-when asks for a bounded-scan-equals-full-scan test on a synthetic repository plus a negative control; tests/test_the_clone_scan_reads_only_the_promoted_diff.py:85 asserts the warm scan equals the cold scan, :98 counts parses, :135 forces the on-disk round trip, :155 asserts an unwritable cache still reports, and both negative controls are EXIT=1.\nVERDICT write_paths: The declared scope is reckon/clones.py, tests/test_the_clone_scan_reads_only_the_promoted_diff.py, the evidence fragment and the figures dir; both landed commits touch exactly the first two and nothing outside them.\nVERDICT manifest: Read; it records head 6e7c645a with 13 passed against a 7-passed base, two negative controls, and the cold/warm profile pair.\nVERDICT diff: Read commit by commit against 57dfae0345; 76c09104 adds the digest-keyed cache (+294/-2) and 6e7c645a makes the cache write best-effort and adds the two regression tests (+48/-1), all inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/clones.py:334 parses only the changed file and clones.py:342 reads the rest from the digest cache, and clone-profile/head-warm.json records functions_in at 1 call (0.002 s) against 868 cold calls.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_the_clone_scan_reads_only_the_promoted_diff.py:85 asserts the warm scan equals the cold scan, :135 forces the disk round trip and :155 the unwritable cache, and head-clones.log records 13 passed EXIT=0 with both negative controls EXIT=1; docked because clone-profile/head-cold.json still puts the clone scan at 0.61 of wall time (42.60/69.35 s, above the 0.49 baseline), so the win holds only with a warm cache.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two landed commits touch only reckon/clones.py and tests/test_the_clone_scan_reads_only_the_promoted_diff.py, both declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-b reddens test_an_unwritable_cache_directory_still_reports_matches (:155) and negative-control-a reddens test_the_disk_cache_round_trips... (tests/test_the_clone_scan_reads_only_the_promoted_diff.py:135), both green at head.\nSCORE fit: 17\nJUSTIFICATION fit: _CachedFunction at clones.py:155 mirrors the frozen _Function dataclass, but clones.py:327 annotates head_functions as list[Any] and _index still declares Iterable[_Function] while now receiving _CachedFunction.\nFINDING reckon/clones.py:345 follow-on: the corpus cache is never pruned, so an entry for every content a file ever had is written on and never evicted, and corpus.json grows without bound across the revisions and worktrees that share the cache root.\nFINDING reckon/clones.py:327 follow-on: head_functions is typed list[Any] and _index declares Iterable[_Function] while it now also receives _CachedFunction, so the type checker cannot catch an interface mismatch between the two window providers.",
+  "review_run_id": "r-20261002T100241202020-review-of-the-clone-scan-reads-only-the-promoted-diff",
+  "reviewed_base_sha": "57dfae0345a5d8ecee9377da3706e8b1ea5dee3b",
+  "reviewed_head_sha": "6e7c645a960c429b374563c0471711dda7a444b4",
+  "reviewed_run_id": "r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T10:17:10.435412+00:00",
+  "total": 92
+}

@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-28T23:52:17.329Z",
+  "dispatched_at": "2026-09-28T22:55:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T215628176452-one-timestamp-parser/after-suite.log",
+      "line": "1",
+      "text": "the log the manifest names as the head arm opens on the pytest progress line rather than naming the revision, tree and command a gate log is required to carry, so the claim that 15 passed at 7960e8a2 rests on manifest.md:17 alone and cannot be checked from the log itself; head-arm.log shows the header shape that log should carry."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against a928b6be - 95c56533 adds reckon/_timestamps.py and its tests, da5147b1 adds the fragment and figure, 7960e8a2 fixes the module summary and replaces the hand inventory with the scan output; 375 insertions, no production caller touched.",
+    "done_when": "read the fence at prompt.txt:80 against the run's own evidence - after-suite.log holds 15 passed at exit 0 at the committed head, negative-control.log reddens three assertions at EXIT=1, and I re-ran tests/test_timestamps_parse_utc.py at 7960e8a2 (15 passed, exit 0) and reproduced the fragment's inventory set-exactly (52 functions over 63 call sites).",
+    "goal": "read the node goal at prompt.txt:25 against the landed module - reckon/_timestamps.py:36 defines parse_utc and covers every shape the goal names (Z suffix, explicit offset, naive read as UTC, epoch seconds and milliseconds, malformed to None), and no caller migrates in this node.",
+    "manifest": "read; it records the gate command and result (manifest.md:10), both arms in the armed JSON form (manifest.md:16 and manifest.md:17), the negative control log, and a commits list whose three shas all resolve at the reviewed head.",
+    "write_paths": "the manifest declares four paths at manifest.md:3, and git diff --name-status a928b6be..7960e8a2 lists exactly those four as additions with nothing outside them."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens three separate assertions at negative-control.log, and the epoch split is bounded from both sides (1800000000 seconds vs 1800000000000 milliseconds), though the lowercase z accepted at reckon/_timestamps.py:66 has no assertion of its own.",
+    "evidence": "the arms and the negative control are recorded (base-arm.log exit 2 on a collection error, after-suite.log 15 passed, negative-control.log 3 failed EXIT=1) and the fragment's inventory at docs/evidence/fragments/a-worker-reuses-before-it-writes/one-timestamp-parser.html:59 reproduces exactly, though after-suite.log names no revision and manifest.md:16 records a described error sentence where a bare pytest id is asked for.",
+    "fit": "reckon/_timestamps.py:1-31 follows the private-module idiom of reckon/_store.py:1 and carries no plan, version or attribution name.",
+    "goal_fidelity": "reckon/_timestamps.py:36 implements each shape the goal at prompt.txt:25 names, with the naive-as-UTC and 1e11-threshold policies stated in the module docstring at reckon/_timestamps.py:6-24.",
+    "scope_discipline": "git diff --name-status a928b6be..7960e8a2 lists only the four declared write paths, and no production file is touched or migrated."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal at prompt.txt:25 against the landed module - reckon/_timestamps.py:36 defines parse_utc and covers every shape the goal names (Z suffix, explicit offset, naive read as UTC, epoch seconds and milliseconds, malformed to None), and no caller migrates in this node.\nVERDICT done_when: read the fence at prompt.txt:80 against the run's own evidence - after-suite.log holds 15 passed at exit 0 at the committed head, negative-control.log reddens three assertions at EXIT=1, and I re-ran tests/test_timestamps_parse_utc.py at 7960e8a2 (15 passed, exit 0) and reproduced the fragment's inventory set-exactly (52 functions over 63 call sites).\nVERDICT write_paths: the manifest declares four paths at manifest.md:3, and git diff --name-status a928b6be..7960e8a2 lists exactly those four as additions with nothing outside them.\nVERDICT manifest: read; it records the gate command and result (manifest.md:10), both arms in the armed JSON form (manifest.md:16 and manifest.md:17), the negative control log, and a commits list whose three shas all resolve at the reviewed head.\nVERDICT diff: read commit by commit against a928b6be - 95c56533 adds reckon/_timestamps.py and its tests, da5147b1 adds the fragment and figure, 7960e8a2 fixes the module summary and replaces the hand inventory with the scan output; 375 insertions, no production caller touched.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_timestamps.py:36 implements each shape the goal at prompt.txt:25 names, with the naive-as-UTC and 1e11-threshold policies stated in the module docstring at reckon/_timestamps.py:6-24.\nSCORE evidence: 18\nJUSTIFICATION evidence: the arms and the negative control are recorded (base-arm.log exit 2 on a collection error, after-suite.log 15 passed, negative-control.log 3 failed EXIT=1) and the fragment's inventory at docs/evidence/fragments/a-worker-reuses-before-it-writes/one-timestamp-parser.html:59 reproduces exactly, though after-suite.log names no revision and manifest.md:16 records a described error sentence where a bare pytest id is asked for.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status a928b6be..7960e8a2 lists only the four declared write paths, and no production file is touched or migrated.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation reddens three separate assertions at negative-control.log, and the epoch split is bounded from both sides (1800000000 seconds vs 1800000000000 milliseconds), though the lowercase z accepted at reckon/_timestamps.py:66 has no assertion of its own.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_timestamps.py:1-31 follows the private-module idiom of reckon/_store.py:1 and carries no plan, version or attribution name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T215628176452-one-timestamp-parser/after-suite.log:1 the log the manifest names as the head arm opens on the pytest progress line rather than naming the revision, tree and command a gate log is required to carry, so the claim that 15 passed at 7960e8a2 rests on manifest.md:17 alone and cannot be checked from the log itself; head-arm.log shows the header shape that log should carry.\n",
+  "review_run_id": "r-20260928T225457714670-review-of-one-timestamp-parser",
+  "reviewed_base_sha": "a928b6bea518166c335cec08b7ebec88b143d732",
+  "reviewed_head_sha": "7960e8a2abfa4e84e6c33911abf0dbbcd47083c3",
+  "reviewed_run_id": "r-20260928T215628176452-one-timestamp-parser",
+  "reviewer_run_id": "r-20260928T225457714670-review-of-one-timestamp-parser",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T23:28:43.605127Z",
+  "total": 93
+}

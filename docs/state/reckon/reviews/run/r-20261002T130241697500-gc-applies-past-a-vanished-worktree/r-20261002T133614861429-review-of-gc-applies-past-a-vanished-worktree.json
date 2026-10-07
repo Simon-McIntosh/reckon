@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "53a72f8c99784e731660beecee07f8dc5ed745a4",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:5461",
+    "reckon/crew/promotion.py:5672",
+    "reckon/cli.py:5217"
+  ],
+  "completed_at": "2026-10-02T14:09:07.718Z",
+  "dispatched_at": "2026-10-02T13:36:45Z",
+  "findings": [
+    {
+      "file": "tests/test_gc_applies_past_a_vanished_worktree.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base and head arms cover the three gc test files but omit tests/test_crew_shadow_paths.py, which invokes crew gc at :324; the done-when's own criterion ('every test file that calls gc') names it, so a regression in the dry-run report shape it reads would not redden this node's gate."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base 53a72f8c9; routing.py adds the raise_on_unavailable opt-out, the unavailable classification with its withheld reason and removes the blanket git worktree prune, with the test and the landing fragment beside it.",
+    "done_when": "the gate tests/test_gc_applies_past_a_vanished_worktree.py builds one integrated worktree and one whose directory was removed and asserts apply reclaims the first, reports the second unavailable with its detail and leaves its git registration; the manifest records it 2 passed, head arm 38 passed EXIT=0, base arm 36 passed EXIT=0.",
+    "goal": "the node's goal is that crew gc --apply reports a registered worktree whose directory is gone while still reclaiming the rest; reckon/crew/routing.py:946 now inspects each candidate with raise_on_unavailable=False and returns an unavailable classification at :975 while the apply pass around :949 carries on.",
+    "manifest": "read; status complete with commits 0c72d3604 and 038c7e85b, baseline_suite and after_suite both completed=true with failure_count 0, negative_control_log and its note present.",
+    "write_paths": "read the manifest's declared paths; git diff --name-only 53a72f8c9..038c7e85b lists exactly reckon/crew/routing.py, tests/test_gc_applies_past_a_vanished_worktree.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/gc-applies-past-a-vanished-worktree.html, all inside the declared set."
+  },
+  "justifications": {
+    "durability": "the negative control reinstates the raise and both gate cases redden (2 failed EXIT=1, independently reproduced at the base module), and each assertion reads an independent source - git registration, _tree_state detail, on-disk existence.",
+    "evidence": "the gate measures the done-when and its result is recorded in the manifest and its logs; an independent re-run reproduced the base defect (CrewError at routing.py:668, both gate cases red) and the head pass (2 passed).",
+    "fit": "reckon/crew/routing.py:832 follows the module's existing withheld-reason pattern beside RUN_DIRECTORY_EXTRACTION_REASON, and neither the source nor the test file carries a plan label or a plan referent.",
+    "goal_fidelity": "reckon/crew/routing.py:668 keeps the raise for promotion's two callers while routing.py:946 opts gc out, so gc reports the vanished tree and reclaims the rest exactly as the goal states.",
+    "scope_discipline": "every path in diff 53a72f8c9..038c7e85b is inside the three declared write paths, with no edit to any other file, shared index, sprint or plan state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew gc --apply reports a registered worktree whose directory is gone while still reclaiming the rest; reckon/crew/routing.py:946 now inspects each candidate with raise_on_unavailable=False and returns an unavailable classification at :975 while the apply pass around :949 carries on.\nVERDICT done_when: the gate tests/test_gc_applies_past_a_vanished_worktree.py builds one integrated worktree and one whose directory was removed and asserts apply reclaims the first, reports the second unavailable with its detail and leaves its git registration; the manifest records it 2 passed, head arm 38 passed EXIT=0, base arm 36 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths; git diff --name-only 53a72f8c9..038c7e85b lists exactly reckon/crew/routing.py, tests/test_gc_applies_past_a_vanished_worktree.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/gc-applies-past-a-vanished-worktree.html, all inside the declared set.\nVERDICT manifest: read; status complete with commits 0c72d3604 and 038c7e85b, baseline_suite and after_suite both completed=true with failure_count 0, negative_control_log and its note present.\nVERDICT diff: read both commits against base 53a72f8c9; routing.py adds the raise_on_unavailable opt-out, the unavailable classification with its withheld reason and removes the blanket git worktree prune, with the test and the landing fragment beside it.\nCALL_SITES: reckon/crew/promotion.py:5461, reckon/crew/promotion.py:5672, reckon/cli.py:5217\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:668 keeps the raise for promotion's two callers while routing.py:946 opts gc out, so gc reports the vanished tree and reclaims the rest exactly as the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate measures the done-when and its result is recorded in the manifest and its logs; an independent re-run reproduced the base defect (CrewError at routing.py:668, both gate cases red) and the head pass (2 passed).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in diff 53a72f8c9..038c7e85b is inside the three declared write paths, with no edit to any other file, shared index, sprint or plan state.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control reinstates the raise and both gate cases redden (2 failed EXIT=1, independently reproduced at the base module), and each assertion reads an independent source - git registration, _tree_state detail, on-disk existence.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/routing.py:832 follows the module's existing withheld-reason pattern beside RUN_DIRECTORY_EXTRACTION_REASON, and neither the source nor the test file carries a plan label or a plan referent.\nFINDING tests/test_gc_applies_past_a_vanished_worktree.py:1 follow-on: the base and head arms cover the three gc test files but omit tests/test_crew_shadow_paths.py, which invokes crew gc at :324; the done-when's own criterion ('every test file that calls gc') names it, so a regression in the dry-run report shape it reads would not redden this node's gate.\n",
+  "review_run_id": "r-20261002T133614861429-review-of-gc-applies-past-a-vanished-worktree",
+  "reviewed_base_sha": "53a72f8c99784e731660beecee07f8dc5ed745a4",
+  "reviewed_head_sha": "038c7e85b1ea1fe049f7809da9d8bb48821a953a",
+  "reviewed_run_id": "r-20261002T130241697500-gc-applies-past-a-vanished-worktree",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T13:52:29.347908+00:00",
+  "total": 93
+}

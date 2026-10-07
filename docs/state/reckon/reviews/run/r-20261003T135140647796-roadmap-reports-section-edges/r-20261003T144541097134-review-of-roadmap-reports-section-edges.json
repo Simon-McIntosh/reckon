@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_roadmap.py::test_roadmap_returns_ready_work_and_hourly_critical_path",
+    "tests/test_sprint_summary_lists_pending.py::test_summary_without_sprint_is_unchanged"
+  ],
+  "added_failures_note": "measured by the reviewer's own wider arm, not read from the reviewed manifest, whose baseline_suite/after_suite record not run: the 29-file set of tests importing reckon.roadmap is 2 failed/343 passed at head aeb59e548 and the two failing files are 53 passed at base 406faf5ef, so both failures are added by this change; the reviewed run never ran this arm.",
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/roadmap.py::_build_roadmap"
+  ],
+  "completed_at": "2026-10-03T15:08:37.442Z",
+  "dispatched_at": "2026-10-03T14:46:02Z",
+  "findings": [
+    {
+      "file": "tests/test_roadmap.py",
+      "line": "150",
+      "severity": "blocking",
+      "text": "blocking: the change adds a mandatory edges key to critical_path and this existing test asserts the exact dict, so it passes at base 406faf5ef (53 passed) and fails at head aeb59e548."
+    },
+    {
+      "file": "tests/test_sprint_summary_lists_pending.py",
+      "line": "181",
+      "severity": "blocking",
+      "text": "blocking: test_summary_without_sprint_is_unchanged asserts the exact roadmap summary JSON and fails at head for the same added edges key, green at base."
+    },
+    {
+      "file": "logs/head-new-test.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed head arm names a097f12c8 rather than the reviewed head aeb59e548; aeb59e548 is docs-only so the code under test is identical and an independent run at aeb59e548 passes 6/6, but the log alone cannot tie the result to the promoted head."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1446",
+      "severity": "follow-on",
+      "text": "follow-on: the feature commit folds formatting-only rewrites of _sprint_member_counts, sprint_summary_rows and _drift_is_member_progress into the change, mixing a style sweep with the feature."
+    },
+    {
+      "file": "manifest.md",
+      "line": "9",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite read not run, so the wider set of files importing reckon.roadmap was gated at neither base nor head; run at head that set is 2 failed/343 passed against 53 passed for the same two files at base."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read against base 406faf5ef; roadmap.py adds the section-gate resolver, stages it into the path graph and the critical path's edges list, the new test file adds six cases, and the evidence fragment records both arms and the live quotes; aeb59e548 is docs-only (+133 lines) so the code under test equals a097f12c8.",
+    "done_when": "section 6's roadmap clause asks that the raw view show a section edge for the two nova gates authored 2026-09-19; read live at head the topology rebank gate resolves to cut-cell-current-attribution#s6 on the critical path and the corpus gate to labeller-throughput-and-shape-inverse#s1 and #s2, matching the committed fragment.",
+    "goal": "the node's goal was that the roadmap's critical path reports section-level edges so a plan blocked on one section of another shows the section rather than the plan; reckon/roadmap.py gains _gate_section_edges/_gate_section_refs/_declared_stages and an edge_meta map feeding an edges list onto every open_paths/critical_path entry.",
+    "manifest": "read; status complete, commits a097f12c8 and aeb59e548, the head and base arms recorded by log path, and a declared negative control that holds; baseline_suite and after_suite read not run.",
+    "write_paths": "the manifest declares reckon/roadmap.py, tests/test_roadmap_reports_section_edges.py, an evidence fragment and a figures dir; git diff --name-only 406faf5ef..aeb59e548 names exactly the first three and the reviewed worktree is clean."
+  },
+  "justifications": {
+    "durability": "the six new tests fail at base (five ids, none failing at head) and pass at head, a real negative control; but the change turns two existing green tests red because the critical_path payload gains an edges key they assert against, so the suite is not green at head.",
+    "evidence": "the new-file arms are recorded and independently reproduced (head 6 passed at aeb59e548, base 5 failed/1 passed) and the live nova edges reproduce exactly; but the reviewed head log names a097f12c8 rather than the reviewed head aeb59e548, the manifest records baseline_suite/after_suite as not run, and the wider importing-file arm the node itself named as needed was never run.",
+    "fit": "the resolver reuses parse_plan_ref, execution_gates and the existing depends_on row shape and reads declarations through _plan_declarations; the critical-path edges key is a new public field added without updating the two tests that pin that payload.",
+    "goal_fidelity": "the deliverable reproduces - _gate_section_edges feeds section-level rows and graph edges and the two nova gates read live as the fragment claims - but the change also reshapes the public critical_path payload with a mandatory edges key without reconciling the existing consumers.",
+    "scope_discipline": "git diff --name-only is exactly the three declared paths and the reviewed worktree is clean, but the feature commit folds in formatting-only rewrites of _sprint_member_counts, sprint_summary_rows and _drift_is_member_progress, unrelated to the change."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal was that the roadmap's critical path reports section-level edges so a plan blocked on one section of another shows the section rather than the plan; reckon/roadmap.py gains _gate_section_edges/_gate_section_refs/_declared_stages and an edge_meta map feeding an edges list onto every open_paths/critical_path entry.\nVERDICT done_when: section 6's roadmap clause asks that the raw view show a section edge for the two nova gates authored 2026-09-19; read live at head the topology rebank gate resolves to cut-cell-current-attribution#s6 on the critical path and the corpus gate to labeller-throughput-and-shape-inverse#s1 and #s2, matching the committed fragment.\nVERDICT write_paths: the manifest declares reckon/roadmap.py, tests/test_roadmap_reports_section_edges.py, an evidence fragment and a figures dir; git diff --name-only 406faf5ef..aeb59e548 names exactly the first three and the reviewed worktree is clean.\nVERDICT manifest: read; status complete, commits a097f12c8 and aeb59e548, the head and base arms recorded by log path, and a declared negative control that holds; baseline_suite and after_suite read not run.\nVERDICT diff: read against base 406faf5ef; roadmap.py adds the section-gate resolver, stages it into the path graph and the critical path's edges list, the new test file adds six cases, and the evidence fragment records both arms and the live quotes; aeb59e548 is docs-only (+133 lines) so the code under test equals a097f12c8.\nreviewed_base_sha: 406faf5efe0cf4c3e7aa9381bfdc909b9e186a79\nreviewed_head_sha: aeb59e5480e7bde0caf2ecce8081d7d7ec158275\nCALL_SITES: reckon/roadmap.py::_build_roadmap\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the deliverable reproduces - _gate_section_edges feeds section-level rows and graph edges and the two nova gates read live as the fragment claims - but the change also reshapes the public critical_path payload with a mandatory edges key without reconciling the existing consumers.\nSCORE evidence: 13\nJUSTIFICATION evidence: the new-file arms are recorded and independently reproduced (head 6 passed at aeb59e548, base 5 failed/1 passed) and the live nova edges reproduce exactly; but the reviewed head log names a097f12c8 rather than the reviewed head aeb59e548, the manifest records baseline_suite/after_suite as not run, and the wider importing-file arm the node itself named as needed was never run.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff --name-only is exactly the three declared paths and the reviewed worktree is clean, but the feature commit folds in formatting-only rewrites of _sprint_member_counts, sprint_summary_rows and _drift_is_member_progress, unrelated to the change.\nSCORE durability: 12\nJUSTIFICATION durability: the six new tests fail at base (five ids, none failing at head) and pass at head, a real negative control; but the change turns two existing green tests red because the critical_path payload gains an edges key they assert against, so the suite is not green at head.\nSCORE fit: 17\nJUSTIFICATION fit: the resolver reuses parse_plan_ref, execution_gates and the existing depends_on row shape and reads declarations through _plan_declarations; the critical-path edges key is a new public field added without updating the two tests that pin that payload.\nFINDING tests/test_roadmap.py:150 blocking: the change adds a mandatory edges key to critical_path and this existing test asserts the exact dict, so it passes at base 406faf5ef (53 passed) and fails at head aeb59e548.\nFINDING tests/test_sprint_summary_lists_pending.py:181 blocking: test_summary_without_sprint_is_unchanged asserts the exact roadmap summary JSON and fails at head for the same added edges key, green at base.\nFINDING logs/head-new-test.log:1 follow-on: the reviewed head arm names a097f12c8 rather than the reviewed head aeb59e548; aeb59e548 is docs-only so the code under test is identical and an independent run at aeb59e548 passes 6/6, but the log alone cannot tie the result to the promoted head.\nFINDING reckon/roadmap.py:1446 follow-on: the feature commit folds formatting-only rewrites of _sprint_member_counts, sprint_summary_rows and _drift_is_member_progress into the change, mixing a style sweep with the feature.\nFINDING manifest.md:9 follow-on: baseline_suite and after_suite read not run, so the wider set of files importing reckon.roadmap was gated at neither base nor head; run at head that set is 2 failed/343 passed against 53 passed for the same two files at base.",
+  "review_run_id": "r-20261003T144541097134-review-of-roadmap-reports-section-edges",
+  "reviewed_base_sha": "406faf5efe0cf4c3e7aa9381bfdc909b9e186a79",
+  "reviewed_head_sha": "aeb59e5480e7bde0caf2ecce8081d7d7ec158275",
+  "reviewed_run_id": "r-20261003T135140647796-roadmap-reports-section-edges",
+  "reviewer_run_id": "r-20261003T144541097134-review-of-roadmap-reports-section-edges",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T15:06:12.709776+00:00",
+  "total": 77
+}

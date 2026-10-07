@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_recorded_exit_status",
+    "reckon/crew/promotion.py:_log_shows_the_command_ran"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T17:32:02.658137+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/capture-gate-recapture/gate-1374-1920-head-4b5eae00.log",
+      "line": "1",
+      "text": "the log is a bare pytest capture whose first line is progress output and which names no gate, no working directory, no interpreter, no pythonpath, no head revision and no command, so the log's only tie to a tree is the head encoded in its filename and every other fact lives in the adjacent summary; the self-describing form was already in fleet use hours earlier \u2014 reports/reckon/gate-recapture/test_pace.log:1-6, written 15:32, carries gate, working_directory, interpreter, pythonpath, head_sha and command on its first six lines \u2014 so a reader holding this log alone cannot say which tree it measured, which is the defect class crew-runtime-positive-controls \u00a717 landed at 19:29 for two other recaptures."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/capture-gate-recapture/gate-summary.md",
+      "line": "26",
+      "text": "the recorded \"Exact command\" omits the echo EXIT=$? clause that produced the log's terminal EXIT=0 line, so a reader reproducing the recorded command produces a log whose exit status is recorded nowhere, and reckon/crew/promotion.py:_recorded_exit_status reads precisely that terminal line, leaving the reproduced log in the branch where the asserted status is read only in the absence of a positive record."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/capture-gate-recapture/gate-summary.md",
+      "line": "67",
+      "text": "the input-set digest 412c5bd8 is stated without its derivation \u2014 the summary names the file set but no hashing procedure, and the report directory stores only head_timeline.py, the figure script \u2014 so the instrument the record substitutes for a commit-sha pin cannot be reproduced from the record; the claim it supports was confirmed in this review by another route, git diff --name-only 4b5eae00 8a6fecb2 over the measured input paths returning no rows, so the record is right while its own instrument is not checkable."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base f68d9873 commit by commit \u2014 one commit, 3 files, +71 lines for the evidence anchor's capture-gate-recapture section, +4 plan paragraphs, one 83645-byte figure; no plan-version or plan-modified meta line is touched.",
+    "done_when": "the section's done-when names tests/test_spa_owed_captures.py with tests/test_spa_viewport_containment.py and the containment run's Crew row; the manifest records that single run and the verdict JSON carries the row.",
+    "goal": "the goal is the capture section's two-file focused gate re-run at the shipped head and captured durably, and the record carries it \u2014 one log, one containment verdict and one summary under reports/reckon/capture-gate-recapture/, with the head at run start named as 4b5eae00.",
+    "manifest": "read; it records the command, exit 0, 9 passed, the absolute log path and its sha256, and it reports the owed-captures roster gap as a follow-on rather than repairing it out of fence.",
+    "write_paths": "the manifest's four declared paths; the single commit c8c329d4 touches 3 files, every one inside them, and the report-directory writes land inside the first."
+  },
+  "justifications": {
+    "durability": "nothing asserts the recaptured record \u2014 docs/evidence/archive/burn-is-visible-before-it-bites-landed.html:648 is guarded only by git history, and the log, summary and verdict live in reports/reckon/capture-gate-recapture/ outside version control, so the log can vanish or its sha drift with no test failing.",
+    "evidence": "the three answers this fence turns on were re-derived here from the artefacts rather than read from the summary \u2014 recomputing sha256 on the named log yields 328376fbf109aecc7046c39fc3f94760b87e52674a6bbaed376a44a51ce85bd3, byte-identical to the recorded value, so the hash matches the log it names; the log's own bytes at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/capture-gate-recapture/gate-1374-1920-head-4b5eae00.log end \"9 passed in 33.05s\" followed by \"EXIT=0\", so the reported 9 passed and exit 0 are what that log contains and not what the summary asserts; and reports/reckon/capture-gate-recapture/spa-viewport-containment-verdict.json carries two surface_verdicts rows named crew at width 1374 and width 1920, each status \"measured\", hash \"#crew\", element_count 115 and no violation, with surfaces_not_measured empty, so the containment verdict does show the Crew surface measured at both widths.",
+    "fit": "the record follows the sibling recapture wave's shape at reports/reckon/gate-recapture/summary.md one directory over, and neither the commit message nor the artefacts introduce a plan, sprint or ticket label into a name.",
+    "goal_fidelity": "gate-summary.md:11-19 names the head, interpreter, working directory, resolved package path, exit status and counts, and the plan paragraph at docs/plans/burn-is-visible-before-it-bites.html:116 repeats the same figures at the section's own anchor.",
+    "scope_discipline": "the commit c8c329d4 diff and the worktree status at the-capture-gate-log-is-recaptured carry 3 files, all inside the declared write paths, with tests/ deliberately left alone as its own follow-on records."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is the capture section's two-file focused gate re-run at the shipped head and captured durably, and the record carries it \u2014 one log, one containment verdict and one summary under reports/reckon/capture-gate-recapture/, with the head at run start named as 4b5eae00.\nVERDICT done_when: the section's done-when names tests/test_spa_owed_captures.py with tests/test_spa_viewport_containment.py and the containment run's Crew row; the manifest records that single run and the verdict JSON carries the row.\nVERDICT write_paths: the manifest's four declared paths; the single commit c8c329d4 touches 3 files, every one inside them, and the report-directory writes land inside the first.\nVERDICT manifest: read; it records the command, exit 0, 9 passed, the absolute log path and its sha256, and it reports the owed-captures roster gap as a follow-on rather than repairing it out of fence.\nVERDICT diff: read against base f68d9873 commit by commit \u2014 one commit, 3 files, +71 lines for the evidence anchor's capture-gate-recapture section, +4 plan paragraphs, one 83645-byte figure; no plan-version or plan-modified meta line is touched.\nCALL_SITES: reckon/crew/promotion.py:_recorded_exit_status, reckon/crew/promotion.py:_log_shows_the_command_ran\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: gate-summary.md:11-19 names the head, interpreter, working directory, resolved package path, exit status and counts, and the plan paragraph at docs/plans/burn-is-visible-before-it-bites.html:116 repeats the same figures at the section's own anchor.\nSCORE evidence: 17\nJUSTIFICATION evidence: the three answers this fence turns on were re-derived here from the artefacts rather than read from the summary \u2014 recomputing sha256 on the named log yields 328376fbf109aecc7046c39fc3f94760b87e52674a6bbaed376a44a51ce85bd3, byte-identical to the recorded value, so the hash matches the log it names; the log's own bytes at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/capture-gate-recapture/gate-1374-1920-head-4b5eae00.log end \"9 passed in 33.05s\" followed by \"EXIT=0\", so the reported 9 passed and exit 0 are what that log contains and not what the summary asserts; and reports/reckon/capture-gate-recapture/spa-viewport-containment-verdict.json carries two surface_verdicts rows named crew at width 1374 and width 1920, each status \"measured\", hash \"#crew\", element_count 115 and no violation, with surfaces_not_measured empty, so the containment verdict does show the Crew surface measured at both widths.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the commit c8c329d4 diff and the worktree status at the-capture-gate-log-is-recaptured carry 3 files, all inside the declared write paths, with tests/ deliberately left alone as its own follow-on records.\nSCORE durability: 13\nJUSTIFICATION durability: nothing asserts the recaptured record \u2014 docs/evidence/archive/burn-is-visible-before-it-bites-landed.html:648 is guarded only by git history, and the log, summary and verdict live in reports/reckon/capture-gate-recapture/ outside version control, so the log can vanish or its sha drift with no test failing.\nSCORE fit: 18\nJUSTIFICATION fit: the record follows the sibling recapture wave's shape at reports/reckon/gate-recapture/summary.md one directory over, and neither the commit message nor the artefacts introduce a plan, sprint or ticket label into a name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/capture-gate-recapture/gate-1374-1920-head-4b5eae00.log:1 the log is a bare pytest capture whose first line is progress output and which names no gate, no working directory, no interpreter, no pythonpath, no head revision and no command, so the log's only tie to a tree is the head encoded in its filename and every other fact lives in the adjacent summary; the self-describing form was already in fleet use hours earlier \u2014 reports/reckon/gate-recapture/test_pace.log:1-6, written 15:32, carries gate, working_directory, interpreter, pythonpath, head_sha and command on its first six lines \u2014 so a reader holding this log alone cannot say which tree it measured, which is the defect class crew-runtime-positive-controls \u00a717 landed at 19:29 for two other recaptures.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/capture-gate-recapture/gate-summary.md:26 the recorded \"Exact command\" omits the echo EXIT=$? clause that produced the log's terminal EXIT=0 line, so a reader reproducing the recorded command produces a log whose exit status is recorded nowhere, and reckon/crew/promotion.py:_recorded_exit_status reads precisely that terminal line, leaving the reproduced log in the branch where the asserted status is read only in the absence of a positive record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/capture-gate-recapture/gate-summary.md:67 the input-set digest 412c5bd8 is stated without its derivation \u2014 the summary names the file set but no hashing procedure, and the report directory stores only head_timeline.py, the figure script \u2014 so the instrument the record substitutes for a commit-sha pin cannot be reproduced from the record; the claim it supports was confirmed in this review by another route, git diff --name-only 4b5eae00 8a6fecb2 over the measured input paths returning no rows, so the record is right while its own instrument is not checkable.",
+  "review_run_id": "r-20260921T173202658137-review-of-the-capture-gate-log-is-recaptured",
+  "reviewed_base": "f68d987365639f493d43bad27a8023582eb83bac",
+  "reviewed_commit": "c8c329d4c324c0c7714cef984deec37806b39807",
+  "reviewed_run_id": "r-20260921T165423254679-the-capture-gate-log-is-recaptured",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:45:10.182230+00:00",
+  "total": 85
+}

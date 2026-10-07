@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T11:55:19.193Z",
+  "dispatched_at": "2026-10-05T11:51:55Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "thin_wrapper-1",
+      "reason": "the author must either retire the whole-document digest in favour of the section-keyed one or write the justification that keeps it, and until that is settled the record carries two identities for one plan and a reader cannot tell which is authoritative.",
+      "text": "\u00a716 keeps `plan_fingerprint` as \"the record's identity\" while the gate and the sweep are changed to read a per-section coverage check, so the whole-document digest is a thin layer over the new digest set that no longer has a reader, and the plan states no reason it cannot be replaced by one section-keyed identity",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:368",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner to extend (`plan_fingerprint`/`_authored_prose`, not a new section walker) is what stops the per-section digest becoming a second, drifting definition of the same prose, which is the duplicate-owner failure the design rubric exists to catch.",
+      "text": "the per-section digest \u00a716 introduces is not assigned an owner, while the mechanism it must reuse \u2014 the authored-prose digest and the landed-card exclusion \u2014 is owned by `plan_fingerprint` (line 368) and `_authored_prose` (line 257) in `reckon/crew/plan_review.py`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface surface it adds in its own text, and confirming the refusal reuses the existing family (rather than minting one) keeps refusal_families at 23.",
+      "text": "against this week's counts (public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23) \u00a716 adds a public definition (the coverage predicate read by the gate and the sweep) without naming in its own text what it retires or merges, or why nothing can be, and it leaves unstated whether the \"refusal names B\" reuses the existing `PlanReviewMissingError` family or adds a new one",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1db8fb5fd96aa955a9149ab2f9ee76338f55ae50319a25b9e72666e9f9482580",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 59,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T115129424801-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "716704da1a3f43d2e7a08f50901c9908618c9bd7",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change lives in the existing identity machinery (`reckon/crew/plan_review.py`) and hides the digest computation, the landed-section exclusion and the record shape behind one coverage question; it does not add a new module or a spread of shallow wrappers. The one interface concern it does raise \u2014 a retained whole-document digest nothing reads \u2014 is emitted under thin_wrapper.",
+    "duplicate_owner": "a finding \u2014 \u00a716 adds a per-section digest but names no owner for where it is computed; the authored-prose digest the per-section value must extend is owned by `reckon/crew/plan_review.py:plan_fingerprint` (line 368) and its prose walk `_authored_prose` (line 257), and the plan must extend that owner rather than add a parallel section walker.",
+    "interface_budget": "a finding \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds at least one public definition (the coverage predicate the gate and the sweep read) and does not name in its text what it retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 \u00a716 names the machinery it extends (`plan_fingerprint` and the \u00a714 `landed_section_ids` predicate from `reckon/_store.py:1034`), and a search of `reckon/crew/` and `reckon/_store.py` found no existing per-section digest or coverage mechanism it overlooked, so the design builds on the digest it cites rather than duplicating an unseen one.",
+    "thin_wrapper": "a finding \u2014 \u00a716 retains the whole-document `plan_fingerprint` as \"the record's identity\" while the gate and the sweep stop reading it and read the new coverage check instead, so the retained digest is a thin layer over the per-section set with no reader and no stated reason it cannot be replaced."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.947528+00:00"
+}

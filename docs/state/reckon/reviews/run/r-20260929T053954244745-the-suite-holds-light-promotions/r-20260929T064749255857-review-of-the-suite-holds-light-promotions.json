@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 1 failing test(s) not retired by name (tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent)",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3716",
+    "reckon/cli.py:4408",
+    "reckon/cli.py:4431"
+  ],
+  "completed_at": "2026-09-29T07:14:38.791Z",
+  "dispatched_at": "2026-09-29T06:48:05Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions.html",
+      "line": "127",
+      "text": "the fragment claims the added-failure cap the review reads from the node's own arms is 0, but the reviewed code's own derivation (reckon/crew/review.py:870) over the run's two gate logs is 1 id, tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent, so annotate_review_of_run (reckon/crew/review.py:955) caps the total this review is read at to 5 for every promotion that consults it; the escape the mechanism offers is naming the id in the manifest prose, and the manifest names it only as \"one differing id\"."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against fc7a5807; 9eab4fe5 adds the tier-gated hold, _suite_project_root, the crew suite group with run and waive, and the 5-test file, and b9ef741b adds only the fragment and its figure.",
+    "done_when": "its consent clauses hold - the declared mutation applied in a copy of head reddens tests/test_standing_suite_holds_promotion.py::test_a_collection_failure_holds_a_tier_none_promotion (1 failed, EXIT=1) - but its population clause - the FAILED ids compared with base and none added - does not hold: the reviewed code's own added_failures_from_gate_logs (reckon/crew/review.py:870) over base-suite-fc7a5807.log and after-suite-9eab4fe5.log derives 1 added id, not none.",
+    "goal": "the goal is a promotion hold on the project's declared suite for tiers none and light, plus coordinator commands to run and waive it, and all three parts land at reckon/crew/promotion.py:3456 with its call at :3716 and reckon/cli.py:4354-4432; my own re-run of tests/test_standing_suite_holds_promotion.py in a copy of the head tree is 5 passed, EXIT=0.",
+    "manifest": "read; it records the focused gate, the negative control with its declared string and log, and full-suite arms at both revisions, but its artifacts line reports \"0 added reachable failures\" where the store's own derivation over those same arms is 1 id, and it does not name the differing id it calls a contention artefact.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, reckon/cli.py, tests/test_standing_suite_holds_promotion.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions.html and docs/figures/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions; git diff --stat fc7a5807..b9ef741b lists exactly those five paths and no others."
+  },
+  "justifications": {
+    "durability": "removing the _require_standing_suite call in a copy of head makes tests/test_standing_suite_holds_promotion.py:198 fail (1 failed, EXIT=1), and the two lift paths are asserted at tests/test_standing_suite_holds_promotion.py:224 and :246.",
+    "evidence": "the focused gate reproduces at a copy of b9ef741b (5 passed) and the declared mutation reddens the tier-none case, but the population arm's result is recorded as 0 added in the manifest artifacts line where the store's own derivation over the same two logs is 1 id.",
+    "fit": "the subcommands at reckon/cli.py:4354 follow the surrounding group-and-_emit idiom, the test synthesises its project through _plan_html and _write_json as tests/test_commitless_review_promotes.py does, and no added symbol or comment carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/promotion.py:3478-3485 consults standing_suite.hold_reason with the tier promotion already resolved at reckon/crew/promotion.py:3698, so the lighter tiers wait and a full review never does.",
+    "scope_discipline": "every path in git diff --stat fc7a5807..b9ef741b is one of the five the manifest declares, and the promotion.py overlap with a concurrent node is disclosed at the manifest's evidence_inputs line rather than left to the merge to discover."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a promotion hold on the project's declared suite for tiers none and light, plus coordinator commands to run and waive it, and all three parts land at reckon/crew/promotion.py:3456 with its call at :3716 and reckon/cli.py:4354-4432; my own re-run of tests/test_standing_suite_holds_promotion.py in a copy of the head tree is 5 passed, EXIT=0.\nVERDICT done_when: its consent clauses hold - the declared mutation applied in a copy of head reddens tests/test_standing_suite_holds_promotion.py::test_a_collection_failure_holds_a_tier_none_promotion (1 failed, EXIT=1) - but its population clause - the FAILED ids compared with base and none added - does not hold: the reviewed code's own added_failures_from_gate_logs (reckon/crew/review.py:870) over base-suite-fc7a5807.log and after-suite-9eab4fe5.log derives 1 added id, not none.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, reckon/cli.py, tests/test_standing_suite_holds_promotion.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions.html and docs/figures/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions; git diff --stat fc7a5807..b9ef741b lists exactly those five paths and no others.\nVERDICT manifest: read; it records the focused gate, the negative control with its declared string and log, and full-suite arms at both revisions, but its artifacts line reports \"0 added reachable failures\" where the store's own derivation over those same arms is 1 id, and it does not name the differing id it calls a contention artefact.\nVERDICT diff: read commit by commit against fc7a5807; 9eab4fe5 adds the tier-gated hold, _suite_project_root, the crew suite group with run and waive, and the 5-test file, and b9ef741b adds only the fragment and its figure.\nCALL_SITES: reckon/crew/promotion.py:3716, reckon/cli.py:4408, reckon/cli.py:4431\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3478-3485 consults standing_suite.hold_reason with the tier promotion already resolved at reckon/crew/promotion.py:3698, so the lighter tiers wait and a full review never does.\nSCORE evidence: 14\nJUSTIFICATION evidence: the focused gate reproduces at a copy of b9ef741b (5 passed) and the declared mutation reddens the tier-none case, but the population arm's result is recorded as 0 added in the manifest artifacts line where the store's own derivation over the same two logs is 1 id.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat fc7a5807..b9ef741b is one of the five the manifest declares, and the promotion.py overlap with a concurrent node is disclosed at the manifest's evidence_inputs line rather than left to the merge to discover.\nSCORE durability: 18\nJUSTIFICATION durability: removing the _require_standing_suite call in a copy of head makes tests/test_standing_suite_holds_promotion.py:198 fail (1 failed, EXIT=1), and the two lift paths are asserted at tests/test_standing_suite_holds_promotion.py:224 and :246.\nSCORE fit: 19\nJUSTIFICATION fit: the subcommands at reckon/cli.py:4354 follow the surrounding group-and-_emit idiom, the test synthesises its project through _plan_html and _write_json as tests/test_commitless_review_promotes.py does, and no added symbol or comment carries a plan or ticket label.\nFINDING docs/evidence/fragments/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions.html:127 the fragment claims the added-failure cap the review reads from the node's own arms is 0, but the reviewed code's own derivation (reckon/crew/review.py:870) over the run's two gate logs is 1 id, tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent, so annotate_review_of_run (reckon/crew/review.py:955) caps the total this review is read at to 5 for every promotion that consults it; the escape the mechanism offers is naming the id in the manifest prose, and the manifest names it only as \"one differing id\".",
+  "review_run_id": "r-20260929T064749255857-review-of-the-suite-holds-light-promotions",
+  "reviewed_base_sha": "fc7a5807455e3ab79184dd525cce6a4ce9bca109",
+  "reviewed_head_sha": "b9ef741b357fb3c7859f6add55f2b43d5b64caf0",
+  "reviewed_run_id": "r-20260929T053954244745-the-suite-holds-light-promotions",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T07:09:30.516226+00:00",
+  "total": 5
+}

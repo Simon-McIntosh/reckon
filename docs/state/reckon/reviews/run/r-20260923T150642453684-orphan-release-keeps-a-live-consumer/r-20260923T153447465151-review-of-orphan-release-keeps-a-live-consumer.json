@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:1933 _check_consumer",
+    "reckon/cli.py:2030 the wait loop reading consumer_gone",
+    "reckon/crew/runs.py:1706 follower_state",
+    "reckon/crew/runs.py:136 follower_lock_path",
+    "reckon/crew/runs.py:2929 _process_start_time",
+    "reckon/crew/runs.py:2597 process_alive"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T15:34:47.465151+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read both commits against the base commit by commit; ce74b88a rewrites one ruff-flagged dict() call as a literal, rewraps two lines and adds the missing final newline in the figure script, and bc72dfca adds the live-consumer case plus its two helpers to the gate, with nothing else in either commit.",
+    "done_when": "the done_when requires a temporary-RECKON_HOME case in which a follower whose consumer still reads is observed still running past the window in which an orphan releases, the orphan case still passing, the figure script ruff-clean, and the declared negative control applied with the new case observed to fail and logged; tests/test_orphaned_follower_releases.py:249 holds that window, its RELEASE_WITHIN_SECONDS = 10.0 at the same file's line 60, and the manifest records 2 passed at bc72dfca with its gate and negative-control logs.",
+    "goal": "the goal names two deliverables, a gate that separates an orphaned follower from one whose consumer still reads and a ruff-clean timeline figure script; tests/test_orphaned_follower_releases.py:380 adds the live-consumer case beside the release case, docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.py:89 replaces the flagged dict() call, and I re-ran ruff check and ruff format --check at head to zero findings on both files.",
+    "manifest": "read; it states 2 passed in 24.69 s at HEAD bc72dfca naming logs/gate.log, records the negative control at logs/negative-control.log whose first line repeats the declared mutation verbatim, and lists both commits ce74b88a and bc72dfca inside the declared scope.",
+    "write_paths": "the manifest declares tests/test_orphaned_follower_releases.py, docs/figures/a-follower-outlives-its-monitor, the plan page and the evidence archive page; git diff 614e6617..bc72dfca touches only the test and the figure script, and the plan and evidence pages were left to the coordinator by its own advice recorded in the run's resume-1-advice.txt."
+  },
+  "justifications": {
+    "durability": "the added case's load-bearing checks are independent of the value it passes in \u2014 tests/test_orphaned_follower_releases.py:233 probes the kernel flock and :249 probes process liveness through /proc \u2014 and each names the code change that reddens it, an over-firing consumer check for the new case and a deleted check for the release case at :325, the latter demonstrated red by the recorded mutation.",
+    "evidence": "the gate's manifest records 2 passed in 24.69 s at bc72dfca with a log whose first line names the revision the tree and the command, the negative-control log at logs/negative-control.log shows the new case failing under the declared mutation while the release case still passes, and the figure script's byte-identity claim is receipted by the tracked PNG at docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.png carrying no diff in a clean worktree whose commit's stat excludes it.",
+    "fit": "tests/test_orphaned_follower_releases.py:233 mirrors the existing _assert_registration_free at :218 in name and shape, its new identifiers name the mechanism rather than a plan label, and the figure edit at orphan_release_timeline.py:89 follows the surrounding literal idiom with no new name introduced.",
+    "goal_fidelity": "tests/test_orphaned_follower_releases.py:380 and :325 now split the two populations the goal names on the same arming with the parent kept alive or killed, and docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.py has zero ruff findings at head as the goal's second clause states.",
+    "scope_discipline": "every path in git diff 614e6617..bc72dfca is inside the declared write paths at tests/test_orphaned_follower_releases.py and docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.py, and the declared plan and evidence pages were deliberately left to the coordinator rather than written out of turn."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260923T150642453684-orphan-release-keeps-a-live-consumer\n(node orphan-release-keeps-a-live-consumer, plan reckon:a-follower-outlives-its-monitor \u00a77),\nread in the reviewed worktree at bc72dfca6862e97e97654ad50116c789b0c1dc4f over base\n614e661757c0f950ee5772f0f4b79e8843107163.\n\nVERDICT goal: the goal names two deliverables, a gate that separates an orphaned follower from one whose consumer still reads and a ruff-clean timeline figure script; tests/test_orphaned_follower_releases.py:380 adds the live-consumer case beside the release case, docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.py:89 replaces the flagged dict() call, and I re-ran ruff check and ruff format --check at head to zero findings on both files.\nVERDICT done_when: the done_when requires a temporary-RECKON_HOME case in which a follower whose consumer still reads is observed still running past the window in which an orphan releases, the orphan case still passing, the figure script ruff-clean, and the declared negative control applied with the new case observed to fail and logged; tests/test_orphaned_follower_releases.py:249 holds that window, its RELEASE_WITHIN_SECONDS = 10.0 at the same file's line 60, and the manifest records 2 passed at bc72dfca with its gate and negative-control logs.\nVERDICT write_paths: the manifest declares tests/test_orphaned_follower_releases.py, docs/figures/a-follower-outlives-its-monitor, the plan page and the evidence archive page; git diff 614e6617..bc72dfca touches only the test and the figure script, and the plan and evidence pages were left to the coordinator by its own advice recorded in the run's resume-1-advice.txt.\nVERDICT manifest: read; it states 2 passed in 24.69 s at HEAD bc72dfca naming logs/gate.log, records the negative control at logs/negative-control.log whose first line repeats the declared mutation verbatim, and lists both commits ce74b88a and bc72dfca inside the declared scope.\nVERDICT diff: read both commits against the base commit by commit; ce74b88a rewrites one ruff-flagged dict() call as a literal, rewraps two lines and adds the missing final newline in the figure script, and bc72dfca adds the live-consumer case plus its two helpers to the gate, with nothing else in either commit.\nCALL_SITES: reckon/cli.py:1933 _check_consumer, reckon/cli.py:2030 the wait loop reading consumer_gone, reckon/crew/runs.py:1706 follower_state, reckon/crew/runs.py:136 follower_lock_path, reckon/crew/runs.py:2929 _process_start_time, reckon/crew/runs.py:2597 process_alive\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_orphaned_follower_releases.py:380 and :325 now split the two populations the goal names on the same arming with the parent kept alive or killed, and docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.py has zero ruff findings at head as the goal's second clause states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate's manifest records 2 passed in 24.69 s at bc72dfca with a log whose first line names the revision the tree and the command, the negative-control log at logs/negative-control.log shows the new case failing under the declared mutation while the release case still passes, and the figure script's byte-identity claim is receipted by the tracked PNG at docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.png carrying no diff in a clean worktree whose commit's stat excludes it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 614e6617..bc72dfca is inside the declared write paths at tests/test_orphaned_follower_releases.py and docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.py, and the declared plan and evidence pages were deliberately left to the coordinator rather than written out of turn.\nSCORE durability: 18\nJUSTIFICATION durability: the added case's load-bearing checks are independent of the value it passes in \u2014 tests/test_orphaned_follower_releases.py:233 probes the kernel flock and :249 probes process liveness through /proc \u2014 and each names the code change that reddens it, an over-firing consumer check for the new case and a deleted check for the release case at :325, the latter demonstrated red by the recorded mutation.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_orphaned_follower_releases.py:233 mirrors the existing _assert_registration_free at :218 in name and shape, its new identifiers name the mechanism rather than a plan label, and the figure edit at orphan_release_timeline.py:89 follows the surrounding literal idiom with no new name introduced.",
+  "review_run_id": "r-20260923T153447465151-review-of-orphan-release-keeps-a-live-consumer",
+  "reviewed_base_sha": "614e661757c0f950ee5772f0f4b79e8843107163",
+  "reviewed_head_sha": "bc72dfca6862e97e97654ad50116c789b0c1dc4f",
+  "reviewed_run_id": "r-20260923T150642453684-orphan-release-keeps-a-live-consumer",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T16:13:43.754589+00:00",
+  "total": 92
+}

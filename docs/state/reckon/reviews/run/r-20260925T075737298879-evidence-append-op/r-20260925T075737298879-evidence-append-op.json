@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "3"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:57:37.298879+00:00",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "697",
+      "text": "A batch naming two or more plans' landing records writes each record as it is reached, so a later record's refusal leaves the earlier records already written while the call reports ok=false and the plan write is discarded; measured against the pre-fix commit, where the same refused batch wrote nothing. Repro: driver /tmp/review-evid-append/repro.py, both logs in the run directory, control arm (fresh second anchor) writing both records in each."
+    },
+    {
+      "file": "tests/test_edit_plan_append_evidence.py",
+      "line": "248",
+      "text": "The comment asserts a refused batch writes no record at all, and the test named for a refused batch holds only one record, so the cross-record case is unasserted and the wider claim is false at the reviewed head once two records are named."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read git diff e731091f..5ca9701f; the fix replaces a two-phase helper (validate every append, then write) with a per-record loop reading, applying and replacing each record inside that record's lock, which fixes the same-record overwrite and drops the cross-record pre-validation.",
+    "done_when": "read tests/test_edit_plan_append_evidence.py at 5ca9701f; the four \u00a72 assertions are present (creation with the required meta, append beside an existing anchor, duplicate-anchor refusal naming the anchor, reckon audit-doc exit 0 on the created record) plus the batch, body-shape and concurrent-writer tests the fix added.",
+    "goal": "read the plan's \u00a72 bullets against reckon/_store.py:606-720 at 5ca9701f; the op creates the record with reckon-type=evidence and plan-evidence-for, appends one anchored section before the closing main element, and refuses a duplicate anchor by name, but a batch naming several plans' records no longer leaves every record untouched when a later append is refused.",
+    "manifest": "read the reviewed run's manifest at the reviewed head; it records the three commits, the gate command with its result, the logs, and the declared batch mutation, with status complete.",
+    "write_paths": "read the three commits against the declared paths; every changed path lies inside them and the op reaches the store through _OP_DISPATCH, not through reckon/mcp.py."
+  },
+  "justifications": {
+    "durability": "three commits carry the op and its tests in the repository with gate, mutation and audit-demo logs beside the run, but the refusal path's partial write leaves no durable record of what the refused batch already wrote.",
+    "evidence": "the diff, both batch tests and the concurrency test are on disk, and the review reproduced a refused multi-record batch against each arm of the fix (repro.log, repro-pre-fix.log), but no test in the change covers a batch naming two records.",
+    "fit": "the op belongs in the store beside the section writes and reuses the shared path lock, but the fix removed a documented all-or-nothing property without a test or a note in the plan's landed summary.",
+    "goal_fidelity": "reckon/_store.py:675-714 implements all three \u00a72 bullets and the refusals are tested, but the reviewed head's own behaviour contradicts the assertion at tests/test_edit_plan_append_evidence.py:248.",
+    "scope_discipline": "every changed path lies in the declared write paths, reckon/mcp.py is untouched, and the one deletion in the diff is the replaced helper's own body."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the plan's \u00a72 bullets against reckon/_store.py:606-720 at 5ca9701f; the op creates the record with reckon-type=evidence and plan-evidence-for, appends one anchored section before the closing main element, and refuses a duplicate anchor by name, but a batch naming several plans' records no longer leaves every record untouched when a later append is refused.\nVERDICT done_when: read tests/test_edit_plan_append_evidence.py at 5ca9701f; the four \u00a72 assertions are present (creation with the required meta, append beside an existing anchor, duplicate-anchor refusal naming the anchor, reckon audit-doc exit 0 on the created record) plus the batch, body-shape and concurrent-writer tests the fix added.\nVERDICT write_paths: read the three commits against the declared paths; every changed path lies inside them and the op reaches the store through _OP_DISPATCH, not through reckon/mcp.py.\nVERDICT manifest: read the reviewed run's manifest at the reviewed head; it records the three commits, the gate command with its result, the logs, and the declared batch mutation, with status complete.\nVERDICT diff: read git diff e731091f..5ca9701f; the fix replaces a two-phase helper (validate every append, then write) with a per-record loop reading, applying and replacing each record inside that record's lock, which fixes the same-record overwrite and drops the cross-record pre-validation.\nCALL_SITES: 3\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_store.py:675-714 implements all three \u00a72 bullets and the refusals are tested, but the reviewed head's own behaviour contradicts the assertion at tests/test_edit_plan_append_evidence.py:248.\nSCORE evidence: 16\nJUSTIFICATION evidence: the diff, both batch tests and the concurrency test are on disk, and the review reproduced a refused multi-record batch against each arm of the fix (repro.log, repro-pre-fix.log), but no test in the change covers a batch naming two records.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path lies in the declared write paths, reckon/mcp.py is untouched, and the one deletion in the diff is the replaced helper's own body.\nSCORE durability: 16\nJUSTIFICATION durability: three commits carry the op and its tests in the repository with gate, mutation and audit-demo logs beside the run, but the refusal path's partial write leaves no durable record of what the refused batch already wrote.\nSCORE fit: 16\nJUSTIFICATION fit: the op belongs in the store beside the section writes and reuses the shared path lock, but the fix removed a documented all-or-nothing property without a test or a note in the plan's landed summary.\nSCORE_PLACEHOLDER_REMOVE_ME\nFINDING reckon/_store.py:697 A batch naming two or more plans' landing records writes each record as it is reached, so a later record's refusal leaves the earlier records already written while the call reports ok=false and the plan write is discarded; measured against the pre-fix commit, where the same refused batch wrote nothing. Repro: driver /tmp/review-evid-append/repro.py, both logs in the run directory, control arm (fresh second anchor) writing both records in each.\nFINDING tests/test_edit_plan_append_evidence.py:248 The comment asserts a refused batch writes no record at all, and the test named for a refused batch holds only one record, so the cross-record case is unasserted and the wider claim is false at the reviewed head once two records are named.\n",
+  "review_run_id": "r-20260925T075737298879-evidence-append-op",
+  "reviewed_base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+  "reviewed_head_sha": "5ca9701f222c3e5116889ba399b448208894130f",
+  "reviewed_run_id": "r-20260925T075737298879-evidence-append-op",
+  "reviewer": "clive",
+  "reviewer_run_id": "r-20260925T102307266547-review-of-evidence-append-op",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T10:46:45.481420+00:00",
+  "total": 83
+}

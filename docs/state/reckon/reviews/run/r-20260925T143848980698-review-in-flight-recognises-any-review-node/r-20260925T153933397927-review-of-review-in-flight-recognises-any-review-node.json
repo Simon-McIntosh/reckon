@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:69",
+    "reckon/crew/recovery.py:1037",
+    "reckon/crew/recovery.py:3628"
+  ],
+  "completed_at": "2026-09-25T16:00:29.616Z",
+  "dispatched_at": "2026-09-25T15:39:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T143848980698-review-in-flight-recognises-any-review-node/logs/gate-head.log",
+      "line": "1",
+      "text": "the head arm's log names revision 4487e9e0, the base, for a measurement made on the uncommitted working tree, and its command line carries the literal <gate targets>, so neither the measured revision nor the targets run can be read from the log alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 4487e9e0; 407 insertions across five paths, the cumulative evidence record carries 0 deleted lines, and the plan edit is insertion-only.",
+    "done_when": "the done_when asks for the two tests red at base and green at head plus four files with no added failures; the manifest and its five logs record both arms, and I re-ran tests/test_review_in_flight_by_record_path.py at the reviewed head (2 passed, exit 0) with reckon.__file__ printed as the reviewed tree.",
+    "goal": "the node's goal is to recognise a standing review by the record path it writes and to print only a lane review routing allows; reckon/crew/recovery.py:830 adds the record-path lookup and reckon/crew/recovery.py:481 selects the printed lane through _review_lane_candidates, and my own re-run of the named test file at the reviewed head returned 2 passed.",
+    "manifest": "read; status complete, commits 1f9f4626 and e2e04ce9, changed_paths matching the diff, a negative_control_log whose first line repeats the declared mutation, and a scope_retained note leaving the driving followup open.",
+    "write_paths": "read from the dispatch and the manifest; every committed path - reckon/crew/recovery.py, tests/test_review_in_flight_by_record_path.py, the evidence record, the figure and the plan section - is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "disabling _pointer_names_review_record in memory reddens the recognition assertion ('' == 'run-review-elsewhere') and restoring the unconditional owning-lane argv reddens the lane test, while the reflex's new behaviour for a pointer naming an undefined backend is pinned by no test.",
+    "evidence": "tests/test_review_in_flight_by_record_path.py is recorded red at base (2 failed) and green at head (2 passed) and I reproduced the green half, while logs/gate-head.log:1 names the base revision 4487e9e0 without the \"+ working tree\" qualifier and its command line keeps the literal <gate targets>.",
+    "fit": "reckon/crew/recovery.py:456 follows the module's docstring idiom and introduces no plan label, and ruff over both changed files at head reports 8 findings, all on lines the change does not touch.",
+    "goal_fidelity": "reckon/crew/recovery.py:830 matches a live review-role pointer by the record path composed from the reviewed run, and recovery.py:481 prints the lane its own ordering selects; that ordering now also leads with an owning lane the configuration no longer defines, which changes the reflex's executed selection.",
+    "scope_discipline": "every path in 4487e9e0..e2e04ce9 lies inside the five declared write paths, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html carries 0 deletions, and the plan edit touches no plan-version meta line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to recognise a standing review by the record path it writes and to print only a lane review routing allows; reckon/crew/recovery.py:830 adds the record-path lookup and reckon/crew/recovery.py:481 selects the printed lane through _review_lane_candidates, and my own re-run of the named test file at the reviewed head returned 2 passed.\nVERDICT done_when: the done_when asks for the two tests red at base and green at head plus four files with no added failures; the manifest and its five logs record both arms, and I re-ran tests/test_review_in_flight_by_record_path.py at the reviewed head (2 passed, exit 0) with reckon.__file__ printed as the reviewed tree.\nVERDICT write_paths: read from the dispatch and the manifest; every committed path - reckon/crew/recovery.py, tests/test_review_in_flight_by_record_path.py, the evidence record, the figure and the plan section - is inside the declared scope.\nVERDICT manifest: read; status complete, commits 1f9f4626 and e2e04ce9, changed_paths matching the diff, a negative_control_log whose first line repeats the declared mutation, and a scope_retained note leaving the driving followup open.\nVERDICT diff: read commit by commit against base 4487e9e0; 407 insertions across five paths, the cumulative evidence record carries 0 deleted lines, and the plan edit is insertion-only.\nCALL_SITES: reckon/crew/obligations.py:69, reckon/crew/recovery.py:1037, reckon/crew/recovery.py:3628\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:830 matches a live review-role pointer by the record path composed from the reviewed run, and recovery.py:481 prints the lane its own ordering selects; that ordering now also leads with an owning lane the configuration no longer defines, which changes the reflex's executed selection.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_review_in_flight_by_record_path.py is recorded red at base (2 failed) and green at head (2 passed) and I reproduced the green half, while logs/gate-head.log:1 names the base revision 4487e9e0 without the \"+ working tree\" qualifier and its command line keeps the literal <gate targets>.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in 4487e9e0..e2e04ce9 lies inside the five declared write paths, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html carries 0 deletions, and the plan edit touches no plan-version meta line.\nSCORE durability: 17\nJUSTIFICATION durability: disabling _pointer_names_review_record in memory reddens the recognition assertion ('' == 'run-review-elsewhere') and restoring the unconditional owning-lane argv reddens the lane test, while the reflex's new behaviour for a pointer naming an undefined backend is pinned by no test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery.py:456 follows the module's docstring idiom and introduces no plan label, and ruff over both changed files at head reports 8 findings, all on lines the change does not touch.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T143848980698-review-in-flight-recognises-any-review-node/logs/gate-head.log:1 the head arm's log names revision 4487e9e0, the base, for a measurement made on the uncommitted working tree, and its command line carries the literal <gate targets>, so neither the measured revision nor the targets run can be read from the log alone.\n",
+  "review_run_id": "r-20260925T153933397927-review-of-review-in-flight-recognises-any-review-node",
+  "reviewed_base_sha": "4487e9e06d5b041338c5374851e8e697636363cf",
+  "reviewed_head_sha": "e2e04ce97f7f4e1f89a09474b09b6f9a51713f60",
+  "reviewed_run_id": "r-20260925T143848980698-review-in-flight-recognises-any-review-node",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T15:56:23.157988+00:00",
+  "total": 88
+}

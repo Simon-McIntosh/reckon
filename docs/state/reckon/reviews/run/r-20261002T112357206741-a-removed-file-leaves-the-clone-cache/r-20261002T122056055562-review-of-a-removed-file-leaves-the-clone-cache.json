@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5c7f693582753f2edb23b9ac96c50f074d7382cf",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:7343"
+  ],
+  "completed_at": "2026-10-02T12:48:13.448Z",
+  "dispatched_at": "2026-10-02T12:21:22Z",
+  "findings": [
+    {
+      "file": "logs/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the focused gate and head arm are logged at revision f497c5eb9, one commit behind the run head e0221456c; the final commit e0221456c is docs-only so the code measured is identical, but the gate was not re-run at the exact promoted revision."
+    }
+  ],
+  "head_log_revision": "f497c5eb98d2e3ef3210fc488f6636e55d5c7ca1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 5c7f69358: fa76fa3b7 adds _seen_at/_current_scan/_fresh_cached_paths and the seen ordinal, 48e75e699 is format-only, f497c5eb9 adds _repository_key/_corpus_directory and the repo= parameter so promotion keys the cache by the git common dir, and abcaefcbb/e0221456c add only the evidence fragment.",
+    "done_when": "the declared measure asks a test that scans a corpus, removes one file, runs scans past the span, and asserts the removed entry is gone while the entry count equals the current corpus, plus a partial-scan case that re-parses nothing; tests/test_a_removed_file_leaves_the_clone_cache.py:133 and :156 are those cases and I re-ran the node test at head (4 passed, EXIT=0).",
+    "goal": "the node's goal is that a file removed or renamed out of the clone-scan corpus stops holding a cache entry; reckon/clones.py:301 (_fresh_cached_paths) counts a cached path toward the prune cap only while scan - _seen_at < _STALE_PATH_SCANS (reckon/clones.py:71), so a departed path stops counting and the LRU prune at reckon/clones.py:594 evicts its entry.",
+    "manifest": "read; it records the node test 4 passed, a focused gate of the node test plus five suites 25 passed EXIT=0, base and head arms of the five named suites 21 passed EXIT=0 with zero added failures, and two negative controls each 1 failed EXIT=1; its baseline_suite and after_suite both completed with failure_count 0.",
+    "write_paths": "the manifest declares reckon/clones.py, tests/test_a_removed_file_leaves_the_clone_cache.py and the evidence fragment; git diff --name-status 5c7f69358 e0221456c lists exactly those three, so the diff stays inside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating the pre-change counted-path cap reddens the removed-file case at tests/test_a_removed_file_leaves_the_clone_cache.py:147, and sharing one cache reddens test_one_repository_scan_does_not_age_another at :188, but the goal's renamed half is exercised only indirectly through the removal case.",
+    "evidence": "the node gate and both arms completed with 0 failures and I reproduced the node test (4 passed, EXIT=0), but gate.log and the head arm measure f497c5eb9 rather than the final head e0221456c (docs-only), so the gate was not re-run at the exact head.",
+    "fit": "helpers are mechanism-named (_STALE_PATH_SCANS, _fresh_cached_paths, _corpus_directory) with no plan or sprint label, and the module docstring states the resulting bound at reckon/clones.py:41-52.",
+    "goal_fidelity": "the removed-or-renamed path stops counting toward the cap and is evicted within _STALE_PATH_SCANS+1 scans, and clone_matches retains the same matches a cold scan reports (reckon/clones.py:301, :594).",
+    "scope_discipline": "the diff touches only reckon/clones.py, tests/test_a_removed_file_leaves_the_clone_cache.py and the evidence fragment, all inside the declared write paths, with no figure the node did not name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a file removed or renamed out of the clone-scan corpus stops holding a cache entry; reckon/clones.py:301 (_fresh_cached_paths) counts a cached path toward the prune cap only while scan - _seen_at < _STALE_PATH_SCANS (reckon/clones.py:71), so a departed path stops counting and the LRU prune at reckon/clones.py:594 evicts its entry.\nVERDICT done_when: the declared measure asks a test that scans a corpus, removes one file, runs scans past the span, and asserts the removed entry is gone while the entry count equals the current corpus, plus a partial-scan case that re-parses nothing; tests/test_a_removed_file_leaves_the_clone_cache.py:133 and :156 are those cases and I re-ran the node test at head (4 passed, EXIT=0).\nVERDICT write_paths: the manifest declares reckon/clones.py, tests/test_a_removed_file_leaves_the_clone_cache.py and the evidence fragment; git diff --name-status 5c7f69358 e0221456c lists exactly those three, so the diff stays inside the fence.\nVERDICT manifest: read; it records the node test 4 passed, a focused gate of the node test plus five suites 25 passed EXIT=0, base and head arms of the five named suites 21 passed EXIT=0 with zero added failures, and two negative controls each 1 failed EXIT=1; its baseline_suite and after_suite both completed with failure_count 0.\nVERDICT diff: read commit by commit against 5c7f69358: fa76fa3b7 adds _seen_at/_current_scan/_fresh_cached_paths and the seen ordinal, 48e75e699 is format-only, f497c5eb9 adds _repository_key/_corpus_directory and the repo= parameter so promotion keys the cache by the git common dir, and abcaefcbb/e0221456c add only the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:7343\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the removed-or-renamed path stops counting toward the cap and is evicted within _STALE_PATH_SCANS+1 scans, and clone_matches retains the same matches a cold scan reports (reckon/clones.py:301, :594).\nSCORE evidence: 19\nJUSTIFICATION evidence: the node gate and both arms completed with 0 failures and I reproduced the node test (4 passed, EXIT=0), but gate.log and the head arm measure f497c5eb9 rather than the final head e0221456c (docs-only), so the gate was not re-run at the exact head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/clones.py, tests/test_a_removed_file_leaves_the_clone_cache.py and the evidence fragment, all inside the declared write paths, with no figure the node did not name.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the pre-change counted-path cap reddens the removed-file case at tests/test_a_removed_file_leaves_the_clone_cache.py:147, and sharing one cache reddens test_one_repository_scan_does_not_age_another at :188, but the goal's renamed half is exercised only indirectly through the removal case.\nSCORE fit: 19\nJUSTIFICATION fit: helpers are mechanism-named (_STALE_PATH_SCANS, _fresh_cached_paths, _corpus_directory) with no plan or sprint label, and the module docstring states the resulting bound at reckon/clones.py:41-52.\nFINDING logs/gate.log:1 follow-on: the focused gate and head arm are logged at revision f497c5eb9, one commit behind the run head e0221456c; the final commit e0221456c is docs-only so the code measured is identical, but the gate was not re-run at the exact promoted revision.\n",
+  "review_run_id": "r-20261002T122056055562-review-of-a-removed-file-leaves-the-clone-cache",
+  "reviewed_base_sha": "5c7f693582753f2edb23b9ac96c50f074d7382cf",
+  "reviewed_head_sha": "e0221456ccc803177d35cebee6b04e010e919f34",
+  "reviewed_run_id": "r-20261002T112357206741-a-removed-file-leaves-the-clone-cache",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T122056055562-review-of-a-removed-file-leaves-the-clone-cache",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:36:29.329316+00:00",
+  "total": 97
+}

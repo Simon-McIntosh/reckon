@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:format_watch_transition (renders every watch transition)",
+    "reckon/cli.py:4142 (the follow pane's Ticker); neither supplies lane_reading",
+    "so the cell is unreachable in production."
+  ],
+  "completed_at": "2026-10-03T10:04:11.405Z",
+  "dispatched_at": "2026-10-03T09:59:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "775",
+      "severity": "follow-on",
+      "text": "follow-on: lane_cells reads event[\"lane_reading\"], which no caller sets \u2014 _watch_snapshot (reckon/crew/recovery.py:9429) and _watch_transition (:9810) rebuild the watch event field by field and omit the lane_reading the live pointer records (reckon/crew/dispatch.py:6878) \u2014 so the cell returns [] on every real row and, because lane_cells then prints neither figure, the live pane loses the per-row rate it used to show without gaining the lane mean; wiring one key through the two functions closes it."
+    }
+  ],
+  "head_log_revision": "b115ba2da6a9aa862d2ff86d703b320721e5a099",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read revision by revision against base 7fbe5fd89; b115ba2da adds LANE_LABEL/LANE_WIDTH/LANE_UNKNOWN, lane_rate_text, carried_lane_mean and lane_cells plus a 245-line test and one call at ticker.py:1526, and c9d65a030 adds the evidence fragment; no other source is touched.",
+    "done_when": "the done_when names tests/test_ticker_shows_the_lane_mean.py and a two-arm gate; the manifest records base 11 failed/394 passed and head 3 failed/402 passed with the same three cli-follow ids, and the negative control is named and was executed.",
+    "goal": "the node goal is that the ticker row shows the run's own generation rate beside the lane's mean from the lane reading the record carries; reckon/crew/ticker.py:775 lane_cells composes \" 1.40 lane  1.44\" from event[\"lane_reading\"], and it renders when handed that reading, but no production producer supplies the key.",
+    "manifest": "read; status complete, two landed revisions (b115ba2da, c9d65a030), both suites recorded with their log paths, the negative control named, and the live-wiring gap disclosed in follow_ons.",
+    "write_paths": "read the manifest's declared paths; the diff touches exactly reckon/crew/ticker.py, tests/test_ticker_shows_the_lane_mean.py and docs/evidence/fragments/crew-observability-truth/ticker-shows-the-lane-mean.html, all inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_ticker_shows_the_lane_mean.py:120 asserts the pair against two distinct constants and the negative control reddens test_a_row_with_a_lane_reading_shows_both_figures_side_by_side at ticker.py:790 when the lane mean is dropped, so the guard fails on the regression it names; docked because no test drives the live producer path, so the unreachability of the cell is guarded by nothing.",
+    "evidence": "the gate at tests/test_ticker_shows_the_lane_mean.py ran at both revisions and its result is recorded rather than claimed \u2014 the base log reads \"11 failed, 394 passed\" (EXIT=1) and the head log \"3 failed, 402 passed\" (EXIT=1), the same three cli-follow ids at both, and negative-control.log shows EXIT=1 with five failures on the declared mutation; docked because the head arm ran at b115ba2da, one docs-only revision before the reviewed head c9d65a030.",
+    "fit": "lane_cells, carried_lane_mean and lane_rate_text at reckon/crew/ticker.py:739-791 follow the module's cell idiom (bound_cells at :716) and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/ticker.py:775 renders the pair exactly as the goal states when handed a reading, but no call site supplies one \u2014 _watch_transition (reckon/crew/recovery.py:9810) drops lane_reading that the pointer records (reckon/crew/dispatch.py:6878) \u2014 so the plan's measure that a reader sees the lane mean beside the rate is unmet end to end.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths, and the one behaviour the goal did not imply \u2014 withholding the per-row rate when no reading is carried \u2014 is disclosed in the fragment, not smuggled."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the ticker row shows the run's own generation rate beside the lane's mean from the lane reading the record carries; reckon/crew/ticker.py:775 lane_cells composes \" 1.40 lane  1.44\" from event[\"lane_reading\"], and it renders when handed that reading, but no production producer supplies the key.\nVERDICT done_when: the done_when names tests/test_ticker_shows_the_lane_mean.py and a two-arm gate; the manifest records base 11 failed/394 passed and head 3 failed/402 passed with the same three cli-follow ids, and the negative control is named and was executed.\nVERDICT write_paths: read the manifest's declared paths; the diff touches exactly reckon/crew/ticker.py, tests/test_ticker_shows_the_lane_mean.py and docs/evidence/fragments/crew-observability-truth/ticker-shows-the-lane-mean.html, all inside the declared write paths.\nVERDICT manifest: read; status complete, two landed revisions (b115ba2da, c9d65a030), both suites recorded with their log paths, the negative control named, and the live-wiring gap disclosed in follow_ons.\nVERDICT diff: read revision by revision against base 7fbe5fd89; b115ba2da adds LANE_LABEL/LANE_WIDTH/LANE_UNKNOWN, lane_rate_text, carried_lane_mean and lane_cells plus a 245-line test and one call at ticker.py:1526, and c9d65a030 adds the evidence fragment; no other source is touched.\nCALL_SITES: reckon/crew/recovery.py:format_watch_transition (renders every watch transition), reckon/cli.py:4142 (the follow pane's Ticker); neither supplies lane_reading, so the cell is unreachable in production.\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:775 renders the pair exactly as the goal states when handed a reading, but no call site supplies one \u2014 _watch_transition (reckon/crew/recovery.py:9810) drops lane_reading that the pointer records (reckon/crew/dispatch.py:6878) \u2014 so the plan's measure that a reader sees the lane mean beside the rate is unmet end to end.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate at tests/test_ticker_shows_the_lane_mean.py ran at both revisions and its result is recorded rather than claimed \u2014 the base log reads \"11 failed, 394 passed\" (EXIT=1) and the head log \"3 failed, 402 passed\" (EXIT=1), the same three cli-follow ids at both, and negative-control.log shows EXIT=1 with five failures on the declared mutation; docked because the head arm ran at b115ba2da, one docs-only revision before the reviewed head c9d65a030.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, and the one behaviour the goal did not imply \u2014 withholding the per-row rate when no reading is carried \u2014 is disclosed in the fragment, not smuggled.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_ticker_shows_the_lane_mean.py:120 asserts the pair against two distinct constants and the negative control reddens test_a_row_with_a_lane_reading_shows_both_figures_side_by_side at ticker.py:790 when the lane mean is dropped, so the guard fails on the regression it names; docked because no test drives the live producer path, so the unreachability of the cell is guarded by nothing.\nSCORE fit: 20\nJUSTIFICATION fit: lane_cells, carried_lane_mean and lane_rate_text at reckon/crew/ticker.py:739-791 follow the module's cell idiom (bound_cells at :716) and introduce no name the repository naming rules forbid.\nFINDING reckon/crew/ticker.py:775 follow-on: lane_cells reads event[\"lane_reading\"], which no caller sets \u2014 _watch_snapshot (reckon/crew/recovery.py:9429) and _watch_transition (:9810) rebuild the watch event field by field and omit the lane_reading the live pointer records (reckon/crew/dispatch.py:6878) \u2014 so the cell returns [] on every real row and, because lane_cells then prints neither figure, the live pane loses the per-row rate it used to show without gaining the lane mean; wiring one key through the two functions closes it.",
+  "review_run_id": "r-20261003T095825395033-review-of-ticker-shows-the-lane-mean",
+  "reviewed_base_sha": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "reviewed_head_sha": "c9d65a030d3fbf6c5d5f98aebebed2d6537f36b8",
+  "reviewed_run_id": "r-20261003T092807054825-ticker-shows-the-lane-mean",
+  "reviewer": {
+    "backend": "local",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:07.215139+00:00",
+  "total": 92
+}

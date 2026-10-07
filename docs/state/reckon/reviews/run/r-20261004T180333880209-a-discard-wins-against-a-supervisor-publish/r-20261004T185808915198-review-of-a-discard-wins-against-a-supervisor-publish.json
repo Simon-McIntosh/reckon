@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1936",
+    "reckon/crew/dispatch.py:10848",
+    "reckon/crew/dispatch.py:10280"
+  ],
+  "completed_at": "2026-10-04T19:03:35.466Z",
+  "dispatched_at": "2026-10-04T18:58:26Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "1200",
+      "severity": "follow-on",
+      "text": "follow-on: the 20-trial gate uses -p discard_repeat, a plugin absent from the repository, so the exact done-when measurement cannot be re-run from the committed tree, though the committed single test still discriminates at base per population-base.log."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit (931b4904 adds the race test, 7ffdab48 wraps the release unlink in _pointer_lock, f3ed6457 makes the test expose the late publish).",
+    "done_when": "the done_when asks the test to pass 20 of 20 at -n 8 beside a CPU-bound load with a main negative control; head-20-contended.log records \"20 passed\" and base-20-contended.log \"20 failed\" beside 8 spinners.",
+    "goal": "the node goal is that a discarded run's pointer is not rewritten by its supervisor; the diff at reckon/crew/dispatch.py:1918 serialises the release unlink under _pointer_lock so a late phase publish cannot restore it.",
+    "manifest": "read; it names the recreating write at reckon/crew/dispatch.py:5043 and records the base/head 20-trial results with their log paths.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py and tests/test_dispatch_returns_without_worker.py; the diff between base and head touches only those two files."
+  },
+  "justifications": {
+    "durability": "the added assertion at tests/test_dispatch_returns_without_worker.py:1348 (not pointer.exists()) reddens when the release lock is removed, as base-20-contended.log shows at product base bbb3eb9b.",
+    "evidence": "head-20-contended.log records 20 passed and base-20-contended.log 20 failed at the recreated-pointer assertion, but the gate command depends on an uncommitted -p discard_repeat plugin.",
+    "fit": "the change reuses the existing _pointer_lock (reckon/crew/runs.py:512) and adds no function, class or module.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1918 takes _pointer_lock around the release unlink, the same lock _publish_stored_phase holds at reckon/crew/dispatch.py:10268.",
+    "scope_discipline": "git diff bbb3eb9b..f3ed6457 --name-only lists only reckon/crew/dispatch.py and tests/test_dispatch_returns_without_worker.py, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a discarded run's pointer is not rewritten by its supervisor; the diff at reckon/crew/dispatch.py:1918 serialises the release unlink under _pointer_lock so a late phase publish cannot restore it.\nVERDICT done_when: the done_when asks the test to pass 20 of 20 at -n 8 beside a CPU-bound load with a main negative control; head-20-contended.log records \"20 passed\" and base-20-contended.log \"20 failed\" beside 8 spinners.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py and tests/test_dispatch_returns_without_worker.py; the diff between base and head touches only those two files.\nVERDICT manifest: read; it names the recreating write at reckon/crew/dispatch.py:5043 and records the base/head 20-trial results with their log paths.\nVERDICT diff: read commit by commit (931b4904 adds the race test, 7ffdab48 wraps the release unlink in _pointer_lock, f3ed6457 makes the test expose the late publish).\nCALL_SITES: reckon/crew/dispatch.py:1936, reckon/crew/dispatch.py:10848, reckon/crew/dispatch.py:10280\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1918 takes _pointer_lock around the release unlink, the same lock _publish_stored_phase holds at reckon/crew/dispatch.py:10268.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-20-contended.log records 20 passed and base-20-contended.log 20 failed at the recreated-pointer assertion, but the gate command depends on an uncommitted -p discard_repeat plugin.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff bbb3eb9b..f3ed6457 --name-only lists only reckon/crew/dispatch.py and tests/test_dispatch_returns_without_worker.py, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the added assertion at tests/test_dispatch_returns_without_worker.py:1348 (not pointer.exists()) reddens when the release lock is removed, as base-20-contended.log shows at product base bbb3eb9b.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the existing _pointer_lock (reckon/crew/runs.py:512) and adds no function, class or module.\nFINDING tests/test_dispatch_returns_without_worker.py:1200 follow-on: the 20-trial gate uses -p discard_repeat, a plugin absent from the repository, so the exact done-when measurement cannot be re-run from the committed tree, though the committed single test still discriminates at base per population-base.log.\n",
+  "review_run_id": "r-20261004T185808915198-review-of-a-discard-wins-against-a-supervisor-publish",
+  "reviewed_base_sha": "bbb3eb9b1fbdc73f552b51fc3ed7758f97703c29",
+  "reviewed_head_sha": "f3ed645742982f279208cf43316985450e637e6b",
+  "reviewed_run_id": "r-20261004T180333880209-a-discard-wins-against-a-supervisor-publish",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T19:02:30.464237+00:00",
+  "total": 95
+}

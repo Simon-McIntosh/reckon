@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/death_census.py:main"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "reckon/crew/death_census.py",
+      "line": "141",
+      "text": "FIXED at the repaired head \u2014 the prior finding that pointer_process_alive reads a stored process_alive field the writer does not populate no longer holds: the function body at reckon/crew/death_census.py:145 now ends with `return record_process_alive(record)` at line 161, delegating to reckon/crew/runs.py:2823, so a live in-flight run with no result record reads CLASS_RUNNING. Its docstring at lines 146-152 states the reason. Independently confirmed: with the pointer fixture naming this process's own live pid and start tick, the shipped reader reports running while the reinstated stored-field reader reports dead (this node's f2-falsify.log). Residual, not the finding: a live run still gains its ledger row only when it settles, so the running class remains rare in the census's population, which rests on the ledger join rather than on this mechanism."
+    },
+    {
+      "file": "tests/test_review_death_census.py",
+      "line": "107",
+      "text": "FIXED at the repaired head \u2014 the prior finding that the running guard asserted CLASS_RUNNING over a pointer carrying {\"process_alive\": True} no longer holds: test_running_run_is_not_counted_dead at tests/test_review_death_census.py:114 now writes a pointer whose body at line 124 carries the test's own live pid and its start tick read from /proc/<pid>/stat by _own_start_tick at line 108, with no stored process_alive field. The inverse guard test_stored_process_alive_field_does_not_decide_liveness at line 134 writes {\"process_alive\": True, \"pid\": 2147483647} at line 143 and requires CLASS_DEAD, so neither the stored field nor the pid alone can satisfy both guards. Independently confirmed by reinstating the old reader over the repaired fixture, which reddens it (running -> dead)."
+    },
+    {
+      "file": "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+      "line": "12",
+      "text": "FIXED at the repaired head \u2014 the prior finding that the cumulative record's provenance metas were left at base no longer holds: plan-verifies at line 12 now leads with reckon:a-review-dies-where-nobody-is-looking#s2 before #s6, #s3 and #s7, plan-commits at line 16 now appends 4ed8ff18, 50b523fa and 673daa07 to the five earlier shas so the \u00a72 landing is traceable to its code and record commits, and the plan-summary meta at line 10 now reads \"Four sections of the plan\". Residual, not the finding: plan-commits cannot name b2d6b7f4, the head that carries the edit, since a commit cannot cite itself, so the anchor's own provenance commit stays unlisted because it postdates the record it edits."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against the reviewed head 50b523fa \u2014 673daa07 rewrites pointer_process_alive to delegate to reckon/crew/runs.py record_process_alive and replaces the pointer fixture with a live pid and start tick, plus an inverse test; b2d6b7f4 extends the evidence anchor's provenance metas (13 insertions, 10 deletions) and refreshes the figure and plan record.",
+    "done_when": "the done_when names tests/test_review_death_census.py and the per-run fields the artifact must list; at the repaired head the artifact carries all seven fields for all 1577 runs with none missing, and I reproduced that file's gate at head b2d6b7f4 (9 passed, EXIT=0).",
+    "goal": "the reviewed node's goal is a census of every recorded locally-served run separating death rate by role and by effort; the artifact at the repaired head carries 1577 runs in 12 role-by-effort cells, each with size, dead count, death_rate and completion_rate, and an empty unattributed list.",
+    "manifest": "read; it now states the gate command with result (9 passed), names gate.log and negative-control.log by bare path, records the liveness guard as a second control, and carries the cell rates as evidence inputs.",
+    "write_paths": "the repair diff 50b523fa..b2d6b7f4 touches only paths the node's manifest declares (death_census.py, its test, the data artifact, the evidence anchor, the figure, the plan), and no other path in the recorded worktree."
+  },
+  "justifications": {
+    "durability": "the repaired tests/test_review_death_census.py:114 asserts CLASS_RUNNING over a pointer naming the test process's own live pid and its recorded start tick at line 124, and tests/test_review_death_census.py:134 asserts CLASS_DEAD over a pointer whose stored process_alive is True but whose pid 2147483647 is not running, so the class is asserted over a shape production emits and from both directions.",
+    "evidence": "the repaired head's manifest names the gate with its result and the log files; the recorded gate.log names revision 673daa07 rather than the head b2d6b7f4, but the two commits between them touch only docs, and I reproduced the same 9 passed EXIT=0 at the head itself.",
+    "fit": "reckon/crew/death_census.py:145 pointer_process_alive now imports and returns reckon/crew/runs.py:2823 record_process_alive at line 161 rather than re-deriving a liveness answer the codebase already owns, which is the same authority every other liveness reader consults.",
+    "goal_fidelity": "docs/research/data/review-death-by-effort.json now states 1577 runs across 12 cells at the repaired head, and the cells separate role at constant effort (review/xhigh 12.1% 45/373 against investigate/xhigh 2.6% 2/76 and test/xhigh 5.9% 3/51) while review/high carries only 12 runs, which is the separation the goal asks for and no more.",
+    "scope_discipline": "git diff --numstat 50b523fa..b2d6b7f4 lists only the evidence anchor, the figure and its script, and the plan record; the anchor edit is a deletion-bearing in-place meta update, which is what the cumulative-record convention requires rather than an out-of-scope write."
+  },
+  "prior_findings": [
+    {
+      "file": "reckon/crew/death_census.py",
+      "line": "141",
+      "text": "pointer_process_alive reads the pointer's stored process_alive field, which the live-pointer writer does not populate: of the 40 pointers present, 38 carry no such field and 2 carry False while none carries True, so the census's running class is unreachable and a live in-flight run with no result record reads dead \u2014 reproduced on this node's own run, whose pid is alive and whose terminal stream ends system/task_started, which classify reports dead. The practical count is unaffected today only because a run gains its ledger row when it settles (10 live-pid clive runs, none in the store), so the section's stated guarantee that such a run is never counted a death rests on the ledger join rather than on the mechanism it documents."
+    },
+    {
+      "file": "tests/test_review_death_census.py",
+      "line": "107",
+      "text": "the running-run guard supplies {\"process_alive\": True}, a value the pointer writer never emits, so the running branch is asserted over an input the codebase does not produce and the assertion cannot redden for the defect it appears to protect."
+    },
+    {
+      "file": "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+      "line": "12",
+      "text": "the cumulative record's provenance metas were left at their base values: plan-verifies names s6,s3,s7 and not s2, and plan-commits on line 16 still lists only the five earlier shas, so the \u00a72 landing cannot be traced to 4ed8ff18 or 50b523fa, and the plan-summary line still reads \"Three sections\" while the file now carries four."
+    }
+  ],
+  "prior_reviewed_head_sha": "50b523fa4905e4dbc022e9adc7290cdb60f02f17",
+  "prior_run_id": "r-20260923T024644047165-review-of-review-deaths-by-effort-and-role",
+  "prior_scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "scope_discipline": 18
+  },
+  "prior_total": 79,
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is a census of every recorded locally-served run separating death rate by role and by effort; the artifact at the repaired head carries 1577 runs in 12 role-by-effort cells, each with size, dead count, death_rate and completion_rate, and an empty unattributed list.\nVERDICT done_when: the done_when names tests/test_review_death_census.py and the per-run fields the artifact must list; at the repaired head the artifact carries all seven fields for all 1577 runs with none missing, and I reproduced that file's gate at head b2d6b7f4 (9 passed, EXIT=0).\nVERDICT write_paths: the repair diff 50b523fa..b2d6b7f4 touches only paths the node's manifest declares (death_census.py, its test, the data artifact, the evidence anchor, the figure, the plan), and no other path in the recorded worktree.\nVERDICT manifest: read; it now states the gate command with result (9 passed), names gate.log and negative-control.log by bare path, records the liveness guard as a second control, and carries the cell rates as evidence inputs.\nVERDICT diff: read commit by commit against the reviewed head 50b523fa \u2014 673daa07 rewrites pointer_process_alive to delegate to reckon/crew/runs.py record_process_alive and replaces the pointer fixture with a live pid and start tick, plus an inverse test; b2d6b7f4 extends the evidence anchor's provenance metas (13 insertions, 10 deletions) and refreshes the figure and plan record.\nCALL_SITES: reckon/crew/death_census.py:main\nREVISION: b2d6b7f4ef3ab5efe61bfbf3fe1ac428fb27b446\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/research/data/review-death-by-effort.json now states 1577 runs across 12 cells at the repaired head, and the cells separate role at constant effort (review/xhigh 12.1% 45/373 against investigate/xhigh 2.6% 2/76 and test/xhigh 5.9% 3/51) while review/high carries only 12 runs, which is the separation the goal asks for and no more.\nSCORE evidence: 18\nJUSTIFICATION evidence: the repaired head's manifest names the gate with its result and the log files; the recorded gate.log names revision 673daa07 rather than the head b2d6b7f4, but the two commits between them touch only docs, and I reproduced the same 9 passed EXIT=0 at the head itself.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --numstat 50b523fa..b2d6b7f4 lists only the evidence anchor, the figure and its script, and the plan record; the anchor edit is a deletion-bearing in-place meta update, which is what the cumulative-record convention requires rather than an out-of-scope write.\nSCORE durability: 19\nJUSTIFICATION durability: the repaired tests/test_review_death_census.py:114 asserts CLASS_RUNNING over a pointer naming the test process's own live pid and its recorded start tick at line 124, and tests/test_review_death_census.py:134 asserts CLASS_DEAD over a pointer whose stored process_alive is True but whose pid 2147483647 is not running, so the class is asserted over a shape production emits and from both directions.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/death_census.py:145 pointer_process_alive now imports and returns reckon/crew/runs.py:2823 record_process_alive at line 161 rather than re-deriving a liveness answer the codebase already owns, which is the same authority every other liveness reader consults.\nFINDING reckon/crew/death_census.py:141 FIXED at the repaired head \u2014 the prior finding that pointer_process_alive reads a stored process_alive field the writer does not populate no longer holds: the function body at reckon/crew/death_census.py:145 now ends with `return record_process_alive(record)` at line 161, delegating to reckon/crew/runs.py:2823, so a live in-flight run with no result record reads CLASS_RUNNING. Its docstring at lines 146-152 states the reason. Independently confirmed: with the pointer fixture naming this process's own live pid and start tick, the shipped reader reports running while the reinstated stored-field reader reports dead (this node's f2-falsify.log). Residual, not the finding: a live run still gains its ledger row only when it settles, so the running class remains rare in the census's population, which rests on the ledger join rather than on this mechanism.\nFINDING tests/test_review_death_census.py:107 FIXED at the repaired head \u2014 the prior finding that the running guard asserted CLASS_RUNNING over a pointer carrying {\"process_alive\": True} no longer holds: test_running_run_is_not_counted_dead at tests/test_review_death_census.py:114 now writes a pointer whose body at line 124 carries the test's own live pid and its start tick read from /proc/<pid>/stat by _own_start_tick at line 108, with no stored process_alive field. The inverse guard test_stored_process_alive_field_does_not_decide_liveness at line 134 writes {\"process_alive\": True, \"pid\": 2147483647} at line 143 and requires CLASS_DEAD, so neither the stored field nor the pid alone can satisfy both guards. Independently confirmed by reinstating the old reader over the repaired fixture, which reddens it (running -> dead).\nFINDING docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:12 FIXED at the repaired head \u2014 the prior finding that the cumulative record's provenance metas were left at base no longer holds: plan-verifies at line 12 now leads with reckon:a-review-dies-where-nobody-is-looking#s2 before #s6, #s3 and #s7, plan-commits at line 16 now appends 4ed8ff18, 50b523fa and 673daa07 to the five earlier shas so the \u00a72 landing is traceable to its code and record commits, and the plan-summary meta at line 10 now reads \"Four sections of the plan\". Residual, not the finding: plan-commits cannot name b2d6b7f4, the head that carries the edit, since a commit cannot cite itself, so the anchor's own provenance commit stays unlisted because it postdates the record it edits.",
+  "review_run_id": "legacy-4a17b7d2c17d",
+  "review_run_id_source": "derived",
+  "reviewed_head_sha": "b2d6b7f4ef3ab5efe61bfbf3fe1ac428fb27b446",
+  "reviewed_run_id": "r-20260923T021758002591-review-deaths-by-effort-and-role",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-23T03:46:37.446305+00:00",
+  "total": 92
+}

@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4952",
+    "reckon/crew/dispatch.py:6634",
+    "reckon/crew/fleet_supervisor.py:634",
+    "reckon/crew/fleet_supervisor.py:753"
+  ],
+  "completed_at": "2026-09-29T09:03:33.631Z",
+  "dispatched_at": "2026-09-29T07:17:04Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_lane_carries_the_dispatch_environment.py",
+      "line": "330",
+      "text": "the test named as the guard on the carried list asserts membership in the same tuple it reads and names four of the five entries, omitting RECKON_RUN_STORE, while the dispatch case asserts only RECKON_HOME of the five in the spec, so dropping any of the other four names from _carried_crew_environment() or from the spec write leaves the gate green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against base 7cc73727 as one commit of five files, +686/-2: the spec's environment mapping with the carried-name constant in reckon/crew/dispatch.py:6275-6355, the overlay with its refusals in reckon/crew/fleet_supervisor.py:603-661, the bounded survival confirm at reckon/crew/dispatch.py:6325, the new test file, and the fragment with its before/after figure.",
+    "done_when": "the done_when is the three named files passing with the real spawn verb under a crew home other than the batch step's, and the dispatch case failing under the declared mutation; the gate log records 26 passed, exit 0, the red log records 1 failed in 6.04s, and my own re-run of that case at the reviewed head passed in 6.43s.",
+    "goal": "the goal is the dispatcher's crew environment travelling to the per-run supervisor and dispatch failing when that supervisor has exited within its first seconds; reckon/crew/dispatch.py:6292 carries the five crew-state names and reckon/crew/dispatch.py:6634 confirms the supervisor survived on both the fleet and fork branches.",
+    "manifest": "read; it names commit 3d39976f, the gate command with 26 passed, exit 0, the test and negative-control logs on disk, and its landing line as the plan comment prose; its baseline_suite and after_suite fields are prose, so neither gate log resolves from them.",
+    "write_paths": "the declared paths are the two production modules, the new test file, the fragment and the figure directory; git show --stat 3d39976f lists exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the reinstated regression (spawn_supervisor starting argv with dict(environ)) reddens the dispatch case, so the RECKON_HOME carry is genuinely guarded, but tests/test_fleet_lane_carries_the_dispatch_environment.py:330 asserts membership in the very tuple it reads and omits RECKON_RUN_STORE, leaving the other four names and the set-only-when-present rule unguarded.",
+    "evidence": "the recorded gate is a real one (gate-after.log: revision 7cc73727, 26 passed, exit 0) and the negative control reddens exactly the intended case (CrewError \"exited within 2s of starting: worker did not spawn: CrewError: no live run\", 1 failed in 6.04s), but the manifest's suite fields are prose, so added_failure_count reads unmeasured (null) rather than a measured zero.",
+    "fit": "the change follows the module's idiom, a named module constant with a per-name comment at reckon/crew/dispatch.py:6270, refusal rather than coercion at the spec boundary at reckon/crew/fleet_supervisor.py:603, and a bounded wait built on the existing branch structure at reckon/crew/dispatch.py:6634, and its new source carries no plan, sprint or ticket label.",
+    "goal_fidelity": "both halves land at reckon/crew/dispatch.py:6292, which selects the five crew-state names, and reckon/crew/dispatch.py:6658 and :6669, which confirm the supervisor survived on the fleet and fork branches, with the gated case showing a supervisor reaching a run under a crew home other than the batch step's.",
+    "scope_discipline": "git show --stat 3d39976f lists exactly the five declared write paths, so the diff stays inside its fence and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 7cc73727c25282aaee94ab65b52e975b1c8a4b9c\nreviewed_head_sha: 3d39976ff612fdf676f712c85d6ed02e1005b95c\n\nVERDICT goal: the goal is the dispatcher's crew environment travelling to the per-run supervisor and dispatch failing when that supervisor has exited within its first seconds; reckon/crew/dispatch.py:6292 carries the five crew-state names and reckon/crew/dispatch.py:6634 confirms the supervisor survived on both the fleet and fork branches.\nVERDICT done_when: the done_when is the three named files passing with the real spawn verb under a crew home other than the batch step's, and the dispatch case failing under the declared mutation; the gate log records 26 passed, exit 0, the red log records 1 failed in 6.04s, and my own re-run of that case at the reviewed head passed in 6.43s.\nVERDICT write_paths: the declared paths are the two production modules, the new test file, the fragment and the figure directory; git show --stat 3d39976f lists exactly those five paths and nothing else.\nVERDICT manifest: read; it names commit 3d39976f, the gate command with 26 passed, exit 0, the test and negative-control logs on disk, and its landing line as the plan comment prose; its baseline_suite and after_suite fields are prose, so neither gate log resolves from them.\nVERDICT diff: read against base 7cc73727 as one commit of five files, +686/-2: the spec's environment mapping with the carried-name constant in reckon/crew/dispatch.py:6275-6355, the overlay with its refusals in reckon/crew/fleet_supervisor.py:603-661, the bounded survival confirm at reckon/crew/dispatch.py:6325, the new test file, and the fragment with its before/after figure.\nCALL_SITES: reckon/crew/dispatch.py:4952, reckon/crew/dispatch.py:6634, reckon/crew/fleet_supervisor.py:634, reckon/crew/fleet_supervisor.py:753\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both halves land at reckon/crew/dispatch.py:6292, which selects the five crew-state names, and reckon/crew/dispatch.py:6658 and :6669, which confirm the supervisor survived on the fleet and fork branches, with the gated case showing a supervisor reaching a run under a crew home other than the batch step's.\nSCORE evidence: 19\nJUSTIFICATION evidence: the recorded gate is a real one (gate-after.log: revision 7cc73727, 26 passed, exit 0) and the negative control reddens exactly the intended case (CrewError \"exited within 2s of starting: worker did not spawn: CrewError: no live run\", 1 failed in 6.04s), but the manifest's suite fields are prose, so added_failure_count reads unmeasured (null) rather than a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 3d39976f lists exactly the five declared write paths, so the diff stays inside its fence and carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: the reinstated regression (spawn_supervisor starting argv with dict(environ)) reddens the dispatch case, so the RECKON_HOME carry is genuinely guarded, but tests/test_fleet_lane_carries_the_dispatch_environment.py:330 asserts membership in the very tuple it reads and omits RECKON_RUN_STORE, leaving the other four names and the set-only-when-present rule unguarded.\nSCORE fit: 20\nJUSTIFICATION fit: the change follows the module's idiom, a named module constant with a per-name comment at reckon/crew/dispatch.py:6270, refusal rather than coercion at the spec boundary at reckon/crew/fleet_supervisor.py:603, and a bounded wait built on the existing branch structure at reckon/crew/dispatch.py:6634, and its new source carries no plan, sprint or ticket label.\nFINDING tests/test_fleet_lane_carries_the_dispatch_environment.py:330 the test named as the guard on the carried list asserts membership in the same tuple it reads and names four of the five entries, omitting RECKON_RUN_STORE, while the dispatch case asserts only RECKON_HOME of the five in the spec, so dropping any of the other four names from _carried_crew_environment() or from the spec write leaves the gate green.\n",
+  "review_run_id": "r-20260929T071650132500-review-of-fleet-lane-carries-the-dispatch-environment",
+  "reviewed_base_sha": "7cc73727c25282aaee94ab65b52e975b1c8a4b9c",
+  "reviewed_head_sha": "3d39976ff612fdf676f712c85d6ed02e1005b95c",
+  "reviewed_run_id": "r-20260929T065026468365-fleet-lane-carries-the-dispatch-environment",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T08:44:05.591503+00:00",
+  "total": 97
+}

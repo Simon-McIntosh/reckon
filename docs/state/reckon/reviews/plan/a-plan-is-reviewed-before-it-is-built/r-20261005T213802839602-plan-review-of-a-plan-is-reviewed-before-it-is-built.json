@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T21:41:22.260Z",
+  "dispatched_at": "2026-10-05T21:38:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "deep_module-1",
+      "reason": "the predicate's contract must join the document unit alongside the sections (or \u00a78's authored-change coverage is silently dropped in the rewrite of `_plan_review_pending`), which changes both the predicate and its done-when.",
+      "text": "the coverage predicate \u00a716 describes asks the whole-document question first and, when no stored record matches whole, joins only the outstanding implementable sections (\u00a718's reader) to the union of stored section digests; it never consults the document unit that `_section_digests` also produces, so an edit to a decision, a followup or an authored comment moves the whole-document digest but leaves every section covered and composes no review \u2014 directly contradicting \u00a716's own claim that such an edit \"earns a review exactly as \u00a78 requires\"",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "94eb545b13a053a85d57e544de9df4fa0c6eb2cc889e757773bb6cd9551f08dd",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 136,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T213802839602-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "c21fb1a7f9f58dc221bca0a3abb0bda5668c560e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the coverage predicate \u00a716 introduces hides substantial behaviour (\"any authored change earns a review\", per \u00a78) behind an interface that cannot express it: it joins only the outstanding implementable sections, never the document unit the same digest map also carries.",
+    "duplicate_owner": "pass \u2014 the plan's shape is consolidation and it names each owner to extend (the tag expression and the span parser in `reckon/_plan_html.py`, the identity derivation in `reckon/crew/routing.py`, the store's card recogniser) and retires the store's copies instead of forking them; the two projections of the one private read are justified by spans no heading record describes.",
+    "interface_budget": "pass \u2014 public_definitions 1478, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 names its one added public definition (`strip_tags`) and that nothing is retired, \u00a717 names its two (`plan_headings` and the machinery-element predicate) and states `landed_section_ids` is a move and no public definition can retire, and neither section adds to cli_options, mcp_views or refusal_families (\u00a716 reuses the existing plan-review-missing refusal family). Note (not a finding): \u00a716's prose says the three sections \"grow the family by four\", but \u00a718's addition is already inside the cited 1478, so the implementable \u00a716+\u00a717 delta is three, which the per-section done-whens state correctly.",
+    "reuse_search": "pass \u2014 the plan names machinery the code confirms and extends it rather than rebuilding: `_plan_html._TAG_RE` and `_StructuredSectionSpanParser` (reckon/_plan_html.py:1506, :44), `_store._landed_card_span`/`_is_structural_boundary`/`landed_section_ids` and the heading helpers (reckon/_store.py:1033, :875, :1075, :901, :940, :973), `plan_review._PROSE_SKIP_TAGS`/`_AuthoredProseParser` (reckon/crew/plan_review.py:147, :168), the AST rule machinery in `interface_counts.read_trees`/`_staged_writes` (reckon/interface_counts.py:441, :97), and `routing.section_record_id`/`section_id_candidates` (reckon/crew/routing.py:224, :243). Each proposed change is an extension of an existing owner.",
+    "thin_wrapper": "pass \u2014 every layer the plan adds states the machinery it extends and why the extension is the honest change (`strip_tags` over the existing `_TAG_RE`; the machinery-element predicate over the `data-reckon` attribute read in five files; `plan_headings` as the public projection of the private span parser), rather than a parallel implementation."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.762038+00:00"
+}

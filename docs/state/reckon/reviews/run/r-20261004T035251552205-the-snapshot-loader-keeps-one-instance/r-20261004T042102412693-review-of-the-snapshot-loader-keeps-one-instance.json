@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs: the two base failures (test_a_file_change_and_the_floor_tick_each_republish, test_a_slow_sweep_does_not_hold_the_next_transition) are the defect this node repairs and are absent at head, so zero added",
+  "base_log_revision": "95b482f213f61346e5d1522ac6e3ee9f4a850cc7",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:396",
+    "reckon/hooks/coordinator_obligations.py:728",
+    "reckon/hooks/coordinator_obligations.py:931",
+    "reckon/cli.py:3024"
+  ],
+  "completed_at": "2026-10-04T04:26:17.860Z",
+  "dispatched_at": "2026-10-04T04:21:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/the-snapshot-loader-keeps-one-instance.html",
+      "line": "29",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment carries three prose paragraphs where the dispatch states a node whose done-when names no artifact writes no evidence prose; the anchor needs the measure and verdict only, and the excess is prose the goal does not imply."
+    }
+  ],
+  "head_log_revision": "075a8d7c0497c3946d18bb7f0f520af52bfa0678",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base; the hook reuses a registered instance and path-loads only when none exists, one 64-line test file pins registration, package attribute and both loaders, and no unrelated change is present.",
+    "done_when": "the measure names tests/test_snapshot_loader_keeps_one_instance.py; the identity test fails 1-of-2 at base 95b482f2 (re-run here) and passes 2-of-2 at head, the serial split fails 2 of 32 at base and passes 34 at head, and the declared negative control reddens the same id at EXIT=1.",
+    "goal": "the node goal keeps one reckon.crew.obligation_snapshot instance per process so both by-path loaders reuse a registered one; the hook's snapshot_module() at reckon/hooks/coordinator_obligations.py:107 now returns sys.modules' instance before path-loading, and the cli loader at reckon/cli.py:3009 already did, both verified at head.",
+    "manifest": "read; it records commits b67525396 and 075a8d7c0, the base/head split and identity arms, the 72-passed hook-and-obligations family, and the negative control, with the scratch-tree measurement module and cwd named.",
+    "write_paths": "the diff over 95b482f2..075a8d7c0 touches reckon/hooks/coordinator_obligations.py, tests/test_snapshot_loader_keeps_one_instance.py and the evidence fragment, all inside the declared fence; reckon/cli.py is fenced but unchanged because it already complied."
+  },
+  "justifications": {
+    "durability": "tests/test_snapshot_loader_keeps_one_instance.py:29 compares sys.modules and both loaders' returns against an independently imported module, and the negative control shows it reddens when the reuse guard is removed.",
+    "evidence": "the done_when's identity and serial-split arms are recorded in the reviewed run's own logs, and re-running the identity test here reproduces 1 failed/1 passed at base and 2 passed at head.",
+    "fit": "the change keeps the module's @cache and sys.modules idiom at reckon/hooks/coordinator_obligations.py:107 and adds no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:113 returns the registered instance before the path load, satisfying the reuse half, and the cli half at reckon/cli.py:3009 was already compliant and is pinned by the test rather than changed.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, and the only fenced path not changed, reckon/cli.py, is correctly left alone as already compliant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal keeps one reckon.crew.obligation_snapshot instance per process so both by-path loaders reuse a registered one; the hook's snapshot_module() at reckon/hooks/coordinator_obligations.py:107 now returns sys.modules' instance before path-loading, and the cli loader at reckon/cli.py:3009 already did, both verified at head.\nVERDICT done_when: the measure names tests/test_snapshot_loader_keeps_one_instance.py; the identity test fails 1-of-2 at base 95b482f2 (re-run here) and passes 2-of-2 at head, the serial split fails 2 of 32 at base and passes 34 at head, and the declared negative control reddens the same id at EXIT=1.\nVERDICT write_paths: the diff over 95b482f2..075a8d7c0 touches reckon/hooks/coordinator_obligations.py, tests/test_snapshot_loader_keeps_one_instance.py and the evidence fragment, all inside the declared fence; reckon/cli.py is fenced but unchanged because it already complied.\nVERDICT manifest: read; it records commits b67525396 and 075a8d7c0, the base/head split and identity arms, the 72-passed hook-and-obligations family, and the negative control, with the scratch-tree measurement module and cwd named.\nVERDICT diff: read commit by commit against base; the hook reuses a registered instance and path-loads only when none exists, one 64-line test file pins registration, package attribute and both loaders, and no unrelated change is present.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:396, reckon/hooks/coordinator_obligations.py:728, reckon/hooks/coordinator_obligations.py:931, reckon/cli.py:3024\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:113 returns the registered instance before the path load, satisfying the reuse half, and the cli half at reckon/cli.py:3009 was already compliant and is pinned by the test rather than changed.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when's identity and serial-split arms are recorded in the reviewed run's own logs, and re-running the identity test here reproduces 1 failed/1 passed at base and 2 passed at head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the only fenced path not changed, reckon/cli.py, is correctly left alone as already compliant.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_snapshot_loader_keeps_one_instance.py:29 compares sys.modules and both loaders' returns against an independently imported module, and the negative control shows it reddens when the reuse guard is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the module's @cache and sys.modules idiom at reckon/hooks/coordinator_obligations.py:107 and adds no name the repository naming rules forbid.\nFINDING docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/the-snapshot-loader-keeps-one-instance.html:29 follow-on: the fragment carries three prose paragraphs where the dispatch states a node whose done-when names no artifact writes no evidence prose; the anchor needs the measure and verdict only, and the excess is prose the goal does not imply.\n",
+  "review_run_id": "r-20261004T042102412693-review-of-the-snapshot-loader-keeps-one-instance",
+  "reviewed_base_sha": "95b482f213f61346e5d1522ac6e3ee9f4a850cc7",
+  "reviewed_head_sha": "075a8d7c0497c3946d18bb7f0f520af52bfa0678",
+  "reviewed_run_id": "r-20261004T035251552205-the-snapshot-loader-keeps-one-instance",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T04:25:14.096973+00:00",
+  "total": 95
+}

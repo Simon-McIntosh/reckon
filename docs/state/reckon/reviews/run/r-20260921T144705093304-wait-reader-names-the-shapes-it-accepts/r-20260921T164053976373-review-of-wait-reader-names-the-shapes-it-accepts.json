@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_site_scope_note": "Both call sites were read and exercised in the source worktree: resumption._run_condition_probe was called with a three-path wait_file declaration and reported terminal false before the paths existed and true after, and classify_pointer was read at recovery.py:2316 where the row the follower renders takes its observation.",
+  "call_sites": [
+    "reckon/crew/resumption.py:_run_condition_probe",
+    "reckon/crew/recovery.py:classify_pointer"
+  ],
+  "commits_read": [
+    "800bef46",
+    "5e9dde39"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:40:53.976373+00:00",
+  "evidence": [
+    "green log 159 passed 1 failed, the failure reproduced at base (delta zero)",
+    "mutation red log: 6 failed 11 passed, first line the declared mutation verbatim",
+    "sweep probe measured in this worktree: terminal false with paths absent, true with them present",
+    "derived terminal emptied: the sweep reports terminal false with every path present and tests/test_wait_shapes.py still passes"
+  ],
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1584",
+      "text": "the same assignment is written twice, so the second is dead; a duplicated computation in the one function that decides which declared paths are missing reads as a copy artefact rather than a decision."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1478",
+      "text": "the docstring says the file condition is read through the same single argument vector every other wait uses, but _run_wait_condition_probe returns early on files and never runs it; the sweep that actually lifts a parked run is a second implementation of the probe in reckon/crew/resumption.py:681, which this commit does not touch, so a reader who trusts this docstring cannot know the derived terminal is what that other module matches on."
+    },
+    {
+      "file": "tests/test_wait_shapes.py",
+      "line": "173",
+      "text": "the case named for the derived condition asserts wait['probe'] and never asserts wait['terminal']; measured in this worktree, emptying the derived terminal records terminal=false from reckon/crew/resumption.py:718 even with every path present, so the sweep would never lift a file-condition run while this file stayed green."
+    }
+  ],
+  "follow_ons": [
+    "reckon/crew/recovery.py:1584 deletes the duplicated assignment, and tests/test_wait_shapes.py:173 asserts the derived terminal beside the derived probe, so the sweep's dependence on it is guarded.",
+    "reckon/crew/prompts.py is outside the source node's fence and still teaches exit:<code> under wait_terminal; the node recorded it as a follow-on."
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; 800bef46 changes reckon/crew/recovery.py and the new tests, 5e9dde39 records the landing in the plan and the evidence record, and the diffstat is 793 insertions against 3 deletions with no removal of a prior guard.",
+    "done_when": "read against the pointer's done_when; tests/test_wait_shapes.py carries every named case (three-path file condition read back at line 127, the three measured wrong shapes at line 286 with the reason reaching manifest_error and detail at line 299, the negative half at line 317, the two preserved refusals at lines 364 and 378) and the mutation red log leads with the declared text; reviewed commit 800bef46 shows a test with the file-readback case on the line the case is at.",
+    "goal": "the goal is that the wait reader accepts a file condition first-class and refuses an unrecognised shape by naming what it accepts; reckon/crew/recovery.py:1367 reads wait_file as one path or a JSON array, and every refusal built from _WAIT_ACCEPTED_SHAPES at reckon/crew/recovery.py:1360 names both accepted shapes, so the landed change is the goal.",
+    "manifest": "read; it reports 159 passed and 1 failed for the focused population, the single failure reproduced identically at base, and a mutation red log of 6 failed and 11 passed; both logs are on disk in the run directory and both were opened and match the account.",
+    "write_paths": "the pointer declares four paths (reckon/crew/recovery.py, tests/test_wait_shapes.py, the plan, the landed-evidence record); git diff ca943455..5e9dde39 names exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_wait_shapes.py:286 fails under the declared mutation as the red log shows, but tests/test_wait_shapes.py:173 never asserted; with the derived terminal emptied the file stays green while reckon/crew/resumption.py:718 needs it.",
+    "evidence": "the green log in the run directory records 159 passed and 1 failed with the failure reproduced at base, and the red log's first line repeats the declared mutation verbatim, but the derived terminal the sweep matches is asserted nowhere.",
+    "fit": "the new helpers follow the surrounding reader's idiom and add no forbidden name, but reckon/crew/recovery.py:1584 is the duplicated line cited below and empty derived-terminal is a name-unstable shape in reckon/crew/recovery.py:1566.",
+    "goal_fidelity": "reckon/crew/recovery.py:1367 reads wait_file and every refusal at reckon/crew/recovery.py:1360 names both shapes, which is the goal; the account of the mechanism in reckon/crew/recovery.py:1478 is not what the code does, which is the deduction.",
+    "scope_discipline": "git diff ca943455..5e9dde39 touches exactly the four declared paths and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the wait reader accepts a file condition first-class and refuses an unrecognised shape by naming what it accepts; reckon/crew/recovery.py:1367 reads wait_file as one path or a JSON array, and every refusal built from _WAIT_ACCEPTED_SHAPES at reckon/crew/recovery.py:1360 names both accepted shapes, so the landed change is the goal.\nVERDICT done_when: read against the pointer's done_when; tests/test_wait_shapes.py carries every named case (three-path file condition read back at line 127, the three measured wrong shapes at line 286 with the reason reaching manifest_error and detail at line 299, the negative half at line 317, the two preserved refusals at lines 364 and 378) and the mutation red log leads with the declared text; reviewed commit 800bef46 shows a test with the file-readback case on the line the case is at.\nVERDICT write_paths: the pointer declares four paths (reckon/crew/recovery.py, tests/test_wait_shapes.py, the plan, the landed-evidence record); git diff ca943455..5e9dde39 names exactly those four and nothing else.\nVERDICT manifest: read; it reports 159 passed and 1 failed for the focused population, the single failure reproduced identically at base, and a mutation red log of 6 failed and 11 passed; both logs are on disk in the run directory and both were opened and match the account.\nVERDICT diff: read commit by commit; 800bef46 changes reckon/crew/recovery.py and the new tests, 5e9dde39 records the landing in the plan and the evidence record, and the diffstat is 793 insertions against 3 deletions with no removal of a prior guard.\nCALL_SITES: reckon/crew/resumption.py:_run_condition_probe, reckon/crew/recovery.py:classify_pointer\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1367 reads wait_file and every refusal at reckon/crew/recovery.py:1360 names both shapes, which is the goal; the account of the mechanism in reckon/crew/recovery.py:1478 is not what the code does, which is the deduction.\nSCORE evidence: 15\nJUSTIFICATION evidence: the green log in the run directory records 159 passed and 1 failed with the failure reproduced at base, and the red log's first line repeats the declared mutation verbatim, but the derived terminal the sweep matches is asserted nowhere.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ca943455..5e9dde39 touches exactly the four declared paths and adds nothing the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_wait_shapes.py:286 fails under the declared mutation as the red log shows, but tests/test_wait_shapes.py:173 never asserted; with the derived terminal emptied the file stays green while reckon/crew/resumption.py:718 needs it.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers follow the surrounding reader's idiom and add no forbidden name, but reckon/crew/recovery.py:1584 is the duplicated line cited below and empty derived-terminal is a name-unstable shape in reckon/crew/recovery.py:1566.\nFINDING reckon/crew/recovery.py:1584 the same assignment is written twice, so the second is dead; a duplicated computation in the one function that decides which declared paths are missing reads as a copy artefact rather than a decision.\nFINDING reckon/crew/recovery.py:1478 the docstring says the file condition is read through the same single argument vector every other wait uses, but _run_wait_condition_probe returns early on files and never runs it; the sweep that actually lifts a parked run is a second implementation of the probe in reckon/crew/resumption.py:681, which this commit does not touch, so a reader who trusts this docstring cannot know the derived terminal is what that other module matches on.\nFINDING tests/test_wait_shapes.py:173 the case named for the derived condition asserts wait['probe'] and never asserts wait['terminal']; measured in this worktree, emptying the derived terminal records terminal=false from reckon/crew/resumption.py:718 even with every path present, so the sweep would never lift a file-condition run while this file stayed green.\n",
+  "review_limitations": "The full suite was not re-run; the worker's green log was read and only tests/test_wait_shapes.py was re-run, its 17 cases passing.",
+  "review_run_id": "r-20260921T164053976373-review-of-wait-reader-names-the-shapes-it-accepts",
+  "reviewed_base_sha": "ca9434550cfb2cda9b132d47bdd1c166965a9cbf",
+  "reviewed_head_sha": "5e9dde395459d7d78aad8d33eeb7f2526496957a",
+  "reviewed_run_id": "r-20260921T144705093304-wait-reader-names-the-shapes-it-accepts",
+  "reviewer_run_id": "r-20260921T164053976373-review-of-wait-reader-names-the-shapes-it-accepts",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144705093304-wait-reader-names-the-shapes-it-accepts/manifest.md",
+  "source_manifest_sha256": "1cda3f6d38933f5c9fe82a4817779eeec6a9fb28ce8d4b3d455f3c646ace1965",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/wait-reader-names-the-shapes-it-accepts",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T19:20:00+02:00",
+  "total": 84
+}

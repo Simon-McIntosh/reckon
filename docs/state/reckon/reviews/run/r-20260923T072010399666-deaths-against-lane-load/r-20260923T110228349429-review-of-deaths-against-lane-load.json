@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T11:02:28.349429+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+      "line": "503",
+      "text": "the report link href=\"/reckon/reports/ship-s19-20260922/deaths-against-lane-load.md\" resolves nowhere: reports is not a root type in reckon/resources.py:34 and there is no docs/reports directory, so the route falls through to safe_join and 404s, leaving the section's own answer unreachable from the served surface."
+    },
+    {
+      "file": "docs/plans/a-review-dies-where-nobody-is-looking.html",
+      "line": "112",
+      "text": "the census instrument (scan.py, liveness_probe.py) and its data record live only under ~/.config/reckon/crew/, so nothing in the repository can re-derive the landed numbers, unlike the sibling censuses that commit docs/research/data/review-death-by-effort.json and reckon/crew/carryover_census.py."
+    },
+    {
+      "file": "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+      "line": "511",
+      "text": "the reported zero for the connection-refused class rests on a detector never shown to fire: the declared positive control did not reproduce and no attempt is recorded to find any run, in or out of the window, whose terminal record carries the refusal text."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit 482e04a6 against base c6266aaa; three files, all inside the declared write paths, adding one evidence section, one figure and one plan section-one landed note, with no plan-version or plan-modified churn.",
+    "done_when": "the done_when enumerates the classification, the per-death router counts weighted by 1/sample_fraction, the bins and the fresh/resumed split with n and 95% intervals, the 06:12Z outage positive control, and one srun bounded to 59 minutes; the data file carries method.in_flight_5m (the weighting), bins[], fresh_resumed{}, positive_control{} and classification_counts, so the measure is asserted item by item, though the srun is evidenced only by slurmstepd lines in the run dir's scan logs and not by a recorded command line.",
+    "goal": "the node's goal is to test whether tonight's local-lane worker deaths track lane load; the report /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/deaths-against-lane-load.md and its data file classify all 76 local-lane run dirs and give a death rate per in-flight bin and separately for fresh and resumed runs, each with n and a 95% interval.",
+    "manifest": "read; status complete, commits 482e04a6, tests none (a measurement with no code path asserted), and its negative control declared none with the reason that the positive control is the known outage window.",
+    "write_paths": "the manifest declares five exclusive paths; commit 482e04a6 touches three of them (the evidence record, the figure and the plan) and the report pair was written to its two declared out-of-repo paths."
+  },
+  "justifications": {
+    "durability": "no committed instrument or data backs the landed numbers; the report's Reproduce block names only scan.py and liveness_probe.py under the run directory, outside the repository.",
+    "evidence": "the gate's result is recorded at deaths-against-lane-load.json method/classification_counts and the scan logs show the srun, but the done_when's declared positive control returned no deaths at positive_control.connection_refused_deaths_total.",
+    "fit": "the new section follows the shape of its siblings in docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:497, but adopts a /reckon/reports/ link form no other document in the tree uses.",
+    "goal_fidelity": "the report's answer and the two intervals at deaths-against-lane-load.json bins[] and fresh_resumed{} answer the node's own question directly and hedge it against the survivorship limit they name.",
+    "scope_discipline": "git show --stat 482e04a6 lists only the evidence record, the figure and the plan, three of the five declared write paths, and the doc reports rather than mutates plan state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to test whether tonight's local-lane worker deaths track lane load; the report /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/deaths-against-lane-load.md and its data file classify all 76 local-lane run dirs and give a death rate per in-flight bin and separately for fresh and resumed runs, each with n and a 95% interval.\nVERDICT done_when: the done_when enumerates the classification, the per-death router counts weighted by 1/sample_fraction, the bins and the fresh/resumed split with n and 95% intervals, the 06:12Z outage positive control, and one srun bounded to 59 minutes; the data file carries method.in_flight_5m (the weighting), bins[], fresh_resumed{}, positive_control{} and classification_counts, so the measure is asserted item by item, though the srun is evidenced only by slurmstepd lines in the run dir's scan logs and not by a recorded command line.\nVERDICT write_paths: the manifest declares five exclusive paths; commit 482e04a6 touches three of them (the evidence record, the figure and the plan) and the report pair was written to its two declared out-of-repo paths.\nVERDICT manifest: read; status complete, commits 482e04a6, tests none (a measurement with no code path asserted), and its negative control declared none with the reason that the positive control is the known outage window.\nVERDICT diff: read commit 482e04a6 against base c6266aaa; three files, all inside the declared write paths, adding one evidence section, one figure and one plan section-one landed note, with no plan-version or plan-modified churn.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the report's answer and the two intervals at deaths-against-lane-load.json bins[] and fresh_resumed{} answer the node's own question directly and hedge it against the survivorship limit they name.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate's result is recorded at deaths-against-lane-load.json method/classification_counts and the scan logs show the srun, but the done_when's declared positive control returned no deaths at positive_control.connection_refused_deaths_total.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 482e04a6 lists only the evidence record, the figure and the plan, three of the five declared write paths, and the doc reports rather than mutates plan state.\nSCORE durability: 11\nJUSTIFICATION durability: no committed instrument or data backs the landed numbers; the report's Reproduce block names only scan.py and liveness_probe.py under the run directory, outside the repository.\nSCORE fit: 17\nJUSTIFICATION fit: the new section follows the shape of its siblings in docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:497, but adopts a /reckon/reports/ link form no other document in the tree uses.\nFINDING docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:503 the report link href=\"/reckon/reports/ship-s19-20260922/deaths-against-lane-load.md\" resolves nowhere: reports is not a root type in reckon/resources.py:34 and there is no docs/reports directory, so the route falls through to safe_join and 404s, leaving the section's own answer unreachable from the served surface.\nFINDING docs/plans/a-review-dies-where-nobody-is-looking.html:112 the census instrument (scan.py, liveness_probe.py) and its data record live only under ~/.config/reckon/crew/, so nothing in the repository can re-derive the landed numbers, unlike the sibling censuses that commit docs/research/data/review-death-by-effort.json and reckon/crew/carryover_census.py.\nFINDING docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:511 the reported zero for the connection-refused class rests on a detector never shown to fire: the declared positive control did not reproduce and no attempt is recorded to find any run, in or out of the window, whose terminal record carries the refusal text.",
+  "review_run_id": "r-20260923T110228349429-review-of-deaths-against-lane-load",
+  "reviewed_base_sha": "c6266aaab4cc9cc42c78a04dd76fa246946864d6",
+  "reviewed_head_sha": "482e04a604f631911825ba552ef3972ff672a8d7",
+  "reviewed_run_id": "r-20260923T072010399666-deaths-against-lane-load",
+  "scores": {
+    "durability": 11,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T11:25:52.448813+00:00",
+  "total": 80
+}

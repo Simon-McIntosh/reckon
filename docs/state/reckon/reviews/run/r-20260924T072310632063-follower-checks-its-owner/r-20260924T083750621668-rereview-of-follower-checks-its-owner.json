@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:2028",
+    "reckon/cli.py:2375",
+    "reckon/cli.py:1788",
+    "reckon/crew/runs.py:1501"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T08:37:50.621668+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both repair commits - 2a98b781 is the test change (bound 5.0 to 2.0 with its derivation in the constant's comment, the new re-parented case with its subreaper and SIGSTOP helpers, and the old reload case's docstring naming the blind spot it leaves to the new case), and 886a9ce3 corrects the figures the first version recorded in the plan note, the landed record and the figure to the new bound and the seven-test gate.",
+    "done_when": "both prior findings close - the exit bound at tests/test_follower_checks_its_owner.py:88 is now 2.0 s derived from the three measured samples at 2.2x the slowest rather than chosen, and the carry at reckon/cli.py:1787-1790, which the first review found asserted by nothing, is now reddened by the new case at tests/test_follower_checks_its_owner.py:660 when I deleted those lines myself while the earlier reload case at :609 stayed green.",
+    "goal": "re-read the section 2 goal against the repaired head; the two production lines the first review accepted are untouched by 2a98b781 and 886a9ce3 - reckon/cli.py:2028 runs _check_consumer on every wait pass whether or not the registration is held, and reckon/crew/runs.py:1501 records the armed owner - so both repair commits answer the first review's findings about the assertion's width and the carry's coverage rather than about the landed behaviour.",
+    "manifest": "read the run manifest; each claim I checked reproduces - the seven-test gate at 886a9ce3 (mine: 7 passed in 24.32 s, exit 0), all three mutation outcomes (all three independently reproduced in overlays of the reviewed tree), and the revised disclosure that two seconds spans about twenty wait passes rather than fifty.",
+    "write_paths": "`git diff --numstat a33dfd8a..886a9ce3` touches five paths, every one inside the node's six declared write paths (the test file 268/6, the plan note 33/10, the landed record 68/22, the figure source 10/7 and its PNG), and the deletions in the two cumulative records are confined to the node's own superseded figures - no removed line carries another node's anchor and the landed record's only section id is the node's own."
+  },
+  "justifications": {
+    "durability": "all three declared mutations redden exactly the case they name when I applied them to an overlay of the reviewed tree with the clean overlay green in the same harness - the restored early return fails tests/test_follower_checks_its_owner.py:544 with \"the follower was still running 2.0s after its owner was killed\", acquire() recording os.getppid() fails :734 naming the claimant's parent, and deleting the carry at reckon/cli.py:1787-1790 fails :660 alone (\"the replacement image was still running 3.0s after it was observed\") while :609 stays green.",
+    "evidence": "the first review's two evidence complaints are answered at tests/test_follower_checks_its_owner.py:76-88 and in the plan note, but the literal clause is still not met (2.0 s at the 0.1 s poll of reckon/cli.py:1912 is twenty intervals, and the slowest measured sample is itself nine) and the node's gate logs still name no revision they ran at.",
+    "fit": "the new case reuses the file's own stub, liveness and process-table helpers (tests/test_follower_checks_its_owner.py:207-541), its two new constants carry their derivation in the repo's comment idiom, and no added name or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "neither repair commit touches reckon/cli.py or reckon/crew/runs.py, so the goal's two halves stand as verified at a33dfd8a and the one disclosed follow-on (no production armer stamps RECKON_FOLLOWER_OWNER, so reckon/crew/runs.py:1636 falls back to os.getppid() - the only other stamper in the tree is the reload at reckon/cli.py:1788) is unchanged.",
+    "scope_discipline": "every path in `git diff --numstat a33dfd8a..886a9ce3` is inside the node's declared write paths, and the record's rewriting of its own stale figures kept the cumulative files' identities - 0 removed lines carry a data-node anchor."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: a695d4255dd9ba18b988fda9707d424f03771767\nreviewed_head_sha: 886a9ce343327b9187bffc76dc08f1beb6184fde\nVERDICT goal: re-read the section 2 goal against the repaired head; the two production lines the first review accepted are untouched by 2a98b781 and 886a9ce3 - reckon/cli.py:2028 runs _check_consumer on every wait pass whether or not the registration is held, and reckon/crew/runs.py:1501 records the armed owner - so both repair commits answer the first review's findings about the assertion's width and the carry's coverage rather than about the landed behaviour.\nVERDICT done_when: both prior findings close - the exit bound at tests/test_follower_checks_its_owner.py:88 is now 2.0 s derived from the three measured samples at 2.2x the slowest rather than chosen, and the carry at reckon/cli.py:1787-1790, which the first review found asserted by nothing, is now reddened by the new case at tests/test_follower_checks_its_owner.py:660 when I deleted those lines myself while the earlier reload case at :609 stayed green.\nVERDICT write_paths: `git diff --numstat a33dfd8a..886a9ce3` touches five paths, every one inside the node's six declared write paths (the test file 268/6, the plan note 33/10, the landed record 68/22, the figure source 10/7 and its PNG), and the deletions in the two cumulative records are confined to the node's own superseded figures - no removed line carries another node's anchor and the landed record's only section id is the node's own.\nVERDICT manifest: read the run manifest; each claim I checked reproduces - the seven-test gate at 886a9ce3 (mine: 7 passed in 24.32 s, exit 0), all three mutation outcomes (all three independently reproduced in overlays of the reviewed tree), and the revised disclosure that two seconds spans about twenty wait passes rather than fifty.\nVERDICT diff: read both repair commits - 2a98b781 is the test change (bound 5.0 to 2.0 with its derivation in the constant's comment, the new re-parented case with its subreaper and SIGSTOP helpers, and the old reload case's docstring naming the blind spot it leaves to the new case), and 886a9ce3 corrects the figures the first version recorded in the plan note, the landed record and the figure to the new bound and the seven-test gate.\nCALL_SITES: reckon/cli.py:2028, reckon/cli.py:2375, reckon/cli.py:1788, reckon/crew/runs.py:1501\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: neither repair commit touches reckon/cli.py or reckon/crew/runs.py, so the goal's two halves stand as verified at a33dfd8a and the one disclosed follow-on (no production armer stamps RECKON_FOLLOWER_OWNER, so reckon/crew/runs.py:1636 falls back to os.getppid() - the only other stamper in the tree is the reload at reckon/cli.py:1788) is unchanged.\nSCORE evidence: 18\nJUSTIFICATION evidence: the first review's two evidence complaints are answered at tests/test_follower_checks_its_owner.py:76-88 and in the plan note, but the literal clause is still not met (2.0 s at the 0.1 s poll of reckon/cli.py:1912 is twenty intervals, and the slowest measured sample is itself nine) and the node's gate logs still name no revision they ran at.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --numstat a33dfd8a..886a9ce3` is inside the node's declared write paths, and the record's rewriting of its own stale figures kept the cumulative files' identities - 0 removed lines carry a data-node anchor.\nSCORE durability: 20\nJUSTIFICATION durability: all three declared mutations redden exactly the case they name when I applied them to an overlay of the reviewed tree with the clean overlay green in the same harness - the restored early return fails tests/test_follower_checks_its_owner.py:544 with \"the follower was still running 2.0s after its owner was killed\", acquire() recording os.getppid() fails :734 naming the claimant's parent, and deleting the carry at reckon/cli.py:1787-1790 fails :660 alone (\"the replacement image was still running 3.0s after it was observed\") while :609 stays green.\nSCORE fit: 19\nJUSTIFICATION fit: the new case reuses the file's own stub, liveness and process-table helpers (tests/test_follower_checks_its_owner.py:207-541), its two new constants carry their derivation in the repo's comment idiom, and no added name or comment carries a plan, sprint or ticket identifier.",
+  "review_run_id": "r-20260924T083750621668-rereview-of-follower-checks-its-owner",
+  "reviewed_base_sha": "a695d4255dd9ba18b988fda9707d424f03771767",
+  "reviewed_head_sha": "886a9ce343327b9187bffc76dc08f1beb6184fde",
+  "reviewed_run_id": "r-20260924T072310632063-follower-checks-its-owner",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T08:48:26.694360+00:00",
+  "total": 95
+}

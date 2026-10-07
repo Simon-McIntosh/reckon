@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T00:21:22.662Z",
+  "dispatched_at": "2026-09-28T23:36:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/standing_suite.py",
+      "line": "247",
+      "text": "under -q, including the repository's own declared -q -n form, pytest suppresses both the \"collected N items\" line and the xdist \"[N items]\" form, so _collected at :114 returns None and collection_failed collapses to exit_status != 0: a project whose single test runs and fails is recorded collected=null, failed=1, collection_failed=true and hold_reason at :350 then takes the same branch as a true collection failure and reports the run as having failed to collect (measured: review-logs/measure-counts.log; the same suite without -q records collected=1 and collection_failed=false), so the distinction the fragment states at docs/evidence/fragments/a-review-is-sized-to-its-risk/the-suite-is-declared-and-recorded.html:93 - a failing suite is not a suite that stopped running - does not hold for the command the project declares, and collected, a count the goal names, is unmeasurable in that form."
+    },
+    {
+      "file": "tests/test_standing_suite.py",
+      "line": "99",
+      "text": "every hold case builds a suite that cannot be collected (a syntax error) or one that passes; no case runs a suite that collects, runs and fails, so the misclassification above never reaches the gate and the collection branch is exercised for the true collection failure alone."
+    },
+    {
+      "file": "reckon/crew/standing_suite.py",
+      "line": "341",
+      "text": "the two-argument hold_reason(project_root, tier) the done_when names resolves its project by mounting at :362 and returns None when the root's docs tree is not itself a mount, even while the latest record carries collection_failed: measured on a throwaway project, hold_reason(root, \"none\") returns None while hold_reason(root, \"none\", \"proj\") returns the hold sentence (review-logs/measure-counts-forms.log:211-214), so a checkout run outside the mount table - a worktree, a clone, a project under test - silently receives no hold rather than an error."
+    },
+    {
+      "file": "reckon/crew/standing_suite.py",
+      "line": "389",
+      "text": "the done_when requires the record to be written through a writer that already exists in reckon/_store.py; no such writer exists at this revision, and record() writes through a call-time import of reckon.crew.runs._write_json instead - disclosed in the manifest and the fragment, and atomic, but the clause reads false to a reader checking the done-when literally and the record's durability now depends on a private helper in another package."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 348688e8; a366947c adds reckon/crew/standing_suite.py, the flight reader and its schema pair, the state declaration and the gate file's eight tests, and cd36faeb adds the fragment and the figure, all inside the declared scope.",
+    "done_when": "every enumerated arm is present and run - the reader's None and its refusal by name, the collection-failure hold over none and light, the later-passing lift, the red negative control with its EXIT= line, the over-budget stop with the process group gone, and the record placement - and the base and head arms are logged with their revisions and zero FAILED ids; but the enumeration contains no failing-but-collected suite, which is where the record misclassifies, and the done_when's \"writer that already exists in reckon/_store.py\" clause is unmet at this revision, as the manifest discloses.",
+    "goal": "the goal is a project-declared suite command and whole-run budget, a runner recording each run's counts at a named revision, and a hold for tier none and light; all three land at reckon/crew/standing_suite.py:148, :258 and :324 with the declaration read by reckon/flight.py, but under the repository's own declared command (-q -n 8, docs/state/reckon/flight.yaml) the recorded collected count is null and a suite that ran and failed is recorded as a collection failure, so the counts the goal names are not reliable in the declared form.",
+    "manifest": "read; it carries the base and head arms as armed JSON with zero FAILED ids on both, the head arm at a366947c with the note that cd36faeb adds only the fragment and figure, the red negative control with its verbatim first line, its FAILED id and its EXIT=1, and it discloses both deviations, the schema source and the borrowed writer.",
+    "write_paths": "the two commits touch exactly the nine changed paths and nothing else - a366947c the seven code, config and test paths, cd36faeb the fragment and the figure - with reckon/schema/flight.yaml edited beyond the eight assigned paths and disclosed, justified because the generated pair carries a generator banner and byte-parity tests against its LinkML source, so the source is the only writable end of that pair."
+  },
+  "justifications": {
+    "durability": "the collection-failure hold case is proven red by the declared mutation and the over-budget stop asserts the child pid is gone, but no test in tests/test_standing_suite.py runs a suite that collects and then fails - :99 and :116 both build a syntax error - so the misclassification at :247 is unguarded.",
+    "evidence": "the base and head arms and the red negative control are logged with revisions and ids, and tests/test_standing_suite.py re-runs at the head cd36faeb as 8 passed, EXIT=0, but the done_when's writer clause is unmet at this revision, as the manifest discloses.",
+    "fit": "the module follows the surrounding idiom (a dataclass reader in reckon/flight.py, call-time imports) and adds no ruff finding over the base (seven before, seven after, same codes), but reckon/crew/standing_suite.py:390 reaches across the package for another module's private writer and :341's two-argument form fails open.",
+    "goal_fidelity": "reckon/crew/standing_suite.py:148, :258 and :324 land the three named pieces, but under the repository's own declared -q command the recorded collected is null and a failing suite is recorded collection_failed, so the counts the goal names do not hold for the declared form.",
+    "scope_discipline": "both commits touch exactly the nine changed paths, and the one beyond the assigned eight, reckon/schema/flight.yaml, is the LinkML source whose generated pair cannot be hand-edited without failing the byte-parity tests."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a project-declared suite command and whole-run budget, a runner recording each run's counts at a named revision, and a hold for tier none and light; all three land at reckon/crew/standing_suite.py:148, :258 and :324 with the declaration read by reckon/flight.py, but under the repository's own declared command (-q -n 8, docs/state/reckon/flight.yaml) the recorded collected count is null and a suite that ran and failed is recorded as a collection failure, so the counts the goal names are not reliable in the declared form.\nVERDICT done_when: every enumerated arm is present and run - the reader's None and its refusal by name, the collection-failure hold over none and light, the later-passing lift, the red negative control with its EXIT= line, the over-budget stop with the process group gone, and the record placement - and the base and head arms are logged with their revisions and zero FAILED ids; but the enumeration contains no failing-but-collected suite, which is where the record misclassifies, and the done_when's \"writer that already exists in reckon/_store.py\" clause is unmet at this revision, as the manifest discloses.\nVERDICT write_paths: the two commits touch exactly the nine changed paths and nothing else - a366947c the seven code, config and test paths, cd36faeb the fragment and the figure - with reckon/schema/flight.yaml edited beyond the eight assigned paths and disclosed, justified because the generated pair carries a generator banner and byte-parity tests against its LinkML source, so the source is the only writable end of that pair.\nVERDICT manifest: read; it carries the base and head arms as armed JSON with zero FAILED ids on both, the head arm at a366947c with the note that cd36faeb adds only the fragment and figure, the red negative control with its verbatim first line, its FAILED id and its EXIT=1, and it discloses both deviations, the schema source and the borrowed writer.\nVERDICT diff: read commit by commit against 348688e8; a366947c adds reckon/crew/standing_suite.py, the flight reader and its schema pair, the state declaration and the gate file's eight tests, and cd36faeb adds the fragment and the figure, all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/standing_suite.py:148, :258 and :324 land the three named pieces, but under the repository's own declared -q command the recorded collected is null and a failing suite is recorded collection_failed, so the counts the goal names do not hold for the declared form.\nSCORE evidence: 15\nJUSTIFICATION evidence: the base and head arms and the red negative control are logged with revisions and ids, and tests/test_standing_suite.py re-runs at the head cd36faeb as 8 passed, EXIT=0, but the done_when's writer clause is unmet at this revision, as the manifest discloses.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both commits touch exactly the nine changed paths, and the one beyond the assigned eight, reckon/schema/flight.yaml, is the LinkML source whose generated pair cannot be hand-edited without failing the byte-parity tests.\nSCORE durability: 13\nJUSTIFICATION durability: the collection-failure hold case is proven red by the declared mutation and the over-budget stop asserts the child pid is gone, but no test in tests/test_standing_suite.py runs a suite that collects and then fails - :99 and :116 both build a syntax error - so the misclassification at :247 is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the module follows the surrounding idiom (a dataclass reader in reckon/flight.py, call-time imports) and adds no ruff finding over the base (seven before, seven after, same codes), but reckon/crew/standing_suite.py:390 reaches across the package for another module's private writer and :341's two-argument form fails open.\nFINDING reckon/crew/standing_suite.py:247 under -q, including the repository's own declared -q -n form, pytest suppresses both the \"collected N items\" line and the xdist \"[N items]\" form, so _collected at :114 returns None and collection_failed collapses to exit_status != 0: a project whose single test runs and fails is recorded collected=null, failed=1, collection_failed=true and hold_reason at :350 then takes the same branch as a true collection failure and reports the run as having failed to collect (measured: review-logs/measure-counts.log; the same suite without -q records collected=1 and collection_failed=false), so the distinction the fragment states at docs/evidence/fragments/a-review-is-sized-to-its-risk/the-suite-is-declared-and-recorded.html:93 - a failing suite is not a suite that stopped running - does not hold for the command the project declares, and collected, a count the goal names, is unmeasurable in that form.\nFINDING tests/test_standing_suite.py:99 every hold case builds a suite that cannot be collected (a syntax error) or one that passes; no case runs a suite that collects, runs and fails, so the misclassification above never reaches the gate and the collection branch is exercised for the true collection failure alone.\nFINDING reckon/crew/standing_suite.py:341 the two-argument hold_reason(project_root, tier) the done_when names resolves its project by mounting at :362 and returns None when the root's docs tree is not itself a mount, even while the latest record carries collection_failed: measured on a throwaway project, hold_reason(root, \"none\") returns None while hold_reason(root, \"none\", \"proj\") returns the hold sentence (review-logs/measure-counts-forms.log:211-214), so a checkout run outside the mount table - a worktree, a clone, a project under test - silently receives no hold rather than an error.\nFINDING reckon/crew/standing_suite.py:389 the done_when requires the record to be written through a writer that already exists in reckon/_store.py; no such writer exists at this revision, and record() writes through a call-time import of reckon.crew.runs._write_json instead - disclosed in the manifest and the fragment, and atomic, but the clause reads false to a reader checking the done-when literally and the record's durability now depends on a private helper in another package.\n",
+  "review_run_id": "r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded",
+  "reviewed_base_sha": "348688e8cfe984d3afbf2e556247c3ac9f1a8d84",
+  "reviewed_head_sha": "cd36faeb2f1805b55f46dbb7b6091287047b52b2",
+  "reviewed_run_id": "r-20260928T223146627061-the-suite-is-declared-and-recorded",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T00:12:47.390988+00:00",
+  "total": 77
+}

@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_cited_identifier_resolves.py::test_an_abbreviated_commit_sha_that_resolves_is_admitted",
+    "tests/test_cited_identifier_resolves.py::test_a_citation_naming_a_tag_is_admitted"
+  ],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (base.log, 0 failed) and after_suite (head.log, 2 failed); independent review found >=3 further added failures in promotion-reaching files the population regex excluded",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T07:30:33.738Z",
+  "dispatched_at": "2026-10-01T07:09:12Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/one-refusal-population/report.md",
+      "line": "28",
+      "severity": "blocking",
+      "text": "blocking: the population regex (crew complete|crew_complete|_complete_locked|from reckon\\.crew\\.promotion import|reckon\\.crew\\.promotion|promotion\\.complete) does not match the facade spellings crew.complete( or from reckon.crew import promotion, so tests that reach promotion through reckon/crew.py's re-export are excluded; measured over 19 such excluded promotion-named files, the head arm adds 3 failures of the same defect the report found where the base arm is 183 passed/0 failed, so the true added-failure count across the goal's population is at least 5, not 2; the regex was dispatched verbatim, so the repair is the coordinator's re-scoping or re-run rather than a worker defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "a read-only test role adds no repository diff; git diff be4f69f53 01ef8bc9 --name-status shows only reckon/crew/promotion.py (M), tests/test_one_refusal_lists_every_precondition.py (A) and an evidence fragment (A), which are the change measured, not a change the run authored.",
+    "done_when": "every enumerated step is present \u2014 the population reproduces exactly from the base tree (git grep -lE over tests/ at be4f69f53 yields the same 28 files), both arm logs head with their revision and end with a bare EXIT= line, and the manifest records baseline_suite and after_suite as JSON with completed true.",
+    "goal": "the goal asks whether merging 5bfd82b52c98bf09bedda6ea6c00922df1b082af into be4f69f53 adds any test failure across the tests that reach promotion, and the report answers it for a 28-file population (report.md:28) that excludes promotion-reaching files, so the answer is narrower than the goal it states.",
+    "manifest": "read; it records base 425 passed (base.log) and head 2 failed/426 passed (head.log), attributes both failures to 5bfd82b52c98bf09bedda6ea6c00922df1b082af, and states negative_control_log none because its write scope carries no test file.",
+    "write_paths": "the run was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/one-refusal-population and wrote only there; the reviewed worktree is clean at be4f69f53, so no repository path was touched."
+  },
+  "justifications": {
+    "durability": "the population reproduces from the base tree and both arm logs are preserved, but the instrument has a coverage hole that lets a regression through unrecorded.",
+    "evidence": "the two-arm logs are preserved and reconcile with the manifest (base.log 425 passed, head.log 2 failed/426 passed), but the population's coverage is not verified against the goal, so the recorded count supports a narrower claim than the report states.",
+    "fit": "the report is structured to the dispatched headings and the run introduces no forbidden name in its artefacts.",
+    "goal_fidelity": "the deliverable answers a 28-file population (report.md:28) rather than the goal's tests that reach promotion, and measured over 19 excluded promotion-named files the head arm adds 3 more failures the report does not count.",
+    "scope_discipline": "the run is read-only and its worktree is clean at be4f69f53, with every artefact confined to its declared report directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks whether merging 5bfd82b52c98bf09bedda6ea6c00922df1b082af into be4f69f53 adds any test failure across the tests that reach promotion, and the report answers it for a 28-file population (report.md:28) that excludes promotion-reaching files, so the answer is narrower than the goal it states.\nVERDICT done_when: every enumerated step is present \u2014 the population reproduces exactly from the base tree (git grep -lE over tests/ at be4f69f53 yields the same 28 files), both arm logs head with their revision and end with a bare EXIT= line, and the manifest records baseline_suite and after_suite as JSON with completed true.\nVERDICT write_paths: the run was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/one-refusal-population and wrote only there; the reviewed worktree is clean at be4f69f53, so no repository path was touched.\nVERDICT manifest: read; it records base 425 passed (base.log) and head 2 failed/426 passed (head.log), attributes both failures to 5bfd82b52c98bf09bedda6ea6c00922df1b082af, and states negative_control_log none because its write scope carries no test file.\nVERDICT diff: a read-only test role adds no repository diff; git diff be4f69f53 01ef8bc9 --name-status shows only reckon/crew/promotion.py (M), tests/test_one_refusal_lists_every_precondition.py (A) and an evidence fragment (A), which are the change measured, not a change the run authored.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: the deliverable answers a 28-file population (report.md:28) rather than the goal's tests that reach promotion, and measured over 19 excluded promotion-named files the head arm adds 3 more failures the report does not count.\nSCORE evidence: 15\nJUSTIFICATION evidence: the two-arm logs are preserved and reconcile with the manifest (base.log 425 passed, head.log 2 failed/426 passed), but the population's coverage is not verified against the goal, so the recorded count supports a narrower claim than the report states.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the run is read-only and its worktree is clean at be4f69f53, with every artefact confined to its declared report directory.\nSCORE durability: 16\nJUSTIFICATION durability: the population reproduces from the base tree and both arm logs are preserved, but the instrument has a coverage hole that lets a regression through unrecorded.\nSCORE fit: 18\nJUSTIFICATION fit: the report is structured to the dispatched headings and the run introduces no forbidden name in its artefacts.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/one-refusal-population/report.md:28 blocking: the population regex (crew complete|crew_complete|_complete_locked|from reckon\\.crew\\.promotion import|reckon\\.crew\\.promotion|promotion\\.complete) does not match the facade spellings crew.complete( or from reckon.crew import promotion, so tests that reach promotion through reckon/crew.py's re-export are excluded; measured over 19 such excluded promotion-named files, the head arm adds 3 failures of the same defect the report found where the base arm is 183 passed/0 failed, so the true added-failure count across the goal's population is at least 5, not 2; the regex was dispatched verbatim, so the repair is the coordinator's re-scoping or re-run rather than a worker defect.\n",
+  "review_run_id": "r-20261001T070850374667-review-of-one-refusal-population",
+  "reviewed_base_sha": "be4f69f53714069b824b6c0f1504a9d1dfce9c1c",
+  "reviewed_head_sha": "be4f69f53714069b824b6c0f1504a9d1dfce9c1c",
+  "reviewed_run_id": "r-20261001T063048951283-one-refusal-population",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T07:28:31.826030+00:00",
+  "total": 83
+}

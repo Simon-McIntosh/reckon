@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: base arm logs/gate-head.txt (revision 4e5f0a870c) and head arm logs/gate-at-commit.txt (revision 62eb59ff6) both report 132 passed / 1 failed with the identical single failure tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once, so the head set minus the base set is empty; the count is 0 and no id is added. The reviewed manifest names no baseline_suite/after_suite fields, so this count was derived by hand from those two logs rather than by the store's read-time annotation.",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": "4e5f0a870c00a33a14f63b09ac5c450ca46a4683",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T13:24:16.209Z",
+  "dispatched_at": "2026-10-01T13:16:02Z",
+  "findings": [
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "539",
+      "severity": "follow-on",
+      "text": "follow-on: the rewritten cli-row wording is asserted by no test, so a future edit can silently restore a background-and-yield dispatch instruction with the skill-contract suite still green (132 passed either way)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T125431075529-the-skill-runs-a-dispatch-in-the-foreground/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest declares no baseline_suite or after_suite fields, naming its arms only in the prose tests/test_logs fields, so the review store's read-time added-failure annotation (reckon/crew/review.py:1271) reads added_failure_count as unmeasured for this run and its total cap never applies."
+    },
+    {
+      "file": "skills/reckon-build/references/orchestrator-harness/codex-cli.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the codex host reference still carries a 'Background dispatch | partly' capability row with no foreground statement for a CLI dispatch, mirroring the wording claude-code.md just gained; it is outside this node's write paths and instructs nothing, but leaves the two host files asymmetric."
+    }
+  ],
+  "head_log_revision": "62eb59ff6399b03d6b52ba14829084fa4e2ee9f3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the change is skill markdown and an evidence fragment; no runtime code parses the launch-kind prose, and the only readers of skills/*/SKILL.md are metadata loaders (reckon/agent_context.py:399 globs SKILL.md for frontmatter, reckon/cli.py:52 and :320 check existence) that do not read the launch-kind table.",
+    "diff": "the diff 4e5f0a870c..62eb59ff6 is 5 files and +44/-12.",
+    "done_when": "the launch-kind cli row states the foreground form, claude-code.md names the follower as the session's only monitor, and the grep read finds no backgrounding instruction, recorded in the manifest and reproduced by me at 62eb59ff6.",
+    "goal": "no skill sentence instructs a coordinator to background a reckon crew dispatch; the launch-kind cli row and the three target sentences now state the foreground form.",
+    "manifest": "status complete, commit 62eb59ff6, gate 132 passed / 1 failed delta 0 against base 4e5f0a870c, the backgrounding-mentioning lines listed, but no baseline_suite/after_suite fields.",
+    "write_paths": "five paths changed, all inside the declared write paths and the permitted evidence fragment."
+  },
+  "justifications": {
+    "durability": "no assertion pins the new wording; tests/test_skill_contracts.py:1149 pins other sentences in the same skill but reverting skills/reckon-build/SKILL.md:539 to 'background the call, yield' reddens nothing, though the behaviour the text documents is guarded by tests/test_dispatch_returns_without_worker.py:791.",
+    "evidence": "the recorded gate at 62eb59ff6 (logs/gate-at-commit.txt, 132 passed / 1 failed, delta 0) pins the skill contracts but does not itself assert the done-when's grep condition; the manifest records that manual read and I reproduced `git grep -n dispatch 62eb59ff6 -- skills/` and found the backgrounding lines are the edited foreground statement plus capability rows, none instructing backgrounding.",
+    "fit": "the edits keep the surrounding skill prose's voice and the commit 'docs(skill): run a CLI dispatch in the foreground' carries a body with no attribution, plan label or version identifier.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:539 states the foreground form and the unclaimed order, and the four target sentences in sprint-orchestration.md, worker-backends.md and claude-code.md are all rewritten as section 4 specifies.",
+    "scope_discipline": "git diff --stat 4e5f0a870c..62eb59ff6 is exactly skills/reckon-build/SKILL.md, its three references, and the evidence fragment, all inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that no skill sentence instructs a coordinator to background a reckon crew dispatch and to run it in the foreground instead; skills/reckon-build/SKILL.md:539 now reads 'run it in the foreground; it returns once the supervisor is running, not waiting for the worker's spawn and claiming no order between its exit and the spawn'.\nVERDICT done_when: the done-when is the launch-kind cli row stating a foreground call returning on supervisor start with no order claimed against the spawn, claude-code.md naming the follower as the session's only monitor, and `grep -rn \"dispatch\" skills/` read line by line leaving no backgrounding instruction; the manifest records that read and its lines, and I reproduced the grep at 62eb59ff6.\nVERDICT write_paths: the four declared skill paths plus the permitted evidence fragment; git diff --stat 4e5f0a870c..62eb59ff6 is exactly those five files and nothing else.\nVERDICT manifest: read; it states status complete, commit 62eb59ff6, lists the backgrounding-mentioning lines it read, and records the gate 132 passed / 1 failed with delta 0 against base 4e5f0a870c, but it declares no baseline_suite/after_suite fields so the store's read-time added-failure derivation reads as unmeasured.\nVERDICT diff: read commit by commit against the base; the change is 5 files, +44/-12, all within the declared scope, and its substance is the four wording edits described in the goal.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:539 states the foreground form and the unclaimed order, and the four target sentences in sprint-orchestration.md, worker-backends.md and claude-code.md are all rewritten as section 4 specifies.\nSCORE evidence: 17\nJUSTIFICATION evidence: the recorded gate at 62eb59ff6 (logs/gate-at-commit.txt, 132 passed / 1 failed, delta 0) pins the skill contracts but does not itself assert the done-when's grep condition; the manifest records that manual read and I reproduced `git grep -n dispatch 62eb59ff6 -- skills/` and found the backgrounding lines are the edited foreground statement plus capability rows, none instructing backgrounding.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4e5f0a870c..62eb59ff6 is exactly skills/reckon-build/SKILL.md, its three references, and docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-skill-runs-a-dispatch-in-the-foreground.html, all inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: no assertion pins the new wording; tests/test_skill_contracts.py:1149 pins other sentences in the same skill but reverting skills/reckon-build/SKILL.md:539 to 'background the call, yield' reddens nothing, though the behaviour the text documents is guarded by tests/test_dispatch_returns_without_worker.py:791.\nSCORE fit: 19\nJUSTIFICATION fit: the edits keep the surrounding skill prose's voice and the commit 'docs(skill): run a CLI dispatch in the foreground' carries a body with no attribution, plan label or version identifier.\nFINDING skills/reckon-build/SKILL.md:539 follow-on: the rewritten cli-row wording is asserted by no test, so a future edit can silently restore a background-and-yield dispatch instruction with the skill-contract suite still green (132 passed either way).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T125431529-the-skill-runs-a-dispatch-in-the-foreground/manifest.md:1 follow-on: the reviewed manifest declares no baseline_suite or after_suite fields, naming its arms only in the prose tests/test_logs fields, so the review store's read-time added-failure annotation (reckon/crew/review.py:1271) reads added_failure_count as unmeasured for this run and its total cap never applies.\nFINDING skills/reckon-build/references/orchestrator-harness/codex-cli.md:18 follow-on: the codex host reference still carries a 'Background dispatch | partly' capability row with no foreground statement for a CLI dispatch, mirroring the wording claude-code.md just gained; it is outside this node's write paths and instructs nothing, but leaves the two host files asymmetric.",
+  "review_run_id": "r-20261001T131543921861-review-of-the-skill-runs-a-dispatch-in-the-foreground",
+  "reviewed_base_sha": "4e5f0a870c00a33a14f63b09ac5c450ca46a4683",
+  "reviewed_head_sha": "62eb59ff6399b03d6b52ba14829084fa4e2ee9f3",
+  "reviewed_run_id": "r-20261001T125431075529-the-skill-runs-a-dispatch-in-the-foreground",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.607637+00:00",
+  "total": 88
+}

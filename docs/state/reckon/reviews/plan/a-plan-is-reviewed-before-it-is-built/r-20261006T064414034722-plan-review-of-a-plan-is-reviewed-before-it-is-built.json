@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:49:35.003Z",
+  "dispatched_at": "2026-10-06T06:44:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:510",
+      "id": "duplicate_owner-1",
+      "reason": "the author must state which mechanism computes the verdict and define the no-snapshot behaviour, or the two open sections land a predicate whose two owners disagree.",
+      "text": "\u00a721 has the coverage predicate recompute the unit digests from the stored review's own snapshot and \"fall back to the stored digests only when the snapshot is missing\", while \u00a722 redefines coverage as a prose-similarity threshold measured \"against the reviewed snapshot that \u00a721 reads\"; both edit the one `_review_coverage`, and \u00a722 never states what the threshold does on the \u00a721 fallback path where the stored digests exist but the snapshot does not, so the predicate ships with two coverage mechanisms and an undefined no-snapshot case",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5d647f56b407e9d6d6730dfca903e4665876df12a6d4950e59f90f84c02788d5",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 178,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T064414034722-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "3496d0965208afb3bbf2911e1c36ce3572bf2bfe",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716's `section_prose` on `reckon/_plan_html.py` hides one parse, the span rule, the landed-card mode, entity decoding and whitespace collapse behind a single reader, and it replaces the interim slicer and `_AuthoredProseParser` rather than layering over them.",
+    "duplicate_owner": "a finding \u2014 \u00a721 and \u00a722 each add a snapshot-based coverage mechanism to the same predicate `_review_coverage`, and \u00a722's prose-similarity measure leaves \u00a721's stored-digest fallback (the no-snapshot case) with no prose to compare.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; every open section carries an interface-accounting paragraph naming what it retires or merges (\u00a716 retires the interim `strip_tags` and the slicer for one `section_prose`; \u00a722 retires `plan_review_settle_seconds` for `plan_review_settings`; \u00a723 retires the private `_store_delivered_plan_review` for one public `store_delivered_reviews`; \u00a721 adds none) and none adds to cli_options, mcp_views or refusal_families.",
+    "reuse_search": "pass \u2014 every proposed mechanism names the existing mechanism it extends (`_section_digests`, `list_plan_reviews`, `roadmap.implementable_sections`, `review_report_directory`, `store_delivered_report`, `_TAG_RE`/`_PROSE_SKIP_TAGS`), and each census it cites reproduces against the tree (14 `get_text` sites, two `\"plan-review\"` spellings, one `_store_delivered_plan_review`).",
+    "thin_wrapper": "pass \u2014 the two additions that could be thin wrappers justify themselves: \u00a723's public `store_delivered_reviews` is a hoist of the one store loop (not a second path) made public because `reckon/cli.py` calls it across a package boundary, and \u00a716's `section_prose` deletes the machinery it would otherwise wrap."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "26ca19409dda668832f554406818ad8b98561beb0262bc1b48b017f4fd98efe7",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "80a6a0059aee47aef152d7e22d75a673cdd56ccdbb155c85aaf6868874ab368d",
+    "s22": "0d179320da16ea25bd04dcadc260d12243ff41cc52b7e7f67bc485e929737c52",
+    "s23": "d5923a18f9f600d2f9d1b10ce797bf2b5ce80a57c5b5544c167824fd936b4515",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:22:13.024201+00:00"
+}

@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:4003",
+    "reckon/crew/recovery.py:7389"
+  ],
+  "completed_at": "2026-10-02T01:54:51.954Z",
+  "dispatched_at": "2026-10-02T01:48:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "7389",
+      "severity": "follow-on",
+      "text": "follow-on: the record lands in the shared crew_home()/watch/senders.jsonl because path.parent is the watch directory common to every project, and the record carries no project, so a watcher stop on a host with several registered projects cannot be attributed to the project whose registration names the signalled pid."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T013653567853-unwatch-leaves-a-sender-record/base-arms.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the arm logs open with \"rev <sha>\", where review.recorded_log_revision looks for \"revision\", so review.annotate_review_of_run records base_log_revision and head_log_revision as None and the added-failure count it derives (0, correctly) cannot be tied to a commit from either log, unlike the sibling node's \"revision <sha>\" headers."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read c1e0d6a0 against base f91fa54e; reckon/crew/recovery.py +7 adds one _write_sender_record call before the signal, tests/test_unwatch_leaves_a_sender_record.py +166, the evidence fragment +26; no other file changes.",
+    "done_when": "the done_when names tests/test_unwatch_leaves_a_sender_record.py; the manifest records 2 passed EXIT=0 (head-unwatch.log) and I reproduced 2 passed EXIT=0 here, and the test reads the record at the instant of signalling, asserting it exists, names the live producer pid and reason=\"unwatch\", and that the producer was still alive at the signal.",
+    "goal": "the node's goal is that crew unwatch writes a sender record beside the watcher registration before it signals the producer; reckon/crew/recovery.py:7389 calls routing._write_sender_record(path.parent, target_pid=pid, reason=\"unwatch\") immediately before _signal_process_group in unwatch, and path.parent is the directory holding the watch registration, so the goal is met.",
+    "manifest": "read; status complete, naming the write, its site, the gate, the negative control and the base/head arms with their machine-readable baseline_suite and after_suite JSON; both arm logs open with the token \"rev\", which review.recorded_log_revision does not match, so their recorded revision reads as None.",
+    "write_paths": "the declared paths are reckon/crew/recovery.py, tests/test_unwatch_leaves_a_sender_record.py and the evidence fragment; git show --stat c1e0d6a0 touches exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared negative control removes the write and test_unwatch_writes_a_sender_record_before_it_signals reddens on \"no sender record on disk when unwatch signalled the producer\" (negative-control-unwatch.log, 1 failed 1 passed, EXIT=1), so the guard is verified by reinstating the regression and the record assertion does not move with the value under test.",
+    "evidence": "the gate tests/test_unwatch_leaves_a_sender_record.py asserts the done_when measure and its result is recorded in head-unwatch.log and reproduced here (2 passed EXIT=0), but base-arms.log and head-arms.log open with \"rev\", which review.recorded_log_revision does not recognise, so the added-failure count cannot be tied to a commit from the logs.",
+    "fit": "recovery.py:7389 mirrors the existing pre-signal _write_sender_record calls at recovery.py:862 and recovery.py:3040, routing.SENDER_RECORD_NAME holds the filename, and no added name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "recovery.py:7389 writes the record through routing._write_sender_record into the watch registration's directory before unwatch signals, doing exactly what the goal states; the record carries no project field, so attributing a watcher stop to a project on a multi-project host rests on the pid alone.",
+    "scope_discipline": "git show --stat c1e0d6a0 lists exactly the three declared paths and the recovery.py change is a single pre-signal call, carrying nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew unwatch writes a sender record beside the watcher registration before it signals the producer; reckon/crew/recovery.py:7389 calls routing._write_sender_record(path.parent, target_pid=pid, reason=\"unwatch\") immediately before _signal_process_group in unwatch, and path.parent is the directory holding the watch registration, so the goal is met.\nVERDICT done_when: the done_when names tests/test_unwatch_leaves_a_sender_record.py; the manifest records 2 passed EXIT=0 (head-unwatch.log) and I reproduced 2 passed EXIT=0 here, and the test reads the record at the instant of signalling, asserting it exists, names the live producer pid and reason=\"unwatch\", and that the producer was still alive at the signal.\nVERDICT write_paths: the declared paths are reckon/crew/recovery.py, tests/test_unwatch_leaves_a_sender_record.py and the evidence fragment; git show --stat c1e0d6a0 touches exactly those three files and nothing else.\nVERDICT manifest: read; status complete, naming the write, its site, the gate, the negative control and the base/head arms with their machine-readable baseline_suite and after_suite JSON; both arm logs open with the token \"rev\", which review.recorded_log_revision does not match, so their recorded revision reads as None.\nVERDICT diff: read c1e0d6a0 against base f91fa54e; reckon/crew/recovery.py +7 adds one _write_sender_record call before the signal, tests/test_unwatch_leaves_a_sender_record.py +166, the evidence fragment +26; no other file changes.\nCALL_SITES: reckon/cli.py:4003, reckon/crew/recovery.py:7389\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: recovery.py:7389 writes the record through routing._write_sender_record into the watch registration's directory before unwatch signals, doing exactly what the goal states; the record carries no project field, so attributing a watcher stop to a project on a multi-project host rests on the pid alone.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate tests/test_unwatch_leaves_a_sender_record.py asserts the done_when measure and its result is recorded in head-unwatch.log and reproduced here (2 passed EXIT=0), but base-arms.log and head-arms.log open with \"rev\", which review.recorded_log_revision does not recognise, so the added-failure count cannot be tied to a commit from the logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat c1e0d6a0 lists exactly the three declared paths and the recovery.py change is a single pre-signal call, carrying nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control removes the write and test_unwatch_writes_a_sender_record_before_it_signals reddens on \"no sender record on disk when unwatch signalled the producer\" (negative-control-unwatch.log, 1 failed 1 passed, EXIT=1), so the guard is verified by reinstating the regression and the record assertion does not move with the value under test.\nSCORE fit: 18\nJUSTIFICATION fit: recovery.py:7389 mirrors the existing pre-signal _write_sender_record calls at recovery.py:862 and recovery.py:3040, routing.SENDER_RECORD_NAME holds the filename, and no added name carries a plan, sprint or ticket identifier.\nFINDING reckon/crew/recovery.py:7389 follow-on: the record lands in the shared crew_home()/watch/senders.jsonl because path.parent is the watch directory common to every project, and the record carries no project, so a watcher stop on a host with several registered projects cannot be attributed to the project whose registration names the signalled pid.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T013653567853-unwatch-leaves-a-sender-record/base-arms.log:1 follow-on: the arm logs open with \"rev <sha>\", where review.recorded_log_revision looks for \"revision\", so review.annotate_review_of_run records base_log_revision and head_log_revision as None and the added-failure count it derives (0, correctly) cannot be tied to a commit from either log, unlike the sibling node's \"revision <sha>\" headers.",
+  "review_run_id": "r-20261002T014803396556-review-of-unwatch-leaves-a-sender-record",
+  "reviewed_base_sha": "f91fa54eeb9248f7e9e02b715a361fa93edbdfa1",
+  "reviewed_head_sha": "c1e0d6a0ead02f24d4c91c3ed31bac3d410f9f9a",
+  "reviewed_run_id": "r-20261002T013653567853-unwatch-leaves-a-sender-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T01:53:47.140966+00:00",
+  "total": 92
+}

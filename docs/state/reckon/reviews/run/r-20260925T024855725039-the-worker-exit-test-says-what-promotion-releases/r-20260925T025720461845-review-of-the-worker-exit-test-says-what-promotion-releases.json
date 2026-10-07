@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T02:57:20.461845+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit at 80894c66 over base a67f800a, one docs commit: the test file's docstring lines 4-9 only, no code line and no test body, the evidence and plan additions are additive with zero deletions and leave the plan-* meta lines untouched; its body cites \"_promotion_worker_exit\", but reckon/crew/promotion.py:597 defines _promoted_worker_exit, so the citation resolves to no symbol.",
+    "done_when": "both arms re-ran at reviewed head 80894c66 from the reviewed worktree: the grep for \"released at promotion, so the ledger row is the only record that outlives the\" returns nothing at 80894c66 and line 5 of base a67f800a's copy as positive control, and tests/test_promotion_keeps_the_worker_exit.py runs 2 passed with exit 0.",
+    "goal": "the node's goal, \"The worker-exit test module's docstring states what promotion actually releases\", is met at tests/test_promotion_keeps_the_worker_exit.py:4-9, where the repaired sentence is verbatim (whitespace-normalised) from reckon/crew/promotion.py:601-603 and factually holds: promotion deletes the live pointer and removes the worktree, and crew gc prunes run directories past a retention window at reckon/crew/routing.py:718-729.",
+    "manifest": "read at the run directory; its test-run.log header names rev a67f800a, the worktree and the pytest command with 2 passed, and grep-docstring.log shows the phrase at HEAD line 5 against no hits in the working tree; both reproduced independently.",
+    "write_paths": "the dispatch declares four paths; the commit touches three of them, tests/test_promotion_keeps_the_worker_exit.py, docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html and docs/plans/a-dispatch-returns-without-its-worker.html, and no other path in the tree."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_keeps_the_worker_exit.py:143-171 and :174-196 fail if promotion stops copying exit.json or writes an empty worker_exit key, the behaviour the docstring documents, but no test fails if the docstring itself drifts back to the repaired overstatement.",
+    "evidence": "the grep receipt and the 2-passed test log sit in the run directory and both reproduce at 80894c66, but grep-docstring.log's header names no revision sha, so a reader must take its \"HEAD\" on trust where test-run.log stamps rev=a67f800a.",
+    "fit": "the paragraph mirrors reckon/crew/promotion.py:601-603's wording and the file's double-backtick idiom, the plan record follows the section's landed-heading pattern, the file is ruff-clean at both revisions, and the commit body's only blemish is the wrong symbol recorded in the diff verdict.",
+    "goal_fidelity": "tests/test_promotion_keeps_the_worker_exit.py:4-9 states the same fact as reckon/crew/promotion.py:601-603 word for word, and that fact matches the release path and crew gc.",
+    "scope_discipline": "all three changed paths are inside the dispatch's four declared write paths, the two docs edits are additive (numstat +20/-0 and +22/-0) and leave the plan-* metas alone, and the worktree is clean at 80894c66."
+  },
+  "node": "review-of-the-worker-exit-test-says-what-promotion-releases",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal, \"The worker-exit test module's docstring states what promotion actually releases\", is met at tests/test_promotion_keeps_the_worker_exit.py:4-9, where the repaired sentence is verbatim (whitespace-normalised) from reckon/crew/promotion.py:601-603 and factually holds: promotion deletes the live pointer and removes the worktree, and crew gc prunes run directories past a retention window at reckon/crew/routing.py:718-729.\nVERDICT done_when: both arms re-ran at reviewed head 80894c66 from the reviewed worktree: the grep for \"released at promotion, so the ledger row is the only record that outlives the\" returns nothing at 80894c66 and line 5 of base a67f800a's copy as positive control, and tests/test_promotion_keeps_the_worker_exit.py runs 2 passed with exit 0.\nVERDICT write_paths: the dispatch declares four paths; the commit touches three of them, tests/test_promotion_keeps_the_worker_exit.py, docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html and docs/plans/a-dispatch-returns-without-its-worker.html, and no other path in the tree.\nVERDICT manifest: read at the run directory; its test-run.log header names rev a67f800a, the worktree and the pytest command with 2 passed, and grep-docstring.log shows the phrase at HEAD line 5 against no hits in the working tree; both reproduced independently.\nVERDICT diff: read commit by commit at 80894c66 over base a67f800a, one docs commit: the test file's docstring lines 4-9 only, no code line and no test body, the evidence and plan additions are additive with zero deletions and leave the plan-* meta lines untouched; its body cites \"_promotion_worker_exit\", but reckon/crew/promotion.py:597 defines _promoted_worker_exit, so the citation resolves to no symbol.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_promotion_keeps_the_worker_exit.py:4-9 states the same fact as reckon/crew/promotion.py:601-603 word for word, and that fact matches the release path and crew gc.\nSCORE evidence: 17\nJUSTIFICATION evidence: the grep receipt and the 2-passed test log sit in the run directory and both reproduce at 80894c66, but grep-docstring.log's header names no revision sha, so a reader must take its \"HEAD\" on trust where test-run.log stamps rev=a67f800a.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three changed paths are inside the dispatch's four declared write paths, the two docs edits are additive (numstat +20/-0 and +22/-0) and leave the plan-* metas alone, and the worktree is clean at 80894c66.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_promotion_keeps_the_worker_exit.py:143-171 and :174-196 fail if promotion stops copying exit.json or writes an empty worker_exit key, the behaviour the docstring documents, but no test fails if the docstring itself drifts back to the repaired overstatement.\nSCORE fit: 19\nJUSTIFICATION fit: the paragraph mirrors reckon/crew/promotion.py:601-603's wording and the file's double-backtick idiom, the plan record follows the section's landed-heading pattern, the file is ruff-clean at both revisions, and the commit body's only blemish is the wrong symbol recorded in the diff verdict.\n",
+  "review_run_id": "r-20260925T025720461845-review-of-the-worker-exit-test-says-what-promotion-releases",
+  "reviewed_base_sha": "a67f800a1aa09aabc94b1a036908b0bdefaf8087",
+  "reviewed_head_sha": "80894c66d61c114836ecd09ae015a62e06d7901f",
+  "reviewed_run_id": "r-20260925T024855725039-the-worker-exit-test-says-what-promotion-releases",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T03:22:49.109412+00:00",
+  "total": 88
+}

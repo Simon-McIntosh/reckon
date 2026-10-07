@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:1919",
+    "reckon/cli.py:2629",
+    "reckon/cli.py:3527"
+  ],
+  "completed_at": "2026-09-29T08:09:25.706Z",
+  "dispatched_at": "2026-09-29T07:16:32Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 89890b94: 87adfa8c adds the observed-end guard and the two-case test file, a953cd99 gives twelve existing lift fixtures an observed end additively (an optional observed_end argument, _absent_pid, a socket import, no assertion touched), a7adda17 adds the fragment and its figure, and 0a656208 edits only the fragment's text.",
+    "done_when": "the declared measure - the new file failing at the base revision on its unknown-liveness case, a negative control restoring the old guard and reddening it, both arms recorded with revisions, commands, exit statuses and failure ids - holds: my own base-tree re-run of the landed test is 1 failed, 1 passed with 'r-unobserved-liveness' in the sweep's resumed list (rerun-base.log), the head re-run is 2 passed (rerun-head.log), and the red log's first line repeats the dispatched mutation verbatim with EXIT=1 after pytest's output.",
+    "goal": "the goal is that the resume sweep lifts a run only once something observed the worker end, read through the three-way vocabulary the row already states; _observed_end_refusal (reckon/crew/resumption.py:607) composes the reading from local_liveness, _run_exit_record and _process_reading and refuses every reading but 'process gone', sweep consults it at reckon/crew/resumption.py:1244 ahead of both modes, and my re-run of tests/test_resume_sweep_needs_an_observed_death.py at the reviewed head is 0 failed, 2 passed, EXIT=0.",
+    "manifest": "read; it names the four commits, both arms as JSON objects carrying revision, command, exit_status, one log_path and twelve failure ids each, and the twelve fixture repairs recorded one call site at a time with the claim that no assertion was deleted and no expectation flipped, which I checked by reading the fixture diff.",
+    "write_paths": "the dispatch fenced four paths, and the resume advice extended them by the seven fixture files; git diff --name-only 89890b94..0a656208 lists exactly those eleven paths - reckon/crew/resumption.py, the new test, the seven repaired test files, and the evidence fragment with its figure - and nothing else."
+  },
+  "justifications": {
+    "durability": "removing the observed-end gate reddens tests/test_resume_sweep_needs_an_observed_death.py:238 with 'r-unobserved-liveness' in the lifted list, which the run's own negative control log shows and my base-tree re-run reproduces, and the case compares the sweep's output against fixture run-id constants rather than values the test handed to the code under test.",
+    "evidence": "both arms are the run's own logs ending in EXIT= lines with twelve identical failure ids (my derivation from base-arm.log and after-suite-repaired.log through added_failures_from_gate_logs is 0, []), the case reproduces independently at both trees, and the one step of reader work left is that the head arm is recorded at a953cd99 rather than the delivered head 0a656208, between which only the evidence fragment changed.",
+    "fit": "the guard reads liveness through recovery.py:3502 local_liveness and recovery.py:3140 _process_reading instead of a second reader, its refusal flows through the existing refusal entry so both sweep modes word it identically, and no added symbol, comment or commit message carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/resumption.py:607-658 composes the lift's reading through local_liveness, _run_exit_record and _process_reading and withholds the lift on every reading but 'process gone', naming 'liveness unknown' and 'nothing observed the end the lift would rest on' in the refusal exactly as the goal requires.",
+    "scope_discipline": "every path in git diff --name-only 89890b94..0a656208 is one of the four dispatched write paths or one of the seven the resume advice added before a953cd99, and the fixture repairs are what the guard's strictness made necessary rather than work the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the resume sweep lifts a run only once something observed the worker end, read through the three-way vocabulary the row already states; _observed_end_refusal (reckon/crew/resumption.py:607) composes the reading from local_liveness, _run_exit_record and _process_reading and refuses every reading but 'process gone', sweep consults it at reckon/crew/resumption.py:1244 ahead of both modes, and my re-run of tests/test_resume_sweep_needs_an_observed_death.py at the reviewed head is 0 failed, 2 passed, EXIT=0.\nVERDICT done_when: the declared measure - the new file failing at the base revision on its unknown-liveness case, a negative control restoring the old guard and reddening it, both arms recorded with revisions, commands, exit statuses and failure ids - holds: my own base-tree re-run of the landed test is 1 failed, 1 passed with 'r-unobserved-liveness' in the sweep's resumed list (rerun-base.log), the head re-run is 2 passed (rerun-head.log), and the red log's first line repeats the dispatched mutation verbatim with EXIT=1 after pytest's output.\nVERDICT write_paths: the dispatch fenced four paths, and the resume advice extended them by the seven fixture files; git diff --name-only 89890b94..0a656208 lists exactly those eleven paths - reckon/crew/resumption.py, the new test, the seven repaired test files, and the evidence fragment with its figure - and nothing else.\nVERDICT manifest: read; it names the four commits, both arms as JSON objects carrying revision, command, exit_status, one log_path and twelve failure ids each, and the twelve fixture repairs recorded one call site at a time with the claim that no assertion was deleted and no expectation flipped, which I checked by reading the fixture diff.\nVERDICT diff: read commit by commit against 89890b94: 87adfa8c adds the observed-end guard and the two-case test file, a953cd99 gives twelve existing lift fixtures an observed end additively (an optional observed_end argument, _absent_pid, a socket import, no assertion touched), a7adda17 adds the fragment and its figure, and 0a656208 edits only the fragment's text.\nCALL_SITES: reckon/cli.py:1919, reckon/cli.py:2629, reckon/cli.py:3527\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:607-658 composes the lift's reading through local_liveness, _run_exit_record and _process_reading and withholds the lift on every reading but 'process gone', naming 'liveness unknown' and 'nothing observed the end the lift would rest on' in the refusal exactly as the goal requires.\nSCORE evidence: 19\nJUSTIFICATION evidence: both arms are the run's own logs ending in EXIT= lines with twelve identical failure ids (my derivation from base-arm.log and after-suite-repaired.log through added_failures_from_gate_logs is 0, []), the case reproduces independently at both trees, and the one step of reader work left is that the head arm is recorded at a953cd99 rather than the delivered head 0a656208, between which only the evidence fragment changed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-only 89890b94..0a656208 is one of the four dispatched write paths or one of the seven the resume advice added before a953cd99, and the fixture repairs are what the guard's strictness made necessary rather than work the goal does not imply.\nSCORE durability: 20\nJUSTIFICATION durability: removing the observed-end gate reddens tests/test_resume_sweep_needs_an_observed_death.py:238 with 'r-unobserved-liveness' in the lifted list, which the run's own negative control log shows and my base-tree re-run reproduces, and the case compares the sweep's output against fixture run-id constants rather than values the test handed to the code under test.\nSCORE fit: 20\nJUSTIFICATION fit: the guard reads liveness through recovery.py:3502 local_liveness and recovery.py:3140 _process_reading instead of a second reader, its refusal flows through the existing refusal entry so both sweep modes word it identically, and no added symbol, comment or commit message carries a plan or ticket identifier.\n",
+  "review_run_id": "r-20260929T071618224126-review-of-resume-sweep-needs-an-observed-death",
+  "reviewed_base_sha": "89890b949a10a5baf16ac2a7d68409c1e1122118",
+  "reviewed_head_sha": "0a656208dae7261116c1be2576f28a255c903836",
+  "reviewed_run_id": "r-20260929T055030354322-resume-sweep-needs-an-observed-death",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T07:56:35.980951+00:00",
+  "total": 99
+}

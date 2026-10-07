@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3546",
+    "reckon/crew/promotion.py:3570",
+    "reckon/crew/reports.py:1084"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T16:11:33.582427+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T155613014205-a-reclaimed-worktree-does-not-become-its-own-repository/negative_control.log",
+      "line": "1",
+      "text": "the red log's first line is \"declared mutation: reckon/crew/promotion.py _outside_declared_scope resolves declared paths with worktree=tree instead of worktree=_scope_worktree(record, tree)\", a code-level restatement, while the node declares \"restore promotion resolving the recorded worktree as the repository when that worktree is absent, so a reclaimed run compares changed paths against the wrong root\"; the declared string occurs nowhere in the log and promotion's own _require_declared_negative_control, run on this run's pointer and manifest, raises CrewError (\"does not name it, so the log is a failure for some other reason\"), so the run is refused at promotion or needs --waive-negative-control even though the mutation was applied and did redden six cases."
+    },
+    {
+      "file": "docs/plans/work-does-not-fall-to-the-coordinator.html",
+      "line": "923",
+      "text": "the landing record claims \"the mutation is verbatim on negative_control.log's first line\"; the claim is false on the same evidence, and a false verbatim claim in the plan is what a later reader of this run checks against \u2014 the same shape this plan's earlier review already caught once."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "306",
+      "text": "the manifest template requires the red log's first line to repeat the declared mutation verbatim while the dispatch prompt the worker receives never carries the declaration itself; the reviewed node's prompt.txt contains only the requirement, so the writer cannot satisfy it except by inventing wording, which is what this run did \u2014 the same late-refusal shape this section exists to remove, one field along."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 34f7f5f3; 7287b129 adds _scope_worktree plus its use at both scope surfaces and the nine reclaimed cases, and 1aea8c49 carries only the plan landing record, the evidence anchor and the figure, insert-only.",
+    "done_when": "two of its three clauses hold and the third does not \u2014 the reclaimed cases exist and the declared mutation reddens exactly the six reclaimed ones (negative_control.log: 26 cases, 6 failed, the pre-existing cases green), the cohort is 1 failed 68 passed at head against 1 failed 59 passed at base with the same single failure id, but the clause \"the red log is recorded in the run directory with the mutation verbatim on its first line\" fails: the declared mutation is not in the log, and promotion's own guard refuses the log on that ground (finding below).",
+    "goal": "the node's goal is that promotion stop resolving a reclaimed run's declaration against the repository once its worktree is gone; reckon/crew/promotion.py:1010 adds _scope_worktree, used at promotion.py:1036 and promotion.py:1070, returning the record's recorded worktree whether or not it exists, and the two recorded reproductions bracket the change: at base 34f7f5f3 \"promotion outside: ['docs/figures/x/scope.svg'] / AGREE: False\" (repro-reclaimed-scope.log) against \"promotion outside: [] / AGREE: True\" at the head (repro-reclaimed-scope-head.log).",
+    "manifest": "read; it records status complete, commits 7287b129 and 1aea8c49, the focused gate at 26 passed and the cohort at 1 failed 68 passed against base 1 failed 59 passed, the honest note that six red cases are the new ones, and negative_control_log as a bare path; baseline_suite and after_suite are absent and the pointer's suite_command is null, so the armed-only fields are not required here.",
+    "write_paths": "numstat 34f7f5f3..1aea8c49 lists exactly the five declared paths \u2014 reckon/crew/promotion.py 20/2, tests/test_write_scope_agreement.py 130/0, docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html 83/0, docs/figures/work-does-not-fall-to-the-coordinator/reclaimed-worktree-resolution.svg 71/0, docs/plans/work-does-not-fall-to-the-coordinator.html 3/0 \u2014 with the source change confined to _scope_worktree and its two call sites."
+  },
+  "justifications": {
+    "durability": "tests/test_write_scope_agreement.py reddens six cases under the declared mutation (falsified, not asserted), but _reclaimed_promotion_accepts reproduces production's tree fallback inside the test and calls _outside_declared_scope directly rather than entering at promotion.py:3546, so a caller that stopped passing the live record would restore the defect with the file green.",
+    "evidence": "the focused and cohort results are recorded and match their logs, but the done-when's verbatim-negative-control clause is unmet and the plan's landing record asserts it holds, so one third of the stated measure is claimed rather than shown.",
+    "fit": "_scope_worktree follows promotion.py's existing idiom for reading the record (path.py:1109, promotion.py:1162, promotion.py:3417), carries a mechanism docstring, and introduces no plan, sprint or ticket name.",
+    "goal_fidelity": "reckon/crew/promotion.py:1010 resolves the declaration against the record's worktree, which is the authority the write-time surface already used at reckon/crew/reports.py:1086, so the two scope surfaces agree for a reclaimed run as the goal states.",
+    "scope_discipline": "git diff --numstat 34f7f5f3..1aea8c49 lists exactly the five declared paths, the three docs additions are insert-only, and no plan-version or plan-modified line is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that promotion stop resolving a reclaimed run's declaration against the repository once its worktree is gone; reckon/crew/promotion.py:1010 adds _scope_worktree, used at promotion.py:1036 and promotion.py:1070, returning the record's recorded worktree whether or not it exists, and the two recorded reproductions bracket the change: at base 34f7f5f3 \"promotion outside: ['docs/figures/x/scope.svg'] / AGREE: False\" (repro-reclaimed-scope.log) against \"promotion outside: [] / AGREE: True\" at the head (repro-reclaimed-scope-head.log).\nVERDICT done_when: two of its three clauses hold and the third does not \u2014 the reclaimed cases exist and the declared mutation reddens exactly the six reclaimed ones (negative_control.log: 26 cases, 6 failed, the pre-existing cases green), the cohort is 1 failed 68 passed at head against 1 failed 59 passed at base with the same single failure id, but the clause \"the red log is recorded in the run directory with the mutation verbatim on its first line\" fails: the declared mutation is not in the log, and promotion's own guard refuses the log on that ground (finding below).\nVERDICT write_paths: numstat 34f7f5f3..1aea8c49 lists exactly the five declared paths \u2014 reckon/crew/promotion.py 20/2, tests/test_write_scope_agreement.py 130/0, docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html 83/0, docs/figures/work-does-not-fall-to-the-coordinator/reclaimed-worktree-resolution.svg 71/0, docs/plans/work-does-not-fall-to-the-coordinator.html 3/0 \u2014 with the source change confined to _scope_worktree and its two call sites.\nVERDICT manifest: read; it records status complete, commits 7287b129 and 1aea8c49, the focused gate at 26 passed and the cohort at 1 failed 68 passed against base 1 failed 59 passed, the honest note that six red cases are the new ones, and negative_control_log as a bare path; baseline_suite and after_suite are absent and the pointer's suite_command is null, so the armed-only fields are not required here.\nVERDICT diff: read commit by commit against 34f7f5f3; 7287b129 adds _scope_worktree plus its use at both scope surfaces and the nine reclaimed cases, and 1aea8c49 carries only the plan landing record, the evidence anchor and the figure, insert-only.\nCALL_SITES: reckon/crew/promotion.py:3546, reckon/crew/promotion.py:3570, reckon/crew/reports.py:1084\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1010 resolves the declaration against the record's worktree, which is the authority the write-time surface already used at reckon/crew/reports.py:1086, so the two scope surfaces agree for a reclaimed run as the goal states.\nSCORE evidence: 14\nJUSTIFICATION evidence: the focused and cohort results are recorded and match their logs, but the done-when's verbatim-negative-control clause is unmet and the plan's landing record asserts it holds, so one third of the stated measure is claimed rather than shown.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 34f7f5f3..1aea8c49 lists exactly the five declared paths, the three docs additions are insert-only, and no plan-version or plan-modified line is touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_write_scope_agreement.py reddens six cases under the declared mutation (falsified, not asserted), but _reclaimed_promotion_accepts reproduces production's tree fallback inside the test and calls _outside_declared_scope directly rather than entering at promotion.py:3546, so a caller that stopped passing the live record would restore the defect with the file green.\nSCORE fit: 19\nJUSTIFICATION fit: _scope_worktree follows promotion.py's existing idiom for reading the record (path.py:1109, promotion.py:1162, promotion.py:3417), carries a mechanism docstring, and introduces no plan, sprint or ticket name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T155613014205-a-reclaimed-worktree-does-not-become-its-own-repository/negative_control.log:1 the red log's first line is \"declared mutation: reckon/crew/promotion.py _outside_declared_scope resolves declared paths with worktree=tree instead of worktree=_scope_worktree(record, tree)\", a code-level restatement, while the node declares \"restore promotion resolving the recorded worktree as the repository when that worktree is absent, so a reclaimed run compares changed paths against the wrong root\"; the declared string occurs nowhere in the log and promotion's own _require_declared_negative_control, run on this run's pointer and manifest, raises CrewError (\"does not name it, so the log is a failure for some other reason\"), so the run is refused at promotion or needs --waive-negative-control even though the mutation was applied and did redden six cases.\nFINDING docs/plans/work-does-not-fall-to-the-coordinator.html:923 the landing record claims \"the mutation is verbatim on negative_control.log's first line\"; the claim is false on the same evidence, and a false verbatim claim in the plan is what a later reader of this run checks against \u2014 the same shape this plan's earlier review already caught once.\nFINDING reckon/crew/prompts.py:306 the manifest template requires the red log's first line to repeat the declared mutation verbatim while the dispatch prompt the worker receives never carries the declaration itself; the reviewed node's prompt.txt contains only the requirement, so the writer cannot satisfy it except by inventing wording, which is what this run did \u2014 the same late-refusal shape this section exists to remove, one field along.\nREVISION: 1aea8c4993beb009e81f5ee1c6fb9f751ff239d7\n",
+  "review_run_id": "r-20260922T161133582427-review-of-a-reclaimed-worktree-does-not-become-its-own-repository",
+  "reviewed_base_sha": "34f7f5f370570cb6a8195b342c2717ab2ae9f146",
+  "reviewed_head_sha": "1aea8c4993beb009e81f5ee1c6fb9f751ff239d7",
+  "reviewed_revision": "1aea8c4993beb009e81f5ee1c6fb9f751ff239d7",
+  "reviewed_run_id": "r-20260922T155613014205-a-reclaimed-worktree-does-not-become-its-own-repository",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T16:40:58.050075+00:00",
+  "total": 88
+}

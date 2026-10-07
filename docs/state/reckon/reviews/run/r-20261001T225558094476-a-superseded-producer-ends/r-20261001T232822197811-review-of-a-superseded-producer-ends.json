@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:8504"
+  ],
+  "completed_at": "2026-10-01T23:48:17.083Z",
+  "dispatched_at": "2026-10-01T23:28:42Z",
+  "findings": [
+    {
+      "file": "tests/test_producer_registration_survives_unlink.py",
+      "line": "107",
+      "severity": "follow-on",
+      "text": "follow-on: the two arms are invoked on slightly different commands -- the base arm carries `-p no:cacheprovider` and the head arm drops it, and neither the gate.txt nor the head crossing carries a `module.__file__` line at the head revision (only the base extraction names one). Neither changes the measured result (5 vs 6 passed, zero added failures, both EXIT=0), but a reader comparing arm headers cannot tell the two runs used the same pytest isolation."
+    },
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-superseded-producer-ends.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node declared docs/figures/a-crew-process-ends-with-its-owner/a-superseded-producer-ends in its write scope but wrote no figure. The supersede sequence (unlink -> replacement takes the path -> superseded wakes and ends) is a sequential relationship the figure mandate says to show, but the node's done-when names no figure and the plan explicitly withholds a test drive from a test node."
+    }
+  ],
+  "head_log_revision": "0b109d9fbeb54b0e6001d07a1531c19103c51b97",
+  "item_aggregate": 19,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read recover.py: the only production change is joining the _recreate_unlinked_registration signature from three wrapped lines to one so ruff format --check reports 5 hunks (was 6 at df6a40b5c), matching the settled 2c49c0457 count; the superseded branch itself (returning the inode comparison, False when the path holds another inode) already existed and is what the new test drives.",
+    "done_when": "the new case is in the named file and runs at head 3 passed/EXIT=0 in my own invocation; the negative control (superseded branch returns True) reddens exactly this node's new id, 1 failed/EXIT=1, and the head arm does not fail it.",
+    "goal": "the node goal is that a test drives the superseded-producer branch of the unlinked-seat recreation; tests/test_producer_registration_survives_unlink.py::test_a_superseded_producer_ends_without_overwriting_the_replacement unlinks the seat under a sleeping producer, starts a replacement that takes the vacated path, and asserts the first producer ends on its next wake-up, the record still names the replacement, and crew unwatch stops the producer that now holds the seat.",
+    "manifest": "read; it names commits f171024ed and 0b109d9fb, the head gate (3 passed), the arms (base 5 passed vs head 6 passed, zero added), the negative-control log, and baseline_suite/after_suite both completed with failure_count 0; its evidence_inputs and artifact figures all resolve to real logs.",
+    "write_paths": "git diff df6a40b5c..0b109d9fb touches exactly four paths, all inside the declared scope: tests/test_producer_registration_survives_unlink.py (108 +/-), reckon/crew/recovery.py (signature join, 2 replaced lines), and the two evidence fragments; the declared figure directory is unused and no out-of-scope file is touched."
+  },
+  "justifications": {
+    "durability": "the guarded thing is made to happen and the refusal shown: the head arm passes the new case, and making the superseded branch return True (my own run of the declared mutation) turns it red on its own assertion -- 'the superseded producer outlived the replacement that took its seat' -- so the test measures the branch rather than a tautology, and watch_ticker returns on that False.",
+    "evidence": "the gate reproduces at head (3 passed, EXIT=0); I reproduced the negative control in an independent scratch extraction, 1 failed/EXIT=1 on test_a_superseded_producer_ends_without_overwriting_the_replacement; ruff check on recovery.py is 9 findings at head, equal to base 60b808f5f's 9; ruff format --check is 5 hunks, equal to 2c49c0457's 5 and one fewer than this node's own base df6a40b5c's 6; and the corrected registration-survives-an-unlink fragment reading (2 failed/25 passed in 83.97 s) matches that predecessor run's own logs/base-arm.txt verbatim. One arm-header inconsistency noted under follow-ons.",
+    "fit": "the case reuses the file's driver/stub pattern, spawns a real separate-session producer because unwatch signals the recorded pid's process group, and documents why the superseded producer is armed at 8.0 s (80x the replacement's 0.1 s poll) so the case measures takeover rather than which process wins a race; the production change is a formatting join whose rationale is a review finding, not a behaviour change.",
+    "goal_fidelity": "the branch that ends a producer whose seat a replacement has taken -- recorded by the registration-survives-an-unlink review as untested (its third finding) -- is now driven end to end: the test observes the takeover, the first producer's exit, the replacement record surviving, and unwatch finding and stopping the replacement, which is the exact behaviour the function's docstring claims.",
+    "scope_discipline": "git diff --stat df6a40b5c..0b109d9fb is four paths, every one inside the declared write scope; the production edit is the declared signature join and nothing else; no test, index, sprint or plan state is touched outside scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a test drives the superseded-producer branch of the unlinked-seat recreation; tests/test_producer_registration_survives_unlink.py::test_a_superseded_producer_ends_without_overwriting_the_replacement unlinks the seat under a sleeping producer, starts a replacement that takes the vacated path, and asserts the first producer ends on its next wake-up, the record still names the replacement, and crew unwatch stops the producer that now holds the seat.\nVERDICT done_when: the new case is in the named file and runs at head 3 passed/EXIT=0 in my own invocation; the negative control (superseded branch returns True) reddens exactly this node's new id, 1 failed/EXIT=1, and the head arm does not fail it.\nVERDICT write_paths: git diff df6a40b5c..0b109d9fb touches exactly four paths, all inside the declared scope: tests/test_producer_registration_survives_unlink.py (108 +/-), reckon/crew/recovery.py (signature join, 2 replaced lines), and the two evidence fragments; the declared figure directory is unused and no out-of-scope file is touched.\nVERDICT manifest: read; it names commits f171024ed and 0b109d9fb, the head gate (3 passed), the arms (base 5 passed vs head 6 passed, zero added), the negative-control log, and baseline_suite/after_suite both completed with failure_count 0; its evidence_inputs and artifact figures all resolve to real logs.\nVERDICT diff: read recover.py: the only production change is joining the _recreate_unlinked_registration signature from three wrapped lines to one so ruff format --check reports 5 hunks (was 6 at df6a40b5c), matching the settled 2c49c0457 count; the superseded branch itself (returning the inode comparison, False when the path holds another inode) already existed and is what the new test drives.\nCALL_SITES: reckon/crew/recovery.py:8504\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the branch that ends a producer whose seat a replacement has taken -- recorded by the registration-survives-an-unlink review as untested (its third finding) -- is now driven end to end: the test observes the takeover, the first producer's exit, the replacement record surviving, and unwatch finding and stopping the replacement, which is the exact behaviour the function's docstring claims.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate reproduces at head (3 passed, EXIT=0); I reproduced the negative control in an independent scratch extraction, 1 failed/EXIT=1 on test_a_superseded_producer_ends_without_overwriting_the_replacement; ruff check on recovery.py is 9 findings at head, equal to base 60b808f5f's 9; ruff format --check is 5 hunks, equal to 2c49c0457's 5 and one fewer than this node's own base df6a40b5c's 6; and the corrected registration-survives-an-unlink fragment reading (2 failed/25 passed in 83.97 s) matches that predecessor run's own logs/base-arm.txt verbatim. One arm-header inconsistency noted under follow-ons.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat df6a40b5c..0b109d9fb is four paths, every one inside the declared write scope; the production edit is the declared signature join and nothing else; no test, index, sprint or plan state is touched outside scope.\nSCORE durability: 20\nJUSTIFICATION durability: the guarded thing is made to happen and the refusal shown: the head arm passes the new case, and making the superseded branch return True (my own run of the declared mutation) turns it red on its own assertion -- 'the superseded producer outlived the replacement that took its seat' -- so the test measures the branch rather than a tautology, and watch_ticker returns on that False.\nSCORE fit: 19\nJUSTIFICATION fit: the case reuses the file's driver/stub pattern, spawns a real separate-session producer because unwatch signals the recorded pid's process group, and documents why the superseded producer is armed at 8.0 s (80x the replacement's 0.1 s poll) so the case measures takeover rather than which process wins a race; the production change is a formatting join whose rationale is a review finding, not a behaviour change.\nFINDING tests/test_producer_registration_survives_unlink.py:107 follow-on: the two arms are invoked on slightly different commands -- the base arm carries `-p no:cacheprovider` and the head arm drops it, and neither the gate.txt nor the head crossing carries a `module.__file__` line at the head revision (only the base extraction names one). Neither changes the measured result (5 vs 6 passed, zero added failures, both EXIT=0), but a reader comparing arm headers cannot tell the two runs used the same pytest isolation.\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-superseded-producer-ends.html:1 follow-on: the node declared docs/figures/a-crew-process-ends-with-its-owner/a-superseded-producer-ends in its write scope but wrote no figure. The supersede sequence (unlink -> replacement takes the path -> superseded wakes and ends) is a sequential relationship the figure mandate says to show, but the node's done-when names no figure and the plan explicitly withholds a test drive from a test node.\nreviewed_base_sha: df6a40b5c8e077c9f74517ff52f1858bac2c6011\nreviewed_head_sha: 0b109d9fbeb54b0e6001d07a1531c19103c51b97",
+  "review_run_id": "r-20261001T232822197811-review-of-a-superseded-producer-ends",
+  "reviewed_base_sha": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "reviewed_head_sha": "0b109d9fbeb54b0e6001d07a1531c19103c51b97",
+  "reviewed_run_id": "r-20261001T225558094476-a-superseded-producer-ends",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T232822197811-review-of-a-superseded-producer-ends",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T23:42:01.375096+00:00",
+  "total": 98
+}

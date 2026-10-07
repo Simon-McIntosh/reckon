@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:6909 (_observed_phase from classify_pointer)",
+    "reckon/crew/recovery.py:5977 (_worker_record_liveness for the resumed-attempt deferral)",
+    "reckon/crew/recovery.py:1851 (_reviewed_run_is_busy)",
+    "reckon/crew/recovery.py:5256 (local_liveness)"
+  ],
+  "completed_at": "2026-10-02T01:53:57.574Z",
+  "dispatched_at": "2026-10-02T01:41:44Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T012751205460-worker-liveness-fixtures-follow-the-host-gate/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names its two gate arms under test_logs and leaves baseline_suite/after_suite empty, so the review store's read-time added-failure derivation (reckon/crew/review.py:1297) reports unmeasured for this run; filling the two suite fields would let the count be derived from the manifest without re-reading the logs."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "4754",
+      "severity": "follow-on",
+      "text": "follow-on: reading the worker-record pid for an unnamed launcher_host restores the pre-gate behaviour in which a foreign run whose pointer predates the host field can have its record pid matched against the local process table, so a coincident live local pid would defer such a run; low risk because foreign launches now record launcher_host, named so the boundary is on record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit 7eb6fe4fa against base 53f2c080f; one file changed (reckon/crew/recovery.py, 32 insertions/7 deletions), tests byte-identical, no plan or index edit.",
+    "done_when": "the plan section's measure is that the six named ids pass at head with no id moved from pass to fail; the manifest records base 6 failed/17 passed and head 23 passed on the four files, and I reproduced both at the reviewed shas in scratch trees.",
+    "goal": "the node's goal is to repair the six ids the worker-record host gate (8259af866) broke; the diff changes reckon/crew/recovery.py so the observed phase advances on a worker record that names a pid and the liveness read is refused only for a known-foreign host.",
+    "manifest": "read; it states the four-file head gate at 23 passed and names base-arm, head-arm, negative-control and subset logs, but leaves baseline_suite and after_suite empty while naming the same two logs under test_logs.",
+    "write_paths": "read the manifest's declared paths; the only path changed base..head is reckon/crew/recovery.py, which the node's dispatch granted it, and the two test files are byte-identical."
+  },
+  "justifications": {
+    "durability": "the existing test files are the guard; reinstating the host gate fails the three resumed ids and reinstating the worker_alive proxy fails the three phase ids, so each half is load-bearing, though reshaping a fixture to name this host would retire it.",
+    "evidence": "the four-file gate is recorded and I reproduced base 6 failed/17 passed and head 23 passed at the reviewed shas, but the manifest leaves baseline_suite/after_suite empty so the store's added-failure derivation reads unmeasured, and the zero-moved-id clause rests on a related-file subset rather than a full-suite delta.",
+    "fit": "_record_is_known_foreign at reckon/crew/recovery.py:5225 is a small private helper beside _launched_on_this_host, with docstrings in the module's own style and no forbidden name.",
+    "goal_fidelity": "reinstating each replaced rule at reckon/crew/recovery.py:4667 and :4754 in a scratch head reddens exactly its three ids, so the change is what makes the six pass.",
+    "scope_discipline": "base..head changes only reckon/crew/recovery.py per git name-status, with tests byte-identical and no plan or index state touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to repair the six ids the worker-record host gate (8259af866) broke; the diff changes reckon/crew/recovery.py so the observed phase advances on a worker record that names a pid and the liveness read is refused only for a known-foreign host.\nVERDICT done_when: the plan section's measure is that the six named ids pass at head with no id moved from pass to fail; the manifest records base 6 failed/17 passed and head 23 passed on the four files, and I reproduced both at the reviewed shas in scratch trees.\nVERDICT write_paths: read the manifest's declared paths; the only path changed base..head is reckon/crew/recovery.py, which the node's dispatch granted it, and the two test files are byte-identical.\nVERDICT manifest: read; it states the four-file head gate at 23 passed and names base-arm, head-arm, negative-control and subset logs, but leaves baseline_suite and after_suite empty while naming the same two logs under test_logs.\nVERDICT diff: read commit 7eb6fe4fa against base 53f2c080f; one file changed (reckon/crew/recovery.py, 32 insertions/7 deletions), tests byte-identical, no plan or index edit.\nCALL_SITES: reckon/crew/recovery.py:6909 (_observed_phase from classify_pointer), reckon/crew/recovery.py:5977 (_worker_record_liveness for the resumed-attempt deferral), reckon/crew/recovery.py:1851 (_reviewed_run_is_busy), reckon/crew/recovery.py:5256 (local_liveness)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reinstating each replaced rule at reckon/crew/recovery.py:4667 and :4754 in a scratch head reddens exactly its three ids, so the change is what makes the six pass.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four-file gate is recorded and I reproduced base 6 failed/17 passed and head 23 passed at the reviewed shas, but the manifest leaves baseline_suite/after_suite empty so the store's added-failure derivation reads unmeasured, and the zero-moved-id clause rests on a related-file subset rather than a full-suite delta.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: base..head changes only reckon/crew/recovery.py per git name-status, with tests byte-identical and no plan or index state touched.\nSCORE durability: 18\nJUSTIFICATION durability: the existing test files are the guard; reinstating the host gate fails the three resumed ids and reinstating the worker_alive proxy fails the three phase ids, so each half is load-bearing, though reshaping a fixture to name this host would retire it.\nSCORE fit: 19\nJUSTIFICATION fit: _record_is_known_foreign at reckon/crew/recovery.py:5225 is a small private helper beside _launched_on_this_host, with docstrings in the module's own style and no forbidden name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T012751205460-worker-liveness-fixtures-follow-the-host-gate/manifest.md:11 follow-on: the reviewed manifest names its two gate arms under test_logs and leaves baseline_suite/after_suite empty, so the review store's read-time added-failure derivation (reckon/crew/review.py:1297) reports unmeasured for this run; filling the two suite fields would let the count be derived from the manifest without re-reading the logs.\nFINDING reckon/crew/recovery.py:4754 follow-on: reading the worker-record pid for an unnamed launcher_host restores the pre-gate behaviour in which a foreign run whose pointer predates the host field can have its record pid matched against the local process table, so a coincident live local pid would defer such a run; low risk because foreign launches now record launcher_host, named so the boundary is on record.\nreviewed_base_sha: 53f2c080f9441f2384fb97c4ce5650ccc381b3a6\nreviewed_head_sha: 7eb6fe4faede29f53c15f341294f59566d117cfd",
+  "review_run_id": "r-20261002T014117547702-review-of-worker-liveness-fixtures-follow-the-host-gate",
+  "reviewed_base_sha": "53f2c080f9441f2384fb97c4ce5650ccc381b3a6",
+  "reviewed_head_sha": "7eb6fe4faede29f53c15f341294f59566d117cfd",
+  "reviewed_run_id": "r-20261002T012751205460-worker-liveness-fixtures-follow-the-host-gate",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T01:52:07.526682+00:00",
+  "total": 93
+}

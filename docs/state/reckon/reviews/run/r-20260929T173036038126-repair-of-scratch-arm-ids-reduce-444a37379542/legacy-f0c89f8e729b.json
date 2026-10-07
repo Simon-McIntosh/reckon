@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:308",
+    "reckon/crew/repair.py:320",
+    "reckon/crew/promotion.py:5087",
+    "reckon/crew/promotion.py:5121"
+  ],
+  "completed_at": "2026-09-29T17:48:21.736Z",
+  "dispatched_at": "2026-09-29T17:30:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542/logs/gate-fix.log",
+      "line": "1",
+      "text": "the log's revision line names cbbbb56, the base, while the change landed at 08fdc5e23, so a reader cannot tie the recorded 5 passed to the committed change without re-running it."
+    },
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-scratch-arm-ids-reduce-444a37379542.html",
+      "line": "1",
+      "text": "the granted landing fragment carries no file in the commit although the diff is 150 changed lines and the small-node clause exempts only diffs of 50 or fewer, so this repair's evidence anchor exists only as a manifest line."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single commit 08fdc5e23 against base cbbbb56f; reckon/crew/review.py gains _names_repository_path and _REPOSITORY_ROOT with a guard that keeps a leading component naming a real repository path whole, and _arm_directory now returns None when its arm names no command; tests/test_scratch_arm_ids_reduce.py adds two cases that drive the promotion read path through read_review with a synthesised manifest and repository.",
+    "done_when": "the measure names the two finding ids and requires an 'acted <id>: <commit>' line for each; the manifest carries 'acted f39c0126866: 08fdc5e23' and 'acted f986bf2cef1: 08fdc5e23', and I re-ran the named test file at the committed revision, 5 passed.",
+    "goal": "the goal is to repair f39c0126866 and f986bf2cef1 on r-20260929T163733029191; I reproduced both defects against the base blob of reckon/crew/review.py (canonical_node_id('pkg/tests/test_gate.py::test_alpha','/tmp/pkg') reduced to 'tests/test_gate.py::test_alpha', and _arm_directory returning '/tmp/rcq2-base' for an arm whose suite record names no command) and both are answered at head 08fdc5e23.",
+    "manifest": "read; it names both findings against their commit, lists the two changed paths and the gate command with its 5-passed and 19-passed results, but it carries no baseline_suite or after_suite record, so the review read path derives no added-failure count from it (verified: unmeasured, with the same call over r-20260929T171030404641 reporting a measured 0).",
+    "write_paths": "the manifest's declared paths include reckon/crew/review.py and tests/test_scratch_arm_ids_reduce.py; 'git show --stat 08fdc5e23' lists exactly those two files and no other, and the reviewed worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "tests/test_scratch_arm_ids_reduce.py:188 and :222 assert added_failure_count and added_failure_ids produced by read_review from logs the test writes, and each reddens when its own change is reverted, so each names the condition under which it fails.",
+    "evidence": "the gate is real and reproducible (tests/test_scratch_arm_ids_reduce.py 5 passed at 08fdc5e23, re-run by me; the node's negative control reddens each change in turn), but its log names revision cbbbb56 which does not contain the change, and the manifest carries no suite arms so the review's added-failure count reads unmeasured from it.",
+    "fit": "the new constant and helper follow the module's own idiom at reckon/crew/review.py:530-545, names are mechanism terms, and ruff check under the repository's config reports no finding on either changed path (a default-config run's RUF100 hit on the added noqa was an artifact of that config).",
+    "goal_fidelity": "both findings are answered at their own site in reckon/crew/review.py:562-628 and reckon/crew/review.py:1087-1107, and my independent reproduction of each defect at the base blob and its absence at head confirms the repair is the one the findings named.",
+    "scope_discipline": "git show --stat 08fdc5e23 lists only reckon/crew/review.py and tests/test_scratch_arm_ids_reduce.py; no plan, index, sprint or unrelated source is touched and the worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to repair f39c0126866 and f986bf2cef1 on r-20260929T163733029191; I reproduced both defects against the base blob of reckon/crew/review.py (canonical_node_id('pkg/tests/test_gate.py::test_alpha','/tmp/pkg') reduced to 'tests/test_gate.py::test_alpha', and _arm_directory returning '/tmp/rcq2-base' for an arm whose suite record names no command) and both are answered at head 08fdc5e23.\nVERDICT done_when: the measure names the two finding ids and requires an 'acted <id>: <commit>' line for each; the manifest carries 'acted f39c0126866: 08fdc5e23' and 'acted f986bf2cef1: 08fdc5e23', and I re-ran the named test file at the committed revision, 5 passed.\nVERDICT write_paths: the manifest's declared paths include reckon/crew/review.py and tests/test_scratch_arm_ids_reduce.py; 'git show --stat 08fdc5e23' lists exactly those two files and no other, and the reviewed worktree is clean at head.\nVERDICT manifest: read; it names both findings against their commit, lists the two changed paths and the gate command with its 5-passed and 19-passed results, but it carries no baseline_suite or after_suite record, so the review read path derives no added-failure count from it (verified: unmeasured, with the same call over r-20260929T171030404641 reporting a measured 0).\nVERDICT diff: read the single commit 08fdc5e23 against base cbbbb56f; reckon/crew/review.py gains _names_repository_path and _REPOSITORY_ROOT with a guard that keeps a leading component naming a real repository path whole, and _arm_directory now returns None when its arm names no command; tests/test_scratch_arm_ids_reduce.py adds two cases that drive the promotion read path through read_review with a synthesised manifest and repository.\nCALL_SITES: reckon/crew/recovery.py:308, reckon/crew/repair.py:320, reckon/crew/promotion.py:5087, reckon/crew/promotion.py:5121\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both findings are answered at their own site in reckon/crew/review.py:562-628 and reckon/crew/review.py:1087-1107, and my independent reproduction of each defect at the base blob and its absence at head confirms the repair is the one the findings named.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is real and reproducible (tests/test_scratch_arm_ids_reduce.py 5 passed at 08fdc5e23, re-run by me; the node's negative control reddens each change in turn), but its log names revision cbbbb56 which does not contain the change, and the manifest carries no suite arms so the review's added-failure count reads unmeasured from it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 08fdc5e23 lists only reckon/crew/review.py and tests/test_scratch_arm_ids_reduce.py; no plan, index, sprint or unrelated source is touched and the worktree is clean.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_scratch_arm_ids_reduce.py:188 and :222 assert added_failure_count and added_failure_ids produced by read_review from logs the test writes, and each reddens when its own change is reverted, so each names the condition under which it fails.\nSCORE fit: 19\nJUSTIFICATION fit: the new constant and helper follow the module's own idiom at reckon/crew/review.py:530-545, names are mechanism terms, and ruff check under the repository's config reports no finding on either changed path (a default-config run's RUF100 hit on the added noqa was an artifact of that config).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542/logs/gate-fix.log:1 the log's revision line names cbbbb56, the base, while the change landed at 08fdc5e23, so a reader cannot tie the recorded 5 passed to the committed change without re-running it.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-scratch-arm-ids-reduce-444a37379542.html:1 the granted landing fragment carries no file in the commit although the diff is 150 changed lines and the small-node clause exempts only diffs of 50 or fewer, so this repair's evidence anchor exists only as a manifest line.",
+  "review_run_id": "legacy-f0c89f8e729b",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "cbbbb56feb1975a070510ac604b2b835b5158515",
+  "reviewed_commits": [
+    "08fdc5e23cc5cc515ebd605542c688f047f29dd6"
+  ],
+  "reviewed_head_sha": "08fdc5e23cc5cc515ebd605542c688f047f29dd6",
+  "reviewed_manifest": {
+    "bytes": 3159,
+    "last_modified": "2026-09-29T19:47:58.478941+02:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542/manifest.md",
+    "sha256": "0eaacd7083c50aeedf77a3d8a97386b2fe41f55998004a2fc4ecbf0ff1c1e0ae"
+  },
+  "reviewed_run_id": "r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-scratch-arm-ids-reduce-444a37379542",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash",
+    "node": "review-of-repair-of-scratch-arm-ids-reduce-444a37379542",
+    "run_id": "r-20260929T174901412242-review-of-repair-of-scratch-arm-ids-reduce-444a37379542"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T20:03:20.517199+02:00",
+  "total": 93
+}

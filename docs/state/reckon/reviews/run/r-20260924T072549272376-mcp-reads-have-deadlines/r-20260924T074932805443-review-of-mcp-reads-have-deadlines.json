@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:4338",
+    "reckon/mcp.py:4276",
+    "reckon/cli.py:479"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T07:49:32.805443+00:00",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "241",
+      "text": "the landing check calls _file_fingerprint -- os.stat -- from the coroutine on the event loop: measured on the reviewed tree, all 32 fingerprint calls ran on MainThread while the body ran on asyncio_0, and with the stat stubbed to 0.3 s a probe coroutine woke 0.551 s late; a stat on the mount that just stalled the write is itself unbounded, so an edit_plan timeout there holds the loop and the concurrent call the done-when requires waits behind it."
+    },
+    {
+      "file": "docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html",
+      "line": "51",
+      "text": "the cumulative record's gate row names d026717e, which predates the concurrency assertion strengthened at 744deae5, while the plan's own row and the manifest both name 744deae5, so one gate is reported at two revisions of the test file it ran."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read all four commits against the base -- d026717e lands the runner, the typed result and the registration, cd75efe0 the records, 744deae5 strengthens the concurrency assertion to the healthy body's entry time, aeeb8bac settles the records on the reproducible measure set.",
+    "done_when": "read tests/test_mcp_reads_have_deadlines.py against each done-when clause -- the SDK premise (line 54), the deadline-parameterised blocked read (107), the concurrent read (135), both write landed directions (185, 207) and the end-to-end adapter (248) are asserted, and the run's gate log records 7 passed.",
+    "goal": "read the goal against reckon/mcp.py:4338-4348, where all five registered tools are wrapped as async adapters by _deadline_tool, and re-ran tests/test_mcp_reads_have_deadlines.py at the reviewed head from the reviewed tree: 7 passed, with the blocked read answered storage-slow and the healthy read entering while the first was still blocked.",
+    "manifest": "read the manifest and every log it names; its gate (7 passed), negative-control (5 of 7 red) and surface (243 passed / 5 failed at both revisions) claims match their logs, but its after_suite revision says 744deae5 while surface-head-10.log, the log it points at, names aeeb8bac, and the SDK finding the done-when asks the manifest to record sits in the landing record the manifest cites rather than in its own words.",
+    "write_paths": "read the diff a695d425..aeeb8bac against the six declared write paths; every changed path is inside them, the two docs files gained 122 lines and lost none, and no plan-version or plan-modified meta line was edited."
+  },
+  "justifications": {
+    "durability": "the executed negative control reddens five assertions including the entry-time one at tests/test_mcp_reads_have_deadlines.py:176, but no assertion covers reckon/mcp.py:241, so the loop-side stat the finding names can return unnoticed.",
+    "evidence": "the gate, the negative control and the surface pair each carry a log whose content matches the manifest, but gate-deadlines.log opens with no revision, tree or command, and the manifest's after_suite revision disagrees with the revision its own log names.",
+    "fit": "reckon/mcp.py:174-380 follows the module's section and docstring idiom, and _deadline_tool, _run_under_deadline and StorageSlowResult carry no plan label, version suffix or author attribution.",
+    "goal_fidelity": "reckon/mcp.py:4338-4348 leaves no registered tool body on the loop and tests/test_mcp_reads_have_deadlines.py:135-179 shows the second call entering first, though the loop-side stat the finding names leaves the write lane short of \"a concurrent call still answers\".",
+    "scope_discipline": "the diff a695d425..aeeb8bac touches exactly the six declared paths and nothing else, in the order the landing contract asks, creating the cumulative evidence record without touching any other plan record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal against reckon/mcp.py:4338-4348, where all five registered tools are wrapped as async adapters by _deadline_tool, and re-ran tests/test_mcp_reads_have_deadlines.py at the reviewed head from the reviewed tree: 7 passed, with the blocked read answered storage-slow and the healthy read entering while the first was still blocked.\nVERDICT done_when: read tests/test_mcp_reads_have_deadlines.py against each done-when clause -- the SDK premise (line 54), the deadline-parameterised blocked read (107), the concurrent read (135), both write landed directions (185, 207) and the end-to-end adapter (248) are asserted, and the run's gate log records 7 passed.\nVERDICT write_paths: read the diff a695d425..aeeb8bac against the six declared write paths; every changed path is inside them, the two docs files gained 122 lines and lost none, and no plan-version or plan-modified meta line was edited.\nVERDICT manifest: read the manifest and every log it names; its gate (7 passed), negative-control (5 of 7 red) and surface (243 passed / 5 failed at both revisions) claims match their logs, but its after_suite revision says 744deae5 while surface-head-10.log, the log it points at, names aeeb8bac, and the SDK finding the done-when asks the manifest to record sits in the landing record the manifest cites rather than in its own words.\nVERDICT diff: read all four commits against the base -- d026717e lands the runner, the typed result and the registration, cd75efe0 the records, 744deae5 strengthens the concurrency assertion to the healthy body's entry time, aeeb8bac settles the records on the reproducible measure set.\nCALL_SITES: reckon/mcp.py:4338, reckon/mcp.py:4276, reckon/cli.py:479\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:4338-4348 leaves no registered tool body on the loop and tests/test_mcp_reads_have_deadlines.py:135-179 shows the second call entering first, though the loop-side stat the finding names leaves the write lane short of \"a concurrent call still answers\".\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate, the negative control and the surface pair each carry a log whose content matches the manifest, but gate-deadlines.log opens with no revision, tree or command, and the manifest's after_suite revision disagrees with the revision its own log names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a695d425..aeeb8bac touches exactly the six declared paths and nothing else, in the order the landing contract asks, creating the cumulative evidence record without touching any other plan record.\nSCORE durability: 17\nJUSTIFICATION durability: the executed negative control reddens five assertions including the entry-time one at tests/test_mcp_reads_have_deadlines.py:176, but no assertion covers reckon/mcp.py:241, so the loop-side stat the finding names can return unnoticed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/mcp.py:174-380 follows the module's section and docstring idiom, and _deadline_tool, _run_under_deadline and StorageSlowResult carry no plan label, version suffix or author attribution.\nFINDING reckon/mcp.py:241 the landing check calls _file_fingerprint -- os.stat -- from the coroutine on the event loop: measured on the reviewed tree, all 32 fingerprint calls ran on MainThread while the body ran on asyncio_0, and with the stat stubbed to 0.3 s a probe coroutine woke 0.551 s late; a stat on the mount that just stalled the write is itself unbounded, so an edit_plan timeout there holds the loop and the concurrent call the done-when requires waits behind it.\nFINDING docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html:51 the cumulative record's gate row names d026717e, which predates the concurrency assertion strengthened at 744deae5, while the plan's own row and the manifest both name 744deae5, so one gate is reported at two revisions of the test file it ran.\n",
+  "review_run_id": "r-20260924T074932805443-review-of-mcp-reads-have-deadlines",
+  "reviewed_base_sha": "a695d4255dd9ba18b988fda9707d424f03771767",
+  "reviewed_head_sha": "aeeb8baccf786cad3aa18ed0cd56c0b441ea72f0",
+  "reviewed_run_id": "r-20260924T072549272376-mcp-reads-have-deadlines",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T07:57:41.746954+00:00",
+  "total": 92
+}

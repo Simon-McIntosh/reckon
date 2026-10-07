@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T10:03:56.867Z",
+  "dispatched_at": "2026-10-03T09:53:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2439",
+      "severity": "follow-on",
+      "text": "_require_commit_for_changed_manifest catches (OSError, KeyError, ValueError) and returns () as a skip; ManifestParseError subclasses ValueError, so on a manifest the reader cannot read the changed-paths-without-commit guard is silent and the refusal reaches the operator only through the status carrier beside it. The reviewed node records this as its own follow-on, so it does not hold the node, but the section's named guard is not what refuses the one-line form."
+    }
+  ],
+  "head_log_revision": "4130bce637d610a1474c82e234893efb555775c2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site is added; the change is a test file and a docs fragment, so the tests drive reckoning/crew/reports.py and promotion.py but the change itself introduces no runtime path.",
+    "diff": "read commit by commit against 7fbe5fd89; 4130bce6 adds the 116-line test file and a7449e4b7 adds the 36-line evidence fragment, both inside the declared paths and with no production-code change.",
+    "done_when": "the section done-when asks that feeding the one-line form yields a refusal rather than a skip and the separate-line form promote; both cases are in tests/test_two_key_line_reaches_promotion.py:79 and :103 and I reproduced the three-file gate at head (128 passed, EXIT=0).",
+    "goal": "the node goal is to prove at the promotion boundary that a manifest joining commits and changed_paths on one line is refused; tests/test_two_key_line_reaches_promotion.py drives crew.complete in a temporary config home and repository and requires that refusal, so the promotion-level proof the goal names is present and I reproduced it (2 passed).",
+    "manifest": "read; status complete, commits 4130bce6 and a7449e4b7, tests names the three-file gate at -n 8 --timeout=300 with base 7fbe5fd89 128 passed EXIT=0 to head 4130bce6 128 passed EXIT=0, zero added ids, and a negative control that removes the parse-level refusal.",
+    "write_paths": "the manifest declares tests/test_two_key_line_reaches_promotion.py and docs/evidence/fragments/crew-observability-truth/two-key-line-reaches-promotion.html; the two commits add exactly those and nothing else, so the diff is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "making _embedded_manifest_key return None in reckon/crew/reports.py reddens tests/test_two_key_line_reaches_promotion.py:90 as DID NOT RAISE CrewError, so the case is a real guard on the promotion-boundary refusal, though not on the changed-paths guard it names.",
+    "evidence": "the gate names the three files and I reproduced base 7fbe5fd89 128 passed EXIT=0, head a7449e4b7 128 passed EXIT=0, and the refusal-disabled arm failing DID NOT RAISE at tests/test_two_key_line_reaches_promotion.py:90.",
+    "fit": "the file is ruff-clean and follows the tests/ idiom, importing the repository fixture and _seed_candidate from tests/test_review_gate_coverage.py:68 and :90 where those fixtures live, and introduces no name the naming rules forbid.",
+    "goal_fidelity": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/two-key-line-reaches-promotion/tests/test_two_key_line_reaches_promotion.py:86 drives crew.complete and requires the refusal, but the done-when's named changed-paths guard at reckon/crew/promotion.py:2439 still swallows the parse refusal, so the boundary refuses via the status carrier rather than that guard.",
+    "scope_discipline": "the two commits add only the manifest's declared paths, tests/test_two_key_line_reaches_promotion.py and docs/evidence/fragments/crew-observability-truth/two-key-line-reaches-promotion.html; no plan, sprint or shared file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to prove at the promotion boundary that a manifest joining commits and changed_paths on one line is refused; tests/test_two_key_line_reaches_promotion.py drives crew.complete in a temporary config home and repository and requires that refusal, so the promotion-level proof the goal names is present and I reproduced it (2 passed).\nVERDICT done_when: the section done-when asks that feeding the one-line form yields a refusal rather than a skip and the separate-line form promote; both cases are in tests/test_two_key_line_reaches_promotion.py:79 and :103 and I reproduced the three-file gate at head (128 passed, EXIT=0).\nVERDICT write_paths: the manifest declares tests/test_two_key_line_reaches_promotion.py and docs/evidence/fragments/crew-observability-truth/two-key-line-reaches-promotion.html; the two commits add exactly those and nothing else, so the diff is inside the declared scope.\nVERDICT manifest: read; status complete, commits 4130bce6 and a7449e4b7, tests names the three-file gate at -n 8 --timeout=300 with base 7fbe5fd89 128 passed EXIT=0 to head 4130bce6 128 passed EXIT=0, zero added ids, and a negative control that removes the parse-level refusal.\nVERDICT diff: read commit by commit against 7fbe5fd89; 4130bce6 adds the 116-line test file and a7449e4b7 adds the 36-line evidence fragment, both inside the declared paths and with no production-code change.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/two-key-line-reaches-promotion/tests/test_two_key_line_reaches_promotion.py:86 drives crew.complete and requires the refusal, but the done-when's named changed-paths guard at reckon/crew/promotion.py:2439 still swallows the parse refusal, so the boundary refuses via the status carrier rather than that guard.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names the three files and I reproduced base 7fbe5fd89 128 passed EXIT=0, head a7449e4b7 128 passed EXIT=0, and the refusal-disabled arm failing DID NOT RAISE at tests/test_two_key_line_reaches_promotion.py:90.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits add only the manifest's declared paths, tests/test_two_key_line_reaches_promotion.py and docs/evidence/fragments/crew-observability-truth/two-key-line-reaches-promotion.html; no plan, sprint or shared file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: making _embedded_manifest_key return None in reckon/crew/reports.py reddens tests/test_two_key_line_reaches_promotion.py:90 as DID NOT RAISE CrewError, so the case is a real guard on the promotion-boundary refusal, though not on the changed-paths guard it names.\nSCORE fit: 18\nJUSTIFICATION fit: the file is ruff-clean and follows the tests/ idiom, importing the repository fixture and _seed_candidate from tests/test_review_gate_coverage.py:68 and :90 where those fixtures live, and introduces no name the naming rules forbid.\nFINDING reckon/crew/promotion.py:2439 follow-on: _require_commit_for_changed_manifest catches (OSError, KeyError, ValueError) and returns () as a skip; ManifestParseError subclasses ValueError, so on a manifest the reader cannot read the changed-paths-without-commit guard is silent and the refusal reaches the operator only through the status carrier beside it. The reviewed node records this as its own follow-on, so it does not hold the node, but the section's named guard is not what refuses the one-line form.\n",
+  "review_run_id": "r-20261003T095308603071-review-of-two-key-line-reaches-promotion",
+  "reviewed_base_sha": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "reviewed_head_sha": "a7449e4b7df0aa86218bdfa398c644a5c95ce073",
+  "reviewed_run_id": "r-20261003T092600081081-two-key-line-reaches-promotion",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:07.201285+00:00",
+  "total": 93
+}

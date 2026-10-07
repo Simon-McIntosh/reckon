@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own gate logs logs/base-file.txt (base arm, e7eca9f0, 2 failed) and logs/head-file.txt (head arm, cea61e0b, 61 passed): the head adds no failing id, so 0 added. The reviewed manifest names no baseline_suite / after_suite field, so a reader's annotate_review_of_run would read unmeasured; the count here is taken from the two whole-file arms the run did record.",
+  "base_log_revision": "e7eca9f0361b661cc4a435b3a39015497a795688",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T19:29:32.721Z",
+  "dispatched_at": "2026-09-30T19:21:43Z",
+  "findings": [],
+  "head_log_revision": "cea61e0b72522ff2b61af73d1f256680fc1ad447",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "three commits add routing_identifier() with HARNESS_FLAGS stripping at tests/test_skill_contracts.py:39, a control test that plants a model identifier and a provider at tests/test_skill_contracts.py:238, and an ast-based exit-anchor family (_statement_blocks, _expression_descendants, _emitted_error_keys, _exit_code_after, _dispatch_exit_branches) replacing the fixed 350-character window at tests/test_skill_contracts.py:1206, plus a pairing test at tests/test_skill_contracts.py:1346; only test and evidence files change.",
+    "done_when": "the done_when required both red ids logged failing at the reviewed base before any edit, the scan telling the harness flag from a routing choice while still refusing a planted model, the fixed window replaced by a structural anchor, no assertion deleted, and only the test file changed; logs/base-file.txt shows exactly test_no_routing_identifier_leaks_into_skills_or_source and test_ship_dispatch_exit_table_matches_cli_branches failing at e7eca9f0, logs/head-file.txt shows 61 passed at cea61e0b, tests/test_skill_contracts.py:238 adds a control asserting the flag line is clean and a model identifier and a provider name are refused, and tests/test_skill_contracts.py:1206 replaces the 350-character window with an ast read.",
+    "goal": "the node goal is to repair the two stale expectations in tests/test_skill_contracts.py, the routing-identifier scan and the exit-table proximity bound; both are green at the committed head cea61e0b (61 passed, re-run independently) and each repair answers the root cause named in the report rather than moving the behaviour.",
+    "manifest": "read; it records the three commits (26f75977, d0bc6bb0, cea61e0b), the base and head whole-file results (2 failed/57 passed; 61 passed), the per-id logs, and both negative-control logs, and it names the earlier reviewer's swap finding as the reason for the exit-pairing rework.",
+    "write_paths": "the diff e7eca9f0..cea61e0b changes only tests/test_skill_contracts.py and docs/evidence/fragments/the-suite-is-green-at-head/skill-contracts-follow-the-shipped-surface.html, both inside the node's granted scope; the worktree at cea61e0b is clean."
+  },
+  "justifications": {
+    "durability": "_dispatch_exit_branches at tests/test_skill_contracts.py:1290 binds each error key to the first Exit in its own innermost block, and logs/negative-control-swap.txt shows test_ship_dispatch_exit_table_matches_cli_branches failing when the two shared-handler exit codes are swapped, closing the union-binding gap the earlier review scored down.",
+    "evidence": "logs/base-file.txt (base e7eca9f0, 2 failed/57 passed) and logs/head-file.txt (head cea61e0b, 61 passed) each open with revision, tree and command and end EXIT=, and the head arm re-ran independently to 61 passed.",
+    "fit": "the ast helpers and routing_identifier() at tests/test_skill_contracts.py:39 follow the module's helper-plus-test idiom with mechanism comments and no banned names or version markers.",
+    "goal_fidelity": "both named ids are green at cea61e0b (tests/test_skill_contracts.py:211 and tests/test_skill_contracts.py:1327) and each repair matches the report's root cause with no third id pulled in.",
+    "scope_discipline": "git diff e7eca9f0..cea61e0b touches only tests/test_skill_contracts.py and the granted docs/evidence fragment, with no production file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to repair the two stale expectations in tests/test_skill_contracts.py, the routing-identifier scan and the exit-table proximity bound; both are green at the committed head cea61e0b (61 passed, re-run independently) and each repair answers the root cause named in the report rather than moving the behaviour.\nVERDICT done_when: the done_when required both red ids logged failing at the reviewed base before any edit, the scan telling the harness flag from a routing choice while still refusing a planted model, the fixed window replaced by a structural anchor, no assertion deleted, and only the test file changed; logs/base-file.txt shows exactly test_no_routing_identifier_leaks_into_skills_or_source and test_ship_dispatch_exit_table_matches_cli_branches failing at e7eca9f0, logs/head-file.txt shows 61 passed at cea61e0b, tests/test_skill_contracts.py:238 adds a control asserting the flag line is clean and a model identifier and a provider name are refused, and tests/test_skill_contracts.py:1206 replaces the 350-character window with an ast read.\nVERDICT write_paths: the diff e7eca9f0..cea61e0b changes only tests/test_skill_contracts.py and docs/evidence/fragments/the-suite-is-green-at-head/skill-contracts-follow-the-shipped-surface.html, both inside the node's granted scope; the worktree at cea61e0b is clean.\nVERDICT manifest: read; it records the three commits (26f75977, d0bc6bb0, cea61e0b), the base and head whole-file results (2 failed/57 passed; 61 passed), the per-id logs, and both negative-control logs, and it names the earlier reviewer's swap finding as the reason for the exit-pairing rework.\nVERDICT diff: three commits add routing_identifier() with HARNESS_FLAGS stripping at tests/test_skill_contracts.py:39, a control test that plants a model identifier and a provider at tests/test_skill_contracts.py:238, and an ast-based exit-anchor family (_statement_blocks, _expression_descendants, _emitted_error_keys, _exit_code_after, _dispatch_exit_branches) replacing the fixed 350-character window at tests/test_skill_contracts.py:1206, plus a pairing test at tests/test_skill_contracts.py:1346; only test and evidence files change.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both named ids are green at cea61e0b (tests/test_skill_contracts.py:211 and tests/test_skill_contracts.py:1327) and each repair matches the report's root cause with no third id pulled in.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base-file.txt (base e7eca9f0, 2 failed/57 passed) and logs/head-file.txt (head cea61e0b, 61 passed) each open with revision, tree and command and end EXIT=, and the head arm re-ran independently to 61 passed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff e7eca9f0..cea61e0b touches only tests/test_skill_contracts.py and the granted docs/evidence fragment, with no production file changed.\nSCORE durability: 18\nJUSTIFICATION durability: _dispatch_exit_branches at tests/test_skill_contracts.py:1290 binds each error key to the first Exit in its own innermost block, and logs/negative-control-swap.txt shows test_ship_dispatch_exit_table_matches_cli_branches failing when the two shared-handler exit codes are swapped, closing the union-binding gap the earlier review scored down.\nSCORE fit: 18\nJUSTIFICATION fit: the ast helpers and routing_identifier() at tests/test_skill_contracts.py:39 follow the module's helper-plus-test idiom with mechanism comments and no banned names or version markers.",
+  "review_run_id": "r-20260930T192122861608-review-of-skill-contracts-follow-the-shipped-surface",
+  "reviewed_base_sha": "e7eca9f0361b661cc4a435b3a39015497a795688",
+  "reviewed_head_sha": "cea61e0b72522ff2b61af73d1f256680fc1ad447",
+  "reviewed_run_id": "r-20260930T182720674538-skill-contracts-follow-the-shipped-surface",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T19:27:06.896487+00:00",
+  "total": 93
+}

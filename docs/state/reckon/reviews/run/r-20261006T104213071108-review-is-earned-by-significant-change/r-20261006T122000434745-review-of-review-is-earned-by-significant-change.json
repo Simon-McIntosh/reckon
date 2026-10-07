@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "64e6b337609d64af4fd463154f1fde2454bab0f1",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/routing.py:2677",
+    "reckon/crew/recovery.py:494",
+    "reckon/crew/plan_review.py:632"
+  ],
+  "completed_at": "2026-10-06T12:34:36.738Z",
+  "dispatched_at": "2026-10-06T12:20:18Z",
+  "findings": [
+    {
+      "file": "tests/test_review_is_earned_by_significant_change.py",
+      "line": "339",
+      "severity": "follow-on",
+      "text": "follow-on: `monkeypatch = monkeypatch.setattr(flight, 'resolve', _REAL_RESOLVE)` rebinds the fixture name to the None that setattr returns; the restore still takes effect, but the line only works because monkeypatch is never read again, so it should be a bare statement."
+    }
+  ],
+  "head_log_revision": "c8a1ae305c33257c3d3e48bdce245ef83a22fd57",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "read commit by commit against 0a5e3a893; one commit d42af0c20 collapses _review_coverage_report and the two-value forwarder into _review_coverage returning three values, resolves the flight config inside the predicate, reads the threshold range through REVIEW_OWNED_KEYS, drops the plan-section citation, corrects the fragment, and updates the three callers and one new test; every hunk serves the goal.",
+    "done_when": "the added case names the project layer test the node's manifest declares (the gate flips through the mount-resolved layer alone); the named gate runs the module's test file and I reproduced 15 passed, EXIT=0 at d42af0c20.",
+    "goal": "the node's goal is to read review.plan_change_threshold through the real flight config so a host or project layer changes the gate's verdict, and to fold in the prior review's three findings; d42af0c20 makes the coverage predicate resolve the project config when no caller passes one, collapses the two functions into the one predicate, drops the plan-section citation and corrects the fragment counts, so the landed change is what the goal states.",
+    "manifest": "read; status complete, one new commit d42af0c20 listed as acted for findings f2e37a0bf0b/fa444c181e1/fc97a32b2c8, tests 15 passed EXIT=0, and baseline_suite (64e6b3376, 3 failed) and after_suite (c8a1ae305, 2 failed) with their log paths.",
+    "write_paths": "the manifest declares eleven changed paths and the section's write set; git diff 0a5e3a893..d42af0c20 touches exactly plan_review.py, routing.py, flight.py, the landing fragment and three test files, all inside that set."
+  },
+  "justifications": {
+    "durability": "the new case drives the real store, the real flight resolution and the real gate refusal, so reverting the config resolution reddens it rather than leaving it green; the collapse keeps the predicate's three-value contract asserted by the two helper callers.",
+    "evidence": "the added case test_a_project_layer_threshold_changes_the_gate_verdict restores the real flight.resolve, writes the project layer where the mount resolves it, and asserts the gate flips to a refusal naming section b with its measured share through that path alone; I re-ran the gate at d42af0c20 (15 passed, EXIT=0) and the full target list at base 0a5e3a893 and head d42af0c20 (2 failed / 2 failed, identical ids), so the delta adds no failure.",
+    "fit": "one fit defect: the new case reassigns the monkeypatch fixture to its own None return; otherwise the additions follow the module's lazy-import and single-reader idiom.",
+    "goal_fidelity": "the delta is the review-response commit for the significant-change node: it makes the gate read the configured threshold (the exact promise flight.py and the fragment state), collapses the two coverage functions into the one predicate \u00a721 and \u00a722 share, and removes the plan-section citation and the stale fragment counts; every hunk serves the node's stated goal.",
+    "reuse": "the delta deletes the duplicate _review_coverage forwarder and the restating _plan_review_change_threshold, reads its range through the shared REVIEW_OWNED_KEYS shape check, and reuses the flight accessor and flight.resolve instead of a second range test or resolution path.",
+    "scope_discipline": "every changed path lies inside the node's declared write set; the two test helpers unpacking the collapsed predicate are named in the node's manifest as edits outside its declared orientation paths, and no production file outside plan_review.py, routing.py and flight.py is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read review.plan_change_threshold through the real flight config so a host or project layer changes the gate's verdict, and to fold in the prior review's three findings; d42af0c20 makes the coverage predicate resolve the project config when no caller passes one, collapses the two functions into the one predicate, drops the plan-section citation and corrects the fragment counts, so the landed change is what the goal states.\nVERDICT done_when: the added case names the project layer test the node's manifest declares (the gate flips through the mount-resolved layer alone); the named gate runs the module's test file and I reproduced 15 passed, EXIT=0 at d42af0c20.\nVERDICT write_paths: the manifest declares eleven changed paths and the section's write set; git diff 0a5e3a893..d42af0c20 touches exactly plan_review.py, routing.py, flight.py, the landing fragment and three test files, all inside that set.\nVERDICT manifest: read; status complete, one new commit d42af0c20 listed as acted for findings f2e37a0bf0b/fa444c181e1/fc97a32b2c8, tests 15 passed EXIT=0, and baseline_suite (64e6b3376, 3 failed) and after_suite (c8a1ae305, 2 failed) with their log paths.\nVERDICT diff: read commit by commit against 0a5e3a893; one commit d42af0c20 collapses _review_coverage_report and the two-value forwarder into _review_coverage returning three values, resolves the flight config inside the predicate, reads the threshold range through REVIEW_OWNED_KEYS, drops the plan-section citation, corrects the fragment, and updates the three callers and one new test; every hunk serves the goal.\nCALL_SITES: reckon/crew/routing.py:2677, reckon/crew/recovery.py:494, reckon/crew/plan_review.py:632\nSCORE goal_fidelity: 17\nSCORE evidence: 18\nSCORE scope_discipline: 16\nSCORE durability: 17\nSCORE fit: 15\nSCORE reuse: 18\nJUSTIFICATION goal_fidelity: the delta is the review-response commit for the significant-change node: it makes the gate read the configured threshold (the exact promise flight.py and the fragment state), collapses the two coverage functions into the one predicate \u00a721 and \u00a722 share, and removes the plan-section citation and the stale fragment counts; every hunk serves the node's stated goal.\nJUSTIFICATION evidence: the added case test_a_project_layer_threshold_changes_the_gate_verdict restores the real flight.resolve, writes the project layer where the mount resolves it, and asserts the gate flips to a refusal naming section b with its measured share through that path alone; I re-ran the gate at d42af0c20 (15 passed, EXIT=0) and the full target list at base 0a5e3a893 and head d42af0c20 (2 failed / 2 failed, identical ids), so the delta adds no failure.\nJUSTIFICATION scope_discipline: every changed path lies inside the node's declared write set; the two test helpers unpacking the collapsed predicate are named in the node's manifest as edits outside its declared orientation paths, and no production file outside plan_review.py, routing.py and flight.py is touched.\nJUSTIFICATION durability: the new case drives the real store, the real flight resolution and the real gate refusal, so reverting the config resolution reddens it rather than leaving it green; the collapse keeps the predicate's three-value contract asserted by the two helper callers.\nJUSTIFICATION fit: one fit defect: the new case reassigns the monkeypatch fixture to its own None return; otherwise the additions follow the module's lazy-import and single-reader idiom.\nJUSTIFICATION reuse: the delta deletes the duplicate _review_coverage forwarder and the restating _plan_review_change_threshold, reads its range through the shared REVIEW_OWNED_KEYS shape check, and reuses the flight accessor and flight.resolve instead of a second range test or resolution path.\nFINDING tests/test_review_is_earned_by_significant_change.py:339 follow-on: `monkeypatch = monkeypatch.setattr(flight, 'resolve', _REAL_RESOLVE)` rebinds the fixture name to the None that setattr returns; the restore still takes effect, but the line only works because monkeypatch is never read again, so it should be a bare statement.\n",
+  "review_run_id": "r-20261006T122000434745-review-of-review-is-earned-by-significant-change",
+  "review_type": null,
+  "reviewed_base_sha": "0a5e3a893c40505fef470927c0d7c7d6b010aeba",
+  "reviewed_head_sha": "d42af0c2013d5ddcc560783dc582f3b15657fead",
+  "reviewed_run_id": "r-20261006T104213071108-review-is-earned-by-significant-change",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T12:32:40.790634+00:00",
+  "total": 101
+}

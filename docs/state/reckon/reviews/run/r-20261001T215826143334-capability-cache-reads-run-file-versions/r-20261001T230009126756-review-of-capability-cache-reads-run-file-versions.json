@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/capabilities.py:707",
+    "reckon/capabilities.py:945",
+    "reckon/capabilities.py:1141",
+    "reckon/capabilities.py:1324"
+  ],
+  "completed_at": "2026-10-01T23:18:09.393Z",
+  "dispatched_at": "2026-10-01T23:00:32Z",
+  "findings": [
+    {
+      "file": "reckon/capabilities.py",
+      "line": "707",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's after_suite gate log ran at 376b2beef, its parent, not the reviewed head 028a4aede. The intervening commit 028a4aede is annotations only (source_versions annotations changed from dict[str, int] to dict[str, str]) so behaviour is identical, and this review re-ran the same three-file gate at 028a4aede (46 passed, EXIT=0, logs/review_head_gate.log) to close the revision gap."
+    }
+  ],
+  "item_aggregate": 99,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s) in reckon/capabilities.py:707, :945, :1141, :1324, all routing the cache freshness key through ledger.history_version",
+    "diff": "read 70d735acb..028a4aede; two files, 31 insertions and 10 deletions, both inside the declared source write paths, no test file edited",
+    "done_when": "tests/test_capabilities.py:482 and tests/test_capabilities.py:618 are red at base (logs/base_three_files.log, 2 failed) and green at head (this review's logs/review_head_gate.log, 46 passed, EXIT=0)",
+    "goal": "reckon/capabilities.py keys capability-cache freshness on ledger.history_version, which folds the run ids ledger.load returns beside the aggregate version, so an appended run moves the key",
+    "manifest": "read; names the head gate 46 passed, the base arm 2 failed/44 passed, two negative controls, and commits 376b2beef and 028a4aede",
+    "write_paths": "the diff touches only reckon/capabilities.py and reckon/ledger.py, both inside the declared source write paths; no fragment or figure was produced, stated in the manifest as a small node under the landing contract"
+  },
+  "justifications": {
+    "durability": "history_version sits beside ledger.load at reckon/ledger.py:767 and is a reader the named regression tests drive; it is falsifiable, and reverting the key to the aggregate version alone reddens both named ids (this review's runtime-mutation control logs/review_negative_control.log, EXIT=1, and the reviewed run's logs/negative_control.log)",
+    "evidence": "the base arm at logs/base_three_files.log (2 failed, exactly the two named ids) and the head arm at logs/head_three_files.log (46 passed, EXIT=0) are recorded; this review independently re-ran the three-file gate at the reviewed head 028a4aede (46 passed, EXIT=0) and independently reproduced the guard refusal by mutating history_version to aggregate-only at runtime (both named ids failed, EXIT=1, 2.03s)",
+    "fit": "history_version sits beside ledger.load at reckon/ledger.py:767 and reuses the module hashlib and Mapping imports; the source_versions annotations at reckon/capabilities.py:701 and :940 and the _current_ledger_versions return annotation now read dict[str, str], matching the string keys history_version returns",
+    "goal_fidelity": "reckon/capabilities.py:707, :945, :1141 and :1324 all route the cache key through ledger.history_version; reckon/ledger.py:767 folds the sorted run ids into a sha256 digest prefixed by the aggregate version, so a promoted run's file moves the key without an extra read (verified directly: appended run changes the key, run order does not, an empty run set still carries the aggregate prefix)",
+    "scope_discipline": "git diff 70d735acb..028a4aede touches exactly reckon/capabilities.py and reckon/ledger.py, 31 insertions and 10 deletions, with no test file edited and nothing the goal does not imply"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reckon/capabilities.py keys capability-cache freshness on ledger.history_version, which folds the run ids ledger.load returns beside the aggregate version, so an appended run moves the key.\nVERDICT done_when: tests/test_capabilities.py:482 and tests/test_capabilities.py:618 are red at base (logs/base_three_files.log, 2 failed) and green at head (this review's logs/review_head_gate.log, 46 passed, EXIT=0).\nVERDICT write_paths: the diff touches only reckon/capabilities.py and reckon/ledger.py, both inside the declared source write paths.\nVERDICT manifest: read; names the head gate 46 passed, the base arm 2 failed/44 passed, two negative controls, and commits 376b2beef and 028a4aede.\nVERDICT diff: read 70d735acb..028a4aede; two files, 31 insertions and 10 deletions, no test file edited.\nCALL_SITES: reckon/capabilities.py:707, reckon/capabilities.py:945, reckon/capabilities.py:1141, reckon/capabilities.py:1324\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all four sites route the cache key through ledger.history_version; the digest folds sorted run ids so an appended run moves the key without an extra read.\nSCORE evidence: 19\nJUSTIFICATION evidence: base arm 2 failed (exactly the two named ids), head arm 46 passed; this review re-ran the gate at the reviewed head and reproduced a red negative control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the two declared source files, no test file edited.\nSCORE durability: 20\nJUSTIFICATION durability: history_version is a reusable reader the named regression drives, and mutating it back reddens both named ids.\nSCORE fit: 20\nJUSTIFICATION fit: history_version sits beside ledger.load and reuses the module imports; the source_versions annotations now read dict[str, str].\nFINDING reckon/capabilities.py:707 follow-on: the reviewed run's after_suite log ran at 376b2beef, its parent; 028a4aede is annotation-only, and this review re-ran the gate at 028a4aede (46 passed).",
+  "review_run_id": "r-20261001T230009126756-review-of-capability-cache-reads-run-file-versions",
+  "reviewed_base_sha": "70d735acba3500ae9f5c147bc3bd57ce545b40cd",
+  "reviewed_head_sha": "028a4aedeea36d88739150a80a03654f7f2a1580",
+  "reviewed_run_id": "r-20261001T215826143334-capability-cache-reads-run-file-versions",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T230009126756-review-of-capability-cache-reads-run-file-versions",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T23:13:55+00:00",
+  "total": 99
+}

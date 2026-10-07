@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-28T08:39:14.402Z",
+  "dispatched_at": "2026-09-28T05:58:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T055758782643-state-the-local-lane-death-rate/manifest.md",
+      "line": "23",
+      "text": "the evidence_inputs line claims \"21 runs disagreeing with the ledger row and recorded rather than resolved\", but the committed artefact's before.role_attribution_disagreements (docs/research/data/local-lane-deaths.json:302) is an empty list and re-running the scanner's own filter over the current corpus finds 0 disagreements among the 2480 local-lane directories where both a prompt role and a ledger role are present, so a coordinator writing this back would carry a count the measurement does not hold."
+    },
+    {
+      "file": "docs/research/data/local-lane-deaths.json",
+      "line": "32",
+      "text": "deaths.at_review_effort is 297, the review-role total, while the same block declares review_effort xhigh whose cell holds 296 of 1011 dead, so a reader or fence taking the pair together finds a count the file's own effort split contradicts and the doc's headline sentence at docs/research/local-lane-death-rate.html:24 inherits the pooling."
+    },
+    {
+      "file": "docs/research/local-lane-death-rate.html",
+      "line": "62",
+      "text": "the sentence \"The script and its output both persist\" rests the after-rate and the stated no-code-change re-run on scan_local_lane_deaths.py living in the run directory under ~/.config/reckon/crew/runs/, which no fence, version control or retention rule protects, so the measurement cannot be reproduced from the repository and the follow-on that produces the after block depends on that file surviving."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 1adc0d18 \u2014 41074252 adds the data file and its gate, 50da2f08 adds the research page and the figure, bd735f73 appends the landing record to \u00a74 and opens the cumulative evidence record with the controls and the negative control.",
+    "done_when": "the measure is the committed file plus the test that reads it \u2014 the file is 115846 bytes (under the 200 KB fence) and tests/test_the_local_lane_death_rate_is_stated.py:20 resolves it from __file__ with only json and pathlib imported, asserts a non-zero count, the positive control's death and a same-run completion, and the named gate exits 0 at bd735f73 with 5 passed in 0.40s, which I re-ran.",
+    "goal": "the goal is the local-lane death rate that gates the orchestrator-lane fence, measured from the runs' own streams; docs/research/data/local-lane-deaths.json states the before block (297 of 1059 review attempts, 28.05%) and docs/research/local-lane-death-rate.html states it with the deaths-per-day-by-role figure, while the after-rate is explicitly not produced with its reason.",
+    "manifest": "read; it records the three commits, the gate result, the negative-control log, the measurement module and its inputs, but its evidence_inputs line at manifest.md:23 claims 21 runs disagreeing with the ledger row \"recorded rather than resolved\", and the committed artefact records no such rows.",
+    "write_paths": "git diff --name-status 1adc0d18..bd735f73 returns exactly the six declared paths (the data file, the page, the test, the figure's one file, the evidence record and the plan), with nothing touched outside the six declared write paths."
+  },
+  "justifications": {
+    "durability": "the negative-control log shows the guard firing (removing the control entry reddens two tests with KeyError at tests/test_the_local_lane_death_rate_is_stated.py:52), but a change that moves the count from 297 to any other positive number leaves every assertion green, since nothing binds the numeral.",
+    "evidence": "the gate asserts the done_when's shape and reproduces green at the reviewed head, and my independent probe of three claimed-dead review streams found no result record in each while finding result/success in the known-completed control, but the doc's figure is bound to the data file by nothing, the manifest's provenance claim is false of the artefact, and the scanner that produced the number has no home in the repository.",
+    "fit": "tests/test_the_local_lane_death_rate_is_stated.py:1 names its mechanism without plan labels or version suffixes and reads only a repository file, and docs/research/local-lane-death-rate.html:78 embeds its figure with the project-absolute src the convention requires.",
+    "goal_fidelity": "docs/research/data/local-lane-deaths.json:32 stores the headline count in deaths.at_review_effort, which is the review-role total (296 xhigh plus 1 high, per the file's own cells) while the same block declares review_effort xhigh, so the number the fence reads is the review-role rate under an effort label.",
+    "scope_discipline": "git diff --name-status 1adc0d18..bd735f73 is set-equal to the six declared write paths, and the plan commit leaves the plan-version and plan-modified meta lines byte-identical."
+  },
+  "project": "reckon",
+  "raw_text": "# Independent review \u2014 r-20260928T055758782643-state-the-local-lane-death-rate\n\nRead: the node's brief and done-when from its own prompt.txt, its manifest, the\nthree-commit diff against 1adc0d18, the gate and negative-control logs, the\ncommitted data file, the research page, the plan landing record and the\ncumulative evidence record. Re-ran the named gate at the reviewed head. Probed\nthree claimed-dead review streams and the known-completed control stream with an\nindependent reader. Reproduced the scanner's role-disagreement filter.\n\nVERDICT goal: the goal is the local-lane death rate that gates the orchestrator-lane fence, measured from the runs' own streams; docs/research/data/local-lane-deaths.json states the before block (297 of 1059 review attempts, 28.05%) and docs/research/local-lane-death-rate.html states it with the deaths-per-day-by-role figure, while the after-rate is explicitly not produced with its reason.\nVERDICT done_when: the measure is the committed file plus the test that reads it \u2014 the file is 115846 bytes (under the 200 KB fence) and tests/test_the_local_lane_death_rate_is_stated.py:20 resolves it from __file__ with only json and pathlib imported, asserts a non-zero count, the positive control's death and a same-run completion, and the named gate exits 0 at bd735f73 with 5 passed in 0.40s, which I re-ran.\nVERDICT write_paths: git diff --name-status 1adc0d18..bd735f73 returns exactly the six declared paths (the data file, the page, the test, the figure's one file, the evidence record and the plan), with nothing touched outside the six declared write paths.\nVERDICT manifest: read; it records the three commits, the gate result, the negative-control log, the measurement module and its inputs, but its evidence_inputs line at manifest.md:23 claims 21 runs disagreeing with the ledger row \"recorded rather than resolved\", and the committed artefact records no such rows.\nVERDICT diff: read commit by commit against 1adc0d18 \u2014 41074252 adds the data file and its gate, 50da2f08 adds the research page and the figure, bd735f73 appends the landing record to \u00a74 and opens the cumulative evidence record with the controls and the negative control.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/research/data/local-lane-deaths.json:32 stores the headline count in deaths.at_review_effort, which is the review-role total (296 xhigh plus 1 high, per the file's own cells) while the same block declares review_effort xhigh, so the number the fence reads is the review-role rate under an effort label.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate asserts the done_when's shape and reproduces green at the reviewed head, and my independent probe of three claimed-dead review streams found no result record in each while finding result/success in the known-completed control, but the doc's figure is bound to the data file by nothing, the manifest's provenance claim is false of the artefact, and the scanner that produced the number has no home in the repository.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 1adc0d18..bd735f73 is set-equal to the six declared write paths, and the plan commit leaves the plan-version and plan-modified meta lines byte-identical.\nSCORE durability: 17\nJUSTIFICATION durability: the negative-control log shows the guard firing (removing the control entry reddens two tests with KeyError at tests/test_the_local_lane_death_rate_is_stated.py:52), but a change that moves the count from 297 to any other positive number leaves every assertion green, since nothing binds the numeral.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_the_local_lane_death_rate_is_stated.py:1 names its mechanism without plan labels or version suffixes and reads only a repository file, and docs/research/local-lane-death-rate.html:78 embeds its figure with the project-absolute src the convention requires.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T055758782643-state-the-local-lane-death-rate/manifest.md:23 the evidence_inputs line claims \"21 runs disagreeing with the ledger row and recorded rather than resolved\", but the committed artefact's before.role_attribution_disagreements (docs/research/data/local-lane-deaths.json:302) is an empty list and re-running the scanner's own filter over the current corpus finds 0 disagreements among the 2480 local-lane directories where both a prompt role and a ledger role are present, so a coordinator writing this back would carry a count the measurement does not hold.\nFINDING docs/research/data/local-lane-deaths.json:32 deaths.at_review_effort is 297, the review-role total, while the same block declares review_effort xhigh whose cell holds 296 of 1011 dead, so a reader or fence taking the pair together finds a count the file's own effort split contradicts and the doc's headline sentence at docs/research/local-lane-death-rate.html:24 inherits the pooling.\nFINDING docs/research/local-lane-death-rate.html:62 the sentence \"The script and its output both persist\" rests the after-rate and the stated no-code-change re-run on scan_local_lane_deaths.py living in the run directory under ~/.config/reckon/crew/runs/, which no fence, version control or retention rule protects, so the measurement cannot be reproduced from the repository and the follow-on that produces the after block depends on that file surviving.",
+  "review_run_id": "legacy-b104d4618501",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "1adc0d183b29ef75e6d948d7a518e2a1c5ebb82f",
+  "reviewed_head_sha": "bd735f73b6c77da4d9134192c0f4051cd7739b56",
+  "reviewed_run_id": "r-20260928T055758782643-state-the-local-lane-death-rate",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T07:44:03.282100+00:00",
+  "total": 91
+}

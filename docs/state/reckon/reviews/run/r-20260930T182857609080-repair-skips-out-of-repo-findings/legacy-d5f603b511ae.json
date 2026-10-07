@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "the reviewed run's own arm logs named by its manifest's test_logs field: red-before-fix.log (revision e7eca9f0361b661cc4a435b3a39015497a795688, 1 failed / 1 passed) as the base arm and gate.log (revision 092698278a0bb3b24819459476cb06cda65986e5, 18 passed) as the after arm; the base arm's only failing id is test_a_round_with_no_repository_finding_dispatches_nothing and the after arm carries no FAILED/ERROR id, so the set difference is empty and the count is a measured zero. The manifest does not carry the armed baseline_suite/after_suite fields, so the store's read-time annotation reports this count unmeasured.",
+  "base_log_revision": "e7eca9f0361b661cc4a435b3a39015497a795688",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:2079"
+  ],
+  "completed_at": "2026-09-30T19:03:05.648Z",
+  "dispatched_at": "2026-09-30T18:29:17Z",
+  "findings": [
+    {
+      "file": "tests/test_a_repair_hold_names_its_cause.py",
+      "line": "227",
+      "text": "the reviewed gate's arm ran only the two declared test files, leaving outside the population the one other file that calls recovery.dispatch_repair_for_run directly; it passes at the reviewed head (4 passed), so nothing regressed, but a change to that function's decision is measured by an arm narrower than the files that cover it."
+    }
+  ],
+  "head_log_revision": "092698278a0bb3b24819459476cb06cda65986e5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against the base; recovery.py replaces the empty-scope check over the composed write scope with one over the finding records' own cited paths, adds the decline-only record and the reason, the new test drives both halves through the reflex with the dispatch stubbed, and the fragment is a new cumulative record rather than an overwrite of a peer's.",
+    "done_when": "the node's measure is that the guard fires on the defect; I re-ran the named gate in a scratch tree at the reviewed head (PYTHONPATH=/tmp/rev-head, module /tmp/rev-head/reckon/crew/recovery.py, 18 passed, EXIT=0) and the same new test file against the base source e7eca9f03 (/tmp/rev-base, 1 failed 1 passed, EXIT=1), the single failure being exactly test_a_round_with_no_repository_finding_dispatches_nothing.",
+    "goal": "the node's goal is that a repair round whose findings cite no repository path dispatches no repair; at the reviewed head reckon/crew/recovery.py:1801 reads that decision from the findings' own `file` fields through `_repairable_scope` instead of from the composed scope, and the all-record round in tests/test_repair_skips_out_of_repo_findings.py:242 launches nothing and records decline-only.",
+    "manifest": "read; it reads status complete, its changed_paths match the diff, and its test_logs name gate.log (head, revision 092698278, 18 passed), red-before-fix.log (base, revision e7eca9f03, 1 failed 1 passed) and negative-control.log, all of which exist on disk and carry the revisions their headers name.",
+    "write_paths": "the range e7eca9f03..092698278 changes exactly reckon/crew/recovery.py (+23/-11), tests/test_repair_skips_out_of_repo_findings.py (new, 328 lines) and docs/evidence/fragments/a-review-is-sized-to-its-risk/repair-skips-out-of-repo-findings.html (new, 3 lines), and names no path outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_repair_skips_out_of_repo_findings.py:288 reddens both when the old check is restored (negative-control.log, EXIT=1) and at the base revision, so the assertion names the regression it guards, while the in-repo record prefix at recovery.py:1524 is asserted only by test_reflex_dispatches_one_repair.py:567, which passes at the base too and so guards without discriminating this fix.",
+    "evidence": "the recorded gate (18 passed, EXIT=0 at 092698278) and the recorded red arm (1 failed 1 passed at e7eca9f03) both reproduce in my own scratch runs, but the arm population is the two declared test files while tests/test_a_repair_hold_names_its_cause.py:227 is the one other file that calls the changed function directly, and the manifest names no armed baseline_suite/after_suite field so the store's own read-time added-failure annotation reads this run unmeasured.",
+    "fit": "the change keeps the module's docstring idiom, updates the guarded-list prose at reckon/crew/recovery.py:1723 to the new reading, and both commit subjects carry bodies with no plan label, version or attribution.",
+    "goal_fidelity": "reckon/crew/recovery.py:1801 reads the decision from the findings' own paths, so a round whose findings name only a manifest, a gate log or a review-store path declines although the composed scope still carries the reviewed run's test paths; I reproduced both the defect and the fix.",
+    "scope_discipline": "the three paths the range touches are the declared write paths and nothing else, and the fragment is a new file rather than a rewrite of a peer's record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a repair round whose findings cite no repository path dispatches no repair; at the reviewed head reckon/crew/recovery.py:1801 reads that decision from the findings' own `file` fields through `_repairable_scope` instead of from the composed scope, and the all-record round in tests/test_repair_skips_out_of_repo_findings.py:242 launches nothing and records decline-only.\nVERDICT done_when: the node's measure is that the guard fires on the defect; I re-ran the named gate in a scratch tree at the reviewed head (PYTHONPATH=/tmp/rev-head, module /tmp/rev-head/reckon/crew/recovery.py, 18 passed, EXIT=0) and the same new test file against the base source e7eca9f03 (/tmp/rev-base, 1 failed 1 passed, EXIT=1), the single failure being exactly test_a_round_with_no_repository_finding_dispatches_nothing.\nVERDICT write_paths: the range e7eca9f03..092698278 changes exactly reckon/crew/recovery.py (+23/-11), tests/test_repair_skips_out_of_repo_findings.py (new, 328 lines) and docs/evidence/fragments/a-review-is-sized-to-its-risk/repair-skips-out-of-repo-findings.html (new, 3 lines), and names no path outside them.\nVERDICT manifest: read; it reads status complete, its changed_paths match the diff, and its test_logs name gate.log (head, revision 092698278, 18 passed), red-before-fix.log (base, revision e7eca9f03, 1 failed 1 passed) and negative-control.log, all of which exist on disk and carry the revisions their headers name.\nVERDICT diff: read commit by commit against the base; recovery.py replaces the empty-scope check over the composed write scope with one over the finding records' own cited paths, adds the decline-only record and the reason, the new test drives both halves through the reflex with the dispatch stubbed, and the fragment is a new cumulative record rather than an overwrite of a peer's.\nCALL_SITES: reckon/crew/recovery.py:2079\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1801 reads the decision from the findings' own paths, so a round whose findings name only a manifest, a gate log or a review-store path declines although the composed scope still carries the reviewed run's test paths; I reproduced both the defect and the fix.\nSCORE evidence: 16\nJUSTIFICATION evidence: the recorded gate (18 passed, EXIT=0 at 092698278) and the recorded red arm (1 failed 1 passed at e7eca9f03) both reproduce in my own scratch runs, but the arm population is the two declared test files while tests/test_a_repair_hold_names_its_cause.py:227 is the one other file that calls the changed function directly, and the manifest names no armed baseline_suite/after_suite field so the store's own read-time added-failure annotation reads this run unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths the range touches are the declared write paths and nothing else, and the fragment is a new file rather than a rewrite of a peer's record.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_repair_skips_out_of_repo_findings.py:288 reddens both when the old check is restored (negative-control.log, EXIT=1) and at the base revision, so the assertion names the regression it guards, while the in-repo record prefix at recovery.py:1524 is asserted only by test_reflex_dispatches_one_repair.py:567, which passes at the base too and so guards without discriminating this fix.\nSCORE fit: 20\nJUSTIFICATION fit: the change keeps the module's docstring idiom, updates the guarded-list prose at reckon/crew/recovery.py:1723 to the new reading, and both commit subjects carry bodies with no plan label, version or attribution.\nFINDING tests/test_a_repair_hold_names_its_cause.py:227 the reviewed gate's arm ran only the two declared test files, leaving outside the population the one other file that calls recovery.dispatch_repair_for_run directly; it passes at the reviewed head (4 passed), so nothing regressed, but a change to that function's decision is measured by an arm narrower than the files that cover it.\n",
+  "review_run_id": "legacy-d5f603b511ae",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "e7eca9f0361b661cc4a435b3a39015497a795688",
+  "reviewed_head_sha": "092698278a0bb3b24819459476cb06cda65986e5",
+  "reviewed_run_id": "r-20260930T182857609080-repair-skips-out-of-repo-findings",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T19:20:13.324024+00:00",
+  "total": 95
+}

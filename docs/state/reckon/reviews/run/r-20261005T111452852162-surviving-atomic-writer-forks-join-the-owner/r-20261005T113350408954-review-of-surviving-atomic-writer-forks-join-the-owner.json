@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/_store.py:363",
+    "reckon/_store.py:1211",
+    "reckon/_store.py:1514",
+    "reckon/_store.py:1975",
+    "reckon/project_state.py:1083",
+    "reckon/project_state.py:1802",
+    "reckon/project_state.py:2009",
+    "reckon/project_state.py:2105",
+    "reckon/project_state.py:2312",
+    "reckon/crew/follow_checkpoint.py:442"
+  ],
+  "completed_at": "2026-10-05T11:45:28.440Z",
+  "dispatched_at": "2026-10-05T11:34:06Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "427",
+      "severity": "follow-on",
+      "text": "follow-on: `render` is annotated `Callable[[TextIO], None]` while `binary=True` hands the callback a binary BufferedWriter, so the annotation misdescribes the binary contract and a type checker reading the binary call sites sees the wrong handle type."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit by commit against the base; the implementation commit deletes three private forks and routes their call sites through write_atomically, and the evidence commit adds the fragment.",
+    "done_when": "the done_when names a def-grep, a replace-grep, the interface-count delta, the focused pytest gate and the negative control; each is recorded in the manifest and the gate reproduced here at 177 passed EXIT=0.",
+    "goal": "the node's goal is to promote the sibling-temporary writer to the public `write_atomically` with a `binary` keyword and route the former forks through it; reckon/_store.py:426 defines `write_atomically` and every former call site in the three named modules now reaches it.",
+    "manifest": "read; it records def-grep 1 line, replace-grep 1 hit, public_definitions 1474->1475, gate 177 passed EXIT=0, and the negative control reddening two durability tests.",
+    "write_paths": "read the manifest's declared paths; git diff --name-only 1af6dba95 352f287e1 lists six paths, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_atomic_writer_has_one_owner.py:277 drives each former call site with an interrupted render and would redden if a call site kept its own temporary, and the negative control reddens the directory-fsync guard.",
+    "evidence": "the focused gate reproduced at 177 passed EXIT=0 and the public_definitions delta 1474->1475 reproduced, but the reviewed manifest declares no baseline/after arm so no added-failure count could be derived.",
+    "fit": "reckon/_store.py:426 follows its sibling `write_json_atomically`, introduces no plan or stage identifier, and the new public name states what it does.",
+    "goal_fidelity": "reckon/_store.py:426 defines `write_atomically` with the `binary` keyword and reckon/project_state.py:1083 plus reckon/crew/follow_checkpoint.py:442 route the former forks through it.",
+    "reuse": "the change extends the existing atomic-publish owner rather than forking it, deleting the three private temp-and-replace helpers it replaces.",
+    "scope_discipline": "git diff --name-only 1af6dba95 352f287e1 returns six paths, all within the declared write scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to promote the sibling-temporary writer to the public `write_atomically` with a `binary` keyword and route the former forks through it; reckon/_store.py:426 defines `write_atomically` and every former call site in the three named modules now reaches it.\nVERDICT done_when: the done_when names a def-grep, a replace-grep, the interface-count delta, the focused pytest gate and the negative control; each is recorded in the manifest and the gate reproduced here at 177 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths; git diff --name-only 1af6dba95 352f287e1 lists six paths, all inside the declared scope.\nVERDICT manifest: read; it records def-grep 1 line, replace-grep 1 hit, public_definitions 1474->1475, gate 177 passed EXIT=0, and the negative control reddening two durability tests.\nVERDICT diff: read commit by commit against the base; the implementation commit deletes three private forks and routes their call sites through write_atomically, and the evidence commit adds the fragment.\nCALL_SITES: reckon/_store.py:363, reckon/_store.py:1211, reckon/_store.py:1514, reckon/_store.py:1975, reckon/project_state.py:1083, reckon/project_state.py:1802, reckon/project_state.py:2009, reckon/project_state.py:2105, reckon/project_state.py:2312, reckon/crew/follow_checkpoint.py:442\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_store.py:426 defines `write_atomically` with the `binary` keyword and reckon/project_state.py:1083 plus reckon/crew/follow_checkpoint.py:442 route the former forks through it.\nSCORE evidence: 19\nJUSTIFICATION evidence: the focused gate reproduced at 177 passed EXIT=0 and the public_definitions delta 1474->1475 reproduced, but the reviewed manifest declares no baseline/after arm so no added-failure count could be derived.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 1af6dba95 352f287e1 returns six paths, all within the declared write scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_atomic_writer_has_one_owner.py:277 drives each former call site with an interrupted render and would redden if a call site kept its own temporary, and the negative control reddens the directory-fsync guard.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_store.py:426 follows its sibling `write_json_atomically`, introduces no plan or stage identifier, and the new public name states what it does.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing atomic-publish owner rather than forking it, deleting the three private temp-and-replace helpers it replaces.\nFINDING reckon/_store.py:427 follow-on: `render` is annotated `Callable[[TextIO], None]` while `binary=True` hands the callback a binary BufferedWriter, so the annotation misdescribes the binary contract and a type checker reading the binary call sites sees the wrong handle type.\n",
+  "review_run_id": "r-20261005T113350408954-review-of-surviving-atomic-writer-forks-join-the-owner",
+  "reviewed_base_sha": "1af6dba95de54006e5fc2f83421da0ef9c1156ad",
+  "reviewed_head_sha": "352f287e1d9a52f54d624d60a83ca1fac054d007",
+  "reviewed_run_id": "r-20261005T111452852162-surviving-atomic-writer-forks-join-the-owner",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T11:43:35.023160+00:00",
+  "total": 117
+}

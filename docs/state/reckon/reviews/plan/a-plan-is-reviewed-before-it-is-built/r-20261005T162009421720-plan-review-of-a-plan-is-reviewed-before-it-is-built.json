@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:25:26.029Z",
+  "dispatched_at": "2026-10-05T16:20:26Z",
+  "findings": [
+    {
+      "anchor": "reckon/evidence.py:50",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a717 rewrites the evidence renderer's heading walk and rests the whole redesign on there being one identity derivation, so it must fold `_section_key` onto the hoisted `section_record_id` or state, as \u00a716 already does for `is_section_identity` and the two readers in \u00a718, why `ledger.normalize_section`'s display form is a distinct question; otherwise the \"one definition of identity\" invariant the section depends on is false at the moment it lands.",
+      "text": "\u00a716 asserts the hoisted `section_record_id` is \"the one producer of values that [is_section_identity] accepts\", but `evidence._section_key` derives the identical `s5`/`s5-1` key from the same inputs (differing only in its slug fallback) and is used to key runs by section and to build the evidence renderer's section-label map, while `ledger.normalize_section` (reckon/ledger.py:203, delegated by reckon/crew/node.py:752) derives a second `\u00a75` spelling for the same numbered plan section; both are live section-identity readers, and in `reckon/evidence.py` the duplicate coexists with a `section_record_id` import",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "79f8e57c695ac9ab3d9fc678ac102fed685831b3caf439fb36187d719557966b",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 88,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T162009421720-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "026dad7d5522efee87ef5a5978ac143ad141a270",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 consolidates the scattered heading walks onto one parser behind the single public reader `plan_headings`, and \u00a716 hides the section-keyed digest and the coverage question behind `plan_fingerprint`'s unchanged public signature plus one private helper (`_section_digests`) and one private predicate, so complexity is added behind interfaces smaller than what they hide.",
+    "duplicate_owner": "a finding \u2014 \u00a716/\u00a717 hoist `section_record_id` as \"the one definition of identity\" but leave `reckon/evidence.py:50 _section_key` (an identical `s5`/`s5-1` derivation used to key evidence runs by section) and `reckon/ledger.py:203 normalize_section` (a second `\u00a75` spelling for the same numbered plan section, delegated by `reckon/crew/node.py:752`) deriving the same identities; evidence.py already imports `section_record_id` elsewhere, so the duplicate is live in a file \u00a717 edits.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds no public definition and retires `plan_fingerprint`'s `legacy` parameter, \u00a717 names `plan_headings` as its one added definition and re-homes `landed_section_ids` count-neutral, \u00a718 names its one added definition and retires the private promotion name, and \u00a716's refusal reuses the existing `plan-review-missing` family, so every section that touches a family names what it adds and what it retires or merges.",
+    "reuse_search": "pass \u2014 \u00a716\u2013\u00a718 name the existing mechanism each addition extends rather than describing one: the raw-text span parser `_StructuredSectionSpanParser`/`structured_section_spans` in `reckon/_plan_html.py`, the identity derivation `section_record_id`/`section_id_candidates` in `reckon/crew/routing.py`, the prose walk `_AuthoredProseParser` and store readers in `reckon/crew/plan_review.py`, `interface_counts.py` for the census rule, and the two section readers in `reckon/crew/promotion.py` and `reckon/doccheck.py`; each is opened and matches the plan's account.",
+    "thin_wrapper": "pass \u2014 every proposed layer states why the underlying machinery cannot simply be extended: \u00a717 keeps the parser private and adds `plan_headings` only because it crosses package boundaries under the house rule \u00a716 states, \u00a718's hoisted reader is a move of `promotion._plan_remaining_sections` rather than a new layer, and \u00a716 explicitly argues that the coverage predicate is not a wrapper over `read_plan_review` because it joins a set to a union."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.857018+00:00"
+}

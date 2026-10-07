@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py::Handler",
+    "reckon/serve.py::discover_plans"
+  ],
+  "completed_at": "2026-10-03T17:04:43.004Z",
+  "dispatched_at": "2026-10-03T16:55:12Z",
+  "findings": [
+    {
+      "file": "tests/test_a_sprint_that_exists_renders.py",
+      "line": "124",
+      "severity": "follow-on",
+      "text": "follow-on: the gate asserts the discovery payload's sprints list, the sprint view's input, not the rendered sprint route the done_when names; docs/ui/sprint.jsx:337 renders from window.STATE.sprints, so a regression in the view's id match or the state loader's merge escapes this pin."
+    },
+    {
+      "file": "docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/a-sprint-that-exists-renders.html",
+      "line": "48",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment records discover_plans returning S3\u2026S25 (distributed) for the real checkout, but the durable log it does not cite, served-checkout-probe.log, records GET /_discover/reckon as 500 with sprint ids [] and S25 carried False; the 500 is a read-only-lock sandbox artifact, and a reader reconciling the fragment against the log meets an unexplained contradiction."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; 68c2e4f3a adds a 130-line test that builds a distributed fixture project and drives serve.Handler, 0879c3414 adds a 95-line evidence fragment, and no production source changed.",
+    "done_when": "\u00a74's done_when asks for a test that serves a fixture project whose sprint file exists, requests its sprint route, and asserts the sprint renders; tests/test_a_sprint_that_exists_renders.py:111 requests /_discover and :124 asserts the payload's sprints list carries the row rather than the view rendering.",
+    "goal": "\u00a74's goal is to establish whether the \"No sprint.\" answer for a sprint whose file exists is a defect in the reader at main; the landed test and fragment show the reader at main carries the sprint row, so the cause is the served process, and the node states that.",
+    "manifest": "read; status complete, commits 68c2e4f3a (test) and 0879c3414 (fragment), head-test.log \"1 passed\", base-arm.log \"1 failed, 616 passed, 35 skipped\", head-arm-rerun.log \"1 failed, 617 passed, 35 skipped\", the negative control recorded with its path, and added failures zero.",
+    "write_paths": "the manifest declares reckon/serve.py, tests/test_a_sprint_that_exists_renders.py, the evidence fragment and a figures directory; git diff --name-only 4d1feeed9..0879c3414 returns exactly the test and the fragment, both inside that scope, and no source file was touched."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows a scratch copy whose fixture omits the sprint file failing at the test's payload assertion, and the head re-run is green, but the guard covers the payload and not the sprint view's row matching.",
+    "evidence": "head-test.log records the gate as \"1 passed\" but it asserts the /_discover payload rather than the rendered route, and the fragment's S3\u2026S25 claim rests on a stream call while served-checkout-probe.log records a contradicting 500.",
+    "fit": "both commits carry conventional subjects with bodies, the test follows the tmp_path/monkeypatch Handler idiom and the fragment the evidence-doc layout, and the naming checks find no plan label in either file.",
+    "goal_fidelity": "reckon/project_state.py has no diff across 0963c7b11..4d1feeed9 and the payload carries the sprint, so the \u00a74 cause \u2014 the stale served process rather than the reader \u2014 is established at main.",
+    "scope_discipline": "git diff --name-only 4d1feeed9 0879c3414 returns only tests/test_a_sprint_that_exists_renders.py and the evidence fragment, both inside the four declared write paths, and no shared plan or index state is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a74's goal is to establish whether the \"No sprint.\" answer for a sprint whose file exists is a defect in the reader at main; the landed test and fragment show the reader at main carries the sprint row, so the cause is the served process, and the node states that.\nVERDICT done_when: \u00a74's done_when asks for a test that serves a fixture project whose sprint file exists, requests its sprint route, and asserts the sprint renders; tests/test_a_sprint_that_exists_renders.py:111 requests /_discover and :124 asserts the payload's sprints list carries the row rather than the view rendering.\nVERDICT write_paths: the manifest declares reckon/serve.py, tests/test_a_sprint_that_exists_renders.py, the evidence fragment and a figures directory; git diff --name-only 4d1feeed9..0879c3414 returns exactly the test and the fragment, both inside that scope, and no source file was touched.\nVERDICT manifest: read; status complete, commits 68c2e4f3a (test) and 0879c3414 (fragment), head-test.log \"1 passed\", base-arm.log \"1 failed, 616 passed, 35 skipped\", head-arm-rerun.log \"1 failed, 617 passed, 35 skipped\", the negative control recorded with its path, and added failures zero.\nVERDICT diff: read commit by commit; 68c2e4f3a adds a 130-line test that builds a distributed fixture project and drives serve.Handler, 0879c3414 adds a 95-line evidence fragment, and no production source changed.\nCALL_SITES: reckon/serve.py::Handler, reckon/serve.py::discover_plans\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/project_state.py has no diff across 0963c7b11..4d1feeed9 and the payload carries the sprint, so the \u00a74 cause \u2014 the stale served process rather than the reader \u2014 is established at main.\nSCORE evidence: 15\nJUSTIFICATION evidence: head-test.log records the gate as \"1 passed\" but it asserts the /_discover payload rather than the rendered route, and the fragment's S3\u2026S25 claim rests on a stream call while served-checkout-probe.log records a contradicting 500.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 4d1feeed9 0879c3414 returns only tests/test_a_sprint_that_exists_renders.py and the evidence fragment, both inside the four declared write paths, and no shared plan or index state is touched.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log shows a scratch copy whose fixture omits the sprint file failing at the test's payload assertion, and the head re-run is green, but the guard covers the payload and not the sprint view's row matching.\nSCORE fit: 18\nJUSTIFICATION fit: both commits carry conventional subjects with bodies, the test follows the tmp_path/monkeypatch Handler idiom and the fragment the evidence-doc layout, and the naming checks find no plan label in either file.\nFINDING tests/test_a_sprint_that_exists_renders.py:124 follow-on: the gate asserts the discovery payload's sprints list, the sprint view's input, not the rendered sprint route the done_when names; docs/ui/sprint.jsx:337 renders from window.STATE.sprints, so a regression in the view's id match or the state loader's merge escapes this pin.\nFINDING docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/a-sprint-that-exists-renders.html:48 follow-on: the fragment records discover_plans returning S3\u2026S25 (distributed) for the real checkout, but the durable log it does not cite, served-checkout-probe.log, records GET /_discover/reckon as 500 with sprint ids [] and S25 carried False; the 500 is a read-only-lock sandbox artifact, and a reader reconciling the fragment against the log meets an unexplained contradiction.\nreviewed_base_sha: 4d1feeed905d145a3130e71293f2cfdf1233f1d7\nreviewed_head_sha: 0879c3414ea18a15a4f61c0a253ab8385e617063\n",
+  "review_run_id": "r-20261003T165453377295-review-of-a-sprint-that-exists-renders",
+  "reviewed_base_sha": "4d1feeed905d145a3130e71293f2cfdf1233f1d7",
+  "reviewed_head_sha": "0879c3414ea18a15a4f61c0a253ab8385e617063",
+  "reviewed_run_id": "r-20261003T162906962061-a-sprint-that-exists-renders",
+  "reviewer_run_id": "r-20261003T165453377295-review-of-a-sprint-that-exists-renders",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T17:03:13.936771+00:00",
+  "total": 85
+}

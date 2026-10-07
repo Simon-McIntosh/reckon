@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_follow_observes_other_sessions.py::test_the_real_configuration_home_gains_no_file",
+    "tests/test_producer_takes_new_code.py::test_a_producer_reexecutes_onto_changed_code"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "deab5e16a6b7489e04b92069476314a7f3e76b20",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T21:11:56.498Z",
+  "dispatched_at": "2026-09-30T21:04:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T185746215809-rollback-population/manifest.md",
+      "line": "22",
+      "text": "failure_attribution is {} while the after-minus-base gate-log delta is 2 ids (test_follow_observes_other_sessions.py::test_the_real_configuration_home_gains_no_file, test_producer_takes_new_code.py::test_a_producer_reexecutes_onto_changed_code), so the reviewed run's conclusion that neither is attributable to b2d19be lives only in report.md and evidence_inputs; a reader or gate consuming failure_attribution alone sees two added failures with no disposition. It does not block promotion here because the run is disarmed (suite_command is null, so _evaluate_suite_delta returns before the test-role check), but the field the dispatch named carries no disposition."
+    }
+  ],
+  "head_log_revision": "b2d19be3743af8f034b16e7fe961c719098bd0e1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "no repository diff from this node (test role); the measured candidate deab5e16..b2d19be touches reckon/crew/dispatch.py and reckon/ledger.py plus a new test and an evidence doc.",
+    "done_when": "mostly met with two recorded deviations - the two trees are blob-verified revision exports rather than registered worktrees (the run's git guard refused worktree registration and the main .git is read-only to the run), and the 60m budget ran to about 105m; both arms completed to their summary lines, the four candidate-only/base-only ids were each rerun alone 3x per revision, and no repository file changed.",
+    "goal": "read the dispatch goal (measure whether merging a-rollback-keeps-its-cause head 153767e adds any failing test, main deab5e16 vs merge b2d19be); the two arm logs at reports/reckon/s22-coord/rollback-population/base.log and candidate.log carry the whole-suite comparison and report.md the per-id attribution.",
+    "manifest": "read; status complete, baseline_suite (deab5e16, completed true, 75 failed) and after_suite (b2d19be, completed true, 76 failed) both present and re-parsed here, but failure_attribution is {} while the gate-log delta is 2 ids.",
+    "write_paths": "the grant is the report directory; every artifact (arm logs, arm JSONs, report.md, the drivers, 24 rerun logs) is inside it and the landing record is in the run's own directory, with the reviewed worktree clean at 97cb9a."
+  },
+  "justifications": {
+    "durability": "the count and ids re-derive from the persisted logs and arm JSONs (reproduced here as 2), so the measurement survives without the run, and the conclusion is grounded in reruns rather than one observation; deducted because the /tmp trees are deleted and the arms cannot be replayed, and because after_suite.failure_ids omits the setup-error signal it counts in prose.",
+    "evidence": "both gate logs name their revision, module.__file__ and cwd, carry completed true and an EXIT= line, the 24 rerun logs reproduce FAIL 3/3 (follow-config-home) and PASS 3/3 (the other three ids) at both revisions, and the added-failure count (2) re-derives from the logs through reckon/crew/review.py; deducted for the uncontrolled inter-arm load asymmetry (base ran at load 50-70, candidate at 12-20) and because the candidate's fifth setup error is represented only in report.md, not in after_suite.failure_ids.",
+    "fit": "the run used the main checkout's interpreter directly, wrote a report artifact in its run directory, named the candidate commit, and made the export deviation symmetric and blob-verified; deducted because the exact spec asked for registered worktrees whose absence of .git changes the environment under test, and because the two arms ran under different node load.",
+    "goal_fidelity": "the goal is achieved - a whole-suite comparison at both revisions with a per-id attribution, and the conclusion (0 failures attributable to b2d19be) is supported by the 3x-per-revision reruns and by the real-home artifact proj-e73c023a2e8e.followers that reproduces the one candidate-only failure at base too; deducted because the two exact-spec deviations are recorded in evidence_inputs rather than named in blockers.",
+    "scope_discipline": "no repository file changed (worktree HEAD stays 97cb9a and is clean), every write lands in the granted report directory or the run's own directory, and nothing is staged; deducted for the budget overrun of about 45 minutes and the departure from the exact worktree step."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 97cb9a147bf76a8388d85dca8129abc7054981f2\nreviewed_head_sha: 97cb9a147bf76a8388d85dca8129abc7054981f2\nVERDICT goal: read the dispatch goal (measure whether merging a-rollback-keeps-its-cause head 153767e adds any failing test, main deab5e16 vs merge b2d19be); the two arm logs at reports/reckon/s22-coord/rollback-population/base.log and candidate.log carry the whole-suite comparison and report.md the per-id attribution.\nVERDICT done_when: mostly met with two recorded deviations - the two trees are blob-verified revision exports rather than registered worktrees (the run's git guard refused worktree registration and the main .git is read-only to the run), and the 60m budget ran to about 105m; both arms completed to their summary lines, the four candidate-only/base-only ids were each rerun alone 3x per revision, and no repository file changed.\nVERDICT write_paths: the grant is the report directory; every artifact (arm logs, arm JSONs, report.md, the drivers, 24 rerun logs) is inside it and the landing record is in the run's own directory, with the reviewed worktree clean at 97cb9a.\nVERDICT manifest: read; status complete, baseline_suite (deab5e16, completed true, 75 failed) and after_suite (b2d19be, completed true, 76 failed) both present and re-parsed here, but failure_attribution is {} while the gate-log delta is 2 ids.\nVERDICT diff: no repository diff from this node (test role); the measured candidate deab5e16..b2d19be touches reckon/crew/dispatch.py and reckon/ledger.py plus a new test and an evidence doc.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is achieved - a whole-suite comparison at both revisions with a per-id attribution, and the conclusion (0 failures attributable to b2d19be) is supported by the 3x-per-revision reruns and by the real-home artifact proj-e73c023a2e8e.followers that reproduces the one candidate-only failure at base too; deducted because the two exact-spec deviations are recorded in evidence_inputs rather than named in blockers.\nSCORE evidence: 17\nJUSTIFICATION evidence: both gate logs name their revision, module.__file__ and cwd, carry completed true and an EXIT= line, the 24 rerun logs reproduce FAIL 3/3 (follow-config-home) and PASS 3/3 (the other three ids) at both revisions, and the added-failure count (2) re-derives from the logs through reckon/crew/review.py; deducted for the uncontrolled inter-arm load asymmetry (base ran at load 50-70, candidate at 12-20) and because the candidate's fifth setup error is represented only in report.md, not in after_suite.failure_ids.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: no repository file changed (worktree HEAD stays 97cb9a and is clean), every write lands in the granted report directory or the run's own directory, and nothing is staged; deducted for the budget overrun of about 45 minutes and the departure from the exact worktree step.\nSCORE durability: 18\nJUSTIFICATION durability: the count and ids re-derive from the persisted logs and arm JSONs (reproduced here as 2), so the measurement survives without the run, and the conclusion is grounded in reruns rather than one observation; deducted because the /tmp trees are deleted and the arms cannot be replayed, and because after_suite.failure_ids omits the setup-error signal it counts in prose.\nSCORE fit: 17\nJUSTIFICATION fit: the run used the main checkout's interpreter directly, wrote a report artifact in its run directory, named the candidate commit, and made the export deviation symmetric and blob-verified; deducted because the exact spec asked for registered worktrees whose absence of .git changes the environment under test, and because the two arms ran under different node load.\nFINDING  /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T185746215809-rollback-population/manifest.md:22 failure_attribution is {} while the after-minus-base gate-log delta is 2 ids (test_follow_observes_other_sessions.py::test_the_real_configuration_home_gains_no_file, test_producer_takes_new_code.py::test_a_producer_reexecutes_onto_changed_code), so the reviewed run's conclusion that neither is attributable to b2d19be lives only in report.md and evidence_inputs; a reader or gate consuming failure_attribution alone sees two added failures with no disposition. It does not block promotion here because the run is disarmed (suite_command is null, so _evaluate_suite_delta returns before the test-role check), but the field the dispatch named carries no disposition.\n",
+  "review_run_id": "r-20260930T210355696537-review-of-rollback-population",
+  "reviewed_base_sha": "97cb9a147bf76a8388d85dca8129abc7054981f2",
+  "reviewed_head_sha": "97cb9a147bf76a8388d85dca8129abc7054981f2",
+  "reviewed_run_id": "r-20260930T185746215809-rollback-population",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T21:10:30.993293+00:00",
+  "total": 89
+}

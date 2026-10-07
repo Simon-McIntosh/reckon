@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "a0d770a61d284beb150f3582993075299157affe",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T11:33:46.607Z",
+  "dispatched_at": "2026-10-01T11:21:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-validation-refusal-test-reads-the-key.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node declared an evidence fragment and a figures directory in its write scope but landed only the test, so this follow-up has no evidence fragment recording the landing; the change itself is sound, so this is a bookkeeping follow-on for the coordinator rather than a defect in the reviewed change."
+    }
+  ],
+  "head_log_revision": "aee0b35d6c211b82526a4e3b626daeb67881a055",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read a0d770a6..aee0b35d6 (one file, 12 insertions, 1 deletion); the old substring assertion is replaced by a filter over payload[\"validation\"][\"findings\"] on finding.get(\"property\") == \"fully-specified\" plus a non-empty detail check, no source change.",
+    "done_when": "the driving follow-up sentence is that the test asserts the key and property name, no longer contains the literal message substring, and passes at head; I re-ran the named gate at aee0b35 and read 22 passed, and the removed line assert \"fully-specified\" in payload[\"detail\"] is gone while the property is read from payload[\"validation\"][\"findings\"].",
+    "goal": "the node goal is that tests/test_dispatch_result_matches_launch.py asserts the contract-validation refusal by its error key and the failed property rather than a literal substring of the rendered message; the landed diff at tests/test_dispatch_result_matches_launch.py:475 does exactly that, keeping error == \"contract-validation\" and the property read from validation.findings.",
+    "manifest": "read; status complete, names the gate command and its 22-passed result at aee0b35d6, and carries a negative_control_log whose note describes two arms; I reproduced both arms independently and they behave as recorded.",
+    "write_paths": "the manifest declares three paths (the test, an evidence fragment and a figures directory); the one commit aee0b35 changes only tests/test_dispatch_result_matches_launch.py, which is inside that scope, and the worktree is clean."
+  },
+  "justifications": {
+    "durability": "the case fails if the emitted error key or the failed-property name changes (arm A reproduced red) and no longer fails on a message reword (arm B reproduced green), so the assertion is independent of the value under test and guards exactly the regression the follow-up names.",
+    "evidence": "the gate at aee0b35d6 re-ran green for me (22 passed, EXIT=0) and both recorded negative-control arms reproduce -- mutating the emitted error key reddens the case (EXIT=1) and rewording the rendered detail leaves it green (EXIT=0), so the evidence measures what the done-when claims.",
+    "fit": "the added comment at tests/test_dispatch_result_matches_launch.py:476-478 describes the mechanism (the case holds on the property rather than the rendered sentence) and the surrounding test idiom of filtering structured payload fields is unchanged.",
+    "goal_fidelity": "the done-when's three clauses are all met at tests/test_dispatch_result_matches_launch.py:475-486 -- the key is asserted, the property is read from the structured findings, and the rendered-message substring assertion is removed.",
+    "scope_discipline": "git diff --stat a0d770a6..aee0b35d6 is one file, tests/test_dispatch_result_matches_launch.py, inside the declared write paths, and the commit carries a conventional subject with a body and no attribution or plan label."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_dispatch_result_matches_launch.py asserts the contract-validation refusal by its error key and the failed property rather than a literal substring of the rendered message; the landed diff at tests/test_dispatch_result_matches_launch.py:475 does exactly that, keeping error == \"contract-validation\" and the property read from validation.findings.\nVERDICT done_when: the driving follow-up sentence is that the test asserts the key and property name, no longer contains the literal message substring, and passes at head; I re-ran the named gate at aee0b35 and read 22 passed, and the removed line assert \"fully-specified\" in payload[\"detail\"] is gone while the property is read from payload[\"validation\"][\"findings\"].\nVERDICT write_paths: the manifest declares three paths (the test, an evidence fragment and a figures directory); the one commit aee0b35 changes only tests/test_dispatch_result_matches_launch.py, which is inside that scope, and the worktree is clean.\nVERDICT manifest: read; status complete, names the gate command and its 22-passed result at aee0b35d6, and carries a negative_control_log whose note describes two arms; I reproduced both arms independently and they behave as recorded.\nVERDICT diff: read a0d770a6..aee0b35d6 (one file, 12 insertions, 1 deletion); the old substring assertion is replaced by a filter over payload[\"validation\"][\"findings\"] on finding.get(\"property\") == \"fully-specified\" plus a non-empty detail check, no source change.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the done-when's three clauses are all met at tests/test_dispatch_result_matches_launch.py:475-486 -- the key is asserted, the property is read from the structured findings, and the rendered-message substring assertion is removed.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate at aee0b35d6 re-ran green for me (22 passed, EXIT=0) and both recorded negative-control arms reproduce -- mutating the emitted error key reddens the case (EXIT=1) and rewording the rendered detail leaves it green (EXIT=0), so the evidence measures what the done-when claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a0d770a6..aee0b35d6 is one file, tests/test_dispatch_result_matches_launch.py, inside the declared write paths, and the commit carries a conventional subject with a body and no attribution or plan label.\nSCORE durability: 19\nJUSTIFICATION durability: the case fails if the emitted error key or the failed-property name changes (arm A reproduced red) and no longer fails on a message reword (arm B reproduced green), so the assertion is independent of the value under test and guards exactly the regression the follow-up names.\nSCORE fit: 20\nJUSTIFICATION fit: the added comment at tests/test_dispatch_result_matches_launch.py:476-478 describes the mechanism (the case holds on the property rather than the rendered sentence) and the surrounding test idiom of filtering structured payload fields is unchanged.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-validation-refusal-test-reads-the-key.html:1 follow-on: the node declared an evidence fragment and a figures directory in its write scope but landed only the test, so this follow-up has no evidence fragment recording the landing; the change itself is sound, so this is a bookkeeping follow-on for the coordinator rather than a defect in the reviewed change.\n",
+  "review_run_id": "r-20261001T112036488433-review-of-the-validation-refusal-test-reads-the-key",
+  "reviewed_base_sha": "a0d770a61d284beb150f3582993075299157affe",
+  "reviewed_head_sha": "aee0b35d6c211b82526a4e3b626daeb67881a055",
+  "reviewed_run_id": "r-20261001T110717125397-the-validation-refusal-test-reads-the-key",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T11:30:00+00:00",
+  "total": 98
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_require_review_waiver"
+  ],
+  "completed_at": "2026-09-30T07:43:13.925Z",
+  "dispatched_at": "2026-09-30T07:24:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3419",
+      "text": "the superseded arm cannot fire for a run resumed after its previous attempt wrote a manifest, because resumption.py:778 records that manifest's own mtime as the new attempt's baseline and _fresh_manifest (strict runs._manifest_freshness, promotion.py:3313) then returns None, so the guard is silent exactly where the goal wants a refusal; probe-guard.log case A returns ADMITTED with recovery._worker_launched_after_manifest True."
+    },
+    {
+      "file": "tests/test_a_stale_manifest_does_not_license_promotion.py",
+      "line": "204",
+      "text": "the new file ends without a trailing newline, adding a W292 finding to a repository whose rule is that a commit adds none; ruff check --no-cache over the two changed paths reports it and ruff format --check would rewrite the file."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3764",
+      "text": "the wording the done-when names is pinned by nothing: tests/test_a_live_worker_still_owes_its_review.py:149-151 assert \"no complete independent review is stored\" and \"is classified running\", both of which the replaced \"because\" sentence also contains, so a revert stays green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against cf729cc7d; 94ed8d38d changes reckon/crew/promotion.py (+42/-7) and adds the 203-line test, 4d6dd38f2 adds the 45-line evidence fragment, and nothing outside the declared scope changed.",
+    "done_when": "the done-when names a resumed run with a live worker pid and a complete manifest written before that attempt's launch, refused by crew complete; tests/test_a_stale_manifest_does_not_license_promotion.py:163 builds a first-dispatch pointer whose baseline is 0 (reckon/crew/dispatch.py:4793) with the manifest dated 120s before the launch, so the named record shape is measured nowhere, and the head gate arm (logs/head-suite.log) runs the same 38 pre-existing files.",
+    "goal": "the node's goal is that _require_worker_stopped_before_promotion refuses a run whose terminal manifest predates the live attempt's launch; the landed arm at reckon/crew/promotion.py:3419 also requires strict freshness, and a resume records the inherited manifest's own mtime as its baseline (reckon/crew/resumption.py:778), so the case the goal names is not refused.",
+    "manifest": "read; status complete with every key filled, the five cited logs exist, negative_control_log is a bare path whose first line repeats the declared mutation and whose last line is EXIT=1, and both suite arms carry completed true with no added failure id.",
+    "write_paths": "the declared scope is reckon/crew/promotion.py, tests/test_a_stale_manifest_does_not_license_promotion.py, one evidence fragment and a figures directory; git show --stat of 94ed8d38d and 4d6dd38f2 lists exactly the first three, so the figure is correctly unwritten."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows the stale-manifest case reddening when the terminal-manifest-only admission is restored, but no case covers a resumed pointer, and the wording change at reckon/crew/promotion.py:3764 is unpinned because tests/test_a_live_worker_still_owes_its_review.py:149-151 asserts substrings the replaced sentence also carries.",
+    "evidence": "the arms in logs/base-suite.log and logs/head-suite.log are literal, EXIT-terminated and add no failure id, but they measure the same 38 pre-existing files and the new cases at tests/test_a_stale_manifest_does_not_license_promotion.py:163 build a fixture whose baseline is 0 rather than a resumed pointer.",
+    "fit": "reckon/crew/promotion.py:3412 imports the recovery helper inside the function as the file does at :3808, and the guard reuses _worker_launched_after_manifest rather than composing a second reading as the done-when asks.",
+    "goal_fidelity": "probe-guard.log case A feeds the resume shape (baseline equal to the inherited manifest's mtime, worker launched 60s later) into reckon/crew/promotion.py:3419 and gets ADMITTED while recovery._worker_launched_after_manifest is True.",
+    "scope_discipline": "git show --stat for 94ed8d38d and 4d6dd38f2 lists only reckon/crew/promotion.py, tests/test_a_stale_manifest_does_not_license_promotion.py and docs/evidence/fragments/crew-runtime-positive-controls/a-stale-manifest-does-not-license-promotion.html."
+  },
+  "node": "review-of-a-stale-manifest-does-not-license-promotion",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that _require_worker_stopped_before_promotion refuses a run whose terminal manifest predates the live attempt's launch; the landed arm at reckon/crew/promotion.py:3419 also requires strict freshness, and a resume records the inherited manifest's own mtime as its baseline (reckon/crew/resumption.py:778), so the case the goal names is not refused.\nVERDICT done_when: the done-when names a resumed run with a live worker pid and a complete manifest written before that attempt's launch, refused by crew complete; tests/test_a_stale_manifest_does_not_license_promotion.py:163 builds a first-dispatch pointer whose baseline is 0 (reckon/crew/dispatch.py:4793) with the manifest dated 120s before the launch, so the named record shape is measured nowhere, and the head gate arm (logs/head-suite.log) runs the same 38 pre-existing files.\nVERDICT write_paths: the declared scope is reckon/crew/promotion.py, tests/test_a_stale_manifest_does_not_license_promotion.py, one evidence fragment and a figures directory; git show --stat of 94ed8d38d and 4d6dd38f2 lists exactly the first three, so the figure is correctly unwritten.\nVERDICT manifest: read; status complete with every key filled, the five cited logs exist, negative_control_log is a bare path whose first line repeats the declared mutation and whose last line is EXIT=1, and both suite arms carry completed true with no added failure id.\nVERDICT diff: read commit by commit against cf729cc7d; 94ed8d38d changes reckon/crew/promotion.py (+42/-7) and adds the 203-line test, 4d6dd38f2 adds the 45-line evidence fragment, and nothing outside the declared scope changed.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_require_review_waiver\nSCORE goal_fidelity: 6\nJUSTIFICATION goal_fidelity: probe-guard.log case A feeds the resume shape (baseline equal to the inherited manifest's mtime, worker launched 60s later) into reckon/crew/promotion.py:3419 and gets ADMITTED while recovery._worker_launched_after_manifest is True.\nSCORE evidence: 9\nJUSTIFICATION evidence: the arms in logs/base-suite.log and logs/head-suite.log are literal, EXIT-terminated and add no failure id, but they measure the same 38 pre-existing files and the new cases at tests/test_a_stale_manifest_does_not_license_promotion.py:163 build a fixture whose baseline is 0 rather than a resumed pointer.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat for 94ed8d38d and 4d6dd38f2 lists only reckon/crew/promotion.py, tests/test_a_stale_manifest_does_not_license_promotion.py and docs/evidence/fragments/crew-runtime-positive-controls/a-stale-manifest-does-not-license-promotion.html.\nSCORE durability: 10\nJUSTIFICATION durability: logs/negative-control.log shows the stale-manifest case reddening when the terminal-manifest-only admission is restored, but no case covers a resumed pointer, and the wording change at reckon/crew/promotion.py:3764 is unpinned because tests/test_a_live_worker_still_owes_its_review.py:149-151 asserts substrings the replaced sentence also carries.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion.py:3412 imports the recovery helper inside the function as the file does at :3808, and the guard reuses _worker_launched_after_manifest rather than composing a second reading as the done-when asks.\nFINDING reckon/crew/promotion.py:3419 the superseded arm cannot fire for a run resumed after its previous attempt wrote a manifest, because resumption.py:778 records that manifest's own mtime as the new attempt's baseline and _fresh_manifest (strict runs._manifest_freshness, promotion.py:3313) then returns None, so the guard is silent exactly where the goal wants a refusal; probe-guard.log case A returns ADMITTED with recovery._worker_launched_after_manifest True.\nFINDING tests/test_a_stale_manifest_does_not_license_promotion.py:204 the new file ends without a trailing newline, adding a W292 finding to a repository whose rule is that a commit adds none; ruff check --no-cache over the two changed paths reports it and ruff format --check would rewrite the file.\nFINDING reckon/crew/promotion.py:3764 the wording the done-when names is pinned by nothing: tests/test_a_live_worker_still_owes_its_review.py:149-151 assert \"no complete independent review is stored\" and \"is classified running\", both of which the replaced \"because\" sentence also contains, so a revert stays green.\n",
+  "review_run_id": "r-20260930T072433250911-review-of-a-stale-manifest-does-not-license-promotion",
+  "reviewed_base_sha": "cf729cc7d376ec2ec4a8ed4d52fc4c32b33ac880",
+  "reviewed_head_sha": "4d6dd38f2fc312eb08c97c824d285539e369198c",
+  "reviewed_run_id": "r-20260929T211819978587-a-stale-manifest-does-not-license-promotion",
+  "reviewer_run_id": "r-20260930T072433250911-review-of-a-stale-manifest-does-not-license-promotion",
+  "scores": {
+    "durability": 10,
+    "evidence": 9,
+    "fit": 17,
+    "goal_fidelity": 6,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T07:38:22.513782+00:00",
+  "total": 61
+}

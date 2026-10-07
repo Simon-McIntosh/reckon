@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "70d735acba3500ae9f5c147bc3bd57ce545b40cd",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:3082",
+    "reckon/cli.py:2949",
+    "reckon/cli.py:3197"
+  ],
+  "completed_at": "2026-10-01T23:30:41.003Z",
+  "dispatched_at": "2026-10-01T23:10:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1358",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's evidence_inputs cite recovery.py:1358,1365 as where the unknown/unknown row is rendered, but those lines are inside _ordered_review_lanes; the renderer format_watch_transition is at recovery.py:8271, so a reader following the citation reaches an unrelated function."
+    },
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "320",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest records that test_ticker_emits_only_changes_and_ends_after_the_last_promotion fails in BOTH arms (a pre-existing fleet_transitions product defect: it pops a promoted run from running memory while _promote_record_holds keeps its live pointer promoted), which is outside this node's change and belongs to whichever node owns that defect."
+    }
+  ],
+  "head_log_revision": "67beff6a842e88f09604ac63f135120c32fd8472",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 67beff6a against base 70d735ac; two guards both keyed on session is None, one at _follow_resume_plan and one at _record_checkpoint; the read path has this one production caller and follow_checkpoint.write has this one production caller, so a session-less follower has no remaining path that reads or writes a durable place.",
+    "done_when": "the named test tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once drives three concurrent session-less followers; independently reproduced at head 5/5 green and at base 7/10 red with the leading '--:--:-- ... unknown ... unknown' row, matching the reviewed run's own head 20/20 vs base 13/20 (logs/review-gate.log).",
+    "goal": "the node goal is that a third concurrent session-less fleet follower must not emit a resume event the watch pane renders as an unknown/unknown row; reckon/cli.py:2498-2503 makes _follow_resume_plan return (\"baseline\", 0, {}) for session is None before any checkpoint read, and reckon/cli.py:2878-2882 makes _record_checkpoint return before writing, so a session-less follower neither reads a peer's place nor leaves one.",
+    "manifest": "read; it names commit 67beff6a, the head gate (20/20 green), the base arm (13/20 red), a negative-control log (5 of 6 red), the added-failure figures, and a landing line; its evidence_inputs cite the renderer locus as recovery.py:1358,1365, which is inside _ordered_review_lanes rather than the renderer.",
+    "write_paths": "git diff 70d735ac..67beff6a touches exactly one file, reckon/cli.py, 12 insertions and 0 deletions, both hunks inside the declared write path reckon/cli.py, and no test file is edited."
+  },
+  "justifications": {
+    "durability": "removing the two guards reproduces the failure, so the guard is load-bearing rather than untestable: base 70d735ac and the declared mutation both redden tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once, and the caller at reckon/cli.py:3082 passes the session the guard reads.",
+    "evidence": "the base arm (logs/base-monitor.log, revision 70d735ac, 13/20 red) and head arm (logs/head-monitor-loop.log, revision 67beff6a, 20/20 green) are recorded and independently reproduced at logs/review-gate.log (head 5/5, base 7/10), and the negative control (logs/negative-control.log, EXIT=1) reddens the named id; the manifest's cited renderer lines recovery.py:1358,1365 do not resolve to the renderer, which sits at recovery.py:8271.",
+    "fit": "the early returns are idiomatic for this file and reuse the existing rule that a session-less follower keeps no history (reckon/cli.py:3699 withholds history caps when session is None), but the change disables durable checkpoints for every present and future session-less follower rather than keying the checkpoint per follower, which is a broader instrument than the defect strictly needs.",
+    "goal_fidelity": "reckon/cli.py:2498-2503 short-circuits _follow_resume_plan to baseline before follow_checkpoint.read when session is None, and reckon/cli.py:2878-2882 short-circuits _record_checkpoint before follow_checkpoint.write, which is the exact mechanism (two session-less followers sharing one checkpoint via follow_checkpoint._session_token(None), lines 65-82) that produced the resume event rendered as an unknown/unknown row.",
+    "scope_discipline": "git diff --stat 70d735ac..67beff6a is exactly reckon/cli.py, 12 insertions, 0 deletions, one file inside the declared path, with no test or unrelated module touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a third concurrent session-less fleet follower must not emit a resume event the watch pane renders as an unknown/unknown row; reckon/cli.py:2498-2503 makes _follow_resume_plan return (\"baseline\", 0, {}) for session is None before any checkpoint read, and reckon/cli.py:2878-2882 makes _record_checkpoint return before writing, so a session-less follower neither reads a peer's place nor leaves one.\nVERDICT done_when: the named test tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once drives three concurrent session-less followers; independently reproduced at head 5/5 green and at base 7/10 red with the leading '--:--:-- ... unknown ... unknown' row, matching the reviewed run's own head 20/20 vs base 13/20 (logs/review-gate.log).\nVERDICT write_paths: git diff 70d735ac..67beff6a touches exactly one file, reckon/cli.py, 12 insertions and 0 deletions, both hunks inside the declared write path reckon/cli.py, and no test file is edited.\nVERDICT manifest: read; it names commit 67beff6a, the head gate (20/20 green), the base arm (13/20 red), a negative-control log (5 of 6 red), the added-failure figures, and a landing line; its evidence_inputs cite the renderer locus as recovery.py:1358,1365, which is inside _ordered_review_lanes rather than the renderer.\nVERDICT diff: read commit 67beff6a against base 70d735ac; two guards both keyed on session is None, one at _follow_resume_plan and one at _record_checkpoint; the read path has this one production caller and follow_checkpoint.write has this one production caller, so a session-less follower has no remaining path that reads or writes a durable place.\nCALL_SITES: reckon/cli.py:3082, reckon/cli.py:2949, reckon/cli.py:3197\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/cli.py:2498-2503 short-circuits _follow_resume_plan to baseline before follow_checkpoint.read when session is None, and reckon/cli.py:2878-2882 short-circuits _record_checkpoint before follow_checkpoint.write, which is the exact mechanism (two session-less followers sharing one checkpoint via follow_checkpoint._session_token(None), lines 65-82) that produced the resume event rendered as an unknown/unknown row.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base arm (logs/base-monitor.log, revision 70d735ac, 13/20 red) and head arm (logs/head-monitor-loop.log, revision 67beff6a, 20/20 green) are recorded and independently reproduced at logs/review-gate.log (head 5/5, base 7/10), and the negative control (logs/negative-control.log, EXIT=1) reddens the named id; the manifest's cited renderer lines recovery.py:1358,1365 do not resolve to the renderer, which sits at recovery.py:8271.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 70d735ac..67beff6a is exactly reckon/cli.py, 12 insertions, 0 deletions, one file inside the declared path, with no test or unrelated module touched.\nSCORE durability: 20\nJUSTIFICATION durability: removing the two guards reproduces the failure, so the guard is load-bearing rather than untestable: base 70d735ac and the declared mutation both redden tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once, and the caller at reckon/cli.py:3082 passes the session the guard reads.\nSCORE fit: 19\nJUSTIFICATION fit: the early returns are idiomatic for this file and reuse the existing rule that a session-less follower keeps no history (reckon/cli.py:3699 withholds history caps when session is None), but the change disables durable checkpoints for every present and future session-less follower rather than keying the checkpoint per follower, which is a broader instrument than the defect strictly needs.\nFINDING reckon/crew/recovery.py:1358 follow-on: the reviewed manifest's evidence_inputs cite recovery.py:1358,1365 as where the unknown/unknown row is rendered, but those lines are inside _ordered_review_lanes; the renderer format_watch_transition is at recovery.py:8271, so a reader following the citation reaches an unrelated function.\nFINDING tests/test_crew_ticker.py:320 follow-on: the reviewed manifest records that test_ticker_emits_only_changes_and_ends_after_the_last_promotion fails in BOTH arms (a pre-existing fleet_transitions product defect: it pops a promoted run from running memory while _promote_record_holds keeps its live pointer promoted), which is outside this node's change and belongs to whichever node owns that defect.\nreviewed_base_sha: 70d735acba3500ae9f5c147bc3bd57ce545b40cd\nreviewed_head_sha: 67beff6a842e88f09604ac63f135120c32fd8472",
+  "review_run_id": "r-20261001T231001209240-review-of-a-third-follower-gets-no-unknown-row",
+  "reviewed_base_sha": "70d735acba3500ae9f5c147bc3bd57ce545b40cd",
+  "reviewed_head_sha": "67beff6a842e88f09604ac63f135120c32fd8472",
+  "reviewed_run_id": "r-20261001T215724469983-a-third-follower-gets-no-unknown-row",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T231001209240-review-of-a-third-follower-gets-no-unknown-row",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T23:25:43.277649+00:00",
+  "total": 98
+}

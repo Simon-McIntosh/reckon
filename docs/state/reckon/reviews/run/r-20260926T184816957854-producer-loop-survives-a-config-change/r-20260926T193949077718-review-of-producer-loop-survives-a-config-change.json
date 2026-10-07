@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/runs.py:511 (list_live)",
+    "reckon/crew/runs.py:1778 (seat arming)",
+    "reckon/crew/recovery.py:5596 (watch_ticker's per-tick list_live)",
+    "reckon/cli.py:3222 (watch_follow consumer loop)",
+    "reckon/cli.py:3056 (text-mode stale-producer branch)"
+  ],
+  "completed_at": "2026-09-26T20:14:35.416Z",
+  "dispatched_at": "2026-09-26T19:39:59Z",
+  "findings": [
+    {
+      "file": "tests/test_producer_loop_survives_a_config_change.py",
+      "line": "266",
+      "text": "the spawned child is isolated only by the explicit RECKON_HOME at line 74 and nothing asserts the default config home was left untouched, so a future edit that drops that env entry would write into the real config home under a synthetic project, under a test that still passes \u2014 the failure mode the repo's test-isolation rule exists to prevent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against f05f73fb; e0966828 confines the code to reckon/crew/runs.py:1094-1276 and the two named test files, recovery.py is not among the changed paths, and a deferred tick commits neither the fold's memory nor the transitions it owes.",
+    "done_when": "the done_when names tests/test_producer_loop_survives_a_config_change.py, its declared mutation and a text-mode test in tests/test_producer_takes_new_code.py, and I re-ran the named gate myself \u2014 head green (1 passed in 1.79s), base red (1 failed in 20.95s), and my own retargeted catch red (1 failed in 21.01s), receipts in the reviewing run's logs/review-head-rerun.log, review-base-rerun.log and review-mutation-rerun.log.",
+    "goal": "the node's goal is that the armed watch producer survives a flight config that no longer validates and keeps producing; reckon/crew/runs.py:1254 catches FlightConfigError around the whole tick, runs.py:1273-1276 prints one deferral line per episode, and the reviewed run's probe (its logs/gate-head-probe.log) shows the same read raising at base and surviving at head.",
+    "manifest": "read; it records the two named tests with eight gate logs, base and head suite results (172 passed 1 skipped against 174 passed 1 skipped with an empty base-failids.txt), a bare negative-control log path whose first line is the declared mutation string verbatim, and a follow_on for a pre-existing ruff format finding left untouched.",
+    "write_paths": "read the manifest's declared write paths against the diff, and `git diff --name-only f05f73fb..5eba468d` lists exactly the six declared paths, with e0966828 carrying the code and the three later commits carrying only documentation."
+  },
+  "justifications": {
+    "durability": "the assertion at tests/test_producer_loop_survives_a_config_change.py:247 reddens when the catch is removed \u2014 measured at base (1 failed in 20.95s) and under my own retargeted catch (1 failed in 21.01s) \u2014 but the file never asserts the default config home was left untouched, as the FINDING below records.",
+    "evidence": "the reviewed run's gate logs are headed with revision, tree and command, and I reproduced the head, base and mutation arms from archives in the reviewing run's logs/review-head-rerun.log, review-base-rerun.log and review-mutation-rerun.log.",
+    "fit": "the guard uses the module-local dim idiom at reckon/crew/runs.py:1273-1275 (as reckon/crew/ticker.py:495 does) and both new names state their mechanism with no plan, sprint or ticket identifier.",
+    "goal_fidelity": "the catch at reckon/crew/runs.py:1254 covers the exact per-tick read the incident took \u2014 the fold prices each run through flight.resolve, which wraps YAML and schema failures \u2014 and a deferral leaves the fold's memory unadvanced, so the transitions it owed are retried rather than dropped (runs.py:1240-1253).",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths, and the three commits after e0966828 change only the plan record, the cumulative evidence record and one figure."
+  },
+  "node": "review-of-producer-loop-survives-a-config-change",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the armed watch producer survives a flight config that no longer validates and keeps producing; reckon/crew/runs.py:1254 catches FlightConfigError around the whole tick, runs.py:1273-1276 prints one deferral line per episode, and the reviewed run's probe (its logs/gate-head-probe.log) shows the same read raising at base and surviving at head.\nVERDICT done_when: the done_when names tests/test_producer_loop_survives_a_config_change.py, its declared mutation and a text-mode test in tests/test_producer_takes_new_code.py, and I re-ran the named gate myself \u2014 head green (1 passed in 1.79s), base red (1 failed in 20.95s), and my own retargeted catch red (1 failed in 21.01s), receipts in the reviewing run's logs/review-head-rerun.log, review-base-rerun.log and review-mutation-rerun.log.\nVERDICT write_paths: read the manifest's declared write paths against the diff, and `git diff --name-only f05f73fb..5eba468d` lists exactly the six declared paths, with e0966828 carrying the code and the three later commits carrying only documentation.\nVERDICT manifest: read; it records the two named tests with eight gate logs, base and head suite results (172 passed 1 skipped against 174 passed 1 skipped with an empty base-failids.txt), a bare negative-control log path whose first line is the declared mutation string verbatim, and a follow_on for a pre-existing ruff format finding left untouched.\nVERDICT diff: read commit by commit against f05f73fb; e0966828 confines the code to reckon/crew/runs.py:1094-1276 and the two named test files, recovery.py is not among the changed paths, and a deferred tick commits neither the fold's memory nor the transitions it owes.\nCALL_SITES: reckon/crew/runs.py:511 (list_live), reckon/crew/runs.py:1778 (seat arming), reckon/crew/recovery.py:5596 (watch_ticker's per-tick list_live), reckon/cli.py:3222 (watch_follow consumer loop), reckon/cli.py:3056 (text-mode stale-producer branch)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the catch at reckon/crew/runs.py:1254 covers the exact per-tick read the incident took \u2014 the fold prices each run through flight.resolve, which wraps YAML and schema failures \u2014 and a deferral leaves the fold's memory unadvanced, so the transitions it owed are retried rather than dropped (runs.py:1240-1253).\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's gate logs are headed with revision, tree and command, and I reproduced the head, base and mutation arms from archives in the reviewing run's logs/review-head-rerun.log, review-base-rerun.log and review-mutation-rerun.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, and the three commits after e0966828 change only the plan record, the cumulative evidence record and one figure.\nSCORE durability: 17\nJUSTIFICATION durability: the assertion at tests/test_producer_loop_survives_a_config_change.py:247 reddens when the catch is removed \u2014 measured at base (1 failed in 20.95s) and under my own retargeted catch (1 failed in 21.01s) \u2014 but the file never asserts the default config home was left untouched, as the FINDING below records.\nSCORE fit: 19\nJUSTIFICATION fit: the guard uses the module-local dim idiom at reckon/crew/runs.py:1273-1275 (as reckon/crew/ticker.py:495 does) and both new names state their mechanism with no plan, sprint or ticket identifier.\nFINDING tests/test_producer_loop_survives_a_config_change.py:266 the spawned child is isolated only by the explicit RECKON_HOME at line 74 and nothing asserts the default config home was left untouched, so a future edit that drops that env entry would write into the real config home under a synthetic project, under a test that still passes \u2014 the failure mode the repo's test-isolation rule exists to prevent.\nREVIEWED_BASE_SHA: f05f73fb42d4602ced10c4c3d4288aacc0c441e1\nREVIEWED_HEAD_SHA: 5eba468d162286f8e3f523c8b0cf890b2f4d0154",
+  "review_run_id": "r-20260926T193949077718-review-of-producer-loop-survives-a-config-change",
+  "reviewed_base_sha": "f05f73fb42d4602ced10c4c3d4288aacc0c441e1",
+  "reviewed_head_sha": "5eba468d162286f8e3f523c8b0cf890b2f4d0154",
+  "reviewed_run_id": "r-20260926T184816957854-producer-loop-survives-a-config-change",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T20:12:33.396027+00:00",
+  "total": 93
+}

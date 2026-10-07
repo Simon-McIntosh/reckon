@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:5340",
+    "reckon/crew/promotion.py:1905"
+  ],
+  "completed_at": "2026-10-01T04:08:26.281Z",
+  "dispatched_at": "2026-10-01T03:51:05Z",
+  "findings": [],
+  "head_log_revision": "218eda1fdee1f0118db4b0b4e182bae7be1f33b8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; 218eda1f adds _recorded_gate_seconds and _replay_bound and the report fields at reckon/crew/promotion.py:1541/:1574/:1709, threads recorded_gate_seconds through rerun/record, and flips the CLI --timeout-seconds default to None at reckon/cli.py:5296; 9d8bece2 adds only the evidence fragment, so the after-arm at 218eda1f measures the code the fragment commit does not change.",
+    "done_when": "the done_when names tests/test_replay_bound_follows_the_gate.py's three cases plus a base arm, an executed negative control, per-arm JSON with completed=true and literal commands, logs naming their revision on line 1 and ending EXIT=, and a ruff delta; the manifest records every one and I re-read the arms: base-arm.log ends '3 failed, 6 passed in 24.39s' EXIT=1, head-arm.log ends '9 passed in 24.93s' EXIT=0, negative-control.log ends '1 failed, 5... 1 failed, 2 passed' EXIT=1.",
+    "goal": "the node goal is to derive verify-gate's re-run bound from the promoted run's recorded gate duration with headroom and a ceiling, keep an explicit --timeout-seconds winning, and name the bound's source and value; reckon/crew/promotion.py:1574 `_replay_bound` returns (bound, source) from those three inputs and reckon/crew/promotion.py:1709-1711 record replay_bound_source, replay_bound_seconds and recorded_gate_seconds on the report.",
+    "manifest": "read; it records commits 218eda1f and 9d8bece2, base arm 3 failed/6 passed at 33c5e761, head arm 9 passed at 218eda1f, the negative-control cause (derived bound replaced by the fixed 300 s), the ruff delta (no added findings), and the shared promotion.py scope note against the-fence-fails-closed.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, reckon/cli.py, tests/test_replay_bound_follows_the_gate.py, the evidence fragment and a docs/figures directory; git diff --name-status 33c5e761d..9d8bece25 changes exactly promotion.py, cli.py, the new test file and the fragment, all inside the declared paths, and the figures directory is correctly left unwritten since the done_when names no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_replay_bound_follows_the_gate.py:197 reddens when the derived bound is replaced by the fixed constant, shown by the executed negative control (1 failed, 2 passed), and its assertion at :219 compares the verdict against the recorded duration the test itself sets, not against the code's own value.",
+    "evidence": "both arm logs and the negative-control log are on disk, name their revision on line 1 and end EXIT=, and the production reader reads base 33c5e761 / head 218eda1f from them; the base arm is a scratch copy at /tmp carrying the new test file so its 3 failures are the measure the change removes.",
+    "fit": "_recorded_gate_seconds at reckon/crew/promotion.py:1541 follows the module's read-text-and-parse idiom (like the result-count marker) and no added symbol or comment names a plan, version or ticket.",
+    "goal_fidelity": "reckon/crew/promotion.py:1574-1597 resolves the bound as explicit > derived(2x recorded clamped into [300,1800]) > default and reports the source beside it, matching the goal exactly.",
+    "scope_discipline": "every path in git diff --name-status... 33c5e761d..9d8bece25 (reckon/cli.py, reckon/crew/promotion.py, tests/test_replay_bound_follows_the_gate.py, the fragment) is one of the manifest's declared write paths and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "\nVERDICT goal: the node goal is to derive verify-gate's re-run bound from the promoted run's recorded gate duration with headroom and a ceiling, keep an explicit --timeout-seconds winning, and name the bound's source and value; reckon/crew/promotion.py:1574 `_replay_bound` returns (bound, source) from those three inputs and reckon/crew/promotion.py:1709-1711 record replay_bound_source, replay_bound_seconds and recorded_gate_seconds on the report.\nVERDICT done_when: the done_when names tests/test_replay_bound_follows_the_gate.py's three cases plus a base arm, an executed negative control, per-arm JSON with completed=true and literal commands, logs naming their revision on line 1 and ending EXIT=, and a ruff delta; the manifest records every one and I re-read the arms: base-arm.log ends '3 failed, 6 passed in 24.39s' EXIT=1, head-arm.log ends '9 passed in 24.93s' EXIT=0, negative-control.log ends '1 failed, 5... 1 failed, 2 passed' EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, reckon/cli.py, tests/test_replay_bound_follows_the_gate.py, the evidence fragment and a docs/figures directory; git diff --name-status 33c5e761d..9d8bece25 changes exactly promotion.py, cli.py, the new test file and the fragment, all inside the declared paths, and the figures directory is correctly left unwritten since the done_when names no figure.\nVERDICT manifest: read; it records commits 218eda1f and 9d8bece2, base arm 3 failed/6 passed at 33c5e761, head arm 9 passed at 218eda1f, the negative-control cause (derived bound replaced by the fixed 300 s), the ruff delta (no added findings), and the shared promotion.py scope note against the-fence-fails-closed.\nVERDICT diff: read commit by commit; 218eda1f adds _recorded_gate_seconds and _replay_bound and the report fields at reckon/crew/promotion.py:1541/:1574/:1709, threads recorded_gate_seconds through rerun/record, and flips the CLI --timeout-seconds default to None at reckon/cli.py:5296; 9d8bece2 adds only the evidence fragment, so the after-arm at 218eda1f measures the code the fragment commit does not change.\nCALL_SITES: reckon/cli.py:5340, reckon/crew/promotion.py:1905\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1574-1597 resolves the bound as explicit > derived(2x recorded clamped into [300,1800]) > default and reports the source beside it, matching the goal exactly.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arm logs and the negative-control log are on disk, name their revision on line 1 and end EXIT=, and the production reader reads base 33c5e761 / head 218eda1f from them; the base arm is a scratch copy at /tmp carrying the new test file so its 3 failures are the measure the change removes.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --name-status... 33c5e761d..9d8bece25 (reckon/cli.py, reckon/crew/promotion.py, tests/test_replay_bound_follows_the_gate.py, the fragment) is one of the manifest's declared write paths and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_replay_bound_follows_the_gate.py:197 reddens when the derived bound is replaced by the fixed constant, shown by the executed negative control (1 failed, 2 passed), and its assertion at :219 compares the verdict against the recorded duration the test itself sets, not against the code's own value.\nSCORE fit: 18\nJUSTIFICATION fit: _recorded_gate_seconds at reckon/crew/promotion.py:1541 follows the module's read-text-and-parse idiom (like the result-count marker) and no added symbol or comment names a plan, version or ticket.\n",
+  "review_run_id": "r-20261001T035028204874-review-of-replay-bound-follows-the-gate",
+  "reviewed_base_sha": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "reviewed_head_sha": "9d8bece25777c781a0f929832df8db257a37958c",
+  "reviewed_run_id": "r-20261001T032019490771-replay-bound-follows-the-gate",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T04:05:14.617310+00:00",
+  "total": 93
+}

@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "afec9a9fe2f1d967c851f77c2b7398a48cc5eb2d",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:6094",
+    "reckon/crew/recovery.py:3567"
+  ],
+  "completed_at": "2026-10-03T04:56:29.253Z",
+  "dispatched_at": "2026-10-03T04:48:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/gate-command-is-executable.html",
+      "line": "9",
+      "severity": "follow-on",
+      "text": "the orientation write paths authorise docs/figures/crew-runtime-positive-controls/gate-command-is-executable, but no figure was produced (the diff's only docs path is the fragment); \u00a727's done-when does not require one, so this is a record gap for the \u00a727 evidence rather than a node defect."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "5603",
+      "severity": "follow-on",
+      "text": "the head gate arm ran at 6af0bbcd while the reviewed head is 971e0ab2 (docs-only), so the code measure is fully backed but the final head is not itself under the suite."
+    },
+    {
+      "file": "tests/test_crew_promotion.py",
+      "line": "313",
+      "severity": "follow-on",
+      "text": "the archived base arm failed two review-score cases that pass at the head; the manifest's follow_ons flags them as pre-existing, but since the head's only changes are the guard and fixture substitutions a coordinator should confirm the base failures were unrelated to this node."
+    }
+  ],
+  "head_log_revision": "6af0bbcd9df4ca9c62362e48c5e2b1c79547c9c0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the guard runs inside promotion.complete() at promotion.py:5603; complete() is called from reckon/cli.py:6094 and reckon/crew/recovery.py:3567.",
+    "diff": "afec9a9f..971e0ab2: restored guard + shlex + _SHELL_ASSIGNMENT and the complete() wiring; conftest helper; 19 fixture substitutions; three guard cases added to test_passed_verdict_needs_exit_zero.py; docs-only evidence HTML.",
+    "done_when": "head arm 269 passed / 0 failed at 6af0bbcd (EXIT=0) over base 2 failed / 264 passed at afec9a9f (EXIT=1); added-failure set derived independently is empty; negative control restores one prose fixture and fails with EXIT=1.",
+    "goal": "plan \u00a727 asks a recorded gate command be an executable argv and every affected fixture record one; the head restores _require_executable_gate_command (verified identical to 10d4be364's 69-line body) and records the shared EXECUTABLE_GATE_COMMAND helper.",
+    "manifest": "read; status complete, baseline_suite 2 failed at afec9a9f, after_suite 0 failed at 6af0bbcd, negative_control_log ends EXIT=1, measurement_module/cwd backed by the base log's module=/cwd= headers.",
+    "write_paths": "the manifest's changed_paths equals the diff's 23 files and nothing outside them; worktree clean at 971e0ab2."
+  },
+  "justifications": {
+    "durability": "the guarded thing is made to happen and shown: the refusal path is asserted by the three new cases in test_passed_verdict_needs_exit_zero.py, the required negative control records the guard firing on a restored prose fixture (EXIT=1, the runnable case as the single failing id), and I reproduced the refusal independently by driving the restored function; the unparseable and leading-assignment branches are covered.",
+    "evidence": "every figure reconciles with disk: base 2 failed / 264 passed and head 269 passed match the arm tails and header revisions; the added-failure set (0) was derived independently with comm over the two logs' FAILED/ERROR lines, not read from the manifest; the negative log ends EXIT=1 with one failing id the head arm does not fail; the base log carries module= and cwd= header lines backing measurement_module/measurement_cwd; ruff is 4 findings and 3 unformatted files at both revisions. Docked one: the head arm ran at 6af0bbcd while the reviewed head is 971e0ab2.",
+    "fit": "the change implements exactly the tension \u00a727 records with a shared conftest helper, conventional commits with bodies, mechanism-only comments (no plan, ticket or author attribution), and a cumulative-evidence fragment; the naming scan of the added lines is clean. Docked one for the authorised-but-unproduced figure path and the no-op `-c pass` helper command.",
+    "goal_fidelity": "the goal is met and independently reproduced: at the reviewed head I imported promotion from the reviewed tree (module.__file__ asserted under that worktree) and called the guard directly \u2014 'focused check passed' is refused naming program 'focused' and 'definitely-not-a-real-program-xyz --run' is refused, while 'PYTHONPATH=x <interpreter> -c pass' is accepted; the guard is absent at base (grep count 0), so the repaired defect reproduces and the repair is demonstrated rather than inferred.",
+    "scope_discipline": "the changed_paths set equals the diff's 23-file set exactly, no file outside the declared paths changed, the worktree is clean at 971e0ab2, no plan/sprint/index state was mutated, and the commits were not pushed or merged by the worker."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan \u00a727 asks that a recorded gate command be an executable argv and that every affected fixture record one; the reviewed head restores _require_executable_gate_command into reckon/crew/promotion.py (verified byte-identical to the function at commit 10d4be364 by extracting and diffing the 69-line body) and records a shared runnable helper EXECUTABLE_GATE_COMMAND in tests/conftest.py, so a promotion whose recorded command names no program is refused and a runnable one promotes.\nVERDICT done_when: the head arm over the 19 repaired files plus tests/test_passed_verdict_needs_exit_zero.py and tests/test_crew_gate_log_agrees.py ran 269 passed, 0 failed (gate-head-20261003T0435.log, revision=6af0bbcd, EXIT=0) against a base with 2 failed, 264 passed (gate-base-20261003T0429.log, revision=afec9a9f, EXIT=1); I derived the added-failure set myself with `comm -13` on the two logs' FAILED/ERROR lines and it is empty, so zero added failure ids; the negative control (gate-negative-20261003T0441.log) restores one fixture's command to prose and its promotion test fails with EXIT=1.\nVERDICT write_paths: the manifest's changed_paths lists exactly the 23 paths in `git diff --name-only afec9a9f 971e0ab2` \u2014 reckon/crew/promotion.py, tests/conftest.py, 20 test files and the evidence fragment \u2014 and nothing outside them; the worktree HEAD is exactly the reviewed 971e0ab2 and `git status --porcelain` is empty.\nVERDICT manifest: status complete; baseline_suite records revision afec9a9f, 2 failed / 264 passed, log gate-base-20261003T0429.log, completed true, failure_ids the two test_crew_promotion.py cases; after_suite records revision 6af0bbcd, 0 failed / 269 passed, log gate-head-20261003T0435.log, completed true; negative_control_log names gate-negative-20261003T0441.log whose last line is a bare EXIT=1; measurement_module and measurement_cwd are backed by the base log's own `module=` and `cwd=` header lines.\nVERDICT diff: read afec9a9f..971e0ab2: promotion.py adds the restored guard plus its `import shlex` and `_SHELL_ASSIGNMENT` and wires the lambda into the complete() gate list; tests/conftest.py adds EXECUTABLE_GATE_COMMAND = f\"{shlex.quote(sys.executable)} -c pass\"; the 19 fixture files substitute that helper for prose commands; test_passed_verdict_needs_exit_zero.py gains three guard cases (prose refused, unparseable refused, leading-assignment accepted); the evidence HTML is docs-only.\nVERDICT call_sites: _require_executable_gate_command runs inside promotion.complete() at reckon/crew/promotion.py:5603; complete() is called in production from reckon/cli.py:6094 (the `reckon crew complete` command) and reckon/crew/recovery.py:3567 (the recovery/repair path), so the guard is live on both promotion entry points.\nCALL_SITES: reckon/cli.py:6094, reckon/crew/recovery.py:3567\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the goal is met and independently reproduced: at the reviewed head I imported promotion from the reviewed tree (module.__file__ asserted under that worktree) and called the guard directly \u2014 'focused check passed' is refused naming program 'focused' as no executable, 'PYTHONPATH=x <interpreter> -c pass' is accepted, and 'definitely-not-a-real-program-xyz --run' is refused; the guard is absent at base (grep count 0), so the defect the section repairs reproduces and the repair is demonstrated rather than inferred.\nSCORE evidence: 19\nJUSTIFICATION evidence: every figure reconciles with disk: base 2 failed / 264 passed and head 269 passed match the arm tails and header revisions; the added-failure ids set (0) was derived independently, not read from the manifest; the negative log ends EXIT=1 with one failing id the head arm does not fail; the base log carries module=/tmp/.../base/reckon/crew/promotion.py and cwd=/tmp/.../base backing measurement_module/measurement_cwd; ruff is 4 findings and 3 unformatted files at both revisions (ruff-delta.json). Docked one: the head arm ran at 6af0bbcd while the reviewed head is 971e0ab2, so the gate log covers the code commit and the docs-only evidence commit is not itself under the arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the changed_paths set equals the diff's file set exactly (23 paths), no file outside the declared paths changed, the worktree is clean at 971e0ab2, no plan/sprint/index state was mutated, and the commits were not pushed or merged by the worker.\nSCORE durability: 20\nJUSTIFICATION durability: the guarded thing is made to happen and shown \u2014 the refusal path is asserted by the three new cases in test_passed_verdict_needs_exit_zero.py (prose, unparseable, and the accepted leading-assignment case), the required negative control records the guard firing on a restored prose fixture (EXIT=1, the runnable case as the single failing id), and I reproduced the refusal independently by driving the restored function; the unparseable and leading-assignment branches are covered so the guard cannot be narrowed without reddening a case.\nSCORE fit: 19\nJUSTIFICATION fit: the change implements exactly the tension \u00a727 records \u2014 restore the guard and repair the fixtures it exposed \u2014 with a shared conftest helper rather than 19 ad-hoc commands, conventional commits carrying bodies, comments that state the mechanism with no plan, ticket or author attribution, and a cumulative-evidence fragment; the naming scan of the added lines is clean. Docked one for two small records: the declared figure path docs/figures/crew-runtime-positive-controls/gate-command-is-executable was authorised but no figure was produced, and the shared helper's command is the no-op `-c pass`, which is a valid runnable argv but not a representative gate command.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/gate-command-is-executable.html:9 follow-on: the orientation write paths authorise docs/figures/crew-runtime-positive-controls/gate-command-is-executable, but no figure was produced (the diff's only docs path is the fragment), so the evidence carries no figure; the plan \u00a727 done-when does not require one, so this is a record gap for the referenced \u00a727 evidence rather than a defect of the node, and the graphics mandate is satisfied weakly.\nFINDING reckon/crew/promotion.py:5603 follow-on: the head gate arm ran at 6af0bbcd while the reviewed head is 971e0ab2, which adds only the evidence HTML; the code measure is therefore fully backed by the arm, but the final head is not itself under the suite, so a reader reconciling reviewed_head_sha against the arm log's header sees a one-commit gap that is docs-only.\nFINDING tests/test_crew_promotion.py:313 follow-on: the archived base arm failed two review-score cases (test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row and test_a_run_promoted_without_a_review_is_distinguishable_from_a_zero_scored_one) that pass at the head; the manifest's follow_ons flags them as pre-existing, but since the head's only changes are the guard and fixture substitutions, a coordinator should confirm the base failures were unrelated (an artifact of the archived base tree) rather than incidentally repaired by this node.\nreviewed_base_sha: afec9a9fe2f1d967c851f77c2b7398a48cc5eb2d\nreviewed_head_sha: 971e0ab20f09b5f4b9339847b687ea63725db972",
+  "review_run_id": "r-20261003T044751579312-review-of-gate-command-is-executable",
+  "reviewed_base_sha": "afec9a9fe2f1d967c851f77c2b7398a48cc5eb2d",
+  "reviewed_head_sha": "971e0ab20f09b5f4b9339847b687ea63725db972",
+  "reviewed_run_id": "r-20261003T042151762617-gate-command-is-executable",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T04:54:51Z",
+  "total": 98
+}

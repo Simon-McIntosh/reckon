@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_source": "derived from the reviewed run's own suite fields: its manifest names after_suite (population-head.log, revision 650c1167f, completed, failure_count 0) but records no baseline_suite, so review.py added_failures_from_gate_logs returns (None, []) \u2014 the count is unmeasured, never a measured zero, because a difference needs both arms. The run's focused gate (gate-head.log, 16 passed) and its declared base mutation (negative-control.log, 4 failed on the 0 case) are both present and I reproduced both.",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:2609",
+    "reckon/crew/reports.py:1910"
+  ],
+  "completed_at": "2026-10-04T19:07:08.530Z",
+  "dispatched_at": "2026-10-04T18:59:44Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T180111683648-one-predicate-decides-a-commit-citation/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "the reviewed manifest records after_suite (population-head.log) but no baseline_suite, so review.py added_failures_from_gate_logs reads the run's added-failure count as unmeasured, and the population base arm was stopped at ~54% (population-base.log) rather than run to its summary; the change's own focused gate is green and reproduced, so this does not hold the node."
+    }
+  ],
+  "head_log_revision": "650c1167fbcf26984e8680cd758f5092afecab0e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against the base: promotion.py:2434 adds _ZERO_COUNT and makes _manifest_cites_a_commit refuse an all-zero entry and a structured non-list value; reports.py deletes its duplicate _cites_a_commit and delegates at audit_manifest; the new test pins all four shapes for both readers.",
+    "done_when": "verified: the done_when's test tests/test_one_commit_citation_predicate.py drives none/[]/0/sha for a commit-owing and a commitless role through audit_manifest and _require_commit_for_changed_manifest; I reproduced it 16 passed EXIT=0 at head and 4 failed EXIT=1 (all on the 0 case) against the base source deefd1b55 with the new test copied in.",
+    "goal": "verified: the node's goal is one predicate deciding commit citation for the write-time audit and the promotion guard; at the reviewed head reckon/crew/reports.py:1910 asks reckon/crew/promotion.py:2433 _manifest_cites_a_commit and reports._cites_a_commit is deleted, so no second reader remains on the run's path.",
+    "manifest": "read: it declares status complete, the three source/test paths and the evidence fragment, and names its gate logs; its armed suite pair records after_suite (population-head.log) but no baseline_suite, so the store reads the run's added-failure count as unmeasured.",
+    "write_paths": "verified: git diff deefd1b55..b1eb39cdf changes exactly reckon/crew/promotion.py, reckon/crew/reports.py, tests/test_one_commit_citation_predicate.py and docs/evidence/fragments/crew-observability-truth/one-predicate-decides-a-commit-citation.html, all inside the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "reverting reports.py to its own _cites_a_commit and dropping the _ZERO_COUNT.fullmatch clause reddens tests/test_one_commit_citation_predicate.py::test_the_audit_and_the_guard_agree_for_a_role_that_owes_a_commit[0] and three siblings, which I reproduced at base (4 failed); the one point withheld is that the agreement cases compare the two readers to each other, so a shared wrong answer would read as agreement, though the per-shape case pins the absolute expected value.",
+    "evidence": "the focused gate tests/test_one_commit_citation_predicate.py is green at head (16 passed, EXIT=0) and red at base on the 0 case (4 failed, EXIT=1), both reproduced by me in scratch trees; deducted because the reviewed manifest arms after_suite but no baseline_suite, so the store reads the run's added-failure count as unmeasured and the population base arm is partial (population-base.log stops before its summary).",
+    "fit": "the change keeps the predicate that already owned the question in promotion.py, deletes the duplicate in reports.py, and reuses the module's lazy-import idiom at reports.py:1907; both commit subjects carry bodies and neither carries an attribution, plan label or version number.",
+    "goal_fidelity": "reckon/crew/reports.py:1910 asks promotion._manifest_cites_a_commit, so the commits field can no longer read as a citation at the guard and as none at check-manifest, and promotion.py:2449 _ZERO_COUNT.fullmatch refuses the all-zero value section 45 names.",
+    "scope_discipline": "git diff deefd1b55..b1eb39cdf names only the three declared source/test paths plus the declared evidence fragment, and nothing outside the manifest's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one predicate decides commit citation for the write-time audit and the promotion guard; at the reviewed head reckon/crew/reports.py:1910 imports and calls reckon/crew/promotion.py:2433 _manifest_cites_a_commit, and reports._cites_a_commit is deleted, so no second reader remains on the run's path.\nVERDICT done_when: the done_when's test is tests/test_one_commit_citation_predicate.py; it drives the four shapes none/[]/0/sha for a commit-owing and a commitless role through audit_manifest and _require_commit_for_changed_manifest, and I reproduced it 16 passed EXIT=0 at head and 4 failed EXIT=1 (all on the 0 case) against the base source with the new test copied in.\nVERDICT write_paths: the range deefd1b55..b1eb39cdf changes exactly reckon/crew/promotion.py, reckon/crew/reports.py, tests/test_one_commit_citation_predicate.py and docs/evidence/fragments/crew-observability-truth/one-predicate-decides-a-commit-citation.html, all inside the manifest's declared write paths.\nVERDICT manifest: read; it declares status complete, the three source/test paths and the evidence fragment, and names its gate logs; its armed suite pair records after_suite (population-head.log) but no baseline_suite, so the store reads the run's added-failure count as unmeasured.\nVERDICT diff: read commit by commit against the base; promotion.py:2434 adds _ZERO_COUNT and makes _manifest_cites_a_commit refuse an all-zero entry and a structured non-list value, reports.py deletes its duplicate _cites_a_commit and delegates at audit_manifest, and the new test pins all four shapes for both readers.\nCALL_SITES: reckon/crew/promotion.py:2609, reckon/crew/reports.py:1910\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1910 asks promotion._manifest_cites_a_commit, so the commits field can no longer read as a citation at the guard and as none at check-manifest, and promotion.py:2449 _ZERO_COUNT.fullmatch refuses the all-zero value section 45 names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the focused gate tests/test_one_commit_citation_predicate.py is green at head (16 passed, EXIT=0) and red at base on the 0 case (4 failed, EXIT=1), both reproduced by me; deducted because the reviewed manifest arms after_suite but no baseline_suite, so the store reads the run's added-failure count as unmeasured and the population base arm is partial.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff deefd1b55..b1eb39cdf names only the three declared source/test paths plus the declared evidence fragment, and nothing outside the manifest's write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reverting reports.py to its own _cites_a_commit and dropping the _ZERO_COUNT.fullmatch clause reddens tests/test_one_commit_citation_predicate.py::test_the_audit_and_the_guard_agree_for_a_role_that_owes_a_commit[0] and three siblings, which I reproduced at base; the one point withheld is that the agreement cases compare the two readers to each other, though the per-shape case pins the absolute expected value.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the predicate that already owned the question in promotion.py, deletes the duplicate in reports.py, and reuses the module's lazy-import idiom at reports.py:1907; both commit subjects carry bodies and neither carries an attribution, plan label or version number.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T180111683648-one-predicate-decides-a-commit-citation/manifest.md:14 follow-on: the reviewed manifest records after_suite but no baseline_suite, so the store reads the run's added-failure count as unmeasured and the population base arm was stopped at ~54% rather than run to its summary; the change's own focused gate is green and reproduced, so this does not hold the node.",
+  "review_run_id": "r-20261004T185919652666-review-of-one-predicate-decides-a-commit-citation",
+  "reviewed_base_sha": "deefd1b5515ae902400958aad26f27207b56dd44",
+  "reviewed_head_sha": "b1eb39cdf846e47ce0e00ee58dfb45a41a571aa8",
+  "reviewed_run_id": "r-20261004T180111683648-one-predicate-decides-a-commit-citation",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T19:05:04Z",
+  "total": 96
+}

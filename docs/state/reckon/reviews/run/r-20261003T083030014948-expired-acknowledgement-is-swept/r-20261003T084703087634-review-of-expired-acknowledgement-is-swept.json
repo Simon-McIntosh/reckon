@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/obligations.py:199"
+  ],
+  "completed_at": "2026-10-03T08:52:24.635Z",
+  "dispatched_at": "2026-10-03T08:47:35Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit -- c6418c51d changes the help and docstring and adds the sweep plus the test, 81e79bb5f adds the evidence fragment; all inside the declared scope.",
+    "done_when": "the done_when asks for a temporary-config-home test asserting the expired file is gone and the current one honoured plus a negative control; tests/test_expired_acknowledgement_is_swept.py:148 and :172 assert exactly that, and the negative-control log shows the removal case failing with the file still in place.",
+    "goal": "the node goal is that crew ack's help and docstring name the promoted path and that the reader sweeps an expired deferral; reckon/cli.py:5565 and :5579 name the promoted path and reckon/crew/runs.py:1115 removes an expired acknowledgement file as it reads it.",
+    "manifest": "read; it records base arm 3 failed/112 passed EXIT=1, head arm 1 failed/114 passed EXIT=1 and the negative control 1 failed EXIT=1, reconciling with the three gate logs on disk.",
+    "write_paths": "the manifest declares reckon/cli.py, reckon/crew/runs.py, the new test and the evidence fragment; git diff --stat c7664e48..81e79bb5f touches those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log fails tests/test_expired_acknowledgement_is_swept.py:148 when the sweep is removed and logs/base-arm.log fails :190 without the help change, so each assertion reddens on the exact regression it guards.",
+    "evidence": "logs/head-arm.log shows the new tests passing and logs/base-arm.log shows both behaviour tests failing without the change, so the gate measures the done_when and its result is recorded, not claimed.",
+    "fit": "the sweep uses contextlib.suppress and a _deferral_clock seam mirroring the obligations reader's own clock at reckon/crew/runs.py:1074, matching the surrounding idiom with no forbidden name.",
+    "goal_fidelity": "reckon/cli.py:5565 and :5579 now name a promoted run and reckon/crew/runs.py:1115 removes an expired deferral as it reads it, satisfying both halves of the section's done_when.",
+    "scope_discipline": "git diff --stat c7664e48..81e79bb5f touches exactly the four declared write paths with 261 insertions and 3 deletions and no path outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that `crew ack`'s help and docstring name the promoted path and that the reader sweeps an expired deferral; reckon/cli.py:5565 and :5579 name the promoted path and reckon/crew/runs.py:1115 removes an expired acknowledgement file as it reads it.\nVERDICT done_when: the done_when asks for a temporary-config-home test asserting the expired file is gone and the current one honoured plus a negative control; tests/test_expired_acknowledgement_is_swept.py:148 and :172 assert exactly that, and the negative-control log shows the removal case failing with the file still in place.\nVERDICT write_paths: the manifest declares reckon/cli.py, reckon/crew/runs.py, the new test and the evidence fragment; git diff --stat c7664e48..81e79bb5f touches those four paths and nothing else.\nVERDICT manifest: read; it records base arm 3 failed/112 passed EXIT=1, head arm 1 failed/114 passed EXIT=1 and the negative control 1 failed EXIT=1, reconciling with the three gate logs on disk.\nVERDICT diff: read commit by commit -- c6418c51d changes the help and docstring and adds the sweep plus the test, 81e79bb5f adds the evidence fragment; all inside the declared scope.\nCALL_SITES: reckon/crew/obligations.py:199\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:5565 and :5579 now name a promoted run and reckon/crew/runs.py:1115 removes an expired deferral as it reads it, satisfying both halves of the section's done_when.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-arm.log shows the new tests passing and logs/base-arm.log shows both behaviour tests failing without the change, so the gate measures the done_when and its result is recorded, not claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c7664e48..81e79bb5f touches exactly the four declared write paths with 261 insertions and 3 deletions and no path outside them.\nSCORE durability: 20\nJUSTIFICATION durability: logs/negative-control.log fails tests/test_expired_acknowledgement_is_swept.py:148 when the sweep is removed and logs/base-arm.log fails :190 without the help change, so each assertion reddens on the exact regression it guards.\nSCORE fit: 19\nJUSTIFICATION fit: the sweep uses contextlib.suppress and a _deferral_clock seam mirroring the obligations reader's own clock at reckon/crew/runs.py:1074, matching the surrounding idiom with no forbidden name.\n",
+  "review_run_id": "r-20261003T084703087634-review-of-expired-acknowledgement-is-swept",
+  "reviewed_base_sha": "c7664e486029b91ee215b0598e9bce9787652c9f",
+  "reviewed_head_sha": "81e79bb5f3e1d32565db9f4626304fb5fae66da9",
+  "reviewed_run_id": "r-20261003T083030014948-expired-acknowledgement-is-swept",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T084703087634-review-of-expired-acknowledgement-is-swept",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T08:51:38.194383+00:00",
+  "total": 97
+}

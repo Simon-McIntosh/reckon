@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_shadow_inherits_primary_time_budget_instead_of_role_default"
+  ],
+  "added_failures_source": {
+    "absent_arm_control": "a missing arm returns (None, []) \u2014 unmeasured, not a measured zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T131121375866-boundary-check-reads-two-trees/suite-head-arm.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T131121375866-boundary-check-reads-two-trees/suite-base-arm.log",
+    "count_derivation": "set difference of pytest FAILED/ERROR node ids over the reviewed run's two arm logs, computed with review.added_failures_from_gate_logs (reckon.crew.review from the reviewer's own worktree at the reviewed base revision); the reviewed manifest writes its baseline_suite and after_suite fields as prose, so the read-time annotation resolves no log_path and reports the count unmeasured while the stored record keeps the derived pair. Derivation log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T142629861932-review-of-boundary-check-reads-two-trees/logs/added-failures.out",
+    "pair_note": "33 failing ids in each arm; the head arm adds tests/test_crew.py::test_shadow_inherits_primary_time_budget_instead_of_role_default and the base arm's one-way id tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_with_disposable_members does not reappear; suite-flake-check.log re-runs both ids on both trees serially and all four pass, so the derived delta is one transient parallel-arm failure, not a regression, and the reviewed manifest's 'the 33 failed ids are the same across arms' overstates its own logs",
+    "pair_usable_as_suite_delta": true,
+    "positive_control": {
+      "count": 2,
+      "count_derived": 1,
+      "ids_actual": [
+        "tests/test_crew.py::test_shadow_inherits_primary_time_budget_instead_of_role_default",
+        "tests/test_synthetic_control.py::test_the_instrument_sees_a_failure"
+      ],
+      "mutation": "append one FAILED line for tests/test_synthetic_control.py::test_the_instrument_sees_a_failure to a copy of the head log text in memory"
+    }
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_write_boundary_tree_snapshot",
+    "reckon/crew/dispatch.py:_supervisor_tree_snapshot",
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/promotion.py:_repository_tree_boundary_violations",
+    "reckon/crew/promotion.py:_worktree_audit"
+  ],
+  "completed_at": "2026-09-29T15:05:01.038Z",
+  "dispatched_at": "2026-09-29T14:26:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4752",
+      "text": "the fence fact is recorded from the module constant FENCE_WORKERS for every launch, including the delegated in-harness branch at dispatch.py:4955 where plan is None and no fence argv is composed (the fence is built only inside _backends.launch_plan, called at dispatch.py:4893 for cli launches); that branch then writes a two-tree baseline at dispatch.py:5087, so a run dispatched to the live `native` in-harness backend (flight.yaml:510) is checked against two trees although nothing fenced it, which is the case the plan keeps the full registry scan for."
+    },
+    {
+      "file": "tests/test_boundary_check_reads_two_trees.py",
+      "line": "159",
+      "text": "the fixture seeds record[\"fenced\"] and all six cases assert the snapshot's and promotion's behaviour on a seeded fact, so the dispatch-time decision that produces it is untested; the fixture rows even carry launch \"in-harness\" with backend \"native\", the combination dispatch currently records as fenced."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T131121375866-boundary-check-reads-two-trees/manifest.md",
+      "line": "38",
+      "text": "the failure_attribution line reports 0 added failures and says the 33 failed ids are the same across arms; the set difference over the run's own two arm logs is one added id, tests/test_crew.py::test_shadow_inherits_primary_time_budget_instead_of_role_default, which its own suite-flake-check.log shows passes serially at the head, and the base arm's one-way id is dropped from the claim rather than named and retired."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against db6726ee; c8ac90dd threads `_boundary_tree_roots` through four dispatch sites and the promotion re-snapshot, 852e3216 adds only the evidence fragment.",
+    "done_when": "the done_when names tests/test_boundary_check_reads_two_trees.py over a temporary repository with 50 registered worktrees and a status-counting git shim; I re-ran tests/test_boundary_check_reads_two_trees.py at the reviewed head, 6 passed, EXIT=0, and the manifest names its arm logs and its negative control.",
+    "goal": "the goal is to scope a fenced run's boundary check to its own worktree and the main checkout; reckon/crew/routing.py:562 adds `_boundary_tree_roots`, and both snapshot sites and the promotion re-snapshot read it, but the fact that selects it is written from a constant, so a delegated launch that composed no fence is scoped as though it had.",
+    "manifest": "read; it records the six-test gate, both arm logs and the red negative control, but its failure_attribution line claims the 33 failed ids are the same across arms where its own two logs differ by one id each way, and it asserts nothing about the dispatch-time fence fact.",
+    "write_paths": "read the manifest's declared paths; the two commits change reckon/crew/routing.py, reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_boundary_check_reads_two_trees.py and the evidence fragment, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the shim assertions are independent of the code under test and tests/test_boundary_check_reads_two_trees.py:283 is a positive control for the counter, but the fixture seeds the fence fact at tests/test_boundary_check_reads_two_trees.py:159, so no test fails if dispatch records it wrongly.",
+    "evidence": "the gate measures the done_when and I reproduced it (tests/test_boundary_check_reads_two_trees.py: 6 passed, EXIT=0) with a genuine negative control failing `assert 51 == 2`, but the manifest's failure_attribution claim that the 33 failed ids match across arms is contradicted by its own two arm logs.",
+    "fit": "reckon/crew/routing.py:562 follows the module's private-helper idiom and names the mechanism rather than a plan item, and neither commit introduces a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/routing.py:562 and reckon/crew/promotion.py:2233 read exactly two trees for a record carrying the fence fact, but reckon/crew/dispatch.py:4752 writes that fact from the constant FENCE_WORKERS (dispatch.py:143), so a launch that composed no fence is scoped as though it had.",
+    "scope_discipline": "every path in both commits is inside the manifest's declared write paths, and the evidence commit touches docs/evidence/fragments/the-boundary-check-reads-two-trees/boundary-check-reads-two-trees.html alone."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to scope a fenced run's boundary check to its own worktree and the main checkout; reckon/crew/routing.py:562 adds `_boundary_tree_roots`, and both snapshot sites and the promotion re-snapshot read it, but the fact that selects it is written from a constant, so a delegated launch that composed no fence is scoped as though it had.\nVERDICT done_when: the done_when names tests/test_boundary_check_reads_two_trees.py over a temporary repository with 50 registered worktrees and a status-counting git shim; I re-ran tests/test_boundary_check_reads_two_trees.py at the reviewed head, 6 passed, EXIT=0, and the manifest names its arm logs and its negative control.\nVERDICT write_paths: read the manifest's declared paths; the two commits change reckon/crew/routing.py, reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_boundary_check_reads_two_trees.py and the evidence fragment, all inside the declared scope.\nVERDICT manifest: read; it records the six-test gate, both arm logs and the red negative control, but its failure_attribution line claims the 33 failed ids are the same across arms where its own two logs differ by one id each way, and it asserts nothing about the dispatch-time fence fact.\nVERDICT diff: read commit by commit against db6726ee; c8ac90dd threads `_boundary_tree_roots` through four dispatch sites and the promotion re-snapshot, 852e3216 adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:_write_boundary_tree_snapshot, reckon/crew/dispatch.py:_supervisor_tree_snapshot, reckon/crew/dispatch.py:dispatch, reckon/crew/promotion.py:_repository_tree_boundary_violations, reckon/crew/promotion.py:_worktree_audit\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:562 and reckon/crew/promotion.py:2233 read exactly two trees for a record carrying the fence fact, but reckon/crew/dispatch.py:4752 writes that fact from the constant FENCE_WORKERS (dispatch.py:143), so a launch that composed no fence is scoped as though it had.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate measures the done_when and I reproduced it (tests/test_boundary_check_reads_two_trees.py: 6 passed, EXIT=0) with a genuine negative control failing `assert 51 == 2`, but the manifest's failure_attribution claim that the 33 failed ids match across arms is contradicted by its own two arm logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in both commits is inside the manifest's declared write paths, and the evidence commit touches docs/evidence/fragments/the-boundary-check-reads-two-trees/boundary-check-reads-two-trees.html alone.\nSCORE durability: 14\nJUSTIFICATION durability: the shim assertions are independent of the code under test and tests/test_boundary_check_reads_two_trees.py:283 is a positive control for the counter, but the fixture seeds the fence fact at tests/test_boundary_check_reads_two_trees.py:159, so no test fails if dispatch records it wrongly.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:562 follows the module's private-helper idiom and names the mechanism rather than a plan item, and neither commit introduces a plan, sprint or ticket identifier.\nFINDING reckon/crew/dispatch.py:4752 the fence fact is recorded from the module constant FENCE_WORKERS for every launch, including the delegated in-harness branch at dispatch.py:4955 where plan is None and no fence argv is composed (the fence is built only inside _backends.launch_plan, called at dispatch.py:4893 for cli launches); that branch then writes a two-tree baseline at dispatch.py:5087, so a run dispatched to the live `native` in-harness backend (flight.yaml:510) is checked against two trees although nothing fenced it, which is the case the plan keeps the full registry scan for.\nFINDING tests/test_boundary_check_reads_two_trees.py:159 the fixture seeds record[\"fenced\"] and all six cases assert the snapshot's and promotion's behaviour on a seeded fact, so the dispatch-time decision that produces it is untested; the fixture rows even carry launch \"in-harness\" with backend \"native\", the combination dispatch currently records as fenced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T131121375866-boundary-check-reads-two-trees/manifest.md:38 the failure_attribution line reports 0 added failures and says the 33 failed ids are the same across arms; the set difference over the run's own two arm logs is one added id, tests/test_crew.py::test_shadow_inherits_primary_time_budget_instead_of_role_default, which its own suite-flake-check.log shows passes serially at the head, and the base arm's one-way id is dropped from the claim rather than named and retired.",
+  "review_run_id": "r-20260929T142629861932-review-of-boundary-check-reads-two-trees",
+  "reviewed_base_sha": "db6726ee01c07c329554f96b4c263623909c2f5c",
+  "reviewed_head_sha": "852e3216daf2205c48c2f321c58e34974fb84754",
+  "reviewed_run_id": "r-20260929T131121375866-boundary-check-reads-two-trees",
+  "reviewer": "review-of-boundary-check-reads-two-trees",
+  "reviewer_run_id": "r-20260929T142629861932-review-of-boundary-check-reads-two-trees",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T14:48:08.833335+00:00",
+  "total": 83
+}

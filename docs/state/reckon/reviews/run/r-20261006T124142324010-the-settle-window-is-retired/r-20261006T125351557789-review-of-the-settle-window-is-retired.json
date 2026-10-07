@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "fa990e12e9c6e8583a785f9a6c1a58aa6cf1a8c0",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T13:04:17.343Z",
+  "dispatched_at": "2026-10-06T12:54:12Z",
+  "findings": [
+    {
+      "file": "reckon/schema/flight-defaults.yaml",
+      "line": "130",
+      "severity": "follow-on",
+      "text": "follow-on: the host flight layer still declares the retired key as a brake (dotfiles/reckon/flight.yaml line 78, review.plan_settle_seconds: 315360000), and at the reviewed head validate_layer refuses it \u2014 verified directly (base ACCEPTED, head REFUSED 'host: review.plan_settle_seconds: Extra inputs are not permitted'). The coordinator must delete that host line in the same beat as the merge, or the live host config stops validating once this lands."
+    }
+  ],
+  "head_log_revision": "2827a865fa14a4f22ad2b9d0f6f8de65518f07bf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no remaining production call site; the retired accessor's only reader, the plan sweep in dispatch_awaiting_reviews, was removed by the sibling node nothing-sweeps-old-plans.",
+    "diff": "read against fa990e12e; three commits: 9ed6fa796 deletes tests/test_plan_settle_window_is_declared.py, 2827a865f removes the accessor, the default and the key-table entry and replaces the settle tests with tests/test_the_settle_window_is_retired.py, 141e389b7 lands the evidence fragment.",
+    "done_when": "verified at head: grep -rn plan_settle_seconds reckon/ tests/ returns nothing (exit 1); the flight-layer/plan-review/review-command gate passes (independently reproduced 137 passed, 2 skipped, EXIT=0); public_definitions is 1482 at base fa990e12e and 1481 at head (one below, the retired accessor); crew review-plan still composes on demand via its passing tests.",
+    "goal": "the node's own subject is the settle window's removal from the flight layer: the accessor plan_review_settle_seconds in reckon/flight.py, the shipped default review.plan_settle_seconds and its comment in reckon/schema/flight-defaults.yaml, and its entry in REVIEW_OWNED_KEYS are all deleted, while plan_change_threshold stays in the table and still resolves.",
+    "manifest": "the reviewed manifest reads status complete, commits 9ed6fa796, 2827a865f and 141e389b7, names the gate command and result, and carries test_logs gate-head.log and negative-control.log; it records no baseline_suite/after_suite JSON keys, so the added-failure figure is derived from the head arm alone.",
+    "write_paths": "all six changed files lie inside the run's declared write paths (reckon/flight.py, reckon/schema/flight-defaults.yaml, three tests, the evidence fragment); no path outside them was touched."
+  },
+  "justifications": {
+    "durability": "the change is a deletion and the new guard is mutation-proven: restoring plan_settle_seconds to REVIEW_OWNED_KEYS makes validate_layer accept the key so test_a_layer_declaring_the_settle_window_is_refused reddens; validated end to end by running the tree's own flight.validate_layer against a layer declaring the key (base ACCEPTED, head REFUSED).",
+    "evidence": "the head arm passes (independently reproduced 137 passed, 2 skipped, EXIT=0) and the declared mutation reddens the new refusal test (independently reproduced 1 failed, 1 passed, EXIT=1, failing id test_a_layer_declaring_the_settle_window_is_refused, not failed by the head arm); the negative-control log names module.__file__ and cwd; deducted one because the reviewed manifest records no baseline_suite arm and carries no baseline_suite/after_suite JSON keys, so the added-failure figure rests on the green head arm alone.",
+    "fit": "the new test carries a docstring explaining why the retired key's name is assembled from its parts, the fragment is a data-reckon evidence section matching the sibling fragment, and no plan or ticket identifiers appear in code or symbols; deducted one for the unrelated one-line monkeypatch-rebind cleanup bundled into 2827a865f and for the string assembly, which a future reader must read the docstring to understand.",
+    "goal_fidelity": "the node does exactly the plan's second-node acts: the accessor, the shipped default and its reckon-owned key-table entry are deleted and the tests that read the window replaced by a refusal test; every done-when condition was independently reproduced (grep empty, gate green, public_definitions one below base) and the change threshold beside it still resolves.",
+    "reuse": "the change deletes an accessor, a default and a redundant whole test file rather than adding a mechanism, introduces no definition that re-implements an existing one, and reuses validate_layer and plan_review_change_threshold for the new coverage.",
+    "scope_discipline": "every changed path lies inside the run's declared six write paths and the evidence fragment directory; no shared index, sprint state or other plan was touched; a one-line cosmetic cleanup of a monkeypatch rebind inside an already-edited test file stays within scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's own subject is the settle window's removal from the flight layer: the accessor plan_review_settle_seconds in reckon/flight.py, the shipped default review.plan_settle_seconds and its comment in reckon/schema/flight-defaults.yaml, and its entry in REVIEW_OWNED_KEYS are all deleted, while plan_change_threshold stays in the table and still resolves.\nVERDICT done_when: verified at head: grep -rn plan_settle_seconds reckon/ tests/ returns nothing (exit 1); the flight-layer/plan-review/review-command gate passes (independently reproduced 137 passed, 2 skipped, EXIT=0); public_definitions is 1482 at base fa990e12e and 1481 at head (one below, the retired accessor); crew review-plan still composes on demand via its passing tests.\nVERDICT write_paths: all six changed files lie inside the run's declared write paths (reckon/flight.py, reckon/schema/flight-defaults.yaml, three tests, the evidence fragment); no path outside them was touched.\nVERDICT manifest: the reviewed manifest reads status complete, commits 9ed6fa796, 2827a865f and 141e389b7, names the gate command and result, and carries test_logs gate-head.log and negative-control.log; it records no baseline_suite/after_suite JSON keys, so the added-failure figure is derived from the head arm alone.\nVERDICT diff: read against fa990e12e; three commits: 9ed6fa796 deletes tests/test_plan_settle_window_is_declared.py, 2827a865f removes the accessor, the default and the key-table entry and replaces the settle tests with tests/test_the_settle_window_is_retired.py, 141e389b7 lands the evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the node does exactly the plan's second-node acts: the accessor, the shipped default and its reckon-owned key-table entry are deleted and the tests that read the window replaced by a refusal test; every done-when condition was independently reproduced (grep empty, gate green, public_definitions one below base) and the change threshold beside it still resolves.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head arm passes (independently reproduced 137 passed, 2 skipped, EXIT=0) and the declared mutation reddens the new refusal test (independently reproduced 1 failed, 1 passed, EXIT=1, failing id test_a_layer_declaring_the_settle_window_is_refused, not failed by the head arm); the negative-control log names module.__file__ and cwd; deducted one because the reviewed manifest records no baseline_suite arm and carries no baseline_suite/after_suite JSON keys, so the added-failure figure rests on the green head arm alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path lies inside the run's declared six write paths and the evidence fragment directory; no shared index, sprint state or other plan was touched; a one-line cosmetic cleanup of a monkeypatch rebind inside an already-edited test file stays within scope.\nSCORE durability: 20\nJUSTIFICATION durability: the change is a deletion and the new guard is mutation-proven: restoring plan_settle_seconds to REVIEW_OWNED_KEYS makes validate_layer accept the key so test_a_layer_declaring_the_settle_window_is_refused reddens; validated end to end by running the tree's own flight.validate_layer against a layer declaring the key (base ACCEPTED, head REFUSED).\nSCORE fit: 19\nJUSTIFICATION fit: the new test carries a docstring explaining why the retired key's name is assembled from its parts, the fragment is a data-reckon evidence section matching the sibling fragment, and no plan or ticket identifiers appear in code or symbols; deducted one for the unrelated one-line monkeypatch-rebind cleanup bundled into 2827a865f and for the string assembly, which a future reader must read the docstring to understand.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes an accessor, a default and a redundant whole test file rather than adding a mechanism, introduces no definition that re-implements an existing one, and reuses validate_layer and plan_review_change_threshold for the new coverage.\nFINDING reckon/schema/flight-defaults.yaml:130 follow-on: follow-on: the host flight layer still declares the retired key as a brake (dotfiles/reckon/flight.yaml line 78, review.plan_settle_seconds: 315360000), and at the reviewed head validate_layer refuses it \u2014 verified directly (base ACCEPTED, head REFUSED 'host: review.plan_settle_seconds: Extra inputs are not permitted'). The coordinator must delete that host line in the same beat as the merge, or the live host config stops validating once this lands.\nreviewed_base_sha: fa990e12e9c6e8583a785f9a6c1a58aa6cf1a8c0\nreviewed_head_sha: 141e389b704dc231f0d89c3a877618665ca35e63\n",
+  "review_run_id": "r-20261006T125351557789-review-of-the-settle-window-is-retired",
+  "reviewed_base_sha": "fa990e12e9c6e8583a785f9a6c1a58aa6cf1a8c0",
+  "reviewed_head_sha": "141e389b704dc231f0d89c3a877618665ca35e63",
+  "reviewed_run_id": "r-20261006T124142324010-the-settle-window-is-retired",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:09.116698+00:00",
+  "total": 118
+}

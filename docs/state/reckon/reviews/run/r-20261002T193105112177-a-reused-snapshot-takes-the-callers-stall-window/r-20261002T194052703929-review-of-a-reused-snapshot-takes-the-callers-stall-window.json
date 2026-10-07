@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's own baseline_suite (base_arm.log, 14 passed, EXIT=0) and after_suite (head_arm.log, 16 passed, EXIT=0) arms list no failing node ids, so the head arm adds zero failure ids; derived with reckon.crew.review.added_failures_from_gate_logs after a positive control confirmed the parser finds the two FAILED ids in negative_control.log.",
+  "base_log_revision": "e7d624f32756f5a1ae14affc7bb2c26b9f1e453e",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:2568",
+    "reckon/crew/runs.py:1447",
+    "reckon/crew/recovery.py:9096",
+    "reckon/crew/recovery.py:9311"
+  ],
+  "completed_at": "2026-10-02T19:47:39.961Z",
+  "dispatched_at": "2026-10-02T19:41:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8454",
+      "severity": "follow-on",
+      "text": "follow-on: the budget_seconds the snapshot now carries is load-bearing for reuse parity when a live child widens the window to the run's declared budget, but the new gate never exercises a live child, so the carry is unguarded. Dropping only that line (leaving the window recompute in place) leaves both new cases green (2 passed); with a snapshot that carries process_alive True, process_descendant_alive True and budget_seconds 3600, _refresh_snapshot(snapshot, moment, stall_seconds=60) then returns state 'stalled' window 60 where the full recompute returns 'working' window 3600 - the same class of caller-leak this node set out to fix, in the branch the test does not reach. tests/test_stall_window_respects_a_child.py already covers this branch through _watch_snapshot and reddens under that mutation (2 failed: test_a_live_child_holds_the_window_for_the_ticker, test_the_supervised_worker_is_the_process_asked_about_its_child), but it was omitted from both gate arms, so the focused arm measured a set that does not exercise the change's own addition."
+    }
+  ],
+  "head_log_revision": "aebb14cee0162317981920fd257e00a1504d51bf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "one commit, aebb14cee 'fix(crew): judge a reused snapshot against the caller's stall window'; it threads stall_seconds into _refresh_snapshot at both call sites in _watch_snapshot, recomputes the window from the caller, and adds budget_seconds to the computed snapshot; the change stays inside the two declared paths.",
+    "done_when": "the new gate tests/test_a_reused_snapshot_takes_the_callers_stall_window.py (two cases, both reuse orders) asserts each reused read equals the full recompute for its own window, and the declared mutation (read the frozen snapshot['stall_window_seconds']) turns both red (2 failed EXIT=1). Its fixture sets process_alive True but no live child and no declared budget, so the _stall_window_seconds widening branch (process_descendant_alive and budget_seconds) is never reached by the new cases.",
+    "goal": "plan section 11 item 2 makes an unchanged run cost one stat by reusing its previous snapshot; this node repairs the follow-on from the predecessor's review - a snapshot served under the reuse key (which deliberately does not carry the window) must be judged against the calling producer's own stall window, not the one frozen onto the entry. At head aebb14cee _refresh_snapshot (reckon/crew/recovery.py:8328) recomputes window = _stall_window_seconds(snapshot, stall_seconds) and carries budget_seconds on the snapshot (recovery.py:8454) so the recomputation sees the same liveness pair and declared budget the full classification read; _snapshot_reuse_key is left unchanged. Independently reproduced: at base e7d624f a run quiet 600s, first call win=60 stores 'stalled'/window 60, a second call win=3600 through the shared cache returns 'stalled'/window 60 where a full recompute returns 'working'/window 3600; at head the second call returns 'working'/window 3600.",
+    "manifest": "read; status complete, changed_paths the two files, arms base 14 passed EXIT=0 and head 16 passed EXIT=0 both completed with literal full commands, negative control 2 failed EXIT=1, added failures 0. The head arm ran at exactly the reviewed head aebb14cee (a point the predecessor's arm missed).",
+    "write_paths": "git diff --name-only e7d624f..aebb14cee lists exactly reckon/crew/recovery.py and tests/test_a_reused_snapshot_takes_the_callers_stall_window.py, both declared; nothing outside them. The evidence fragment and figures dir named in orientation_write_paths were declared but never landed."
+  },
+  "justifications": {
+    "durability": "the new test covers both reuse orders and a parity assertion and the declared mutation reddens both, but it exercises no live child, so the budget_seconds carry (recovery.py:8454) is unguarded by it - dropping that one line leaves both new cases green while a snapshot lacking budget_seconds recomputes a narrower window ('stalled'/60) where the full path returns 'working'/3600; the existing tests/test_stall_window_respects_a_child.py does catch that mutation (2 failed) but was not in either arm.",
+    "evidence": "base e7d624f 14 passed and head aebb14cee 16 passed, both EXIT=0 and completed, literal commands, head at exactly the reviewed revision, zero added failure ids derived with reckon.crew.review.added_failures_from_gate_logs after a positive control confirmed the parser finds the two FAILED ids in negative_control.log; points withheld because the focused arm omitted tests/test_stall_window_respects_a_child.py, which covers the child/budget branch the change's new budget_seconds carry serves.",
+    "fit": "helpers named by mechanism, the added snapshot field carries a mechanism docstring explaining why it travels, no plan or ticket identifier anywhere; _snapshot_reuse_key is deliberately left window-agnostic with the reason stated in the _refresh_snapshot docstring.",
+    "goal_fidelity": "the frozen-window leak the predecessor reported is repaired - the window is recomputed from the caller's stall_seconds on reuse and the reuse key stays window-agnostic, so one reader still serves many consumers; independently reproduced fixed at head and broken at base.",
+    "scope_discipline": "the diff touches exactly the two declared write paths and mutates no shared plan, index or sprint state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 11 item 2 makes an unchanged run cost one stat by reusing its previous snapshot; this node repairs the follow-on from the predecessor's review - a snapshot served under the reuse key (which deliberately does not carry the window) must be judged against the calling producer's own stall window, not the one frozen onto the entry. At head aebb14cee _refresh_snapshot (reckon/crew/recovery.py:8328) recomputes window = _stall_window_seconds(snapshot, stall_seconds) and carries budget_seconds on the snapshot (recovery.py:8454) so the recomputation sees the same liveness pair and declared budget the full classification read; _snapshot_reuse_key is left unchanged. Independently reproduced: at base e7d624f a run quiet 600s, first call win=60 stores 'stalled'/window 60, a second call win=3600 through the shared cache returns 'stalled'/window 60 where a full recompute returns 'working'/window 3600; at head the second call returns 'working'/window 3600.\nVERDICT done_when: the new gate tests/test_a_reused_snapshot_takes_the_callers_stall_window.py (two cases, both reuse orders) asserts each reused read equals the full recompute for its own window, and the declared mutation (read the frozen snapshot['stall_window_seconds']) turns both red (2 failed EXIT=1). Its fixture sets process_alive True but no live child and no declared budget, so the _stall_window_seconds widening branch (process_descendant_alive and budget_seconds) is never reached by the new cases.\nVERDICT write_paths: git diff --name-only e7d624f..aebb14cee lists exactly reckon/crew/recovery.py and tests/test_a_reused_snapshot_takes_the_callers_stall_window.py, both declared; nothing outside them. The evidence fragment and figures dir named in orientation_write_paths were declared but never landed.\nVERDICT manifest: read; status complete, changed_paths the two files, arms base 14 passed EXIT=0 and head 16 passed EXIT=0 both completed with literal full commands, negative control 2 failed EXIT=1, added failures 0. The head arm ran at exactly the reviewed head aebb14cee (a point the predecessor's arm missed).\nVERDICT diff: one commit, aebb14cee 'fix(crew): judge a reused snapshot against the caller's stall window'; it threads stall_seconds into _refresh_snapshot at both call sites in _watch_snapshot, recomputes the window from the caller, and adds budget_seconds to the computed snapshot; the change stays inside the two declared paths.\nCALL_SITES: reckon/cli.py:2568, reckon/crew/runs.py:1447, reckon/crew/recovery.py:9096, reckon/crew/recovery.py:9311\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the frozen-window leak the predecessor reported is repaired - the window is recomputed from the caller's stall_seconds on reuse and the reuse key stays window-agnostic, so one reader still serves many consumers; independently reproduced fixed at head and broken at base.\nSCORE evidence: 17\nJUSTIFICATION evidence: base e7d624f 14 passed and head aebb14cee 16 passed, both EXIT=0 and completed, literal commands, head at exactly the reviewed revision, zero added failure ids derived with reckon.crew.review.added_failures_from_gate_logs after a positive control confirmed the parser finds the two FAILED ids in negative_control.log; points withheld because the focused arm omitted tests/test_stall_window_respects_a_child.py, which covers the child/budget branch the change's new budget_seconds carry serves.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the two declared write paths and mutates no shared plan, index or sprint state.\nSCORE durability: 16\nJUSTIFICATION durability: the new test covers both reuse orders and a parity assertion and the declared mutation reddens both, but it exercises no live child, so the budget_seconds carry (recovery.py:8454) is unguarded by it - dropping that one line leaves both new cases green while a snapshot lacking budget_seconds recomputes a narrower window ('stalled'/60) where the full path returns 'working'/3600; the existing tests/test_stall_window_respects_a_child.py does catch that mutation (2 failed) but was not in either arm.\nSCORE fit: 18\nJUSTIFICATION fit: helpers named by mechanism, the added snapshot field carries a mechanism docstring explaining why it travels, no plan or ticket identifier anywhere; _snapshot_reuse_key is deliberately left window-agnostic with the reason stated in the _refresh_snapshot docstring.\nreviewed_base_sha: e7d624f32756f5a1ae14affc7bb2c26b9f1e453e\nreviewed_head_sha: aebb14cee0162317981920fd257e00a1504d51bf\nFINDING reckon/crew/recovery.py:8454 follow-on: the budget_seconds the snapshot now carries is load-bearing for reuse parity when a live child widens the window to the run's declared budget, but the new gate never exercises a live child, so the carry is unguarded. Dropping only that line (leaving the window recompute in place) leaves both new cases green (2 passed); with a snapshot that carries process_alive True, process_descendant_alive True and budget_seconds 3600, _refresh_snapshot(snapshot, moment, stall_seconds=60) then returns state 'stalled' window 60 where the full recompute returns 'working' window 3600 - the same class of caller-leak this node set out to fix, in the branch the test does not reach. tests/test_stall_window_respects_a_child.py already covers this branch through _watch_snapshot and reddens under that mutation (2 failed: test_a_live_child_holds_the_window_for_the_ticker, test_the_supervised_worker_is_the_process_asked_about_its_child), but it was omitted from both gate arms, so the focused arm measured a set that does not exercise the change's own addition.",
+  "review_run_id": "r-20261002T194052703929-review-of-a-reused-snapshot-takes-the-callers-stall-window",
+  "reviewed_base_sha": "e7d624f32756f5a1ae14affc7bb2c26b9f1e453e",
+  "reviewed_head_sha": "aebb14cee0162317981920fd257e00a1504d51bf",
+  "reviewed_run_id": "r-20261002T193105112177-a-reused-snapshot-takes-the-callers-stall-window",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T194052703929-review-of-a-reused-snapshot-takes-the-callers-stall-window",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T19:46:30.643024+00:00",
+  "total": 90
+}

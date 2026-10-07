@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T15:55:14.459674+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/negative-control.log",
+      "line": "1",
+      "text": "the red log's first line repeats the applied mutation in code (`row[\"wall_seconds\"] = record.get(\"wall_seconds\")`) while the node's declared negative_control is the prose `make the summary read return the stored wall_seconds field instead of deriving the figure from the row own stamps`, so promotion's substring check at reckon/crew/promotion.py:3131 refuses the pair \u2014 measured by calling it: it returns \"declares the mutation ... but the log ... does not name it\". The failing set (assert 4242 == 120, assert 7 is None) proves the applied mutation is the declared one, so this is a paraphrase rather than a substitution and the remedy is `--waive-negative-control` with that equivalence stated, or the declaration corrected to the mutation the log shows."
+    },
+    {
+      "file": "docs/plans/work-does-not-fall-to-the-coordinator.html",
+      "line": "210",
+      "text": "section 5's own citation of `reckon/crew/summary.py:concurrency_bounds` as `:397` was exact at base 63fd372f and is one line off at the delivered tree, because this change inserted `from datetime import UTC, datetime` at line 5 of that file, so a reader following the citation lands inside the signature of the function it names; the same revision-relative form in the landed evidence record cites reckon/cli.py:3117 and :3122, exact at 3a1f120e but now at :3163 and :3168 after the later landing 8196dc7f added 46 lines to that file, which is why a durable record is better served by naming the symbol than by pinning a line."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against the base \u2014 the code half is confined to reckon/crew/summary.py and its test, and the two documentation commits record the landing, the re-measurement and the wiring gap without touching another section.",
+    "done_when": "tests/test_summary_wall_and_width.py:111-167 asserts each of the four clauses the done_when states \u2014 stamp-derived wall time, the stored field never reaching the answer, a width counted at the dispatch stamp, and absence rather than zero for either missing stamp \u2014 and the declared mutation, re-applied by this reviewer to a scratch copy of 3a1f120e, reddened exactly the three wall and absence cases with `assert 4242 == 120` and `assert 7 is None`, the same failing set the run directory's red log records.",
+    "goal": "the goal is per-node wall time and width-at-start emitted on the crew summary read, each derived from the row's own dispatch and completion stamps; reckon/crew/summary.py:533 returns both figures on every row, but a search at the merged head returns no production caller for it \u2014 the definition, this node's test, and an unrelated reckon/evidence.py:101 `_run_rows` \u2014 so the emission the goal names is reachable to a Python caller and to no surface.",
+    "manifest": "read in full; its green run, its red run and its lint delta all held where I re-measured them, its stored-vs-derived buckets name the instrument they were taken with, and its negative_control_note discloses the declaration/log mismatch I independently confirmed refuses promotion rather than leaving that to be discovered.",
+    "write_paths": "the diffstat over 63fd372f..3a1f120e is four paths \u2014 reckon/crew/summary.py, tests/test_summary_wall_and_width.py, docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html and docs/plans/work-does-not-fall-to-the-coordinator.html \u2014 376 insertions and no deletions, exactly the four write_paths the node declared, with the worktree clean at 3a1f120e."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens three tests on distinct clauses at tests/test_summary_wall_and_width.py:116, :132 and :162, so a regression to passing the stored field through cannot land silently.",
+    "evidence": "the gate asserts the clauses the done_when names and both results reproduce on re-measurement \u2014 5 passed at the merged head, and 3 failed with 2 passed under the declared mutation on a scratch copy of the delivered tree.",
+    "fit": "reckon/crew/summary.py:568 reuses the ledger's own `_worker_seconds` that docs/plans/work-does-not-fall-to-the-coordinator.html:208 names, matches the module's section-comment idiom, introduces no barred name, and stages no lint delta (one pre-existing UP035 either side, both files otherwise clean).",
+    "goal_fidelity": "reckon/crew/summary.py:533 emits both figures per row, but no surface reaches the read at the merged head and the wiring lives in reckon/cli.py, reckon/ledger.py and reckon/mcp_views.py, which the node's fence excluded and docs/plans/work-does-not-fall-to-the-coordinator.html:245 records as \u00a78's.",
+    "scope_discipline": "every path in the diff is inside the declared write_paths and the change carries nothing the goal does not imply, the documentation commits included."
+  },
+  "project": "reckon",
+  "raw_text": "This is an independent review of the-summary-read-emits-wall-time-and-width\n(r-20260921T142336254234), landed as 20496d11, 693cd6ac, 3a1f120e over base\n63fd372f0d08a9a5e457b8e291f5e94c572da97e. Every claim below rests on the\nartefacts, and the two load-bearing ones were re-measured rather than read.\n\nVERDICT goal: the goal is per-node wall time and width-at-start emitted on the crew summary read, each derived from the row's own dispatch and completion stamps; reckon/crew/summary.py:533 returns both figures on every row, but a search at the merged head returns no production caller for it \u2014 the definition, this node's test, and an unrelated reckon/evidence.py:101 `_run_rows` \u2014 so the emission the goal names is reachable to a Python caller and to no surface.\nVERDICT done_when: tests/test_summary_wall_and_width.py:111-167 asserts each of the four clauses the done_when states \u2014 stamp-derived wall time, the stored field never reaching the answer, a width counted at the dispatch stamp, and absence rather than zero for either missing stamp \u2014 and the declared mutation, re-applied by this reviewer to a scratch copy of 3a1f120e, reddened exactly the three wall and absence cases with `assert 4242 == 120` and `assert 7 is None`, the same failing set the run directory's red log records.\nVERDICT write_paths: the diffstat over 63fd372f..3a1f120e is four paths \u2014 reckon/crew/summary.py, tests/test_summary_wall_and_width.py, docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html and docs/plans/work-does-not-fall-to-the-coordinator.html \u2014 376 insertions and no deletions, exactly the four write_paths the node declared, with the worktree clean at 3a1f120e.\nVERDICT manifest: read in full; its green run, its red run and its lint delta all held where I re-measured them, its stored-vs-derived buckets name the instrument they were taken with, and its negative_control_note discloses the declaration/log mismatch I independently confirmed refuses promotion rather than leaving that to be discovered.\nVERDICT diff: read commit by commit against the base \u2014 the code half is confined to reckon/crew/summary.py and its test, and the two documentation commits record the landing, the re-measurement and the wiring gap without touching another section.\n\nCALL_SITES: none\n\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/summary.py:533 emits both figures per row, but no surface reaches the read at the merged head and the wiring lives in reckon/cli.py, reckon/ledger.py and reckon/mcp_views.py, which the node's fence excluded and docs/plans/work-does-not-fall-to-the-coordinator.html:245 records as \u00a78's.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate asserts the clauses the done_when names and both results reproduce on re-measurement \u2014 5 passed at the merged head, and 3 failed with 2 passed under the declared mutation on a scratch copy of the delivered tree.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write_paths and the change carries nothing the goal does not imply, the documentation commits included.\nSCORE durability: 19\nJUSTIFICATION durability: the declared mutation reddens three tests on distinct clauses at tests/test_summary_wall_and_width.py:116, :132 and :162, so a regression to passing the stored field through cannot land silently.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/summary.py:568 reuses the ledger's own `_worker_seconds` that docs/plans/work-does-not-fall-to-the-coordinator.html:208 names, matches the module's section-comment idiom, introduces no barred name, and stages no lint delta (one pre-existing UP035 either side, both files otherwise clean).\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/negative-control.log:1 the red log's first line repeats the applied mutation in code (`row[\"wall_seconds\"] = record.get(\"wall_seconds\")`) while the node's declared negative_control is the prose `make the summary read return the stored wall_seconds field instead of deriving the figure from the row own stamps`, so promotion's substring check at reckon/crew/promotion.py:3131 refuses the pair \u2014 measured by calling it: it returns \"declares the mutation ... but the log ... does not name it\". The failing set (assert 4242 == 120, assert 7 is None) proves the applied mutation is the declared one, so this is a paraphrase rather than a substitution and the remedy is `--waive-negative-control` with that equivalence stated, or the declaration corrected to the mutation the log shows.\nFINDING docs/plans/work-does-not-fall-to-the-coordinator.html:210 section 5's own citation of `reckon/crew/summary.py:concurrency_bounds` as `:397` was exact at base 63fd372f and is one line off at the delivered tree, because this change inserted `from datetime import UTC, datetime` at line 5 of that file, so a reader following the citation lands inside the signature of the function it names; the same revision-relative form in the landed evidence record cites reckon/cli.py:3117 and :3122, exact at 3a1f120e but now at :3163 and :3168 after the later landing 8196dc7f added 46 lines to that file, which is why a durable record is better served by naming the symbol than by pinning a line.",
+  "review_run_id": "r-20260921T155514459674-review-of-the-summary-read-emits-wall-time-and-width",
+  "reviewed_base_sha": "63fd372f0d08a9a5e457b8e291f5e94c572da97e",
+  "reviewed_commits": [
+    "20496d11e9322c0fd757327950ea654e35a46b84",
+    "693cd6ac366783713f051c87bdda74b9acac4383",
+    "3a1f120e46c808dec8de2b291bd19674e523f874"
+  ],
+  "reviewed_head_sha": "3a1f120e46c808dec8de2b291bd19674e523f874",
+  "reviewed_run_id": "r-20260921T142336254234-the-summary-read-emits-wall-time-and-width",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-summary-read-emits-wall-time-and-width",
+  "reviewer_negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T155514459674-review-of-the-summary-read-emits-wall-time-and-width/reviewer-negative-control.log",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T16:34:38.562400+00:00",
+  "total": 91
+}

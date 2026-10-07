@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (a50b154c, base_gate_callers.log) exit 0 / 328 passed with failure_ids [], after_suite (c6884b24, head_gate_callers.log) exit 0 / 348 passed with failure_ids []; the 20-test delta is the new test file, so added failures = 0.",
+  "base_log_revision": "a50b154c47b9d920d3d5758559eb15d9961062b2",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/prompts.py:572",
+    "reckon/crew/dispatch.py:10262",
+    "reckon/crew/repair.py:177",
+    "reckon/crew/repair.py:178",
+    "reckon/served_code.py:560"
+  ],
+  "completed_at": "2026-10-02T18:30:37.110Z",
+  "dispatched_at": "2026-10-02T18:08:23Z",
+  "findings": [
+    {
+      "file": "reckon/served_code.py",
+      "line": "580",
+      "severity": "follow-on",
+      "text": "follow-on: the migration reads through parse_iso whose strip and lowercase-z handling (reckon/_timestamps.py:74,77) widens accepted input -- a direct base-vs-head probe shows a lowercase-z or whitespace-padded stamp that the base _summary repeated verbatim now renders as a formatted time, the base _parsed_moment returned None for a lowercase-z stamp and now returns a moment, and the manifest discloses the widening but no assertion pins it and the evidence fragment does not state it; producers write canonical +00:00 or Z stamps so the widening is off the emitted shapes."
+    }
+  ],
+  "head_log_revision": "c6884b24f91f2fb5421f59331519e5eae9beea39",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "five production call sites reach the migrated functions: prompts.py:572 (compose_prompt) and dispatch.py:10262 call time_fence_statement, repair.py:177,178 call _parsed_moment, and served_code.py:560 calls _summary; the node's own test file is not counted.",
+    "diff": "commit 8a813321e migrates the three callers (5/11/8 lines) and adds tests/test_timestamp_callers_use_parse_utc.py (125 lines); commit c6884b24f adds the 4-line evidence fragment; diff a50b154c..c6884b24 is 141 insertions / 12 deletions across five declared paths.",
+    "done_when": "all fence clauses met: the three functions read through reckon._timestamps (parse_iso, sanctioned by the fence's 'or parse_iso where the caller needs a naive value'), the six-row base table is asserted, the source-inspection test asserts no direct fromisoformat call, the declared mutation reddens it (recorded), and the caller suite adds no failure (base 328 / head 348, EXIT 0).",
+    "goal": "goal is to route the three remaining direct timestamp parsers through reckon._timestamps; commits 8a813321e + c6884b24f do exactly that and pin their base output on the six recorded shapes.",
+    "manifest": "read; status complete; baseline_suite and after_suite carried as JSON with revision, command, exit_status 0, completed true, failure_count 0, failure_ids [] and log_path; negative_control_log is a bare path to a red log naming the no-direct-parser test as the sole failing id.",
+    "write_paths": "declared fence is reckon/crew/prompts.py, reckon/crew/repair.py, reckon/served_code.py, tests/test_timestamps_parse_utc.py, tests/test_timestamp_callers_use_parse_utc.py, the fragment and a figure dir; the diff touches only paths inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_timestamp_callers_use_parse_utc.py:77 fails if a direct datetime.fromisoformat call is restored in _parsed_moment (recorded negative-control log, sole failing id test_none_of_the_three_calls_fromisoformat_directly), and the six-row base-output table fails if parse_iso's zone handling changes; deducted because the widening on lowercase-z and padded stamps is unpinned by any behavioural assertion.",
+    "evidence": "the gate measures the done_when and its result is recorded in the reviewed run's own logs (base a50b154c 328 passed, head c6884b24 348 passed, both EXIT 0, zero added failure ids); the reviewer reran the node's test file at head (20 passed, EXIT 0) and the negative-control log (1 failed / 19 passed, EXIT=1) confirms the guard fires; deducted because the base arm log does not print its own EXIT= line and the widening is evidenced only by the manifest's prose, not a recorded probe.",
+    "fit": "the change imports parse_iso in the same idiom as the sibling timestamp batches, keeps the three functions' mechanism names and their module-local helpers, and introduces no plan, sprint or ticket identifier in any symbol, test name or the evidence fragment.",
+    "goal_fidelity": "all fence clauses are met and the callers read through reckon/_timestamps.py:62 while preserving each caller's base output on the six recorded shapes; a reader comparing the goal's word 'parse_utc' to the code finds parse_iso, which the fence's own parenthetical sanctions for a caller needing a naive value.",
+    "scope_discipline": "the diff a50b154c..c6884b24 touches exactly the declared paths (the three production modules, the new test file and the evidence fragment) with no file outside the fence and no concurrent node's file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: route the three remaining direct timestamp parsers through reckon._timestamps: commit 8a813321e moves reckon/crew/prompts.py time_fence_statement, reckon/crew/repair.py _parsed_moment and reckon/served_code.py _summary onto the shared parser (parse_iso for the two display callers, parse_iso then a naive->UTC pin for the moment reader).\nVERDICT done_when: the evidence fence names the three functions reading through reckon._timestamps (parse_utc or parse_iso where a naive value is needed), a base-recorded six-row table (valid UTC, offset, naive, Z suffix, malformed, empty) asserted by tests/test_timestamp_callers_use_parse_utc.py, a source-inspection test that none of the three calls fromisoformat directly, and a red negative control; all are present and the caller suite records base 328 passed / head 348 passed, both EXIT 0, zero added failure ids.\nVERDICT write_paths: git diff a50b154c c6884b24 touches exactly reckon/crew/prompts.py, reckon/crew/repair.py, reckon/served_code.py, tests/test_timestamp_callers_use_parse_utc.py and docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-use-parse-utc.html, all inside the declared fence.\nVERDICT manifest: read; status complete; both suite arms carried as JSON with revision, command, exit_status 0, completed true, failure_count 0, failure_ids [] and log_path (base a50b154c 328 passed, head c6884b24 348 passed); negative_control_log is a bare path to a red log whose sole failing id is test_none_of_the_three_calls_fromisoformat_directly.\nVERDICT diff: read commit by commit against base a50b154c: 8a813321e migrates the three callers (5/11/8 changed lines) and adds the 125-line tests/test_timestamp_callers_use_parse_utc.py; c6884b24f adds the 4-line evidence fragment; nothing else changed.\nCALL_SITES: reckon/crew/prompts.py:572, reckon/crew/prompts.py:10262, reckon/crew/repair.py:177, reckon/crew/repair.py:178, reckon/served_code.py:560\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:380, reckon/crew/repair.py:155 and reckon/served_code.py:580 all read through reckon/_timestamps.py:62 parse_iso, preserving each caller's base output on the six recorded shapes that tests/test_timestamp_callers_use_parse_utc.py asserts.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded in the manifest and its logs (base a50b154c 328 passed, head c6884b24 348 passed EXIT=0, no added failure id); I reran the node's own test file at head c6884b24 (20 passed, EXIT 0) and the negative-control log (1 failed / 19 passed, EXIT=1) shows the guard fires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a50b154c c6884b24 touches exactly the five declared paths, no file outside the fence and no concurrent node's file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_timestamp_callers_use_parse_utc.py:77 reddens when a direct datetime.fromisoformat call is restored in _parsed_moment (recorded red log, id test_none_of_the_three_calls_fromisoformat_directly) and the base-output table reddens if the zone handling changes; deducted because the widening on lowercase-z and padded stamps is unpinned by any behavioural assertion.\nSCORE fit: 19\nJUSTIFICATION fit: parse_iso is imported in the same idiom as the sibling timestamp batches, the three functions keep their mechanism names and module-local helpers, and no symbol, test name or fragment carries a plan, sprint or ticket identifier.\nFINDING reckon/served_code.py:580 follow-on: the migration reads through parse_iso whose strip and lowercase-z handling (reckon/_timestamps.py:74,77) widens accepted input -- a direct base-vs-head probe shows a lowercase-z or whitespace-padded stamp that the base _summary repeated verbatim now renders as a formatted time, the base _parsed_moment returned None for a lowercase-z stamp and now returns a moment, and the manifest discloses the widening but no assertion pins it and the evidence fragment does not state it; producers write canonical +00:00 or Z stamps so the widening is off the emitted shapes.\nreviewed_base_sha: a50b154c47b9d920d3d5758559eb15d9961062b2\nreviewed_head_sha: c6884b24f91f2fb5421f59331519e5eae9beea39\n",
+  "review_run_id": "r-20261002T180754447915-review-of-timestamp-callers-use-parse-utc",
+  "reviewed_base_sha": "a50b154c47b9d920d3d5758559eb15d9961062b2",
+  "reviewed_head_sha": "c6884b24f91f2fb5421f59331519e5eae9beea39",
+  "reviewed_run_id": "r-20261002T171336188879-timestamp-callers-use-parse-utc",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T180754447915-review-of-timestamp-callers-use-parse-utc",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T18:26:13.423837+00:00",
+  "total": 94
+}

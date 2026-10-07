@@ -1,0 +1,150 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-07T04:06:30.291818+00:00",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fleet-moves-to-a-new-node.html:239 (\u00a78 census row)",
+      "id": "reuse_search-1",
+      "reason": "the census should extend `sessions.tsv` (or name why it cannot) instead of building a parallel pane record that will drift from the writer.",
+      "text": "the census proposes recording \"every Claude pane with its conversation id, peer name, tab, pane and working directory\", but `bin/fleet-claude:76-79` already appends exactly that tuple to `$HOME/.local/state/fleet/sessions.tsv` on every pane start, expressly \"so a restart that loses the panes can still be mapped back by hand\"; the plan neither cites this record nor says why it must be re-derived.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-moves-to-a-new-node.html:232-291 (\u00a78 migrate table)",
+      "id": "deep_module-1",
+      "reason": "a single `migrate` entry point that owns the ordered steps (with an internal ledger) hides the sequence behind one interface, where six subcommands push ordering and resume logic onto the operator with no module owning it.",
+      "text": "`reckon fleet-node migrate` is six subcommands (census, layout, stand-up, promote, cutover, retire), each a thin forward to machinery that already exists (`fleet_node.query_jobs`/`find_allocation`, `placement.ensure_reservation`, `fleet_supervisor.start_session` with its existing `layout` argument at `reckon/crew/fleet_supervisor.py:1041`, and a printed `scancel`); the interface is wide while each part hides almost nothing.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-moves-to-a-new-node.html:184-204 (\u00a76 freeze)",
+      "id": "thin_wrapper-1",
+      "reason": "extending the one admitting gate keeps a single place a launch can be refused; two gates is the parallel-machinery defect the item exists to catch.",
+      "text": "dispatch already refuses to launch through an admission gate (`reckon/crew/lane_document.py:144-152` publishes open/congested/full/paused and `reckon/crew/dispatch.py` acts on it), and the plan adds a second, independent refusal record threaded through dispatch, resume, redispatch, the review/repair reflexes, recover and plan review, without saying why the existing admission gate cannot carry a fleet-wide freeze; `crew drain` (`reckon/crew/runs.py:1519`, `reckon/cli.py:6265`) is also named as the closest existing mechanism and not justified as unextendable.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-moves-to-a-new-node.html:239 (\u00a78 census row)",
+      "id": "duplicate_owner-1",
+      "reason": "placement/path/state readers are the recurring duplicate owner; the census must extend `runs.py` and `fleet-claude` rather than fork a second reader that can disagree with what dispatch sees.",
+      "text": "the census duplicates two owned state readers: (1) the pane\u2192conversation id/workdir map owned by `bin/fleet-claude:76-79` (`sessions.tsv`); and (2) \"every live crew run with its resume path\", owned by the live-pointer readers in `reckon/crew/runs.py:599` and `reckon/crew/runs.py:624` and the resume path resolved in `reckon/crew/recovery.py`.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-moves-to-a-new-node.html:222-291 (\u00a78) and 184-204 (\u00a76)",
+      "id": "interface_budget-1",
+      "reason": "at cli_options 317 and refusal_families 23, a section adding this much surface must account for it in its own text per the rubric.",
+      "text": "the plan adds a `fleet-node migrate` group with six subcommands beside the existing `hold`/`status`/`place` group (`reckon/cli.py:774-878`), a `crew freeze`/`crew thaw` pair, and a new freeze refusal family (refusal_families 23 \u2192 24), and names nothing it retires or merges nor why nothing can be.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1bf29cbe9ee04367b73fa85d4c104e27c7de949c37229d35af4ab868d71a2dab",
+  "plan_slug": "the-fleet-moves-to-a-new-node",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-07T04:35:27.330054+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "deep_module-1",
+      "reason": "",
+      "when": "2026-10-07T04:35:34.821265+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "",
+      "when": "2026-10-07T04:35:42.244328+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-07T04:35:49.810548+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-07T04:35:57.335036+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T04:35:34.821265+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T04:35:49.810548+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T04:35:57.335036+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T04:35:27.330054+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T04:35:42.244328+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-fleet-moves-to-a-new-node.v0.json",
+  "review_run_id": "r-20261007T040630291818-plan-review-of-the-fleet-moves-to-a-new-node",
+  "reviewed_blob_sha": "44d8b28f2ef519931fc544919b8a62b0733aaccb",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 `reckon fleet-node migrate` spreads the move across six thin subcommands rather than one module that hides the sequence.",
+    "duplicate_owner": "a finding \u2014 \u00a78's census re-implements two owned mechanisms: the pane\u2192conversation map (`bin/fleet-claude`) and the live-run/resume-path reader (`reckon/crew/runs.py`, `reckon/crew/recovery.py`).",
+    "interface_budget": "a finding \u2014 public_definitions 1497, cli_options 317, mcp_views 33, refusal_families 23; \u00a76 and \u00a78 add CLI subcommands and a refusal family without naming what they retire or merge, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites fleet_supervisor, fleet_node, placement and fleet-health, but misses `bin/fleet-claude`'s existing pane\u2192conversation record that \u00a78's census re-derives.",
+    "thin_wrapper": "a finding \u2014 \u00a76 adds a second launch-refusal gate beside the existing admission refusal without saying why the admission gate cannot carry a freeze."
+  },
+  "section_digests": {
+    "_document": "7c4a95ef517e0e8cc068489c770346745658af1d3ddb26e23f57cc6962910cbc",
+    "s1": "1382e02d27e170b0adc11be67e10bf98716d01607de5f230983b1abd8e9d0c13",
+    "s10": "45b0b0ff06d94fd67378a3765056652af61b6560da84e32d73e071cf945e6cfd",
+    "s11": "74adf265a38e1f05134b50b804ae600e65646d365aa92c5b8e6049a3b2d7bda7",
+    "s12": "8f9efc2f8484970110d22aee703238bb66e98d9822d819b3a676f27801684768",
+    "s13": "595a84243ca4df9854c57694c0999b541452b2be36e4e0665a0bd7f96afbde1c",
+    "s2": "7b7daead8ae69142fed6fc6427f831844ab4ab609745c6ae932a95949b726487",
+    "s3": "f98db3f0f32bc272f316b86e8b36a421ae696cd89c99c13adfa9d9c0e0c3a771",
+    "s4": "fc1c562338a9051a8f6b83632dbeecfd1b4263662316d10bc28c515de7313234",
+    "s5": "a6c5be7702eaa856043b2361c94fdb02be545388f218d8edffce74edb32da561",
+    "s6": "04718021cd83e8393d54d8db196d9f649804ac9c602f4c09e1d27cfc1b79a3c2",
+    "s7": "edde76d3cddf020af348eb1ff4336f1e72ffce35ef61e95e5b45646d36003937",
+    "s8": "4e5ef49ba5ca772789b4bdc44fbf3c66d914623403bed5663635a3af386f6608",
+    "s9": "f713272baf168501b5d4678e179000477651849d178ef6bf1ad783348368af80"
+  },
+  "status": "ready",
+  "times_source": "run-id",
+  "timestamp": "2026-10-07T04:34:56.653000+00:00"
+}

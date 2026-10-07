@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:5294 (edit_plan registered from _edit_plan_tool)",
+    "reckon/mcp.py:3770 (_edit_plan_prose -> replace_plan_text_batch)"
+  ],
+  "completed_at": "2026-10-02T19:34:06.916Z",
+  "dispatched_at": "2026-10-02T19:27:22Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.claude/skills/reckon-edit/SKILL.md",
+      "line": "303",
+      "severity": "follow-on",
+      "text": "follow-on: the skill documents only the single old_html/new_html form, so the new batch capability is undiscoverable to an agent following it; the node declared this out of its write scope in its manifest."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit \u2014 3ef54f3c8 implements the batch and its tests, 40a8d6453 adds the evidence fragment; the source change is the replacements plumbing and one loop applying each pair to a single working copy.",
+    "done_when": "\u00a710 names a two-pair batch landing as one version and a batch whose second pair is refused leaving the plan untouched; tests/test_text_mode_applies_a_batch.py:96 and :156 assert exactly these, and the manifest records 575 passed / 1 failed at head with the nine new cases green.",
+    "goal": "the node goal is plan-writes-are-not-fenced \u00a710 \u2014 text mode accepts an ordered {old_html,new_html} replacements list as one versioned write; reckon/mcp.py:3860 _edit_plan_tool now carries a replacements parameter and reckon/_store.py:1776 replace_plan_text_batch implements it.",
+    "manifest": "read; it states the head arm 575 passed / 1 failed, the base arm 567 passed / 9 failed with the eight new ids red, the negative control red at EXIT=1, and carried added_failure_count 0 as its own gate logs support.",
+    "write_paths": "the manifest declares reckon/_store.py, reckon/mcp.py, tests/test_text_mode_applies_a_batch.py and the evidence fragment; git diff base..head touches only those four paths."
+  },
+  "justifications": {
+    "durability": "negative-control.log makes tests/test_text_mode_applies_a_batch.py:156 red at EXIT=1 by applying pairs one write at a time, and every added assertion compares against an independently captured value (path.read_bytes() taken before the call, new_version == 1, an intermediate literal asserted absent).",
+    "evidence": "head-arm-full.log records 1 failed / 575 passed and base-arm.log 9 failed / 567 passed with eight new ids red, and six TypeError receipts in the base log (unexpected keyword 'replacements') show the base code was genuinely exercised; docked one because the base log's own module: header names the worktree, a probe artefact the manifest discloses.",
+    "fit": "the change follows the surrounding refusal idiom at reckon/_store.py:1592 (a ValueError carrying a selector name, mapped by the MCP handler to text_edit_error) and updates the tool docstring and _DOS_DONTS at reckon/mcp.py:1689; no plan or ticket identifiers appear in the new symbols.",
+    "goal_fidelity": "every clause of \u00a710 holds at reckon/_store.py:1910 \u2014 pairs applied in order to one working copy, a single write, one version advance, per-pair refusals naming replacements[i], file and version untouched on refusal, single-pair unchanged.",
+    "scope_discipline": "git diff a326205d5..40a8d6453 touches only reckon/_store.py, reckon/mcp.py, tests/test_text_mode_applies_a_batch.py and the evidence fragment, all inside the declared write paths, with no plan, index or sprint state mutated."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is plan-writes-are-not-fenced \u00a710 \u2014 text mode accepts an ordered {old_html,new_html} replacements list as one versioned write; reckon/mcp.py:3860 _edit_plan_tool now carries a replacements parameter and reckon/_store.py:1776 replace_plan_text_batch implements it.\nVERDICT done_when: \u00a710 names a two-pair batch landing as one version and a batch whose second pair is refused leaving the plan untouched; tests/test_text_mode_applies_a_batch.py:96 and :156 assert exactly these, and the manifest records 575 passed / 1 failed at head with the nine new cases green.\nVERDICT write_paths: the manifest declares reckon/_store.py, reckon/mcp.py, tests/test_text_mode_applies_a_batch.py and the evidence fragment; git diff base..head touches only those four paths.\nVERDICT manifest: read; it states the head arm 575 passed / 1 failed, the base arm 567 passed / 9 failed with the eight new ids red, the negative control red at EXIT=1, and carried added_failure_count 0 as its own gate logs support.\nVERDICT diff: read commit by commit \u2014 3ef54f3c8 implements the batch and its tests, 40a8d6453 adds the evidence fragment; the source change is the replacements plumbing and one loop applying each pair to a single working copy.\nCALL_SITES: reckon/mcp.py:5294 (edit_plan registered from _edit_plan_tool), reckon/mcp.py:3770 (_edit_plan_prose -> replace_plan_text_batch)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every clause of \u00a710 holds at reckon/_store.py:1910 \u2014 pairs applied in order to one working copy, a single write, one version advance, per-pair refusals naming replacements[i], file and version untouched on refusal, single-pair unchanged.\nSCORE evidence: 19\nJUSTIFICATION evidence: head-arm-full.log records 1 failed / 575 passed and base-arm.log 9 failed / 567 passed with eight new ids red, and six TypeError receipts in the base log (unexpected keyword 'replacements') show the base code was genuinely exercised; docked one because the base log's own module: header names the worktree, a probe artefact the manifest discloses.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a326205d5..40a8d6453 touches only reckon/_store.py, reckon/mcp.py, tests/test_text_mode_applies_a_batch.py and the evidence fragment, all inside the declared write paths, with no plan, index or sprint state mutated.\nSCORE durability: 20\nJUSTIFICATION durability: negative-control.log makes tests/test_text_mode_applies_a_batch.py:156 red at EXIT=1 by applying pairs one write at a time, and every added assertion compares against an independently captured value (path.read_bytes() taken before the call, new_version == 1, an intermediate literal asserted absent).\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the surrounding refusal idiom at reckon/_store.py:1592 (a ValueError carrying a selector name, mapped by the MCP handler to text_edit_error) and updates the tool docstring and _DOS_DONTS at reckon/mcp.py:1689; no plan or ticket identifiers appear in the new symbols.\nFINDING /home/ITER/mcintos/.claude/skills/reckon-edit/SKILL.md:303 follow-on: the skill documents only the single old_html/new_html form, so the new batch capability is undiscoverable to an agent following it; the node declared this out of its write scope in its manifest.",
+  "review_run_id": "r-20261002T192649015435-review-of-text-mode-applies-a-batch",
+  "reviewed_base_sha": "a326205d5b8173815b4b839fc651b4f49ce6156e",
+  "reviewed_head_sha": "40a8d645389519e2161c9006fc6ac22ee9b588d7",
+  "reviewed_run_id": "r-20261002T181720891682-text-mode-applies-a-batch",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T19:32:46.343023+00:00",
+  "total": 98
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:5358",
+    "reckon/crew.py:85"
+  ],
+  "completed_at": "2026-10-03T01:20:22.725Z",
+  "dispatched_at": "2026-10-03T01:13:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1251",
+      "severity": "follow-on",
+      "text": "the partial report returned by _gc_partial_report carries removed_worktrees, the judged worktrees rows and failed_path but no separate refused list, so the goal's \"removed and refused lists\" is satisfied only through the classifications recorded on the remaining rows; a caller reading the report has to inspect each row to recover what was refused."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1473",
+      "severity": "follow-on",
+      "text": "the bare `except Exception` reports every mid-sweep failure, including a programming error such as a TypeError or AttributeError, as a gc sweep refusal with ok:false and exit 1 rather than surfacing a traceback; it matches the goal's \"any other mid-sweep failure\" but can present a genuine bug to a reader as an ordinary refusal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 3b08135adf3e; 1a36da02f changes routing.py, cli.py and the new test, 07518deed adds the evidence fragment only",
+    "done_when": "the done_when names tests/test_gc_reports_what_it_already_did.py; the manifest's baseline_suite and after_suite record that file's run and its results",
+    "goal": "the node's goal is to make gc name the tree a git failure ran in and report the steps a stopped sweep already applied; routing.py:463 appends the directory to the _git message and GcSweepError at routing.py:1235 carries the partial report",
+    "manifest": "read; it states the gate command, the two arm results (base 4 failed/56 passed, head 1 failed/59 passed) and the declared mutation",
+    "write_paths": "the manifest declares reckon/crew/routing.py, reckon/cli.py, the new test file and its evidence fragment; every path in the diff is inside them"
+  },
+  "justifications": {
+    "durability": "tests/test_gc_reports_what_it_already_did.py:165 fails if the release goes unreported and :151 fails if the _git message drops the directory, and the declared mutation at logs/negative-control.log restores the abort and reddens :165.",
+    "evidence": "the head-arm log at base 3b08135adf3e and head 1a36da02f records the three new cases failing at base and passing at head, with the declared mutation in logs/negative-control.log.",
+    "fit": "GcSweepError subclasses CrewError beside the neighbouring reason constants at routing.py:1235, and no symbol carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/routing.py:463 names the directory in the _git message, routing.py:1495 selects UNREADABLE_WORKTREE_REASON for a directory that exists, and reckon/cli.py:5394 emits the partial report before exiting 1.",
+    "scope_discipline": "the diff touches exactly reckon/crew/routing.py, reckon/cli.py, tests/test_gc_reports_what_it_already_did.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make gc name the tree a git failure ran in and report the steps a stopped sweep already applied; reckon/crew/routing.py:463 appends the directory to the _git message and GcSweepError at reckon/crew/routing.py:1235 carries the partial report.\nVERDICT done_when: the done_when names tests/test_gc_reports_what_it_already_did.py; the manifest's baseline_suite and after_suite record that file's run and its results.\nVERDICT write_paths: the manifest declares reckon/crew/routing.py, reckon/cli.py, the new test file and its evidence fragment; every path in the diff is inside them.\nVERDICT manifest: read; it states the gate command, the two arm results (base 4 failed/56 passed, head 1 failed/59 passed) and the declared mutation.\nVERDICT diff: read commit by commit against 3b08135adf3e; 1a36da02f changes routing.py, cli.py and the new test, 07518deed adds the evidence fragment only.\nCALL_SITES: reckon/cli.py:5358, reckon/crew.py:85\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:463 names the directory in the _git message, routing.py:1495 selects UNREADABLE_WORKTREE_REASON for a directory that exists, and reckon/cli.py:5394 emits the partial report before exiting 1.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head-arm log at base 3b08135adf3e and head 1a36da02f records the three new cases failing at base and passing at head, with the declared mutation in logs/negative-control.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches exactly reckon/crew/routing.py, reckon/cli.py, tests/test_gc_reports_what_it_already_did.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_gc_reports_what_it_already_did.py:165 fails if the release goes unreported and :151 fails if the _git message drops the directory, and the declared mutation at logs/negative-control.log restores the abort and reddens :165.\nSCORE fit: 19\nJUSTIFICATION fit: GcSweepError subclasses CrewError beside the neighbouring reason constants at routing.py:1235, and no symbol carries a plan, sprint or ticket identifier.\nFINDING reckon/crew/routing.py:1251 follow-on: the partial report returned by _gc_partial_report carries removed_worktrees, the judged worktrees rows and failed_path but no separate refused list, so the goal's \"removed and refused lists\" is satisfied only through the classifications recorded on the remaining rows; a caller reading the report has to inspect each row to recover what was refused.\nFINDING reckon/crew/routing.py:1473 follow-on: the bare `except Exception` reports every mid-sweep failure, including a programming error such as a TypeError or AttributeError, as a gc sweep refusal with ok:false and exit 1 rather than surfacing a traceback; it matches the goal's \"any other mid-sweep failure\" but can present a genuine bug to a reader as an ordinary refusal.\n",
+  "review_run_id": "r-20261003T011318071334-review-of-gc-reports-what-it-already-did",
+  "reviewed_base_sha": "3b08135adf3e24054272f6029961f175d5817276",
+  "reviewed_head_sha": "07518deedba8aa860e107539eb1c01270d1bc4bd",
+  "reviewed_run_id": "r-20261003T001538886711-gc-reports-what-it-already-did",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T011318071334-review-of-gc-reports-what-it-already-did",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T01:20:00+00:00",
+  "total": 95
+}

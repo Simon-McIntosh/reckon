@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3fadeb60e5d96c0ec4009c570947145937abbc59",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/runs.py:list_live",
+    "reckon/crew/runs.py:_project_watch_claim"
+  ],
+  "completed_at": "2026-10-02T09:01:41.227Z",
+  "dispatched_at": "2026-10-02T08:37:45Z",
+  "findings": [],
+  "head_log_revision": "28e5baa6bed3e0f6f222576efaad89e8fc10168e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read b9385068f against 3fadeb60e; four files, 1327 insertions and 16 deletions - the new module, the runs.py producer wiring with a re-entrancy guard, the new test file of ten cases and the evidence fragment.",
+    "done_when": "the done_when names tests/test_obligations_snapshot_is_published.py plus every tests/ file naming runs.watch, watch_registration, obligations( or crew watch, at base and head; the manifest records both arms literally and the head arm adds no failure id over the base's nine.",
+    "goal": "the node's goal is to land section 2's producer publish; reckon/crew/obligation_snapshot.py:574 sweep() writes each registered session's snapshot atomically through write_snapshot:371, and reckon/crew/runs.py:1522 _publish_watch_stream drives it from the watch producer each sweep.",
+    "manifest": "read; status complete, with base 3fadeb60e exit 1 completed true nine ids and head 28e5baa6b exit 1 completed true seven ids named by log path; it reports the added-failure set empty and names the negative control.",
+    "write_paths": "the declared write paths are reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, tests/test_obligations_snapshot_is_published.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/the-producer-publishes-the-snapshot.html and a docs/figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_snapshot_is_published.py:205 asserts the stored snapshot equals an independent obligations() call, :229 injects a rename failure and asserts the previous snapshot survives, :415 makes a real zombie and covers each freshness outcome at :266, and :68 is falsified by the recorded negative control.",
+    "evidence": "the manifest names gate/base-xdist4.log at 3fadeb60e and gate/head-xdist4.log at 28e5baa6b, both completed, and the added-failure set derived from them is empty; negative-control.log shows the import case failing under the declared mutation with EXIT=1, though after_suite.failure_ids is written as prose rather than a list.",
+    "fit": "the module follows the surrounding crew idiom and both findings the predecessor review left (dead _process_is_running at obligation_snapshot.py:183 and a bare marker in the test) are repaired at this head; the naming scan over the changed paths is clean.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:574 sweep() publishes each registered session's snapshot via write_snapshot:371 and reckon/crew/runs.py:1563 _publish_obligation_snapshots drives it from the watch producer, matching section 2.",
+    "scope_discipline": "every path in the diff is a declared write path; the only out-of-change lines are two incidental ruff reformats in reckon/crew/runs.py, a file the change already edits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to land section 2's producer publish; reckon/crew/obligation_snapshot.py:574 sweep() writes each registered session's snapshot atomically through write_snapshot:371, and reckon/crew/runs.py:1522 _publish_watch_stream drives it from the watch producer each sweep.\nVERDICT done_when: the done_when names tests/test_obligations_snapshot_is_published.py plus every tests/ file naming runs.watch, watch_registration, obligations( or crew watch, at base and head; the manifest records both arms literally and the head arm adds no failure id over the base's nine.\nVERDICT write_paths: the declared write paths are reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, tests/test_obligations_snapshot_is_published.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/the-producer-publishes-the-snapshot.html and a docs/figures directory; every path in the diff is inside them.\nVERDICT manifest: read; status complete, with base 3fadeb60e exit 1 completed true nine ids and head 28e5baa6b exit 1 completed true seven ids named by log path; it reports the added-failure set empty and names the negative control.\nVERDICT diff: read b9385068f against 3fadeb60e; four files, 1327 insertions and 16 deletions - the new module, the runs.py producer wiring with a re-entrancy guard, the new test file of ten cases and the evidence fragment.\nCALL_SITES: reckon/crew/runs.py:list_live, reckon/crew/runs.py:_project_watch_claim\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:574 sweep() publishes each registered session's snapshot via write_snapshot:371 and reckon/crew/runs.py:1563 _publish_obligation_snapshots drives it from the watch producer, matching section 2.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest names gate/base-xdist4.log at 3fadeb60e and gate/head-xdist4.log at 28e5baa6b, both completed, and the added-failure set derived from them is empty; negative-control.log shows the import case failing under the declared mutation with EXIT=1, though after_suite.failure_ids is written as prose rather than a list.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is a declared write path; the only out-of-change lines are two incidental ruff reformats in reckon/crew/runs.py, a file the change already edits.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_obligations_snapshot_is_published.py:205 asserts the stored snapshot equals an independent obligations() call, :229 injects a rename failure and asserts the previous snapshot survives, :415 makes a real zombie and covers each freshness outcome at :266, and :68 is falsified by the recorded negative control.\nSCORE fit: 19\nJUSTIFICATION fit: the module follows the surrounding crew idiom and both findings the predecessor review left (dead _process_is_running at obligation_snapshot.py:183 and a bare marker in the test) are repaired at this head; the naming scan over the changed paths is clean.\nreviewed_base_sha: 3fadeb60e5d96c0ec4009c570947145937abbc59\nreviewed_head_sha: b9385068f8defab0d7899950760640c6075bf1e4\n",
+  "review_run_id": "r-20261002T083703048147-review-of-the-producer-publishes-the-snapshot",
+  "reviewed_base_sha": "3fadeb60e5d96c0ec4009c570947145937abbc59",
+  "reviewed_head_sha": "b9385068f8defab0d7899950760640c6075bf1e4",
+  "reviewed_run_id": "r-20261001T204424733309-the-producer-publishes-the-snapshot",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T09:01:20.758427+00:00",
+  "total": 93
+}

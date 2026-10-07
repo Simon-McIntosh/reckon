@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5354",
+    "reckon/crew/dispatch.py:7120"
+  ],
+  "completed_at": "2026-09-30T23:05:03.088Z",
+  "dispatched_at": "2026-09-30T22:57:33Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "1024",
+      "severity": "follow-on",
+      "text": "follow-on: this change adds a failing test to the repository suite -- the peer case's sitecustomize shim parks the dispatch process by subclassing subprocess.Popen and firing on \"__supervise__\" in the spawned argv, but the supervisor is now started by os.fork/os.execv rather than Popen, so the park flag is never written and the case fails at the 60 s bound (regression.log: 1 failed, 10 passed, 180.86 s); it is disclosed in follow_ons with a ready repair."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "7170",
+      "severity": "follow-on",
+      "text": "follow-on: the launcher now forks with a bare os.fork(), where the replaced subprocess.Popen used a fork-safe path; if the launcher is threaded the forked intermediate runs Python-level work before exec (an f-string allocation at :7216 and os._exit) and can deadlock on a lock or the allocator held by another thread at fork time, and the commit's own text names the MCP server as a possible launcher, so the fork-safety property is not established."
+    },
+    {
+      "file": "tests/test_supervisor_outlives_its_launcher.py",
+      "line": "221",
+      "severity": "follow-on",
+      "text": "follow-on: test_supervisor_survives_a_signal_to_the_launchers_group does not discriminate the change, because the prior single Popen(start_new_session=True) also made the supervisor a session leader that survives SIGTERM to the launcher's group, so the test cannot detect a regression of the property it names."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "7240",
+      "severity": "follow-on",
+      "text": "follow-on: the empty-pipe CrewError branch of _read_supervisor_pid, the path taken when the intermediate exits without reporting a pid, is untested, so a failure there would surface only through the caller."
+    },
+    {
+      "file": "manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the artifacts line states the base ruff count as 11 for base 149d3c29, but that revision measures 9 findings for the two changed files under the repository config (7 pre-existing plus S606 at dispatch.py:7211 and W292 at the test file), so the quoted delta overstates the base by two although the head count of 7 and the no-new-findings conclusion both hold."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 149d3c29 and 55c35193 against base 27c67a3a; dispatch.py +108/-13 introduces _spawn_detached_supervisor, _detach_supervisor and _read_supervisor_pid and rewrites the docstring, the new tests/test_supervisor_outlives_its_launcher.py is +244, and the evidence fragment is +19; the second commit adds the descriptor close, an S606 suppression with its reason, and the test file's trailing newline.",
+    "done_when": "the done-when asserts the forking path double-forks, still returns the supervisor's own pid with _confirm_supervisor_survived run on it, leaves the fleet batch-step path unchanged, and ships tests/test_supervisor_outlives_its_launcher.py; re-running that file in the head worktree gave 4 passed EXIT=0, matching gate.log, and the fleet branch (dispatch.py:7136) and the _confirm call (dispatch.py:7153) are present.",
+    "goal": "the node goal is to make reckon.crew.dispatch._start_supervisor detach the per-run supervisor from the process that launched it; at 55c35193 dispatch.py:7151-7153 starts it through _spawn_detached_supervisor (dispatch.py:7157), whose os.fork intermediate forks the supervisor, reads its pid back over a pipe and exits at once, so the supervisor's parent is the intermediate and never the launcher, and the supervisor's own session- and process-group-leading pid is returned.",
+    "manifest": "read; it records the gate (4 passed, exit 0) with gate.log, the parent-pid negative control (1 failed, 3 passed, exit 1), the descriptor-close control (1 failed, exit 1) and a regression run (1 failed, 10 passed); the worktree is clean at 55c35193 and the peer-test regression is disclosed under follow_ons with a ready repair rather than hidden, but the artifacts line states the base ruff count as 11 where the base revision measures 9.",
+    "write_paths": "the node declares reckon/crew/dispatch.py, tests/test_supervisor_outlives_its_launcher.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/supervisor-outlives-its-launcher.html and docs/figures/a-review-is-sized-to-its-risk/supervisor-outlives-its-launcher; commits 149d3c29 and 55c35193 together touch exactly the three file paths and nothing outside the grant, while the declared figures directory was left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_supervisor_outlives_its_launcher.py:207,214,230 assert the kernel's own parent, session/group and open-descriptor state with a positive control for the pipe, so the guard genuinely fires and is discriminating; three gaps remain: the group-signal test at :221 is also satisfied by the old single Popen, the empty-pipe CrewError branch at dispatch.py:7240 is untested, and the raw os.fork at dispatch.py:7170 is not fork-safe if the launcher is threaded.",
+    "evidence": "the named gate was reproduced independently (4 passed EXIT=0 in the head worktree) and two negative controls redden exactly the parent-pid and descriptor assertions, but the reviewed manifest names no baseline_suite/after_suite, so the required added-failure derivation returns unmeasured even though the change genuinely adds a failing peer test, and the manifest's base ruff figure (11) does not reconcile with the base revision's measured 9.",
+    "fit": "the new helpers are named by mechanism (_spawn_detached_supervisor, _detach_supervisor, _read_supervisor_pid) with no plan or ticket label, the raw-syscall choice and the descriptor close are each explained at dispatch.py:7158 and :7221, and the S606 suppression carries its reason; deducted for the declared figure path being produced as no figure.",
+    "goal_fidelity": "dispatch.py:7151-7157 starts the supervisor through _spawn_detached_supervisor, whose intermediate forks the supervisor and exits at once so the launcher is never its parent while the supervisor's own pid is returned, the fleet branch at :7136 is untouched, and the parent-pid assertion is reddened by the single-Popen negative control, so the stated goal is fully met.",
+    "scope_discipline": "both commits touch only the three declared file paths and nothing outside the grant, carry conventional subjects with bodies, and add no AI trailer or plan/ticket label, and the ruff delta base 149d3c29 = 9 findings to head 55c35193 = 7 contains none in the changed region or the test file, so the repository's no-new-findings rule is now met."
+  },
+  "node": "review-of-supervisor-outlives-its-launcher",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make reckon.crew.dispatch._start_supervisor detach the per-run supervisor from the process that launched it; at 55c35193 dispatch.py:7151-7153 starts it through _spawn_detached_supervisor (dispatch.py:7157), whose os.fork intermediate forks the supervisor, reads its pid back over a pipe and exits at once, so the supervisor's parent is the intermediate and never the launcher, and the supervisor's own session- and process-group-leading pid is returned.\nVERDICT done_when: the done-when asserts the forking path double-forks, still returns the supervisor's own pid with _confirm_supervisor_survived run on it, leaves the fleet batch-step path unchanged, and ships tests/test_supervisor_outlives_its_launcher.py; re-running that file in the head worktree gave 4 passed EXIT=0, matching gate.log, and the fleet branch (dispatch.py:7136) and the _confirm call (dispatch.py:7153) are present.\nVERDICT write_paths: the node declares reckon/crew/dispatch.py, tests/test_supervisor_outlives_its_launcher.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/supervisor-outlives-its-launcher.html and docs/figures/a-review-is-sized-to-its-risk/supervisor-outlives-its-launcher; commits 149d3c29 and 55c35193 together touch exactly the three file paths and nothing outside the grant, while the declared figures directory was left unused.\nVERDICT manifest: read; it records the gate (4 passed, exit 0) with gate.log, the parent-pid negative control (1 failed, 3 passed, exit 1), the descriptor-close control (1 failed, exit 1) and a regression run (1 failed, 10 passed); the worktree is clean at 55c35193 and the peer-test regression is disclosed under follow_ons with a ready repair rather than hidden, but the artifacts line states the base ruff count as 11 where the base revision measures 9.\nVERDICT diff: read 149d3c29 and 55c35193 against base 27c67a3a; dispatch.py +108/-13 introduces _spawn_detached_supervisor, _detach_supervisor and _read_supervisor_pid and rewrites the docstring, the new tests/test_supervisor_outlives_its_launcher.py is +244, and the evidence fragment is +19; the second commit adds the descriptor close, an S606 suppression with its reason, and the test file's trailing newline.\nCALL_SITES: reckon/crew/dispatch.py:5354, reckon/crew/dispatch.py:7120\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: dispatch.py:7151-7157 starts the supervisor through _spawn_detached_supervisor, whose intermediate forks the supervisor and exits at once so the launcher is never its parent while the supervisor's own pid is returned, the fleet branch at :7136 is untouched, and the parent-pid assertion is reddened by the single-Popen negative control, so the stated goal is fully met.\nSCORE evidence: 16\nJUSTIFICATION evidence: the named gate was reproduced independently (4 passed EXIT=0 in the head worktree) and two negative controls redden exactly the parent-pid and descriptor assertions, but the reviewed manifest names no baseline_suite/after_suite, so the required added-failure derivation returns unmeasured even though the change genuinely adds a failing peer test, and the manifest's base ruff figure (11) does not reconcile with the base revision's measured 9.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both commits touch only the three declared file paths and nothing outside the grant, carry conventional subjects with bodies, and add no AI trailer or plan/ticket label, and the ruff delta base 149d3c29 = 9 findings to head 55c35193 = 7 contains none in the changed region or the test file, so the repository's no-new-findings rule is now met.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_supervisor_outlives_its_launcher.py:207,214,230 assert the kernel's own parent, session/group and open-descriptor state with a positive control for the pipe, so the guard genuinely fires and is discriminating; three gaps remain: the group-signal test at :221 is also satisfied by the old single Popen, the empty-pipe CrewError branch at dispatch.py:7240 is untested, and the raw os.fork at dispatch.py:7170 is not fork-safe if the launcher is threaded.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers are named by mechanism (_spawn_detached_supervisor, _detach_supervisor, _read_supervisor_pid) with no plan or ticket label, the raw-syscall choice and the descriptor close are each explained at dispatch.py:7158 and :7221, and the S606 suppression carries its reason; deducted for the declared figure path being produced as no figure.\nFINDING tests/test_dispatch_returns_without_worker.py:1024 follow-on: this change adds a failing test to the repository suite -- the peer case's sitecustomize shim parks the dispatch process by subclassing subprocess.Popen and firing on \"__supervise__\" in the spawned argv, but the supervisor is now started by os.fork/os.execv rather than Popen, so the park flag is never written and the case fails at the 60 s bound (regression.log: 1 failed, 10 passed, 180.86 s); it is disclosed in follow_ons with a ready repair.\nFINDING reckon/crew/dispatch.py:7170 follow-on: the launcher now forks with a bare os.fork(), where the replaced subprocess.Popen used a fork-safe path; if the launcher is threaded the forked intermediate runs Python-level work before exec (an f-string allocation at :7216 and os._exit) and can deadlock on a lock or the allocator held by another thread at fork time, and the commit's own text names the MCP server as a possible launcher, so the fork-safety property is not established.\nFINDING tests/test_supervisor_outlives_its_launcher.py:221 follow-on: test_supervisor_survives_a_signal_to_the_launchers_group does not discriminate the change, because the prior single Popen(start_new_session=True) also made the supervisor a session leader that survives SIGTERM to the launcher's group, so the test cannot detect a regression of the property it names.\nFINDING reckon/crew/dispatch.py:7240 follow-on: the empty-pipe CrewError branch of _read_supervisor_pid, the path taken when the intermediate exits without reporting a pid, is untested, so a failure there would surface only through the caller.\nFINDING manifest.md:14 follow-on: the artifacts line states the base ruff count as 11 for base 149d3c29, but that revision measures 9 findings for the two changed files under the repository config (7 pre-existing plus S606 at dispatch.py:7211 and W292 at the test file), so the quoted delta overstates the base by two although the head count of 7 and the no-new-findings conclusion both hold.\nreviewed_base_sha: 27c67a3a56b0773d9e80d90a1f62a8c6807fd8df\nreviewed_head_sha: 55c351932e3b57bf6392e48bd2a7543f29c7031e\n",
+  "review_run_id": "r-20260930T225711164108-review-of-supervisor-outlives-its-launcher",
+  "reviewed_base_sha": "27c67a3a56b0773d9e80d90a1f62a8c6807fd8df",
+  "reviewed_head_sha": "55c351932e3b57bf6392e48bd2a7543f29c7031e",
+  "reviewed_run_id": "r-20260930T222131092669-supervisor-outlives-its-launcher",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T23:03:54.652245+00:00",
+  "total": 89
+}

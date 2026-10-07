@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_production_view": {
+    "count": 0,
+    "note": null
+  },
+  "added_failures_source": {
+    "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T115555224623-review-of-work-in-progress-is-visible/logs/base-arm.log",
+    "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T115555224623-review-of-work-in-progress-is-visible/logs/head-arm.log",
+    "note": "both arms run by this review at the reviewed base and head revisions; the reviewed manifest's suite fields hold prose rather than a log_path, so the production reader reports the reviewed run unmeasured"
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/velocity.py:2047 velocity()",
+    "reckon/velocity.py:2012 capture()",
+    "reckon/velocity.py:460 capture_project()",
+    "reckon/velocity.py:1333 measure()",
+    "reckon/velocity.py:1934 compact_summary()"
+  ],
+  "completed_at": "2026-09-28T12:37:54.382Z",
+  "dispatched_at": "2026-09-28T11:56:12Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T105911753846-work-in-progress-is-visible/manifest.md",
+      "line": "29",
+      "text": "the baseline_suite field carries a prose claim with no log path, and after_suite at line 31 does the same, so no base gate log exists for this run and reckon/crew/review.py:869 added_failures_from_gate_logs reads the pair as absent - every reader of this review gets an unmeasured added-failure count where the run's own green gate would have supported a measured zero, and the base arm's \"15 passed\" cannot be checked by anyone."
+    },
+    {
+      "file": "docs/evidence/archive/the-fleet-reports-its-velocity-landed.html",
+      "line": "12",
+      "text": "plan-verifies still names only the-fleet-reports-its-velocity#s2 although the page now carries the section appended at line 169, and every other cumulative landing page that carries several sections registers each of them, so the plan's s5 section is anchored to no evidence page while plan-commits and plan-artifacts on the same lines were extended."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against the base - fe33dbf6 lands reckon/velocity.py:104 CLOSED_STATUSES and :356 plan_census with its tests, 790dfbe4 lands the plan comment, the appended section at docs/evidence/archive/the-fleet-reports-its-velocity-landed.html:169 and the figure; the only two deletions are the plan-commits and plan-artifacts meta lines, replaced by extended values, so no peer evidence was clobbered.",
+    "done_when": "the done_when pins the cohort reading at commit 23eb2545 over the window 2026-09-12T00:00:00Z to 2026-09-26T10:00:00Z at 58 opened and 7 closed, plus the two synthesised-history cases; tests/test_velocity_work_in_progress.py:215 asserts exactly those literals, the reviewed gate log records 22 passed at revision 790dfbe4 with a clean tree, and I re-ran the pinned reading at that head myself: 1 passed, EXIT=0.",
+    "goal": "the node's goal is to report plans opened, closed and pending per project and ISO week in reckon/velocity.py; reckon/velocity.py:356 plan_census computes all three from this repository's own plan history and reckon/velocity.py:1864 surfaces them under \"plans\" per project and week, which is the measure docs/plans/the-fleet-reports-its-velocity.html:172 states for section 5.",
+    "manifest": "read; status complete, the gate log and the negative-control log are named by bare path and both are present with the recorded content, and the two suite fields carry prose where a log path belongs (see FINDING).",
+    "write_paths": "the manifest declares five write paths and git diff acc1adde..790dfbe4 touches exactly those five - reckon/velocity.py, tests/test_velocity_work_in_progress.py, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/archive/the-fleet-reports-its-velocity-landed.html and one figure PNG - with nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_velocity_work_in_progress.py:148 reddens if a second closing is counted again and :164 if an archive-flag close stops counting, each asserted against hand-derived expectations from a synthesised history rather than against the module's own output.",
+    "evidence": "the reviewed gate log carries revision, tree, command, imported module path and cwd, and both arms reproduce at the reviewed revisions - 15 passed at acc1adde and 22 passed at 790dfbe4 - so the added-failure count of 0 is measured, but the base arm is a prose claim at manifest.md:29 with no log so the reviewed run's own record cannot support that derivation.",
+    "fit": "plan_census and plan_cohort at reckon/velocity.py:356 and :433 follow the module's existing snapshot-and-measure idiom and none of the added names carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/velocity.py:389 closes a plan at the first status in CLOSED_STATUSES or an archive flag and :368 dates the opening at the commit that added the file, which is the goal's own definition at docs/plans/the-fleet-reports-its-velocity.html:172.",
+    "scope_discipline": "all five paths in git diff acc1adde..790dfbe4 are inside the five declared write paths and no file outside them changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to report plans opened, closed and pending per project and ISO week in reckon/velocity.py; reckon/velocity.py:356 plan_census computes all three from this repository's own plan history and reckon/velocity.py:1864 surfaces them under \"plans\" per project and week, which is the measure docs/plans/the-fleet-reports-its-velocity.html:172 states for section 5.\nVERDICT done_when: the done_when pins the cohort reading at commit 23eb2545 over the window 2026-09-12T00:00:00Z to 2026-09-26T10:00:00Z at 58 opened and 7 closed, plus the two synthesised-history cases; tests/test_velocity_work_in_progress.py:215 asserts exactly those literals, the reviewed gate log records 22 passed at revision 790dfbe4 with a clean tree, and I re-ran the pinned reading at that head myself: 1 passed, EXIT=0.\nVERDICT write_paths: the manifest declares five write paths and git diff acc1adde..790dfbe4 touches exactly those five - reckon/velocity.py, tests/test_velocity_work_in_progress.py, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/archive/the-fleet-reports-its-velocity-landed.html and one figure PNG - with nothing outside them.\nVERDICT manifest: read; status complete, the gate log and the negative-control log are named by bare path and both are present with the recorded content, and the two suite fields carry prose where a log path belongs (see FINDING).\nVERDICT diff: read commit by commit against the base - fe33dbf6 lands reckon/velocity.py:104 CLOSED_STATUSES and :356 plan_census with its tests, 790dfbe4 lands the plan comment, the appended section at docs/evidence/archive/the-fleet-reports-its-velocity-landed.html:169 and the figure; the only two deletions are the plan-commits and plan-artifacts meta lines, replaced by extended values, so no peer evidence was clobbered.\nCALL_SITES: reckon/velocity.py:2047 velocity(), reckon/velocity.py:2012 capture(), reckon/velocity.py:460 capture_project(), reckon/velocity.py:1333 measure(), reckon/velocity.py:1934 compact_summary()\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/velocity.py:389 closes a plan at the first status in CLOSED_STATUSES or an archive flag and :368 dates the opening at the commit that added the file, which is the goal's own definition at docs/plans/the-fleet-reports-its-velocity.html:172.\nSCORE evidence: 16\nJUSTIFICATION evidence: the reviewed gate log carries revision, tree, command, imported module path and cwd, and both arms reproduce at the reviewed revisions - 15 passed at acc1adde and 22 passed at 790dfbe4 - so the added-failure count of 0 is measured, but the base arm is a prose claim at manifest.md:29 with no log so the reviewed run's own record cannot support that derivation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five paths in git diff acc1adde..790dfbe4 are inside the five declared write paths and no file outside them changed.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_velocity_work_in_progress.py:148 reddens if a second closing is counted again and :164 if an archive-flag close stops counting, each asserted against hand-derived expectations from a synthesised history rather than against the module's own output.\nSCORE fit: 18\nJUSTIFICATION fit: plan_census and plan_cohort at reckon/velocity.py:356 and :433 follow the module's existing snapshot-and-measure idiom and none of the added names carries a plan, sprint or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T105911753846-work-in-progress-is-visible/manifest.md:29 the baseline_suite field carries a prose claim with no log path, and after_suite at line 31 does the same, so no base gate log exists for this run and reckon/crew/review.py:869 added_failures_from_gate_logs reads the pair as absent - every reader of this review gets an unmeasured added-failure count where the run's own green gate would have supported a measured zero, and the base arm's \"15 passed\" cannot be checked by anyone.\nFINDING docs/evidence/archive/the-fleet-reports-its-velocity-landed.html:12 plan-verifies still names only the-fleet-reports-its-velocity#s2 although the page now carries the section appended at line 169, and every other cumulative landing page that carries several sections registers each of them, so the plan's s5 section is anchored to no evidence page while plan-commits and plan-artifacts on the same lines were extended.\n",
+  "review_run_id": "r-20260928T115555224623-review-of-work-in-progress-is-visible",
+  "reviewed_base_sha": "acc1adde2d1b40e3128c2301d2ef2dee6aa0dfcd",
+  "reviewed_head_sha": "790dfbe4835e703267e8c33cd9e5d57b58f76064",
+  "reviewed_run_id": "r-20260928T105911753846-work-in-progress-is-visible",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:01.595907+00:00",
+  "total": 90
+}

@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from two arms I ran over the gate file tests/test_worker_git_guard.py: base 6205b507b 57 passed EXIT=0 (review-base-arm.log) and head 03f13dacc 59 passed EXIT=0 (review-head-arm.log), so head adds no failing test (the +2 are the reviewed node's own two new passing cases). The reviewed run's manifest names no baseline_suite/after_suite gate logs (it is not armed; it records a single head-only gate at 03f13dacc), so the count could not be taken from the reviewed run's own arms and was measured here.",
+  "after_suite": {
+    "command": "env -C /tmp/reckon-crew-scratch/r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import/head-03f13dac PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import/head-03f13dac /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/reckon-crew-scratch/r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import/head-03f13dac/tests/test_worker_git_guard.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import/review-head-arm.log",
+    "revision": "03f13dacceb5e1967c27b6897eff96b7b67b973d"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/review-of-the-guard-docstrings-name-the-import /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/review-of-the-guard-docstrings-name-the-import/tests/test_worker_git_guard.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import/review-base-arm.log",
+    "revision": "6205b507ba60faa1ed72981cc16c41d72b380930"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/install.py:_git_guard_group",
+    "reckon/cli.py:_worker_git_guard_path"
+  ],
+  "completed_at": "2026-10-01T15:59:46.924Z",
+  "dispatched_at": "2026-10-01T15:53:54Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 6205b507ba60faa1ed72981cc16c41d72b380930; 5ee19a727 changes two docstrings in reckon/hooks/__init__.py and reckon/hooks/install.py and adds 65 lines to tests/test_worker_git_guard.py, and 03f13dac adds a 27-line evidence fragment; nothing else moves.",
+    "done_when": "the followup asks both docstrings to state the guard must run from a reckon checkout and why, a test asserting the installed guard command points at the guard inside a reckon checkout, and a run of that guard under the current interpreter with -I and a live synthesised run id asserting a commit into another checkout is denied; all three are present and I reproduced the gate (59 passed EXIT=0 at 03f13dacc) and the declared mutation reddening the deny case (1 failed EXIT=1).",
+    "goal": "the goal is to correct two hook docstrings that still called the worker git guard standard-library-only and copyable standalone, after the guard began importing reckon.worker_git_shim from its own checkout; reckon/hooks/install.py:222 and reckon/hooks/__init__.py:3 now state the checkout requirement and the fail-open, which is the goal.",
+    "manifest": "read; it records status complete, commits 5ee19a727 and 03f13dac, the gate command with 59 passed EXIT=0 at 03f13dacc, a negative_control_log path, measurement_module and measurement_cwd for the scratch arm, and claims no plan file was edited.",
+    "write_paths": "the manifest declares reckon/hooks/install.py, reckon/hooks/__init__.py, tests/test_worker_git_guard.py, the evidence fragment and an unused figures dir; git show --name-only lists exactly those three code/test files and the fragment, all inside the declared scope, with no plan meta edit."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_git_guard.py:514 launches the composed guard as a real subprocess under the current interpreter with -I and a live synthesised pointer, asserting a cross-checkout commit is denied with exit 2; the import that guard depends on, renamed in a scratch checkout, reddens exactly that case as I reproduced (1 failed, EXIT=1), and tests/test_worker_git_guard.py:481 asserts the composed command resolves to a checkout carrying reckon/worker_git_shim.py. The two corrected docstrings are prose and no test pins their wording, so a future reword could silently contradict the guard again; that is the only durability gap and it is inherent to a prose deliverable.",
+    "evidence": "the gate tests/test_worker_git_guard.py records 59 passed EXIT=0 at 03f13dacc in the reviewed manifest, and my independent head arm over the same file reproduces it (59 passed EXIT=0), against a base arm of 57 passed EXIT=0 at 6205b507b, so head adds two passing cases and no failure; the declared negative control renaming the shim import to a missing module reddens the isolated deny case exactly as recorded (1 failed, EXIT=1), reproduced here in review-negative-control.log.",
+    "fit": "both docstrings are written in their module's own voice beside the clauses they correct \u2014 the __init__ package docstring narrows \"each module\" to \"most modules\" and names worker_git_guard as the exception, and the _git_guard_group docstring amends its own standard-library-only claim \u2014 and no plan, sprint or ticket identifier appears in the changed source, the two test names describe the behaviour, and both commits carry a subject with a body.",
+    "goal_fidelity": "reckon/hooks/install.py:222 and reckon/hooks/__init__.py:3 now say the worker git guard must run from a reckon checkout because it imports reckon.worker_git_shim from that checkout, putting it on sys.path itself, and that a standalone copy would raise on that import and fail open; I read the mechanism in reckon/hooks/worker_git_guard.py:51-53 (_CHECKOUT_ROOT = Path(__file__).resolve().parents[2] inserted on sys.path) and :354 (the shim import), and confirmed a missing shim exits 1 rather than 2, i.e. fail open, so the prose matches the code.",
+    "scope_discipline": "commits 5ee19a727 and 03f13dac touch exactly the two docstring files, the test file and the evidence fragment, all inside the node's declared write paths; no plan meta line changes and no figure path is written."
+  },
+  "node": "review-of-the-guard-docstrings-name-the-import",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to correct two hook docstrings that still called the worker git guard standard-library-only and copyable standalone, after the guard began importing reckon.worker_git_shim from its own checkout; reckon/hooks/install.py:222 and reckon/hooks/__init__.py:3 now state the checkout requirement and the fail-open, which is the goal.\nVERDICT done_when: the followup asks both docstrings to state the guard must run from a reckon checkout and why, a test asserting the installed guard command points at the guard inside a reckon checkout, and a run of that guard under the current interpreter with -I and a live synthesised run id asserting a commit into another checkout is denied; all three are present and I reproduced the gate (59 passed EXIT=0 at 03f13dacc) and the declared mutation reddening the deny case (1 failed EXIT=1).\nVERDICT write_paths: the manifest declares reckon/hooks/install.py, reckon/hooks/__init__.py, tests/test_worker_git_guard.py, the evidence fragment and an unused figures dir; git show --name-only lists exactly those three code/test files and the fragment, all inside the declared scope, with no plan meta edit.\nVERDICT manifest: read; it records status complete, commits 5ee19a727 and 03f13dac, the gate command with 59 passed EXIT=0 at 03f13dacc, a negative_control_log path, measurement_module and measurement_cwd for the scratch arm, and claims no plan file was edited.\nVERDICT diff: read commit by commit against base 6205b507ba60faa1ed72981cc16c41d72b380930; 5ee19a727 changes two docstrings in reckon/hooks/__init__.py and reckon/hooks/install.py and adds 65 lines to tests/test_worker_git_guard.py, and 03f13dac adds a 27-line evidence fragment; nothing else moves.\nCALL_SITES: reckon/hooks/install.py:_git_guard_group, reckon/cli.py:_worker_git_guard_path\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/install.py:222 and reckon/hooks/__init__.py:3 now say the worker git guard must run from a reckon checkout because it imports reckon.worker_git_shim from that checkout, putting it on sys.path itself, and that a standalone copy would raise on that import and fail open; I read the mechanism in reckon/hooks/worker_git_guard.py:51-53 (_CHECKOUT_ROOT = Path(__file__).resolve().parents[2] inserted on sys.path) and :354 (the shim import), and confirmed a missing shim exits 1 rather than 2, i.e. fail open, so the prose matches the code.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate tests/test_worker_git_guard.py records 59 passed EXIT=0 at 03f13dacc in the reviewed manifest, and my independent head arm over the same file reproduces it (59 passed EXIT=0), against a base arm of 57 passed EXIT=0 at 6205b507b, so head adds two passing cases and no failure; the declared negative control renaming the shim import to a missing module reddens the isolated deny case exactly as recorded (1 failed, EXIT=1), reproduced here in review-negative-control.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commits 5ee19a727 and 03f13dac touch exactly the two docstring files, the test file and the evidence fragment, all inside the node's declared write paths; no plan meta line changes and no figure path is written.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_worker_git_guard.py:514 launches the composed guard as a real subprocess under the current interpreter with -I and a live synthesised pointer, asserting a cross-checkout commit is denied with exit 2; the import that guard depends on, renamed in a scratch checkout, reddens exactly that case as I reproduced (1 failed, EXIT=1), and tests/test_worker_git_guard.py:481 asserts the composed command resolves to a checkout carrying reckon/worker_git_shim.py. The two corrected docstrings are prose and no test pins their wording, so a future reword could silently contradict the guard again; that is the only durability gap and it is inherent to a prose deliverable.\nSCORE fit: 19\nJUSTIFICATION fit: both docstrings are written in their module's own voice beside the clauses they correct \u2014 the __init__ package docstring narrows \"each module\" to \"most modules\" and names worker_git_guard as the exception, and the _git_guard_group docstring amends its own standard-library-only claim \u2014 and no plan, sprint or ticket identifier appears in the changed source, the two test names describe the behaviour, and both commits carry a subject with a body.",
+  "review_run_id": "r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import",
+  "reviewed_base_sha": "6205b507ba60faa1ed72981cc16c41d72b380930",
+  "reviewed_head_sha": "03f13dacceb5e1967c27b6897eff96b7b67b973d",
+  "reviewed_run_id": "r-20261001T154624314762-the-guard-docstrings-name-the-import",
+  "reviewer_run_id": "r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import/review-base-arm.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import/review-head-arm.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import/review-negative-control.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T15:57:51.414294+00:00",
+  "total": 95
+}

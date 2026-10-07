@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d3cedc615e609f6b7f17476bc673cc7dce2d6d3b",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:1491",
+    "reckon/cli.py:2401",
+    "reckon/crew/recovery.py:8179"
+  ],
+  "completed_at": "2026-10-02T03:07:45.381Z",
+  "dispatched_at": "2026-10-02T03:03:04Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the \"superseded phrases (expect no matches)\" section lists \"(none)\", so the grep tested zero phrases and its zero cannot tell a clean file from an unchecked one; it should name the three superseded phrases and show their removal (each reproduces at base=1 head=0)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the receipt's \"revision: d3cedc615\" names the base, but its withdraw-line census shows the head text at recovery.py:8164/8166, so the receipt mislabels the revision it measured and cannot be tied to a tree."
+    }
+  ],
+  "head_log_revision": "c4ad902d8c327e28ed9e777288ad0da96f6b347a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read c4ad902d8 against its parent/base d3cedc615; the single file reckon/crew/recovery.py changes 12 insertions and 9 deletions, all in comments and one docstring - an AST comparison with docstrings stripped is identical, so no executable code moved - and each reworded sentence matches the word _departure_word returns (recorded row promoted, discard marker discarded, unresolved ledger departed, resolved ledger with no row withdrawn).",
+    "done_when": "the done-when's measure is a grep receipt showing no comment still says an unresolvable departure withdraws, plus base and head arms of tests/test_a_live_run_never_reads_dead.py and tests/test_a_discard_never_reads_promoted.py with zero added failures; the arms are recorded (17 passed EXIT=0 each) and I reproduced the head arm at c4ad902d8 (17 passed EXIT=0) and the phrase check by hand (the three named superseded phrases base=1 head=0); the shipped receipt's own superseded-phrase list is however empty, so that section tested nothing.",
+    "goal": "the node goal is that recovery.py's departure comments describe the departed rule the code follows; the diff rewords the _watch_snapshot project-field comment (recovery.py:7863), the _departure_recorded_run_ids docstring (recovery.py:8058) and the fleet_transitions departure block (recovery.py:8160), and each now matches _departure_word's promoted/discarded/departed/withdrawn order.",
+    "manifest": "read the reviewed manifest at status complete; it names baseline_suite (d3cedc615, completed true, failure_count 0, failure_ids []) and after_suite (c4ad902d8, completed true, failure_count 0, failure_ids []), measurement_module and measurement_cwd for the scratch base arm, and negative_control \"none\"; both arm logs open with a revision header and run to their summary line.",
+    "write_paths": "declared paths are reckon/crew/recovery.py plus an unused fragment and figure path; git show --stat c4ad902d8 lists exactly reckon/crew/recovery.py (+12/-9), all inside the fence, with no fragment or figure written (a small comment-only node names no artifact)."
+  },
+  "justifications": {
+    "durability": "the change touches no behaviour, so no test fails on its regression; the only guard is the ad-hoc grep receipt /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt, which the node declared as its negative control and which is uncommitted and vacuous in its phrase section.",
+    "evidence": "the done-when's base and head arms are recorded and reproduce (17 passed EXIT=0 each) and the phrase check reproduces by hand, but /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt:4 lists \"(none)\" under superseded phrases so the named check's zero is vacuous, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt:2 stamps the base d3cedc615 while its body is the head tree.",
+    "fit": "the reworded prose matches the surrounding comment idiom in recovery.py and the commit body states the rule with no plan, sprint or ticket identifier.",
+    "goal_fidelity": "recovery.py:8088-8094 _departure_word returns promoted/discarded/departed/withdrawn and the reworded comments at recovery.py:7863, 8058 and 8160-8169 state exactly that order, confirmed AST-equal outside comments.",
+    "scope_discipline": "git show --stat c4ad902d8 lists only reckon/crew/recovery.py, inside the declared fence, comment-only with no symbol, import or behaviour added."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that recovery.py's departure comments describe the departed rule the code follows; the diff rewords the _watch_snapshot project-field comment (recovery.py:7863), the _departure_recorded_run_ids docstring (recovery.py:8058) and the fleet_transitions departure block (recovery.py:8160), and each now matches _departure_word's promoted/discarded/departed/withdrawn order.\nVERDICT done_when: the done-when's measure is a grep receipt showing no comment still says an unresolvable departure withdraws, plus base and head arms of tests/test_a_live_run_never_reads_dead.py and tests/test_a_discard_never_reads_promoted.py with zero added failures; the arms are recorded (17 passed EXIT=0 each) and I reproduced the head arm at c4ad902d8 (17 passed EXIT=0) and the phrase check by hand (the three named superseded phrases base=1 head=0); the shipped receipt's own superseded-phrase list is however empty, so that section tested nothing.\nVERDICT write_paths: declared paths are reckon/crew/recovery.py plus an unused fragment and figure path; git show --stat c4ad902d8 lists exactly reckon/crew/recovery.py (+12/-9), all inside the fence, with no fragment or figure written (a small comment-only node names no artifact).\nVERDICT manifest: read the reviewed manifest at status complete; it names baseline_suite (d3cedc615, completed true, failure_count 0, failure_ids []) and after_suite (c4ad902d8, completed true, failure_count 0, failure_ids []), measurement_module and measurement_cwd for the scratch base arm, and negative_control \"none\"; both arm logs open with a revision header and run to their summary line.\nVERDICT diff: read c4ad902d8 against its parent/base d3cedc615; the single file reckon/crew/recovery.py changes 12 insertions and 9 deletions, all in comments and one docstring - an AST comparison with docstrings stripped is identical, so no executable code moved - and each reworded sentence matches the word _departure_word returns (recorded row promoted, discard marker discarded, unresolved ledger departed, resolved ledger with no row withdrawn).\nCALL_SITES: reckon/crew/runs.py:1491, reckon/cli.py:2401, reckon/crew/recovery.py:8179\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: recovery.py:8088-8094 _departure_word returns promoted/discarded/departed/withdrawn and the reworded comments at recovery.py:7863, 8058 and 8160-8169 state exactly that order, confirmed AST-equal outside comments.\nSCORE evidence: 15\nJUSTIFICATION evidence: the done-when's base and head arms are recorded and reproduce (17 passed EXIT=0 each) and the phrase check reproduces by hand, but /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt:4 lists \"(none)\" under superseded phrases so the named check's zero is vacuous, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt:2 stamps the base d3cedc615 while its body is the head tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat c4ad902d8 lists only reckon/crew/recovery.py, inside the declared fence, comment-only with no symbol, import or behaviour added.\nSCORE durability: 13\nJUSTIFICATION durability: the change touches no behaviour, so no test fails on its regression; the only guard is the ad-hoc grep receipt /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt, which the node declared as its negative control and which is uncommitted and vacuous in its phrase section.\nSCORE fit: 20\nJUSTIFICATION fit: the reworded prose matches the surrounding comment idiom in recovery.py and the commit body states the rule with no plan, sprint or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt:4 follow-on: the \"superseded phrases (expect no matches)\" section lists \"(none)\", so the grep tested zero phrases and its zero cannot tell a clean file from an unchecked one; it should name the three superseded phrases and show their removal (each reproduces at base=1 head=0).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T025629689856-departure-comments-state-the-departed-rule/grep-receipt.txt:2 follow-on: the receipt's \"revision: d3cedc615\" names the base, but its withdraw-line census shows the head text at recovery.py:8164/8166, so the receipt mislabels the revision it measured and cannot be tied to a tree.\n",
+  "review_run_id": "r-20261002T030242179151-review-of-departure-comments-state-the-departed-rule",
+  "reviewed_base_sha": "d3cedc615e609f6b7f17476bc673cc7dce2d6d3b",
+  "reviewed_head_sha": "c4ad902d8c327e28ed9e777288ad0da96f6b347a",
+  "reviewed_run_id": "r-20261002T025629689856-departure-comments-state-the-departed-rule",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T030242179151-review-of-departure-comments-state-the-departed-rule",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T03:07:20.145820+00:00",
+  "total": 88
+}

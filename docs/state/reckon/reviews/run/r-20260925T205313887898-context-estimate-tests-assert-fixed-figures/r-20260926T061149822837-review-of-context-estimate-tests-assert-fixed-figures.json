@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/routing.py:_declared_input_files",
+    "reckon/crew/routing.py:_context_file_inputs",
+    "reckon/crew/routing.py:_context_fit_verdict"
+  ],
+  "completed_at": "2026-09-26T07:38:33.073Z",
+  "dispatched_at": "2026-09-26T06:12:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T205313887898-context-estimate-tests-assert-fixed-figures/logs/gate-head.log",
+      "line": "1",
+      "text": "the head gate's header names rev=318ec2b6, the pre-commit worktree HEAD, without marking the tree dirty, so a reader cannot tell the fixed module was the thing measured."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 07a601c4 against base 318ec2b6, which rewrites the test module's expectations, removes the docstring attribution, and appends the plan comment and the evidence section, with reckon/.../routing.py absent from the commit so the control's mutation was not landed.",
+    "done_when": "its six named measures all hold, with my recheck of the named test at the reviewed head at 4 passed, negative-control.log repeating the declared mutation verbatim with the two prose-mention cases red, the docstring attribution gone at line 3, the landing comment's data-when a zero-padded UTC instant, both arms logged green, and the change committed.",
+    "goal": "the goal is to make tests/test_context_estimate_reads_declared_files.py assert fixed expected token figures derived from its own fixture instead of a second call of the function under test, and the diff replaces every such comparison with a fixture-derived expectation.",
+    "manifest": "read, and it records the 4-passed gate, both arms, the declared negative control with its log path, and its claim that no assertion compares the function's output with another call of it matches the head blob.",
+    "write_paths": "the declared paths are tests/test_context_estimate_reads_declared_files.py, docs/plans/the-local-lane-is-the-default.html, docs/evidence/archive/the-local-lane-is-the-default-landed.html and docs/figures/the-local-lane-is-the-default, and the commit touches only the first three."
+  },
+  "justifications": {
+    "durability": "restoring the prose-counting clause in reckon/crew/routing.py reddens two cases (negative-control.log), and a dropped declared file fails tests/test_context_estimate_reads_declared_files.py:127 because zero is not 571,429.",
+    "evidence": "the gate, both arms and the declared control are logged and my recheck reproduced 4 passed at 07a601c4, but logs/gate-head.log:1 names rev=318ec2b6 for a run over the modified tree, so the head revision it measured cannot be established from the log alone.",
+    "fit": "the added _estimated_tokens helper mirrors the rule routing.py:1490 documents, the flagged attribution is removed from the docstring at line 3, and the fixture-derived constants keep the module's existing idiom.",
+    "goal_fidelity": "tests/test_context_estimate_reads_declared_files.py:127 asserts the fixture-derived 571,429-token figure rather than a second call, and no assertion in the head module compares the estimator with itself.",
+    "scope_discipline": "the commit touches only the test module and the two declared doc pages, and it leaves the plan-version and plan-modified meta lines untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_context_estimate_reads_declared_files.py assert fixed expected token figures derived from its own fixture instead of a second call of the function under test, and the diff replaces every such comparison with a fixture-derived expectation.\nVERDICT done_when: its six named measures all hold, with my recheck of the named test at the reviewed head at 4 passed, negative-control.log repeating the declared mutation verbatim with the two prose-mention cases red, the docstring attribution gone at line 3, the landing comment's data-when a zero-padded UTC instant, both arms logged green, and the change committed.\nVERDICT write_paths: the declared paths are tests/test_context_estimate_reads_declared_files.py, docs/plans/the-local-lane-is-the-default.html, docs/evidence/archive/the-local-lane-is-the-default-landed.html and docs/figures/the-local-lane-is-the-default, and the commit touches only the first three.\nVERDICT manifest: read, and it records the 4-passed gate, both arms, the declared negative control with its log path, and its claim that no assertion compares the function's output with another call of it matches the head blob.\nVERDICT diff: read the single commit 07a601c4 against base 318ec2b6, which rewrites the test module's expectations, removes the docstring attribution, and appends the plan comment and the evidence section, with reckon/.../routing.py absent from the commit so the control's mutation was not landed.\nCALL_SITES: reckon/crew/routing.py:_declared_input_files, reckon/crew/routing.py:_context_file_inputs, reckon/crew/routing.py:_context_fit_verdict\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_context_estimate_reads_declared_files.py:127 asserts the fixture-derived 571,429-token figure rather than a second call, and no assertion in the head module compares the estimator with itself.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate, both arms and the declared control are logged and my recheck reproduced 4 passed at 07a601c4, but logs/gate-head.log:1 names rev=318ec2b6 for a run over the modified tree, so the head revision it measured cannot be established from the log alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only the test module and the two declared doc pages, and it leaves the plan-version and plan-modified meta lines untouched.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the prose-counting clause in reckon/crew/routing.py reddens two cases (negative-control.log), and a dropped declared file fails tests/test_context_estimate_reads_declared_files.py:127 because zero is not 571,429.\nSCORE fit: 19\nJUSTIFICATION fit: the added _estimated_tokens helper mirrors the rule routing.py:1490 documents, the flagged attribution is removed from the docstring at line 3, and the fixture-derived constants keep the module's existing idiom.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T205313887898-context-estimate-tests-assert-fixed-figures/logs/gate-head.log:1 the head gate's header names rev=318ec2b6, the pre-commit worktree HEAD, without marking the tree dirty, so a reader cannot tell the fixed module was the thing measured.\n",
+  "review_run_id": "r-20260926T061149822837-review-of-context-estimate-tests-assert-fixed-figures",
+  "reviewed_base_sha": "318ec2b6a0a439f9ff152d89b93cac3f4e678f60",
+  "reviewed_head_sha": "07a601c464f835dcd8513949effb5818f04cb416",
+  "reviewed_run_id": "r-20260925T205313887898-context-estimate-tests-assert-fixed-figures",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T07:32:42.645207+00:00",
+  "total": 94
+}

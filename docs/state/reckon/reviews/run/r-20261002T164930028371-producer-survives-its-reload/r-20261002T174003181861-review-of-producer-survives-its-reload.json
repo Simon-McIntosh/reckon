@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:_StampPoll._tick",
+    "reckon/cli.py:_FollowerReloader.reload",
+    "reckon/cli.py:_follow_watch_lines",
+    "reckon/cli.py:crew_follow",
+    "reckon/crew/runs.py:watch_producer_identity",
+    "reckon/crew/runs.py:_project_watch_claim"
+  ],
+  "completed_at": "2026-10-02T18:02:17.117Z",
+  "dispatched_at": "2026-10-02T17:40:32Z",
+  "findings": [
+    {
+      "file": "tests/test_producer_survives_its_reload.py",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the new test imports eight private helper names from tests/test_producer_takes_new_code.py, a cross-test-module coupling unique in the tree, so a change to that module's helpers breaks this test rather than failing locally; worth promoting the helpers to a shared module or accepting deliberately."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read revision ee3f1e68fd86e12ae9db010340636757876227a5 and its parent 37176c0e against base 89690489f0b9c717bc6f532fdce7e5a275e8faed; two conventional messages touch only the three declared files, 134 insertions and 7 deletions.",
+    "done_when": "read the FENCE-EVIDENCE measure; the manifest records a base arm (1 failed, 21 passed, EXIT=1) failing the new publishing test, a head arm (22 passed, EXIT=0), the declared mutation reddening that same id (EXIT=1), and a zero ruff delta, each with a named on-disk log.",
+    "goal": "read section 28 of crew-runtime-positive-controls and the node goal; the landed change reproduces the recursive reload entry (a 2s import proof inside a 1s alarm interval) and adds the two written lines and the follower's interrupted-reload report, satisfying reload-completes-or-keeps-image and never-silently.",
+    "manifest": "read; it states the cause, records both gate arms as JSON with completed true and literal absolute commands, names its logs, and carries the landing line, commits and empty follow_ons.",
+    "write_paths": "read the manifest's declared fence of seven paths and the diff; the three changed files reckon/cli.py, reckon/crew/runs.py and tests/test_producer_survives_its_reload.py are all inside it, and the untouched declared test files are honest omissions."
+  },
+  "justifications": {
+    "durability": "tests/test_producer_survives_its_reload.py:45 asserts the seat code_stamp equals an independently recomputed _stamp_of(root) and that the producer is still live, and restoring the failing reload path reddens exactly that test (negative-control-final.log, EXIT=1).",
+    "evidence": "the base arm at revision 89690489f0b9c717bc6f532fdce7e5a275e8faed (baseline-suite-audited.log, EXIT=1) fails only tests/test_producer_survives_its_reload.py::test_a_producer_keeps_publishing_after_a_slow_reload, the head arm at ee3f1e68fd86e12ae9db010340636757876227a5 (after-suite-audited.log, EXIT=0) passes 22, and negative-control-final.log reddens that same id under the declared mutation.",
+    "fit": "reckon/cli.py:2429 and reckon/crew/runs.py:2186 follow the file's signal-and-seat idiom and the docstring at reckon/crew/runs.py:1394 drops a plan reference, but tests/test_producer_survives_its_reload.py:5 is the only test in the tree importing another test module's private helpers.",
+    "goal_fidelity": "reckon/cli.py:2429 disarms the alarm across the import proof so the handler cannot recurse and reckon/cli.py:3250 raises the interrupted-reload event, meeting every clause except that the cannot-continue path records the reload timestamp rather than a reason, reported by the follower beside the log path.",
+    "scope_discipline": "the diff touches only reckon/cli.py, reckon/crew/runs.py and tests/test_producer_survives_its_reload.py, all within the declared fence, with no plan, index or state mutation and no identifier the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read section 28 of crew-runtime-positive-controls and the node goal; the landed change reproduces the recursive reload entry (a 2s import proof inside a 1s alarm interval) and adds the two written lines and the follower's interrupted-reload report, satisfying reload-completes-or-keeps-image and never-silently.\nVERDICT done_when: read the FENCE-EVIDENCE measure; the manifest records a base arm (1 failed, 21 passed, EXIT=1) failing the new publishing test, a head arm (22 passed, EXIT=0), the declared mutation reddening that same id (EXIT=1), and a zero ruff delta, each with a named on-disk log.\nVERDICT write_paths: read the manifest's declared fence of seven paths and the diff; the three changed files reckon/cli.py, reckon/crew/runs.py and tests/test_producer_survives_its_reload.py are all inside it, and the untouched declared test files are honest omissions.\nVERDICT manifest: read; it states the cause, records both gate arms as JSON with completed true and literal absolute commands, names its logs, and carries the landing line, commits and empty follow_ons.\nVERDICT diff: read revision ee3f1e68fd86e12ae9db010340636757876227a5 and its parent 37176c0e against base 89690489f0b9c717bc6f532fdce7e5a275e8faed; two conventional messages touch only the three declared files, 134 insertions and 7 deletions.\nCALL_SITES: reckon/cli.py:_StampPoll._tick, reckon/cli.py:_FollowerReloader.reload, reckon/cli.py:_follow_watch_lines, reckon/cli.py:crew_follow, reckon/crew/runs.py:watch_producer_identity, reckon/crew/runs.py:_project_watch_claim\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:2429 disarms the alarm across the import proof so the handler cannot recurse and reckon/cli.py:3250 raises the interrupted-reload event, meeting every clause except that the cannot-continue path records the reload timestamp rather than a reason, reported by the follower beside the log path.\nSCORE evidence: 20\nJUSTIFICATION evidence: the base arm at revision 89690489f0b9c717bc6f532fdce7e5a275e8faed (baseline-suite-audited.log, EXIT=1) fails only tests/test_producer_survives_its_reload.py::test_a_producer_keeps_publishing_after_a_slow_reload, the head arm at ee3f1e68fd86e12ae9db010340636757876227a5 (after-suite-audited.log, EXIT=0) passes 22, and negative-control-final.log reddens that same id under the declared mutation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/cli.py, reckon/crew/runs.py and tests/test_producer_survives_its_reload.py, all within the declared fence, with no plan, index or state mutation and no identifier the goal does not imply.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_producer_survives_its_reload.py:45 asserts the seat code_stamp equals an independently recomputed _stamp_of(root) and that the producer is still live, and restoring the failing reload path reddens exactly that test (negative-control-final.log, EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: reckon/cli.py:2429 and reckon/crew/runs.py:2186 follow the file's signal-and-seat idiom and the docstring at reckon/crew/runs.py:1394 drops a plan reference, but tests/test_producer_survives_its_reload.py:5 is the only test in the tree importing another test module's private helpers.\nFINDING tests/test_producer_survives_its_reload.py:5 follow-on: the new test imports eight private helper names from tests/test_producer_takes_new_code.py, a cross-test-module coupling unique in the tree, so a change to that module's helpers breaks this test rather than failing locally; worth promoting the helpers to a shared module or accepting deliberately.\nreviewed_base_sha: 89690489f0b9c717bc6f532fdce7e5a275e8faed\nreviewed_head_sha: ee3f1e68fd86e12ae9db010340636757876227a5\n",
+  "review_run_id": "r-20261002T174003181861-review-of-producer-survives-its-reload",
+  "reviewed_base_sha": "89690489f0b9c717bc6f532fdce7e5a275e8faed",
+  "reviewed_head_sha": "ee3f1e68fd86e12ae9db010340636757876227a5",
+  "reviewed_run_id": "r-20261002T164930028371-producer-survives-its-reload",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.184109+00:00",
+  "total": 98
+}

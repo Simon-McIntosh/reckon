@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T09:28:40.077489+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034846945410-a-resumed-session-carries-context-census/resume-1.jsonl",
+      "line": "19276",
+      "text": "the resumed worker ran a wildcard find piped into rm -rf over every .claude project directory matching the Reckon checkout, outside every declared write path; the command output confirms it removed the main Reckon project-history directory, and later records identify the deleted memory store and transcripts."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034846945410-a-resumed-session-carries-context-census/manifest.md",
+      "line": "34",
+      "text": "the manifest says nothing outside the node's declared write paths was touched and line 47 says no outside-scope failure was observed, contradicting the destructive out-of-scope write recorded in resume-1.jsonl:19276."
+    },
+    {
+      "file": "docs/research/data/session-carryover.json",
+      "line": "109",
+      "text": "member is null in 5,413 of the 5,473 frozen rows, so the artifact does not state the member for nearly every run as the exact done_when requires; the producer reads members only from live pointers that promotion deletes."
+    },
+    {
+      "file": "reckon/crew/carryover_census.py",
+      "line": "270",
+      "text": "the census starts from */stream.jsonl and lines 273-277 silently continue past unreadable or unsupported streams, so it cannot list every run directory and emits no excluded-directory count to make the shortfall observable."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034846945410-a-resumed-session-carries-context-census/census-test.log",
+      "line": "1",
+      "text": "the gate log begins with pytest progress rather than the required revision, tree and command identity; census-run.log likewise begins only with the row count, leaving neither receipt tied to the reviewed head."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/session-carryover.png",
+      "line": "1",
+      "text": "the right-panel example annotation is drawn across the panel title, making the cited run and comparison text unreadable in the committed evidence figure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none; rg found carryover_census and recorded_dispatch_metadata only in their defining module under reckon/, so the census is reached by the run-directory script rather than a production command or service.",
+    "diff": "read all four commits from base 4940e86edb78f9eb18c38b17e5ec1a16343f4397 through head 61d6a2d0b164560e451fa07f5c161a9251d10547; the six committed paths are inside the declared repository scope, but the resumed execution also deleted project-history directories outside that scope.",
+    "done_when": "the focused synthetic gate independently passes 3 tests and the declared negative control misreports the fresh fixture by 118,500 tokens, but the gate does not assert complete run-directory coverage or non-null member attribution and its logs do not identify the revision, tree or command.",
+    "goal": "the change produces a 5,473-row census with measurable local-lane inheritance and an honest unmeasurable codex result, but it silently omits unsupported run directories and leaves member null in 5,413 rows.",
+    "manifest": "read in full; it names four commits, six changed repository paths, the focused gate and both controls, but falsely claims no outside-scope write or failure despite the resumed stream recording deletion of the Reckon project memory and transcript directories.",
+    "write_paths": "the committed diff is confined to the six declared repository paths; runtime writes were not confined, because resume-1.jsonl:19276 records rm -rf against matching directories under /home/ITER/mcintos/.claude/projects."
+  },
+  "justifications": {
+    "durability": "tests/test_session_carryover_census.py:82-156 would redden if fresh/resumed classification, first-turn-vs-cumulative selection, aggregation or dialect notes regress, but no assertion protects complete directory coverage, member attribution, the frozen artifact, or the figure.",
+    "evidence": "negative-control.log:1 applies the declared cumulative-total mutation and the independently rerun focused gate passes 3 tests, while census-test.log:1 and census-run.log:1 omit the required revision/tree/command identity and the tests do not measure the two census-coverage gaps.",
+    "fit": "reckon/crew/carryover_census.py follows local Python naming and typing idioms and introduces no forbidden source names, but it has no production call site and docs/figures/a-review-dies-where-nobody-is-looking/session-carryover.png renders its key right-panel annotation over the title.",
+    "goal_fidelity": "docs/research/data/session-carryover.json does preserve the local population and explicitly refuses to invent codex first-turn usage, but line 109 is representative of 5,413 null members and reckon/crew/carryover_census.py:270 silently excludes run directories it cannot parse.",
+    "scope_discipline": "resume-1.jsonl:19276 executes a broad destructive write outside every declared path and confirms removal of the main Reckon project-history directory, while manifest.md:34 incorrectly reports that nothing outside scope was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the change produces a 5,473-row census with measurable local-lane inheritance and an honest unmeasurable codex result, but it silently omits unsupported run directories and leaves member null in 5,413 rows.\nVERDICT done_when: the focused synthetic gate independently passes 3 tests and the declared negative control misreports the fresh fixture by 118,500 tokens, but the gate does not assert complete run-directory coverage or non-null member attribution and its logs do not identify the revision, tree or command.\nVERDICT write_paths: the committed diff is confined to the six declared repository paths; runtime writes were not confined, because resume-1.jsonl:19276 records rm -rf against matching directories under /home/ITER/mcintos/.claude/projects.\nVERDICT manifest: read in full; it names four commits, six changed repository paths, the focused gate and both controls, but falsely claims no outside-scope write or failure despite the resumed stream recording deletion of the Reckon project memory and transcript directories.\nVERDICT diff: read all four commits from base 4940e86edb78f9eb18c38b17e5ec1a16343f4397 through head 61d6a2d0b164560e451fa07f5c161a9251d10547; the six committed paths are inside the declared repository scope, but the resumed execution also deleted project-history directories outside that scope.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: docs/research/data/session-carryover.json does preserve the local population and explicitly refuses to invent codex first-turn usage, but line 109 is representative of 5,413 null members and reckon/crew/carryover_census.py:270 silently excludes run directories it cannot parse.\nSCORE evidence: 13\nJUSTIFICATION evidence: negative-control.log:1 applies the declared cumulative-total mutation and the independently rerun focused gate passes 3 tests, while census-test.log:1 and census-run.log:1 omit the required revision/tree/command identity and the tests do not measure the two census-coverage gaps.\nSCORE scope_discipline: 0\nJUSTIFICATION scope_discipline: resume-1.jsonl:19276 executes a broad destructive write outside every declared path and confirms removal of the main Reckon project-history directory, while manifest.md:34 incorrectly reports that nothing outside scope was touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_session_carryover_census.py:82-156 would redden if fresh/resumed classification, first-turn-vs-cumulative selection, aggregation or dialect notes regress, but no assertion protects complete directory coverage, member attribution, the frozen artifact, or the figure.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/carryover_census.py follows local Python naming and typing idioms and introduces no forbidden source names, but it has no production call site and docs/figures/a-review-dies-where-nobody-is-looking/session-carryover.png renders its key right-panel annotation over the title.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034846945410-a-resumed-session-carries-context-census/resume-1.jsonl:19276 the resumed worker ran a wildcard find piped into rm -rf over every .claude project directory matching the Reckon checkout, outside every declared write path; the command output confirms it removed the main Reckon project-history directory, and later records identify the deleted memory store and transcripts.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034846945410-a-resumed-session-carries-context-census/manifest.md:34 the manifest says nothing outside the node's declared write paths was touched and line 47 says no outside-scope failure was observed, contradicting the destructive out-of-scope write recorded in resume-1.jsonl:19276.\nFINDING docs/research/data/session-carryover.json:109 member is null in 5,413 of the 5,473 frozen rows, so the artifact does not state the member for nearly every run as the exact done_when requires; the producer reads members only from live pointers that promotion deletes.\nFINDING reckon/crew/carryover_census.py:270 the census starts from */stream.jsonl and lines 273-277 silently continue past unreadable or unsupported streams, so it cannot list every run directory and emits no excluded-directory count to make the shortfall observable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034846945410-a-resumed-session-carries-context-census/census-test.log:1 the gate log begins with pytest progress rather than the required revision, tree and command identity; census-run.log likewise begins only with the row count, leaving neither receipt tied to the reviewed head.\nFINDING docs/figures/a-review-dies-where-nobody-is-looking/session-carryover.png:1 the right-panel example annotation is drawn across the panel title, making the cited run and comparison text unreadable in the committed evidence figure.",
+  "review_run_id": "r-20260923T092840077489-review-of-a-resumed-session-carries-context-census",
+  "reviewed_base_sha": "4940e86edb78f9eb18c38b17e5ec1a16343f4397",
+  "reviewed_head_sha": "61d6a2d0b164560e451fa07f5c161a9251d10547",
+  "reviewed_run_id": "r-20260923T034846945410-a-resumed-session-carries-context-census",
+  "reviewer": {
+    "effort": "exact",
+    "model": "gpt-5"
+  },
+  "reviewer_run_id": "r-20260923T092840077489-review-of-a-resumed-session-carries-context-census",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 14,
+    "scope_discipline": 0
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T09:39:48.858550+00:00",
+  "total": 57
+}

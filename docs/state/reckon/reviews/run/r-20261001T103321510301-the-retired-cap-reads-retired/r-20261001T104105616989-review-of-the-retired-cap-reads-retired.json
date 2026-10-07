@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T10:48:50.115Z",
+  "dispatched_at": "2026-10-01T10:41:28Z",
+  "findings": [
+    {
+      "file": "tests/test_flight.py",
+      "line": "128",
+      "severity": "follow-on",
+      "text": "follow-on: the two round-trip tests that prove the committed Pydantic model and JSON Schema match their LinkML source skip silently when the LinkML generators are absent ('LinkML generators absent \u2014 install the dev dependency group'), as they did in my independent run; on any machine without the dev group the guarantee this node relied on is unverified, so a description edited only in flight.yaml and not regenerated would pass the suite unremarked."
+    },
+    {
+      "file": "reckon/schema/flight.yaml",
+      "line": "509",
+      "severity": "follow-on",
+      "text": "follow-on: the rewritten 'Retired and ignored' description, and the claim that the slot stays declared only for host-file compatibility, are asserted by no test; the removal of the enforcement sentence is the whole point of this node, yet nothing reddens if the sentence returns, so the correctness of the change rests on the reviewed commit alone."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the diff a09f289..a744478b7 is 4 files, 11 insertions / 10 deletions; the only substantive changes are the rewritten max_concurrent_runs description in the LinkML source and its two regenerated artifacts, and the roster_bound signature plus its single caller in summary.py.",
+    "done_when": "the driving followup's done-when (a-dispatch-returns-without-its-worker.html:1046) is exactly this node's measure \u2014 a grep of the three schema files finds no sentence saying dispatch refuses on the key, roster_bound takes no unread argument, and test_backend_carries_no_worker_cap.py plus test_crew_binding_bound.py pass at head; I independently reproduced all three at a744478b7.",
+    "goal": "make the retired roster key read as retired on every generated surface; delivered \u2014 flight.yaml, the regenerated reckon/_flight_schema.py and docs/_shared/flight.schema.json all now say \"Retired and ignored\" and the enforcement sentence is absent from all three, and summary.roster_bound() drops the backend/occupancy it never read with its one caller updated.",
+    "manifest": "read; status complete, names the four changed paths and the gate log; negative_control_log is \"none\" with the honest reason that its write paths reach no test file, and baseline_suite/after_suite are declared empty (unmeasured), which I confirmed with review.annotate_review_of_run.",
+    "write_paths": "four files changed (reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, reckon/crew/summary.py), all inside the declared scope; no test file and no path outside the grant was touched, and the worktree at a744478b7 is clean."
+  },
+  "justifications": {
+    "durability": "no test asserts the schema description text, so a regression that silently restored the enforcement sentence would not redden \u2014 grep of tests/ for 'Retired and ignored' returns nothing; what does stand is the roster_bound signature, which the report-path tests in test_backend_carries_no_worker_cap.py and test_crew_binding_bound.py exercise indirectly by asserting the roster row reads retired and does not bind.",
+    "evidence": "the node's greps reproduce \u2014 I re-ran them at a744478b7 and confirmed exit 1 on dispatch.py and the enforcement sentence, and described text is byte-identical across flight.yaml, _flight_schema.py and both JSON-schema copies (verified programmatically); its gate re-ran for me at 104 passed / 2 skipped, the two skips being the LinkML round-trip tests (test_flight.py:128,144) whose generators are absent from the shared venv, so the generated-artifact byte-identity was corroborated by direct string comparison rather than by the round-trip test the node's own log ran.",
+    "fit": "the work tracks the driving followup at a-dispatch-returns-without-its-worker.html:1046 line for line, the new description carries no plan label, ticket or version identifier, and the commit message carries no attribution and no plan reference.",
+    "goal_fidelity": "the goal is that the retired cap read retired rather than enforced; at head grep of reckon/crew/dispatch.py for max_concurrent_runs exits 1 (no reference), grep of the three schema files for 'counts the non-terminal live pointers|refuses a new dispatch' exits 1, and each carries 'Retired and ignored'; roster_bound at summary.py is 'def roster_bound() -> Bound' with its sole caller at summary.py:440 updated.",
+    "scope_discipline": "the commit touches only the four declared paths (git diff --stat a09f289..a744478b7 = 4 files) and no test file; the subject is conventional with a body describing the why, and the worktree at a744478b7 is clean with no stray artifacts."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: make the retired roster key read as retired on every generated surface; delivered \u2014 flight.yaml, the regenerated reckon/_flight_schema.py and docs/_shared/flight.schema.json all now say \"Retired and ignored\" and the enforcement sentence is absent from all three, and summary.roster_bound() drops the backend/occupancy it never read with its one caller updated.\nVERDICT done_when: the driving followup's done-when (a-dispatch-returns-without-its-worker.html:1046) is exactly this node's measure \u2014 a grep of the three schema files finds no sentence saying dispatch refuses on the key, roster_bound takes no unread argument, and test_backend_carries_no_worker_cap.py plus test_crew_binding_bound.py pass at head; I independently reproduced all three at a744478b7.\nVERDICT write_paths: four files changed (reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, reckon/crew/summary.py), all inside the declared scope; no test file and no path outside the grant was touched, and the worktree at a744478b7 is clean.\nVERDICT manifest: read; status complete, names the four changed paths and the gate log; negative_control_log is \"none\" with the honest reason that its write paths reach no test file, and baseline_suite/after_suite are declared empty (unmeasured), which I confirmed with review.annotate_review_of_run.\nVERDICT diff: the diff a09f289..a744478b7 is 4 files, 11 insertions / 10 deletions; the only substantive changes are the rewritten max_concurrent_runs description in the LinkML source and its two regenerated artifacts, and the roster_bound signature plus its single caller in summary.py.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is that the retired cap read retired rather than enforced; at head grep of reckon/crew/dispatch.py for max_concurrent_runs exits 1 (no reference), grep of the three schema files for 'counts the non-terminal live pointers|refuses a new dispatch' exits 1, and each carries 'Retired and ignored'; roster_bound at summary.py is 'def roster_bound() -> Bound' with its sole caller at summary.py:440 updated.\nSCORE evidence: 17\nJUSTIFICATION evidence: the node's greps reproduce \u2014 I re-ran them at a744478b7 and confirmed exit 1 on dispatch.py and the enforcement sentence, and described text is byte-identical across flight.yaml, _flight_schema.py and both JSON-schema copies (verified programmatically); its gate re-ran for me at 104 passed / 2 skipped, the two skips being the LinkML round-trip tests (test_flight.py:128,144) whose generators are absent from the shared venv, so the generated-artifact byte-identity was corroborated by direct string comparison rather than by the round-trip test the node's own log ran.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the commit touches only the four declared paths (git diff --stat a09f289..a744478b7 = 4 files) and no test file; the subject is conventional with a body describing the why, and the worktree at a744478b7 is clean with no stray artifacts.\nSCORE durability: 14\nJUSTIFICATION durability: no test asserts the schema description text, so a regression that silently restored the enforcement sentence would not redden \u2014 grep of tests/ for 'Retired and ignored' returns nothing; what does stand is the roster_bound signature, which the report-path tests in test_backend_carries_no_worker_cap.py and test_crew_binding_bound.py exercise indirectly by asserting the roster row reads retired and does not bind.\nSCORE fit: 18\nJUSTIFICATION fit: the work tracks the driving followup at a-dispatch-returns-without-its-worker.html:1046 line for line, the new description carries no plan label, ticket or version identifier, and the commit message carries no attribution and no plan reference.\nFINDING tests/test_flight.py:128 follow-on: the two round-trip tests that prove the committed Pydantic model and JSON Schema match their LinkML source skip silently when the LinkML generators are absent ('LinkML generators absent \u2014 install the dev dependency group'), as they did in my independent run; on any machine without the dev group the guarantee this node relied on is unverified, so a description edited only in flight.yaml and not regenerated would pass the suite unremarked.\nFINDING reckon/schema/flight.yaml:509 follow-on: the rewritten 'Retired and ignored' description, and the claim that the slot stays declared only for host-file compatibility, are asserted by no test; the removal of the enforcement sentence is the whole point of this node, yet nothing reddens if the sentence returns, so the correctness of the change rests on the reviewed commit alone.",
+  "review_run_id": "r-20261001T104105616989-review-of-the-retired-cap-reads-retired",
+  "reviewed_base_sha": "a09f289bcdc409493b57e50bc3251a226f27d057",
+  "reviewed_head_sha": "a744478b7aef010244353f25b7ad3e68df7e4bc1",
+  "reviewed_run_id": "r-20261001T103321510301-the-retired-cap-reads-retired",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.533769+00:00",
+  "total": 87
+}

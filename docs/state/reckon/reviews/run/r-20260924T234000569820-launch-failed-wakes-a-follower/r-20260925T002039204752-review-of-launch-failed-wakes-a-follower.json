@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T00:20:39.204752+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234000569820-launch-failed-wakes-a-follower/logs/head-import-set.log",
+      "line": "3",
+      "text": "the command label reads \"<61 files importing reckon.crew.runs>\" while the arm ran the same 50-file list as the base arm (the worker transcript records n_files=50 and both arms collected 585 tests), so the log misstates the set it ran."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234000569820-launch-failed-wakes-a-follower/logs/head-import-set.log",
+      "line": "1",
+      "text": "the head arm names rev=cce1f3a8, the base commit, because its edit was still uncommitted when the arm ran (log mtime 01:55:59, commit 70c1c3df at 02:13:50), so the log cannot tie its own arm to a revision containing the change."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234000569820-launch-failed-wakes-a-follower/logs/head-named-test.log",
+      "line": "1",
+      "text": "this arm log, and its base sibling at logs/base-named-test.log:1, carry no first line naming the tree, the revision and the command, the header the node's own evidence contract requires of a gate log (prompt.txt:121)."
+    },
+    {
+      "file": "docs/plans/the-suite-is-green-at-head.html",
+      "line": "522",
+      "text": "the landing note's effect claim, \"a coordinator reading the watch surface had no route to the run\", reads a wake route out of a tuple with no production consumer (WATCH_ATTENTION_STATES at reckon/crew/runs.py:2420 is read only by tests) while the runtime route ticker.NEEDS_ACTION to recovery.FLEET_BLOCKED_STATES already carried launch-failed at base, so what landed is the vocabulary invariant the named test asserts rather than a changed delivery path."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the two commits against base cce1f3a8; 70c1c3df carries the one tuple entry plus the evidence record, figure and plan note, and 5ce30907 records the landing, so the product diff is one line.",
+    "done_when": "read the done_when naming tests/test_crew.py::test_every_live_state_has_one_fleet_bucket_and_an_attention_route; both arm logs record the asserted measure, red at base (logs/base-named-test.log:40, \"Extra items in the left set: 'launch-failed'\") and green at head (logs/head-named-test.log:2).",
+    "goal": "read the node goal \"A launch-failed run is an attention state a follower wakes on\" (prompt.txt:25) against the diff, and the landed change is exactly that: reckon/crew/runs.py:2424 now names launch-failed in WATCH_ATTENTION_STATES.",
+    "manifest": "read it with its five named logs; the named-test arms and the negative control match the logs and prove the measure, but the import-set arm records carry the metadata defects named in the findings below.",
+    "write_paths": "read the four declared write paths against the diff, and all five changed paths lie inside them (reckon/crew/runs.py, the evidence archive, the figure and its generator, the plan), with no test file touched."
+  },
+  "justifications": {
+    "durability": "tests/test_crew.py:3295 asserts recovery.FLEET_BLOCKED_STATES, derived from ticker.NEEDS_ACTION, is a subset of runs.WATCH_ATTENTION_STATES, two independently sourced vocabularies, and the negative control log shows removing the entry reddens it.",
+    "evidence": "tests/test_crew.py:3295 is recorded red at base (logs/base-named-test.log:40) and green at head (logs/head-named-test.log:2), so the gate measures the done_when, but the import-set arm metadata named in the findings keeps the surrounding record from being fully trustworthy.",
+    "fit": "the entry joins the surrounding tuple at reckon/crew/runs.py:2420-2431 in its existing order and introduces no forbidden identifier.",
+    "goal_fidelity": "reckon/crew/runs.py:2424 adds launch-failed to WATCH_ATTENTION_STATES, which is the attention vocabulary the goal names and the exact change the named test measures.",
+    "scope_discipline": "every changed path is inside the declared write paths, and the product diff is the single tuple entry at reckon/crew/runs.py:2424."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal \"A launch-failed run is an attention state a follower wakes on\" (prompt.txt:25) against the diff, and the landed change is exactly that: reckon/crew/runs.py:2424 now names launch-failed in WATCH_ATTENTION_STATES.\nVERDICT done_when: read the done_when naming tests/test_crew.py::test_every_live_state_has_one_fleet_bucket_and_an_attention_route; both arm logs record the asserted measure, red at base (logs/base-named-test.log:40, \"Extra items in the left set: 'launch-failed'\") and green at head (logs/head-named-test.log:2).\nVERDICT write_paths: read the four declared write paths against the diff, and all five changed paths lie inside them (reckon/crew/runs.py, the evidence archive, the figure and its generator, the plan), with no test file touched.\nVERDICT manifest: read it with its five named logs; the named-test arms and the negative control match the logs and prove the measure, but the import-set arm records carry the metadata defects named in the findings below.\nVERDICT diff: read the two commits against base cce1f3a8; 70c1c3df carries the one tuple entry plus the evidence record, figure and plan note, and 5ce30907 records the landing, so the product diff is one line.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2424 adds launch-failed to WATCH_ATTENTION_STATES, which is the attention vocabulary the goal names and the exact change the named test measures.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_crew.py:3295 is recorded red at base (logs/base-named-test.log:40) and green at head (logs/head-named-test.log:2), so the gate measures the done_when, but the import-set arm metadata named in the findings keeps the surrounding record from being fully trustworthy.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths, and the product diff is the single tuple entry at reckon/crew/runs.py:2424.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_crew.py:3295 asserts recovery.FLEET_BLOCKED_STATES, derived from ticker.NEEDS_ACTION, is a subset of runs.WATCH_ATTENTION_STATES, two independently sourced vocabularies, and the negative control log shows removing the entry reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: the entry joins the surrounding tuple at reckon/crew/runs.py:2420-2431 in its existing order and introduces no forbidden identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234000569820-launch-failed-wakes-a-follower/logs/head-import-set.log:3 the command label reads \"<61 files importing reckon.crew.runs>\" while the arm ran the same 50-file list as the base arm (the worker transcript records n_files=50 and both arms collected 585 tests), so the log misstates the set it ran.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234000569820-launch-failed-wakes-a-follower/logs/head-import-set.log:1 the head arm names rev=cce1f3a8, the base commit, because its edit was still uncommitted when the arm ran (log mtime 01:55:59, commit 70c1c3df at 02:13:50), so the log cannot tie its own arm to a revision containing the change.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234000569820-launch-failed-wakes-a-follower/logs/head-named-test.log:1 this arm log, and its base sibling at logs/base-named-test.log:1, carry no first line naming the tree, the revision and the command, the header the node's own evidence contract requires of a gate log (prompt.txt:121).\nFINDING docs/plans/the-suite-is-green-at-head.html:522 the landing note's effect claim, \"a coordinator reading the watch surface had no route to the run\", reads a wake route out of a tuple with no production consumer (WATCH_ATTENTION_STATES at reckon/crew/runs.py:2420 is read only by tests) while the runtime route ticker.NEEDS_ACTION to recovery.FLEET_BLOCKED_STATES already carried launch-failed at base, so what landed is the vocabulary invariant the named test asserts rather than a changed delivery path.",
+  "review_run_id": "r-20260925T002039204752-review-of-launch-failed-wakes-a-follower",
+  "reviewed_base_sha": "cce1f3a877330aa785d6ace57bb0542df8557591",
+  "reviewed_head_sha": "5ce3090751a216f0bf95e021a145047fca6ee935",
+  "reviewed_run_id": "r-20260924T234000569820-launch-failed-wakes-a-follower",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T01:18:05.609782+00:00",
+  "total": 91
+}

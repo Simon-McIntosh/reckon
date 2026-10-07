@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T17:04:19.546230+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4497",
+      "text": "the resume writer's session_resumed: True has no test that would fail if the line were dropped; the only test reaching it (tests/test_crew.py resume path) is not-run in the gate cohort and never asserted the key, so the third writer of the pair is exercised by nothing."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3184",
+      "text": "a delegated in-harness launch records session_resumed: False although reckon never launched a command to resume; \"this run did not resume\" and \"reckon cannot put a label on this launch\" are different facts sharing one false, which is a weaker version of the conflation the node removed (the comment above the line says so, so it is documented rather than hidden)."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4382",
+      "text": "a pointer written before the rename and then resumed carries session_resumed without session_reuse_capable, because record_resumption writes only the act key while the capability comes from the record's own history; the manifest's \"all three writers carry the pair\" is therefore imprecise, and a reader treating an absent capability key as false would read a legacy record as a run that could not have resumed, which is not what the absence means."
+    }
+  ],
+  "justifications": {
+    "durability": "the pair holds, but its third writer is unguarded \u2014 record_resumption (dispatch.py:4497) sets session_resumed with no test that fails if the line is dropped, because the only test reaching that path (tests/test_crew.py) is not-run in the prescribed cohort (probe exit 124 at base and head alike) and never asserted session_resumed even when it ran.",
+    "evidence": "the falsifier is the right shape and I reproduced it myself rather than reading the worker's logs \u2014 the new file fails 5/5 at base 09615744 with a uniform KeyError: 'session_reuse_capable' and passes 5/5 at head 1f250057 (/tmp/rev-run-record-3283259/my_base.log, my_head.log), and I re-measured the population (41 live pointers, 41 carrying the old key true, 37 of those with no session_id) instead of quoting the brief's 51/45.",
+    "fit": "the two names read as act versus capability and the new tests assert the old key's absence from the record (\"session_reuse\" not in dispatched / moved, tests/test_run_record_reports_actual_resume.py), so no reader of a fresh record can keep taking the lane's setting for an observation.",
+    "goal_fidelity": "dispatch.py:3180,3267,4381,4497 split the always-true capability copy into session_reuse_capable (the lane's setting) and session_resumed (this run's act), derived by _launched_prior_session (dispatch.py:3469) from plan.resumed_session required to appear as an argv token \u2014 the run's own launch, not the config it launched under.",
+    "scope_discipline": "both commits touch only the four declared paths (git show --stat 1f250057 505f34cc) and the reviewed worktree is clean at 505f34cc, with the plan section and evidence anchor landing inside the fence rather than around it."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: dispatch.py:3180,3267,4381,4497 split the always-true capability copy into session_reuse_capable (the lane's setting) and session_resumed (this run's act), derived by _launched_prior_session (dispatch.py:3469) from plan.resumed_session required to appear as an argv token \u2014 the run's own launch, not the config it launched under.\nSCORE evidence: 19\nJUSTIFICATION evidence: the falsifier is the right shape and I reproduced it myself rather than reading the worker's logs \u2014 the new file fails 5/5 at base 09615744 with a uniform KeyError: 'session_reuse_capable' and passes 5/5 at head 1f250057 (/tmp/rev-run-record-3283259/my_base.log, my_head.log), and I re-measured the population (41 live pointers, 41 carrying the old key true, 37 of those with no session_id) instead of quoting the brief's 51/45.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only the four declared paths (git show --stat 1f250057 505f34cc) and the reviewed worktree is clean at 505f34cc, with the plan section and evidence anchor landing inside the fence rather than around it.\nSCORE durability: 17\nJUSTIFICATION durability: the pair holds, but its third writer is unguarded \u2014 record_resumption (dispatch.py:4497) sets session_resumed with no test that fails if the line is dropped, because the only test reaching that path (tests/test_crew.py) is not-run in the prescribed cohort (probe exit 124 at base and head alike) and never asserted session_resumed even when it ran.\nSCORE fit: 19\nJUSTIFICATION fit: the two names read as act versus capability and the new tests assert the old key's absence from the record (\"session_reuse\" not in dispatched / moved, tests/test_run_record_reports_actual_resume.py), so no reader of a fresh record can keep taking the lane's setting for an observation.\nFINDING reckon/crew/dispatch.py:4497 the resume writer's session_resumed: True has no test that would fail if the line were dropped; the only test reaching it (tests/test_crew.py resume path) is not-run in the gate cohort and never asserted the key, so the third writer of the pair is exercised by nothing.\nFINDING reckon/crew/dispatch.py:3184 a delegated in-harness launch records session_resumed: False although reckon never launched a command to resume; \"this run did not resume\" and \"reckon cannot put a label on this launch\" are different facts sharing one false, which is a weaker version of the conflation the node removed (the comment above the line says so, so it is documented rather than hidden).\nFINDING reckon/crew/dispatch.py:4382 a pointer written before the rename and then resumed carries session_resumed without session_reuse_capable, because record_resumption writes only the act key while the capability comes from the record's own history; the manifest's \"all three writers carry the pair\" is therefore imprecise, and a reader treating an absent capability key as false would read a legacy record as a run that could not have resumed, which is not what the absence means.\n",
+  "review_run_id": "r-20260917T170419546230-review-of-a-run-record-says-whether-it-resumed",
+  "reviewed_base_sha": "0961574462cb18d561046ba851c0c2f2df83a6b2",
+  "reviewed_commits": [
+    "1f2500573868c4a87e90d0f654a89a7e9ddfce1b",
+    "505f34cc761afd9d3bdd28eb42478d6a25f88454"
+  ],
+  "reviewed_head_sha": "505f34cc761afd9d3bdd28eb42478d6a25f88454",
+  "reviewed_run_id": "r-20260917T145144464105-a-run-record-says-whether-it-resumed",
+  "reviewer_run_id": "r-20260917T170419546230-review-of-a-run-record-says-whether-it-resumed",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T18:02:31.294065+00:00",
+  "total": 95
+}

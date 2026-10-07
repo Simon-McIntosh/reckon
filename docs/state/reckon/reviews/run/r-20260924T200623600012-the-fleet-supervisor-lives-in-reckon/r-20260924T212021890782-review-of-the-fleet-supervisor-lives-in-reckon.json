@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T21:20:21.890782+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+      "line": "464",
+      "text": "the record says \"the real state directory is asserted untouched afterwards\", but tests/test_fleet_supervisor.py only points FLEET_STATE_DIR at tmp_path and asserts on that directory, so nothing checks the machine's own fleet state; a later change dropping the override would write the real fleet record and the suite would stay green."
+    },
+    {
+      "file": "docs/plans/a-dispatch-returns-without-its-worker.html",
+      "line": "692",
+      "text": "the landing record repeats the same unsupported claim, so a reader auditing whether this suite can write the machine's fleet state finds an assurance with no assertion behind it."
+    },
+    {
+      "file": "tests/test_fleet_supervisor.py",
+      "line": "95",
+      "text": "no case asserts the 0700 mode on the runtime directory that fleet_supervisor.py:133 chmods, so the privacy the module docstring at :126 and the plan landing record at :695 claim is unguarded and a chmod removal would not redden any case."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 02e2757d; 770abccf adds the module (417 lines) and the test (353 lines), a55aff86 appends the landing record, the cumulative evidence section and a real two-pane 153 KB figure, with 0 deletions in both docs files, so the cumulative records were appended rather than rewritten.",
+    "done_when": "the manifest records 4 passed for tests/test_fleet_supervisor.py in logs/gate.log, whose first three lines name revision a55aff86, the reviewed tree and the command, and I re-ran that file at a55aff86 from the reviewed tree: 4 passed in 3.66s, EXIT=0, log at runs/r-20260924T212021890782-review-of-the-fleet-supervisor-lives-in-reckon/logs/recheck-gate.log.",
+    "goal": "read section 10 of docs/plans/a-dispatch-returns-without-its-worker.html at :614 and the landed module; reckon/crew/fleet_supervisor.py:416 runs as python -m reckon.crew.fleet_supervisor and carries the reference's session, reload, runtime-directory and stripping protocol, plus the spawn verb the section fixes, reading argv, cwd and run_directory from the section's spec shape.",
+    "manifest": "read; complete, both commits recorded (770abccf module and test, a55aff86 docs and figure), the declared control's only failure being the pid case it names, and crew check-manifest on it returns ok true with no findings, run read-only.",
+    "write_paths": "git diff --name-only 02e2757d a55aff86 returns exactly the five paths the manifest declares \u2014 the module, the four-case test, the plan page, the landed evidence record and the figure \u2014 and no reckon caller and no dotfiles file appears in it."
+  },
+  "justifications": {
+    "durability": "the logged control reddens the pid case by dropping the spawned.json write, the malformed-line case shows the loop survives, and the env case carries its present-marker control, but no case asserts the 0700 mode fleet_supervisor.py:133 chmods on a property the module at :126 and the plan at :695 both call private.",
+    "evidence": "the four cases cover the done-when's shows and the recorded gate reproduced in my re-run at 4 passed in 3.66s, but the durable record at docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:464 asserts an assertion the suite never makes.",
+    "fit": "the module follows the surrounding idiom (typed Request dataclass at fleet_supervisor.py:287, atomic JSON writes mirroring dispatch.py) and carries no plan, ticket or version identifier, though its comments say \"the reference\" without naming the dotfiles bin/fleet-supervisor script a reader needs.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:323-347 dispatches session, reload and spawn lines and :247-281 runs the spec's argv and writes spawned.json with the pid and started_at, which is exactly what section 10 fixes, and :302-310 re-executes itself with no arguments on reload as the reference does.",
+    "scope_discipline": "every path in 02e2757d..a55aff86 is one of the five the manifest declares, both docs files carry 0 deletions, and no caller, cli, placement or dotfiles file appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "Context for the call-site line: no module in reckon imports or launches the batch step at this head; the first in-repo caller is the dispatch-side routing the sibling node owns under section 10: the module is reached through python -m from outside the repository, and the node's own test file is not a production site.\n\nVERDICT goal: read section 10 of docs/plans/a-dispatch-returns-without-its-worker.html at :614 and the landed module; reckon/crew/fleet_supervisor.py:416 runs as python -m reckon.crew.fleet_supervisor and carries the reference's session, reload, runtime-directory and stripping protocol, plus the spawn verb the section fixes, reading argv, cwd and run_directory from the section's spec shape.\n\nVERDICT done_when: the manifest records 4 passed for tests/test_fleet_supervisor.py in logs/gate.log, whose first three lines name revision a55aff86, the reviewed tree and the command, and I re-ran that file at a55aff86 from the reviewed tree: 4 passed in 3.66s, EXIT=0, log at runs/r-20260924T212021890782-review-of-the-fleet-supervisor-lives-in-reckon/logs/recheck-gate.log.\n\nVERDICT write_paths: git diff --name-only 02e2757d a55aff86 returns exactly the five paths the manifest declares \u2014 the module, the four-case test, the plan page, the landed evidence record and the figure \u2014 and no reckon caller and no dotfiles file appears in it.\n\nVERDICT manifest: read; complete, both commits recorded (770abccf module and test, a55aff86 docs and figure), the declared control's only failure being the pid case it names, and crew check-manifest on it returns ok true with no findings, run read-only.\n\nVERDICT diff: read commit by commit against 02e2757d; 770abccf adds the module (417 lines) and the test (353 lines), a55aff86 appends the landing record, the cumulative evidence section and a real two-pane 153 KB figure, with 0 deletions in both docs files, so the cumulative records were appended rather than rewritten.\n\nCALL_SITES: none\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:323-347 dispatches session, reload and spawn lines and :247-281 runs the spec's argv and writes spawned.json with the pid and started_at, which is exactly what section 10 fixes, and :302-310 re-executes itself with no arguments on reload as the reference does.\n\nSCORE evidence: 17\nJUSTIFICATION evidence: the four cases cover the done-when's shows and the recorded gate reproduced in my re-run at 4 passed in 3.66s, but the durable record at docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:464 asserts an assertion the suite never makes.\n\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 02e2757d..a55aff86 is one of the five the manifest declares, both docs files carry 0 deletions, and no caller, cli, placement or dotfiles file appears in the diff.\n\nSCORE durability: 17\nJUSTIFICATION durability: the logged control reddens the pid case by dropping the spawned.json write, the malformed-line case shows the loop survives, and the env case carries its present-marker control, but no case asserts the 0700 mode fleet_supervisor.py:133 chmods on a property the module at :126 and the plan at :695 both call private.\n\nSCORE fit: 19\nJUSTIFICATION fit: the module follows the surrounding idiom (typed Request dataclass at fleet_supervisor.py:287, atomic JSON writes mirroring dispatch.py) and carries no plan, ticket or version identifier, though its comments say \"the reference\" without naming the dotfiles bin/fleet-supervisor script a reader needs.\n\nFINDING docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:464 the record says \"the real state directory is asserted untouched afterwards\", but tests/test_fleet_supervisor.py only points FLEET_STATE_DIR at tmp_path and asserts on that directory, so nothing checks the machine's own fleet state; a later change dropping the override would write the real fleet record and the suite would stay green.\n\nFINDING docs/plans/a-dispatch-returns-without-its-worker.html:692 the landing record repeats the same unsupported claim, so a reader auditing whether this suite can write the machine's fleet state finds an assurance with no assertion behind it.\n\nFINDING tests/test_fleet_supervisor.py:95 no case asserts the 0700 mode on the runtime directory that fleet_supervisor.py:133 chmods, so the privacy the module docstring at :126 and the plan landing record at :695 claim is unguarded and a chmod removal would not redden any case.\n\nreviewed_base_sha: 02e2757d4795338d9c3af4209aef400cfbd4f7f4\nreviewed_head_sha: a55aff86f924bb3e32aca9b9e834b71599414e00",
+  "review_run_id": "r-20260924T212021890782-review-of-the-fleet-supervisor-lives-in-reckon",
+  "reviewed_base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+  "reviewed_head_sha": "a55aff86f924bb3e32aca9b9e834b71599414e00",
+  "reviewed_run_id": "r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T22:21:21.453656+00:00",
+  "total": 93
+}

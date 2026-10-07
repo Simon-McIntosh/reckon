@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the two gate logs print the same six FAILED ids, so the head arm adds none",
+  "added_failures_source": {
+    "after_suite": {
+      "command": "PYTHONPATH=$PWD python -m pytest -p no:cacheprovider -q <22 modules importing reckon.crew.prompts>",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 6,
+      "failure_ids": [
+        "tests/test_crew_prompts.py::test_repo_writing_role_is_told_to_land_both_records_in_the_tree",
+        "tests/test_crew_prompts.py::test_landing_clause_names_the_figure_convention_and_src_form",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[SKILL.md]",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[worker-protocol.md]",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[sprint-orchestration.md]",
+        "tests/test_skill_contract_parity.py::test_the_extracted_sentences_are_the_prompt_s_own_words"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T171030404641-repair-of-template-says-what-completed-holds-fe9140e26a53/logs/after_suite.log",
+      "revision": "5447c7f1ee54213de926f761d693c05fb6922902"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/base-arm-fe9140e26 python -m pytest -p no:cacheprovider -q <22 modules importing reckon.crew.prompts>",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 6,
+      "failure_ids": [
+        "tests/test_crew_prompts.py::test_repo_writing_role_is_told_to_land_both_records_in_the_tree",
+        "tests/test_crew_prompts.py::test_landing_clause_names_the_figure_convention_and_src_form",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[SKILL.md]",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[worker-protocol.md]",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[sprint-orchestration.md]",
+        "tests/test_skill_contract_parity.py::test_the_extracted_sentences_are_the_prompt_s_own_words"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T171030404641-repair-of-template-says-what-completed-holds-fe9140e26a53/logs/baseline_suite.log",
+      "revision": "3376b995903a2bf0669a4a53168d260818a681d9"
+    },
+    "derivation": "set(after failure_ids) - set(baseline failure_ids) over the FAILED lines the reviewed run's own two gate logs print; each log's command line names the same 22 test modules, and the six ids are unchanged between the arms"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1467 _compose_dispatch_prompt called at reckon/crew/dispatch.py:4668 (the production render of every dispatched worker prompt)",
+    "reckon/crew/prompts.py:350 compose_prompt"
+  ],
+  "completed_at": "2026-09-29T17:48:12.506Z",
+  "dispatched_at": "2026-09-29T17:26:46Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/repair-of-template-says-what-completed-holds-fe9140e26a53.html",
+      "line": "29",
+      "text": "the head-arm bullet quotes \"6 failed, 232 passed in 49.78s\" while logs/after_suite.log, the log the same bullet cites, ends \"6 failed, 232 passed in 50.41s\"; the counts, ids and exit status agree and only the wall time differs, but the artefact's figure cannot be reconciled with the evidence it names, the head arm having been re-run after the commit (log mtime 19:24:04 against a 19:22:18 commit) while the bullet kept the earlier run's duration."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 3376b9959; 5447c7f1 changes the completion clause on both arm lines of the manifest template, adds the reader-driving case and its helper to tests/test_brief_prompt.py, and adds the 40-line evidence fragment, whose line 29 misquotes the head arm's wall time; the earlier fragment template-says-what-completed-holds.html is left as that node's own record and still states the wording this commit supersedes.",
+    "done_when": "the measure asks the manifest to name the one finding by id with \"acted <id>: <commit>\"; the reviewed manifest's evidence_inputs line reads \"acted fb3fce2735c: 5447c7f1ee54213de926f761d693c05fb6922902\", that sha resolves as the reviewed worktree head, and the finding is neither declined nor left unanswered.",
+    "goal": "the node's goal is to answer finding fb3fce2735c, that the suite arms named false as the ordinary completed value while every reader refuses it, and reckon/crew/prompts.py:572-573 now read \"completed is true only when the suite ran to its summary line; false, null or absent is unreadable\" on both arms; I drove the readers myself and found completed=false reported missing by reckon/ledger.py:256 and returned as None by both reckon/crew/promotion.py:5080/5114, exactly as null is.",
+    "manifest": "read against the artefacts; both arm JSONs match their logs' own FAILED lines id for id (6 and 6, set difference empty) and each log's header names its revision, tree, imported module.__file__ and command; the base archive at /tmp/base-arm-fe9140e26 is byte-identical to revision 3376b9959 for both files the change touches, so the base arm measured the base text; and the negative-control log's first line repeats the declared mutation verbatim.",
+    "write_paths": "the declared paths are reckon/crew/prompts.py, tests/test_brief_prompt.py and the node's own anchor under docs/evidence/fragments/crew-runtime-positive-controls/; git diff --name-status 3376b9959 5447c7f1e lists exactly those three (M, M, A) and no fourth path, and the reviewed worktree is clean at that head."
+  },
+  "justifications": {
+    "durability": "tests/test_brief_prompt.py:485 reddens when the former completion clause is reinstated on the production template, which I reproduced at 2 failed/15 passed with the mutation and 17 passed with it reverted, and tests/test_brief_prompt.py:464 drives the three production readers rather than restating their rule; it is not 20 because that drive unions the three readers (by_ledger or by_promotion), so a single reader drifting to accept false stays green.",
+    "evidence": "the two arms are real measurements recorded with revision, tree, imported module and command (6 failed/231 passed at base, 6 failed/232 passed at head), I re-derived added_failure_count 0 with an empty id list from those same two logs against a positive control of 6 FAILED lines each, and I reproduced the negative control in a scratch copy of the head tree (2 failed, 15 passed mutated; 17 passed restored, /tmp/rv-mutation-5447c7f1, log in the reviewer run directory); it is not 20 because docs/evidence/fragments/crew-runtime-positive-controls/repair-of-template-says-what-completed-holds-fe9140e26a53.html:29 quotes a head-arm wall time the log it cites does not contain.",
+    "fit": "the rule sits on each arm's own line of the template (reckon/crew/prompts.py:572-573), the new case follows the file's existing constant-plus-helper idiom and names its subject by mechanism with no plan, sprint or ticket identifier, and the commit is conventional with a body and no attribution; it is not 20 because the helper's docstring at tests/test_brief_prompt.py:418 claims prose and code \"cannot drift\" while the union leaves one-reader drift unseen.",
+    "goal_fidelity": "reckon/crew/prompts.py:572-573 now name false among the values the readers refuse, and my own drive of reckon/ledger.py:256 and reckon/crew/promotion.py:5080/5114 shows only a literal true readable, so the prose states the gate's own partition and the surprise the finding named is gone.",
+    "scope_discipline": "git diff --name-status 3376b9959 5447c7f1e lists three paths, all inside the node's own write scope (reckon/crew/prompts.py, tests/test_brief_prompt.py, the node's fragment), the worktree is clean at head, and no plan, sprint or index file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to answer finding fb3fce2735c, that the suite arms named false as the ordinary completed value while every reader refuses it, and reckon/crew/prompts.py:572-573 now read \"completed is true only when the suite ran to its summary line; false, null or absent is unreadable\" on both arms; I drove the readers myself and found completed=false reported missing by reckon/ledger.py:256 and returned as None by both reckon/crew/promotion.py:5080/5114, exactly as null is.\nVERDICT done_when: the measure asks the manifest to name the one finding by id with \"acted <id>: <commit>\"; the reviewed manifest's evidence_inputs line reads \"acted fb3fce2735c: 5447c7f1ee54213de926f761d693c05fb6922902\", that sha resolves as the reviewed worktree head, and the finding is neither declined nor left unanswered.\nVERDICT write_paths: the declared paths are reckon/crew/prompts.py, tests/test_brief_prompt.py and the node's own anchor under docs/evidence/fragments/crew-runtime-positive-controls/; git diff --name-status 3376b9959 5447c7f1e lists exactly those three (M, M, A) and no fourth path, and the reviewed worktree is clean at that head.\nVERDICT manifest: read against the artefacts; both arm JSONs match their logs' own FAILED lines id for id (6 and 6, set difference empty) and each log's header names its revision, tree, imported module.__file__ and command; the base archive at /tmp/base-arm-fe9140e26 is byte-identical to revision 3376b9959 for both files the change touches, so the base arm measured the base text; and the negative-control log's first line repeats the declared mutation verbatim.\nVERDICT diff: read commit by commit against 3376b9959; 5447c7f1 changes the completion clause on both arm lines of the manifest template, adds the reader-driving case and its helper to tests/test_brief_prompt.py, and adds the 40-line evidence fragment, whose line 29 misquotes the head arm's wall time; the earlier fragment template-says-what-completed-holds.html is left as that node's own record and still states the wording this commit supersedes.\nCALL_SITES: reckon/crew/dispatch.py:1467 _compose_dispatch_prompt called at reckon/crew/dispatch.py:4668 (the production render of every dispatched worker prompt), reckon/crew/prompts.py:350 compose_prompt\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:572-573 now name false among the values the readers refuse, and my own drive of reckon/ledger.py:256 and reckon/crew/promotion.py:5080/5114 shows only a literal true readable, so the prose states the gate's own partition and the surprise the finding named is gone.\nSCORE evidence: 18\nJUSTIFICATION evidence: the two arms are real measurements recorded with revision, tree, imported module and command (6 failed/231 passed at base, 6 failed/232 passed at head), I re-derived added_failure_count 0 with an empty id list from those same two logs against a positive control of 6 FAILED lines each, and I reproduced the negative control in a scratch copy of the head tree (2 failed, 15 passed mutated; 17 passed restored, /tmp/rv-mutation-5447c7f1, log in the reviewer run directory); it is not 20 because docs/evidence/fragments/crew-runtime-positive-controls/repair-of-template-says-what-completed-holds-fe9140e26a53.html:29 quotes a head-arm wall time the log it cites does not contain.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 3376b9959 5447c7f1e lists three paths, all inside the node's own write scope (reckon/crew/prompts.py, tests/test_brief_prompt.py, the node's fragment), the worktree is clean at head, and no plan, sprint or index file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_brief_prompt.py:485 reddens when the former completion clause is reinstated on the production template, which I reproduced at 2 failed/15 passed with the mutation and 17 passed with it reverted, and tests/test_brief_prompt.py:464 drives the three production readers rather than restating their rule; it is not 20 because that drive unions the three readers (by_ledger or by_promotion), so a single reader drifting to accept false stays green.\nSCORE fit: 19\nJUSTIFICATION fit: the rule sits on each arm's own line of the template (reckon/crew/prompts.py:572-573), the new case follows the file's existing constant-plus-helper idiom and names its subject by mechanism with no plan, sprint or ticket identifier, and the commit is conventional with a body and no attribution; it is not 20 because the helper's docstring at tests/test_brief_prompt.py:418 claims prose and code \"cannot drift\" while the union leaves one-reader drift unseen.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/repair-of-template-says-what-completed-holds-fe9140e26a53.html:29 the head-arm bullet quotes \"6 failed, 232 passed in 49.78s\" while logs/after_suite.log, the log the same bullet cites, ends \"6 failed, 232 passed in 50.41s\"; the counts, ids and exit status agree and only the wall time differs, but the artefact's figure cannot be reconciled with the evidence it names, the head arm having been re-run after the commit (log mtime 19:24:04 against a 19:22:18 commit) while the bullet kept the earlier run's duration.\nreviewed_base_sha: 3376b995903a2bf0669a4a53168d260818a681d9\nreviewed_head_sha: 5447c7f1ee54213de926f761d693c05fb6922902\n",
+  "review_run_id": "r-20260929T172632268303-review-of-repair-of-template-says-what-completed-holds-fe9140e26a53",
+  "reviewed_base_note": "base 3376b9959 and head 5447c7f1e are parent and child in one worktree; the base arm ran in an archived copy of that base revision at /tmp/base-arm-fe9140e26 and the head arm in the reviewed worktree, and each log's header names its own revision.",
+  "reviewed_base_sha": "3376b995903a2bf0669a4a53168d260818a681d9",
+  "reviewed_commits": [
+    "5447c7f1ee54213de926f761d693c05fb6922902"
+  ],
+  "reviewed_head_sha": "5447c7f1ee54213de926f761d693c05fb6922902",
+  "reviewed_manifest": {
+    "bytes": 6282,
+    "last_modified": "2026-09-29T19:24:32.744726+02:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T171030404641-repair-of-template-says-what-completed-holds-fe9140e26a53/manifest.md",
+    "sha256": "12af983302b0f301e900934af047d6fcc2daded1afb690ba15bd94c1c12f6c2c"
+  },
+  "reviewed_run_id": "r-20260929T171030404641-repair-of-template-says-what-completed-holds-fe9140e26a53",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-template-says-what-completed-holds-fe9140e26a53",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-repair-of-template-says-what-completed-holds-fe9140e26a53",
+  "reviewer_run_id": "r-20260929T172632268303-review-of-repair-of-template-says-what-completed-holds-fe9140e26a53",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T17:39:34.701262+00:00",
+  "total": 95
+}

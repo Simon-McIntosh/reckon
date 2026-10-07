@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/gates/head-arm.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/gates/base-arm.log",
+    "note": "the reviewed manifest names this pair under tests/test_logs rather than under the baseline_suite and after_suite keys the read path scans, so a read-time annotation reports the count unmeasured; this count is the set difference over the two arm logs the run itself recorded"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:2329 _follow_watch_lines is the arming the test drives",
+    "reckon/cli.py:3149 is its console caller",
+    "reckon/crew/runs.py:1279 watch_stream_cursor is read by the arming at reckon/cli.py:2608",
+    "reckon/crew/follow_checkpoint.py:exists is read by the resume plan at reckon/cli.py:2492"
+  ],
+  "completed_at": "2026-09-28T08:25:41.861Z",
+  "dispatched_at": "2026-09-28T07:39:15Z",
+  "findings": [
+    {
+      "file": "tests/test_follower_survives_a_host_change.py",
+      "line": "214",
+      "text": "the added to_state assertion compares the delivered row against a second call to runs.watch_stream_cursor, the same call the arming itself reads the row from at reckon/cli.py:2608, so both sides move with any change to the state reading: forcing the cursor to report the constant dispatched for a pointer whose phase is working left the whole file at 3 passed (gates/review-cursor-state-mutated-test.log, receipt at gates/review-cursor-state-probe.log), and the fixture already supplies an independent expectation, the pointer phase working it writes itself."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/manifest.md",
+      "line": "9",
+      "text": "the manifest records the two arms as prose under tests and their paths under test_logs, neither of which the review read path at reckon/crew/review.py:486 or the armed promotion delta reads, so a read-time derivation reports this run's added-failure count unmeasured even though its own two logs measure it as zero."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/gates/head-arm.log",
+      "line": "1",
+      "text": "the head arm's header names revision 1a1c50a5, the base revision, while the tree it ran is the worktree carrying the reviewed commit efc21c28, so the log alone cannot attribute the head arm's 22 passed to the reviewed head; the base arm names its own revision and the sibling run's head arm names its head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit at efc21c288cad878e4434af0549b18fbdf0eb9bc0 against 1a1c50a5e68ab083063d077767476db56a22864b; one commit, 47 insertions and no deletions across three files, the test addition being the count and shape assertions ahead of the retained all() checks and the docs additions being a plan landing article and a cumulative evidence anchor.",
+    "done_when": "the done-when names seven clauses -- a count assertion then shape, a declared mutation red at head and green on the pre-change test, a head pass, zero added failures by id, single-invocation base and head logs, and no product file edited; gates/base-arm.log and gates/head-arm.log (22 passed each), gates/red-mutation.log (1 failed), gates/green-mutation-old-test.log (3 passed) and the test-only diff answer them, and I reproduced the mutation pair independently at gates/review-head-mutated.log (1 failed, got []) and gates/review-base-mutated.log (3 passed).",
+    "goal": "the node goal is that the host-change follower test asserts the one baseline row its done-when names instead of passing vacuously, and tests/test_follower_survives_a_host_change.py:203 now asserts the emitted row count ahead of the two all() checks at :217 and :220.",
+    "manifest": "read in full; it reports 22 passed on both arms, the four logs by path, the count assertion with the mutation that reddens it, and no product file edited, but it records the arms as prose under tests and paths under test_logs rather than the baseline_suite and after_suite objects the review read path scans.",
+    "write_paths": "the manifest declares tests/test_follower_survives_a_host_change.py, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html, docs/figures/the-fleet-counters-count-the-fleet and docs/plans/the-fleet-counters-count-the-fleet.html; the commit at efc21c28 touches the first, the second and the plan, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_follower_survives_a_host_change.py:203 fails on the declared mutation, reproduced by me at gates/review-head-mutated.log with got [], while the pre-change test stays green on the same mutation; the :214 state assertion is the weaker half, its expectation read from the same production call the arm composes from.",
+    "evidence": "gates/base-arm.log at 1a1c50a5 and gates/head-arm.log at the worktree 22 passed each with zero FAILED lines, and gates/red-mutation.log shows the required 1 failed, though gates/head-arm.log:1 names the base revision and the manifest does not carry the suite objects the read path scans.",
+    "fit": "the new assertions follow the file's f-string message idiom, the comments state the vacuity mechanism rather than a changelog, the commit carries a conventional subject and a mechanism body, and the naming checks over the changed test path report no plan or ticket token.",
+    "goal_fidelity": "tests/test_follower_survives_a_host_change.py:203 asserts len(emitted) == 1 before the all() checks at :217 and :220, which is the goal's count-before-shape exactly.",
+    "scope_discipline": "every path in the diff at efc21c28 is one of the manifest's declared write paths, no product file is edited, and the evidence-record change is additive with no deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the host-change follower test asserts the one baseline row its done-when names instead of passing vacuously, and tests/test_follower_survives_a_host_change.py:203 now asserts the emitted row count ahead of the two all() checks at :217 and :220.\nVERDICT done_when: the done-when names seven clauses -- a count assertion then shape, a declared mutation red at head and green on the pre-change test, a head pass, zero added failures by id, single-invocation base and head logs, and no product file edited; gates/base-arm.log and gates/head-arm.log (22 passed each), gates/red-mutation.log (1 failed), gates/green-mutation-old-test.log (3 passed) and the test-only diff answer them, and I reproduced the mutation pair independently at gates/review-head-mutated.log (1 failed, got []) and gates/review-base-mutated.log (3 passed).\nVERDICT write_paths: the manifest declares tests/test_follower_survives_a_host_change.py, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html, docs/figures/the-fleet-counters-count-the-fleet and docs/plans/the-fleet-counters-count-the-fleet.html; the commit at efc21c28 touches the first, the second and the plan, and nothing outside them.\nVERDICT manifest: read in full; it reports 22 passed on both arms, the four logs by path, the count assertion with the mutation that reddens it, and no product file edited, but it records the arms as prose under tests and paths under test_logs rather than the baseline_suite and after_suite objects the review read path scans.\nVERDICT diff: read commit by commit at efc21c288cad878e4434af0549b18fbdf0eb9bc0 against 1a1c50a5e68ab083063d077767476db56a22864b; one commit, 47 insertions and no deletions across three files, the test addition being the count and shape assertions ahead of the retained all() checks and the docs additions being a plan landing article and a cumulative evidence anchor.\nCALL_SITES: reckon/cli.py:2329 _follow_watch_lines is the arming the test drives, reckon/cli.py:3149 is its console caller, reckon/crew/runs.py:1279 watch_stream_cursor is read by the arming at reckon/cli.py:2608, reckon/crew/follow_checkpoint.py:exists is read by the resume plan at reckon/cli.py:2492\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_follower_survives_a_host_change.py:203 asserts len(emitted) == 1 before the all() checks at :217 and :220, which is the goal's count-before-shape exactly.\nSCORE evidence: 16\nJUSTIFICATION evidence: gates/base-arm.log at 1a1c50a5 and gates/head-arm.log at the worktree 22 passed each with zero FAILED lines, and gates/red-mutation.log shows the required 1 failed, though gates/head-arm.log:1 names the base revision and the manifest does not carry the suite objects the read path scans.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff at efc21c28 is one of the manifest's declared write paths, no product file is edited, and the evidence-record change is additive with no deletions.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_follower_survives_a_host_change.py:203 fails on the declared mutation, reproduced by me at gates/review-head-mutated.log with got [], while the pre-change test stays green on the same mutation; the :214 state assertion is the weaker half, its expectation read from the same production call the arm composes from.\nSCORE fit: 19\nJUSTIFICATION fit: the new assertions follow the file's f-string message idiom, the comments state the vacuity mechanism rather than a changelog, the commit carries a conventional subject and a mechanism body, and the naming checks over the changed test path report no plan or ticket token.\nFINDING tests/test_follower_survives_a_host_change.py:214 the added to_state assertion compares the delivered row against a second call to runs.watch_stream_cursor, the same call the arming itself reads the row from at reckon/cli.py:2608, so both sides move with any change to the state reading: forcing the cursor to report the constant dispatched for a pointer whose phase is working left the whole file at 3 passed (gates/review-cursor-state-mutated-test.log, receipt at gates/review-cursor-state-probe.log), and the fixture already supplies an independent expectation, the pointer phase working it writes itself.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/manifest.md:9 the manifest records the two arms as prose under tests and their paths under test_logs, neither of which the review read path at reckon/crew/review.py:486 or the armed promotion delta reads, so a read-time derivation reports this run's added-failure count unmeasured even though its own two logs measure it as zero.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/gates/head-arm.log:1 the head arm's header names revision 1a1c50a5, the base revision, while the tree it ran is the worktree carrying the reviewed commit efc21c28, so the log alone cannot attribute the head arm's 22 passed to the reviewed head; the base arm names its own revision and the sibling run's head arm names its head.",
+  "review_run_id": "r-20260928T073855724869-review-of-host-change-test-asserts-its-baseline",
+  "reviewed_base_sha": "1a1c50a5e68ab083063d077767476db56a22864b",
+  "reviewed_head_sha": "efc21c288cad878e4434af0549b18fbdf0eb9bc0",
+  "reviewed_run_id": "r-20260928T071138350289-host-change-test-asserts-its-baseline",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T08:18:37.969145+00:00",
+  "total": 90
+}

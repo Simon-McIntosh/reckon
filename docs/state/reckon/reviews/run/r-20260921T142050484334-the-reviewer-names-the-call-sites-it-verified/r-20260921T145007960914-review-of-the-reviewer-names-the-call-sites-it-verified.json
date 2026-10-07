@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_site_scan": {
+    "direct_named_calls": {
+      "load_review_prompt": [],
+      "parse_review": [],
+      "read_review": [
+        "reckon/crew/recovery.py:261",
+        "reckon/crew/promotion.py:2824"
+      ]
+    },
+    "limitation": "Static named calls in reckon and scripts only; worker-issued interpreter commands and dynamic indirection are not production call-site observations.",
+    "python_files_scanned": 72
+  },
+  "call_site_scope_note": "No production caller of the changed parse_review or load_review_prompt was discovered in 72 Python files under reckon/ and scripts/ at the reviewed head. The scan positively found the two read_review consumers. Inspected recovery._stored_review and promotion._review_row_block read stored records but do not invoke the changed parser; they are not counted as call sites of this change. Direct worker-issued parser probes are also not counted. This is a bounded static observation, not a judgment of whether unwired code was intended.",
+  "call_sites": [],
+  "commits_read": [
+    "57ed30eeaa34fee7f85f862f8057d14c6b423634",
+    "3df4730fb15f446679b3fbd54847affca51a6580"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T14:50:07.960914+00:00",
+  "evidence": {
+    "corrected_control": {
+      "baseline_passed": 5,
+      "baseline_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/logs/negative-control-declared-baseline.log",
+      "failed": 2,
+      "matches_declared_mutation": true,
+      "passed": 3,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/logs/negative-control-declared.log"
+    },
+    "direct_probe": {
+      "empty_forms_misclassified_as_zero": 3,
+      "legacy_complete": true,
+      "none_count": 0,
+      "omitted_count_absent": true,
+      "positive_call_site_count": 2,
+      "score_21_refused": true
+    },
+    "focused_receipt": {
+      "exit_status": 0,
+      "failed": 0,
+      "independently_rerun": false,
+      "passed": 32,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/focused-final.log"
+    },
+    "original_control": {
+      "failed": 1,
+      "matches_declared_mutation": false,
+      "passed": 22,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/negative-control-call-sites.log"
+    },
+    "scope": {
+      "changed_paths": 6,
+      "declared_paths": 6,
+      "out_of_scope_paths": 0
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "215",
+      "text": "[P2] Empty or delimiter-only CALL_SITES values fabricate a measured zero: parse_review with all five SCORE lines plus CALL_SITES:, CALL_SITES followed only by whitespace, or CALL_SITES: , , returns call_sites=[] and call_site_count=0, indistinguishable from the explicitly required literal none; leave these malformed emissions absent or reject them and add a regression."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md",
+      "line": "15",
+      "text": "[P2] The authoritative negative_control_log still points at negative-control-call-sites.log, whose mutation removes prompt text, while node.negative_control declares making an omitted parser field zero and requires tests/test_review_call_sites.py to fail; the later logs/negative-control-declared.log correctly shows 2 failed and 3 passed, so update the manifest reference and the landing claims rather than presenting the prompt mutation as the declared control."
+    }
+  ],
+  "follow_ons": [
+    "Preserve absent evidence for empty or delimiter-only CALL_SITES values and add a regression.",
+    "Reconcile the target manifest and landing prose with the corrected declared-mutation receipt."
+  ],
+  "independent_probe_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145007960914-review-of-the-reviewer-names-the-call-sites-it-verified/probe-review.log",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read 57ed30eeaa34fee7f85f862f8057d14c6b423634 and 3df4730fb15f446679b3fbd54847affca51a6580 separately; the source adds measurement parsing and tests, and the documentation commit appends the evidence without closing shared plan state.",
+    "done_when": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/prompt.txt and both negative-control receipts; the recorded 32-test gate covers the five stated cases, while the later logs/negative-control-declared.log supplies the actual declared parser mutation.",
+    "goal": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/prompt.txt; the parser now stores explicit call-site measurements but reckon/crew/review.py:215 also classifies an empty emission as a measured zero.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md:11 and the referenced files; both commits exist and the 32-pass receipt is accurate, but line 15 points to a different mutation from the one declared in the live run record.",
+    "write_paths": "Compared the six paths declared in /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md:3 with git diff 599b8c8367b4f5f2d45bf8f31b2f3d5b3466ba14..3df4730fb15f446679b3fbd54847affca51a6580; every changed path is in scope."
+  },
+  "justifications": {
+    "durability": "tests/test_review_call_sites.py:12 covers list, none, omission, machine filtering and legacy completeness, and tests/test_review_scoring.py:93 extends the existing falsifier, but neither exercises an empty CALL_SITES emission.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/focused-final.log records 32 passes and the corrected logs/negative-control-declared.log records the expected two failures, but manifest.md:15 still identifies the unrelated prompt-removal control.",
+    "fit": "reckon/crew/review.py:213 follows the existing line parser and avoids changing five-dimension completeness, but unlike the adjacent VERDICT handling at line 210 it counts an empty value as a reported measurement.",
+    "goal_fidelity": "reckon/crew/review.py:213 preserves omission versus explicit none on valid inputs, but a blank or comma-only emission is incorrectly treated as an explicit measured zero.",
+    "scope_discipline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md:3 names exactly the six paths changed across the two reviewed commits, and both retained source and review worktrees were clean when inspected."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/prompt.txt; the parser now stores explicit call-site measurements but reckon/crew/review.py:215 also classifies an empty emission as a measured zero.\nVERDICT done_when: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/prompt.txt and both negative-control receipts; the recorded 32-test gate covers the five stated cases, while the later logs/negative-control-declared.log supplies the actual declared parser mutation.\nVERDICT write_paths: Compared the six paths declared in /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md:3 with git diff 599b8c8367b4f5f2d45bf8f31b2f3d5b3466ba14..3df4730fb15f446679b3fbd54847affca51a6580; every changed path is in scope.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md:11 and the referenced files; both commits exist and the 32-pass receipt is accurate, but line 15 points to a different mutation from the one declared in the live run record.\nVERDICT diff: Read 57ed30eeaa34fee7f85f862f8057d14c6b423634 and 3df4730fb15f446679b3fbd54847affca51a6580 separately; the source adds measurement parsing and tests, and the documentation commit appends the evidence without closing shared plan state.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:213 preserves omission versus explicit none on valid inputs, but a blank or comma-only emission is incorrectly treated as an explicit measured zero.\nSCORE evidence: 17\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/focused-final.log records 32 passes and the corrected logs/negative-control-declared.log records the expected two failures, but manifest.md:15 still identifies the unrelated prompt-removal control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md:3 names exactly the six paths changed across the two reviewed commits, and both retained source and review worktrees were clean when inspected.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_call_sites.py:12 covers list, none, omission, machine filtering and legacy completeness, and tests/test_review_scoring.py:93 extends the existing falsifier, but neither exercises an empty CALL_SITES emission.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review.py:213 follows the existing line parser and avoids changing five-dimension completeness, but unlike the adjacent VERDICT handling at line 210 it counts an empty value as a reported measurement.\nFINDING reckon/crew/review.py:215 [P2] Empty or delimiter-only CALL_SITES values fabricate a measured zero: parse_review with all five SCORE lines plus CALL_SITES:, CALL_SITES followed only by whitespace, or CALL_SITES: , , returns call_sites=[] and call_site_count=0, indistinguishable from the explicitly required literal none; leave these malformed emissions absent or reject them and add a regression.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md:15 [P2] The authoritative negative_control_log still points at negative-control-call-sites.log, whose mutation removes prompt text, while node.negative_control declares making an omitted parser field zero and requires tests/test_review_call_sites.py to fail; the later logs/negative-control-declared.log correctly shows 2 failed and 3 passed, so update the manifest reference and the landing claims rather than presenting the prompt mutation as the declared control.\n",
+  "review_limitations": [
+    "Read the recorded focused test and mutation receipts; did not rerun the full suite.",
+    "This review attaches findings and scores only. It does not repair source, merge commits, promote the target run or verify the merged head.",
+    "Source manifest lint counts were read as reported; lint was not rerun."
+  ],
+  "review_run_id": "r-20260921T145007960914-review-of-the-reviewer-names-the-call-sites-it-verified",
+  "reviewed_base_sha": "599b8c8367b4f5f2d45bf8f31b2f3d5b3466ba14",
+  "reviewed_head_sha": "3df4730fb15f446679b3fbd54847affca51a6580",
+  "reviewed_run_id": "r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified",
+  "reviewer_run_id": "r-20260921T145007960914-review-of-the-reviewer-names-the-call-sites-it-verified",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md",
+  "source_manifest_sha256": "0a6f1ea063cfa60c51c0f0e062016927d9e6302c21729c13fd89f20fc8dcdc56",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-reviewer-names-the-call-sites-it-verified",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T15:00:36.883260+00:00",
+  "total": 90
+}

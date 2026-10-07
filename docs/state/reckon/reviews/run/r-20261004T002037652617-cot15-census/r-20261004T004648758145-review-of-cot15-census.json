@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T00:54:37.165Z",
+  "dispatched_at": "2026-10-04T00:47:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/cot15-census.html",
+      "line": "100",
+      "severity": "follow-on",
+      "text": "follow-on: row 4 states the recorded watch deadlock is no longer reproducible at this revision from one 7.00s pass in watch-case.log, but one green run of a timing-dependent deadlock does not establish a repair, so the row should record not-reproduced-once or repeat the run before the claim stands."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/census-tests.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the test arm runs pytest -q so the log records only 16 passed and never names the individual ids the report cites as passing, leaving the id-to-result mapping asserted rather than shown; running the cited ids explicitly or with -v would make the evidence self-checking."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no code diff, because the node is read-only and landed no commit, so this review reads the report artifact and the probe and test logs rather than a change set against a base.",
+    "done_when": "the done-when requires one row per item with a verdict and evidence and, for each partial or open row, a write-path set, a one-node done-when and a negative control; all twelve report rows carry these, and probe_census.py:32-41 runs every probe in a temporary RECKON_HOME and a temporary repository under the run's TMPDIR.",
+    "goal": "the goal asks for a crew-observability-truth section 15 census against 33fb3b6cb stating per asserted item whether main satisfies it, with a cited passing test id or a captured probe; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/cot15-census.html gives met, partial or open for all twelve distinct asserted items, the nine table measures plus three surrounding assertions.",
+    "manifest": "the manifest reads status complete with the test arm at 16 passed, the watch case at 1 passed, the probe at EXIT=0, and the out-of-scope recovery teardown error recorded as a follow-on; check-manifest returns ok.",
+    "write_paths": "the node was fenced to the report path alone; its manifest records the worktree at 33fb3b6cb as unchanged and read-only, its commits field names the revision it read rather than one it wrote, and no repository file changed."
+  },
+  "justifications": {
+    "durability": "the read-only census adds no durable repository test, and its row-4 claim that the watch deadlock is no longer reproducible rests on a single 7.00s pass of a previously more-than-90s hang, which does not falsify a timing-dependent deadlock.",
+    "evidence": "the probes carry real failing controls (census-probes.log base gate exit=1, noncompleting gate exit=124, range witness disagreement 14.751%), the test target collects exactly the 16 tests the manifest reports, verified by an independent collection, and two cited ids re-ran green though the -q shape hides which ids passed.",
+    "fit": "the report follows the reports/reckon HTML idiom, probe_census.py is mechanism-named, and no plan or ticket identifier appears in a symbol or filename.",
+    "goal_fidelity": "the report covers all twelve asserted items and its headline open result, that crew widen accepts a peer-held path, is confirmed at reckon/cli.py:5530 where the widen mutation appends requested paths with no peer-holder collision check.",
+    "scope_discipline": "the node wrote only its fenced report plus run-directory artifacts, and probe_census.py:32-41 sets RECKON_HOME and the fixture repo under the run's TMPDIR and touches no project or operator configuration."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks for a crew-observability-truth section 15 census against 33fb3b6cb stating per asserted item whether main satisfies it, with a cited passing test id or a captured probe; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/cot15-census.html gives met, partial or open for all twelve distinct asserted items, the nine table measures plus three surrounding assertions.\nVERDICT done_when: the done-when requires one row per item with a verdict and evidence and, for each partial or open row, a write-path set, a one-node done-when and a negative control; all twelve report rows carry these, and probe_census.py:32-41 runs every probe in a temporary RECKON_HOME and a temporary repository under the run's TMPDIR.\nVERDICT write_paths: the node was fenced to the report path alone; its manifest records the worktree at 33fb3b6cb as unchanged and read-only, its commits field names the revision it read rather than one it wrote, and no repository file changed.\nVERDICT manifest: the manifest reads status complete with the test arm at 16 passed, the watch case at 1 passed, the probe at EXIT=0, and the out-of-scope recovery teardown error recorded as a follow-on; check-manifest returns ok.\nVERDICT diff: there is no code diff, because the node is read-only and landed no commit, so this review reads the report artifact and the probe and test logs rather than a change set against a base.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the report covers all twelve asserted items and its headline open result, that crew widen accepts a peer-held path, is confirmed at reckon/cli.py:5530 where the widen mutation appends requested paths with no peer-holder collision check.\nSCORE evidence: 18\nJUSTIFICATION evidence: the probes carry real failing controls (census-probes.log base gate exit=1, noncompleting gate exit=124, range witness disagreement 14.751%), the test target collects exactly the 16 tests the manifest reports, verified by an independent collection, and two cited ids re-ran green though the -q shape hides which ids passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node wrote only its fenced report plus run-directory artifacts, and probe_census.py:32-41 sets RECKON_HOME and the fixture repo under the run's TMPDIR and touches no project or operator configuration.\nSCORE durability: 15\nJUSTIFICATION durability: the read-only census adds no durable repository test, and its row-4 claim that the watch deadlock is no longer reproducible rests on a single 7.00s pass of a previously more-than-90s hang, which does not falsify a timing-dependent deadlock.\nSCORE fit: 19\nJUSTIFICATION fit: the report follows the reports/reckon HTML idiom, probe_census.py is mechanism-named, and no plan or ticket identifier appears in a symbol or filename.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/cot15-census.html:100 follow-on: row 4 states the recorded watch deadlock is no longer reproducible at this revision from one 7.00s pass in watch-case.log, but one green run of a timing-dependent deadlock does not establish a repair, so the row should record not-reproduced-once or repeat the run before the claim stands.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/census-tests.log:1 follow-on: the test arm runs pytest -q so the log records only 16 passed and never names the individual ids the report cites as passing, leaving the id-to-result mapping asserted rather than shown; running the cited ids explicitly or with -v would make the evidence self-checking.\nreviewed_base_sha: 33fb3b6cbdaa357ed3f21bb4eeb0527a931f1ff9\nreviewed_head_sha: 33fb3b6cbdaa357ed3f21bb4eeb0527a931f1ff9\n",
+  "review_run_id": "r-20261004T004648758145-review-of-cot15-census",
+  "reviewed_base_sha": "33fb3b6cbdaa357ed3f21bb4eeb0527a931f1ff9",
+  "reviewed_head_sha": "33fb3b6cbdaa357ed3f21bb4eeb0527a931f1ff9",
+  "reviewed_run_id": "r-20261004T002037652617-cot15-census",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T004648758145-review-of-cot15-census",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T00:53:19.137887+00:00",
+  "total": 91
+}

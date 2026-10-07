@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3729"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T18:08:56.531387+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "135",
+      "text": "NEGATIVE_CONTROL_DECLARED_RULE opens by asserting \"This node writes a check\" and then requires the worker to name a red log's path, but compose_prompt renders that branch for any node whose declaration is not a none form, whatever its write paths hold: a node declaring a mutation with no test file is a shape dispatch admits (negative_control_finding returns None because negative_control_writes_a_check is False whenever any declaration is present) and promotion exempts with node-writes-no-test-path before it reads the declaration, so the prompt tells such a worker a false property of its own node and asks it for a log nothing consumes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 37de7907; fb68d3fb adds the block, the render helper and the six-case file, 8ba6c011 corrects the none branch's sentence, 45edbb92 and 0ce529ea add the plan landing record, the cumulative evidence anchor and the figure; the only deleted lines are an extended import in reckon/crew/prompts.py and a plan-verifies meta line extended with #s11.",
+    "done_when": "the done_when names tests/test_prompt_carries_the_declaration.py entering through compose_prompt and asserts four properties; I re-ran that file alone at the corrected head and it is 6 passed, and each of the four properties is asserted there.",
+    "goal": "the node's goal is that a dispatched worker can copy the declaration its red log must repeat; composing prompts from the corrected revision gives the declaration exactly once, unaltered, and immediately before the manifest template, so reckon/crew/prompts.py:157 does what the goal states.",
+    "manifest": "read; its gate command reproduces at the corrected revision (my independent re-run is 6 passed), the declared mutation on its negative_control_log's first line is byte-equal to the run's declaration, and its cohort figures 8 failed/158 passed at base and 8 failed/164 passed at head, with identical failure names, hold in the two logs it cites.",
+    "write_paths": "read the manifest's five declared paths and the diff between them; git diff --numstat 37de7907..0ce529ea lists exactly those five files and no other path changed."
+  },
+  "justifications": {
+    "durability": "each of the six cases names the change that reddens it and all six reddened under the declared mutation, re-run at the corrected revision; against that, no case composes a node that declares a mutation without writing a test file, so the branch the finding names is unguarded, and the composer-to-matcher strip agreement remains unpinned by any case.",
+    "evidence": "the gate is recorded and falsified (all six cases reddened under the declared mutation re-run at the corrected revision), the defect is reproduced at base at 0 occurrences in 9,989 prompt characters, the head cohort log now names the revision it ran at with its mtime postdating that commit, and my independent re-run of the gate file at the corrected head is 6 passed; against that, the six cases all compose a node that writes a test file, so the gate cannot reach the shape the finding names.",
+    "fit": "the constants and the render helper at reckon/crew/prompts.py:118 carry the surrounding contract-block idiom, every name states what it does, and no plan, stage or ticket label appears in any name, comment or filename.",
+    "goal_fidelity": "the block interpolates the node's declaration as written one line above the MANIFEST template whose negative_control_log gloss states the requirement it answers, and the none branch's corrected sentence matches what promotion does; against that, the declared branch asserts a property of the node itself that one reachable shape does not have, which is the finding below.",
+    "scope_discipline": "git diff --numstat 37de7907..0ce529ea lists exactly the five declared write paths, 415 insertions against 2 deletions, and both deletions are accounted for (an extended import line and a plan-verifies meta line extended with #s11), with no plan-state meta line moved."
+  },
+  "model": "deepseek-v4.1-flash",
+  "prior_findings": {
+    "dispositions": [
+      {
+        "basis": "green-focused.log:1 now names revision 8ba6c0113b8c6fec08e8f16617f430d40d41667f, the same revision the manifest's after_suite block records, and the file's mtime (2026-09-22 20:02:37 +0200) postdates that commit (20:01:43 +0200), so the label is corroborated by the run having happened after the repair rather than merely rewritten; green-restored.log and negative-control-red.log both name 8ba6c011 as well.",
+        "disposition": "resolved",
+        "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T171701435432-the-prompt-carries-the-declaration-it-demands/green-focused.log",
+        "finding": "the first line names revision 37de79079cc1887f153db6043175cabf10e162aa while the tree it ran in holds the repair that is committed only as fb68d3fb, so the head cohort's citation and the manifest's own after_suite revision disagree and this log cannot be told apart from one run against the pristine base tree.",
+        "line": "1"
+      },
+      {
+        "basis": "commit 8ba6c011 replaces the claim with the condition that actually holds, and I probed both halves at the corrected revision: dispatch accepts a bare none (negative_control_finding returns None, because negative_control_writes_a_check is False whenever any declaration is present), and _require_declared_negative_control raises CrewError for a check-writing node's bare none on a passing gate with the message naming the 'none: <reason>' form. The refusing branch is reachable and the sentence now matches it.",
+        "disposition": "resolved",
+        "file": "reckon/crew/prompts.py",
+        "finding": "NEGATIVE_CONTROL_NONE_RULE tells the worker this node \"states the reason\", but a bare none declaration passes the dispatch check and reaches promotion, where _require_declared_negative_control raises a refusal for the missing reason before the waiver is consulted, so the prompt states a property of the declaration it cannot support and sends the worker on without the red log the refusal is about.",
+        "line": "143"
+      }
+    ],
+    "review_run_id": "r-20260922T174144725086-review-of-the-prompt-carrying-its-declaration",
+    "reviewed_revision": "45edbb92d9c35ec8e3f51bc5fb4505fbde384c42",
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "total": 97
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a dispatched worker can copy the declaration its red log must repeat; composing prompts from the corrected revision gives the declaration exactly once, unaltered, and immediately before the manifest template, so reckon/crew/prompts.py:157 does what the goal states.\nVERDICT done_when: the done_when names tests/test_prompt_carries_the_declaration.py entering through compose_prompt and asserts four properties; I re-ran that file alone at the corrected head and it is 6 passed, and each of the four properties is asserted there.\nVERDICT write_paths: read the manifest's five declared paths and the diff between them; git diff --numstat 37de7907..0ce529ea lists exactly those five files and no other path changed.\nVERDICT manifest: read; its gate command reproduces at the corrected revision (my independent re-run is 6 passed), the declared mutation on its negative_control_log's first line is byte-equal to the run's declaration, and its cohort figures 8 failed/158 passed at base and 8 failed/164 passed at head, with identical failure names, hold in the two logs it cites.\nVERDICT diff: read commit by commit against 37de7907; fb68d3fb adds the block, the render helper and the six-case file, 8ba6c011 corrects the none branch's sentence, 45edbb92 and 0ce529ea add the plan landing record, the cumulative evidence anchor and the figure; the only deleted lines are an extended import in reckon/crew/prompts.py and a plan-verifies meta line extended with #s11.\nCALL_SITES: reckon/crew/dispatch.py:3729\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the block interpolates the node's declaration as written one line above the MANIFEST template whose negative_control_log gloss states the requirement it answers, and the none branch's corrected sentence matches what promotion does; against that, the declared branch asserts a property of the node itself that one reachable shape does not have, which is the finding below.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded and falsified (all six cases reddened under the declared mutation re-run at the corrected revision), the defect is reproduced at base at 0 occurrences in 9,989 prompt characters, the head cohort log now names the revision it ran at with its mtime postdating that commit, and my independent re-run of the gate file at the corrected head is 6 passed; against that, the six cases all compose a node that writes a test file, so the gate cannot reach the shape the finding names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 37de7907..0ce529ea lists exactly the five declared write paths, 415 insertions against 2 deletions, and both deletions are accounted for (an extended import line and a plan-verifies meta line extended with #s11), with no plan-state meta line moved.\nSCORE durability: 18\nJUSTIFICATION durability: each of the six cases names the change that reddens it and all six reddened under the declared mutation, re-run at the corrected revision; against that, no case composes a node that declares a mutation without writing a test file, so the branch the finding names is unguarded, and the composer-to-matcher strip agreement remains unpinned by any case.\nSCORE fit: 20\nJUSTIFICATION fit: the constants and the render helper at reckon/crew/prompts.py:118 carry the surrounding contract-block idiom, every name states what it does, and no plan, stage or ticket label appears in any name, comment or filename.\nFINDING reckon/crew/prompts.py:135 NEGATIVE_CONTROL_DECLARED_RULE opens by asserting \"This node writes a check\" and then requires the worker to name a red log's path, but compose_prompt renders that branch for any node whose declaration is not a none form, whatever its write paths hold: a node declaring a mutation with no test file is a shape dispatch admits (negative_control_finding returns None because negative_control_writes_a_check is False whenever any declaration is present) and promotion exempts with node-writes-no-test-path before it reads the declaration, so the prompt tells such a worker a false property of its own node and asks it for a log nothing consumes.\n",
+  "review_run_id": "r-20260922T180856531387-re-review-of-the-prompt-carrying-its-declaration",
+  "reviewed_base_sha": "37de79079cc1887f153db6043175cabf10e162aa",
+  "reviewed_head_sha": "0ce529eae704d70ff5d2add2e1b95171712b77d4",
+  "reviewed_revision": "0ce529eae704d70ff5d2add2e1b95171712b77d4",
+  "reviewed_run_id": "r-20260922T171701435432-the-prompt-carries-the-declaration-it-demands",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T18:16:47.396722+00:00",
+  "total": 93
+}

@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:_read_state (line 471)",
+    "reckon/_store.py:read_plan (line 1054)",
+    "reckon/mcp.py:688"
+  ],
+  "completed_at": "2026-09-25T16:17:02.529Z",
+  "dispatched_at": "2026-09-25T15:56:22Z",
+  "findings": [
+    {
+      "file": "docs/plans/reckon-reads-answer-in-seconds.html",
+      "line": "92",
+      "text": "the landing record names f3bf0d55a0bcbeffab3e71f57935cd4c3224831d, which git cat-file -t refuses; the committed commit is f3bf0d55a0bcbeffab3e71f57935cc4c3224831d, so the record's own pointer to its code cannot be resolved."
+    },
+    {
+      "file": "docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html",
+      "line": "13",
+      "text": "the plan-commits meta repeats the same unresolvable sha, so a reader resolving the cumulative record's commit list fails here too."
+    },
+    {
+      "file": "docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html",
+      "line": "109",
+      "text": "the body paragraph repeats the unresolvable sha a third time."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T151551177733-read-pairs-state-and-text-from-one-read/manifest.md",
+      "line": "11",
+      "text": "the tests: line is a template carrying <worktree> placeholders, so the gate command the record states cannot be re-run as written."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 311bfc6256b029cafd9934a013452d41c192ea48; f3bf0d55 adds 152 lines across three files and a32f80d8 appends to the plan page and the cumulative evidence page and adds one XML-valid figure, so no peer content was overwritten.",
+    "done_when": "the gate asks for the replacement test red at base and green at head, a warm read that still parses once, and no added failures against base, and the four gate logs plus the manifest record each; the parses-once half is guarded at tests/test_plan_read_pairs_state_and_text.py:117.",
+    "goal": "the node's goal is a plan read returning its state and the text that state was parsed from out of one read; reckon/_plan_html.py:621 is that one call, returning both halves from a single _read_plan_text, and reckon/_store.py:471 is its caller, which is what followup f-rraiss-one-read-pairs-state-and-text asked for.",
+    "manifest": "read; it records 3 passed at head, 2 failed at base, a zero regression delta with the two pre-existing test_store_concurrency failures and a red control, but its commits: line (line 9) names f3bf0d55a0bcbeffab3e71f57935cd4c3224831d, which git cat-file -t refuses, and its tests: line (line 11) is a template carrying <worktree> placeholders.",
+    "write_paths": "the reviewed prompt fences six paths and every path in both commits lies inside them, so nothing was written outside reckon/_store.py, reckon/_plan_html.py, the new test file, the plan page, the cumulative evidence page and its figure directory."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_read_pairs_state_and_text.py:97 fails when _read_state is reverted to the two separately keyed lookups, which the recorded mutation log shows as 1 failed while the other two pass.",
+    "evidence": "the base arm reddens tests/test_plan_read_pairs_state_and_text.py:97 with the authored-child warning the defect predicts and the mutation log reddens the same line, though the scratch arms ran a copy of that file one trailing newline short of the committed blob and the record misnames the sha.",
+    "fit": "read_state_and_text_file at reckon/_plan_html.py:621 follows the memoised-helper idiom of read_state_file at reckon/_plan_html.py:610 and adds no name the naming rules forbid.",
+    "goal_fidelity": "reckon/_plan_html.py:621 computes both halves from one _read_plan_text call and memoises them together on one stat identity, which is the pairing the followup named.",
+    "scope_discipline": "every path in a32f80d8 and f3bf0d55 sits inside the six fenced paths of the reviewed prompt, and the out-of-scope halves the worker found were reported under follow_ons rather than touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a plan read returning its state and the text that state was parsed from out of one read; reckon/_plan_html.py:621 is that one call, returning both halves from a single _read_plan_text, and reckon/_store.py:471 is its caller, which is what followup f-rraiss-one-read-pairs-state-and-text asked for.\nVERDICT done_when: the gate asks for the replacement test red at base and green at head, a warm read that still parses once, and no added failures against base, and the four gate logs plus the manifest record each; the parses-once half is guarded at tests/test_plan_read_pairs_state_and_text.py:117.\nVERDICT write_paths: the reviewed prompt fences six paths and every path in both commits lies inside them, so nothing was written outside reckon/_store.py, reckon/_plan_html.py, the new test file, the plan page, the cumulative evidence page and its figure directory.\nVERDICT manifest: read; it records 3 passed at head, 2 failed at base, a zero regression delta with the two pre-existing test_store_concurrency failures and a red control, but its commits: line (line 9) names f3bf0d55a0bcbeffab3e71f57935cd4c3224831d, which git cat-file -t refuses, and its tests: line (line 11) is a template carrying <worktree> placeholders.\nVERDICT diff: read commit by commit against 311bfc6256b029cafd9934a013452d41c192ea48; f3bf0d55 adds 152 lines across three files and a32f80d8 appends to the plan page and the cumulative evidence page and adds one XML-valid figure, so no peer content was overwritten.\nCALL_SITES: reckon/_store.py:_read_state (line 471), reckon/_store.py:read_plan (line 1054), reckon/mcp.py:688\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:621 computes both halves from one _read_plan_text call and memoises them together on one stat identity, which is the pairing the followup named.\nSCORE evidence: 15\nJUSTIFICATION evidence: the base arm reddens tests/test_plan_read_pairs_state_and_text.py:97 with the authored-child warning the defect predicts and the mutation log reddens the same line, though the scratch arms ran a copy of that file one trailing newline short of the committed blob and the record misnames the sha.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in a32f80d8 and f3bf0d55 sits inside the six fenced paths of the reviewed prompt, and the out-of-scope halves the worker found were reported under follow_ons rather than touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_plan_read_pairs_state_and_text.py:97 fails when _read_state is reverted to the two separately keyed lookups, which the recorded mutation log shows as 1 failed while the other two pass.\nSCORE fit: 18\nJUSTIFICATION fit: read_state_and_text_file at reckon/_plan_html.py:621 follows the memoised-helper idiom of read_state_file at reckon/_plan_html.py:610 and adds no name the naming rules forbid.\nFINDING docs/plans/reckon-reads-answer-in-seconds.html:92 the landing record names f3bf0d55a0bcbeffab3e71f57935cd4c3224831d, which git cat-file -t refuses; the committed commit is f3bf0d55a0bcbeffab3e71f57935cc4c3224831d, so the record's own pointer to its code cannot be resolved.\nFINDING docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html:13 the plan-commits meta repeats the same unresolvable sha, so a reader resolving the cumulative record's commit list fails here too.\nFINDING docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html:109 the body paragraph repeats the unresolvable sha a third time.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T151551177733-read-pairs-state-and-text-from-one-read/manifest.md:11 the tests: line is a template carrying <worktree> placeholders, so the gate command the record states cannot be re-run as written.",
+  "review_run_id": "r-20260925T155606833065-review-of-read-pairs-state-and-text-from-one-read",
+  "reviewed_base_sha": "311bfc6256b029cafd9934a013452d41c192ea48",
+  "reviewed_head_sha": "a32f80d814dd70cbdd4d48550dbbfb75566339c5",
+  "reviewed_run_id": "r-20260925T151551177733-read-pairs-state-and-text-from-one-read",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T16:12:41.507956+00:00",
+  "total": 90
+}

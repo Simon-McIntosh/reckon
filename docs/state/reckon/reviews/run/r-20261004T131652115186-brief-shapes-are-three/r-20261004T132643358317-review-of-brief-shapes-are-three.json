@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5311",
+    "reckon/crew/dispatch.py:2156"
+  ],
+  "completed_at": "2026-10-04T13:39:24.513Z",
+  "dispatched_at": "2026-10-04T13:27:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-orchestrator-orchestrates/brief-shapes-are-three.html",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment cites the head arm as 6cff4c20e while gate.log's header records revision f8b95c7d, so the 76-passed result cannot be tied to the promoted commit by the log's own header, though the new case's presence shows the change was in the tree."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against f8b95c7d; two commits, all four paths inside the declared scope, and the behaviour change is confined to the new refusal branch plus a docstring paragraph.",
+    "done_when": "the done_when names the five-file gate and a negative control; gate.log records 76 passed and negative_control.log records 1 failed, 9 passed, EXIT=1, both on disk under the reviewed run directory.",
+    "goal": "the goal is to repair three follow-on findings so a node names exactly one of three authority shapes; the landed diff does exactly that, stating the three shapes in reckon/crew/prompts.py:413, refusing a brief with a plan and no section at reckon/crew/node.py:1148, and adding the refusal and end-to-end cases at tests/test_brief_beside_a_plan_section.py:120.",
+    "manifest": "read; it states the gate result and the negative control, names gate.log and negative_control.log, and its account reconciles with the two log files on disk.",
+    "write_paths": "read the manifest's declared write paths; the diff f8b95c7d..c385ef76 touches reckon/crew/prompts.py, reckon/crew/node.py, tests/test_brief_beside_a_plan_section.py and the evidence fragment, every one inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_brief_beside_a_plan_section.py:120 fails when the new refusal is removed, shown by negative_control.log, and :272 fails if the pair dry run stops resolving the brief digest onto the node.",
+    "evidence": "the gate measured the change (76 passed, including the new case at tests/test_brief_beside_a_plan_section.py:120) and the negative control reddens exactly that case, but gate.log's own revision header names f8b95c7d rather than the head c385ef76 the evidence fragment cites it against.",
+    "fit": "the change edits the existing validate_node and compose_prompt rather than adding a mechanism, and no added name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/node.py:1148 refuses brief plus plan and no section under fully-specified naming the section as the mirror of the section-with-no-plan refusal, and reckon/crew/prompts.py:413 states all three shapes, matching the goal.",
+    "scope_discipline": "every path in the diff f8b95c7d..c385ef76 is inside the declared write paths and no undeclared file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: f8b95c7d06d7d60681767aa97d0c1f7d61e421d8\nreviewed_head_sha: c385ef76c13f82b4b62276b83be1cd1aaa3d9309\nVERDICT goal: the goal is to repair three follow-on findings so a node names exactly one of three authority shapes; the landed diff does exactly that, stating the three shapes in reckon/crew/prompts.py:413, refusing a brief with a plan and no section at reckon/crew/node.py:1148, and adding the refusal and end-to-end cases at tests/test_brief_beside_a_plan_section.py:120.\nVERDICT done_when: the done_when names the five-file gate and a negative control; gate.log records 76 passed and negative_control.log records 1 failed, 9 passed, EXIT=1, both on disk under the reviewed run directory.\nVERDICT write_paths: read the manifest's declared write paths; the diff f8b95c7d..c385ef76 touches reckon/crew/prompts.py, reckon/crew/node.py, tests/test_brief_beside_a_plan_section.py and the evidence fragment, every one inside the declared set.\nVERDICT manifest: read; it states the gate result and the negative control, names gate.log and negative_control.log, and its account reconciles with the two log files on disk.\nVERDICT diff: read commit by commit against f8b95c7d; two commits, all four paths inside the declared scope, and the behaviour change is confined to the new refusal branch plus a docstring paragraph.\nCALL_SITES: reckon/crew/dispatch.py:5311, reckon/crew/dispatch.py:2156\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1148 refuses brief plus plan and no section under fully-specified naming the section as the mirror of the section-with-no-plan refusal, and reckon/crew/prompts.py:413 states all three shapes, matching the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate measured the change (76 passed, including the new case at tests/test_brief_beside_a_plan_section.py:120) and the negative control reddens exactly that case, but gate.log's own revision header names f8b95c7d rather than the head c385ef76 the evidence fragment cites it against.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff f8b95c7d..c385ef76 is inside the declared write paths and no undeclared file is touched.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_brief_beside_a_plan_section.py:120 fails when the new refusal is removed, shown by negative_control.log, and :272 fails if the pair dry run stops resolving the brief digest onto the node.\nSCORE fit: 20\nJUSTIFICATION fit: the change edits the existing validate_node and compose_prompt rather than adding a mechanism, and no added name carries a plan, sprint or ticket label.\nFINDING docs/evidence/fragments/the-orchestrator-orchestrates/brief-shapes-are-three.html:17 follow-on: the fragment cites the head arm as 6cff4c20e while gate.log's header records revision f8b95c7d, so the 76-passed result cannot be tied to the promoted commit by the log's own header, though the new case's presence shows the change was in the tree.",
+  "review_run_id": "r-20261004T132643358317-review-of-brief-shapes-are-three",
+  "reviewed_base_sha": "f8b95c7d06d7d60681767aa97d0c1f7d61e421d8",
+  "reviewed_head_sha": "c385ef76c13f82b4b62276b83be1cd1aaa3d9309",
+  "reviewed_run_id": "r-20261004T131652115186-brief-shapes-are-three",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T13:37:34.893213+00:00",
+  "total": 98
+}

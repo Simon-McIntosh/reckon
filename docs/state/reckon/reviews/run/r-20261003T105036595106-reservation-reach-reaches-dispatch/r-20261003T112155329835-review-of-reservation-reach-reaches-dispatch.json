@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bd621f63ce227fb31b8627fe9f4ac69d2115f90e (production modules reckon/crew/placement.py and reckon/crew/dispatch.py reverted; this node's test file and the evidence fragment kept, so the base arm measures the defense the change adds)",
+  "call_site_count": 4,
+  "call_sites": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "7110",
+      "note": "dispatch route passes payload=record",
+      "symbol": "resolve_backend_placement"
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "11233",
+      "note": "resume route passes payload=record",
+      "symbol": "resolve_backend_placement"
+    },
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "800",
+      "note": "_roster_reach counts with it",
+      "symbol": "roster_occupants"
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "666",
+      "note": "reservation guard counts with it",
+      "symbol": "roster_occupants"
+    }
+  ],
+  "completed_at": "2026-10-03T11:29:43.304Z",
+  "dispatched_at": "2026-10-03T11:22:25Z",
+  "findings": [],
+  "head_log_revision": "c2c1bdf6782e2bf6ae413781d533402da8597d32",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "resolve_backend_placement has exactly two production callers, dispatch at reckon/crew/dispatch.py:7110 and resume_plan at :11233, and both pass payload=record; roster_occupants has exactly two callers, _roster_reach at placement.py:800 and the reservation guard at dispatch.py:666, which is what makes the two counts one selection.",
+    "diff": "read commit by commit against bd621f63c; aae9a9e5 changes reckon/crew/placement.py and reckon/crew/dispatch.py (adding roster_occupants, _live_runs_across_backends, the payload carry, and the already-held reach) and adds the test file, and c2c1bdf6 adds only the evidence fragment html.",
+    "done_when": "the section done-when asks that a dispatch that arms or finds the reservation carries the reach, that the already-held read-back states the cap and the reach, and that the reach and the guard count the same population; tests/test_reservation_reach_reaches_dispatch.py:240 and :287 cover the first two clauses directly and the third over two placing backends, and I reproduced the seven-file gate at head (34 passed, EXIT=0).",
+    "goal": "the node goal is to make the reservation's reach reach the dispatch route and to make the reach and the guard count one population; resolve_backend_placement now keeps the ensure result and writes placement_reservation onto the payload, _held_result states the cap and the reach, and roster_occupants is the single seat selection both _roster_reach and _refuse_over_reservation_roster call, so all three done-when clauses are present.",
+    "manifest": "read; status complete, commits aae9a9e5 and c2c1bdf6, tests names the seven-file gate at -n 8 --timeout=300 with base 2 failed/32 passed EXIT=1 to head 34 passed EXIT=0, zero added ids, and the declared negative control.",
+    "write_paths": "the manifest declares reckon/crew/placement.py, reckon/crew/dispatch.py, tests/test_reservation_reach_reaches_dispatch.py and the evidence fragment; git diff --name-only base..head lists exactly those four, so the diff is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the negative-control mutation shows the arming case is a real guard rather than a tautology: discarding the ensure result makes it fail on KeyError 'placement_reservation' at the exact key the change adds, and reverting the guard population reddens the two-backend case. The guard-population case is falsifiable against base because the guard counted one backend's thirteen against a cap of twenty five.",
+    "evidence": "I reproduced both arms independently: head c2c1bdf6782e2bf6ae413781d533402da8597d32 34 passed EXIT=0, and a scratch base with only the two production modules reverted and this node's test file kept 2 failed/32 passed EXIT=1, matching the reviewed run's logs to the failure id; the declared negative control (the dispatch route discards the ensure result again) reddens the arming case 1 failed/1 passed EXIT=1.",
+    "fit": "the touched files carry the same seven ruff findings at base and at head (none added), placement.py and the new test file are ruff-format clean, and the tests are hermetic (temp RECKON_HOME, recording scheduler stubs, launcher substituted, throwaway git repo), so they read no state outside the repository under test. No plan, sprint or ticket identifier appears in the new names or comments.",
+    "goal_fidelity": "the three done-when clauses are implemented and each is shown by a case: the arming and already-held payloads by tests/test_reservation_reach_reaches_dispatch.py:260-283, and the shared population by :317-330, which I reproduced at head (34 passed). The resume route carries the key but is stated rather than driven by a case, which is the one clause not shown end to end, so not a full 20.",
+    "scope_discipline": "the two commits change exactly the four manifest-declared paths and nothing else; no plan html, sprint, shared index or config is touched, and the reviewed worktree is clean at the reviewed head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the reservation's reach reach the dispatch route and to make the reach and the guard count one population; resolve_backend_placement now keeps the ensure result and writes placement_reservation onto the payload, _held_result states the cap and the reach, and roster_occupants is the single seat selection both _roster_reach and _refuse_over_reservation_roster call, so all three done-when clauses are present.\nVERDICT done_when: the section done-when asks that a dispatch that arms or finds the reservation carries the reach, that the already-held read-back states the cap and the reach, and that the reach and the guard count the same population; tests/test_reservation_reach_reaches_dispatch.py:240 and :287 cover the first two clauses directly and the third over two placing backends, and I reproduced the seven-file gate at head (34 passed, EXIT=0).\nVERDICT write_paths: the manifest declares reckon/crew/placement.py, reckon/crew/dispatch.py, tests/test_reservation_reach_reaches_dispatch.py and the evidence fragment; git diff --name-only base..head lists exactly those four, so the diff is inside the declared scope.\nVERDICT manifest: read; status complete, commits aae9a9e5 and c2c1bdf6, tests names the seven-file gate at -n 8 --timeout=300 with base 2 failed/32 passed EXIT=1 to head 34 passed EXIT=0, zero added ids, and the declared negative control.\nVERDICT diff: read commit by commit against bd621f63c; aae9a9e5 changes reckon/crew/placement.py and reckon/crew/dispatch.py (adding roster_occupants, _live_runs_across_backends, the payload carry, and the already-held reach) and adds the test file, and c2c1bdf6 adds only the evidence fragment html.\nCALL_SITES: resolve_backend_placement -> reckon/crew/dispatch.py:7110, :11233; roster_occupants -> reckon/crew/placement.py:800, reckon/crew/dispatch.py:666\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the three done-when clauses are implemented and each is shown by a case: the arming and already-held payloads by tests/test_reservation_reach_reaches_dispatch.py:260-283, and the shared population by :317-330, which I reproduced at head (34 passed). The resume route carries the key but is stated rather than driven by a case, which is the one clause not shown end to end, so not a full 20.\nSCORE evidence: 20\nJUSTIFICATION evidence: I reproduced both arms independently: head c2c1bdf6782e2bf6ae413781d533402da8597d32 34 passed EXIT=0, and a scratch base with only the two production modules reverted and this node's test file kept 2 failed/32 passed EXIT=1, matching the reviewed run's logs to the failure id; the declared negative control (the dispatch route discards the ensure result again) reddens the arming case 1 failed/1 passed EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change exactly the four manifest-declared paths and nothing else; no plan html, sprint, shared index or config is touched, and the reviewed worktree is clean at the reviewed head.\nSCORE durability: 19\nJUSTIFICATION durability: the negative-control mutation shows the arming case is a real guard rather than a tautology: discarding the ensure result makes it fail on KeyError 'placement_reservation' at the exact key the change adds, and reverting the guard population reddens the two-backend case. The guard-population case is falsifiable against base because the guard counted one backend's thirteen against a cap of twenty five.\nSCORE fit: 19\nJUSTIFICATION fit: the touched files carry the same seven ruff findings at base and at head (none added), placement.py and the new test file are ruff-format clean, and the tests are hermetic (temp RECKON_HOME, recording scheduler stubs, launcher substituted, throwaway git repo), so they read no state outside the repository under test. No plan, sprint or ticket identifier appears in the new names or comments.\n",
+  "review_run_id": "r-20261003T112155329835-review-of-reservation-reach-reaches-dispatch",
+  "reviewed_base_sha": "bd621f63ce227fb31b8627fe9f4ac69d2115f90e",
+  "reviewed_head_sha": "c2c1bdf6782e2bf6ae413781d533402da8597d32",
+  "reviewed_run_id": "r-20261003T105036595106-reservation-reach-reaches-dispatch",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:07.255641+00:00",
+  "total": 97
+}

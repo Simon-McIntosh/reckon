@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_derivation": "set difference of the pytest node ids FAILED/ERROR in the reviewed run's own two arm logs named by its manifest (baseline_suite logs/base-arm-20260928T114016Z.log at 176a9ab6, after_suite logs/head-arm-20260928T121503Z.log at 5e4185c7), each EXIT=0 with no failing id; positive control over the same extractor on the run's red negative-control-20260928T113753Z.log finds its 1 failing id, so the zero is measured and not blind; reckon.crew.review.annotate_review_of_run derives the same pair from the manifest.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:1492",
+    "reckon/mcp.py:4876",
+    "reckon/mcp.py:1106"
+  ],
+  "completed_at": "2026-09-28T12:39:35.978Z",
+  "dispatched_at": "2026-09-28T12:18:22Z",
+  "findings": [
+    {
+      "file": "docs/plans/a-landing-record-never-conflicts.html",
+      "line": "152",
+      "text": "the plan still states that the public read_plan route refuses an evidence document at view='section' and that the composed text is reachable only through _typed_resource_text, and the paragraph this node added 10 lines below has closed exactly that item, so the live plan contradicts the landed code while the node held write scope on the file."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "2500",
+      "text": "the dispatch keys on the selector's type rather than on the record resolver evidence_record_plan, so a document typed evidence whose metas name no plan -- the ordinary-file case tests/test_read_plan_composes_the_record.py:57 keeps -- is served whole and refused a section argument; the plan's new paragraph and the archive record both describe the dispatch as taken \"when the selected resource is an evidence record\", which is not what the predicate establishes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/logs/negative-control-refusal-20260928T121101Z.log",
+      "line": "2",
+      "text": "the control's revision line names 153a2cfd, whose tree does not contain test_the_read_plan_tool_refuses_a_section_argument_on_a_record (added in 5e4185c7 at 14:14:45), so a reader who reproduces the control from the revision it names finds no such test; the red itself is genuine (KeyError: 'ok' is the signature of a removed refusal) and the scratch tree and module paths are disclosed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against the base \u2014 153a2cfd adds _record_text_response and its dispatch plus the docs and figure, and 5e4185c7 adds the refusal case to tests/test_read_plan_composes_the_record.py:374 and rewrites the two read_plan docstrings, with reckon/mcp.py's only change being those docstrings (13 insertions, 7 deletions, no behaviour).",
+    "done_when": "the manifest's suite fields now carry the armed JSON the block reserves, and the two logs they name were read here \u2014 logs/base-arm-20260928T114016Z.log (20 passed, EXIT=0 at 176a9ab6) and logs/head-arm-20260928T121503Z.log (24 passed, EXIT=0 at 5e4185c7), the delta being the four new cases in tests/test_read_plan_composes_the_record.py:323-394. The open item of the previous landing is the one the repair closes.",
+    "goal": "the node was dispatched to deliver read_plan's composition-failure warning on the response a caller receives; reckon/mcp_views.py:1589 serves a cumulative evidence record whole at the section view and reckon/mcp.py:1508 appends the read's warning to that response, so a caller reading a record through read_plan receives it.",
+    "manifest": "read at the run directory; it states the two commits, both arms, the end-to-end negative control and the correction of the suite fields to armed JSON, and its status is complete with the failure_attribution field recording an empty delta.",
+    "write_paths": "the manifest declares six paths and git diff --numstat 176a9ab6..5e4185c7 lists exactly those six (reckon/mcp_views.py 56/7, reckon/mcp.py 13/7, tests/test_read_plan_composes_the_record.py 91/0, docs/plans/a-landing-record-never-conflicts.html 28/0, docs/evidence/archive/a-landing-record-never-conflicts-landed.html 7/0 at 153a2cfd then 1/1 at 5e4185c7, docs/figures/a-landing-record-never-conflicts/view-dispatch.svg 55/0)."
+  },
+  "justifications": {
+    "durability": "tests/test_read_plan_composes_the_record.py:374 asserts the section_not_applicable refusal's code and message through the public tool, and the logged control shows that deleting the refusal reddens it (KeyError: 'ok'), while tests/test_read_plan_composes_the_record.py:323 and :363 assert against fixture bytes rather than against the code under test.",
+    "evidence": "the two arm logs the manifest names are on disk and were read here (logs/base-arm-20260928T114016Z.log 20 passed EXIT=0, logs/head-arm-20260928T121503Z.log 24 passed EXIT=0), though the scratch refusal control's revision line names a commit whose tree cannot contain the test it reports failing (logs/negative-control-refusal-20260928T121101Z.log:2).",
+    "fit": "reckon/mcp_views.py:1589 follows _section_response's helper shape and its ViewRequestError(code, message, hint) idiom, and the names it introduces carry no plan, sprint or version identifiers.",
+    "goal_fidelity": "reckon/mcp_views.py:2500 dispatches an evidence selector to the whole-record response and reckon/mcp.py:1508 puts the composition-failure warning on that response, which is the delivered behaviour the goal names.",
+    "scope_discipline": "every path in git diff --numstat 176a9ab6..5e4185c7 is one of the six the manifest declares, and the archive-record edit is append-only plus one corrected citation line, so no peer anchor was dropped."
+  },
+  "project": "reckon",
+  "raw_text": "# Emitted review \u2014 r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed\n# Reviewed base 176a9ab6121055f83244efc767a0bd6bdb84df38, reviewed head 5e4185c7d1d938c3a769749ea6b9024fefa7a4fe.\n# Second review of this run: the first (r-20260928T114739070644) read head 153a2cfd and its four findings are\n# re-read against the repair landing at 5e4185c7.\n\nVERDICT goal: the node was dispatched to deliver read_plan's composition-failure warning on the response a caller receives; reckon/mcp_views.py:1589 serves a cumulative evidence record whole at the section view and reckon/mcp.py:1508 appends the read's warning to that response, so a caller reading a record through read_plan receives it.\nVERDICT done_when: the manifest's suite fields now carry the armed JSON the block reserves, and the two logs they name were read here \u2014 logs/base-arm-20260928T114016Z.log (20 passed, EXIT=0 at 176a9ab6) and logs/head-arm-20260928T121503Z.log (24 passed, EXIT=0 at 5e4185c7), the delta being the four new cases in tests/test_read_plan_composes_the_record.py:323-394. The open item of the previous landing is the one the repair closes.\nVERDICT write_paths: the manifest declares six paths and git diff --numstat 176a9ab6..5e4185c7 lists exactly those six (reckon/mcp_views.py 56/7, reckon/mcp.py 13/7, tests/test_read_plan_composes_the_record.py 91/0, docs/plans/a-landing-record-never-conflicts.html 28/0, docs/evidence/archive/a-landing-record-never-conflicts-landed.html 7/0 at 153a2cfd then 1/1 at 5e4185c7, docs/figures/a-landing-record-never-conflicts/view-dispatch.svg 55/0).\nVERDICT manifest: read at the run directory; it states the two commits, both arms, the end-to-end negative control and the correction of the suite fields to armed JSON, and its status is complete with the failure_attribution field recording an empty delta.\nVERDICT diff: read commit by commit against the base \u2014 153a2cfd adds _record_text_response and its dispatch plus the docs and figure, and 5e4185c7 adds the refusal case to tests/test_read_plan_composes_the_record.py:374 and rewrites the two read_plan docstrings, with reckon/mcp.py's only change being those docstrings (13 insertions, 7 deletions, no behaviour).\nCALL_SITES: reckon/mcp.py:1492, reckon/mcp.py:4876, reckon/mcp.py:1106\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:2500 dispatches an evidence selector to the whole-record response and reckon/mcp.py:1508 puts the composition-failure warning on that response, which is the delivered behaviour the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: the two arm logs the manifest names are on disk and were read here (logs/base-arm-20260928T114016Z.log 20 passed EXIT=0, logs/head-arm-20260928T121503Z.log 24 passed EXIT=0), though the scratch refusal control's revision line names a commit whose tree cannot contain the test it reports failing (logs/negative-control-refusal-20260928T121101Z.log:2).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff --numstat 176a9ab6..5e4185c7 is one of the six the manifest declares, and the archive-record edit is append-only plus one corrected citation line, so no peer anchor was dropped.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_read_plan_composes_the_record.py:374 asserts the section_not_applicable refusal's code and message through the public tool, and the logged control shows that deleting the refusal reddens it (KeyError: 'ok'), while tests/test_read_plan_composes_the_record.py:323 and :363 assert against fixture bytes rather than against the code under test.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/mcp_views.py:1589 follows _section_response's helper shape and its ViewRequestError(code, message, hint) idiom, and the names it introduces carry no plan, sprint or version identifiers.\nFINDING docs/plans/a-landing-record-never-conflicts.html:152 the plan still states that the public read_plan route refuses an evidence document at view='section' and that the composed text is reachable only through _typed_resource_text, and the paragraph this node added 10 lines below has closed exactly that item, so the live plan contradicts the landed code while the node held write scope on the file.\nFINDING reckon/mcp_views.py:2500 the dispatch keys on the selector's type rather than on the record resolver evidence_record_plan, so a document typed evidence whose metas name no plan -- the ordinary-file case tests/test_read_plan_composes_the_record.py:57 keeps -- is served whole and refused a section argument; the plan's new paragraph and the archive record both describe the dispatch as taken \"when the selected resource is an evidence record\", which is not what the predicate establishes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/logs/negative-control-refusal-20260928T121101Z.log:2 the control's revision line names 153a2cfd, whose tree does not contain test_the_read_plan_tool_refuses_a_section_argument_on_a_record (added in 5e4185c7 at 14:14:45), so a reader who reproduces the control from the revision it names finds no such test; the red itself is genuine (KeyError: 'ok' is the signature of a removed refusal) and the scratch tree and module paths are disclosed.",
+  "review_run_id": "r-20260928T121811310907-review-of-read-plan-says-when-a-record-is-uncomposed",
+  "reviewed_base_sha": "176a9ab6121055f83244efc767a0bd6bdb84df38",
+  "reviewed_head_sha": "5e4185c7d1d938c3a769749ea6b9024fefa7a4fe",
+  "reviewed_run_id": "r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed",
+  "reviewer": "r-20260928T121811310907-review-of-read-plan-says-when-a-record-is-uncomposed",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T12:32:47.871908+00:00",
+  "total": 88
+}

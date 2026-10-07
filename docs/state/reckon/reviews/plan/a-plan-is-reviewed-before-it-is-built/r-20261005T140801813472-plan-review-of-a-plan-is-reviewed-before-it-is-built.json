@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:12:54.221Z",
+  "dispatched_at": "2026-10-05T14:08:20Z",
+  "findings": [
+    {
+      "anchor": "reckon/doccheck.py:1014",
+      "id": "duplicate_owner-1",
+      "reason": "an author completing \"one owner of the outstanding-sections question\" must either fold `doccheck._implementable_section_ids` into the hoisted reader or state in the section why the two questions genuinely differ, which is the accounting \u00a716 gives for the other owners it reuses.",
+      "text": "the plan hoists `promotion._plan_remaining_sections` to be the one outstanding-sections reader, but `doccheck._implementable_section_ids` (doccheck.py:1014) already reads the same `section_declarations` map to answer \"which sections are still work\", and the plan names doccheck only for its heading walks (identity), not for this declaration-map reader, so the state reader it set out to unify stays forked",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "62b3246c9c6b70aef465f44e721c960db8efab38bff9341e44252ea416579a8d",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 72,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T140801813472-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "d20a8185a340a1cddf66572a93dcc6accdb7adcd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change deepens one module (`_StructuredSectionSpanParser`) behind a raw-text interface of identity, heading text and replaced-span offsets, and collapses the package's heading walkers onto it instead of spreading a thinner scanner per caller.",
+    "duplicate_owner": "a finding \u2014 the outstanding-sections question has a second reader of the same declaration map, `_implementable_section_ids` in `reckon/doccheck.py`, that the plan neither hoists nor names.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 states in its own text that it adds one public definition (the coverage predicate) and retires nothing, giving the reason (the identity digest and the prose walk keep their names), rewrites the `legacy=` callers with the signature change, and reuses the existing `plan-review-missing` refusal family rather than adding one.",
+    "reuse_search": "pass \u2014 \u00a716 names the machinery it extends rather than rebuilding it: `_StructuredSectionSpanParser` and `structured_section_spans` in `reckon/_plan_html.py`, `_authored_section_headings` in `reckon/mcp_views.py`, `_section_heading`/`_section_body_end`/`landed_section_ids` in `reckon/_store.py`, and `promotion._plan_remaining_sections`; `_AuthoredProseParser` in `reckon/crew/plan_review.py:162` was opened and is the walker the plan extends rather than a new one.",
+    "thin_wrapper": "pass \u2014 the coverage predicate is a new join (outstanding sections from the declaration reader against stored per-section digests), not a forwarder, and the plan hoists `promotion._plan_remaining_sections` rather than wrapping it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.899527+00:00"
+}

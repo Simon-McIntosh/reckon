@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: both gate logs of the reviewed run were read (logs/baseline-suite.log and logs/after-suite.log), count 0, the same single failing id tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op on both arms",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/serve.py:1622",
+    "reckon/serve.py:1683",
+    "reckon/serve.py:1731",
+    "reckon/flight.py:1637",
+    "reckon/mcp.py:3583",
+    "reckon/mcp.py:3695",
+    "reckon/mcp.py:4706",
+    "reckon/roadmap.py:1407",
+    "reckon/roadmap.py:1707"
+  ],
+  "completed_at": "2026-09-28T19:15:00.392Z",
+  "dispatched_at": "2026-09-28T18:45:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/section-contract-and-computed-impl/the-roadmap-reads-the-checkout-it-inventoried.html",
+      "line": "50",
+      "text": "the base-gate row states 2 failed, 523 passed, 3 skipped and cites baseline-suite.log, but that log records 1 failed, 523 passed, 3 skipped at revision 58405bd6; the 2-failed figure belongs to an earlier base arm that collected the new test file, whose log is not among those kept, so a reader cannot check this row from the log it names and the true base delta is one pre-existing failure, not two."
+    },
+    {
+      "file": "logs/gate-file-list-base.txt",
+      "line": "1",
+      "text": "this single-line artefact lists tests/test_roadmap_wiring_reads_its_own_checkout.py under the base tree /tmp/wiring-base-58405bd6, though the base revision does not contain that file and the base arm's own recorded list (logs/base-list.txt, 44 entries, no new test) excludes it; reproducing the base arm from this artefact collects the new file and yields 2 failures instead of the recorded 1, so the artefact that is meant to make the arm reproducible contradicts it."
+    },
+    {
+      "file": "tests/test_roadmap_wiring_reads_its_own_checkout.py",
+      "line": "182",
+      "text": "the file ends without a newline, so ruff reports W292 and ruff format --check reports it would be reformatted \u2014 a finding the commit adds, against the repository rule that a commit adds none; a one-character fix, and the only lint finding on the seven changed paths."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "3583",
+      "text": "the graph branch's new docs_dir key is unasserted and inert \u2014 the new test's graph arm supplies its own state dict to the resolver rather than driving the MCP graph branch, the existing graph tests read the registered mount where the supplied value equals the fallback, so the line can be deleted with the suite green and it changes no behaviour where it stands; it should either be asserted through the MCP surface or dropped."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit \u2014 d51c8ff4 threads one keyword-only docs_dir through the four production modules and adds the test, 263a44f6 adds the evidence fragment and the figure; the mechanism is one parameter carried from each caller's own resolved docs dir into the scan, plus one state key on the graph branch.",
+    "done_when": "the assertion asked that a worktree-scoped roadmap judge that tree's own declaration and that the red and green arms be recorded; the run records the new test red at base (base-new-test.log, 1 failed at the serve arm) and green at head (head-new-test.log, 1 passed), and I reproduced both ends under my own runs \u2014 the named test passes at 263a44f6 (1 passed, EXIT=0) and the declared mutation reddens the flight arm in the scratch tree (1 failed, EXIT=1) \u2014 while the gate delta is zero added failing ids, re-derived from the reviewed run's own two gate logs.",
+    "goal": "the work asked that the wiring scan judge the tree a caller inventoried rather than the registered mount; at the reviewed head every production caller names one \u2014 reckon/serve.py:1731, reckon/flight.py:1637, reckon/mcp.py:3695, reckon/mcp.py:4706 and reckon/roadmap.py:1407 carry docs_dir into the scan, the MCP graph branch sets it on each project's state at reckon/mcp.py:3583, and both discovery call sites of the ready-set helper pass the scoped dir at reckon/serve.py:1622 and reckon/serve.py:1683 \u2014 while a caller naming none still resolves the registered mount at reckon/roadmap.py:1739, so the change is additive and no route loses the tree it had.",
+    "manifest": "read; it declares the two fence paths, both gate arms with their log paths and exit statuses, the scratch-tree measurement module, the negative control with the declared mutation repeated verbatim on the red log's first line, and one follow-on naming the pre-existing failure.",
+    "write_paths": "read the manifest's declared paths against the diff: git diff --name-status 58405bd6..263a44f6 lists seven changed paths, every one inside the seven declared, with no plan HTML, no shared index or sprint state and no stray edit; the reviewed worktree carries no uncommitted tracked change."
+  },
+  "justifications": {
+    "durability": "the test's five arms each aim at one caller and four redden under a caller that drops docs_dir, the base arm proves the discovery path reddens, and the positive control keeps a scan that reports nothing from passing vacuously; the gap is one unasserted line \u2014 reckon/mcp.py:3583 sets docs_dir on each graph project's state, but the graph arm hands the resolver its own state dict rather than driving the MCP graph branch, and no other test drives that branch away from the registered mount, so deleting the line leaves the suite green (it is also behaviourally inert there, since the mount is what the fallback resolves).",
+    "evidence": "the added-failure pair re-derives through the reader's own annotate path from the reviewed run's manifest (count 0, ids empty, both arms failing only tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op), both gate arms are logged with exit statuses and log paths, and both ends of the new test reproduce under my own runs (head 1 passed EXIT=0; the declared mutation 1 failed EXIT=1 at the flight arm). Deducted because two figures in the landing record do not check out against the logs they cite: the base-gate table row states 2 failed where the log it names records 1, and the base gate-file list names the new test at a revision that does not contain it.",
+    "fit": "the callers thread a keyword-only parameter from the docs dir each already resolves, the resolver reads it from state with the same state.get form as its sibling keys, and the landing artefact is an HTML fragment with a figure as the plan's evidence convention asks. Deducted because the new test file adds a lint finding the repository's rules forbid: ruff reports no-newline-at-end-of-file at tests/test_roadmap_wiring_reads_its_own_checkout.py:182 and ruff format --check reports that file would be reformatted.",
+    "goal_fidelity": "every production caller of the scan now names a tree, both internal call sites of the ready-set helper pass the scoped dir, the fallback for a caller naming none remains the registered mount at reckon/roadmap.py:1739, and my own run of the named test at 263a44f6 passes, so a worktree-scoped roadmap judges that worktree's declaration.",
+    "scope_discipline": "the diff lists seven changed paths and all seven sit inside the seven declared write paths; nothing touched plan HTML, the shared index or another node's files, and the reviewed worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the work asked that the wiring scan judge the tree a caller inventoried rather than the registered mount; at the reviewed head every production caller names one \u2014 reckon/serve.py:1731, reckon/flight.py:1637, reckon/mcp.py:3695, reckon/mcp.py:4706 and reckon/roadmap.py:1407 carry docs_dir into the scan, the MCP graph branch sets it on each project's state at reckon/mcp.py:3583, and both discovery call sites of the ready-set helper pass the scoped dir at reckon/serve.py:1622 and reckon/serve.py:1683 \u2014 while a caller naming none still resolves the registered mount at reckon/roadmap.py:1739, so the change is additive and no route loses the tree it had.\nVERDICT done_when: the assertion asked that a worktree-scoped roadmap judge that tree's own declaration and that the red and green arms be recorded; the run records the new test red at base (base-new-test.log, 1 failed at the serve arm) and green at head (head-new-test.log, 1 passed), and I reproduced both ends under my own runs \u2014 the named test passes at 263a44f6 (1 passed, EXIT=0) and the declared mutation reddens the flight arm in the scratch tree (1 failed, EXIT=1) \u2014 while the gate delta is zero added failing ids, re-derived from the reviewed run's own two gate logs.\nVERDICT write_paths: read the manifest's declared paths against the diff: git diff --name-status 58405bd6..263a44f6 lists seven changed paths, every one inside the seven declared, with no plan HTML, no shared index or sprint state and no stray edit; the reviewed worktree carries no uncommitted tracked change.\nVERDICT manifest: read; it declares the two fence paths, both gate arms with their log paths and exit statuses, the scratch-tree measurement module, the negative control with the declared mutation repeated verbatim on the red log's first line, and one follow-on naming the pre-existing failure.\nVERDICT diff: read commit by commit \u2014 d51c8ff4 threads one keyword-only docs_dir through the four production modules and adds the test, 263a44f6 adds the evidence fragment and the figure; the mechanism is one parameter carried from each caller's own resolved docs dir into the scan, plus one state key on the graph branch.\nCALL_SITES: reckon/serve.py:1622, reckon/serve.py:1683, reckon/serve.py:1731, reckon/flight.py:1637, reckon/mcp.py:3583, reckon/mcp.py:3695, reckon/mcp.py:4706, reckon/roadmap.py:1407, reckon/roadmap.py:1707\nSCORE goal_fidelity: 20\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 17\nJUSTIFICATION goal_fidelity: every production caller of the scan now names a tree, both internal call sites of the ready-set helper pass the scoped dir, the fallback for a caller naming none remains the registered mount at reckon/roadmap.py:1739, and my own run of the named test at 263a44f6 passes, so a worktree-scoped roadmap judges that worktree's declaration.\nJUSTIFICATION evidence: the added-failure pair re-derives through the reader's own annotate path from the reviewed run's manifest (count 0, ids empty, both arms failing only tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op), both gate arms are logged with exit statuses and log paths, and both ends of the new test reproduce under my own runs (head 1 passed EXIT=0; the declared mutation 1 failed EXIT=1 at the flight arm). Deducted because two figures in the landing record do not check out against the logs they cite: the base-gate table row states 2 failed where the log it names records 1, and the base gate-file list names the new test at a revision that does not contain it.\nJUSTIFICATION scope_discipline: the diff lists seven changed paths and all seven sit inside the seven declared write paths; nothing touched plan HTML, the shared index or another node's files, and the reviewed worktree is clean.\nJUSTIFICATION durability: the test's five arms each aim at one caller and four redden under a caller that drops docs_dir, the base arm proves the discovery path reddens, and the positive control keeps a scan that reports nothing from passing vacuously; the gap is one unasserted line \u2014 reckon/mcp.py:3583 sets docs_dir on each graph project's state, but the graph arm hands the resolver its own state dict rather than driving the MCP graph branch, and no other test drives that branch away from the registered mount, so deleting the line leaves the suite green (it is also behaviourally inert there, since the mount is what the fallback resolves).\nJUSTIFICATION fit: the callers thread a keyword-only parameter from the docs dir each already resolves, the resolver reads it from state with the same state.get form as its sibling keys, and the landing artefact is an HTML fragment with a figure as the plan's evidence convention asks. Deducted because the new test file adds a lint finding the repository's rules forbid: ruff reports no-newline-at-end-of-file at tests/test_roadmap_wiring_reads_its_own_checkout.py:182 and ruff format --check reports that file would be reformatted.\nFINDING docs/evidence/fragments/section-contract-and-computed-impl/the-roadmap-reads-the-checkout-it-inventoried.html:50 the base-gate row states 2 failed, 523 passed, 3 skipped and cites baseline-suite.log, but that log records 1 failed, 523 passed, 3 skipped at revision 58405bd6; the 2-failed figure belongs to an earlier base arm that collected the new test file, whose log is not among those kept, so a reader cannot check this row from the log it names and the true base delta is one pre-existing failure, not two.\nFINDING logs/gate-file-list-base.txt:1 this single-line artefact lists tests/test_roadmap_wiring_reads_its_own_checkout.py under the base tree /tmp/wiring-base-58405bd6, though the base revision does not contain that file and the base arm's own recorded list (logs/base-list.txt, 44 entries, no new test) excludes it; reproducing the base arm from this artefact collects the new file and yields 2 failures instead of the recorded 1, so the artefact that is meant to make the arm reproducible contradicts it.\nFINDING tests/test_roadmap_wiring_reads_its_own_checkout.py:182 the file ends without a newline, so ruff reports W292 and ruff format --check reports it would be reformatted \u2014 a finding the commit adds, against the repository rule that a commit adds none; a one-character fix, and the only lint finding on the seven changed paths.\nFINDING reckon/mcp.py:3583 the graph branch's new docs_dir key is unasserted and inert \u2014 the new test's graph arm supplies its own state dict to the resolver rather than driving the MCP graph branch, the existing graph tests read the registered mount where the supplied value equals the fallback, so the line can be deleted with the suite green and it changes no behaviour where it stands; it should either be asserted through the MCP surface or dropped.\nREVISION reviewed_base_sha: 58405bd6eeca722241894b0ad21bce826ab4c433\nREVISION reviewed_head_sha: 263a44f6afda885727f08be7d87334a388ab4474",
+  "review_run_id": "r-20260928T184517217068-review-of-the-roadmap-reads-the-checkout-it-inventoried",
+  "reviewed_base_sha": "58405bd6eeca722241894b0ad21bce826ab4c433",
+  "reviewed_head_sha": "263a44f6afda885727f08be7d87334a388ab4474",
+  "reviewed_run_id": "r-20260928T180523970016-the-roadmap-reads-the-checkout-it-inventoried",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T19:08:54.155597+00:00",
+  "total": 91
+}

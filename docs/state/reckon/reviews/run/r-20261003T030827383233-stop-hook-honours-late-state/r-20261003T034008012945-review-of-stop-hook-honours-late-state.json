@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite and after_suite gate logs named in its manifest, with reckon/crew/review.py:added_failures_from_gate_logs, each arm read against its own recorded working directory. baseline_suite (revision 4c87d83e9) reads logs/base-arm.log: '2 failed, 45 passed in 14.71s' EXIT=1, failure_ids [tests/test_stop_hook_honours_late_state.py::test_an_ack_recorded_after_the_snapshot_lets_the_stop_through, tests/test_stop_hook_honours_late_state.py::test_an_unreadable_record_prompts_without_holding_the_stop]. after_suite (revision 9865c8d0) reads logs/head-arm.log: '47 passed in 16.83s' EXIT=0, no failure ids. Added = head minus base = none, so added_failure_count is 0 and added_failure_ids is empty. The reviewer independently re-ran tests/test_stop_hook_honours_late_state.py at the reviewed head worktree (620b1261): '2 passed in 8.72s' EXIT=0.",
+  "base_log_revision": "4c87d83e948be12863fdc0e79001342767ae1768",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:888",
+    "reckon/hooks/coordinator_obligations.py:821"
+  ],
+  "completed_at": "2026-10-03T03:49:40.749Z",
+  "dispatched_at": "2026-10-03T03:40:49Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "888",
+      "severity": "follow-on",
+      "text": "follow-on: the fresh-snapshot stop path now imports the whole obligations module through _obligations_module (reapply_acknowledgements), where before only snapshot_module was loaded. The cost is real but bounded \u2014 it is paid only when a stop already has a blocking item and is about to refuse \u2014 and the module docstring accepts it because the deferrals must be re-read there."
+    },
+    {
+      "file": "docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/stop-hook-honours-late-state.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: \u00a714's third done-when clause (worktree-held is raised only when the tree still exists on disk and no promotion record shows it released) is not covered by this change; the manifest declares it a separate node and leaves reckon/crew/obligations.py untouched, so the section is not closed by this node."
+    },
+    {
+      "file": "/tmp/reckon-crew-scratch/r-20261003T030827383233-stop-hook-honours-late-state",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the run's /tmp scratch tree was left on disk although the manifest checkpoint names deleting it as the next step after check-manifest. It is node-local and dies with the allocation, so it does not hold the node."
+    }
+  ],
+  "head_log_revision": "9865c8d03e61fce38490dcd15c8e4adff6b9ea31",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/hooks/coordinator_obligations.py:888, reckon/hooks/coordinator_obligations.py:821",
+    "diff": "Read all three commits end to end against 4c87d83e948be12863fdc0e79001342767ae1768. 9865c8d0 adds reapply_acknowledgements and the widened _NON_BLOCKING_KINDS to reckon/hooks/coordinator_obligations.py and the new 287-line test file; ae1307e7 adds the evidence fragment; 620b1261 rewrites three lines of that fragment's base-arm prose. No other file or branch is touched by any commit.",
+    "done_when": "Both clauses this node was assigned hold. test_stop_hook_honours_late_state.py drives the hook as the harness does, as a subprocess against a synthesised configuration home: test_an_ack_recorded_after_the_snapshot_lets_the_stop_through and test_an_unreadable_record_prompts_without_holding_the_stop. The reviewer re-ran that file at the reviewed head: 2 passed in 8.72s, EXIT=0.",
+    "goal": "The assigned goal \u2014 a late ack and a skipped review record do not hold a stop open \u2014 is met. `_stop` re-applies the deferrals in force through `reapply_acknowledgements` (reckon/hooks/coordinator_obligations.py:785, called at :888) before it would refuse, and `unreadable-review-record` joins `_NON_BLOCKING_KINDS` at :203 so it prompts without holding the turn open.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030827383233-stop-hook-honours-late-state/manifest.md. Status complete; commits 9865c8d0, ae1307e7, 620b1261; negative_control_log is a bare path; the tests line matches both gate logs (base '2 failed, 45 passed in 14.71s' EXIT=1, head '47 passed in 16.83s' EXIT=0); the two arms are recorded as JSON with exit_status, completed true and literal absolute-path commands. `reckon crew check-manifest` returns ok true with no findings.",
+    "write_paths": "Four paths were declared (reckon/hooks/coordinator_obligations.py, tests/test_stop_hook_honours_late_state.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/stop-hook-honours-late-state.html, and a figures directory). Three changed against 4c87d83e9 \u2014 the hook file (+74/-13), the 287-line test file, and the 105-line evidence fragment (rewritten by +3/-3 in the head commit). The declared figures directory was correctly left uncreated because the landing draws no figure, and no plan or shared index was touched."
+  },
+  "justifications": {
+    "durability": "The late-ack case is red under the declared mutation that removes the re-application (logs/negative-control.log, EXIT=1, id test_an_ack_recorded_after_the_snapshot_lets_the_stop_through, with the unreadable case still passing beside it). The case asserts the snapshot is unchanged (computed_at) and that moving the deferral's deadline into the past makes the same snapshot block again, so the allowance is a bounded reading rather than a suppression, and its assertions compare against independent sources rather than a value it handed the code under test.",
+    "evidence": "Both arms carry EXIT and their summary lines, the added-failure count re-derives to 0 through reckon/crew/review.py:added_failures_from_gate_logs against each arm's recorded working directory, and the declared negative control is kept (logs/negative-control.log, EXIT=1). Deducted one because the head arm ran at the code commit 9865c8d0 rather than the reviewed head 620b1261, so no gate log names the final reviewed revision.",
+    "fit": "The change follows the module's existing split \u2014 a lazily imported derivation, a shared _blocking_items filter, and mechanism-naming comments \u2014 and no plan, sprint or ticket identifier appears in a name, comment or filename. Deducted one because reapply_acknowledgements loads the full obligations module on the fresh-snapshot refuse path that the module's own docstring had kept clear of every derivation import.",
+    "goal_fidelity": "reapply_acknowledgements (reckon/hooks/coordinator_obligations.py:785) re-partitions the fresh snapshot's list against module._acknowledgements_in_force and _partition_acknowledged at :888, and unreadable-review-record is in _NON_BLOCKING_KINDS at :203; both cases pass at the reviewed head (reviewer re-ran the file, 2 passed, EXIT=0).",
+    "scope_discipline": "Only the three declared paths changed against 4c87d83e9 and the declared figures path was correctly left uncreated; reckon/crew/obligations.py, the plan and every shared index are untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The assigned goal \u2014 a late ack and a skipped review record do not hold a stop open \u2014 is met. `_stop` re-applies the deferrals in force through `reapply_acknowledgements` (reckon/hooks/coordinator_obligations.py:785, called at :888) before it would refuse, and `unreadable-review-record` joins `_NON_BLOCKING_KINDS` at :203 so it prompts without holding the turn open.\nVERDICT done_when: Both clauses this node was assigned hold. test_stop_hook_honours_late_state.py drives the hook as the harness does, as a subprocess against a synthesised configuration home: test_an_ack_recorded_after_the_snapshot_lets_the_stop_through and test_an_unreadable_record_prompts_without_holding_the_stop. The reviewer re-ran that file at the reviewed head: 2 passed in 8.72s, EXIT=0.\nVERDICT write_paths: Four paths were declared (reckon/hooks/coordinator_obligations.py, tests/test_stop_hook_honours_late_state.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/stop-hook-honours-late-state.html, and a figures directory). Three changed against 4c87d83e9 \u2014 the hook file (+74/-13), the 287-line test file, and the 105-line evidence fragment (rewritten by +3/-3 in the head commit). The declared figures directory was correctly left uncreated because the landing draws no figure, and no plan or shared index was touched.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030827383233-stop-hook-honours-late-state/manifest.md. Status complete; commits 9865c8d0, ae1307e7, 620b1261; negative_control_log is a bare path; the tests line matches both gate logs (base '2 failed, 45 passed in 14.71s' EXIT=1, head '47 passed in 16.83s' EXIT=0); the two arms are recorded as JSON with exit_status, completed true and literal absolute-path commands. `reckon crew check-manifest` returns ok true with no findings.\nVERDICT diff: Read all three commits end to end against 4c87d83e948be12863fdc0e79001342767ae1768. 9865c8d0 adds reapply_acknowledgements and the widened _NON_BLOCKING_KINDS to reckon/hooks/coordinator_obligations.py and the new 287-line test file; ae1307e7 adds the evidence fragment; 620b1261 rewrites three lines of that fragment's base-arm prose. No other file or branch is touched by any commit.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:888, reckon/hooks/coordinator_obligations.py:821\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reapply_acknowledgements (reckon/hooks/coordinator_obligations.py:785) re-partitions the fresh snapshot's list against module._acknowledgements_in_force and _partition_acknowledged at :888, and unreadable-review-record is in _NON_BLOCKING_KINDS at :203; both cases pass at the reviewed head (reviewer re-ran the file, 2 passed, EXIT=0).\nSCORE evidence: 19\nJUSTIFICATION evidence: Both arms carry EXIT and their summary lines, the added-failure count re-derives to 0 through reckon/crew/review.py:added_failures_from_gate_logs against each arm's recorded working directory, and the declared negative control is kept (logs/negative-control.log, EXIT=1). Deducted one because the head arm ran at the code commit 9865c8d0 rather than the reviewed head 620b1261, so no gate log names the final reviewed revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Only the three declared paths changed against 4c87d83e9 and the declared figures path was correctly left uncreated; reckon/crew/obligations.py, the plan and every shared index are untouched.\nSCORE durability: 20\nJUSTIFICATION durability: The late-ack case is red under the declared mutation that removes the re-application (logs/negative-control.log, EXIT=1, id test_an_ack_recorded_after_the_snapshot_lets_the_stop_through, with the unreadable case still passing beside it). The case asserts the snapshot is unchanged (computed_at) and that moving the deferral's deadline into the past makes the same snapshot block again, so the allowance is a bounded reading rather than a suppression, and its assertions compare against independent sources rather than a value it handed the code under test.\nSCORE fit: 19\nJUSTIFICATION fit: The change follows the module's existing split \u2014 a lazily imported derivation, a shared _blocking_items filter, and mechanism-naming comments \u2014 and no plan, sprint or ticket identifier appears in a name, comment or filename. Deducted one because reapply_acknowledgements loads the full obligations module on the fresh-snapshot refuse path that the module's own docstring had kept clear of every derivation import.\nFINDING reckon/hooks/coordinator_obligations.py:888 follow-on: the fresh-snapshot stop path now imports the whole obligations module through _obligations_module (reapply_acknowledgements), where before only snapshot_module was loaded. The cost is real but bounded \u2014 it is paid only when a stop already has a blocking item and is about to refuse \u2014 and the module docstring accepts it because the deferrals must be re-read there.\nFINDING docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/stop-hook-honours-late-state.html:1 follow-on: \u00a714's third done-when clause (worktree-held is raised only when the tree still exists on disk and no promotion record shows it released) is not covered by this change; the manifest declares it a separate node and leaves reckon/crew/obligations.py untouched, so the section is not closed by this node.\nFINDING /tmp/reckon-crew-scratch/r-20261003T030827383233-stop-hook-honours-late-state:1 follow-on: the run's /tmp scratch tree was left on disk although the manifest checkpoint names deleting it as the next step after check-manifest. It is node-local and dies with the allocation, so it does not hold the node.",
+  "review_run_id": "r-20261003T034008012945-review-of-stop-hook-honours-late-state",
+  "reviewed_base_sha": "4c87d83e948be12863fdc0e79001342767ae1768",
+  "reviewed_head_sha": "620b1261b32f9a54f28bc601aa3d453efe628694",
+  "reviewed_run_id": "r-20261003T030827383233-stop-hook-honours-late-state",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T034008012945-review-of-stop-hook-honours-late-state",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T03:48:16.415134+00:00",
+  "total": 98
+}

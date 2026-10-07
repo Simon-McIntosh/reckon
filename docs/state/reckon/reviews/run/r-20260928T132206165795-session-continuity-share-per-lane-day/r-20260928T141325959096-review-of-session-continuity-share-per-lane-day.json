@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/gate-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/gate-base.log",
+    "count_derivation": "the reviewed manifest carries no baseline_suite/after_suite fields (the project is unarmed; the run's live pointer reports suite_command null), so annotate_review_of_run reads the count unmeasured; the reviewed run's own two arm logs named in its tests field are read directly through added_failures_from_gate_logs: neither the base log (5 passed) nor the head log (11 passed) reports a FAILED or ERROR node id, so the added set is empty and the count is a measured zero rather than an untaken measurement"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/velocity.py:1585",
+    "reckon/velocity.py:2017",
+    "reckon/velocity.py:2113"
+  ],
+  "completed_at": "2026-09-28T15:22:21.713Z",
+  "dispatched_at": "2026-09-28T14:13:41Z",
+  "findings": [
+    {
+      "file": "docs/plans/the-fleet-reports-its-velocity.html",
+      "line": "172",
+      "text": "the section-4 landed block carries data-node=\"session-continuity-share-per-lane-day\" where every sibling landed block carries data-section=\"sN\" (in this plan at :149 and :191), so a reader selecting section-landed blocks by their section association misses section 4 silently; the data-node spelling belongs to the r-note data-reckon=landed blocks."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/measurement-reckon-0920-0927.log",
+      "line": "1",
+      "text": "the reading's first line prints git rev-parse HEAD at run time, which was base 76e1bf93 while the code measured was the worktree's uncommitted velocity.py (its module line and the runner read reckon.velocity.session_continuity), so the header names a revision at which the metric does not exist and a later reader cannot resolve the reading to the code that produced it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base 76e1bf93: 106e4bbb adds session_continuity and its call in measure(), the session_id keep-tuple field, the aggregate and summary blocks, the doc string and the 252-line test file; 8c97ac82 adds the plan landed block, the evidence anchor section and the figure; both stay inside the declared paths.",
+    "done_when": "the done-when (prompt.txt:75) names the session-continuity test file passing at exit 0, base and head arms logged with their revision and module, and a recorded reading over reckon's committed records for 2026-09-20 to 2026-09-27; the manifest's tests field and gate-head.log (11 passed at 106e4bbb) and gate-base.log (5 passed at 76e1bf93, the new file absent) record both arms, and measurement-reckon-0920-0927.log records the reading with its before/after comparison.",
+    "goal": "the node goal (prompt.txt:25) is to report per lane and day the share of dispatches that continued another task's session; reckon/velocity.py:151 classifies each run, :1761 and :2017 report it per lane and day, and the recorded reading reports 33 continued of 982 overall with 0.0 for every lane and day after 2026-09-24.",
+    "manifest": "read in full; it carries the required keys, status complete, both arms' results, the reading's figures with its disagreement explanation, the negative control's absolute path with EXIT and FAILED id, and cites the reuse map; the added-failures arm logs are named under tests rather than as baseline_suite/after_suite fields, so annotate_review_of_run would read the count unmeasured and this review derives it from the two named arm logs instead (see added_failures_source).",
+    "write_paths": "the manifest's orientation_write_paths names five paths; the diff of 106e4bbb and 8c97ac82 against 76e1bf93 changes exactly those five files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_velocity_session_continuity.py:214 asserts cell[\"continued\"] == 0 over a fixture where counting the same-task resume would read 1, the recorded control reddens precisely that assertion, and the other five tests compare against fixture-derived expectations rather than the code's own output.",
+    "evidence": "the reading is recorded and its arithmetic reproduces (982 dispatches, 33 continued, 15 unmeasured, 0.033605), but its header names base revision 76e1bf93 while the measured code was the worktree's (see the finding at measurement-reckon-0920-0927.log:1).",
+    "fit": "the velocity.py additions follow the module's own idiom and naming, but the section-4 landed block at docs/plans/the-fleet-reports-its-velocity.html:172 breaks the plan landed block convention (see the finding).",
+    "goal_fidelity": "reckon/velocity.py:1761 reports the share beside same_task/fresh/unmeasured per lane and day, which is the goal's reading exactly, and :2017 surfaces the same cells through compact_summary.",
+    "scope_discipline": "every path in the diff (reckon/velocity.py, tests/test_velocity_session_continuity.py, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/archive/the-fleet-reports-its-velocity-landed.html, docs/figures/the-fleet-reports-its-velocity/session-continuity-share-per-lane-day.png) is inside the manifest's five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:25) is to report per lane and day the share of dispatches that continued another task's session; reckon/velocity.py:151 classifies each run, :1761 and :2017 report it per lane and day, and the recorded reading reports 33 continued of 982 overall with 0.0 for every lane and day after 2026-09-24.\nVERDICT done_when: the done-when (prompt.txt:75) names the session-continuity test file passing at exit 0, base and head arms logged with their revision and module, and a recorded reading over reckon's committed records for 2026-09-20 to 2026-09-27; the manifest's tests field and gate-head.log (11 passed at 106e4bbb) and gate-base.log (5 passed at 76e1bf93, the new file absent) record both arms, and measurement-reckon-0920-0927.log records the reading with its before/after comparison.\nVERDICT write_paths: the manifest's orientation_write_paths names five paths; the diff of 106e4bbb and 8c97ac82 against 76e1bf93 changes exactly those five files and nothing else.\nVERDICT manifest: read in full; it carries the required keys, status complete, both arms' results, the reading's figures with its disagreement explanation, the negative control's absolute path with EXIT and FAILED id, and cites the reuse map; the added-failures arm logs are named under tests rather than as baseline_suite/after_suite fields, so annotate_review_of_run would read the count unmeasured and this review derives it from the two named arm logs instead (see added_failures_source).\nVERDICT diff: read both commits against base 76e1bf93: 106e4bbb adds session_continuity and its call in measure(), the session_id keep-tuple field, the aggregate and summary blocks, the doc string and the 252-line test file; 8c97ac82 adds the plan landed block, the evidence anchor section and the figure; both stay inside the declared paths.\nCALL_SITES: reckon/velocity.py:1585, reckon/velocity.py:2017, reckon/velocity.py:2113\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/velocity.py:1761 reports the share beside same_task/fresh/unmeasured per lane and day, which is the goal's reading exactly, and :2017 surfaces the same cells through compact_summary.\nSCORE evidence: 16\nJUSTIFICATION evidence: the reading is recorded and its arithmetic reproduces (982 dispatches, 33 continued, 15 unmeasured, 0.033605), but its header names base revision 76e1bf93 while the measured code was the worktree's (see the finding at measurement-reckon-0920-0927.log:1).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/velocity.py, tests/test_velocity_session_continuity.py, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/archive/the-fleet-reports-its-velocity-landed.html, docs/figures/the-fleet-reports-its-velocity/session-continuity-share-per-lane-day.png) is inside the manifest's five declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_velocity_session_continuity.py:214 asserts cell[\"continued\"] == 0 over a fixture where counting the same-task resume would read 1, the recorded control reddens precisely that assertion, and the other five tests compare against fixture-derived expectations rather than the code's own output.\nSCORE fit: 17\nJUSTIFICATION fit: the velocity.py additions follow the module's own idiom and naming, but the section-4 landed block at docs/plans/the-fleet-reports-its-velocity.html:172 breaks the plan landed block convention (see the finding).\nFINDING docs/plans/the-fleet-reports-its-velocity.html:172 the section-4 landed block carries data-node=\"session-continuity-share-per-lane-day\" where every sibling landed block carries data-section=\"sN\" (in this plan at :149 and :191), so a reader selecting section-landed blocks by their section association misses section 4 silently; the data-node spelling belongs to the r-note data-reckon=landed blocks.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/measurement-reckon-0920-0927.log:1 the reading's first line prints git rev-parse HEAD at run time, which was base 76e1bf93 while the code measured was the worktree's uncommitted velocity.py (its module line and the runner read reckon.velocity.session_continuity), so the header names a revision at which the metric does not exist and a later reader cannot resolve the reading to the code that produced it.\nreviewed_base_sha: 76e1bf938b1bf16cd18618cd03f742f264f079eb\nreviewed_head_sha: 8c97ac82cdb857fb98ea916a133a01adec4b6ce6\n",
+  "review_run_id": "r-20260928T141325959096-review-of-session-continuity-share-per-lane-day",
+  "reviewed_base_sha": "76e1bf938b1bf16cd18618cd03f742f264f079eb",
+  "reviewed_head_sha": "8c97ac82cdb857fb98ea916a133a01adec4b6ce6",
+  "reviewed_run_id": "r-20260928T132206165795-session-continuity-share-per-lane-day",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T15:11:26.943875+00:00",
+  "total": 90
+}

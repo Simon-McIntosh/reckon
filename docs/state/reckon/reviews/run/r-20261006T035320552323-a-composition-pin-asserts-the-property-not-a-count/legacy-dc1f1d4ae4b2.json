@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T04:18:02.254Z",
+  "dispatched_at": "2026-10-06T03:53:51Z",
+  "findings": [
+    {
+      "file": "tests/test_section_spelling_grammars_share_one_core.py",
+      "line": "207",
+      "severity": "follow-on",
+      "text": "follow-on: _is_grammar_full_match detects an inline segment grammar by requiring the literal substring A-Za-z9 in the pattern argument's unparsed text, so a re-spelling of the same character class in another order or escape (e.g. re.fullmatch(r\"[a-zA-Z0-9._-]+\", section_id)) escapes the guard even though it composes the segment grammar inline over a section id; verified by mutating _store.py in a scratch tree, which leaves the pin green (EXIT=0). The guard is narrower than its docstring's claim that no function composes the segment grammar inline."
+    },
+    {
+      "file": "tests/test_section_spelling_grammars_share_one_core.py",
+      "line": "246",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion inline - _SEGMENT_GRAMMAR_NON_SECTION == set() names its exceptions by (function, argument), so a legitimate new non-section use of the segment grammar in a new function reddens the pin with no regression; verified by adding a function that full-matches the same grammar over a slug argument in a scratch tree (EXIT=1). The deliberate exception edit it forces is a mitigant, but the red-without-regression shape is the brittleness \u00a720 exists to remove."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against f25c6ede; 371c53240 rewrites the two pins, 700e2dde4 adds the evidence fragment, and 12766573a widens the store identity guard \u2014 the exact-set caller assertion becomes containment and the inline-full-match check is lifted from helper-calling functions to every function in _store.py, both inside the declared scope and carrying no production code change.",
+    "done_when": "the done_when names the tests/ source-count grep, the two negative controls, the followup-pointer and reader tests, and public_definitions parity; independently at head 12766573a the four \u00a716/\u00a717/\u00a719 test files run 112 passed EXIT=0, the source-count grep over them reports no count over a symbol or source fragment, the three scratch-tree controls redden EXIT=1 and the fourth-caller positive check stays EXIT=0, and public_definitions is unchanged (1481 base = 1481 head; the diff carries no production code).",
+    "goal": "the node goal is to rewrite the cross-module count-over-source pins into property assertions; the cumulative diff f25c6ede..12766573a removes the two source.count(...) pins (tests/test_the_invocation_parser_spells_a_section.py and tests/test_section_spelling_grammars_share_one_core.py) and replaces them with a pattern-membership plus behavioural spelling loop on parse_invocation and an AST property assertion over _store.py.",
+    "manifest": "read; it reads complete, names commits 371c53240, 700e2dde4 and 12766573a, and states 112 passed EXIT=0 with three negative controls EXIT=1 and the positive fourth-caller check EXIT=0; it names no baseline_suite or after_suite, so the added-failure count is unmeasured, never zero.",
+    "write_paths": "the diff touches only tests/test_the_invocation_parser_spells_a_section.py, tests/test_section_spelling_grammars_share_one_core.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-composition-pin-asserts-the-property-not-a-count.html, every path inside the reviewed manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "the rewritten pins redden under the invocation, grammar and new-validator controls and stay green on the legitimate fourth caller, but the inline-full-match detector keys on the literal substring A-Za-z0-9 so a re-spelled segment grammar over a section id evades it, and the exception set reddens on a legitimate new non-section grammar use \u2014 residual narrowing recorded as findings.",
+    "evidence": "the recorded gate at logs/gate.log is 112 passed EXIT=0 over the four \u00a716/\u00a717/\u00a719 files, independently reproduced at head 12766573a in a scratch tree (112 passed, EXIT=0); the three negative controls redden EXIT=1 and the fourth-caller positive check stays EXIT=0; the reviewed manifest carries no baseline_suite/after_suite so the added-failure count is unmeasured, and the recorded gate log predates the final widening commit, which the head re-run closes.",
+    "fit": "the change follows the existing AST-parsing idiom of tests/test_section_spelling_grammars_share_one_core.py and introduces no plan, sprint or ticket label in the test names or comments.",
+    "goal_fidelity": "tests/test_the_invocation_parser_spells_a_section.py keeps the SECTION_NUMBER_PATTERN pattern-membership assertion and tests the pinned spellings behaviourally (\u00a75->s5, \u00a75.1->s5-1, \u00a75-1->s5-1, \u00a75a->no section) rather than counting the symbol in source, and tests/test_section_spelling_grammars_share_one_core.py:217 asserts the store validates a section id through is_section_identity; both stated properties are held, with the residual detector narrowing noted in a finding.",
+    "reuse": "the change adds no production definition and no new mechanism; the rewritten pins call the existing helpers is_section_identity and parse_invocation rather than re-implementing them.",
+    "scope_discipline": "the cumulative diff touches only the two named test files and the named evidence fragment, all inside the declared write paths, and carries no production definition change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to rewrite the cross-module count-over-source pins into property assertions; the cumulative diff f25c6ede..12766573a removes the two source.count(...) pins (tests/test_the_invocation_parser_spells_a_section.py and tests/test_section_spelling_grammars_share_one_core.py) and replaces them with a pattern-membership plus behavioural spelling loop on parse_invocation and an AST property assertion over _store.py.\nVERDICT done_when: the done_when names the tests/ source-count grep, the two negative controls, the followup-pointer and reader tests, and public_definitions parity; independently at head 12766573a the four \u00a716/\u00a717/\u00a719 test files run 112 passed EXIT=0, the source-count grep over them reports no count over a symbol or source fragment, the three scratch-tree controls redden EXIT=1 and the fourth-caller positive check stays EXIT=0, and public_definitions is unchanged (1481 base = 1481 head; the diff carries no production code).\nVERDICT write_paths: the diff touches only tests/test_the_invocation_parser_spells_a_section.py, tests/test_section_spelling_grammars_share_one_core.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-composition-pin-asserts-the-property-not-a-count.html, every path inside the reviewed manifest's declared write paths.\nVERDICT manifest: read; it reads complete, names commits 371c53240, 700e2dde4 and 12766573a, and states 112 passed EXIT=0 with three negative controls EXIT=1 and the positive fourth-caller check EXIT=0; it names no baseline_suite or after_suite, so the added-failure count is unmeasured, never zero.\nVERDICT diff: read commit by commit against f25c6ede; 371c53240 rewrites the two pins, 700e2dde4 adds the evidence fragment, and 12766573a widens the store identity guard \u2014 the exact-set caller assertion becomes containment and the inline-full-match check is lifted from helper-calling functions to every function in _store.py, both inside the declared scope and carrying no production code change.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_invocation_parser_spells_a_section.py keeps the SECTION_NUMBER_PATTERN pattern-membership assertion and tests the pinned spellings behaviourally (\u00a75->s5, \u00a75.1->s5-1, \u00a75-1->s5-1, \u00a75a->no section) rather than counting the symbol in source, and tests/test_section_spelling_grammars_share_one_core.py:217 asserts the store validates a section id through is_section_identity; both stated properties are held, with the residual detector narrowing noted in a finding.\nSCORE evidence: 18\nJUSTIFICATION evidence: the recorded gate at logs/gate.log is 112 passed EXIT=0 over the four \u00a716/\u00a717/\u00a719 files, independently reproduced at head 12766573a in a scratch tree (112 passed, EXIT=0); the three negative controls redden EXIT=1 and the fourth-caller positive check stays EXIT=0; the reviewed manifest carries no baseline_suite/after_suite so the added-failure count is unmeasured, and the recorded gate log predates the final widening commit, which the head re-run closes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the cumulative diff touches only the two named test files and the named evidence fragment, all inside the declared write paths, and carries no production definition change.\nSCORE durability: 17\nJUSTIFICATION durability: the rewritten pins redden under the invocation, grammar and new-validator controls and stay green on the legitimate fourth caller, but the inline-full-match detector keys on the literal substring A-Za-z0-9 so a re-spelled segment grammar over a section id evades it, and the exception set reddens on a legitimate new non-section grammar use \u2014 residual narrowing recorded as findings.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the existing AST-parsing idiom of tests/test_section_spelling_grammars_share_one_core.py and introduces no plan, sprint or ticket label in the test names or comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition and no new mechanism; the rewritten pins call the existing helpers is_section_identity and parse_invocation rather than re-implementing them.\nFINDING tests/test_section_spelling_grammars_share_one_core.py:207 follow-on: _is_grammar_full_match detects an inline segment grammar by requiring the literal substring A-Za-z9 in the pattern argument's unparsed text, so a re-spelling of the same character class in another order or escape (e.g. re.fullmatch(r\"[a-zA-Z0-9._-]+\", section_id)) escapes the guard even though it composes the segment grammar inline over a section id; verified by mutating _store.py in a scratch tree, which leaves the pin green (EXIT=0). The guard is narrower than its docstring's claim that no function composes the segment grammar inline.\nFINDING tests/test_section_spelling_grammars_share_one_core.py:246 follow-on: the assertion inline - _SEGMENT_GRAMMAR_NON_SECTION == set() names its exceptions by (function, argument), so a legitimate new non-section use of the segment grammar in a new function reddens the pin with no regression; verified by adding a function that full-matches the same grammar over a slug argument in a scratch tree (EXIT=1). The deliberate exception edit it forces is a mitigant, but the red-without-regression shape is the brittleness \u00a720 exists to remove.\n\nreviewed_base_sha: f25c6ede09a75a9f4d1ea49f1f783f5a3237433e\nreviewed_head_sha: 12766573a6a23de207c6f29cf1def313ac76c9a8",
+  "review_run_id": "legacy-dc1f1d4ae4b2",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "f25c6ede09a75a9f4d1ea49f1f783f5a3237433e",
+  "reviewed_head_sha": "12766573a6a23de207c6f29cf1def313ac76c9a8",
+  "reviewed_run_id": "r-20261006T035320552323-a-composition-pin-asserts-the-property-not-a-count",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T04:26:01.200574+00:00",
+  "total": 113
+}

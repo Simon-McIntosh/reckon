@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own baseline_suite and after_suite gate logs through the store's own reader: both arms report the same three pre-existing failure ids, so the count is 0 and no id is added",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/roadmap.py:_section_scoped_edges",
+    "reckon/mcp.py:_read_plan",
+    "reckon/mcp.py:_section_dependency_rows"
+  ],
+  "completed_at": "2026-09-28T11:33:56.890Z",
+  "dispatched_at": "2026-09-28T11:03:16Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101434576396-malformed-section-map-is-named/manifest.md",
+      "line": "15",
+      "text": "the manifest's tests: field states the gate as a template, env -C <worktree> PYTHONPATH=<worktree> ... pytest -q tests/test_schema.py tests/test_roadmap.py, so the command that actually ran cannot be reconstructed from the field itself; the dispatch contract asks for the command that ran, and the real ones survive only in the two gate logs' own header lines, while the same audit (reckon crew check-manifest) exits 0 on this run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit. 7865ebda replaces the two silent None returns with the carrier mapping and adds the carrier branch to section_dependency_refusals; 5bb94009 appends the landing record, the evidence anchor and the figure. The only deletions in the range are the two return None lines and the docstring sentences they contradicted; both landing documents are append-only (70 and 33 insertions, 0 deletions) and no plan-* meta line is touched.",
+    "done_when": "the done-when names two cases, both arms, the negative control and a zero suite delta; the manifest records each, and I reproduced both arms myself (2 passed at head; 2 failed with only reckon/_schema.py reverted to e6a86550), plus a direct call showing is_section_identity('<plan-section-depends-on>') is False and a valid mapping still yields its edge.",
+    "goal": "the node goal is to stop a whole malformed plan-section-depends-on value from reading as no declaration; reckon/_schema.py:398-409 at head 5bb94009 returns a one-entry mapping keyed by SECTION_DEPENDS_ON_DEFECT_KEY (:351) instead of None, and reckon/_schema.py:462 routes that entry into the existing invalid-section-dependency refusal, so the roadmap reports the defect.",
+    "manifest": "read; its baseline_suite and after_suite name both gate logs with revisions, commands and log paths, its failure_ids match both logs' summaries, and its derived added-failure count is 0 and [] \u2014 re-derived here through reckon.crew.review.annotate_review_of_run; its tests: field is a template carrying <worktree> placeholders (FINDING).",
+    "write_paths": "read the five declared paths against the range e6a86550..5bb94009; every changed path is inside them (reckon/_schema.py, tests/test_schema.py, the two landing documents and the new figure) and nothing else in the range leaves the fence."
+  },
+  "justifications": {
+    "durability": "both added cases redden when the change's own file is reverted in a scratch copy (my arms: 2 failed at base, 2 passed at head), so the guards fire; the withheld point is that no added test drives the whole-value case through the roadmap reporting chain \u2014 only the hand-run probe does \u2014 while the entry-shaped analogue is already covered at tests/test_roadmap.py:376.",
+    "evidence": "the reviewed manifest's own gate logs (3 failed / 1659 passed at e6a86550; 3 failed / 1661 passed at 5bb94009) carry byte-identical failure ids, zero added; the withheld point is the templated tests: field named in the FINDING.",
+    "fit": "the carrier is a module-level constant beside SECTION_DEPENDS_ON_META (reckon/_schema.py:347-351) and the refusal reuses the existing invalid-section-dependency code and refusals row shape; ruff check reports the same 10 pre-existing findings in both arms and ruff format --check is clean at head.",
+    "goal_fidelity": "reckon/_schema.py:398-409 carries the defect under a key the segment grammar cannot produce, and both edge builders gate on that grammar (reckon/roadmap.py:582, reckon/mcp.py:1470), so the refusal is reported and no phantom section enters a readiness set \u2014 verified directly against head.",
+    "scope_discipline": "the range touches exactly the five fenced paths, both landing documents are append-only with zero deletions, and no plan-version, plan-modified or plan-impl line appears in the plan diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to stop a whole malformed plan-section-depends-on value from reading as no declaration; reckon/_schema.py:398-409 at head 5bb94009 returns a one-entry mapping keyed by SECTION_DEPENDS_ON_DEFECT_KEY (:351) instead of None, and reckon/_schema.py:462 routes that entry into the existing invalid-section-dependency refusal, so the roadmap reports the defect.\nVERDICT done_when: the done-when names two cases, both arms, the negative control and a zero suite delta; the manifest records each, and I reproduced both arms myself (2 passed at head; 2 failed with only reckon/_schema.py reverted to e6a86550), plus a direct call showing is_section_identity('<plan-section-depends-on>') is False and a valid mapping still yields its edge.\nVERDICT write_paths: read the five declared paths against the range e6a86550..5bb94009; every changed path is inside them (reckon/_schema.py, tests/test_schema.py, the two landing documents and the new figure) and nothing else in the range leaves the fence.\nVERDICT manifest: read; its baseline_suite and after_suite name both gate logs with revisions, commands and log paths, its failure_ids match both logs' summaries, and its derived added-failure count is 0 and [] \u2014 re-derived here through reckon.crew.review.annotate_review_of_run; its tests: field is a template carrying <worktree> placeholders (FINDING).\nVERDICT diff: read commit by commit. 7865ebda replaces the two silent None returns with the carrier mapping and adds the carrier branch to section_dependency_refusals; 5bb94009 appends the landing record, the evidence anchor and the figure. The only deletions in the range are the two return None lines and the docstring sentences they contradicted; both landing documents are append-only (70 and 33 insertions, 0 deletions) and no plan-* meta line is touched.\nCALL_SITES: reckon/roadmap.py:_build_roadmap, reckon/roadmap.py:_section_scoped_edges, reckon/mcp.py:_read_plan, reckon/mcp.py:_section_dependency_rows\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_schema.py:398-409 carries the defect under a key the segment grammar cannot produce, and both edge builders gate on that grammar (reckon/roadmap.py:582, reckon/mcp.py:1470), so the refusal is reported and no phantom section enters a readiness set \u2014 verified directly against head.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed manifest's own gate logs (3 failed / 1659 passed at e6a86550; 3 failed / 1661 passed at 5bb94009) carry byte-identical failure ids, zero added; the withheld point is the templated tests: field named in the FINDING.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the range touches exactly the five fenced paths, both landing documents are append-only with zero deletions, and no plan-version, plan-modified or plan-impl line appears in the plan diff.\nSCORE durability: 19\nJUSTIFICATION durability: both added cases redden when the change's own file is reverted in a scratch copy (my arms: 2 failed at base, 2 passed at head), so the guards fire; the withheld point is that no added test drives the whole-value case through the roadmap reporting chain \u2014 only the hand-run probe does \u2014 while the entry-shaped analogue is already covered at tests/test_roadmap.py:376.\nSCORE fit: 20\nJUSTIFICATION fit: the carrier is a module-level constant beside SECTION_DEPENDS_ON_META (reckon/_schema.py:347-351) and the refusal reuses the existing invalid-section-dependency code and refusals row shape; ruff check reports the same 10 pre-existing findings in both arms and ruff format --check is clean at head.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101434576396-malformed-section-map-is-named/manifest.md:15 the manifest's tests: field states the gate as a template, env -C <worktree> PYTHONPATH=<worktree> ... pytest -q tests/test_schema.py tests/test_roadmap.py, so the command that actually ran cannot be reconstructed from the field itself; the dispatch contract asks for the command that ran, and the real ones survive only in the two gate logs' own header lines, while the same audit (reckon crew check-manifest) exits 0 on this run.\nADDED FAILURES: 0, measured rather than asserted: the reviewed manifest names baseline_suite (logs/gate-base.txt, revision e6a86550) and after_suite (logs/gate-head-final.txt, revision 5bb94009), and reckon.crew.review.annotate_review_of_run over them returns count=0 with no ids, since both logs report the same three pre-existing failures (test_canonical_dump_equals_read_state[full] and two test_cross_project_conformance params). A positive control on the same reader sees a failure known to be present: a synthesised pair whose head adds tests/b.py::test_y returns count=1 with that id, an identical pair returns 0, and a one-sided pair returns None. Log: logs/two-arm-verification.txt.\n",
+  "review_run_id": "r-20260928T110303524434-review-of-malformed-section-map-is-named",
+  "reviewed_base_sha": "e6a865505e9c1dcbb560602087616c71ebd04b06",
+  "reviewed_head_sha": "5bb94009b73920467bd17a0c815c1fe413f5f014",
+  "reviewed_run_id": "r-20260928T101434576396-malformed-section-map-is-named",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T11:25:45.976912+00:00",
+  "total": 98
+}

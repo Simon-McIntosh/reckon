@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3392",
+    "reckon/crew.py:150"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T17:48:31.957269+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree/gate_log.log",
+      "line": "1",
+      "text": "this run's own gate log names no revision, no tree and no command \u2014 its entire content is the pytest progress line, \"32 passed in 0.96s\" and \"EXIT=0\" \u2014 so the log offered as this node's evidence is the exact shape the section exists to remove, tieable to a tree only through the manifest that the section's own incident says may be gone."
+    },
+    {
+      "file": "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+      "line": "1382",
+      "text": "the anchor states the negative half was shown to fire at 1 failed / 3 passed and the manifest repeats it, but the run directory holds no log of that probe, so as recorded the claim rests on the worker's word; I reproduced it in a scratch copy and it holds (receipt at the review run's negative_half_probe.log), and the missing log rather than the result is the defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base d061e49b; the fix commit rewrites two manifest-gloss lines in reckon/crew/prompts.py, the docs commit adds the test module, a three-line plan comment and a 74-line evidence section, and the committed tree carries the sentence exactly once with no mutation residue.",
+    "done_when": "the done_when names four cases entering through compose_prompt plus a declared mutation whose red log carries it verbatim; the manifest records the gate population at 32 passed exit 0, the run directory holds gate_log.log and negative_control.log, that log's first line is byte-identical to the declared mutation (measured, equal strings), and my re-run of the named population at the fixed tree is 32 passed exit 0.",
+    "goal": "the goal asks the manifest template to state that a gate log names the revision, tree and command it ran and that a recorded gate command is the one that ran; composing the prompt from the fixed tree renders both statements at reckon/crew/prompts.py:262-263, which I reproduced with my own compose_prompt call against commit 7892cb69.",
+    "manifest": "read; it states the gate command and its result, names the red log, the separately probed negative half and the pre-existing unrelated failure, and its one loose figure is \"4 pre-existing findings\" on reckon/crew/prompts.py, which counts ruff's two summary lines beside the two findings I measured identically at base and head.",
+    "write_paths": "the manifest declares five paths; the diff d061e49b..7892cb69 touches four of them with 197 insertions and 2 deletions, all inside, the fifth being a figures directory the change did not need, and no other path appears."
+  },
+  "justifications": {
+    "durability": "tests/test_gate_log_names_its_tree.py:93 fails if the first-line sentence leaves the template and :108 fails if the angle-bracket placeholder returns, both shown red, though :111 pins the single literal token <worktree> rather than the angle-bracket form.",
+    "evidence": "the gate's result is recorded in the manifest beside gate_log.log, the declared mutation reddened exactly its own case at 1 failed / 3 passed, and the negative half fires under my own scratch probe at 1 failed / 3 passed, but two records this run leaves fall short of the section's own subject (the two findings below).",
+    "fit": "the two glosses sit in the manifest template beside the negative_control_log line whose convention :117 pins, the added sentence carries no angle bracket so a worker's placeholder substitution cannot erase it, and neither the module nor the test file carries a plan, version or ticket identifier.",
+    "goal_fidelity": "compose_prompt at commit 7892cb69 renders tests: \"<the gate command that actually ran, and its result \u2014 never a template command carrying an unsubstituted placeholder>\" and test_logs: \"<paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command\", which is both halves of the goal verbatim.",
+    "scope_discipline": "the diff is four of the five declared paths, 197 insertions and 2 deletions with the deletions being the two replaced gloss lines, no plan-version or plan-modified edit, and my lint delta on reckon/crew/prompts.py is zero (UP035 line 6 and S608 line 217 identical at base and head)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the manifest template to state that a gate log names the revision, tree and command it ran and that a recorded gate command is the one that ran; composing the prompt from the fixed tree renders both statements at reckon/crew/prompts.py:262-263, which I reproduced with my own compose_prompt call against commit 7892cb69.\nVERDICT done_when: the done_when names four cases entering through compose_prompt plus a declared mutation whose red log carries it verbatim; the manifest records the gate population at 32 passed exit 0, the run directory holds gate_log.log and negative_control.log, that log's first line is byte-identical to the declared mutation (measured, equal strings), and my re-run of the named population at the fixed tree is 32 passed exit 0.\nVERDICT write_paths: the manifest declares five paths; the diff d061e49b..7892cb69 touches four of them with 197 insertions and 2 deletions, all inside, the fifth being a figures directory the change did not need, and no other path appears.\nVERDICT manifest: read; it states the gate command and its result, names the red log, the separately probed negative half and the pre-existing unrelated failure, and its one loose figure is \"4 pre-existing findings\" on reckon/crew/prompts.py, which counts ruff's two summary lines beside the two findings I measured identically at base and head.\nVERDICT diff: read commit by commit against base d061e49b; the fix commit rewrites two manifest-gloss lines in reckon/crew/prompts.py, the docs commit adds the test module, a three-line plan comment and a 74-line evidence section, and the committed tree carries the sentence exactly once with no mutation residue.\nCALL_SITES: reckon/crew/dispatch.py:3392, reckon/crew.py:150\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: compose_prompt at commit 7892cb69 renders tests: \"<the gate command that actually ran, and its result \u2014 never a template command carrying an unsubstituted placeholder>\" and test_logs: \"<paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command\", which is both halves of the goal verbatim.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate's result is recorded in the manifest beside gate_log.log, the declared mutation reddened exactly its own case at 1 failed / 3 passed, and the negative half fires under my own scratch probe at 1 failed / 3 passed, but two records this run leaves fall short of the section's own subject (the two findings below).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is four of the five declared paths, 197 insertions and 2 deletions with the deletions being the two replaced gloss lines, no plan-version or plan-modified edit, and my lint delta on reckon/crew/prompts.py is zero (UP035 line 6 and S608 line 217 identical at base and head).\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_gate_log_names_its_tree.py:93 fails if the first-line sentence leaves the template and :108 fails if the angle-bracket placeholder returns, both shown red, though :111 pins the single literal token <worktree> rather than the angle-bracket form.\nSCORE fit: 19\nJUSTIFICATION fit: the two glosses sit in the manifest template beside the negative_control_log line whose convention :117 pins, the added sentence carries no angle bracket so a worker's placeholder substitution cannot erase it, and neither the module nor the test file carries a plan, version or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree/gate_log.log:1 this run's own gate log names no revision, no tree and no command \u2014 its entire content is the pytest progress line, \"32 passed in 0.96s\" and \"EXIT=0\" \u2014 so the log offered as this node's evidence is the exact shape the section exists to remove, tieable to a tree only through the manifest that the section's own incident says may be gone.\nFINDING docs/evidence/archive/crew-runtime-positive-controls-landed.html:1382 the anchor states the negative half was shown to fire at 1 failed / 3 passed and the manifest repeats it, but the run directory holds no log of that probe, so as recorded the claim rests on the worker's word; I reproduced it in a scratch copy and it holds (receipt at the review run's negative_half_probe.log), and the missing log rather than the result is the defect.",
+  "review_run_id": "r-20260921T174831957269-review-of-the-template-says-a-gate-log-names-its-tree",
+  "reviewed_base": "d061e49b9a76a1c319fce1cbbc0d91a7783aa8f6",
+  "reviewed_commit": "7892cb69128523ac598e02f62babaf56b6b71c17",
+  "reviewed_run_id": "r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260921T174831957269-review-of-the-template-says-a-gate-log-names-its-tree",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T18:02:29.378304+00:00",
+  "total": 96
+}

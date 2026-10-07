@@ -1,0 +1,34 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T06:11:19.884781+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "the committed case tests/test_crew_prompts.py:151 fails if the guidance reverts to the resumed-worker-only scoping, which I demonstrated by running the head test file against the base prompt source, and tests/test_crew_prompts.py:138 continues to hold the key's presence in the time fence.",
+    "evidence": "tests/test_crew_prompts.py:151 asserts the introduced literal against the composed prompt in both the manifest checkpoint line and the time fence, and both directions were re-run here independently (24 passed at head; at base 23 passed 1 failed with AssertionError inside _manifest_line(prompt, \"checkpoint\")), matching the recorded /tmp/base_prompts_repro.log.",
+    "fit": "the two sentences are written in the template's own voice beside the clauses they amend, the test constant CHECKPOINT_FOR_ANY_WORKER names the guidance rather than a plan item, both commits carry subjects with bodies and clean trailers, and no second copy of the scoped wording exists under skills/reckon-ship or docs.",
+    "goal_fidelity": "reckon/crew/prompts.py:241 and :259 now point any worker recording progress at the checkpoint key; composing the prompt from the landed commit yields the literal \"any worker recording progress at any point\" in both the checkpoint line and the time fence, and composing from f1213d97 yields neither.",
+    "scope_discipline": "the diff f1213d97..3d7fbd4b touches exactly the four declared write paths (numstat 29/13/2/16 insertions, two deletions in one file), leaves the plan-version and plan-modified meta lines untouched, adds no banned label on its added lines, and moves the ruff finding count on the two code paths by zero (4 at base, 4 at head)."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:241 and :259 now point any worker recording progress at the checkpoint key; composing the prompt from the landed commit yields the literal \"any worker recording progress at any point\" in both the checkpoint line and the time fence, and composing from f1213d97 yields neither.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_crew_prompts.py:151 asserts the introduced literal against the composed prompt in both the manifest checkpoint line and the time fence, and both directions were re-run here independently (24 passed at head; at base 23 passed 1 failed with AssertionError inside _manifest_line(prompt, \"checkpoint\")), matching the recorded /tmp/base_prompts_repro.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff f1213d97..3d7fbd4b touches exactly the four declared write paths (numstat 29/13/2/16 insertions, two deletions in one file), leaves the plan-version and plan-modified meta lines untouched, adds no banned label on its added lines, and moves the ruff finding count on the two code paths by zero (4 at base, 4 at head).\nSCORE durability: 19\nJUSTIFICATION durability: the committed case tests/test_crew_prompts.py:151 fails if the guidance reverts to the resumed-worker-only scoping, which I demonstrated by running the head test file against the base prompt source, and tests/test_crew_prompts.py:138 continues to hold the key's presence in the time fence.\nSCORE fit: 19\nJUSTIFICATION fit: the two sentences are written in the template's own voice beside the clauses they amend, the test constant CHECKPOINT_FOR_ANY_WORKER names the guidance rather than a plan item, both commits carry subjects with bodies and clean trailers, and no second copy of the scoped wording exists under skills/reckon-ship or docs.",
+  "review_run_id": "r-20260917T061119884781-review-of-the-checkpoint-slot-is-offered-to-every-worker",
+  "reviewed_run_id": "r-20260917T050158346954-the-checkpoint-slot-is-offered-to-every-worker",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260917T061119884781-review-of-the-checkpoint-slot-is-offered-to-every-worker",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T06:39:33.389643+00:00",
+  "total": 96
+}

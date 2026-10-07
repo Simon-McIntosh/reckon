@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T14:07:05.286Z",
+  "dispatched_at": "2026-09-30T13:56:14Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/review-dies-currency/report.md",
+      "line": "144",
+      "text": "the sentence \"The `.at-<sha>` sibling is named by no dispatch at all, so it is stray even when the declaration is granted\" is false at the revision the report reads: the review dispatch composes write_paths from both the legacy store path and the reviewed_head_sha-keyed sibling (reckon/crew/recovery.py:435-438), so the sibling is refused for the same reason as the legacy record - an absolute declaration outside the repository resolves to no root in promotion._repository_scope_paths (reckon/crew/promotion.py:2011-2033) - and the probe models the pre-grant shape with write_paths defaulting to the legacy path alone (review_currency_probe.py:80), so a repairer following the report's smallest change (c) is sent to add a grant that already exists."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/review-dies-currency/report.md",
+      "line": "147",
+      "text": "the claim that promotion._outside_declared_scope was \"measured, same probe home\" has no recorded measurement: the probe drives only check-manifest cases A-E (review_currency_probe.py:82-144) and its captured output contains no call to that function, so this half of item (2)'s deciding code cannot be re-run the way the refusals can; the claim is plausible - a dropped declaration leaves no root - but it is carried with a receipt it does not have."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no repository diff - commits: none and the worktree is clean at b04701d0e - so the landed change is the three report-directory files: report.md, the 144-line probe that puts the tree under audit on sys.path and asserts it (review_currency_probe.py:18-26), and its captured output naming revision, tree, command, module under test and cwd.",
+    "done_when": "the done-when asks for the three items at b04701d0e with a verdict, the deciding file and line, any pinning test, the smallest change and the test that would pin each unmet item, plus \u00a79's prevention and \u00a71's correlation; report.md:22-108, :112-205, :209-262, :266-310 and :314-353 give all of it, the commits for items already met are listed at :357-369, and I reproduced the item (2) refusals verbatim on the run's own manifest (logs/verify-reproduce.log).",
+    "goal": "the node's goal is to report which items of followup f-ardwnil-002 and of sections \u00a71 and \u00a79 stay unmet at b04701d0e, and report.md:16-18 states the headline - two of the three f-ardwnil-002 items unmet and reproduced, one partly met, \u00a79's demonstration recorded without its prevention, \u00a71's instrument shipped without its correlation - with a section per item carrying a verdict and a deciding file and line.",
+    "manifest": "read at the run directory as manifest.md; status complete; its declared check-manifest refusal reproduces exactly - my own invocation returns ok false with \"status is complete but no commit is recorded\" and the three report paths outside the declared scope - and the probe command its tests line names is the command its artifact log records at b04701d0e.",
+    "write_paths": "the granted scope is the absolute directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/review-dies-currency; all three products (report.md, review_currency_probe.py, review_currency_probe.out) lie inside it, the audited worktree is clean at b04701d0e, and the manifest declares no repository path changed."
+  },
+  "justifications": {
+    "durability": "the probe is re-runnable and carries its own positive control, but no test pins any of the three items - the report records \"Pinning test: none\" for item (2) at report.md:189 - and the two code defects it reports at tests/test_a_delivered_review_ends_its_turn.py:189 and reckon/crew/recovery.py:681 stay green under the regressions it names.",
+    "evidence": "the item (2) reproduction drives the real CLI with a positive control (review_currency_probe.out cases A-D refuse, case E accepts) and the live refusal reproduces on my own invocation against the reviewed run's manifest (logs/verify-reproduce.log), but two claims are stronger in wording than in receipt - see the findings.",
+    "fit": "the report follows the sibling currency report's structure with citations that land on the lines they name, and the probe follows the house idiom (a module docstring stating the mechanism at review_currency_probe.py:1-8, the tree under audit asserted at :26) with the field case's run id as literal data only and no plan label in any name.",
+    "goal_fidelity": "report.md answers all three items and both sections at b04701d0e with verdicts the tree supports, among them item (1)'s two unmet arms - no reader of an operator lane pause exists in reckon/ at this revision, and _review_lane_candidates consults no launch kind (reckon/crew/recovery.py) - and the \u00a79 and \u00a71 verdicts match the data files they cite.",
+    "scope_discipline": "the reviewed run's three products all sit inside its single granted directory, its worktree is clean with no repository commit at b04701d0e, and nothing it wrote reaches another node's scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to report which items of followup f-ardwnil-002 and of sections \u00a71 and \u00a79 stay unmet at b04701d0e, and report.md:16-18 states the headline - two of the three f-ardwnil-002 items unmet and reproduced, one partly met, \u00a79's demonstration recorded without its prevention, \u00a71's instrument shipped without its correlation - with a section per item carrying a verdict and a deciding file and line.\nVERDICT done_when: the done-when asks for the three items at b04701d0e with a verdict, the deciding file and line, any pinning test, the smallest change and the test that would pin each unmet item, plus \u00a79's prevention and \u00a71's correlation; report.md:22-108, :112-205, :209-262, :266-310 and :314-353 give all of it, the commits for items already met are listed at :357-369, and I reproduced the item (2) refusals verbatim on the run's own manifest (logs/verify-reproduce.log).\nVERDICT write_paths: the granted scope is the absolute directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/review-dies-currency; all three products (report.md, review_currency_probe.py, review_currency_probe.out) lie inside it, the audited worktree is clean at b04701d0e, and the manifest declares no repository path changed.\nVERDICT manifest: read at the run directory as manifest.md; status complete; its declared check-manifest refusal reproduces exactly - my own invocation returns ok false with \"status is complete but no commit is recorded\" and the three report paths outside the declared scope - and the probe command its tests line names is the command its artifact log records at b04701d0e.\nVERDICT diff: there is no repository diff - commits: none and the worktree is clean at b04701d0e - so the landed change is the three report-directory files: report.md, the 144-line probe that puts the tree under audit on sys.path and asserts it (review_currency_probe.py:18-26), and its captured output naming revision, tree, command, module under test and cwd.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md answers all three items and both sections at b04701d0e with verdicts the tree supports, among them item (1)'s two unmet arms - no reader of an operator lane pause exists in reckon/ at this revision, and _review_lane_candidates consults no launch kind (reckon/crew/recovery.py) - and the \u00a79 and \u00a71 verdicts match the data files they cite.\nSCORE evidence: 18\nJUSTIFICATION evidence: the item (2) reproduction drives the real CLI with a positive control (review_currency_probe.out cases A-D refuse, case E accepts) and the live refusal reproduces on my own invocation against the reviewed run's manifest (logs/verify-reproduce.log), but two claims are stronger in wording than in receipt - see the findings.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the reviewed run's three products all sit inside its single granted directory, its worktree is clean with no repository commit at b04701d0e, and nothing it wrote reaches another node's scope.\nSCORE durability: 17\nJUSTIFICATION durability: the probe is re-runnable and carries its own positive control, but no test pins any of the three items - the report records \"Pinning test: none\" for item (2) at report.md:189 - and the two code defects it reports at tests/test_a_delivered_review_ends_its_turn.py:189 and reckon/crew/recovery.py:681 stay green under the regressions it names.\nSCORE fit: 19\nJUSTIFICATION fit: the report follows the sibling currency report's structure with citations that land on the lines they name, and the probe follows the house idiom (a module docstring stating the mechanism at review_currency_probe.py:1-8, the tree under audit asserted at :26) with the field case's run id as literal data only and no plan label in any name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/review-dies-currency/report.md:144 the sentence \"The `.at-<sha>` sibling is named by no dispatch at all, so it is stray even when the declaration is granted\" is false at the revision the report reads: the review dispatch composes write_paths from both the legacy store path and the reviewed_head_sha-keyed sibling (reckon/crew/recovery.py:435-438), so the sibling is refused for the same reason as the legacy record - an absolute declaration outside the repository resolves to no root in promotion._repository_scope_paths (reckon/crew/promotion.py:2011-2033) - and the probe models the pre-grant shape with write_paths defaulting to the legacy path alone (review_currency_probe.py:80), so a repairer following the report's smallest change (c) is sent to add a grant that already exists.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/review-dies-currency/report.md:147 the claim that promotion._outside_declared_scope was \"measured, same probe home\" has no recorded measurement: the probe drives only check-manifest cases A-E (review_currency_probe.py:82-144) and its captured output contains no call to that function, so this half of item (2)'s deciding code cannot be re-run the way the refusals can; the claim is plausible - a dropped declaration leaves no root - but it is carried with a receipt it does not have.",
+  "review_run_id": "legacy-6421614c39bc",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "b04701d0ed786a6a7ccecb582c253c136b90417e",
+  "reviewed_head_sha": "b04701d0ed786a6a7ccecb582c253c136b90417e",
+  "reviewed_run_id": "r-20260930T135603070793-review-dies-currency",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T14:21:34.841773+00:00",
+  "total": 92
+}

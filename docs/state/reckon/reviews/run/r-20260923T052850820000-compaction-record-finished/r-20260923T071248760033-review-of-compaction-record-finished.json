@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T07:12:48.760033+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+      "line": "16",
+      "text": "the landing commits 06a008fb and 3263f5a1 are absent from plan-commits although this landing appended plan-artifacts and plan-verifies; every prior landing in this file appended its own commits, so a reader cannot resolve the s9 anchor's citations from the record's commit list."
+    },
+    {
+      "file": "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+      "line": "10",
+      "text": "plan-summary still counts Four sections of the plan each recorded by its own node while this landing adds a fifth (s9), so the record's own summary under-describes the sections it now verifies."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base 2855d7175c5fc0b54bce62593c0c5d220f366989; four paths, all data and docs, no code touched.",
+    "done_when": "the done_when names the two compaction records with file, line, trigger and pre_tokens, the after-compaction count, ended_with_complete_manifest false with the resume-3 refusal, and the same figures in the s9 anchor; the gate log at 3263f5a1 prints each and PASS.",
+    "goal": "the node goal is to complete the compaction demonstration record from the dead run's own streams; docs/research/data/compaction-demonstration.json:31-59 fills compaction_events, results_written_after_compaction, manifest_refusal and early_turn_end.",
+    "manifest": "read; it states the gate command (a python3 check over the two source streams and the record), EXIT=0, the gate log path and the figures.",
+    "write_paths": "read the manifest's four declared paths; the diff changes exactly those four -- docs/research/data/compaction-demonstration.json, docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html, docs/plans/a-review-dies-where-nobody-is-looking.html, and docs/figures/a-review-dies-where-nobody-is-looking/compaction-timeline.svg."
+  },
+  "justifications": {
+    "durability": "no committed assertion fails if the record drifts from the source streams; the gate ran from /tmp/gate_s9.py, an ephemeral script not in the commit, so a later reader cannot re-run the check.",
+    "evidence": "the gate log at 3263f5a1 reproduces every done-when figure and I re-derived the two records, after=37, the refusal and the early_turn_end from the source streams; but the evidence record's plan-commits at docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:16 omits the two landing commits, so the anchor's citations cannot be resolved from the record.",
+    "fit": "the record follows the docs/research/data JSON idiom and the s9 section and figure follow docs/evidence/archive with the project-absolute /reckon/figures src and no banned names, though the ephemeral gate and the stale plan-summary are rough edges.",
+    "goal_fidelity": "docs/research/data/compaction-demonstration.json:31-59 lists both compaction records (stream.jsonl:3904 pre_tokens 176242; resume-1.jsonl:459 pre_tokens 171919), which my own JSON scan of the two source streams reproduces exactly.",
+    "scope_discipline": "the diff's four paths are exactly the four declared write paths with no code touched, though the node left plan-summary at docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:10 reading Four sections after adding a fifth."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to complete the compaction demonstration record from the dead run's own streams; docs/research/data/compaction-demonstration.json:31-59 fills compaction_events, results_written_after_compaction, manifest_refusal and early_turn_end.\nVERDICT done_when: the done_when names the two compaction records with file, line, trigger and pre_tokens, the after-compaction count, ended_with_complete_manifest false with the resume-3 refusal, and the same figures in the s9 anchor; the gate log at 3263f5a1 prints each and PASS.\nVERDICT write_paths: read the manifest's four declared paths; the diff changes exactly those four -- docs/research/data/compaction-demonstration.json, docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html, docs/plans/a-review-dies-where-nobody-is-looking.html, and docs/figures/a-review-dies-where-nobody-is-looking/compaction-timeline.svg.\nVERDICT manifest: read; it states the gate command (a python3 check over the two source streams and the record), EXIT=0, the gate log path and the figures.\nVERDICT diff: read both commits against base 2855d7175c5fc0b54bce62593c0c5d220f366989; four paths, all data and docs, no code touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/research/data/compaction-demonstration.json:31-59 lists both compaction records (stream.jsonl:3904 pre_tokens 176242; resume-1.jsonl:459 pre_tokens 171919), which my own JSON scan of the two source streams reproduces exactly.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log at 3263f5a1 reproduces every done-when figure and I re-derived the two records, after=37, the refusal and the early_turn_end from the source streams; but the evidence record's plan-commits at docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:16 omits the two landing commits, so the anchor's citations cannot be resolved from the record.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff's four paths are exactly the four declared write paths with no code touched, though the node left plan-summary at docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:10 reading Four sections after adding a fifth.\nSCORE durability: 9\nJUSTIFICATION durability: no committed assertion fails if the record drifts from the source streams; the gate ran from /tmp/gate_s9.py, an ephemeral script not in the commit, so a later reader cannot re-run the check.\nSCORE fit: 17\nJUSTIFICATION fit: the record follows the docs/research/data JSON idiom and the s9 section and figure follow docs/evidence/archive with the project-absolute /reckon/figures src and no banned names, though the ephemeral gate and the stale plan-summary are rough edges.\nFINDING docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:16 the landing commits 06a008fb and 3263f5a1 are absent from plan-commits although this landing appended plan-artifacts and plan-verifies; every prior landing in this file appended its own commits, so a reader cannot resolve the s9 anchor's citations from the record's commit list.\nFINDING docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:10 plan-summary still counts Four sections of the plan each recorded by its own node while this landing adds a fifth (s9), so the record's own summary under-describes the sections it now verifies.",
+  "review_run_id": "r-20260923T071248760033-review-of-compaction-record-finished",
+  "reviewed_base_sha": "2855d7175c5fc0b54bce62593c0c5d220f366989",
+  "reviewed_head_sha": "3263f5a1a93e3cbc3c3ae57f36bc87ae7eefad39",
+  "reviewed_run_id": "r-20260923T052850820000-compaction-record-finished",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260923T071248760033-review-of-compaction-record-finished",
+  "scores": {
+    "durability": 9,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T07:47:47.851337+00:00",
+  "total": 77
+}

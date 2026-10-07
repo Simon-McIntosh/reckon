@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:main",
+    "reckon/budget.py:1440"
+  ],
+  "completed_at": "2026-09-25T14:50:59.872Z",
+  "dispatched_at": "2026-09-25T13:48:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+      "line": "790",
+      "text": "the row says \"recent observed windows\" for claude, claude-opus, codex-astra and codex-terra, but the receipt it cites marks all four stale (ages 53 h, 21 d, 2.8 h and 13 h), so a reader checking freshness is told the reverse of the artifact."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against base 9d5f2815: 904d3baf adds the rollout reader and the local-lane publication, 6b51b1ee honours the document's published shelf life with a regression test, f863abdb feeds a real Claude stream file and adds the stream-removal case, and b44fcb9d with 2aad37b3 carry the landing records; the three findings of the review taken at b44fcb9d are each repaired.",
+    "done_when": "All five clauses are met: tests/test_headroom_publishes_real_readings.py passed 4 when I re-ran it at the reviewed head, host-publish.json observes a non-unknown reading for each of the six event-carrying accounts plus the local block, the declared control's log opens with its declared line verbatim, the paid-lanes and budget gate stays at 84 passed against base, and the evidence anchor is section id=\"headroom-publishes-real-readings\" at docs/evidence/archive/the-local-lane-is-the-default-landed.html:774.",
+    "goal": "The goal is that the published headroom document reads codex-family windows from ~/.codex/sessions rollouts, keeps the Claude stream path, and publishes the local lane block from ~/public/imas-ambix/lane.json; host-publish.json shows claude, claude-opus, codex, codex-astra, codex-luna and codex-terra observed beside a measured local-lane block.",
+    "manifest": "Read; status complete with five commits, and every figure it states re-derived: at 2aad37b3 the worktree is clean, host-publish.json carries the ten declared accounts, and the artifacts line's local block (running=12, ceiling=19, headroom=7, gate_waiting=0, in_flight=13, kv_occupancy=0.28, prefix_hit_rate=0.988, stale=false) equals the receipt exactly.",
+    "write_paths": "The base-to-head diff names five files - reckon/crew/paid_lanes.py, reckon/budget.py, tests/test_headroom_publishes_real_readings.py, docs/evidence/archive/the-local-lane-is-the-default-landed.html and docs/plans/the-local-lane-is-the-default.html - all declared, with the declared figures directory holding no file."
+  },
+  "justifications": {
+    "durability": "tests/test_headroom_publishes_real_readings.py reddens under the reinstated shelf-life defect - the recorded reproduction shows age_seconds=1800.0 with a 45-second shelf life reading stale=False - and under the removed rollout and stream readers.",
+    "evidence": "every figure in the landing record and the manifest re-derives from host-publish.json except the word \"recent\" at docs/evidence/archive/the-local-lane-is-the-default-landed.html:790, which the receipt contradicts for four stale windows.",
+    "fit": "the new helpers at reckon/crew/paid_lanes.py:642 and :167 are named for their mechanism and follow the module's gatherer/compose split, and no plan, node or ticket identifier appears in the diff or the five commit messages.",
+    "goal_fidelity": "reckon/crew/paid_lanes.py:159 and :642 supply exactly the three sources the goal names, and host-publish.json records the resulting readings for six accounts.",
+    "scope_discipline": "git diff --name-only 9d5f2815..2aad37b3 names exactly the five declared files, and the reviewed worktree is clean at 2aad37b3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that the published headroom document reads codex-family windows from ~/.codex/sessions rollouts, keeps the Claude stream path, and publishes the local lane block from ~/public/imas-ambix/lane.json; host-publish.json shows claude, claude-opus, codex, codex-astra, codex-luna and codex-terra observed beside a measured local-lane block.\nVERDICT done_when: All five clauses are met: tests/test_headroom_publishes_real_readings.py passed 4 when I re-ran it at the reviewed head, host-publish.json observes a non-unknown reading for each of the six event-carrying accounts plus the local block, the declared control's log opens with its declared line verbatim, the paid-lanes and budget gate stays at 84 passed against base, and the evidence anchor is section id=\"headroom-publishes-real-readings\" at docs/evidence/archive/the-local-lane-is-the-default-landed.html:774.\nVERDICT write_paths: The base-to-head diff names five files - reckon/crew/paid_lanes.py, reckon/budget.py, tests/test_headroom_publishes_real_readings.py, docs/evidence/archive/the-local-lane-is-the-default-landed.html and docs/plans/the-local-lane-is-the-default.html - all declared, with the declared figures directory holding no file.\nVERDICT manifest: Read; status complete with five commits, and every figure it states re-derived: at 2aad37b3 the worktree is clean, host-publish.json carries the ten declared accounts, and the artifacts line's local block (running=12, ceiling=19, headroom=7, gate_waiting=0, in_flight=13, kv_occupancy=0.28, prefix_hit_rate=0.988, stale=false) equals the receipt exactly.\nVERDICT diff: Read commit by commit against base 9d5f2815: 904d3baf adds the rollout reader and the local-lane publication, 6b51b1ee honours the document's published shelf life with a regression test, f863abdb feeds a real Claude stream file and adds the stream-removal case, and b44fcb9d with 2aad37b3 carry the landing records; the three findings of the review taken at b44fcb9d are each repaired.\nCALL_SITES: reckon/crew/paid_lanes.py:main, reckon/budget.py:1440\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/paid_lanes.py:159 and :642 supply exactly the three sources the goal names, and host-publish.json records the resulting readings for six accounts.\nSCORE evidence: 17\nJUSTIFICATION evidence: every figure in the landing record and the manifest re-derives from host-publish.json except the word \"recent\" at docs/evidence/archive/the-local-lane-is-the-default-landed.html:790, which the receipt contradicts for four stale windows.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 9d5f2815..2aad37b3 names exactly the five declared files, and the reviewed worktree is clean at 2aad37b3.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_headroom_publishes_real_readings.py reddens under the reinstated shelf-life defect - the recorded reproduction shows age_seconds=1800.0 with a 45-second shelf life reading stale=False - and under the removed rollout and stream readers.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at reckon/crew/paid_lanes.py:642 and :167 are named for their mechanism and follow the module's gatherer/compose split, and no plan, node or ticket identifier appears in the diff or the five commit messages.\nFINDING docs/evidence/archive/the-local-lane-is-the-default-landed.html:790 the row says \"recent observed windows\" for claude, claude-opus, codex-astra and codex-terra, but the receipt it cites marks all four stale (ages 53 h, 21 d, 2.8 h and 13 h), so a reader checking freshness is told the reverse of the artifact.\n",
+  "review_run_id": "r-20260925T134804008927-re-review-of-headroom-publishes-real-readings",
+  "reviewed_base_sha": "9d5f2815ec4b75ba62d086d0abc76c7f12c8b5af",
+  "reviewed_head_sha": "2aad37b3bbc20ed96776c5e37f9980802f4da234",
+  "reviewed_run_id": "r-20260925T115122496308-headroom-publishes-real-readings",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T14:49:08.147356+00:00",
+  "total": 91
+}

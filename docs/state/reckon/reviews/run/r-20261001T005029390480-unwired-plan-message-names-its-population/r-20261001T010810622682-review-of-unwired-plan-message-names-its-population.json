@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/doccheck.py:886",
+    "reckon/roadmap.py:824",
+    "reckon/mcp.py:1886"
+  ],
+  "completed_at": "2026-10-01T01:18:28.160Z",
+  "dispatched_at": "2026-10-01T01:08:25Z",
+  "findings": [
+    {
+      "file": "tests/test_doccheck_unwired_plan.py",
+      "line": "81",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares finding.message against unwired_plan_finding(...).message, both of which call unwired_plan_message(slug='sample'), so the two sides move together and the test is vacuous for message content \u2014 it did not and cannot catch the very text change this node made, which is why the node's own tests were needed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; ce39ed5b1 adds the constant and the clause plus two tests, 1a3e30e8d adds only the fragment, and no diff line removes behaviour beyond the two new tests' expectations of the old text.",
+    "done_when": "the done_when requires a base reproduction, a new tests/test_unwired_plan_message_names_its_population.py pinning the message and the count, a red negative control, base+head gate arms, and ruff delta; the manifest records all of them.",
+    "goal": "the node goal is that unwired_plan_message in reckon/_schema.py states the population the audit counts over; reckon/_schema.py:314 adds UNWIRED_PLAN_POPULATION and :334 appends it to the composed message.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T005029390480-unwired-plan-message-names-its-population/manifest.md; it names base 2 failed/102 passed EXIT=1, head 104 passed EXIT=0, the negative control 2 failed, and ruff 9=9 across the revisions.",
+    "write_paths": "read the manifest's four declared paths; git diff --stat 39fff0435..1a3e30e8d touches exactly reckon/_schema.py, the new test file and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_unwired_plan_message_names_its_population.py:68 asserts the clause against an independent literal and :87 pins the plan-scoped count, both reddened by the declared mutation in gate-logs/gate-negative-control.log.",
+    "evidence": "the gate names the reproduction at gate-logs/reproduction-base.log and the base/head arms at gate-logs/gate-base.log and gate-head.log with completion and EXIT lines, though the clause that every existing caller's output stays unchanged is covered only transitively, since tests/test_doccheck_unwired_plan.py:81 compares two calls of the same production function.",
+    "fit": "UNWIRED_PLAN_POPULATION sits beside UNWIRED_PLAN_CHECKLIST at reckon/_schema.py:305 in the same constant-and-shared-message idiom, and introduces no forbidden name.",
+    "goal_fidelity": "reckon/_schema.py:314 defines UNWIRED_PLAN_POPULATION and :334 composes it into the one refusal/audit message, which the tests at tests/test_unwired_plan_message_names_its_population.py:66 read back.",
+    "scope_discipline": "git diff --stat 39fff0435..1a3e30e8d lists only reckon/_schema.py, tests/test_unwired_plan_message_names_its_population.py and docs/evidence/fragments/section-contract-and-computed-impl/unwired-plan-message-names-its-population.html, all inside the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-unwired-plan-message-names-its-population",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that unwired_plan_message in reckon/_schema.py states the population the audit counts over; reckon/_schema.py:314 adds UNWIRED_PLAN_POPULATION and :334 appends it to the composed message.\nVERDICT done_when: the done_when requires a base reproduction, a new tests/test_unwired_plan_message_names_its_population.py pinning the message and the count, a red negative control, base+head gate arms, and ruff delta; the manifest records all of them.\nVERDICT write_paths: read the manifest's four declared paths; git diff --stat 39fff0435..1a3e30e8d touches exactly reckon/_schema.py, the new test file and the evidence fragment, all inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T005029390480-unwired-plan-message-names-its-population/manifest.md; it names base 2 failed/102 passed EXIT=1, head 104 passed EXIT=0, the negative control 2 failed, and ruff 9=9 across the revisions.\nVERDICT diff: read commit by commit; ce39ed5b1 adds the constant and the clause plus two tests, 1a3e30e8d adds only the fragment, and no diff line removes behaviour beyond the two new tests' expectations of the old text.\nCALL_SITES: reckon/doccheck.py:886, reckon/roadmap.py:824, reckon/mcp.py:1886\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_schema.py:314 defines UNWIRED_PLAN_POPULATION and :334 composes it into the one refusal/audit message, which the tests at tests/test_unwired_plan_message_names_its_population.py:66 read back.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names the reproduction at gate-logs/reproduction-base.log and the base/head arms at gate-logs/gate-base.log and gate-head.log with completion and EXIT lines, though the clause that every existing caller's output stays unchanged is covered only transitively, since tests/test_doccheck_unwired_plan.py:81 compares two calls of the same production function.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 39fff0435..1a3e30e8d lists only reckon/_schema.py, tests/test_unwired_plan_message_names_its_population.py and docs/evidence/fragments/section-contract-and-computed-impl/unwired-plan-message-names-its-population.html, all inside the manifest's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_unwired_plan_message_names_its_population.py:68 asserts the clause against an independent literal and :87 pins the plan-scoped count, both reddened by the declared mutation in gate-logs/gate-negative-control.log.\nSCORE fit: 20\nJUSTIFICATION fit: UNWIRED_PLAN_POPULATION sits beside UNWIRED_PLAN_CHECKLIST at reckon/_schema.py:305 in the same constant-and-shared-message idiom, and introduces no forbidden name.\nFINDING tests/test_doccheck_unwired_plan.py:81 follow-on: the assertion compares finding.message against unwired_plan_finding(...).message, both of which call unwired_plan_message(slug='sample'), so the two sides move together and the test is vacuous for message content \u2014 it did not and cannot catch the very text change this node made, which is why the node's own tests were needed.",
+  "review_run_id": "r-20261001T010810622682-review-of-unwired-plan-message-names-its-population",
+  "reviewed_base_sha": "39fff0435239ded5d285a4d87e38a1ad007e8451",
+  "reviewed_head_sha": "1a3e30e8d15187ce7bf190d8d343d0eaab0c9f97",
+  "reviewed_run_id": "r-20261001T005029390480-unwired-plan-message-names-its-population",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T01:16:27.659022+00:00",
+  "total": 99
+}

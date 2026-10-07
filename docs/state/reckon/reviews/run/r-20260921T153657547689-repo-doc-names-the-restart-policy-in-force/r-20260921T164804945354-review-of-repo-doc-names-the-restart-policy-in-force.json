@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:48:04.945354+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+      "line": "735",
+      "text": "the landed record cites git diff --stat for its \"1 file changed, 1 insertion(+), 1 deletion(-)\" figure, but that command prints nothing at the clean reviewed tree and git show --stat 2d451dbd reads 3 files, 34 insertions and 1 deletion, so only the scoped form (git diff --stat HEAD~1 HEAD -- docs/AGENTS.md) yields the quoted line and a reader reproducing the citation as written gets no output."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against base a42b3f86; one commit, 2d451dbd, three files and 34 insertions with one deletion, the single deletion being the replaced bullet line, and both the archive and the plan appends are insertions-only so nothing was eaten.",
+    "done_when": "four of the five clauses hold and are recorded in the run's docs-grep.log, and I reproduced each on the reviewed tree \u2014 docs/AGENTS.md:106 names Restart=always, the same sentence states that it comes back within five seconds and :107 names RestartSec=5, the document itself holds zero Restart=on-failure against one at base a42b3f86:docs/AGENTS.md:106, docs/ holds 14 lines of Restart=always, and docs/AGENTS.md is 1 file with 1 insertion and 1 deletion (2 changed lines, inside the stated at-most-4 bound); the fifth clause as worded, zero matches for Restart=on-failure over docs/, reads 16 lines (archive 5, plan, and docs/state/reckon/crew.json 5 \u2014 5+6+5), every one of them a record of the change rather than a statement of policy, so the literal reading of 0 would require deleting records this plan requires repeated verbatim.",
+    "goal": "the node's goal is that the repository document describes the restart policy the unit generators carry; docs/AGENTS.md:106-107 now names Restart=always with the five-second delay and RestartSec=5, and the value it names is the value I re-rendered myself through reckon/service.py render_unit(), which returns Restart=always and RestartSec=5.",
+    "manifest": "read; it states the gate and the resolved 16-line reading with per-file counts, the positive control at base and at HEAD, plan metas unchanged and a clean worktree \u2014 all of which I reproduced, and grep confirms plan-version 47 and plan-impl 0.733 are identical at base and HEAD.",
+    "write_paths": "the manifest declares docs/AGENTS.md, docs/evidence/archive/crew-runtime-positive-controls-landed.html, docs/figures/crew-runtime-positive-controls and docs/plans/crew-runtime-positive-controls.html; git show --numstat 2d451dbd lists exactly the first, second and fourth at 1/1, 17/0 and 16/0, and the unused figures path is explained in the manifest rather than silently dropped."
+  },
+  "justifications": {
+    "durability": "docs/AGENTS.md:106 has no test behind it \u2014 no file under tests/ reads the server-unit policy, so reverting the sentence to Restart=on-failure reddens nothing, and the manifest records the negative control as none for that reason.",
+    "evidence": "the run's docs-grep.log records both gate halves with their readings and shows the scoped check red at a42b3f86:docs/AGENTS.md:106 and green at review:head, but the done_when's literal zero over docs/ resolves to 16 and the archive's cited command at docs/evidence/archive/crew-runtime-positive-controls-landed.html:735 does not produce its quoted figure.",
+    "fit": "the new bullet keeps the file's bold-claim-then-guidance idiom at docs/AGENTS.md:106-108, takes its value from the generator it describes, and the commit message carries no plan identifier, ticket reference or AI attribution.",
+    "goal_fidelity": "docs/AGENTS.md:106-107 states the policy the unit generators carry and the value it names is the rendered text of reckon/service.py:37-38, which I re-rendered rather than took from the record.",
+    "scope_discipline": "git show --numstat 2d451dbd lists exactly the three declared paths it used (docs/AGENTS.md, the landing archive, the plan) with no plan-meta line among them and a clean worktree at HEAD 2d451dbd."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the repository document describes the restart policy the unit generators carry; docs/AGENTS.md:106-107 now names Restart=always with the five-second delay and RestartSec=5, and the value it names is the value I re-rendered myself through reckon/service.py render_unit(), which returns Restart=always and RestartSec=5.\nVERDICT done_when: four of the five clauses hold and are recorded in the run's docs-grep.log, and I reproduced each on the reviewed tree \u2014 docs/AGENTS.md:106 names Restart=always, the same sentence states that it comes back within five seconds and :107 names RestartSec=5, the document itself holds zero Restart=on-failure against one at base a42b3f86:docs/AGENTS.md:106, docs/ holds 14 lines of Restart=always, and docs/AGENTS.md is 1 file with 1 insertion and 1 deletion (2 changed lines, inside the stated at-most-4 bound); the fifth clause as worded, zero matches for Restart=on-failure over docs/, reads 16 lines (archive 5, plan, and docs/state/reckon/crew.json 5 \u2014 5+6+5), every one of them a record of the change rather than a statement of policy, so the literal reading of 0 would require deleting records this plan requires repeated verbatim.\nVERDICT write_paths: the manifest declares docs/AGENTS.md, docs/evidence/archive/crew-runtime-positive-controls-landed.html, docs/figures/crew-runtime-positive-controls and docs/plans/crew-runtime-positive-controls.html; git show --numstat 2d451dbd lists exactly the first, second and fourth at 1/1, 17/0 and 16/0, and the unused figures path is explained in the manifest rather than silently dropped.\nVERDICT manifest: read; it states the gate and the resolved 16-line reading with per-file counts, the positive control at base and at HEAD, plan metas unchanged and a clean worktree \u2014 all of which I reproduced, and grep confirms plan-version 47 and plan-impl 0.733 are identical at base and HEAD.\nVERDICT diff: read commit by commit against base a42b3f86; one commit, 2d451dbd, three files and 34 insertions with one deletion, the single deletion being the replaced bullet line, and both the archive and the plan appends are insertions-only so nothing was eaten.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/AGENTS.md:106-107 states the policy the unit generators carry and the value it names is the rendered text of reckon/service.py:37-38, which I re-rendered rather than took from the record.\nSCORE evidence: 17\nJUSTIFICATION evidence: the run's docs-grep.log records both gate halves with their readings and shows the scoped check red at a42b3f86:docs/AGENTS.md:106 and green at review:head, but the done_when's literal zero over docs/ resolves to 16 and the archive's cited command at docs/evidence/archive/crew-runtime-positive-controls-landed.html:735 does not produce its quoted figure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --numstat 2d451dbd lists exactly the three declared paths it used (docs/AGENTS.md, the landing archive, the plan) with no plan-meta line among them and a clean worktree at HEAD 2d451dbd.\nSCORE durability: 9\nJUSTIFICATION durability: docs/AGENTS.md:106 has no test behind it \u2014 no file under tests/ reads the server-unit policy, so reverting the sentence to Restart=on-failure reddens nothing, and the manifest records the negative control as none for that reason.\nSCORE fit: 20\nJUSTIFICATION fit: the new bullet keeps the file's bold-claim-then-guidance idiom at docs/AGENTS.md:106-108, takes its value from the generator it describes, and the commit message carries no plan identifier, ticket reference or AI attribution.\nFINDING docs/evidence/archive/crew-runtime-positive-controls-landed.html:735 the landed record cites git diff --stat for its \"1 file changed, 1 insertion(+), 1 deletion(-)\" figure, but that command prints nothing at the clean reviewed tree and git show --stat 2d451dbd reads 3 files, 34 insertions and 1 deletion, so only the scoped form (git diff --stat HEAD~1 HEAD -- docs/AGENTS.md) yields the quoted line and a reader reproducing the citation as written gets no output.",
+  "review_run_id": "r-20260921T164804945354-review-of-repo-doc-names-the-restart-policy-in-force",
+  "reviewed_base": "a42b3f8626539fb0c771cd7c876a89266dbb023b",
+  "reviewed_commit": "2d451dbd87e646316909ea86dc6c0fbe9f2f7a13",
+  "reviewed_run_id": "r-20260921T153657547689-repo-doc-names-the-restart-policy-in-force",
+  "scores": {
+    "durability": 9,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:08:44.358654+00:00",
+  "total": 86
+}

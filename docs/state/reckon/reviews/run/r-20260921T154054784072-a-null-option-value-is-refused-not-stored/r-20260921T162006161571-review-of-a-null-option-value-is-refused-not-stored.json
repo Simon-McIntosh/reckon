@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:_decision_as_stored",
+    "reckon/_store.py:_apply_append"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:20:06.161571+00:00",
+  "findings": [
+    {
+      "file": "tests/test_append_decision_keeps_its_question.py",
+      "line": "162",
+      "text": "no case in this file passes a mapping-shaped options value, so the mapping-branch guard added at reckon/_store.py:1556 can be deleted without reddening either the gate or the declared mutation, and that half of the change is unprotected."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "1546",
+      "text": "the guard also fires for an entry carrying no \"value\" key at all, so an empty option object now reports \"carries a null 'value'\" where the removed read at :1536 fell back to the empty string and the case reported \"carries no 'value'\" \u2014 the refusal is right and the message now misnames the input a caller must fix."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "1551",
+      "text": "an object option with a valid value and a null label still stringifies the label, so {\"value\": \"x\", \"label\": None} yields labels {'x': 'None'} while the mapping branch below deliberately falls back to the value for a null label; this is the sibling of the repaired stringification, pre-existing and unchanged by this diff, so it is scored on no dimension and is named only so the coordinator can dispatch it rather than read it as a regression introduced here."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against the base ed56e55a; a7f81257 changes the option read at reckon/_store.py:1536, adds the null guards at :1546 and :1556 and 50 lines of cases, and 96b84bcf appends 16 lines to the plan section and 37 to the evidence archive.",
+    "done_when": "the measure names tests/test_append_decision_keeps_its_question.py and its three added cases assert the refusal naming the option with nothing landing, the empty-string refusal unchanged, and the two-option read-back; re-running that file here read 6 passed in 3.18s, and the red log's first line repeats the declared mutation verbatim over 1 failed, 5 passed.",
+    "goal": "the goal is that a decision option whose value is JSON null is refused rather than stored as the literal None; reckon/_store.py:1546 raises OpError naming the option, and an independent call of reckon/_store.py:_decision_options_as_choices([{\"value\": None}]) returned \"decision option {'value': None} carries a null 'value'\" while [{\"value\": \"a\"}] still returned (['a'], {'a': 'a'}).",
+    "manifest": "read; it names commits a7f81257 and 96b84bcf, records \"tests/test_append_decision_keeps_its_question.py -> 6 passed; tests/test_dec_open.py tests/test_tool_arguments_accept_a_serialised_list.py -> 11 passed\", cites gate-green.log and negative-control.log by path, and its evidence_inputs quote the pre-repair return (['None'], {'None': 'None'}).",
+    "write_paths": "the manifest declares five paths and the range diff ed56e55a..96b84bcf touches four of them (reckon/_store.py, tests/test_append_decision_keeps_its_question.py, docs/evidence/archive/crew-runtime-positive-controls-landed.html, docs/plans/crew-runtime-positive-controls.html) with 113 insertions and 1 deletion, and nothing outside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_append_decision_keeps_its_question.py:162 fails if the null refusal is replaced by the old fallback, which the red log demonstrates, while nothing in the file covers the mapping guard at reckon/_store.py:1556.",
+    "evidence": "gate-green.log reads 6 passed and negative-control.log:1 carries the mutation verbatim with the null case alone failing, but no case exercises the mapping guard so that red run cannot speak to it.",
+    "fit": "the guard matches the neighbouring raises in shape (f-string OpError naming the offending entry, as at reckon/_store.py:1541), though its text claims a null value for an entry that carries no \"value\" key at all.",
+    "goal_fidelity": "reckon/_store.py:1536 asks whether the \"value\" key is present rather than falling back, so the refusal at :1546 fires for a null and not for a valid value, both confirmed by an independent call of the helper.",
+    "scope_discipline": "git diff --stat ed56e55a..96b84bcf lists exactly the four declared paths at 113 insertions and one deletion, the deletion being the replaced read itself."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a decision option whose value is JSON null is refused rather than stored as the literal None; reckon/_store.py:1546 raises OpError naming the option, and an independent call of reckon/_store.py:_decision_options_as_choices([{\"value\": None}]) returned \"decision option {'value': None} carries a null 'value'\" while [{\"value\": \"a\"}] still returned (['a'], {'a': 'a'}).\nVERDICT done_when: the measure names tests/test_append_decision_keeps_its_question.py and its three added cases assert the refusal naming the option with nothing landing, the empty-string refusal unchanged, and the two-option read-back; re-running that file here read 6 passed in 3.18s, and the red log's first line repeats the declared mutation verbatim over 1 failed, 5 passed.\nVERDICT write_paths: the manifest declares five paths and the range diff ed56e55a..96b84bcf touches four of them (reckon/_store.py, tests/test_append_decision_keeps_its_question.py, docs/evidence/archive/crew-runtime-positive-controls-landed.html, docs/plans/crew-runtime-positive-controls.html) with 113 insertions and 1 deletion, and nothing outside the fence.\nVERDICT manifest: read; it names commits a7f81257 and 96b84bcf, records \"tests/test_append_decision_keeps_its_question.py -> 6 passed; tests/test_dec_open.py tests/test_tool_arguments_accept_a_serialised_list.py -> 11 passed\", cites gate-green.log and negative-control.log by path, and its evidence_inputs quote the pre-repair return (['None'], {'None': 'None'}).\nVERDICT diff: read both commits against the base ed56e55a; a7f81257 changes the option read at reckon/_store.py:1536, adds the null guards at :1546 and :1556 and 50 lines of cases, and 96b84bcf appends 16 lines to the plan section and 37 to the evidence archive.\nCALL_SITES: reckon/_store.py:_decision_as_stored, reckon/_store.py:_apply_append\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_store.py:1536 asks whether the \"value\" key is present rather than falling back, so the refusal at :1546 fires for a null and not for a valid value, both confirmed by an independent call of the helper.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-green.log reads 6 passed and negative-control.log:1 carries the mutation verbatim with the null case alone failing, but no case exercises the mapping guard so that red run cannot speak to it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat ed56e55a..96b84bcf lists exactly the four declared paths at 113 insertions and one deletion, the deletion being the replaced read itself.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_append_decision_keeps_its_question.py:162 fails if the null refusal is replaced by the old fallback, which the red log demonstrates, while nothing in the file covers the mapping guard at reckon/_store.py:1556.\nSCORE fit: 18\nJUSTIFICATION fit: the guard matches the neighbouring raises in shape (f-string OpError naming the offending entry, as at reckon/_store.py:1541), though its text claims a null value for an entry that carries no \"value\" key at all.\nFINDING tests/test_append_decision_keeps_its_question.py:162 no case in this file passes a mapping-shaped options value, so the mapping-branch guard added at reckon/_store.py:1556 can be deleted without reddening either the gate or the declared mutation, and that half of the change is unprotected.\nFINDING reckon/_store.py:1546 the guard also fires for an entry carrying no \"value\" key at all, so an empty option object now reports \"carries a null 'value'\" where the removed read at :1536 fell back to the empty string and the case reported \"carries no 'value'\" \u2014 the refusal is right and the message now misnames the input a caller must fix.\nFINDING reckon/_store.py:1551 an object option with a valid value and a null label still stringifies the label, so {\"value\": \"x\", \"label\": None} yields labels {'x': 'None'} while the mapping branch below deliberately falls back to the value for a null label; this is the sibling of the repaired stringification, pre-existing and unchanged by this diff, so it is scored on no dimension and is named only so the coordinator can dispatch it rather than read it as a regression introduced here.",
+  "review_run_id": "r-20260921T162006161571-review-of-a-null-option-value-is-refused-not-stored",
+  "reviewed_run_id": "r-20260921T154054784072-a-null-option-value-is-refused-not-stored",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260921T162006161571-review-of-a-null-option-value-is-refused-not-stored",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T16:37:06.754826+00:00",
+  "total": 95
+}

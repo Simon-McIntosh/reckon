@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "ed3115360",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:299",
+    "reckon/serve.py:2388"
+  ],
+  "completed_at": "2026-10-01T02:38:37.251Z",
+  "dispatched_at": "2026-10-01T02:33:59Z",
+  "findings": [
+    {
+      "file": "tests/test_metadata_index_survives_restart.py",
+      "line": "344",
+      "severity": "follow-on",
+      "text": "follow-on: the added assertion `stamps[0] is not None` is a one-sided guard. The watch always passes a non-None time.monotonic() stamp at reckon/serve.py:299, so the assertion can fail only when the whole invalidation call is bypassed, which the pre-existing `assert invalidated` already catches; the node's negative control likewise suppresses the call entirely and so demonstrates the first assertion rather than this one, leaving the stamp-forwarding behaviour asserted only by construction."
+    }
+  ],
+  "head_log_revision": "397cdd6a4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base; the spy signature gains `changed_at`, appends it to a new `stamps` list, forwards it, and a two-line assertion `stamps[0] is not None` is added after the existing root assertion.",
+    "done_when": "the node's own base/after gate pair is the measure; I re-ran the three-file head gate in the reviewed worktree at 397cdd6a4 and reproduced 24 passed, EXIT=0, and re-ran the reader over the two recorded gate logs (base 1 failed, head 0) giving added_failure_count 0.",
+    "goal": "the node repairs tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree so its invalidation spy takes the watch's changed_at stamp; at head 397cdd6a4 the spy is `def spy(root, changed_at: float | None = None)` and forwards it to the real serve._invalidate_tree_views, which is exactly what the watch calls at reckon/serve.py:299.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T022134203051-the-watch-spy-takes-the-stamp/manifest.md; status complete, commit 397cdd6a4 over base ed3115360, gate logs base-gate.log and head-gate.log named with their revisions, negative-control.log named and EXIT=1.",
+    "write_paths": "the diff ed3115360..397cdd6a4 is exactly one file, tests/test_metadata_index_survives_restart.py (+8/-2), a subset of the node's declared write paths, with no source file touched."
+  },
+  "justifications": {
+    "durability": "the repaired spy now mirrors the real _invalidate_tree_views signature and forwards the stamp, so the test tracks the source rather than drifting, and the base failure is retired; the added `stamps[0] is not None` guard is one-sided, since the watch always passes a non-None time.monotonic() value and the guard can only fail if the call is bypassed entirely, which the pre-existing assertion already catches.",
+    "evidence": "the gate is genuine and falsifiable \u2014 base-gate.log records the exact TypeError at reckon/serve.py:299 and 1 failed/EXIT=1, I independently reproduced the head arm at 397cdd6a4 (24 passed, EXIT=0), and negative-control.log reddens the same test (1 failed/EXIT=1) \u2014 but the node's negative control suppresses the whole invalidation call, so it exercises the first assertion rather than the newly added stamp assertion.",
+    "fit": "the spy accepts the same optional kwarg as the function it replaces, the new comment explains the mechanism (the stamp keeps a discovery computed after the change), and no plan, phase, ticket or version label appears in the change.",
+    "goal_fidelity": "the reviewed defect is the stale spy signature and the landed change makes the spy accept and forward the changed_at stamp, which the reproduced base TypeError (\"got an unexpected keyword argument 'changed_at'\") and the passing head gate both confirm.",
+    "scope_discipline": "the change is confined to one test file that is a declared write path; no source file, shared index or plan was touched, and git status in the reviewed worktree is clean at 397cdd6a4."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node repairs tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree so its invalidation spy takes the watch's changed_at stamp; at head 397cdd6a4 the spy is `def spy(root, changed_at: float | None = None)` and forwards it to the real serve._invalidate_tree_views, which is exactly what the watch calls at reckon/serve.py:299.\nVERDICT done_when: the node's own base/after gate pair is the measure; I re-ran the three-file head gate in the reviewed worktree at 397cdd6a4 and reproduced 24 passed, EXIT=0, and re-ran the reader over the two recorded gate logs (base 1 failed, head 0) giving added_failure_count 0.\nVERDICT write_paths: the diff ed3115360..397cdd6a4 is exactly one file, tests/test_metadata_index_survives_restart.py (+8/-2), a subset of the node's declared write paths, with no source file touched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T022134203051-the-watch-spy-takes-the-stamp/manifest.md; status complete, commit 397cdd6a4 over base ed3115360, gate logs base-gate.log and head-gate.log named with their revisions, negative-control.log named and EXIT=1.\nVERDICT diff: read against base; the spy signature gains `changed_at`, appends it to a new `stamps` list, forwards it, and a two-line assertion `stamps[0] is not None` is added after the existing root assertion.\nVERDICT call_sites: two production call sites pass the kwarg, reckon/serve.py:299 inside the watch thread and reckon/serve.py:2388, both matching the def at reckon/serve.py:1535.\nCALL_SITES: reckon/serve.py:299, reckon/serve.py:2388\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the reviewed defect is the stale spy signature and the landed change makes the spy accept and forward the changed_at stamp, which the reproduced base TypeError (\"got an unexpected keyword argument 'changed_at'\") and the passing head gate both confirm.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate is genuine and falsifiable \u2014 base-gate.log records the exact TypeError at reckon/serve.py:299 and 1 failed/EXIT=1, I independently reproduced the head arm at 397cdd6a4 (24 passed, EXIT=0), and negative-control.log reddens the same test (1 failed/EXIT=1) \u2014 but the node's negative control suppresses the whole invalidation call, so it exercises the first assertion rather than the newly added stamp assertion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the change is confined to one test file that is a declared write path; no source file, shared index or plan was touched, and git status in the reviewed worktree is clean at 397cdd6a4.\nSCORE durability: 18\nJUSTIFICATION durability: the repaired spy now mirrors the real _invalidate_tree_views signature and forwards the stamp, so the test tracks the source rather than drifting, and the base failure is retired; the added `stamps[0] is not None` guard is one-sided, since the watch always passes a non-None time.monotonic() value and the guard can only fail if the call is bypassed entirely, which the pre-existing assertion already catches.\nSCORE fit: 20\nJUSTIFICATION fit: the spy accepts the same optional kwarg as the function it replaces, the new comment explains the mechanism (the stamp keeps a discovery computed after the change), and no plan, phase, ticket or version label appears in the change.\nFINDING tests/test_metadata_index_survives_restart.py:344 follow-on: the added assertion `stamps[0] is not None` is a one-sided guard. The watch always passes a non-None time.monotonic() stamp at reckon/serve.py:299, so the assertion can fail only when the whole invalidation call is bypassed, which the pre-existing `assert invalidated` already catches; the node's negative control likewise suppresses the call entirely and so demonstrates the first assertion rather than this one, leaving the stamp-forwarding behaviour asserted only by construction.\n",
+  "review_run_id": "r-20261001T023336918910-review-of-the-watch-spy-takes-the-stamp",
+  "reviewed_base_sha": "ed31153606683f19f659b1decd30291f019c1a82",
+  "reviewed_head_sha": "397cdd6a4b1d1e45e440e5629c5f98184ef0a43d",
+  "reviewed_run_id": "r-20261001T022134203051-the-watch-spy-takes-the-stamp",
+  "reviewer_run_id": "r-20261001T023336918910-review-of-the-watch-spy-takes-the-stamp",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T02:37:44.858507+00:00",
+  "total": 97
+}

@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c6acda8e0531dc9bc764475570c364e72fe4c368",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/flight.py:1152",
+    "reckon/mcp.py:4449"
+  ],
+  "completed_at": "2026-10-03T03:59:23.147Z",
+  "dispatched_at": "2026-10-03T03:51:27Z",
+  "findings": [
+    {
+      "file": "tests/test_flight_catalogue_layer.py",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "the new test file adds one ruff finding: ruff check --config pyproject.toml reports I001 at tests/test_flight_catalogue_layer.py:20, the blank line between `import pytest` and `from reckon.flight import` that isort folds into one section; the repo requires a staged commit to add no findings, `--fix` removes it, and the node's follow_ons do not name it."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/model-catalogue-in-reckon.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the goal's second clause \u2014 the host layer keeps only machine facts \u2014 is not yet true: the host layer still declares all 32 catalogue keys and every one resolves from host, so the catalogue is a proven-safe default rather than the value a dispatch reads until a later dotfiles commit empties those keys from ~/.config/reckon/flight.yaml; the node proves emptying is value-safe but its follow_ons name only other reckon-other keys, not this emptying."
+    }
+  ],
+  "head_log_revision": "c8badc4968ab6d75adf69439094b7c3877653478",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s): the catalogue is applied in resolve() at reckon/flight.py:1152 and the crew flight view reaches the shadow list through reckon/mcp.py:4449, which returns flight_report unchanged.",
+    "diff": "read diff c6acda8e0..c8badc496; four files \u2014 reckon/flight.py (+145/-4), a new reckon/schema/model-catalogue.yaml (85 lines, 9 backends), a new tests/test_flight_catalogue_layer.py (196 lines), and the evidence fragment (+95); no figure, correctly, since the done-when names a fragment not a figure.",
+    "done_when": "the four requirement clauses \u2014 the key table, the shipped catalogue with its two rules, the shadow report in reckon flight and the crew flight view, and the no-value-changes proof; an independent HEAD re-run of the new file gives 4 passed.",
+    "goal": "Reckon ships the model catalogue; the host layer keeps only machine facts. The catalogue ships at reckon/schema/model-catalogue.yaml and the host layer is proven safe to empty, but the host still carries every catalogue key.",
+    "manifest": "read; status complete, base and head gate logs named with headers, negative_control.log named with EXIT=1, before/after/emptied JSONs named as artifacts.",
+    "write_paths": "read the manifest's declared paths; the diff touches only reckon/flight.py, reckon/schema/model-catalogue.yaml, tests/test_flight_catalogue_layer.py and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_flight_catalogue_layer.py:56 asserts a catalogue-only entry creates no backend, :81 that a host value wins and is named as a shadow, :117 that emptying the host catalogue keys leaves every value unchanged and moves provenance host->catalogue, and :159 that the report carries the shadow list; the negative control drops the catalogue-only guard and the same test fails with EXIT=1, so the guard is shown to fire. The new file adds one ruff finding (unsorted import block) and no test guards the catalogue file's own completeness.",
+    "evidence": "base-flight-gate.log (111 passed, 2 skipped, EXIT=0) and head-flight-gate.log (115 passed, 2 skipped, EXIT=0) each name their revision, tree, command, module.__file__ and cwd; negative-control.log shows the guard's removal failing test_a_catalogue_entry_alone_creates_no_backend with EXIT=1. Independently reproduced from after.json vs emptied.json: config leaf diffs 0 (358 leaves each), host shadows 32->0, 32 provenance entries move host->catalogue and no other key's provenance changes, and the new file re-runs 4 passed.",
+    "fit": "the added code follows the module's idiom \u2014 a documented module constant (CATALOGUE_LAYER), a ResolvedFlight dataclass field, two underscore helpers with the surrounding docstring voice; no plan, version or ticket identifier appears in the new symbols or comments. One dead branch remains: _catalogue_shadows skips layer_name == CATALOGUE_LAYER \u2014 layer_data never holds the catalogue, since it is applied after the loop, so the guard is unreachable.",
+    "goal_fidelity": "requirements 1-4 land: the fragment tables every host backends key as catalogue / machine / reckon-other; the catalogue ships with precedence below the host and the catalogue-only-creates-no-backend rule enforced; reckon flight and the crew flight view report each host catalogue value as a shadow naming key, backend and file; and the JSON proof shows no resolved value moves. The stated goal's second clause is unmet in this commit \u2014 the host layer still declares all 32 catalogue keys, so the catalogue is not yet the layer a dispatch reads \u2014 which the plan defers to a later dotfiles commit the node proves safe but does not name in follow_ons.",
+    "scope_discipline": "the diff touches exactly the four declared paths (reckon/flight.py, reckon/schema/model-catalogue.yaml, tests/test_flight_catalogue_layer.py, the fragment); it writes no figure, which the brief permits since the done-when names a fragment rather than a figure, and it mutates no plan or index state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Reckon ships the model catalogue; the host layer keeps only machine facts. The catalogue ships at reckon/schema/model-catalogue.yaml and the host layer is proven safe to empty, but the host still carries every catalogue key.\nVERDICT done_when: the four requirement clauses \u2014 the key table, the shipped catalogue with its two rules, the shadow report in reckon flight and the crew flight view, and the no-value-changes proof; an independent HEAD re-run of the new file gives 4 passed.\nVERDICT write_paths: read the manifest's declared paths; the diff touches only reckon/flight.py, reckon/schema/model-catalogue.yaml, tests/test_flight_catalogue_layer.py and the fragment, all inside them.\nVERDICT manifest: read; status complete, base and head gate logs named with headers, negative_control.log named with EXIT=1, before/after/emptied JSONs named as artifacts.\nVERDICT diff: read diff c6acda8e0..c8badc496; four files \u2014 reckon/flight.py (+145/-4), a new reckon/schema/model-catalogue.yaml (85 lines, 9 backends), a new tests/test_flight_catalogue_layer.py (196 lines), and the evidence fragment (+95); no figure, correctly, since the done-when names a fragment not a figure.\nCALL_SITES: reckon/flight.py:1152, reckon/mcp.py:4449\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: requirements 1-4 land: the fragment tables every host backends key as catalogue / machine / reckon-other; the catalogue ships with precedence below the host and the catalogue-only-creates-no-backend rule enforced; reckon flight and the crew flight view report each host catalogue value as a shadow naming key, backend and file; and the JSON proof shows no resolved value moves. The stated goal's second clause is unmet in this commit \u2014 the host layer still declares all 32 catalogue keys, so the catalogue is not yet the layer a dispatch reads \u2014 which the plan defers to a later dotfiles commit the node proves safe but does not name in follow_ons.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-flight-gate.log (111 passed, 2 skipped, EXIT=0) and head-flight-gate.log (115 passed, 2 skipped, EXIT=0) each name their revision, tree, command, module.__file__ and cwd; negative-control.log shows the guard's removal failing test_a_catalogue_entry_alone_creates_no_backend with EXIT=1. Independently reproduced from after.json vs emptied.json: config leaf diffs 0 (358 leaves each), host shadows 32->0, 32 provenance entries move host->catalogue and no other key's provenance changes, and the new file re-runs 4 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the four declared paths (reckon/flight.py, reckon/schema/model-catalogue.yaml, tests/test_flight_catalogue_layer.py, the fragment); it writes no figure, which the brief permits since the done-when names a fragment rather than a figure, and it mutates no plan or index state.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_flight_catalogue_layer.py:56 asserts a catalogue-only entry creates no backend, :81 that a host value wins and is named as a shadow, :117 that emptying the host catalogue keys leaves every value unchanged and moves provenance host->catalogue, and :159 that the report carries the shadow list; the negative control drops the catalogue-only guard and the same test fails with EXIT=1, so the guard is shown to fire. The new file adds one ruff finding (unsorted import block) and no test guards the catalogue file's own completeness.\nSCORE fit: 19\nJUSTIFICATION fit: the added code follows the module's idiom \u2014 a documented module constant (CATALOGUE_LAYER), a ResolvedFlight dataclass field, two underscore helpers with the surrounding docstring voice; no plan, version or ticket identifier appears in the new symbols or comments. One dead branch remains: _catalogue_shadows skips layer_name == CATALOGUE_LAYER \u2014 layer_data never holds the catalogue, since it is applied after the loop, so the guard is unreachable.\nFINDING tests/test_flight_catalogue_layer.py:20 the new test file adds one ruff finding: ruff check --config pyproject.toml reports I001 at tests/test_flight_catalogue_layer.py:20, the blank line between `import pytest` and `from reckon.flight import` that isort folds into one section; the repo requires a staged commit to add no findings, `--fix` removes it, and the node's follow_ons do not name it.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/model-catalogue-in-reckon.html:1 the goal's second clause \u2014 the host layer keeps only machine facts \u2014 is not yet true: the host layer still declares all 32 catalogue keys and every one resolves from host, so the catalogue is a proven-safe default rather than the value a dispatch reads until a later dotfiles commit empties those keys from ~/.config/reckon/flight.yaml; the node proves emptying is value-safe but its follow_ons name only other reckon-other keys, not this emptying.\nreviewed_base_sha: c6acda8e0531dc9bc764475570c364e72fe4c368\nreviewed_head_sha: c8badc4968ab6d75adf69439094b7c3877653478\n",
+  "review_run_id": "r-20261003T035044694750-review-of-model-catalogue-in-reckon",
+  "reviewed_base_sha": "c6acda8e0531dc9bc764475570c364e72fe4c368",
+  "reviewed_head_sha": "c8badc4968ab6d75adf69439094b7c3877653478",
+  "reviewed_run_id": "r-20261003T032115043790-model-catalogue-in-reckon",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T03:57:13+00:00",
+  "total": 92
+}

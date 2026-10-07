@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:3401",
+    "reckon/mcp.py:3866",
+    "reckon/crew/dispatch.py:6755",
+    "reckon/crew/resumption.py:723",
+    "reckon/crew/dispatch.py:4115",
+    "reckon/crew/dispatch.py:5575"
+  ],
+  "completed_at": "2026-09-25T15:20:24.878Z",
+  "dispatched_at": "2026-09-25T13:48:02Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against af23487; ce1f6281 carries the implementation and 9e1cc40e adds only evidence and plan docs, so the code the gate measured is the code at head.",
+    "done_when": "the done_when names tests/test_every_attempt_is_supervised.py, whose five cases cover supervised resume and redispatch through both stub harnesses, the killed worker's exit record and the old-complete-manifest live run; gate.log records 5 passed at ce1f6281 and my re-run at head read 5 passed.",
+    "goal": "the goal is that every resumed execution attempt launches under a per-run supervisor with attempt-numbered receipts; dispatch.py:4881 routes the resume- and lane-change-named streams into supervised_launch and dispatch.py:5368 numbers the attempt.",
+    "manifest": "the run manifest records the gate, the base/head comparison, the declared control, the two commits and a follow-on for recovery.py, and every log path it names exists and carries the claimed content.",
+    "write_paths": "the five declared paths are the dispatch module, the test module, the landed evidence page, the figure directory and the plan page; the diff touches five files and each is one of them."
+  },
+  "justifications": {
+    "durability": "the control reddens the killed-resume arm at its own exit-record wait (negative-control.log:157, \"was not observed within 3s\"), and tests/test_every_attempt_is_supervised.py:224 restates :223's equality so it cannot fail independently.",
+    "evidence": "gate.log records 5 passed at ce1f6281, after-suite.log keeps baseline-suite.log's three failure ids with 275 passing, and re-running tests/test_every_attempt_is_supervised.py at 9e1cc40e reproduced 5 passed.",
+    "fit": "the new helpers sit beside the supervisor machinery they serve in dispatch.py and are named for what they do (attempt markers and per-attempt receipts), with conventional commit subjects and no attribution or plan labels in the diff.",
+    "goal_fidelity": "dispatch.py:4881 sends both continuation stream names through the same per-run supervisor a fresh launch uses at dispatch.py:4115, and dispatch.py:5095 withholds the canonical receipts unless the attempt is current.",
+    "scope_discipline": "every path in the diff is a declared write path, and the only structural change is the _spawn router split at dispatch.py:4859 that the routing itself requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every resumed execution attempt launches under a per-run supervisor with attempt-numbered receipts; dispatch.py:4881 routes the resume- and lane-change-named streams into supervised_launch and dispatch.py:5368 numbers the attempt.\nVERDICT done_when: the done_when names tests/test_every_attempt_is_supervised.py, whose five cases cover supervised resume and redispatch through both stub harnesses, the killed worker's exit record and the old-complete-manifest live run; gate.log records 5 passed at ce1f6281 and my re-run at head read 5 passed.\nVERDICT write_paths: the five declared paths are the dispatch module, the test module, the landed evidence page, the figure directory and the plan page; the diff touches five files and each is one of them.\nVERDICT manifest: the run manifest records the gate, the base/head comparison, the declared control, the two commits and a follow-on for recovery.py, and every log path it names exists and carries the claimed content.\nVERDICT diff: read commit by commit against af23487; ce1f6281 carries the implementation and 9e1cc40e adds only evidence and plan docs, so the code the gate measured is the code at head.\nCALL_SITES: reckon/cli.py:3401, reckon/mcp.py:3866, reckon/crew/dispatch.py:6755, reckon/crew/resumption.py:723, reckon/crew/dispatch.py:4115, reckon/crew/dispatch.py:5575\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: dispatch.py:4881 sends both continuation stream names through the same per-run supervisor a fresh launch uses at dispatch.py:4115, and dispatch.py:5095 withholds the canonical receipts unless the attempt is current.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate.log records 5 passed at ce1f6281, after-suite.log keeps baseline-suite.log's three failure ids with 275 passing, and re-running tests/test_every_attempt_is_supervised.py at 9e1cc40e reproduced 5 passed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is a declared write path, and the only structural change is the _spawn router split at dispatch.py:4859 that the routing itself requires.\nSCORE durability: 17\nJUSTIFICATION durability: the control reddens the killed-resume arm at its own exit-record wait (negative-control.log:157, \"was not observed within 3s\"), and tests/test_every_attempt_is_supervised.py:224 restates :223's equality so it cannot fail independently.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers sit beside the supervisor machinery they serve in dispatch.py and are named for what they do (attempt markers and per-attempt receipts), with conventional commit subjects and no attribution or plan labels in the diff.",
+  "review_run_id": "r-20260925T134748025123-review-of-every-attempt-is-supervised",
+  "reviewed_base_sha": "af234879c6220d566e29a26eee251bf9407548b1",
+  "reviewed_head_sha": "9e1cc40e968ee8387742fa71cd6e03b147f9630a",
+  "reviewed_run_id": "r-20260925T131110241464-every-attempt-is-supervised",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T15:00:24.453037+00:00",
+  "total": 92
+}

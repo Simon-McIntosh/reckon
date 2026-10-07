@@ -1,0 +1,26 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T20:57:52.069Z",
+  "dispatched_at": "2026-10-04T20:53:29Z",
+  "findings": [],
+  "plan_fingerprint": "fd759fb028f73825d53d37e52ccb8234d623e799847e7d57681b11edf6bb05ce",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 30,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T205315385735-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "ce8f80ecb15526a403997c6829b141aab8fcc81e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan-review store `reckon/crew/plan_review.py` hides the record shape, version/blob path resolution, the content fingerprint, response tracking and report delivery behind a small public API (`plan_fingerprint`, `store_plan_review`, `read_plan_review`, `list_plan_reviews`, `record_response`, `declined_recurrence`), and the dispatch composer in `reckon/crew/recovery.py:_review_dispatch_fields` hides both review subjects \u2014 a run and a plan \u2014 behind one function rather than a second composer.",
+    "duplicate_owner": "pass \u2014 the shared infrastructure at risk of forking is the review store root, and the plan reuses it: `reckon/crew/plan_review.py:295,399,480` resolve through `reckon.crew.review.review_store_root`, so plan reviews and code reviews share one root and one namespace (`plan-<slug>.v<N>.json` beside `<run_id>.json`). The plan-review reader in `plan_review.py` (`_candidate_paths`, `read_plan_review`, `list_plan_reviews`) serves a genuinely different key \u2014 plan slug, version and content fingerprint \u2014 than the owner `reckon/crew/review.py:read_review`/`stored_record`, which key on reviewed run id and head revision; it is new keying, not a second copy of `review.py`'s index/partial-record machinery (which is not duplicated), so no shared mechanism is forked.",
+    "reuse_search": "pass \u2014 \u00a73 extends two mechanisms it names and the code confirms both: the build skill's manual prior-art-scout reuse-map (`skills/reckon-build/references/coordinator-reference.md` \u00a71b), and `reckon/interface_counts.py`, whose docstring states it counts \"the ones the plan-review rubric reads\" and whose `count_revision_cached` is the same reader `reckon/velocity.py:2513` already consumes.",
+    "thin_wrapper": "pass \u2014 the design extends the shared review reflex rather than wrapping it: `_review_dispatch_fields` gains a `subject == \"plan\"` branch (recovery.py:521) and `plan_review_subject` (recovery.py:438) is a thin adapter that feeds the existing composer, so the plan review reuses the run-review path; \u00a77's `plan_review_settle_seconds` is a declared config key read through the existing flight resolver, not a wrapper over new machinery."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.958032+00:00"
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a4c312fbea80e2990b5781c0ec180f80cc7393d0",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/install.py:217 _git_guard_group (builds the PreToolUse Bash wiring by absolute path)",
+    "reckon/worker_git_shim.py:414 mutating_verb (the classifier the guard now imports)",
+    "reckon/cli.py:127 _worker_git_guard_path (resolves the script the settings fragment names)"
+  ],
+  "completed_at": "2026-10-01T14:30:26.267Z",
+  "dispatched_at": "2026-10-01T14:18:42Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/install.py",
+      "line": 222,
+      "severity": "follow-on",
+      "text": "follow-on: _git_guard_group's docstring still justifies the bare-script PreToolUse command with 'the guard is standard-library only, so it needs no interpreter of this package', but the changed guard now imports reckon.worker_git_shim (and transitively reckon.shim_lookup) at reckon/hooks/worker_git_guard.py:354; the comment is now false and the bare-script command's safety rests on the imported closure happening to be stdlib-only."
+    },
+    {
+      "file": "reckon/hooks/__init__.py",
+      "line": 3,
+      "severity": "follow-on",
+      "text": "follow-on: the package docstring still states every hook here 'is designed to be copied standalone into a target repository's harness settings' and follows 'the self-contained convention', which worker_git_guard now breaks by importing reckon; a standalone copy into a repo with no reckon source beside it would raise ImportError at decision time, and the guard works today only because the settings fragment references it in place under the reckon checkout."
+    }
+  ],
+  "findings_note": "Neither finding blocks: the guard is wired by absolute path into /home/ITER/mcintos/Code/reckon/reckon/hooks/worker_git_guard.py and its import closure is stdlib-only, verified by importing it under /usr/bin/env python3 with only the checkout on sys.path.",
+  "head_log_revision": "4cdb960c07fd797c863be052fee0875009758e1d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "read d9f13890a against a4c312fbe; the guard loses its private READ_ONLY_VERBS and _is_mutating now classifies through the shim's mutating_verb, _git_target returns the post-verb tail the classifier needs, and the test file gains a per-verb shim-agreement case, a worktree-listing modifier case and a mutating-form denial case.",
+    "done_when": "the done-when names tests/test_worker_git_guard.py walking every read form the shim admits with worktree list --porcelain included, a mutating verb still denied, and the declared negative control; I reran the named gate at head 4cdb960c0 (242 passed EXIT=0) and the base arm a4c312fbe (198 passed EXIT=0), and reproduced the declared negative control at 17 failed / 40 passed / EXIT=1, reddening test_the_guard_allows_every_read_form_the_shim_admits[worktree] and the four worktree-listing cases.",
+    "goal": "the node goal is to make the Bash-tool git guard decide read forms through the shim's classifier; reckon/hooks/worker_git_guard.py:344 _classify returns reckon.worker_git_shim.mutating_verb(verb, tail) verbatim, so the guard and the execution-time shim read one table and cannot disagree on a parsed invocation.",
+    "manifest": "read at the run directory; status complete, commits d9f13890a and 4cdb960c0 named, head-gate.log and the negative-control log named, negative_control_log present with its declared mutation; the manifest names no baseline_suite/after_suite pair, so this review ran the two arms itself and derived the added-failure pair (0 added).",
+    "write_paths": "the diff a4c312fbe..4cdb960c0 touches three paths \u2014 reckon/hooks/worker_git_guard.py, tests/test_worker_git_guard.py and the declared evidence fragment \u2014 every one inside the fence; reckon/worker_git_shim.py, also declared, is untouched because the shared table already lived there."
+  },
+  "justifications": {
+    "durability": "a test exists that fails if the change regresses and it is proved to fire: restoring a private read-verb list that omits worktree reddens test_the_guard_allows_every_read_form_the_shim_admits[worktree] and the worktree-listing cases (17 failed, EXIT=1, reproduced), and the new case is drawn from the shim's own tables rather than a list kept beside them so it cannot drift silently; held back because the guard's residual MUTATING_VERBS scan path and its alias-expansion branch carry no new assertion, and no test pins the deployed hook-command shape against the import the change adds.",
+    "evidence": "the gate measures what the done_when asserts and the result is recorded: I reran the named command at head 4cdb960c0 (242 passed EXIT=0) and the base arm at a4c312fbe (198 passed EXIT=0), both logs headed with cwd, revision and the literal command, and I reproduced the declared negative control at 17 failed / 40 passed / EXIT=1; docked because the reviewed manifest names no baseline_suite/after_suite pair so its own record leaves the added-failure count unmeasured (this review supplied the pair) and the gate log's header records the command with an unexpanded `$PWD` in place of the absolute checkout path.",
+    "fit": "the change matches the module's deferred-import idiom with a mechanism comment and a conventional two-part commit body with no plan or ticket identifier and no attribution, but it leaves two unchanged comments asserting a property the guard no longer has \u2014 reckon/hooks/install.py:222 ('the guard is standard-library only') and reckon/hooks/__init__.py:3 ('copied standalone ... the self-contained convention every hook in this package follows') \u2014 so fit is docked for comment drift the landed change introduced.",
+    "goal_fidelity": "the goal is met at the changed revision: reckon/hooks/worker_git_guard.py:354 imports mutating_verb from reckon.worker_git_shim and :344 _classify returns it verbatim, the private READ_ONLY_VERBS set is gone, and `git worktree list --porcelain` at another checkout is now allowed while `worktree add` stays denied; held back one point because the guard still keeps its own MUTATING_VERBS deny-list at :64, a residual second verb list (a mutating deny-list, not a read list) used only for the unsplittable-command scan.",
+    "scope_discipline": "every path in the diff a4c312fbe..4cdb960c0 is inside the declared fence (reckon/hooks/worker_git_guard.py, tests/test_worker_git_guard.py, the evidence fragment), reckon/worker_git_shim.py is correctly left untouched, and no plan-version or plan-modified meta line is edited; the module docstring rewrite and the sys.path insertion are in scope for the goal."
+  },
+  "node": "review-of-the-git-guard-shares-the-shim-read-forms",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the Bash-tool git guard decide read forms through the shim's classifier; reckon/hooks/worker_git_guard.py:344 _classify returns reckon.worker_git_shim.mutating_verb(verb, tail) verbatim, so the guard and the execution-time shim read one table and cannot disagree on a parsed invocation.\nVERDICT done_when: the done-when names tests/test_worker_git_guard.py walking every read form the shim admits with worktree list --porcelain included, a mutating verb still denied, and the declared negative control; I reran the named gate at head 4cdb960c0 (242 passed EXIT=0) and the base arm a4c312fbe (198 passed EXIT=0), and reproduced the declared negative control at 17 failed / 40 passed / EXIT=1, reddening test_the_guard_allows_every_read_form_the_shim_admits[worktree] and the four worktree-listing cases.\nVERDICT write_paths: the diff a4c312fbe..4cdb960c0 touches three paths - reckon/hooks/worker_git_guard.py, tests/test_worker_git_guard.py and the declared evidence fragment - every one inside the fence; reckon/worker_git_shim.py, also declared, is untouched because the shared table already lived there.\nVERDICT manifest: read at the run directory; status complete, commits d9f13890a and 4cdb960c0 named, head-gate.log and the negative-control log named, negative_control_log present with its declared mutation; the manifest names no baseline_suite/after_suite pair, so this review ran the two arms itself and derived the added-failure pair (0 added).\nVERDICT diff: read d9f13890a against a4c312fbe; the guard loses its private READ_ONLY_VERBS and _is_mutating now classifies through the shim's mutating_verb, _git_target returns the post-verb tail the classifier needs, and the test file gains a per-verb shim-agreement case, a worktree-listing modifier case and a mutating-form denial case.\nCALL_SITES: reckon/hooks/install.py:217 _git_guard_group, reckon/worker_git_shim.py:414 mutating_verb, reckon/cli.py:127 _worker_git_guard_path\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is met at the changed revision - reckon/hooks/worker_git_guard.py:354 imports mutating_verb from reckon.worker_git_shim and :344 _classify returns it verbatim, the private READ_ONLY_VERBS set is gone, and `git worktree list --porcelain` at another checkout is allowed while `worktree add` stays denied; held back one point because the guard still keeps its own MUTATING_VERBS deny-list at :64.\nSCORE evidence: 18\nJUSTIFICATION evidence: I reran the named command at head 4cdb960c0 (242 passed EXIT=0) and the base arm at a4c312fbe (198 passed EXIT=0), both logs headed with cwd, revision and the literal command, and I reproduced the declared negative control at 17 failed / 40 passed / EXIT=1; docked because the reviewed manifest names no baseline_suite/after_suite pair and the gate log header records the command with an unexpanded `$PWD`.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff a4c312fbe..4cdb960c0 is inside the declared fence (reckon/hooks/worker_git_guard.py, tests/test_worker_git_guard.py, the evidence fragment), reckon/worker_git_shim.py is correctly left untouched, and no plan-version or plan-modified meta line is edited.\nSCORE durability: 18\nJUSTIFICATION durability: restoring a private read-verb list that omits worktree reddens test_the_guard_allows_every_read_form_the_shim_admits[worktree] and the worktree-listing cases (17 failed, EXIT=1, reproduced), and the new case is drawn from the shim's own tables so it cannot drift silently; held back because the guard's MUTATING_VERBS scan path and alias branch carry no new assertion.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the module's deferred-import idiom with a mechanism comment and a conventional two-part commit body, but leaves reckon/hooks/install.py:222 ('the guard is standard-library only') and reckon/hooks/__init__.py:3 ('copied standalone') asserting a property the guard no longer has.\nFINDING reckon/hooks/install.py:222 follow-on: _git_guard_group's docstring still justifies the bare-script PreToolUse command with 'the guard is standard-library only', but the changed guard now imports reckon.worker_git_shim; the comment is now false and the command's safety rests on the imported closure happening to be stdlib-only.\nFINDING reckon/hooks/__init__.py:3 follow-on: the package docstring still states every hook here is designed to be copied standalone and follows the self-contained convention, which worker_git_guard now breaks by importing reckon; a standalone copy into a repo with no reckon source beside it would raise ImportError at decision time.",
+  "review_run_id": "r-20261001T141822211490-review-of-the-git-guard-shares-the-shim-read-forms",
+  "reviewed_base_sha": "a4c312fbea80e2990b5781c0ec180f80cc7393d0",
+  "reviewed_head_sha": "4cdb960c07fd797c863be052fee0875009758e1d",
+  "reviewed_run_id": "r-20261001T140516037424-the-git-guard-shares-the-shim-read-forms",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T14:35:00+00:00",
+  "total": 91
+}

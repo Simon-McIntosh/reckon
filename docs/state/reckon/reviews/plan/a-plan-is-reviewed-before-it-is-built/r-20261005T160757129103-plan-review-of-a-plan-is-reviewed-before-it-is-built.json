@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:12:12.897Z",
+  "dispatched_at": "2026-10-05T16:08:16Z",
+  "findings": [
+    {
+      "anchor": "reckon/_schema.py:372",
+      "id": "reuse_search-1",
+      "reason": "\u00a716 argues at length that the core layer should own the normaliser, so it must name the existing schema predicate and say whether it stays a predicate distinct from the derivation or is folded under the same owner.",
+      "text": "the plan reworks the section-identity vocabulary and hoists section_record_id and section_id_candidates into the core layer but never cites the existing is_section_identity in _schema.py, the one symbol that already owns \"is this a usable section identity\", so a reader meets three identity names and a predicate whose relationship the plan does not state",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:215",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend section_record_id to accept the enclosing element's attributes (or make the adapter private) instead of adding a third public identity symbol beside the normaliser it is hoisting.",
+      "text": "the plan hoists section_record_id (the canonical identity derivation) into reckon/_plan_html.py and in the same change adds a second public derivation, section_identity, over two attribute mappings, so one module ends up owning section identity twice; the two-mapping signature is the only difference and could be a parameter of section_record_id rather than a parallel name",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "693535e0ec2755da0d9e8ccc0a653f2555e21b4499e95316692dd0e60dca99b5",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 86,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T160757129103-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "133f7a6440687dafed6e9d9f2a3e722c1f2e77ba",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 consolidates nine store helpers and the wrapper-id resolution onto one parser, and \u00a716/\u00a718 relocate rather than spread machinery; the interfaces added are smaller than the behaviour they hide.",
+    "duplicate_owner": "a finding \u2014 \u00a716 adds a new public section_identity beside the section_record_id it hoists into the same module, so section identity derivation has two owners where one is being extended.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; each of \u00a716 (section_identity), \u00a717 (plan_headings) and \u00a718 (hoisted reader) names its one added public definition and names what it retires or moves (section_record_id/section_id_candidates hoisted, landed_section_ids moved, the private promotion reader retired) or states why nothing is retired, so no section adds surface unaccounted.",
+    "reuse_search": "a finding \u2014 the plan searched the named codebase and cites section_record_id, section_id_candidates, _StructuredSectionSpanParser, list_plan_reviews, promotion._plan_remaining_sections and doccheck._implementable_section_ids, but omits the existing third symbol of the same vocabulary, reckon/_schema.py:is_section_identity.",
+    "thin_wrapper": "pass \u2014 the one genuinely thin layer, \u00a716's coverage predicate, is joined over two existing readers (outstanding sections \u00d7 stored section digests) rather than forwarding, and the plan states its consumers."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.861774+00:00"
+}
