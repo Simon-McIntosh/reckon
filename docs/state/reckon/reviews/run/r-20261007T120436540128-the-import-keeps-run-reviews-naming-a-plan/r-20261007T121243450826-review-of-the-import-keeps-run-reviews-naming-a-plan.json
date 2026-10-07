@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "scripts/import_host_reviews.py:_review_identity"
+  ],
+  "completed_at": "2026-10-07T12:23:21.675Z",
+  "dispatched_at": "2026-10-07T12:13:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/reckon/reckon/crew/review.py",
+      "line": "2068",
+      "severity": "follow-on",
+      "text": "follow-on: store_committed_review has the same plan-first branch order as the fixed _subject_kind, so a run review whose body carries its run's plan_slug is filed under plan/<slug>/ with int(plan_version or 0) = 0 rather than under run/<reviewed_run_id>/; the fix belongs in a sibling node as the reviewed run reported, and names_a_review_subject already tests reviewed_run_id first."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T120436540128-the-import-keeps-run-reviews-naming-a-plan/dryrun-imas-codex.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the header names revision 89b2ca125 (the base) though the dry run ran against the fixed working tree whose 157 run-review count the fix alone produces, so the header does not identify the code behind the output."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T120436540128-the-import-keeps-run-reviews-naming-a-plan/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's baseline_suite and after_suite arms are empty, so this record stores added_failure_count unmeasured, and its tests line carries an unsubstituted <run> placeholder rather than the absolute path gate-import-and-identity.log holds."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 788efc125 against base 89b2ca125 - a 13-line reorder of _subject_kind plus a 65-line test that stores a run review carrying its run's plan slug and a null plan version and shows it committed rather than quarantined.",
+    "done_when": "the brief names no pytest command; the manifest's tests line carries the importer gate and gate-import-and-identity.log records 25 passed EXIT=0 at the reviewed head 788efc125.",
+    "goal": "read the brief and plan section 8 against the diff; _subject_kind now returns \"run\" for a body that names reviewed_run_id before testing plan_slug, so a run review naming its run's plan is no longer refused as a versionless plan, which is the brief's stated change.",
+    "manifest": "read; it records commit 788efc125 as head, both changed paths, a 25-passed gate at that revision and a red negative control, but its baseline_suite and after_suite arms are empty and its tests line carries an unsubstituted <run> placeholder.",
+    "write_paths": "the manifest declares scripts/import_host_reviews.py, tests/test_import_host_reviews.py, the section 8 evidence fragment and the figure directory; the diff 788efc125 touches only the first two, both inside the declared set."
+  },
+  "justifications": {
+    "durability": "negative-control.log reddens test_a_run_review_naming_its_runs_plan_is_a_record and test_recognition_needs_a_subject_and_rejects_a_bare_reference with EXIT=1, and tests/test_import_host_reviews.py:698 stores the record and asserts dry-run \"non-records: 0\" and \"imported: 1\", so the guarded behaviour is exercised, not assumed.",
+    "evidence": "gate-import-and-identity.log records 25 passed EXIT=0 at rev 788efc125 with its module and tree named and the dry run moved non-records from 4 to 0, but the reviewed manifest carries no baseline_suite/after_suite arm and dryrun-imas-codex.log's header names revision 89b2ca125.",
+    "fit": "the reorder makes _subject_kind agree with review.names_a_review_subject, which already tests reviewed_run_id first, and the docstring states the run-before-plan rule at its mechanism.",
+    "goal_fidelity": "scripts/import_host_reviews.py:117 tests reviewed_run_id first and returns \"run\", and a probe over the four imas-codex run reviews returns kind \"run\" at 788efc125 against None at 89b2ca125, so the brief's change is the one landed.",
+    "reuse": "the change edits the existing _subject_kind branch order and adds no second subject test; scripts/import_host_reviews.py keeps one recognition path through _review_identity.",
+    "scope_discipline": "the only paths in git show 788efc125 --stat are scripts/import_host_reviews.py and tests/test_import_host_reviews.py, both declared write paths, and no plan, index or out-of-scope file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the brief and plan section 8 against the diff; _subject_kind now returns \"run\" for a body that names reviewed_run_id before testing plan_slug, so a run review naming its run's plan is no longer refused as a versionless plan, which is the brief's stated change.\nVERDICT done_when: the brief names no pytest command; the manifest's tests line carries the importer gate and gate-import-and-identity.log records 25 passed EXIT=0 at the reviewed head 788efc125.\nVERDICT write_paths: the manifest declares scripts/import_host_reviews.py, tests/test_import_host_reviews.py, the section 8 evidence fragment and the figure directory; the diff 788efc125 touches only the first two, both inside the declared set.\nVERDICT manifest: read; it records commit 788efc125 as head, both changed paths, a 25-passed gate at that revision and a red negative control, but its baseline_suite and after_suite arms are empty and its tests line carries an unsubstituted <run> placeholder.\nVERDICT diff: read 788efc125 against base 89b2ca125 - a 13-line reorder of _subject_kind plus a 65-line test that stores a run review carrying its run's plan slug and a null plan version and shows it committed rather than quarantined.\nCALL_SITES: scripts/import_host_reviews.py:_review_identity\nSCORE goal_fidelity: 19\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 18\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: scripts/import_host_reviews.py:117 tests reviewed_run_id first and returns \"run\", and a probe over the four imas-codex run reviews returns kind \"run\" at 788efc125 against None at 89b2ca125, so the brief's change is the one landed.\nJUSTIFICATION evidence: gate-import-and-identity.log records 25 passed EXIT=0 at rev 788efc125 with its module and tree named and the dry run moved non-records from 4 to 0, but the reviewed manifest carries no baseline_suite/after_suite arm and dryrun-imas-codex.log's header names revision 89b2ca125.\nJUSTIFICATION scope_discipline: the only paths in git show 788efc125 --stat are scripts/import_host_reviews.py and tests/test_import_host_reviews.py, both declared write paths, and no plan, index or out-of-scope file is touched.\nJUSTIFICATION durability: negative-control.log reddens test_a_run_review_naming_its_runs_plan_is_a_record and test_recognition_needs_a_subject_and_rejects_a_bare_reference with EXIT=1, and tests/test_import_host_reviews.py:698 stores the record and asserts dry-run \"non-records: 0\" and \"imported: 1\", so the guarded behaviour is exercised, not assumed.\nJUSTIFICATION fit: the reorder makes _subject_kind agree with review.names_a_review_subject, which already tests reviewed_run_id first, and the docstring states the run-before-plan rule at its mechanism.\nJUSTIFICATION reuse: the change edits the existing _subject_kind branch order and adds no second subject test; scripts/import_host_reviews.py keeps one recognition path through _review_identity.\nFINDING /home/ITER/mcintos/Code/reckon/reckon/crew/review.py:2068 follow-on: store_committed_review has the same plan-first branch order as the fixed _subject_kind, so a run review whose body carries its run's plan_slug is filed under plan/<slug>/ with int(plan_version or 0) = 0 rather than under run/<reviewed_run_id>/; the fix belongs in a sibling node as the reviewed run reported, and names_a_review_subject already tests reviewed_run_id first.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T120436540128-the-import-keeps-run-reviews-naming-a-plan/dryrun-imas-codex.log:1 follow-on: the header names revision 89b2ca125 (the base) though the dry run ran against the fixed working tree whose 157 run-review count the fix alone produces, so the header does not identify the code behind the output.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T120436540128-the-import-keeps-run-reviews-naming-a-plan/manifest.md:1 follow-on: the reviewed manifest's baseline_suite and after_suite arms are empty, so this record stores added_failure_count unmeasured, and its tests line carries an unsubstituted <run> placeholder rather than the absolute path gate-import-and-identity.log holds.\nREVIEWED_BASE_SHA: 89b2ca125b01f9e9c814bb309a6c35287d2a958e\nREVIEWED_HEAD_SHA: 788efc1251cea728ad56a87e5401fa6397297977",
+  "review_run_id": "r-20261007T121243450826-review-of-the-import-keeps-run-reviews-naming-a-plan",
+  "reviewed_base_sha": "89b2ca125b01f9e9c814bb309a6c35287d2a958e",
+  "reviewed_head_sha": "788efc1251cea728ad56a87e5401fa6397297977",
+  "reviewed_run_id": "r-20261007T120436540128-the-import-keeps-run-reviews-naming-a-plan",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T12:23:37.842557+00:00",
+  "total": 108
+}
