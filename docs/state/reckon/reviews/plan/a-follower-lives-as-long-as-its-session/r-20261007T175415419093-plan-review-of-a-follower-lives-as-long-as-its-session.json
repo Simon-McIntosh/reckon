@@ -1,0 +1,89 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T18:00:09.985Z",
+  "dispatched_at": "2026-10-07T17:54:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:229",
+      "id": "wiring-1",
+      "reason": "a builder following the sole open followup builds \u00a79's live census only, so \u00a713's required-stop-reason change is never dispatched and the followup's own state claim misleads the next reader.",
+      "text": "\u00a713 is declared implementable but no followup carries it, and the only open followup f-afl-004 invokes `\u00a79` while its body asserts \"Every code node has landed\", which the newly added \u00a713 code section makes false",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:170",
+      "id": "reasoning-1",
+      "reason": "the plan should either drop the dead branch and its test or name the caller that closes the request descriptor; as written it adds tests for a path the shipped host cannot reach.",
+      "text": "\u00a713's second done-when test drives an \"end-of-file on the request descriptor\", but in the shipped configuration that descriptor is the request FIFO opened read-write (`exec 3<>\"$fifo\"` in plugins/crew-host/bin/crew-host; `os_module.open(fifo_path, os_module.O_RDWR)` at reckon/cli.py:5079), so the host itself holds a write end and `os.read` at reckon/crew/session_host.py:554 never returns 0 \u2014 the EOF branch runs on no production caller and the plan names none",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9f5100c5d92fac2645b88b47cbf1cbfdae3e44de44446c7decbffffb1d08a198",
+  "plan_slug": "a-follower-lives-as-long-as-its-session",
+  "plan_version": 56,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-07T18:01:34.699428+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T18:01:42.819836+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T18:01:42.819836+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T18:01:34.699428+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-follower-lives-as-long-as-its-session.v56.json",
+  "review_run_id": "r-20261007T175415419093-plan-review-of-a-follower-lives-as-long-as-its-session",
+  "reviewed_blob_sha": "22a0c9725777bf34c4006f24e491215c915605a0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_session_host.py` and `tests/test_dispatch_session_host.py` exist, and `SessionHost.stop` resolves at `reckon/crew/session_host.py:459`; the correction comment's `c-close-s11` target resolves to the s11 comment at line 348.",
+    "done_when": "pass \u2014 \u00a713's done-when names two tests, the two test modules, and a mutation negative control, and its end-of-file arm fails on the current code because that path records stop_reason None.",
+    "evidence_paths": "pass \u2014 \u00a713 places no evidence in a session scratchpad; its gate is the two named test modules and it declares no throwaway artifact.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the new symbols (`stop_reason`, `request_stop`); the `\u00a7N` identifiers are the plan's own section scheme.",
+    "reasoning": "a finding \u2014 the end-of-file path \u00a713 requires a reason on is reached by no production caller, because the request descriptor is the FIFO opened read-write and never returns end-of-file.",
+    "single_goal": "pass \u2014 \u00a713 carries one contract, that the final record's stop_reason is never None, with three implementation clauses under one goal.",
+    "wiring": "a finding \u2014 \u00a713 is declared implementable but no followup carries it, and the sole open followup f-afl-004 invokes \u00a79 while its body asserts \"Every code node has landed\"."
+  },
+  "section_digests": {
+    "_document": "ffd5995b28520daba705fe61e1acbcee53db3c4b986ee622677e003e86a68410",
+    "s1": "a4eeecaff9300863f1a6f28d4f659a0977a7583ac703af75654ddf0622bd81d4",
+    "s10": "7dd4672bb7cf4d1be69d191b1b75168b2541ba034fb2e304aac73c5826be0125",
+    "s11": "e05ea2085f88e301a9bd3edd6b7f417b6926e799c9d5ce6ed68371c6b658880d",
+    "s12": "b9d1786058731f14be5bf5e3a693f8df0c72a0163c45603a8fc047776485e6a9",
+    "s13": "2057c79e531c7d00fc8913906e145050f9826f1037ae7a17520f9c8d2c2f795e",
+    "s2": "b9689c739005faa621201d6009e306831a98c253828e1da227693acd6b977ab2",
+    "s3": "27ff46e837af55f0eaba51e6b64d726f133b299233e5eb3f672ab5fc6b1ca9bd",
+    "s4": "9c4d2ab6d7ca5942dead1327565460770d77bccf4ecd90e73c42a2b6eef7d94d",
+    "s5": "42339a7b96242d9c43f0a11b39792c3a77586525b5e12fff673cb29b22b1f33d",
+    "s6": "c99082a11529fcb10ae0464cbc7f1ed142dfe25618098cdf03a199fd240978c8",
+    "s7": "c115e3e35b8c6fc3d8ce9a5648d440b39c7f571ee1afabdea4a1c2a395bc3a22",
+    "s8": "7870597c5f6c188f2c555f7f17bca65a25aa338f1f74d3557f870668b31f167f",
+    "s9": "36ff7b0447b49cb29d721d4956a0d47739c48e68212f6c9d6a1cd99f2195b73b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:01:28.006766+00:00"
+}
