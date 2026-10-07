@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bc9404ddabe1d733804e8c6feee9ea03601515aa",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:reload",
+    "reckon/crew/fleet_supervisor.py:stop",
+    "reckon/crew/fleet_supervisor.py:stop_all",
+    "reckon/crew/fleet_supervisor.py:supervise_once"
+  ],
+  "completed_at": "2026-10-07T10:46:36.631Z",
+  "dispatched_at": "2026-10-07T10:36:11Z",
+  "findings": [],
+  "head_log_revision": "337bbb56df9cbb1044264484852397c118ee67be",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the 4 call site(s) of the changed _stop_locked",
+    "diff": "read commit 337bbb56d -- removes the four-line early-return guard (state is None or state.pid is None) and its lease.release, and widens the tail collect to run unconditionally; adds one test; two files, 25 insertions, 6 deletions.",
+    "done_when": "the run's done_when is the three-part section 5 gate; this increment's share is covered by repair-gate.log (30 passed, EXIT=0) over tests/test_host_lease.py, tests/test_fleet_supervisor_runs_declared_services.py and tests/test_fleet_supervisor.py, plus the two arms that isolate the new test.",
+    "goal": "the increment's own goal is to keep the node-local lock and the recorded-PID stop path reachable when a supervisor loses its in-memory service state; the diff removes the early return at fleet_supervisor.py:765 and always collects the stopped child, and the added test drives exactly that path, so the increment does what its commit message states.",
+    "manifest": "read; status complete, and it records repair-gate.log, the base and head arm logs, the declared negative control with its log, and the two arms' baseline_suite and after_suite entries.",
+    "write_paths": "the increment touches only reckon/crew/fleet_supervisor.py and tests/test_fleet_supervisor_runs_declared_services.py."
+  },
+  "justifications": {
+    "durability": "the added test test_stop_recovers_a_running_service_from_its_recorded_pid fails the moment the early return is restored -- the base arm shows it failing with the service still alive -- so the repair is guarded by a test that reddens without it.",
+    "evidence": "the reviewed run's manifest records a base arm at bc9404dd (missing-state-base-arm.log, 1 failed, EXIT=1) and a head arm at 337bbb56 (missing-state-after-arm.log, 1 passed, EXIT=0); reproducing both in a scratch tree reproduced the same failure at base and a pass at head, so the evidence could have failed.",
+    "fit": "the repair restores the lock-gated, recorded-pid stop shape the surrounding module already uses and adds no plan label, version or ticket reference in the code, the test name or the commit message.",
+    "goal_fidelity": "the increment repairs the stop path the goal depends on: reckon/crew/fleet_supervisor.py:754-824 drops the early return that skipped the recorded-pid fallback whenever in-memory state was absent, so a stop now signals the recorded pid, waits for the node-local lock to free, collects the child and releases its own lease -- the release-on-stop behaviour plan section 5 requires.",
+    "reuse": "it reuses recorded_service_pid, lock_held and _collect_locked rather than adding a parallel stop path; dropping the state.owned guard on _collect_locked is safe because the helper returns on ChildProcessError for a pid that is not this image's child.",
+    "scope_discipline": "the diff touches exactly reckon/crew/fleet_supervisor.py and tests/test_fleet_supervisor_runs_declared_services.py, both inside the run's declared write paths, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment's own goal is to keep the node-local lock and the recorded-PID stop path reachable when a supervisor loses its in-memory service state; the diff removes the early return at fleet_supervisor.py:765 and always collects the stopped child, and the added test drives exactly that path, so the increment does what its commit message states.\nVERDICT done_when: the run's done_when is the three-part section 5 gate; this increment's share is covered by repair-gate.log (30 passed, EXIT=0) over tests/test_host_lease.py, tests/test_fleet_supervisor_runs_declared_services.py and tests/test_fleet_supervisor.py, plus the two arms that isolate the new test.\nVERDICT write_paths: the increment touches only reckon/crew/fleet_supervisor.py and tests/test_fleet_supervisor_runs_declared_services.py.\nVERDICT manifest: read; status complete, and it records repair-gate.log, the base and head arm logs, the declared negative control with its log, and the two arms' baseline_suite and after_suite entries.\nVERDICT diff: read commit 337bbb56d -- removes the four-line early-return guard (state is None or state.pid is None) and its lease.release, and widens the tail collect to run unconditionally; adds one test; two files, 25 insertions, 6 deletions.\nCALL_SITES: reckon/crew/fleet_supervisor.py:reload, reckon/crew/fleet_supervisor.py:stop, reckon/crew/fleet_supervisor.py:stop_all, reckon/crew/fleet_supervisor.py:supervise_once\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the increment repairs the stop path the goal depends on: reckon/crew/fleet_supervisor.py:754-824 drops the early return that skipped the recorded-pid fallback whenever in-memory state was absent, so a stop now signals the recorded pid, waits for the node-local lock to free, collects the child and releases its own lease -- the release-on-stop behaviour plan section 5 requires.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's manifest records a base arm at bc9404dd (missing-state-base-arm.log, 1 failed, EXIT=1) and a head arm at 337bbb56 (missing-state-after-arm.log, 1 passed, EXIT=0); reproducing both in a scratch tree reproduced the same failure at base and a pass at head, so the evidence could have failed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches exactly reckon/crew/fleet_supervisor.py and tests/test_fleet_supervisor_runs_declared_services.py, both inside the run's declared write paths, and nothing else.\nSCORE durability: 19\nJUSTIFICATION durability: the added test test_stop_recovers_a_running_service_from_its_recorded_pid fails the moment the early return is restored -- the base arm shows it failing with the service still alive -- so the repair is guarded by a test that reddens without it.\nSCORE fit: 18\nJUSTIFICATION fit: the repair restores the lock-gated, recorded-pid stop shape the surrounding module already uses and adds no plan label, version or ticket reference in the code, the test name or the commit message.\nSCORE reuse: 17\nJUSTIFICATION reuse: it reuses recorded_service_pid, lock_held and _collect_locked rather than adding a parallel stop path; dropping the state.owned guard on _collect_locked is safe because the helper returns on ChildProcessError for a pid that is not this image's child.\nreviewed_base_sha: bc9404ddabe1d733804e8c6feee9ea03601515aa\nreviewed_head_sha: 337bbb56df9cbb1044264484852397c118ee67be",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T093549967306-a-declared-service-runs-once-across-nodes.json",
+  "review_run_id": "r-20261007T103543659908-review-of-a-declared-service-runs-once-across-nodes",
+  "reviewed_base_sha": "bc9404ddabe1d733804e8c6feee9ea03601515aa",
+  "reviewed_head_sha": "337bbb56df9cbb1044264484852397c118ee67be",
+  "reviewed_run_id": "r-20261007T093549967306-a-declared-service-runs-once-across-nodes",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:48:40.220910+00:00",
+  "total": 110
+}
