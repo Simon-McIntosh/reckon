@@ -778,16 +778,25 @@ def fleet_node_group():
 @click.option(
     "--dry-run", is_flag=True, help="Print the next step without changing state."
 )
-@click.option("--session", help="Limit a cutover step to one zellij session.")
+@click.option("--session", help="Select one cutover or rehearsal session.")
+@click.option(
+    "--rehearse", is_flag=True, help="Rehearse one probe session on this node."
+)
 @click.option(
     "--confirm", is_flag=True, help="Confirm cancellation at the retire step."
 )
-def fleet_node_migrate(dry_run: bool, session: str | None, confirm: bool) -> None:
+def fleet_node_migrate(
+    dry_run: bool, session: str | None, rehearse: bool, confirm: bool
+) -> None:
     """Advance the fleet move by one recorded checkpoint."""
     from reckon.crew.fleet_migrate import MigrationError, migrate
 
     try:
-        click.echo(migrate(dry_run=dry_run, session=session, confirm=confirm))
+        click.echo(
+            migrate(
+                dry_run=dry_run, session=session, rehearse=rehearse, confirm=confirm
+            )
+        )
     except MigrationError as exc:
         raise click.ClickException(str(exc)) from exc
 
