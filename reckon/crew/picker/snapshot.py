@@ -3,6 +3,7 @@
 import json
 import math
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -67,20 +68,29 @@ def recent_outcomes(
 
 
 def estimated_context_tokens(
-    node: Any, repo: Path, *, backend_settings: dict[str, Any] | None = None
+    node: Any,
+    repo: Path,
+    *,
+    backend_settings: dict[str, Any] | None = None,
+    authority: Mapping[str, Any] | None = None,
 ) -> int:
     """A node's deterministic input estimate, independent of any lane window.
 
     The figure is the same measurement the context-fit verdict charges a node
     against -- its standing instruction chain plus the repository files its
     brief loads -- so a request-level estimate and a candidate's own verdict
-    agree whenever the standing chain is shared. The standing chain is read
-    for the resolved backend's agent layout; a caller with no backend reads the
-    harness-independent chain, which is what an unrouted estimate wants.
+    agree whenever the standing chain and the dispatch authority are shared.
+    ``authority`` is threaded to the file census for the same reason the verdict
+    threads it: dispatcher-granted landing paths are exempt only when the census
+    can see the grant, so an estimate measured without the authority charges a
+    node for its own granted fragment and reads larger than that node's own
+    candidate blocks. The standing chain is read for the resolved backend's
+    agent layout; a caller with no backend reads the harness-independent chain,
+    which is what an unrouted estimate wants.
     """
 
     standing_tokens, _ = routing._standing_context_input(repo, backend_settings or {})
-    file_tokens, _ = routing._context_file_inputs(repo, node, None)
+    file_tokens, _ = routing._context_file_inputs(repo, node, authority)
     return standing_tokens + file_tokens
 
 
@@ -154,7 +164,9 @@ def _context_block(
         estimated_tokens = context.get("estimated_tokens")
     headroom_pct = None
     if window_tokens and estimated_tokens is not None:
-        headroom_pct = round(100.0 * (window_tokens - estimated_tokens) / window_tokens, 1)
+        headroom_pct = round(
+            100.0 * (window_tokens - estimated_tokens) / window_tokens, 1
+        )
     return {
         "window_tokens": window_tokens,
         "estimated_tokens": estimated_tokens,
@@ -253,12 +265,18 @@ def _fit(
     *,
     verdict_inputs: dict[str, Any] | None = None,
     context_out: dict[str, Any] | None = None,
+    authority: Mapping[str, Any] | None = None,
 ) -> list[str]:
     execution = capability.assess_execution_fit(
         request.node.done_when,
         role=request.node.role,
         execution_capable=backend.get("execution_capable"),
     )
+    # The authority travels into the verdict so its context estimate charges the
+    # same granted-path set the request-level estimate uses. Without it the
+    # verdict exempts a dispatcher-granted landing fragment the request-level
+    # estimate (measured with the authority) would also exempt, and the two
+    # figures describing one node disagree.
     resolution = DispatchPlan(
         run_id="",
         backend=name,
@@ -268,6 +286,7 @@ def _fit(
         budget_ceiling="",
         validation=NodeValidation(ok=True),
         execution_fit=execution,
+        authority=dict(authority) if authority is not None else None,
     )
     reasons = (
         [] if execution.allowed else ["execution-fit: " + execution.refusal_detail()]
@@ -395,6 +414,7 @@ def candidates(
     budget_snapshot: dict[str, Any] | None = None,
     verdict_inputs: dict[str, Any] | None = None,
     cached_only: bool = False,
+    authority: Mapping[str, Any] | None = None,
 ) -> list[Candidate]:
     """Read a fresh snapshot; never dispatch or change routing configuration."""
     now = datetime.now(UTC)
@@ -417,8 +437,13 @@ def candidates(
     }
     # The node's estimate is independent of the candidate, so it is measured
     # once for the pick and reused wherever a lane declares no window of its
-    # own. Peak utilisation is read once per lane rather than once per row.
-    node_context_tokens = estimated_context_tokens(request.node, repo)
+    # own. Peak utilisation is read once per lane rather than once per row. The
+    # authority is threaded here and into every candidate's verdict so the
+    # request-level figure and the block a candidate carries are one estimate,
+    # not two measured against different granted-path sets.
+    node_context_tokens = estimated_context_tokens(
+        request.node, repo, authority=authority
+    )
     lane_utilisation = {
         name: _peak_input_utilisation(rows, name, now=now)
         for name in config.get("backends", {})
@@ -500,6 +525,7 @@ def candidates(
                     repo,
                     verdict_inputs=shared,
                     context_out=contexts,
+                    authority=authority,
                 )
             )
             context_block = _context_block(

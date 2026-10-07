@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Jev weighs each lane's context window against the node's estimate">
+  <meta name="plan-summary" content="Every offered candidate carries a context block — the gating window, the node's estimate against it, the headroom that estimate leaves and recent peak input utilisation — so the router sends a node that fills a lane's window to a lane with room. A lane the node cannot fit stays excluded with its context-fit reason, and the dispatch path fills the request estimate from the same measurement the verdict uses.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,context,evidence">
+  <title>Jev weighs each lane's context window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="jev-weighs-context" data-reckon="landed" data-when="2026-10-07">
+  <h2>Jev weighs each lane's context window against the node's estimate</h2>
+  <p>A node whose input approaches a lane's window risks dying mid-way with no deliverable,
+  so the picker now hands Jev the facts to send it elsewhere. Every offered candidate carries a
+  <code>context</code> block: the window that gates the lane, this node's deterministic estimate
+  against it, the share of the window that leaves free, and the peak input utilisation recent
+  passed runs recorded on the lane. No numeric threshold is coded — headroom is one more figure
+  Jev weighs, and a null figure reads as unknown, never as zero.</p>
+
+  <h3>What the change does</h3>
+  <ul>
+    <li><code>PickRequest.estimated_context</code> is filled on the dispatch path from
+    <code>snapshot.estimated_context_tokens</code>, the same standing-instruction-plus-file
+    census the context-fit verdict charges a node against.</li>
+    <li>The request-level estimate and every candidate's block are one estimate: the dispatch
+    authority is threaded into both, so a dispatcher-granted landing fragment is exempt in each
+    and the two figures describing one node agree. Measured for a node with a granted fragment:
+    both read <code>51535</code> tokens; measured without the authority the request-level figure
+    is larger, which is the split the threading removes.</li>
+    <li>Each block renders <code>window_tokens</code>,
+    <code>estimated_tokens</code>, <code>headroom_pct</code> and
+    <code>peak_utilisation_p50_pct</code> / <code>peak_utilisation_p90_pct</code> and
+    <code>peak_utilisation_runs</code>; the peak figures come from recent <em>passed</em> runs
+    on that lane whose throughput block recorded a percent.</li>
+    <li>A lane the node cannot fit is not offered at all — it stays excluded with its
+    <code>context-fit: context-window-exceeded</code> reason rather than left for Jev to
+    weigh.</li>
+  </ul>
+
+  <h3>Estimated tokens for recent dispatches against each lane's window</h3>
+  <p>The distribution of peak input utilisation, per lane, over recent passed runs whose
+  throughput recorded a reading (14-day window). Utilisation is the node's input estimate as a
+  share of that lane's window, so it is the same quantity the context block reports as
+  <code>100 − headroom_pct</code>. The lanes below are the metered groups the ledger records;
+  the local <code>clive</code> lane dominates the population and its p90 at 70.1&nbsp;% is the
+  reason a ~85&nbsp;% node is the case worth weighing.</p>
+  <table>
+    <thead>
+      <tr><th>lane</th><th>runs</th><th>min&nbsp;%</th><th>p50&nbsp;%</th><th>p90&nbsp;%</th><th>max&nbsp;%</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>clive (local)</td><td>3128</td><td>6.4</td><td>34.7</td><td>70.1</td><td>89.5</td></tr>
+      <tr><td>claude</td><td>27</td><td>7.1</td><td>15.3</td><td>23.0</td><td>31.1</td></tr>
+      <tr><td>claude-opus</td><td>6</td><td>11.1</td><td>20.9</td><td>35.5</td><td>35.5</td></tr>
+      <tr><td>codex</td><td>1</td><td>68.0</td><td>68.0</td><td>68.0</td><td>68.0</td></tr>
+    </tbody>
+  </table>
+
+  <h3>One real node's rendered context block</h3>
+  <p>An implement node whose brief names a 4&nbsp;kB repository file estimates
+  <strong>51&nbsp;535</strong> input tokens. Against a local lane declaring a 60&nbsp;000-token
+  window the estimate leaves 14.1&nbsp;% headroom; against a metered lane declaring 200&nbsp;000
+  it leaves 74.2&nbsp;%. Both blocks are rendered from the same once-per-pick estimate, so the
+  node is described identically wherever it is weighed.</p>
+  <pre><code>{
+  "local": {
+    "window_tokens": 60000,
+    "estimated_tokens": 51535,
+    "headroom_pct": 14.1,
+    "peak_utilisation_p50_pct": null,
+    "peak_utilisation_p90_pct": null,
+    "peak_utilisation_runs": null
+  },
+  "remote": {
+    "window_tokens": 200000,
+    "estimated_tokens": 51535,
+    "headroom_pct": 74.2,
+    "peak_utilisation_p50_pct": null,
+    "peak_utilisation_p90_pct": null,
+    "peak_utilisation_runs": null
+  }
+}</code></pre>
+  <p>A node whose estimate exceeds the local lane's window (60&nbsp;000 here) is excluded from
+  that lane with <code>context-fit: context-window-exceeded</code> and offered on the lane whose
+  window holds it with positive headroom — the behaviour fixed by
+  <code>tests/test_jev_weighs_context.py</code>.</p>
+
+  <h3>Rendered state size</h3>
+  <p>The state Jev reads for a representative 9-candidate implement node was measured at both
+  arms with the picker's own <code>rendered_token_estimate</code>
+  (<code>tests/test_picker_pressure.py::test_representative_live_state_fits_the_token_bound</code>):</p>
+  <table>
+    <thead><tr><th>arm</th><th>rendered tokens</th><th>bound</th></tr></thead>
+    <tbody>
+      <tr><td>main (no context block)</td><td>1496</td><td>1500</td></tr>
+      <tr><td>head (context block)</td><td>1881</td><td>2200</td></tr>
+    </tbody>
+  </table>
+  <p>The context block adds 385 tokens across nine candidates, about 43 tokens per candidate.
+  The render bound rose from 1500 to 2200 in <code>test_picker_pressure.py</code> and from
+  1500&times;4 to 1500&times;5 in the sibling picker tests to admit it; the head figure of 1881
+  sits well inside both. Each field carried is one Jev acts on — the window, the estimate,
+  the headroom and the three peak-utilisation figures — so none is dropped; a shared window is
+  not yet hoisted, and the block is the only cost of the change.</p>
+</article>
+</body>
+</html>

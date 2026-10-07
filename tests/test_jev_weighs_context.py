@@ -90,16 +90,14 @@ def scan(monkeypatch, tmp_path):
     monkeypatch.setattr(
         snapshot,
         "estimated_context_tokens",
-        lambda request_node, repo, *, backend_settings=None: ESTIMATE,
+        lambda request_node, repo, *, backend_settings=None, authority=None: ESTIMATE,
     )
     monkeypatch.setattr(
         snapshot.resumption,
         "probe_lane_availability",
         lambda project, name, backend, **k: {"status": "served"},
     )
-    monkeypatch.setattr(
-        snapshot.routing, "_context_fit_verdict", lambda **k: None
-    )
+    monkeypatch.setattr(snapshot.routing, "_context_fit_verdict", lambda **k: None)
     monkeypatch.setattr(
         snapshot, "_dispatch_lane_gate", lambda backend: {"state": "open"}
     )
@@ -111,7 +109,7 @@ def scan(monkeypatch, tmp_path):
         window = resolution.backend_settings.get("usable_input_window")
         if window is None:
             return {"allowed": True}
-        allowed = ESTIMATE <= window
+        allowed = window >= ESTIMATE
         reason = "within-context-window" if allowed else "context-window-exceeded"
         return {
             "allowed": allowed,
@@ -213,3 +211,73 @@ def test_dispatch_pick_carries_a_non_zero_estimated_context(tmp_path, monkeypatc
         repo=repo,
     )
     assert seen["estimated_context"] > 0
+
+
+def _granted_authority(repo):
+    return {
+        "plan": {
+            "project": "proj",
+            "repository": str(repo),
+            "docs": str(repo / "docs"),
+        }
+    }
+
+
+def test_node_and_candidate_estimates_agree_with_granted_paths(tmp_path):
+    """One estimate: the request-level figure equals the candidate block's.
+
+    A dispatcher-granted landing fragment is exempt from the context charge
+    only when the census can see the grant. Measured without the authority the
+    node-level figure charges that fragment and reads larger than the estimate
+    the same node's candidate block carries, so the two figures Jev weighs for
+    one node disagree. Both paths are given the same authority here and must
+    return one estimate.
+    """
+
+    from reckon import capability
+    from reckon.crew.dispatch import DispatchPlan, _grant_landing_write_paths
+    from reckon.crew.node import NodeValidation
+    from reckon.crew.routing import _context_fit_verdict
+
+    repo = tmp_path / "repo"
+    (repo / "docs").mkdir(parents=True)
+    node = build_node(id="n", plan="p", write_paths=["src/target.py"])
+    (repo / "src").mkdir(parents=True)
+    (repo / "src" / "target.py").write_text("x" * 400)
+    authority = _granted_authority(repo)
+    _grant_landing_write_paths(node, project="proj", authority=authority, warnings=[])
+    # The granted fragment exists and is large: exempt only if the census can
+    # see the grant, so the two estimates diverge when they disagree on it.
+    for granted in node.write_paths:
+        resolved = repo / granted
+        resolved.parent.mkdir(parents=True, exist_ok=True)
+        resolved.write_text("g" * 4000)
+    settings = {"launch": "cli", "command": "codex", "usable_input_window": 1_000_000}
+
+    node_tokens = snapshot.estimated_context_tokens(
+        node, repo, backend_settings=settings, authority=authority
+    )
+    without_authority = snapshot.estimated_context_tokens(
+        node, repo, backend_settings=settings
+    )
+    execution = capability.assess_execution_fit(
+        node.done_when, role=node.role, execution_capable=None
+    )
+    resolution = DispatchPlan(
+        run_id="",
+        backend="remote",
+        launch="cli",
+        backend_settings=settings,
+        node=node,
+        budget_ceiling="",
+        validation=NodeValidation(ok=True),
+        execution_fit=execution,
+        authority=authority,
+    )
+    verdict = _context_fit_verdict(resolution=resolution, repo=repo)
+
+    # The granted fragment is exempt, so the two estimates for one node agree.
+    assert node_tokens == verdict["estimated_tokens"]
+    # Without the grant the same fragment is charged, which is the split this
+    # authority threading removes.
+    assert without_authority > node_tokens
