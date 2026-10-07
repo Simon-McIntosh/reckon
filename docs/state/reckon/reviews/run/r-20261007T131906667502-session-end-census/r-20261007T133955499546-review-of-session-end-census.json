@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T13:45:17.017Z",
+  "dispatched_at": "2026-10-07T13:40:30Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/follower-proof/session-end-census/census.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the zero rests on the claim that none of the 483 unreadable environs is a survivor, but census.log records only the counts (own_uid 14, other_uid 469) and not the 14 own-uid pids or their command lines, so a reader cannot independently confirm none is a crew process; recording that enumeration would let the bound be checked rather than trusted. No blocking defect: every crew row in the tabulation has a readable environ, so the survivor test is not reached through an unreadable one."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: the run adds no production definition and changes no production file, so it introduces no call site.",
+    "diff": "the run commits nothing and touches no tracked file, so there is no diff against the base c6846481; the deliverable is the measurement under the report path, not a code change.",
+    "done_when": "the bound line owner42863_survivors=0 unreadable_environ=0 control_survivors=11 doctor_link_valid=15/15 stale_fifos=3 is present as report.md's last line, satisfying every bound (0, 0, >=1, 15/15); I re-read census.log (survivor_count 0), control.log (11) and doctor-summary.json (15 projects exit 0) to confirm the line matches the logs.",
+    "goal": "the goal is a read-only census of every process surviving owner 42863 on this node, with a negative control proving the zero is measured; report.md answers all five brief steps and the classifier in scan.py implements exactly the four survivor tests the brief names.",
+    "manifest": "read; status complete, commits c6846481 (the base this read-only run started from), changed_paths [], tests line with the four EXIT=0 runs, test_logs naming the six evidence files; baseline_suite and after_suite are both absent, so the added-failure count is unmeasured.",
+    "write_paths": "the run writes under ~/.config/reckon/crew/reports/reckon/follower-proof/session-end-census only (report.md, scan.py, run_doctor.py, the six logs and doctor-summary.json); changed_paths is empty and no repository file is touched."
+  },
+  "justifications": {
+    "durability": "scan.py (survivors/control/fifos) and run_doctor.py are kept beside report.md so a reviewer can re-run every step, and the classifier's exclusion of its own argv and ancestor chain is documented in the report body; 18 because the report and its logs live only under ~/.config and are not committed, so the evidence survives this node rather than the repository.",
+    "evidence": "the survivor zero is a measured zero (control.log survivor_count=11 through the identical classifier, with 2497126 and 2570178 hit on CLAUDE_PID=2496700), census.log and control.log are kept beside the report, and the code citations in step 3 resolve on the reviewed revision (session_host.py:367 opens the child stderr sink, :373 passes stderr=sink, :582 prints the host's own [session-host] line to stderr); I confirmed the cache log is 0 bytes and the host record still carries children:[] at updated_at 1791378547.264918.",
+    "fit": "the node is plan a-follower-lives-as-long-as-its-session section 8's closing measurement \u2014 a census of what survived the proof session after its owner ended \u2014 and every step (survivors, control, stop time, doctor links, FIFOs) maps to that section without reaching into section 9, which the report explicitly leaves FIFO removal to.",
+    "goal_fidelity": "all five brief steps are answered with a table each and the closing line reads exactly owner42863_survivors=0 unreadable_environ=0 control_survivors=11 doctor_link_valid=15/15 stale_fifos=3; 19 rather than 20 because step 3's earlier bound is honestly reported as absent rather than measured, and the finding below notes the unreadable-environ population is bounded by the runner's inspection rather than a recorded per-process listing.",
+    "reuse": "the run reuses reckon doctor across all 15 mounted projects rather than reimplementing a link check, drives the survivor classifier from /proc directly, and adds no production definition or parallel mechanism.",
+    "scope_discipline": "the run is read-only as the brief requires: no process was signalled and no FIFO or record removed (report.md:5-6, fifos.log leaves all five in place), changed_paths is empty, and every artifact lands under the single declared write path ~/.config/reckon/crew/reports/reckon/follower-proof/session-end-census."
+  },
+  "project": "reckon",
+  "raw_text": "REVIEW r-20261007T131906667502-session-end-census\nVERDICT goal: the goal is a read-only census of every process surviving owner 42863 on this node, with a negative control proving the zero is measured; report.md answers all five brief steps and the classifier in scan.py implements exactly the four survivor tests the brief names.\nVERDICT done_when: the bound line owner42863_survivors=0 unreadable_environ=0 control_survivors=11 doctor_link_valid=15/15 stale_fifos=3 is present as report.md's last line, satisfying every bound (0, 0, >=1, 15/15); I re-read census.log (survivor_count 0), control.log (11) and doctor-summary.json (15 projects exit 0) to confirm the line matches the logs.\nVERDICT write_paths: the run writes under ~/.config/reckon/crew/reports/reckon/follower-proof/session-end-census only (report.md, scan.py, run_doctor.py, the six logs and doctor-summary.json); changed_paths is empty and no repository file is touched.\nVERDICT manifest: read; status complete, commits c6846481 (the base this read-only run started from), changed_paths [], tests line with the four EXIT=0 runs, test_logs naming the six evidence files; baseline_suite and after_suite are both absent, so the added-failure count is unmeasured.\nVERDICT diff: the run commits nothing and touches no tracked file, so there is no diff against the base c6846481; the deliverable is the measurement under the report path, not a code change.\nVERDICT call_sites: none: the run adds no production definition and changes no production file, so it introduces no call site.\nCALL_SITES: none: the run adds no production definition and changes no production file, so it introduces no call site.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all five brief steps are answered with a table each and the closing line reads exactly owner42863_survivors=0 unreadable_environ=0 control_survivors=11 doctor_link_valid=15/15 stale_fifos=3; 19 rather than 20 because step 3's earlier bound is honestly reported as absent rather than measured, and the finding below notes the unreadable-environ population is bounded by the runner's inspection rather than a recorded per-process listing.\nSCORE evidence: 19\nJUSTIFICATION evidence: the survivor zero is a measured zero (control.log survivor_count=11 through the identical classifier, with 2497126 and 2570178 hit on CLAUDE_PID=2496700), census.log and control.log are kept beside the report, and the code citations in step 3 resolve on the reviewed revision (session_host.py:367 opens the child stderr sink, :373 passes stderr=sink, :582 prints the host's own [session-host] line to stderr); I confirmed the cache log is 0 bytes and the host record still carries children:[] at updated_at 1791378547.264918.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the run is read-only as the brief requires: no process was signalled and no FIFO or record removed (report.md:5-6, fifos.log leaves all five in place), changed_paths is empty, and every artifact lands under the single declared write path ~/.config/reckon/crew/reports/reckon/follower-proof/session-end-census.\nSCORE durability: 18\nJUSTIFICATION durability: scan.py (survivors/control/fifos) and run_doctor.py are kept beside report.md so a reviewer can re-run every step, and the classifier's exclusion of its own argv and ancestor chain is documented in the report body; 18 because the report and its logs live only under ~/.config and are not committed, so the evidence survives this node rather than the repository.\nSCORE fit: 20\nJUSTIFICATION fit: the node is plan a-follower-lives-as-long-as-its-session section 8's closing measurement \u2014 a census of what survived the proof session after its owner ended \u2014 and every step (survivors, control, stop time, doctor links, FIFOs) maps to that section without reaching into section 9, which the report explicitly leaves FIFO removal to.\nSCORE reuse: 20\nJUSTIFICATION reuse: the run reuses reckon doctor across all 15 mounted projects rather than reimplementing a link check, drives the survivor classifier from /proc directly, and adds no production definition or parallel mechanism.",
+  "review_run_id": "r-20261007T133955499546-review-of-session-end-census",
+  "reviewed_base_sha": "c6846481c326398f0f085f28d2a47cec61e8d74d",
+  "reviewed_head_sha": "c6846481c326398f0f085f28d2a47cec61e8d74d",
+  "reviewed_run_id": "r-20261007T131906667502-session-end-census",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T13:44:37.206149+00:00",
+  "total": 116
+}
