@@ -46,7 +46,7 @@ SNAPSHOT_RUN_ID = "an-edit-tells-its-author-a-review-is-owed"
 DONE_WHEN = "charlie ships and nothing regresses"
 _INVOCATION = (
     "reckon crew review-plan --project sample --plan fixture --rubric content "
-    "--session <session> --local"
+    "--session <session>"
 )
 
 

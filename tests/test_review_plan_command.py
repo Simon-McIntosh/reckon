@@ -531,3 +531,21 @@ def test_the_report_grammar_parses_through_the_shared_review_reader():
     ]
     assert parsed["findings"][0]["id"] == "duplicate_owner-1"
     assert parsed["findings"][0]["would_change"] is True
+
+
+def test_a_plan_review_naming_no_lane_stays_off_an_excluded_default(project):
+    lanes = {"launch": "cli", "model": "m", "effort": "high", "time_budget": "20m"}
+    config = {
+        **CONFIG,
+        "default_backend": "metered",
+        "local_backend": "served",
+        "backends": {"metered": dict(lanes), "served": dict(lanes)},
+        "review_excluded_backends": ["metered"],
+        "roles": {"review": {"execution_capable": True}},
+    }
+
+    lane = recovery._composed_review_lane("sample", _subject(), config)
+
+    assert lane == ["--local", "--backend", "served"]
+    named = recovery._composed_review_lane("sample", _subject(local=True), config)
+    assert named == ["--local", "--backend", "served"]

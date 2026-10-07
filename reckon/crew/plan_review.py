@@ -164,12 +164,14 @@ def review_invocation(
 
     One composer, so a write's ``review_owed`` note, the stale-review hint and
     the dispatch gate's refusals hand their reader the same command, and one the
-    verb accepts once the session is filled in.
+    verb accepts once the session is filled in. It names no lane: a review that
+    names none takes the review lanes ``review_excluded_backends`` leaves, which
+    keeps it off metered lanes, and holds when the local lane is saturated.
     """
     named = shlex.quote(session) if session else SESSION_PLACEHOLDER
     return (
         f"reckon crew review-plan --project {shlex.quote(project)} "
-        f"--plan {shlex.quote(plan_slug)} --rubric {rubric} --session {named} --local"
+        f"--plan {shlex.quote(plan_slug)} --rubric {rubric} --session {named}"
     )
 
 

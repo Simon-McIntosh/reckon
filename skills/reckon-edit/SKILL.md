@@ -126,10 +126,11 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    that reads differently to the executor than to its author, and the author
    cannot see it by re-reading, which is why the reader must be someone else.
    Before the revised plan goes back to work, once the session's writing is
-   done, compose one content review on the local lane:
+   done, compose one content review. It names no lane: `review_excluded_backends`
+   keeps a review off metered lanes, so it runs locally or holds.
 
    ```bash
-   reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session> --local
+   reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session>
    ```
 
    A plan reviewed before is reviewed again only where it changed: the brief
@@ -169,7 +170,7 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    Run the invocation once, with your session in place of its `<session>`,
 
    ```bash
-   reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session> --local
+   reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session>
    ```
 
    and answer every finding it raises before a build is dispatched. The tool

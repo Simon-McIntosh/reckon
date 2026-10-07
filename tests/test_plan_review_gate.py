@@ -214,7 +214,7 @@ def test_unreviewed_implementation_is_refused_with_a_composed_remedy(
     assert "fixture" in refusal
     assert (
         "`reckon crew review-plan --project sample --plan fixture --rubric design "
-        "--session <session> --local`" in refusal
+        "--session <session>`" in refusal
     )
 
 
