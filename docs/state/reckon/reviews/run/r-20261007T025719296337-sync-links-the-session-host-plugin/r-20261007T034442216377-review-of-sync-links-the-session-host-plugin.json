@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:234 _sync_crew_host_plugin",
+    "reckon/cli.py:181 crew_host_link_state",
+    "reckon/cli.py:8172 doctor"
+  ],
+  "completed_at": "2026-10-07T03:58:00.340Z",
+  "dispatched_at": "2026-10-07T03:45:15Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base d988a0d6; the single commit ce5fee6b touches reckon/cli.py (-27/+16) and tests/test_doctor_session_host_link.py (+66/-1); every line is the node's own authorship, with no merge absorption in this range.",
+    "done_when": "the section's three clauses are asserted by tests/test_doctor_session_host_link.py as 16 passed EXIT=0 at ce5fee6b, and the reviewed run's declared negative control (worktree branch disabled) reproduces 2 failed EXIT=1; the third clause, claude plugin list showing reckon-crew-host loaded, remains external and is not exercised by any test.",
+    "goal": "the delta d988a0d6..ce5fee6b is a repair commit that adds no new clause; it makes _main_checkout delegate to reckon.crew.node.repository_identity (reckon/cli.py:113) and _in_linked_worktree compare the given path's own git toplevel against that collapsed root (reckon/cli.py:127), so the section's link, worktree-refusal and doctor clauses stand exactly as before.",
+    "manifest": "read; status complete, commits d988a0d60 and ce5fee6bd, changed_paths and negative_control_log populated; baseline_suite and after_suite are null, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "the delta is two files, reckon/cli.py and tests/test_doctor_session_host_link.py, both inside the reviewed run's declared write paths; no file outside them is touched."
+  },
+  "justifications": {
+    "durability": "the new tests assert the injected-validator message reaches doctor's output and its exit code is non-zero (tests/test_doctor_session_host_link.py:257) and that _claude_plugin_validate returns \"\" on success, a message on refusal and None with no CLI on PATH, so the validator leg is falsifiable; the worktree guard's negative control stays red.",
+    "evidence": "the gate reproduces 16 passed EXIT=0 at ce5fee6b and the new test_doctor_fails_when_the_plugin_does_not_validate plus three direct _claude_plugin_validate cases exercise the plugin-validate leg the earlier review found stubbed at tests/test_doctor_session_host_link.py:199; the external claude plugin list clause is",
+    "fit": "the helpers keep cli.py's idiom of a named constant block and a mechanism docstring (reckon/cli.py:94-143), and the new tests reuse the module's _run_doctor helper and its comment banners.",
+    "goal_fidelity": "crew_host_link_state (reckon/cli.py:145) and _sync_crew_host_plugin still implement the link, the worktree refusal and the doctor report the section names; the delta changes how the main-checkout identity is resolved, not what it resolves to.",
+    "reuse": "_main_checkout now delegates to reckon.crew.node.repository_identity (reckon/cli.py:121) and _in_linked_worktree reuses it too (reckon/cli.py:135), resolving the earlier review's duplication finding; the only residual is the function-local import.",
+    "scope_discipline": "the delta's two files, reckon/cli.py and tests/test_doctor_session_host_link.py, are both declared write paths, and the change is confined to the helpers the finding named."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta d988a0d6..ce5fee6b is a repair commit that adds no new clause; it makes _main_checkout delegate to reckon.crew.node.repository_identity (reckon/cli.py:113) and _in_linked_worktree compare the given path's own git toplevel against that collapsed root (reckon/cli.py:127), so the section's link, worktree-refusal and doctor clauses stand exactly as before.\nVERDICT done_when: the section's three clauses are asserted by tests/test_doctor_session_host_link.py as 16 passed EXIT=0 at ce5fee6b, and the reviewed run's declared negative control (worktree branch disabled) reproduces 2 failed EXIT=1; the third clause, claude plugin list showing reckon-crew-host loaded, remains external and is not exercised by any test.\nVERDICT write_paths: the delta is two files, reckon/cli.py and tests/test_doctor_session_host_link.py, both inside the reviewed run's declared write paths; no file outside them is touched.\nVERDICT manifest: read; status complete, commits d988a0d60 and ce5fee6bd, changed_paths and negative_control_log populated; baseline_suite and after_suite are null, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: read commit by commit against base d988a0d6; the single commit ce5fee6b touches reckon/cli.py (-27/+16) and tests/test_doctor_session_host_link.py (+66/-1); every line is the node's own authorship, with no merge absorption in this range.\nCALL_SITES: reckon/cli.py:234 _sync_crew_host_plugin, reckon/cli.py:181 crew_host_link_state, reckon/cli.py:8172 doctor\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: crew_host_link_state (reckon/cli.py:145) and _sync_crew_host_plugin still implement the link, the worktree refusal and the doctor report the section names; the delta changes how the main-checkout identity is resolved, not what it resolves to.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate reproduces 16 passed EXIT=0 at ce5fee6b and the new test_doctor_fails_when_the_plugin_does_not_validate plus three direct _claude_plugin_validate cases exercise the plugin-validate leg the earlier review found stubbed at tests/test_doctor_session_host_link.py:199; the external claude plugin list clause is\nstill not exercised.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the delta's two files, reckon/cli.py and tests/test_doctor_session_host_link.py, are both declared write paths, and the change is confined to the helpers the finding named.\nSCORE durability: 18\nJUSTIFICATION durability: the new tests assert the injected-validator message reaches doctor's output and its exit code is non-zero (tests/test_doctor_session_host_link.py:257) and that _claude_plugin_validate returns \"\" on success, a message on refusal and None with no CLI on PATH, so the validator leg is falsifiable; the worktree guard's negative control stays red.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers keep cli.py's idiom of a named constant block and a mechanism docstring (reckon/cli.py:94-143), and the new tests reuse the module's _run_doctor helper and its comment banners.\nSCORE reuse: 19\nJUSTIFICATION reuse: _main_checkout now delegates to reckon.crew.node.repository_identity (reckon/cli.py:121) and _in_linked_worktree reuses it too (reckon/cli.py:135), resolving the earlier review's duplication finding; the only residual is the function-local import.",
+  "review_run_id": "r-20261007T034442216377-review-of-sync-links-the-session-host-plugin",
+  "reviewed_base_sha": "d988a0d609e9dd15c38af5fc0af2348f0b39422c",
+  "reviewed_head_sha": "ce5fee6bdab505e00c686b6490bf46680c0889ed",
+  "reviewed_run_id": "r-20261007T025719296337-sync-links-the-session-host-plugin",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:01:50.507533+00:00",
+  "total": 112
+}
