@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+# Session host entry point. Claude Code starts this as a plugin monitor for the
+# whole session. It waits silently on a node-local FIFO named for its owner —
+# the Claude process named by CLAUDE_PID together with that process's start
+# time, a pair that survives /clear where the session id does not — and exits
+# silently when its owner is gone. On the first request line it replaces itself
+# (same pid, same stdout) with `reckon crew host`, which is the protocol's only
+# reader. The FIFO descriptor stays open across exec, so a request written in
+# the gap waits in the pipe rather than being lost.
+set -u
+
+owner_pid="${CLAUDE_PID:-}"
+[ -n "$owner_pid" ] || exit 0
+[ -r "/proc/$owner_pid/stat" ] || exit 0
+
+# Field 22 of /proc/<pid>/stat is the process start time. The comm field
+# (field 2) may hold spaces and parentheses, so strip through the last ") "
+# before counting fields.
+owner_start="$(sed 's/^.*) //' "/proc/$owner_pid/stat" | awk '{print $20}')"
+[ -n "$owner_start" ] || exit 0
+
+# The read timeout bounds one wait; the owner's liveness is re-checked each time
+# it elapses. Overridable only so the tests can exercise the loop quickly.
+wait_interval="${RECKON_SESSION_HOST_INTERVAL:-60}"
+
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+  runtime="$XDG_RUNTIME_DIR"
+elif [ -d "/run/user/$(id -u)" ]; then
+  runtime="/run/user/$(id -u)"
+elif [ -n "${TMPDIR:-}" ]; then
+  runtime="$TMPDIR"
+else
+  exit 0
+fi
+
+state_dir="$runtime/reckon-session-host"
+mkdir -p "$state_dir" || exit 0
+fifo="$state_dir/$owner_pid-$owner_start.fifo"
+[ -p "$fifo" ] || mkfifo "$fifo" || exit 0
+
+# Open once, read-write, so the open does not block on a writer and a request
+# written before the exec waits in the pipe.
+exec 3<>"$fifo" || exit 0
+
+owner_alive() {
+  kill -0 "$owner_pid" 2>/dev/null || return 1
+  [ "$(sed 's/^.*) //' "/proc/$owner_pid/stat" 2>/dev/null | awk '{print $20}')" = "$owner_start" ]
+}
+
+while owner_alive; do
+  line=
+  if IFS= read -r -t "$wait_interval" -u 3 line; then
+    script_path="$(readlink -f "$0")"
+    checkout="$(cd "$(dirname "$script_path")/../../.." && pwd)"
+    exec "$checkout/.venv/bin/reckon" crew host \
+      --owner-pid "$owner_pid" \
+      --owner-start "$owner_start" \
+      --fd 3 \
+      --first-request "$line"
+  fi
+done
+
+# Reached only when the owner is gone: the exec path above never returns here.
+# Remove the FIFO this process created so a later session does not inherit it.
+rm -f "$fifo"
+exit 0
