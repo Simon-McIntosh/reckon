@@ -5,26 +5,11 @@ import os
 import socket
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 from reckon.crew import fleet_supervisor
 from reckon.crew.host_lease import HostLease
-
-
-def _wait_for(predicate):
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline:
-        result = predicate()
-        if result:
-            return result
-        time.sleep(0.05)
-    raise AssertionError("supervisor did not reach the expected state")
-
-
-def _request(runtime: Path, verb: str):
-    with (runtime / "requests").open("w", encoding="utf-8") as fifo:
-        fifo.write(verb + "\n")
+from tests.fleet_supervisor_requests import ready_response, send_request, wait_for
 
 
 def test_standby_claims_declared_service_lease_only_on_promotion(tmp_path):
@@ -45,39 +30,33 @@ def test_standby_claims_declared_service_lease_only_on_promotion(tmp_path):
         "SLURM_JOB_ID": "test-job",
         "PYTHONPATH": str(Path(fleet_supervisor.__file__).resolve().parents[2]),
     }
-    supervisor_log = tmp_path / "supervisor.log"
-    with supervisor_log.open("w", encoding="utf-8") as output:
-        process = subprocess.Popen(
-            [sys.executable, "-m", "reckon.crew.fleet_supervisor", "--standby"],
-            env=env,
-            stdin=subprocess.DEVNULL,
-            stdout=output,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+    process = subprocess.Popen(
+        [sys.executable, "-m", "reckon.crew.fleet_supervisor", "--standby"],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
     lease = HostLease(state, "demo", "observer", 0, "")
     try:
-        _wait_for((runtime / "requests").exists)
-        _request(runtime, "standby-ready-probe")
-        _wait_for(
-            lambda: (
-                "unknown request: standby-ready-probe"
-                in supervisor_log.read_text(encoding="utf-8")
-            )
-        )
+        wait_for((runtime / "requests").exists)
+        ready = ready_response(runtime, state, "b" * 32)
+        assert ready["standby"] is True
+        assert ready["job_id"] == "test-job"
         assert lease.holder() is None
         assert not lease.path.exists()
-        _request(runtime, "promote")
-        holder = _wait_for(lease.holder)
+        send_request(runtime, "promote")
+        holder = wait_for(lease.holder)
         assert (holder.host, holder.pid, holder.job) == (
             socket.gethostname().split(".")[0],
             process.pid,
             "test-job",
         )
-        _wait_for(lambda: fleet_supervisor.recorded_service_pid(runtime, "demo"))
+        wait_for(lambda: fleet_supervisor.recorded_service_pid(runtime, "demo"))
     finally:
         if process.poll() is None:
-            _request(runtime, "stop")
+            send_request(runtime, "stop")
         try:
             process.wait(timeout=15)
         except subprocess.TimeoutExpired:

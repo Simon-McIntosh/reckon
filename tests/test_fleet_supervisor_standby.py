@@ -6,25 +6,10 @@ import json
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 from reckon.crew import fleet_node, fleet_supervisor
-
-
-def _wait_for(predicate, timeout: float = 10.0):
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        result = predicate()
-        if result:
-            return result
-        time.sleep(0.05)
-    raise AssertionError("the expected fleet action did not complete")
-
-
-def _request(runtime: Path, line: str) -> None:
-    with (runtime / "requests").open("w", encoding="utf-8") as fifo:
-        fifo.write(line + "\n")
+from tests.fleet_supervisor_requests import ready_response, send_request, wait_for
 
 
 def test_standby_serves_then_promotes_record_and_declared_service(tmp_path):
@@ -87,21 +72,24 @@ def test_standby_serves_then_promotes_record_and_declared_service(tmp_path):
         text=True,
     )
     try:
-        _wait_for((runtime / "requests").exists)
-        _request(runtime, f"spawn r-test {spec}")
-        _wait_for(spawn_marker.exists)
+        wait_for((runtime / "requests").exists)
+        ready = ready_response(runtime, state, "a" * 32)
+        assert ready["job_id"] == "new-job"
+        assert ready["standby"] is True
+        send_request(runtime, f"spawn r-test {spec}")
+        wait_for(spawn_marker.exists)
         assert (run / "spawned.json").exists()
         assert record.read_bytes() == old_record
         assert not service_marker.exists()
         assert fleet_supervisor.recorded_service_pid(runtime, "demo") is None
 
-        _request(runtime, "promote")
-        _wait_for(lambda: json.loads(record.read_text()).get("job_id") == "new-job")
-        _wait_for(service_marker.exists)
+        send_request(runtime, "promote")
+        wait_for(lambda: json.loads(record.read_text()).get("job_id") == "new-job")
+        wait_for(service_marker.exists)
         assert fleet_supervisor.recorded_service_pid(runtime, "demo") is not None
     finally:
         if process.poll() is None:
-            _request(runtime, "stop")
+            send_request(runtime, "stop")
         try:
             process.wait(timeout=15)
         except subprocess.TimeoutExpired:
