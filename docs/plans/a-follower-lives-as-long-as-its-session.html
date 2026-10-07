@@ -25,7 +25,7 @@
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -273,7 +273,7 @@
     <div class="r-comment-body"><p>Read-back review of a-follower-lives-as-long-as-its-session at c5c42dc8: intent restated, all 3 decisions restated, all 6 done-whens restated, 14 sentences with two or more readings listed (A1 host-term overload and A2 -p lifetime conflict are the two to settle before build).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261007T033111439392-session-host-plugin-waits-silently" data-who="reckon-build" data-when="2026-10-07T03:56:42.532Z">
-    <div class="r-comment-body"><p>session-host-plugin-waits-silently: added plugins/crew-host (.claude-plugin/plugin.json named reckon-crew-host, monitors/monitors.json declaring one monitor with when &quot;always&quot; and description &quot;reckon crew&quot;, bin/crew-host) and tests/test_session_host_plugin.py; gate figure 5 passed, EXIT=0</p></div>
+    <div class="r-comment-body"><p>session-host-plugin-waits-silently: added plugins/crew-host (.claude-plugin/plugin.json named reckon-crew-host, monitors/monitors.json declaring one monitor with when "always" and description "reckon crew", bin/crew-host) and tests/test_session_host_plugin.py; gate figure 5 passed, EXIT=0</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T032109520794-review-of-sync-links-the-session-host-plugin" data-who="reckon-build" data-when="2026-10-07T03:39:29.434Z">
     <div class="r-comment-body"><p>Reviewed r-20261007T025719296337-sync-links-the-session-host-plugin at head d988a0d60 against base 9e3cbe6a: the section's link/refuse/doctor clauses are all implemented in reckon/cli.py, the diff is four files (+631/-5) all inside the declared paths, the named gate reproduces 12 passed EXIT=0 and the declared negative control (worktree branch disabled) reproduces exactly 2 failed/10 passed EXIT=1; two follow-on findings recorded (a duplicated repository-identity helper and an untested doctor invalid-plugin arm). Total 105.</p></div>
@@ -286,6 +286,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T042732715106-review-of-sync-tests-keep-the-real-skills-dir" data-who="reckon-build" data-when="2026-10-07T04:51:04.853Z">
     <div class="r-comment-body"><p>review of sync-tests-keep-the-real-skills-dir (record at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T040504698629-sync-tests-keep-the-real-skills-dir.json): parsed record stored at both declared paths, six dimensions scored goal_fidelity 18 / evidence 20 / scope_discipline 20 / durability 17 / fit 18 / reuse 20 (total 113), reviewed base 6ab102dd1 head 9bdf6250a, added_failure_count unmeasured (the reviewed run declares no baseline_suite/after_suite arm), two follow-on findings and one out-of-scope follow-on.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T040504698629-sync-tests-keep-the-real-skills-dir" data-who="reckon-build" data-when="2026-10-07T05:01:03.358Z">
+    <div class="r-comment-body"><p>reckon sync and the doctor skills and link checks now resolve the personal skills directory from RECKON_CLAUDE_SKILLS_DIR (falling back to ~/.claude/skills); an autouse fixture points it at a session temp dir and a sync test proves the link lands there while the default home skills dir is not created — gate tests/test_doctor_session_host_link.py + tests/test_doctor.py 29 passed, EXIT=0; negative control 1 failed, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T034544742984-review-of-session-host-supervises-followers" data-who="reckon-build" data-when="2026-10-07T04:01:49.175Z">
     <div class="r-comment-body"><p>Attached an independent review to run r-20261007T025625735707-session-host-supervises-followers at head 241b80161 against base 0dbf9865: §4's session host (reckon/crew/session_host.py, hidden `crew host` at reckon/cli.py:4743) implements all five done-when clauses, the re-run gate reads 9 passed EXIT=0 and the declared negative control reads 1 failed EXIT=1; stored a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 19, reuse 15 (total 106) with four follow-on findings and no blocking finding.</p></div>
