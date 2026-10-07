@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -383,7 +383,7 @@
     </p>
     <ol>
       <li>Hold every launch with <code>reckon crew gate --pause</code> (&sect;6), giving the move as the reason.</li>
-      <li>Message every coordinator pane: reach a checkpoint, launch nothing, record your state in your plan, and reply with your live runs and whether you stopped mid-task. Panes are interactive sessions, which receive peer messages; workers are not, and are never messaged.</li>
+      <li>Message every coordinator pane: reach a checkpoint, launch nothing, record your state in your plan, and reply with your live runs and whether you stopped mid-task. Panes are interactive sessions, which receive peer messages; workers are not, and are never messaged. A session's messaging socket lives in its node's runtime directory, so a peer is reachable only from a session on the same node: measured on 7 October, a login-node session listed one peer and none of the 13 fleet panes. The halt messages are therefore sent by a session on the old fleet node, or the migrate command sends them from a step there.</li>
       <li>Let running workers finish and land. A run that cannot finish within the halt window is recorded in the ledger with its resume path and left unpromoted, because promoting an unfinished run destroys its resume path.</li>
       <li>Take the final census. For each pane the ledger records whether it was halted mid-task, and the continue prompt it will receive.</li>
     </ol>
