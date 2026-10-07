@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -138,7 +138,7 @@
     </ul>
 
     <h2 id="s4">&sect;4 &mdash; The supervisor collects every child</h2>
-    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       <code>fleet_supervisor._reap_finished_children</code> runs only between FIFO
       requests, and requests are rare, so an exited child can stay defunct for days:
@@ -516,6 +516,12 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T072805118264-review-of-fleet-supervisor-collects-every-child" data-who="reckon-build" data-when="2026-10-07T07:55:56.517Z">
     <div class="r-comment-body"><p>Independent review of run r-20261007T065728317601-fleet-supervisor-collects-every-child (base b8cc7f0f, head 5db90a224) stored as a parsed record scoring all six dimensions (goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 19; total 112); the change is confirmed correct and the one discriminating test is reproduced, with two follow-on findings recorded.</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-20261007-supervisor-reaping-landed" data-who="reckon-build" data-when="2026-10-07T09:15:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20261007T065728317601-fleet-supervisor-collects-every-child</code> landed at <code>e58cd3c81</code>: the supervisor's request loop waits on its FIFO with a bounded select and collects exited children every 0.5 s with no request arriving, which also collects service children adopted after a reload. The first review scored 112 and asked for a project-neutral comment and a test of the partial-read reassembly; the fix attempt was re-reviewed at 116. Its remaining follow-on, a test helper that opens the FIFO without retrying when the reader has not yet opened it, is accepted as minor.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261007T065728317601-fleet-supervisor-collects-every-child" data-who="reckon-build" data-when="2026-10-07T08:12:54.105Z">
+    <div class="r-comment-body"><p>The fleet batch step&#x27;s request loop now waits on its request FIFO with a bounded select (REQUEST_WAIT_SECONDS = 0.5) instead of a blocking read, so it collects exited children on its own interval and no longer depends on a request arriving, and it reassembles a request split across reads from a pending buffer so it is handled once and whole; proven by test_an_exited_child_is_collected_with_no_request_arriving and test_a_request_split_across_reads_is_handled_once_and_whole, gate 20 passed with EXIT=0, evidence in docs/evidence/fragments/the-fleet-moves-to-a-new-node/fleet-supervisor-collects-every-child.html.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261007T073256147577-review-of-fleet-health-names-a-stall" data-who="reckon-build" data-when="2026-10-07T07:55:00.053Z">
     <div class="r-comment-body"><p>independent review stored for run r-20261007T065615607875-fleet-health-names-a-stall at base 3befbf4f / head 660b2e36: six dimensions scored 19 goal_fidelity, 17 evidence, 19 scope_discipline, 16 durability, 17 fit, 19 reuse (total 107), added_failure_count null and added_failure_ids [] (unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log), with a CALL_SITES line naming one production caller and two follow-on findings.</p></div>
 </div>
@@ -544,7 +550,7 @@
     <div class="r-comment-body"><p>Reviewed r-20261007T081502086686-fleet-migrate-census-and-layout at head eb58dcabc; scored all 6 dimensions (total 108/120, min 17), reproduced the 11-test gate green and the reversal negative control red (1 failed, 10 passed, EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261007T084312491499-review-of-worker-hooks-run-under-reckons-interpreter" data-who="reckon-build" data-when="2026-10-07T09:11:56.217Z">
-    <div class="r-comment-body"><p>The reviewed node&#x27;s install.py change passes all three done-when clauses and its four-file gate (98 passed EXIT=0); two defects recorded at reckon/cli.py — the second composer of the worker git guard still emits the bare command (cli.py:509) and _is_worker_git_guard_group (cli.py:381) no longer recognises the composed guard group, so both composers together duplicate the guard.</p></div>
+    <div class="r-comment-body"><p>The reviewed node's install.py change passes all three done-when clauses and its four-file gate (98 passed EXIT=0); two defects recorded at reckon/cli.py — the second composer of the worker git guard still emits the bare command (cli.py:509) and _is_worker_git_guard_group (cli.py:381) no longer recognises the composed guard group, so both composers together duplicate the guard.</p></div>
 </div>
 </section>
 </main>
