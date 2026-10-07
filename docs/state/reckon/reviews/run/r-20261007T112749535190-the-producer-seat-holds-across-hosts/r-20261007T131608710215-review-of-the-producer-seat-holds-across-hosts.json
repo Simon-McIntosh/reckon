@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base or head arm log, so the added-failure count was not taken",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/runs.py:_fresh_watch_holder",
+    "reckon/crew/runs.py:producer_live",
+    "reckon/crew/runs.py:_record_producer_running",
+    "reckon/crew/runs.py:_project_watch_claim",
+    "reckon/crew/runs.py:watch_state",
+    "reckon/crew/runs.py:project_watch_visibility",
+    "reckon/crew/recovery.py:watch_ticker._wait"
+  ],
+  "completed_at": "2026-10-07T13:26:19.924Z",
+  "dispatched_at": "2026-10-07T13:16:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T112749535190-the-producer-seat-holds-across-hosts/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest lists eight-final.log but leaves baseline_suite/after_suite empty, so the eight-before to eight-final arm delta present on disk is derived by nothing machine-readable."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "3251",
+      "severity": "follow-on",
+      "text": "follow-on: _fresh_watch_holder is called from the query paths watch_state (runs.py:3251) and project_watch_visibility (runs.py:3319) and can unlink the host-lease file via release_holder, so a state read mutates shared lease state."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against base d7d280288 \u2014 ab43fc31c holds the local-seat liveness and claim repair (runs.py plus recovery.py _wait), 9b5c5ce05 bounds the injected sleeper to LEASE_RENEW_SECONDS, and dcacdc483 updates only the fragment's landed-commit and gate-count meta.",
+    "done_when": "the node's done_when names the \u00a714 tests; the manifest records the six-file gate (gate-repair-final.log 34 passed EXIT=0 at 9b5c5ce05) and the eight named regressions (eight-final.log 8 passed EXIT=0 at the reviewed head dcacdc483).",
+    "goal": "the gained commits (ab43fc31c..dcacdc483) refine the host-lease producer seat \u2014 reckon/crew/runs.py:159 _fresh_watch_holder judges a local holder by pid and seat while a fresh remote lease defers, and reckon/crew/runs.py:2629 _project_watch_claim claims the local seat before the shared lease.",
+    "manifest": "read; it records head dcacdc483, the repair gates and a negative-control log, but its baseline_suite and after_suite lines are empty so no machine-readable arm delta is derived.",
+    "write_paths": "the gained diff touches reckon/crew/runs.py, reckon/crew/recovery.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "at the repair base d7d280288 eight-before.log shows 7 of the 8 named tests failing and eight-final.log shows them passing at the head, and negative-control-repair.log reddens tests/test_producer_seat_across_hosts.py:55 (assert stops == []).",
+    "evidence": "eight-final.log records the eight named regressions passing at the reviewed head dcacdc483 and gate-repair-final.log records 34 passed EXIT=0 at 9b5c5ce05, but the manifest's baseline_suite/after_suite are empty so the arm delta is unmeasured.",
+    "fit": "reckon/crew/runs.py:159 reuses the existing _WATCH_HOST_LEASES idiom and reckon/crew/host_lease.py:143 release_holder's inode-checked unlink rather than adding a second mechanism.",
+    "goal_fidelity": "reckon/crew/runs.py:2380 producer_live returns True for a fresh remote lease while runs.py:159 judges a local holder by pid, which is the cross-host deferral section 14 names.",
+    "reuse": "the change extends the HostLease owner at reckon/crew/host_lease.py:143 and adds no second lease; the search over reckon/crew found HostLease already owning claim, renew and release.",
+    "scope_discipline": "the gained diff is confined to reckon/crew/runs.py, reckon/crew/recovery.py and the evidence fragment, all inside the declared write paths of the manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits (ab43fc31c..dcacdc483) refine the host-lease producer seat \u2014 reckon/crew/runs.py:159 _fresh_watch_holder judges a local holder by pid and seat while a fresh remote lease defers, and reckon/crew/runs.py:2629 _project_watch_claim claims the local seat before the shared lease.\nVERDICT done_when: the node's done_when names the \u00a714 tests; the manifest records the six-file gate (gate-repair-final.log 34 passed EXIT=0 at 9b5c5ce05) and the eight named regressions (eight-final.log 8 passed EXIT=0 at the reviewed head dcacdc483).\nVERDICT write_paths: the gained diff touches reckon/crew/runs.py, reckon/crew/recovery.py and the evidence fragment, all inside the manifest's declared write paths.\nVERDICT manifest: read; it records head dcacdc483, the repair gates and a negative-control log, but its baseline_suite and after_suite lines are empty so no machine-readable arm delta is derived.\nVERDICT diff: read commit by commit against base d7d280288 \u2014 ab43fc31c holds the local-seat liveness and claim repair (runs.py plus recovery.py _wait), 9b5c5ce05 bounds the injected sleeper to LEASE_RENEW_SECONDS, and dcacdc483 updates only the fragment's landed-commit and gate-count meta.\nCALL_SITES: reckon/crew/runs.py:_fresh_watch_holder, reckon/crew/runs.py:producer_live, reckon/crew/runs.py:_record_producer_running, reckon/crew/runs.py:_project_watch_claim, reckon/crew/runs.py:watch_state, reckon/crew/runs.py:project_watch_visibility, reckon/crew/recovery.py:watch_ticker._wait\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2380 producer_live returns True for a fresh remote lease while runs.py:159 judges a local holder by pid, which is the cross-host deferral section 14 names.\nSCORE evidence: 17\nJUSTIFICATION evidence: eight-final.log records the eight named regressions passing at the reviewed head dcacdc483 and gate-repair-final.log records 34 passed EXIT=0 at 9b5c5ce05, but the manifest's baseline_suite/after_suite are empty so the arm delta is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the gained diff is confined to reckon/crew/runs.py, reckon/crew/recovery.py and the evidence fragment, all inside the declared write paths of the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: at the repair base d7d280288 eight-before.log shows 7 of the 8 named tests failing and eight-final.log shows them passing at the head, and negative-control-repair.log reddens tests/test_producer_seat_across_hosts.py:55 (assert stops == []).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/runs.py:159 reuses the existing _WATCH_HOST_LEASES idiom and reckon/crew/host_lease.py:143 release_holder's inode-checked unlink rather than adding a second mechanism.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the HostLease owner at reckon/crew/host_lease.py:143 and adds no second lease; the search over reckon/crew found HostLease already owning claim, renew and release.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T112749535190-the-producer-seat-holds-across-hosts/manifest.md:21 follow-on: the manifest lists eight-final.log but leaves baseline_suite/after_suite empty, so the eight-before to eight-final arm delta present on disk is derived by nothing machine-readable.\nFINDING reckon/crew/runs.py:3251 follow-on: _fresh_watch_holder is called from the query paths watch_state (runs.py:3251) and project_watch_visibility (runs.py:3319) and can unlink the host-lease file via release_holder, so a state read mutates shared lease state.",
+  "review_run_id": "r-20261007T131608710215-review-of-the-producer-seat-holds-across-hosts",
+  "reviewed_base_sha": "d7d2802880b6252e748dd40d4b3cb291cdd9ad99",
+  "reviewed_head_sha": "dcacdc4838193840939d207b28732c808df9bc2b",
+  "reviewed_run_id": "r-20261007T112749535190-the-producer-seat-holds-across-hosts",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T13:23:39.175180+00:00",
+  "total": 109
+}
