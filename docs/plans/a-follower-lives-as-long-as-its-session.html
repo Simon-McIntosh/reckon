@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -237,6 +237,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T033207052069-dispatch-asks-the-session-host" data-who="reckon-build" data-when="2026-10-07T03:59:35.307Z">
     <div class="r-comment-body"><p>dispatch asks the calling Claude session's host for a follower before refusing -- a JSON request naming project and session is written through _write_fleet_request with no wait to &lt;runtime&gt;/reckon-session-host/&lt;CLAUDE_PID&gt;-&lt;start&gt;.fifo, and the payload's delivery field reads host when the host attached the session (arming line emptied) or monitor otherwise; tests/test_dispatch_session_host.py 2 passed EXIT=0, negative control (skip the host request) makes the admitted-with-host case fail EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T054000711922-crew-host-monitors-file-loads" data-who="reckon-build" data-when="2026-10-07T05:49:09.438Z">
+    <div class="r-comment-body"><p>crew-host plugin monitors load — monitors.json is a bare JSON array of entries; claude --plugin-dir plugin list --json now reports no errors, tests/test_session_host_plugin.py 6 passed EXIT=0</p></div>
 </div>
 </section>
 </main>
