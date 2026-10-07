@@ -443,3 +443,65 @@ def test_dry_run_without_a_host_still_refuses_watcher_required(
     finally:
         runner.terminate()
         runner.wait(timeout=5)
+
+
+def test_dry_run_predicts_host_for_a_follower_the_host_started(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    """A session already attached by the host's own follower predicts host.
+
+    The host's census names the follower it runs for this pair, carrying the
+    live registration's pid, so the dry run reaches host delivery the way the
+    real admission does -- no write is needed, and none is made.
+    """
+    config_home, repo = isolated_project
+    project = "sample"
+    session = "session-dryhosted-hostrun"
+    runtime = tmp_path / "run-runtime"
+    runtime.mkdir()
+    _claude_env(monkeypatch, runtime)
+    runner = _spawn_runner()
+    try:
+        _register_watcher(project, runner.pid)
+        _write_host_record(
+            [{"project": project, "session": session, "pid": os.getpid()}],
+        )
+        with runs.follower_registration(project, session, delivery="stream"):
+            resolution = _dry_dispatch(config_home, repo, session)
+    finally:
+        runner.terminate()
+        runner.wait(timeout=5)
+
+    assert resolution.watch["delivery"] == "host"
+    assert resolution.watch["session_attached"] is True
+
+
+def test_dry_run_predicts_monitor_for_a_follower_the_host_did_not_start(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    """A hand-armed follower the host does not run predicts monitor.
+
+    The session is attached, but the host's census names a pid that is not the
+    live registration's, so the follower is not the host's and the delivery the
+    real dispatch would report is the Monitor path, not host.
+    """
+    config_home, repo = isolated_project
+    project = "sample"
+    session = "session-dryforeign-follower"
+    runtime = tmp_path / "run-runtime"
+    runtime.mkdir()
+    _claude_env(monkeypatch, runtime)
+    runner = _spawn_runner()
+    try:
+        _register_watcher(project, runner.pid)
+        _write_host_record(
+            [{"project": project, "session": session, "pid": runner.pid}],
+        )
+        with runs.follower_registration(project, session, delivery="stream"):
+            resolution = _dry_dispatch(config_home, repo, session)
+    finally:
+        runner.terminate()
+        runner.wait(timeout=5)
+
+    assert resolution.watch["delivery"] == "monitor"
+    assert resolution.watch["session_attached"] is True

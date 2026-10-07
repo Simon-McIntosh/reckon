@@ -1329,21 +1329,26 @@ def _session_host_waiting() -> bool:
     """Whether the calling session's host is waiting on its FIFO to be asked.
 
     A dry run must report the delivery a real dispatch would reach without
-    writing to the FIFO, because a write starts a follower and a validating
-    caller starts nothing. A host publishes that it is waiting by holding its
-    FIFO's descriptor open across the wait, so the liveness read here is the
-    same non-blocking open the real request uses, closed without a byte: an
-    open succeeds only while a reader holds the other end, and a FIFO with no
-    reader is a host that has gone. A real dispatch writes that reader and the
-    host attaches; with no reader it falls through to the Monitor path, and the
-    prediction reports the delivery the launch would reach either way.
+    writing to the FIFO, because a dry run starts nothing and a write starts a
+    follower. A host publishes that it is waiting by holding its FIFO's
+    descriptor open across the wait, so the liveness read here is the same
+    non-blocking open the real request uses, closed without a byte: an open
+    succeeds only while a reader holds the other end, and a FIFO with no reader
+    is a host that has gone. A real dispatch writes that reader and the host
+    attaches; with no reader it falls through to the Monitor path, and the
+    prediction does too. A host that is wedged while still holding its FIFO
+    open reads the same as a live one here; a dry run cannot tell a wedged host
+    from a live one without writing a request, which is the one thing it must
+    not do.
     """
     fifo = _session_host_fifo()
     if fifo is None:
         return False
     try:
-        descriptor = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
-    except OSError:
+        # A deadline already in the past asks for a single attempt: a reader
+        # not yet on the FIFO is a fallback, not a wait.
+        descriptor = _open_request_fifo(fifo, time.monotonic())
+    except CrewError:
         return False
     os.close(descriptor)
     return True
@@ -6154,15 +6159,21 @@ def plan_dispatch(
         if preview["watcher_live"]:
             delivery = "monitor"
             attached = bool(preview["session_attached"])
-            # A waiting session host attaches the session on a real dispatch, so
-            # the delivery it would reach is read from the host's own liveness
-            # rather than by asking it: the request that starts the follower is
-            # the one write a dry run must never make. The prediction stands in
-            # for the attachment a live host would have confirmed, so the
-            # admission below names no unmet follower condition for it.
+            # The real admission reports host delivery in two cases, and the
+            # dry run mirrors both without its one forbidden write. A waiting
+            # host attaches the session on the real request, so the delivery
+            # that request would reach is read from the host's own liveness
+            # rather than by asking it. A session a follower already runs is
+            # host delivery only when the host's own census names that follower,
+            # which is how the real dispatch tells a host's follower from one a
+            # coordinator armed by hand.
             if not attached and _session_host_waiting():
                 delivery = "host"
                 attached = True
+            elif _session_host_runs_follower(
+                project, session, (preview.get("follower") or {}).get("pid")
+            ):
+                delivery = "host"
             admission = _watcher_delivery_admission(
                 project,
                 {**dict(preview), "session_attached": attached},
@@ -10086,17 +10097,20 @@ def _watch_request_slug(project: str) -> str:
     return re.sub(r"\s+", "-", project.strip()) or "project"
 
 
-def _write_fleet_request(fifo: Path, line: bytes, deadline: float) -> None:
-    """Write one request line to the batch step's FIFO within the deadline.
+def _open_request_fifo(fifo: Path, deadline: float) -> int:
+    """Open a request FIFO for writing, retrying while no reader holds it.
 
-    The FIFO is opened non-blocking because opening a FIFO for writing blocks
-    until a reader holds the other end, and a dispatch that hung there would
-    hang for as long as the batch step was down rather than refusing at its
-    bound. No reader within the deadline is a refusal, not a wait.
+    Opening a FIFO for writing blocks until a reader holds the other end, so
+    the open is non-blocking: a reader not yet there is retried until the
+    deadline rather than hung on, and no reader within it is a refusal. The
+    caller owns the returned descriptor and closes it. This is the one spelling
+    of the reconnect-or-fall-back open, shared by the batch step's request
+    write and by the dry run's read of the session host's liveness. A deadline
+    already in the past asks for a single attempt.
     """
     while True:
         try:
-            descriptor = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
+            return os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
         except OSError as exc:
             if exc.errno == errno.ENXIO and time.monotonic() < deadline:
                 time.sleep(FLEET_REQUEST_POLL_SECONDS)
@@ -10104,15 +10118,23 @@ def _write_fleet_request(fifo: Path, line: bytes, deadline: float) -> None:
             raise CrewError(
                 f"the fleet's request FIFO {fifo} could not be written: {exc}"
             ) from exc
-        try:
-            os.write(descriptor, line)
-        except OSError as exc:
-            raise CrewError(
-                f"the fleet's request FIFO {fifo} refused the spawn request: {exc}"
-            ) from exc
-        finally:
-            os.close(descriptor)
-        return
+
+
+def _write_fleet_request(fifo: Path, line: bytes, deadline: float) -> None:
+    """Write one request line to the batch step's FIFO within the deadline.
+
+    No reader within the deadline is a refusal, not a wait; the non-blocking
+    open with its retry lives in :func:`_open_request_fifo`.
+    """
+    descriptor = _open_request_fifo(fifo, deadline)
+    try:
+        os.write(descriptor, line)
+    except OSError as exc:
+        raise CrewError(
+            f"the fleet's request FIFO {fifo} refused the spawn request: {exc}"
+        ) from exc
+    finally:
+        os.close(descriptor)
 
 
 def _read_spawn_ack(ack_path: Path) -> int | None:
