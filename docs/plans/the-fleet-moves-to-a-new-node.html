@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="61">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -183,40 +183,12 @@
       <li>The test points the services configuration at a temporary directory and starts no real service.</li>
     </ul>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s6">&sect;6 &mdash; The lane gate can hold every launch at once</h2>
-    <section data-reckon="section" data-id="s6" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>
-      The quiesce in &sect;11 needs launches to stop everywhere, not only where a
-      coordinator agrees to stop. Reflex reviews, repair resumes, <code>crew
-      recover</code> and plan reviews launch on their own, and <code>crew drain</code>
-      only reports. A second refusal record would be a second gate beside one that
-      already exists: dispatch reads a backend's declared gate document, and a
-      <code>paused: true</code> there holds the launch as <code>LanePaused</code>, a
-      wait rather than a refusal, which the recovery reflexes already handle. The
-      gate is extended rather than duplicated. Beside each backend's declared document,
-      every launch reads one fleet-wide gate document in the crew state on shared
-      storage, in the same format and with the same deadline, and a pause in either
-      holds the launch. Every path that starts a worker is routed through that one
-      read: dispatch, resume, redispatch, the review and repair reflexes, recover and
-      plan review. Nothing writes a gate document today, so the fleet-wide one gains a
-      writer, <code>reckon crew gate --pause REASON</code> and <code>--open</code>,
-      which prints the document before and after. Reads, follows, completion and
-      promotion are not launches and keep working, so finished runs can still land
-      while the gate is held.
-    </p>
-    <p>
-      <strong>Interface accounting.</strong> This adds one command and no refusal
-      family: a held launch is the existing <code>LanePaused</code>. It retires
-      nothing, because the backend gate it extends keeps its own role for the local
-      lane's router.
-    </p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>One test per launching path finds it held as <code>LanePaused</code> under a fleet-wide pause, naming the fleet gate and its reason, and a control finds the same call admitted once the gate is open.</li>
-      <li>The set of launching paths is found by a search the test runs over the code, not by a hand list, so a launch path added later without the gate read fails the test.</li>
-      <li>A backend's own gate document still holds its launches exactly as before.</li>
-      <li>Completion and promotion while the gate is held still succeed.</li>
-    </ul>
+<section data-reckon="section" data-id="s6" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed through <code>6d4a79a6c</code>, <code>048204c6c</code> and <code>e09b16654</code>: <code>reckon crew gate</code> writes one fleet-wide gate that every worker launch reads first, so dispatch, resume, redispatch, the reflexes, recover and plan review wait as <code>LanePaused</code> while completion and promotion continue; a search from the process-spawning roots fails any later launch path without the read. <a href="s6">full record</a></p>
+</section>
 
     <h2 id="s7">&sect;7 &mdash; The worker reservation can be moved</h2>
     <section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
@@ -589,11 +561,29 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T131212631457-review-of-every-launch-path-reads-the-fleet-gate" data-who="reckon-build" data-when="2026-10-07T13:28:52.486Z">
     <div class="r-comment-body"><p>no plan edit made — this is a review node; the deliverable is the parsed review record stored at both granted review paths, carrying reviewed_base_sha 3f36e54bf97f0690aa1343337f969bf0fc99b93c and reviewed_head_sha 35706b3f04450771c34df2b42ba3ec9613c52619, all six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 19; total 112), added_failure_count 0 and added_failure_ids [], with one follow-on finding.</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T140430401963-review-of-every-launch-path-reads-the-fleet-gate" data-who="reckon-build" data-when="2026-10-07T14:25:59.775Z">
+    <div class="r-comment-body"><p>Review of run r-20261007T115450779738-every-launch-path-reads-the-fleet-gate over 3f36e54bf..d26d7f567 stored as a parsed record scoring six dimensions (18/16/20/17/18/18, total 107), added_failure_count 0, added_failure_ids [].</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T115450779738-every-launch-path-reads-the-fleet-gate" data-who="reckon-build" data-when="2026-10-07T14:34:10Z">
+    <div class="r-comment-body"><p>Primitive-rooted launch search remains in place; six resolution doubles now carry complete open lane gate rows; the eleven-file gate passes 145 tests and the reverted-parent row probe fails.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261007T081502086686-fleet-migrate-census-and-layout" data-who="reckon-build" data-when="2026-10-07T08:39:29Z">
     <div class="r-comment-body"><p>Preserved the recorded zellij layout while rewriting Claude resume panes and stripping shell scrollback references; five layouts keep tab bars, templates and focus, 11 tests pass, and tab reversal fails the tab-order case.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261007T084359233015-review-of-fleet-migrate-census-and-layout" data-who="reckon-build" data-when="2026-10-07T09:03:05.568Z">
     <div class="r-comment-body"><p>Reviewed r-20261007T081502086686-fleet-migrate-census-and-layout at head eb58dcabc; scored all 6 dimensions (total 108/120, min 17), reproduced the 11-test gate green and the reversal negative control red (1 failed, 10 passed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T142200395038-review-of-the-migrate-command-stands-up-and-promotes" data-who="reckon-build" data-when="2026-10-07T14:31:36.673Z">
+    <div class="r-comment-body"><p>Reviewed r-20261007T140020415589-the-migrate-command-stands-up-and-promotes across 8eccdcd3a319fbc730e6fa1215a1515269459c15..32b9874064bc70c1470c82e8a412802bd05682a0; stored a parsed six-dimension review (total 94 of 120, min 8 reuse) at reviews/reckon/&lt;run&gt;.json and its .at-32b9874064bc70c1470c82e8a412802bd05682a0.json sibling.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T140020415589-the-migrate-command-stands-up-and-promotes" data-who="reckon-build" data-when="2026-10-07T14:58:29Z">
+    <div class="r-comment-body"><p>Stand-up and promote use the shared bounded supervisor FIFO writer, retrying a missing FIFO until the deadline; the expanded ten-file gate passed 365 tests, EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T150054522636-review-of-the-migrate-command-stands-up-and-promotes" data-who="reckon-build" data-when="2026-10-07T15:13:18.943Z">
+    <div class="r-comment-body"><p>Reviewed r-20261007T140020415589-the-migrate-command-stands-up-and-promotes across 32b9874064bc70c1470c82e8a412802bd05682a0..2e2f5d3fe11168fd46e0ac93addb5dc2610b1783; stored a parsed six-dimension review (total 111 of 120, min 17 fit) at reviews/reckon/&lt;run&gt;.json and its .at-2e2f5d3fe11168fd46e0ac93addb5dc2610b1783.json sibling; the increment is the single commit 2e2f5d3fe which resolves the prior reuse finding with no new finding.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20261007T1530-standup-promote-landed" data-who="reckon-build" data-when="2026-10-07T15:30:00Z">
+    <div class="r-comment-body"><p>The migrate command's stand-up and promote steps landed on main through <code>41b3dc00a</code>. Stand-up holds a new allocation whose supervisor starts in standby, refuses a job on the old job's node, confirms readiness through a <code>ready</code> request the supervisor answers with a written response rather than log text, and runs one step inside the new job. Promote points the worker reservation at the new job through <code>placement.replace_reservation</code>, has the supervisor publish the fleet record, and prints both records before and after. Every scheduler, step and supervisor call is injected, and the tests pass with <code>sbatch</code>, <code>srun</code> and <code>scancel</code> failing on PATH.</p><p>The first review scored 94: the steps carried a second writer for the supervisor request FIFO. The repair shares <code>dispatch._write_fleet_request</code> and gives the FIFO one name; re-review 111. Gate: the 117-file dispatch, fleet and placement population added no failure against main, and 441 tests passed at the pushed head after main moved. The standby readiness and duplicated-helper follow-ons from §10 are closed by the shared request helper module. Cutover and retire are the section's next node.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261007T084312491499-review-of-worker-hooks-run-under-reckons-interpreter" data-who="reckon-build" data-when="2026-10-07T09:11:56.217Z">
     <div class="r-comment-body"><p>The reviewed node's install.py change passes all three done-when clauses and its four-file gate (98 passed EXIT=0); two defects recorded at reckon/cli.py — the second composer of the worker git guard still emits the bare command (cli.py:509) and _is_worker_git_guard_group (cli.py:381) no longer recognises the composed guard group, so both composers together duplicate the guard.</p></div>

@@ -927,6 +927,64 @@ def _evidence_record_path(docs_dir: Path, plan_slug: str) -> Path:
     return docs_dir / "evidence" / "archive" / f"{plan_slug}-landed.html"
 
 
+_EVIDENCE_FRAGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
+def _resolve_evidence_href(
+    anchor: str,
+    *,
+    project: str,
+    slug: str,
+    docs_dir: Path | None,
+    evidence_appends: list[dict[str, str]],
+) -> str:
+    """The href a landed card links its full record through.
+
+    An anchor carrying a path or a scheme is the caller's href and is kept as
+    written. A bare anchor names a section of this plan's landing record, which
+    the surface serves at ``/<project>/evidence/archive/<plan>-landed.html``, so
+    it is linked there with the anchor as its fragment. Left bare, the surface
+    would fetch ``/<project>/<anchor>.html`` and the link would lead nowhere.
+
+    A bare anchor must name a section the record holds once this batch lands:
+    one an ``append_evidence`` in the same batch writes, or one already in the
+    record. Anything else would be a dead link, so it is refused at write time
+    rather than discovered by a reader.
+    """
+    if "/" in anchor or ":" in anchor:
+        return anchor
+    fragment = anchor.removeprefix("#")
+    if not _EVIDENCE_FRAGMENT.fullmatch(fragment):
+        raise OpError(
+            f"collapse_section evidence_anchor {anchor!r} is neither an href nor "
+            "a landing-record anchor"
+        )
+    appended = any(
+        request.get("plan") == slug and request.get("anchor") == fragment
+        for request in evidence_appends
+    )
+    if not appended:
+        record = _evidence_record_path(docs_dir, slug) if docs_dir else None
+        held = (
+            record is not None
+            and record.is_file()
+            and bool(
+                re.search(
+                    rf"""\bid=["']{re.escape(fragment)}["']""",
+                    record.read_text(encoding="utf-8"),
+                )
+            )
+        )
+        if not held:
+            raise OpError(
+                f"collapse_section evidence_anchor {fragment!r} names no section "
+                f"of the landing record docs/evidence/archive/{slug}-landed.html; "
+                "append it with append_evidence in the same batch, or pass a "
+                "project-absolute href"
+            )
+    return f"/{project}/evidence/archive/{slug}-landed.html#{fragment}"
+
+
 def _evidence_plan_title(project: str, plan_slug: str, root: str | Path | None) -> str:
     """The title an op-created landing record names, from the plan it documents."""
     state, _ = read_plan(project, plan_slug, root)
@@ -1301,7 +1359,17 @@ def _write_state_locked(
         for request in section_insertions:
             source_text = _insert_authored_section(source_text, request)
         for request in section_collapses:
-            source_text = _collapse_authored_section(source_text, request)
+            linked = {
+                **request,
+                "evidence_anchor": _resolve_evidence_href(
+                    request["evidence_anchor"],
+                    project=project,
+                    slug=slug,
+                    docs_dir=docs_dir,
+                    evidence_appends=evidence_appends,
+                ),
+            }
+            source_text = _collapse_authored_section(source_text, linked)
     except ValueError as exc:
         raise OpError(str(exc)) from exc
     if evidence_appends:

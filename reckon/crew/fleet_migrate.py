@@ -5,20 +5,26 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 import subprocess
 import sys
+import time
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon.crew import fleet_node, runs
-from reckon.crew.fleet_supervisor import state_directory
+from reckon.crew import fleet_node, placement, runs
+from reckon.crew.fleet_supervisor import (
+    REQUEST_FIFO_NAME,
+    runtime_directory,
+    state_directory,
+)
 from reckon.crew.resumption import resolve_session
 
 
 class MigrationError(RuntimeError):
-    """A census cannot safely identify what a move would restore."""
+    """A migration checkpoint cannot safely advance."""
 
 
 _TAB = re.compile(r'^\s*tab name="([^"]+)"')
@@ -340,6 +346,88 @@ def _read_runs() -> list[dict[str, Any]]:
     return rows
 
 
+def _fleet_record(state: Path) -> dict[str, Any]:
+    try:
+        record = json.loads((state / fleet_node.RECORD_NAME).read_text())
+    except (OSError, ValueError) as exc:
+        raise MigrationError("the fleet record cannot be read") from exc
+    if not isinstance(record, dict):
+        raise MigrationError("the fleet record is not a mapping")
+    return record
+
+
+def _run_step(argv: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(argv, capture_output=True, text=True, check=False, timeout=30)
+
+
+def _send_supervisor(job: Mapping[str, str], line: str) -> None:
+    argv = fleet_node.placement_argv(
+        job,
+        [sys.executable, "-m", "reckon.crew.fleet_migrate", "request", *line.split()],
+    )
+    result = _run_step(argv)
+    if result.returncode:
+        raise MigrationError(
+            f"supervisor request failed in job {job['jobid']}: {result.stderr.strip()}"
+        )
+
+
+def _local_request(line: str) -> None:
+    """Send a bounded request to the supervisor on this allocation's node."""
+    from reckon.crew.dispatch import _write_fleet_request
+    from reckon.crew.runs import CrewError
+
+    if not line or "\n" in line:
+        raise MigrationError("supervisor request must be one nonempty line")
+    fifo = runtime_directory() / REQUEST_FIFO_NAME
+    try:
+        _write_fleet_request(fifo, (line + "\n").encode(), time.monotonic() + 10)
+    except CrewError as exc:
+        raise MigrationError(str(exc)) from exc
+
+
+def _running_job(
+    job_id: str,
+    *,
+    old_node: str,
+    query_jobs: Callable[[str], list[dict[str, str]]],
+    pause: Callable[[float], None],
+) -> dict[str, str]:
+    account = fleet_node.fleet_size().account
+    for _ in range(120):
+        job = next(
+            (row for row in query_jobs(account) if row.get("jobid") == job_id), None
+        )
+        if job and job.get("state", "").upper() in {"RUNNING", "R"}:
+            node = job.get("node", "").strip()
+            if not node or node == old_node or any(char in node for char in " ()"):
+                raise MigrationError(
+                    f"new job {job_id} runs on {node or 'an unknown node'}; "
+                    f"the old job runs on {old_node}"
+                )
+            return job
+        pause(5)
+    raise MigrationError(f"job {job_id} did not start within ten minutes")
+
+
+def _wait_for_record(
+    path: Path,
+    *,
+    matches: Callable[[dict[str, Any]], bool],
+    pause: Callable[[float], None],
+    description: str,
+) -> dict[str, Any]:
+    for _ in range(30):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            record = None
+        if isinstance(record, dict) and matches(record):
+            return record
+        pause(1)
+    raise MigrationError(f"{description} was not recorded within thirty seconds")
+
+
 def migrate(
     *,
     dry_run: bool = False,
@@ -349,6 +437,14 @@ def migrate(
     layouts_dir: Path | None = None,
     observation: Callable[[], dict[str, Any]] = _remote_observation,
     read_runs: Callable[[], list[dict[str, Any]]] = _read_runs,
+    submit_hold: Callable[[str], str] = fleet_node.submit,
+    query_jobs: Callable[[str], list[dict[str, str]]] = fleet_node.query_jobs,
+    run_step: Callable[[list[str]], subprocess.CompletedProcess[str]] = _run_step,
+    send_supervisor: Callable[[Mapping[str, str], str], None] = _send_supervisor,
+    replace_reservation: Callable[..., dict[str, Any]] = placement.replace_reservation,
+    read_reservation: Callable[[], dict[str, Any] | None] = placement.read_reservation,
+    read_fleet_record: Callable[[Path], dict[str, Any]] = _fleet_record,
+    pause: Callable[[float], None] = time.sleep,
 ) -> str:
     """Perform exactly one migration checkpoint, resuming from its ledger."""
     del confirm  # The guarded retire step is implemented by the cutover owner.
@@ -361,6 +457,8 @@ def migrate(
     path = _latest_ledger(state)
     ledger = json.loads(path.read_text()) if path else None
     step = "census" if ledger is None else ledger["next_step"]
+    if session and step != "cutover":
+        raise MigrationError("--session applies only to a cutover step")
     if step == "census":
         description = "census: read live runs, Claude process records, transcripts and zellij layout dumps on the old node"
     elif step == "layout":
@@ -368,13 +466,24 @@ def migrate(
         description = "layout: write " + ", ".join(
             f"migrate-{name}.kdl" for name in names
         )
+    elif step == "stand-up":
+        known = ledger.get("stand_up", {}).get("job_id")
+        description = (
+            f"stand-up: {'reuse job ' + known if known else 'submit a standby hold'}, "
+            "wait for a different node, request a readiness response, "
+            "and run one step inside the new job"
+        )
+    elif step == "promote":
+        description = (
+            f"promote: replace the worker reservation with job "
+            f"{ledger['stand_up']['job_id']}, request supervisor promotion, "
+            "and print the fleet and reservation records before and after"
+        )
     else:
         description = f"{step}: awaits the next migration implementation"
     if dry_run:
         return description
     if step == "census":
-        if session:
-            raise MigrationError("--session applies only to a cutover step")
         census = build_census(observation())
         ledger = {
             "started_at": datetime.now(UTC).isoformat(),
@@ -405,10 +514,130 @@ def migrate(
         ledger["next_step"] = "stand-up"
         path.write_text(json.dumps(ledger, indent=2) + "\n")
         return f"Wrote {len(ledger['census']['sessions'])} layouts to {layouts_dir}; next step: stand-up"
+    if step == "stand-up":
+        assert path is not None and ledger is not None
+        standing = ledger.setdefault("stand_up", {})
+        old_record = standing.get("old_record") or read_fleet_record(state)
+        old_job = str(old_record.get("job_id") or "")
+        old_node = str(old_record.get("node") or "")
+        if not old_job or not old_node:
+            raise MigrationError("the old fleet record needs a job id and node")
+        standing["old_record"] = old_record
+        if not standing.get("job_id"):
+            script = fleet_node.generate_hold_script(
+                fleet_node.fleet_size(),
+                log_path=fleet_node.batch_log_path(),
+                standby=True,
+            )
+            try:
+                standing["job_id"] = submit_hold(script)
+            except fleet_node.FleetNodeError as exc:
+                raise MigrationError(f"standby hold submission failed: {exc}") from exc
+            if not standing["job_id"]:
+                raise MigrationError("standby hold submission returned no job id")
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
+        job = _running_job(
+            standing["job_id"],
+            old_node=old_node,
+            query_jobs=query_jobs,
+            pause=pause,
+        )
+        token = secrets.token_hex(16)
+        standing["ready_token"] = token
+        path.write_text(json.dumps(ledger, indent=2) + "\n")
+        response_path = state / "migration" / f"ready-{token}.json"
+        send_supervisor(job, f"ready {token}")
+        ready = _wait_for_record(
+            response_path,
+            matches=lambda answer: (
+                answer.get("job_id") == standing["job_id"]
+                and answer.get("node") == job["node"]
+                and answer.get("standby") is True
+            ),
+            pause=pause,
+            description="standby supervisor readiness",
+        )
+        result = run_step(fleet_node.placement_argv(job, ["hostname", "-s"]))
+        if result.returncode or result.stdout.strip() != job["node"]:
+            raise MigrationError(
+                f"step in job {standing['job_id']} did not confirm node {job['node']}: "
+                f"{result.stdout.strip()} {result.stderr.strip()}"
+            )
+        standing.update(
+            {
+                "node": job["node"],
+                "readiness": ready,
+                "step_node": result.stdout.strip(),
+            }
+        )
+        ledger["completed"].append("stand-up")
+        ledger["next_step"] = "promote"
+        path.write_text(json.dumps(ledger, indent=2) + "\n")
+        return (
+            f"Standby job {standing['job_id']} runs on {job['node']}; "
+            f"supervisor answered ready at {ready['ready_at']}; "
+            f"step ran on {result.stdout.strip()}; next step: promote"
+        )
+    if step == "promote":
+        assert path is not None and ledger is not None
+        standing = ledger["stand_up"]
+        promotion = ledger.setdefault("promotion", {})
+        if "fleet_before" not in promotion:
+            promotion["fleet_before"] = read_fleet_record(state)
+            promotion["reservation_before"] = read_reservation()
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
+        before_fleet = promotion["fleet_before"]
+        before_reservation = promotion["reservation_before"]
+        job = _running_job(
+            standing["job_id"],
+            old_node=standing["old_record"]["node"],
+            query_jobs=query_jobs,
+            pause=pause,
+        )
+        try:
+            replacement = replace_reservation(job_id=standing["job_id"])
+        except placement.CrewError as exc:
+            raise MigrationError(f"reservation replacement failed: {exc}") from exc
+        send_supervisor(job, "promote")
+        after_fleet = _wait_for_record(
+            state / fleet_node.RECORD_NAME,
+            matches=lambda record: (
+                record.get("job_id") == standing["job_id"]
+                and record.get("node") == standing["node"]
+            ),
+            pause=pause,
+            description="promoted fleet record",
+        )
+        after_reservation = read_reservation()
+        if (
+            not after_reservation
+            or after_reservation.get("job_id") != standing["job_id"]
+        ):
+            raise MigrationError("reservation did not retain the new job")
+        promotion.update(
+            {
+                "fleet_after": after_fleet,
+                "reservation_after": after_reservation,
+                "replacement": replacement,
+            }
+        )
+        ledger["completed"].append("promote")
+        ledger["next_step"] = "cutover"
+        path.write_text(json.dumps(ledger, indent=2) + "\n")
+        return (
+            "Promoted standby supervisor; next step: cutover\n"
+            f"fleet before: {json.dumps(before_fleet, sort_keys=True)}\n"
+            f"fleet after: {json.dumps(after_fleet, sort_keys=True)}\n"
+            f"reservation before: {json.dumps(before_reservation, sort_keys=True)}\n"
+            f"reservation after: {json.dumps(after_reservation, sort_keys=True)}"
+        )
     raise MigrationError(f"{step} is not implemented by the census and layout step")
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] != ["collect-local"]:
-        raise SystemExit("expected collect-local")
-    print(json.dumps(collect_local()))
+    if sys.argv[1:] == ["collect-local"]:
+        print(json.dumps(collect_local()))
+    elif len(sys.argv) in {3, 4} and sys.argv[1] == "request":
+        _local_request(" ".join(sys.argv[2:]))
+    else:
+        raise SystemExit("expected collect-local or request VERB [TOKEN]")

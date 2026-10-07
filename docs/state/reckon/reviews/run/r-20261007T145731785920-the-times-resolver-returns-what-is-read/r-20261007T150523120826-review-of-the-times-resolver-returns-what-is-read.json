@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/review.py:1940 resolve_record_times",
+    "reckon/crew/review.py:1944 resolve_record_times",
+    "reckon/crew/review.py:1946 resolve_record_times"
+  ],
+  "completed_at": "2026-10-07T15:13:30.399Z",
+  "dispatched_at": "2026-10-07T15:06:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T145731785920-the-times-resolver-returns-what-is-read/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest declares no baseline_suite or after_suite gate arm, so the store's added-failure derivation (review.py:1708-1713) finds no base and no head log and records the count unmeasured (null) rather than a measured zero; recording the two arms would let a later reader derive the delta this one-arm evidence cannot."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T145731785920-the-times-resolver-returns-what-is-read/gate/head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's header line names revision 3524dea88 (the base) with \"(working tree, uncommitted change)\" while the landed commit is 4133b3e75, so a reader tying the gate result to a commit sees the base revision rather than the head the change landed at; naming the head in the header would let the log be reconciled with the reviewed pair without a re-run."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 4133b3e75 against base 3524dea8; it folds the private resolver into the public one in reckon/crew/review.py, adds a four-case test module and one evidence fragment, and changes no wiring outside review.py.",
+    "done_when": "the done_when asks for a search showing no caller-unread value remains and a test that fails when the dropped value is restored; the reviewed manifest records gate/search.log (0 hits for _run_record_times_found) and I re-ran the declared gate at head 4133b3e75 in a scratch extraction (reviewer-head-gate.log, 13 passed, EXIT=0) and reproduced the mutation (reviewer-negative-control.log, 6 failed, EXIT=1).",
+    "goal": "the node's goal is the plan's \u00a79(b), to remove a value the times resolver returns that no caller reads; the landed diff at reckon/crew/review.py:1800 deletes the private _run_record_times_found and folds its single body into the public run_record_times, which now returns only the (dispatched_at, completed_at) pair and whose docstring states that a record whose times resolve from no source is committed as unknown.",
+    "manifest": "read; status complete, commit 4133b3e75, tests line 13 passed EXIT=0, test_logs naming gate/head.log, gate/negative_control.log and gate/search.log, negative_control_log naming the red log; baseline_suite and after_suite are both absent, so the store's added-failure derivation reads unmeasured.",
+    "write_paths": "the reviewed manifest declares reckon/crew/review.py, tests/test_run_record_times_returns_the_pair.py and the evidence fragment docs/evidence/fragments/every-review-is-kept-as-a-committed-record/the-times-resolver-returns-what-is-read.html; git diff --stat 3524dea8 4133b3e75 lists exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_run_record_times_returns_the_pair.py:122 test_the_resolver_returns_only_the_pair asserts len(result)==2, which reddens under the declared mutation that restores the third value, reproduced independently at head; 19 not 20 because the two source-mapping cases assert a pair whose values are the same constants the fixture writes into the record, so the shape guard is the one assertion independent of its input.",
+    "evidence": "the manifest records gate/head.log (13 passed, EXIT=0) and gate/negative_control.log (4 failed, EXIT=1), and I reproduced both at head 4133b3e75 in a scratch extraction (reviewer-head-gate.log 13 passed EXIT=0; reviewer-negative-control.log 6 failed EXIT=1); 19 not 20 because the manifest names no baseline_suite/after_suite arm, so the added-failure count is unmeasured rather than a measured zero.",
+    "fit": "the change adds no new name (run_record_times already existed) and its docstring at review.py:1806 states the invariant rather than the change history, with no version, plan or ticket identifier and no attribution.",
+    "goal_fidelity": "reckon/crew/review.py:1800 run_record_times now returns the two-stamp pair and the private helper is gone, with its docstring stating the unknown-commitment rule at review.py:1815, exactly the \u00a79(b) deliverable.",
+    "reuse": "the change removes a fork rather than introducing one \u2014 the private _run_record_times_found is deleted and its single body is folded into the public run_record_times at review.py:1800, so the run-record lookup has one owner and no capability is duplicated.",
+    "scope_discipline": "git diff --stat 3524dea8 4133b3e75 lists exactly reckon/crew/review.py, tests/test_run_record_times_returns_the_pair.py and the declared evidence fragment, with no production file outside the node's declared write scope and no plan, sprint or index state touched."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 3524dea88dfe79a32b3b600695eddc7c26b615fb\nreviewed_head_sha: 4133b3e75499cd355e215c6b0a554ace81bccf3c\nVERDICT goal: the node's goal is the plan's \u00a79(b), to remove a value the times resolver returns that no caller reads; the landed diff at reckon/crew/review.py:1800 deletes the private _run_record_times_found and folds its single body into the public run_record_times, which now returns only the (dispatched_at, completed_at) pair and whose docstring states that a record whose times resolve from no source is committed as unknown.\nVERDICT done_when: the done_when asks for a search showing no caller-unread value remains and a test that fails when the dropped value is restored; the reviewed manifest records gate/search.log (0 hits for _run_record_times_found) and I re-ran the declared gate at head 4133b3e75 in a scratch extraction (reviewer-head-gate.log, 13 passed, EXIT=0) and reproduced the mutation (reviewer-negative-control.log, 6 failed, EXIT=1).\nVERDICT write_paths: the reviewed manifest declares reckon/crew/review.py, tests/test_run_record_times_returns_the_pair.py and the evidence fragment docs/evidence/fragments/every-review-is-kept-as-a-committed-record/the-times-resolver-returns-what-is-read.html; git diff --stat 3524dea8 4133b3e75 lists exactly those three paths.\nVERDICT manifest: read; status complete, commit 4133b3e75, tests line 13 passed EXIT=0, test_logs naming gate/head.log, gate/negative_control.log and gate/search.log, negative_control_log naming the red log; baseline_suite and after_suite are both absent, so the store's added-failure derivation reads unmeasured.\nVERDICT diff: read the single commit 4133b3e75 against base 3524dea8; it folds the private resolver into the public one in reckon/crew/review.py, adds a four-case test module and one evidence fragment, and changes no wiring outside review.py.\nCALL_SITES: reckon/crew/review.py:1940 resolve_record_times, reckon/crew/review.py:1944 resolve_record_times, reckon/crew/review.py:1946 resolve_record_times\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1800 run_record_times now returns the two-stamp pair and the private helper is gone, with its docstring stating the unknown-commitment rule at review.py:1815, exactly the \u00a79(b) deliverable.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest records gate/head.log (13 passed, EXIT=0) and gate/negative_control.log (4 failed, EXIT=1), and I reproduced both at head 4133b3e75 in a scratch extraction (reviewer-head-gate.log 13 passed EXIT=0; reviewer-negative-control.log 6 failed EXIT=1); 19 not 20 because the manifest names no baseline_suite/after_suite arm, so the added-failure count is unmeasured rather than a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3524dea8 4133b3e75 lists exactly reckon/crew/review.py, tests/test_run_record_times_returns_the_pair.py and the declared evidence fragment, with no production file outside the node's declared write scope and no plan, sprint or index state touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_run_record_times_returns_the_pair.py:122 test_the_resolver_returns_only_the_pair asserts len(result)==2, which reddens under the declared mutation that restores the third value, reproduced independently at head; 19 not 20 because the two source-mapping cases assert a pair whose values are the same constants the fixture writes into the record, so the shape guard is the one assertion independent of its input.\nSCORE fit: 20\nJUSTIFICATION fit: the change adds no new name (run_record_times already existed) and its docstring at review.py:1806 states the invariant rather than the change history, with no version, plan or ticket identifier and no attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes a fork rather than introducing one \u2014 the private _run_record_times_found is deleted and its single body is folded into the public run_record_times at review.py:1800, so the run-record lookup has one owner and no capability is duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T145731785920-the-times-resolver-returns-what-is-read/manifest.md:1 follow-on: the reviewed manifest declares no baseline_suite or after_suite gate arm, so the store's added-failure derivation (review.py:1708-1713) finds no base and no head log and records the count unmeasured (null) rather than a measured zero; recording the two arms would let a later reader derive the delta this one-arm evidence cannot.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T145731785920-the-times-resolver-returns-what-is-read/gate/head.log:1 follow-on: the head gate log's header line names revision 3524dea88 (the base) with \"(working tree, uncommitted change)\" while the landed commit is 4133b3e75, so a reader tying the gate result to a commit sees the base revision rather than the head the change landed at; naming the head in the header would let the log be reconciled with the reviewed pair without a re-run.",
+  "review_run_id": "r-20261007T150523120826-review-of-the-times-resolver-returns-what-is-read",
+  "reviewed_base_sha": "3524dea88dfe79a32b3b600695eddc7c26b615fb",
+  "reviewed_head_sha": "4133b3e75499cd355e215c6b0a554ace81bccf3c",
+  "reviewed_run_id": "r-20261007T145731785920-the-times-resolver-returns-what-is-read",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:12:05.544243+00:00",
+  "total": 118
+}

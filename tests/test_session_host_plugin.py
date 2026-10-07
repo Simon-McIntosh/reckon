@@ -232,6 +232,29 @@ def test_exits_within_one_interval_after_its_owner_exits(tmp_path: Path) -> None
         _stop(owner)
 
 
+def test_a_signal_removes_its_fifo(tmp_path: Path) -> None:
+    """A waiting entry point removes its FIFO when it is signalled.
+
+    Claude Code stops a monitor at session end, and the entry point's own wait
+    loop reaches its removal only when the owner is gone. Without a trap the
+    signal ends the shell before that line, so a session that never dispatched
+    leaves its FIFO behind with no entry point alive.
+    """
+    root = _checkout(tmp_path)
+    owner = _start_owner()
+    proc, runtime, _ = _launch(root, tmp_path, owner.pid)
+    try:
+        fifo = _fifo(runtime, owner.pid, _proc_start(owner.pid))
+        assert _await(fifo.exists), f"FIFO never appeared at {fifo}"
+
+        proc.send_signal(signal.SIGTERM)
+        assert proc.wait(timeout=8) == 0
+        assert not fifo.exists(), "the entry point left its FIFO behind on TERM"
+    finally:
+        _stop(proc)
+        _stop(owner)
+
+
 def test_removes_its_fifo_when_its_owner_exits(tmp_path: Path) -> None:
     root = _checkout(tmp_path)
     owner = _start_owner()

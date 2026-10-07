@@ -24,8 +24,8 @@
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.9">
-<meta name="plan-version" content="106">
+<meta name="plan-impl" content="0.95">
+<meta name="plan-version" content="112">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -227,9 +227,15 @@
     <div class="r-fu-body"><p>Seven reckon plan reviews dispatched since the 06:44 import are staging-only, because promotion looks the record up by the dispatched run's id and the record carries the composed one. Node (1) writes <code>promotion.py</code>; node (2) runs the import and census after it.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §13</pre>
     </article>
-<article class="r-fu" data-id="f-erkc-012" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-erkc-012" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="2026-10-07T15:24:40+00:00" data-resolved-by="9cf43820">
     <h4 class="r-fu-title">Build §9&#x27;s remaining nodes (b) and (e)</h4>
     <div class="r-fu-body"><p>Node (b) writes <code>reckon/crew/review.py</code>, so it follows §12. Node (e) writes <code>reckon/crew/plan_review.py</code>; nodes (a) and (d), which also wrote it, have landed, so (e) runs alone on that file.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §9</pre>
+    <p class="r-fu-outcome">Nodes (b) and (e) of section 9 landed (4133b3e75, ddd2f0264). Section 9 now waits only on node (d)'s real 7–13 October figures, under f-erkc-013.</p>
+    </article>
+<article class="r-fu" data-id="f-erkc-013" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Record the 7–13 October recurrence figures, then close §9</h4>
+    <div class="r-fu-body"><p>After 13 October, read the plan-review day summary's <code>finding_type_recurrence</code> for the week of 7 to 13 October. Record the <code>duplicate_owner</code> any share and acted share beside 83.3% and 41.9%, then collapse §9.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §9</pre>
     </article>
 </section>
@@ -456,6 +462,21 @@
 <div class="r-comment" data-section="s9" data-id="c-20261007T141600Z" data-who="reckon-build" data-when="2026-10-07T14:16:00Z">
     <div class="r-comment-body"><p>Node (d) landed (<code>the-finding-type-recurrence-fold</code>, <code>5d7744751</code>, reviewed 117/120). The day summary carries <code>finding_type_recurrence</code>: per type, <code>findings</code>, <code>any</code>, <code>acted</code> and the two shares, over each plan's consecutive review pairs. A predecessor outside the window still anchors a window review, and a plan's first review is excluded, as in the research script. The declared mutation, counting a same-type finding as acted whatever its response, reddens 2 of 4 new tests. The 39-file population went from 371 to 375 passed, with 0 failures either side. One difference from the script: it skips a pair when either review's plan text does not resolve, because its unit classification needs the text. The fold reads no text and keeps such pairs. The fold also lower-cases the stored action where the script compares it exactly; <code>record_response</code> stores only <code>acted</code> or <code>declined</code>, so the two differ only on a hand-written variant. The review's third finding, a second copy of the response lookup, is node (e).</p></div>
 </div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261007T145731785920-the-times-resolver-returns-what-is-read" data-who="reckon-build" data-when="2026-10-07T15:04:18.164Z">
+    <div class="r-comment-body"><p>(b) review._run_record_times_found is gone and run_record_times returns only the (dispatched_at, completed_at) pair its callers read, its docstring stating the rule that a record whose times resolve from no source is committed as unknown; gate 13 passed EXIT=0, negative control 4 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261007T150523120826-review-of-the-times-resolver-returns-what-is-read" data-who="reckon-build" data-when="2026-10-07T15:13:30.399Z">
+    <div class="r-comment-body"><p>the independent review of r-20261007T145731785920-the-times-resolver-returns-what-is-read is stored as a parsed six-dimension record (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20; total 118) at both granted paths, recording reviewed_base_sha 3524dea88dfe79a32b3b600695eddc7c26b615fb and reviewed_head_sha 4133b3e75499cd355e215c6b0a554ace81bccf3c, with two follow-on findings and no blocker.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261007T150912619266-review-of-one-reader-of-a-findings-response" data-who="reckon-build" data-when="2026-10-07T15:18:23.393Z">
+    <div class="r-comment-body"><p>review of r-20261007T145829084045-one-reader-of-a-findings-response stored as a parsed record at both declared paths — six dimensions scored 0..20 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 20, reuse 20; total 117), reviewed_base_sha 3524dea88dfe79a32b3b600695eddc7c26b615fb and reviewed_head_sha ddd2f02647388827c72f33b66d69e82e08865e01, added_failure_count null (unmeasured: the reviewed manifest arms neither baseline_suite nor after_suite) with added_failure_ids []; three follow-on findings, no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261007T145829084045-one-reader-of-a-findings-response" data-who="reckon-build" data-when="2026-10-07T15:08:01.711Z">
+    <div class="r-comment-body"><p>§9(e) one reader of a finding's stored response — plan_review._stored_response added and declined_recurrence, _acted_finding_types and review_scope call it; gate 29 passed EXIT=0; fragment docs/evidence/fragments/every-review-is-kept-as-a-committed-record/one-reader-of-a-findings-response.html</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20261007T153000Z" data-who="reckon-build" data-when="2026-10-07T15:30:00Z">
+    <div class="r-comment-body"><p>Nodes (b) and (e) landed, so all five of §9's nodes are merged. Only (d)'s real 7–13 October figures remain.</p><p><strong>(b)</strong> <code>the-times-resolver-returns-what-is-read</code>, <code>4133b3e75</code>, reviewed 118/120. <code>run_record_times</code> resolves a run's two stamps itself; the unread <code>found</code> flag and <code>_run_record_times_found</code> are gone. Its docstring states the rule that a record whose times resolve from no source is committed as unknown. The 93-file population went from 1058 to 1062 passed, 0 failures either side.</p><p><strong>(e)</strong> <code>one-reader-of-a-findings-response</code>, <code>ddd2f0264</code>, reviewed 117/120. <code>declined_recurrence</code>, the recurrence fold and <code>review_scope</code> look a finding's response up through <code>plan_review._stored_response</code>; <code>unanswered_findings</code> is left as it was, since it asks a different question. A patched-accessor test holds each reader to the accessor. The 41-file population went from 395 to 399 passed, 0 failures either side.</p></div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261007T140756819299-review-of-a-review-record-is-read-with-every-copys-answers" data-who="reckon-build" data-when="2026-10-07T14:22:01.780Z">
     <div class="r-comment-body"><p>stored an independent review for r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers at base c1a13efa / head a9e9d322, 113/120 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 16, fit 19, reuse 19), three follow-on findings (responses/response_events merge unguarded by the node's tests; base_dir-blind merge source; reviewed manifest names no suite arms so added failures read unmeasured).</p></div>
 </div>
@@ -464,6 +485,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261007T143230259969-review-of-a-review-record-is-read-with-every-copys-answers" data-who="reckon-build" data-when="2026-10-07T14:44:13.577Z">
     <div class="r-comment-body"><p>stored an independent review of r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers at base c1a13efa / head 2cf84885, 115/120 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 19); the rework at 2cf84885 now asserts and guards responses and response_events and threads base_dir through the merge source, resolving two follow-ons from the prior review at a9e9d322; three follow-ons remain (the reviewed manifest names no baseline_suite/after_suite arm so added failures read unmeasured; gate-head.log's header names a9e9d322 while the head revision is 2cf84885; stored_records_for_run enumerates a run's staging rounds raw).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261007T151316858087-review-of-a-promoted-plan-review-is-committed" data-who="reckon-build" data-when="2026-10-07T15:27:42.115Z">
+    <div class="r-comment-body"><p>reviewed run r-20261007T145624673678-a-promoted-plan-review-is-committed at base 4ba052773c7373c0ecbdbc885f221069cd214d79 head 6e00dd22fa8b6f3bdb52291571e743ea07818a46 (single commit 6e00dd22 &quot;fix(promotion): commit a promoted plan review under its report&#x27;s run id&quot;) and stored a parsed six-dimension record at both granted review-store paths scoring goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 16 (total 115) with two follow-ons (promotion.py:8046 unguarded _store_delivered_report can abort promotion on a report with no RUBRIC/FINDING line; promotion.py:8054 duplicates review.py:1890&#x27;s dispatch.json reader); added_failure_count null (unmeasured, no baseline_suite/after_suite in the reviewed manifest)</p></div>
 </div>
 </section>
 </main>

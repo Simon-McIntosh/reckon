@@ -37,11 +37,18 @@ fi
 state_dir="$runtime/reckon-session-host"
 mkdir -p "$state_dir" || exit 0
 fifo="$state_dir/$owner_pid-$owner_start.fifo"
+
+# Remove the FIFO on the signals a monitor is stopped with, so a session that
+# ends before its first request leaves nothing behind. The trap is gone the
+# moment the exec below replaces this shell with the host: from then on the
+# host owns removal, and this entry point never sees the signal.
+trap 'rm -f "$fifo"; exit 0' TERM HUP INT
+
 [ -p "$fifo" ] || mkfifo "$fifo" || exit 0
 
 # Open once, read-write, so the open does not block on a writer and a request
 # written before the exec waits in the pipe.
-exec 3<>"$fifo" || exit 0
+exec 3<>"$fifo" || { rm -f "$fifo"; exit 0; }
 
 owner_alive() {
   kill -0 "$owner_pid" 2>/dev/null || return 1
