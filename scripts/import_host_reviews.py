@@ -44,7 +44,9 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from reckon.crew import plan_review  # noqa: E402
 from reckon.crew import review as review_store  # noqa: E402
+from reckon.crew.runs import reports_dir  # noqa: E402
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:
@@ -375,6 +377,130 @@ def _import_records(
     }
 
 
+def _delivered_plan_slugs(project: str) -> list[str]:
+    """Return the plan slugs a project's report root holds delivered reviews for.
+
+    The report root is ``reports/<project>/plan-review/<slug>/`` and the plans
+    are its directories, so the enumeration reads the same layout
+    :func:`plan_review.delivered_reports` builds on rather than walking for a
+    ``report.md`` by hand.
+    """
+    root = reports_dir() / project / "plan-review"
+    if not root.is_dir():
+        return []
+    return sorted(entry.name for entry in root.iterdir() if entry.is_dir())
+
+
+def _committed_plan_records(committed_root: Path) -> list[Mapping[str, Any]]:
+    """Return the plan-review record bodies committed under a project's tree."""
+    plan_root = committed_root / review_store.COMMITTED_PLAN_DIRNAME
+    if not plan_root.is_dir():
+        return []
+    records: list[Mapping[str, Any]] = []
+    for path in sorted(plan_root.glob("*/*.json")):
+        body = _parse_json(_read_bytes(path))
+        if isinstance(body, Mapping):
+            records.append(body)
+    return records
+
+
+def _carried_reports(
+    project: str, committed_root: Path
+) -> tuple[set[str], set[tuple[str, str, str]]]:
+    """The review run ids and (plan, fingerprint, rubric) triples records carry.
+
+    A record carries a delivered report when its ``review_run_id`` equals the
+    report directory's name, or when its ``plan_slug``, ``plan_fingerprint``
+    and ``rubric`` equal the sidecar's. Both trees are read: the committed tree
+    the import targets, and the staging store whose records the import commits
+    in the same pass, so a report whose content is already staged is not
+    imported twice.
+    """
+    run_ids: set[str] = set()
+    triples: set[tuple[str, str, str]] = set()
+    records: list[Mapping[str, Any]] = [
+        *_committed_plan_records(committed_root),
+        *plan_review.list_plan_reviews(project),
+    ]
+    for record in records:
+        run_id = str(record.get("review_run_id") or "").strip()
+        if run_id:
+            run_ids.add(run_id)
+        slug = str(record.get("plan_slug") or "").strip()
+        if slug:
+            triples.add(
+                (
+                    slug,
+                    str(record.get("plan_fingerprint") or ""),
+                    str(record.get("rubric") or ""),
+                )
+            )
+    return run_ids, triples
+
+
+def _delivered_report_candidates(
+    project: str, committed_root: Path
+) -> list[dict[str, Any]]:
+    """Delivered reports no record carries, as sidecar-and-record pairs.
+
+    A delivered report is a report directory whose ``report.md`` carries a
+    ``RUBRIC`` or ``FINDING`` line; a directory that was composed and never
+    delivered, or whose report carries neither line, is not a review and is
+    neither returned nor counted. A report a record already carries — by review
+    run id or by plan, fingerprint and rubric — is skipped, so a second pass
+    imports zero.
+    """
+    run_ids, triples = _carried_reports(project, committed_root)
+    candidates: list[dict[str, Any]] = []
+    for slug in _delivered_plan_slugs(project):
+        for sidecar in plan_review.delivered_reports(project, slug):
+            run_id = str(sidecar.get("review_run_id") or "").strip()
+            triple = (
+                str(sidecar.get("plan_slug") or ""),
+                str(sidecar.get("plan_fingerprint") or ""),
+                str(sidecar.get("rubric") or ""),
+            )
+            if run_id in run_ids or triple in triples:
+                continue
+            try:
+                record = plan_review.delivered_report_record(sidecar)
+            except (OSError, ValueError):
+                continue
+            candidates.append({"sidecar": sidecar, "record": record})
+    return candidates
+
+
+def _print_delivered(candidates: list[dict[str, Any]]) -> None:
+    """List each delivered report no record carries, with a count line."""
+    print(f"delivered reports without a record: {len(candidates)}")
+    for item in candidates:
+        report_path = str(item["sidecar"].get("report_path") or "")
+        print(f"  delivered\t{report_path}")
+
+
+def _import_delivered(
+    project: str,
+    candidates: list[dict[str, Any]],
+    root: str | None,
+) -> dict[str, int]:
+    """Commit each delivered report no record carries through the shared writer."""
+    imported = 0
+    refused: list[str] = []
+    for item in candidates:
+        record = item["record"]
+        try:
+            review_store.store_committed_review(record, project=project, root=root)
+        except (OSError, ValueError) as exc:
+            refused.append(
+                f"{record.get('review_run_id')}: {type(exc).__name__}: {exc}"
+            )
+            continue
+        imported += 1
+    for message in refused:
+        print(f"refused: {message}")
+    return {"imported": imported, "refused": len(refused)}
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse(list(argv) if argv is not None else sys.argv[1:])
     store_root = review_store.review_store_root()
@@ -386,6 +512,9 @@ def main(argv: list[str] | None = None) -> int:
 
     plan = _plan(args.project, store_root, committed_root)
     _print_inventory(args.project, store_root, plan)
+
+    delivered = _delivered_report_candidates(args.project, committed_root)
+    _print_delivered(delivered)
 
     if not args.write:
         print("dry run: nothing written")
@@ -403,6 +532,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"imported: {counts['imported']}")
     print(f"already present: {counts['already_present']}")
     print(f"refused: {counts['refused']}")
+    delivered_counts = _import_delivered(args.project, delivered, args.root)
+    print(f"delivered imported: {delivered_counts['imported']}")
     return 0
 
 

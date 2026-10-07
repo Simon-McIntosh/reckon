@@ -413,6 +413,199 @@ def test_recognition_takes_the_subject_from_a_filename_when_the_body_omits_it() 
     assert module._filename_run_subject("notes.txt") is None
 
 
+REPORT_SLUG = "demo-sonar"
+
+# A report carrying both a RUBRIC and a FINDING line for the content rubric, so
+# the parser reads a verdict and a finding out of it.
+REPORT_TEXT = (
+    "RUBRIC wiring: the wiring is sound\n"
+    "RUBRIC done_when: stated\n"
+    "FINDING wiring plan.html#s1 — the wiring is wrong — "
+    "WOULD_CHANGE_THE_PLAN: yes — REASON: rewire it\n"
+)
+
+
+def _report_dir(config: Path, run_id: str, *, slug: str = REPORT_SLUG) -> Path:
+    return config / "crew" / "reports" / PROJECT / "plan-review" / slug / run_id
+
+
+def _write_delivered_report(
+    config: Path,
+    run_id: str,
+    *,
+    slug: str = REPORT_SLUG,
+    fingerprint: str | None = None,
+    report_text: str = REPORT_TEXT,
+    write_report: bool = True,
+) -> Path:
+    """Write a delivered report directory with a sidecar and, usually, a report."""
+    directory = _report_dir(config, run_id, slug=slug)
+    directory.mkdir(parents=True)
+    report_path = directory / "report.md"
+    if write_report:
+        report_path.write_text(report_text, encoding="utf-8")
+    sidecar = {
+        "project": PROJECT,
+        "plan_slug": slug,
+        "plan_version": 3,
+        "reviewed_blob_sha": "c" * 40,
+        "plan_fingerprint": fingerprint or f"fp-{run_id}",
+        "section_digests": {},
+        "rubric": "content",
+        "report_path": str(report_path),
+    }
+    (directory / "plan-review.json").write_text(
+        json.dumps(sidecar, sort_keys=True), encoding="utf-8"
+    )
+    return directory
+
+
+def _commit_plan_record(
+    repo: Path,
+    run_id: str,
+    *,
+    slug: str = REPORT_SLUG,
+    fingerprint: str,
+    rubric: str = "content",
+) -> Path:
+    """Write one committed plan-review record so the import sees it as carried."""
+    path = (
+        repo
+        # docs/state/<project>/reviews/plan/<slug>/<run>.json
+        / "docs"
+        / "state"
+        / PROJECT
+        / "reviews"
+        / "plan"
+        / slug
+        / f"{run_id}.json"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "project": PROJECT,
+                "plan_slug": slug,
+                "plan_version": 3,
+                "plan_fingerprint": fingerprint,
+                "rubric": rubric,
+                "review_run_id": run_id,
+                "findings": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_delivered_report_with_no_record_is_imported_once(harness) -> None:
+    module = _load_script()
+    config = harness["tmp"] / "config"
+    repo = harness["repo"]
+    _write_delivered_report(config, "r-delivered-1")
+    # A directory composed and never delivered: a sidecar and a snapshot, no
+    # report, so it is not a review and is neither listed nor imported.
+    _write_delivered_report(config, "r-composed-only", write_report=False)
+    (
+        config
+        / "crew"
+        / "reports"
+        / PROJECT
+        / "plan-review"
+        / REPORT_SLUG
+        / "r-composed-only"
+        / "plan.html"
+    ).write_text("<html></html>", encoding="utf-8")
+
+    dry_code, dry_out = _run_cli(module, ["--project", PROJECT, "--root", str(repo)])
+    assert dry_code == 0
+    assert "delivered reports without a record: 1" in dry_out
+    assert "r-delivered-1" in dry_out
+    assert "r-composed-only" not in dry_out
+    assert "dry run: nothing written" in dry_out
+    assert not (repo / "docs" / "state" / PROJECT / "reviews").exists()
+
+    argv = ["--project", PROJECT, "--root", str(repo), "--write"]
+    assert _run_cli(module, argv)[0] == 0
+    committed = (
+        repo
+        / "docs"
+        / "state"
+        / PROJECT
+        / "reviews"
+        / "plan"
+        / REPORT_SLUG
+        / "r-delivered-1.json"
+    )
+    assert committed.is_file()
+    stored = json.loads(committed.read_text(encoding="utf-8"))
+    assert stored["review_run_id"] == "r-delivered-1"
+    assert [f["id"] for f in stored["findings"]] == ["wiring-1"]
+    # The composed-but-undelivered directory is not a review and is not stored.
+    assert not (
+        repo
+        / "docs"
+        / "state"
+        / PROJECT
+        / "reviews"
+        / "plan"
+        / REPORT_SLUG
+        / "r-composed-only.json"
+    ).exists()
+
+    # A second pass finds the report carried by the record it just wrote.
+    code, out = _run_cli(module, argv)
+    assert code == 0
+    assert "delivered reports without a record: 0" in out
+    assert "delivered imported: 0" in out
+
+
+def test_delivered_report_already_carried_is_not_imported(harness) -> None:
+    module = _load_script()
+    config = harness["tmp"] / "config"
+    repo = harness["repo"]
+    # Carried by review run id: the record's run id equals the directory's name.
+    _write_delivered_report(config, "r-same-run")
+    _commit_plan_record(
+        repo, "r-same-run", fingerprint="fp-other", rubric="plan_design_review"
+    )
+    # Carried by content: a different run id, but the same plan slug, fingerprint
+    # and rubric as a record.
+    _write_delivered_report(config, "r-by-content", fingerprint="fp-shared")
+    _commit_plan_record(repo, "r-earlier", fingerprint="fp-shared", rubric="content")
+
+    argv = ["--project", PROJECT, "--root", str(repo), "--write"]
+    code, out = _run_cli(module, argv)
+
+    assert code == 0
+    assert "delivered reports without a record: 0" in out
+    assert "delivered imported: 0" in out
+    # The run-id-carried record is left as it was: had the report been imported
+    # it would have been rewritten with the report's own finding.
+    carried = (
+        repo
+        / "docs"
+        / "state"
+        / PROJECT
+        / "reviews"
+        / "plan"
+        / REPORT_SLUG
+        / "r-same-run.json"
+    )
+    assert json.loads(carried.read_text(encoding="utf-8"))["findings"] == []
+    # The content-carried report minted no committed file of its own.
+    assert not (
+        repo
+        / "docs"
+        / "state"
+        / PROJECT
+        / "reviews"
+        / "plan"
+        / REPORT_SLUG
+        / "r-by-content.json"
+    ).exists()
+
+
 def test_write_imports_a_filename_named_run_review(harness) -> None:
     module = _load_script()
     store = harness["store"]
