@@ -5166,6 +5166,7 @@ def dispatch_picker_selection(
     verdict_inputs: Mapping[str, Any] | None = None,
     budget_snapshot: Mapping[str, Any] | None = None,
     input_errors: Mapping[str, str] | None = None,
+    authority: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Ask the picker without letting its latency or failure stop dispatch."""
     if input_errors:
@@ -5187,23 +5188,38 @@ def dispatch_picker_selection(
             from reckon.crew.picker import PickRequest, pick
             from reckon.crew.picker import snapshot as picker_snapshot
 
+            # The dispatcher's own authority travels into the estimate and the
+            # pick, so a dispatcher-granted landing fragment is exempt in the
+            # figure Jev weighs exactly as it is in every candidate's context-fit
+            # verdict. A caller that does not hold the resolved authority (the
+            # advisory shadow path, the dry-run pick) resolves the same one here;
+            # a resolution that fails leaves the picker with no authority rather
+            # than aborting an advisory.
+            pick_authority = authority
+            if pick_authority is None:
+                try:
+                    pick_authority = resolve_dispatch_authority(project, repo)
+                except (CrewError, PlanVisibilityError, OSError, KeyError, TypeError):
+                    pick_authority = None
+
             # The estimate is the same deterministic measurement the context-fit
-            # verdict charges a node against, so Jev weighs the node's size
-            # rather than a zero. It is advisory: a failure to measure leaves the
-            # figure at zero and never aborts the pick.
-            local_backend = config.get("local_backend")
-            backend_settings = (config.get("backends") or {}).get(local_backend) or {}
+            # verdict charges a node against, measured with the same authority
+            # and the same harness-independent standing chain, so the request's
+            # figure and every candidate block's are one. It is advisory: a
+            # failure to measure leaves the figure at zero and never aborts the
+            # pick.
             try:
                 estimated_context = picker_snapshot.estimated_context_tokens(
-                    node, repo, backend_settings=backend_settings
+                    node, repo, authority=pick_authority
                 )
-            except Exception:  # noqa: the estimate is advisory to the pick
+            except Exception:  # noqa: BLE001 - the estimate is advisory to the pick
                 estimated_context = 0
 
             inputs = {
                 "records": records,
                 "verdict_inputs": verdict_inputs,
                 "budget_snapshot": budget_snapshot,
+                "authority": pick_authority,
             }
             parameters = inspect.signature(pick).parameters.values()
             if not any(item.kind is item.VAR_KEYWORD for item in parameters):
@@ -6876,6 +6892,7 @@ def dispatch(
             repo=repo_root,
             session=session,
             comment=comment,
+            authority=authority,
             records=picker_records,
             verdict_inputs=picker_inputs,
             budget_snapshot=picker_budget,
