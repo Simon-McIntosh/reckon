@@ -440,8 +440,11 @@ def test_the_sync_installer_wires_the_guard_behind_the_same_opt_in(
         Path(shlex.split(command)[0]).name == "worker_git_guard.py"
         for command in default_commands
     )
-    assert bash_commands == [str(cli._worker_git_guard_path())]
-    assert Path(bash_commands[0]).name == "worker_git_guard.py"
+    guard_script = cli._worker_git_guard_path()
+    interpreter = guard_script.parents[2] / ".venv" / "bin" / "python"
+    assert bash_commands == [shlex.join([str(interpreter), str(guard_script)])]
+    assert interpreter.is_file()
+    assert guard_script.name == "worker_git_guard.py"
 
     # The guard group is reckon's own, so a later remove takes it back out.
     cli._configure_crew_guards(target, remove=True)
@@ -456,6 +459,27 @@ def test_the_sync_installer_wires_the_guard_behind_the_same_opt_in(
 
     after = real_settings.read_bytes() if real_settings.is_file() else None
     assert after == before
+
+
+def test_sync_replaces_an_installed_guard_without_duplicating_it(
+    tmp_path: Path,
+) -> None:
+    from reckon import cli
+
+    target = tmp_path / "settings.json"
+    composed = installer.build_hook_snippet(include_git_guard=True)["hooks"][
+        "PreToolUse"
+    ][0]
+    assert cli._is_worker_git_guard_group(composed)
+    target.write_text(json.dumps({"hooks": {"PreToolUse": [composed]}}))
+
+    cli._configure_crew_guards(target, remove=False, include_git_guard=True)
+
+    groups = json.loads(target.read_text())["hooks"]["PreToolUse"]
+    guards = [group for group in groups if group.get("matcher") == "Bash"]
+    assert len(guards) == 1
+    assert cli._is_worker_git_guard_group(guards[0])
+    assert len(_pre_tool_use_bash_commands({"hooks": {"PreToolUse": guards}})) == 1
 
 
 def test_the_fragment_is_unchanged_when_the_guard_is_not_requested() -> None:

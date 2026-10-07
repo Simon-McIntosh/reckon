@@ -378,9 +378,19 @@ def _is_worker_git_guard_group(group: Any) -> bool:
         command = shlex.split(str(hook.get("command") or ""))
     except ValueError:
         return False
-    if len(command) != 1:
+    if len(command) == 2:
+        interpreter = Path(command[0])
+        if (
+            interpreter.name != "python"
+            or interpreter.parent.name != "bin"
+            or interpreter.parent.parent.name != ".venv"
+        ):
+            return False
+        path = Path(command[1])
+    elif len(command) == 1:
+        path = Path(command[0])
+    else:
         return False
-    path = Path(command[0])
     return path.name == "worker_git_guard.py" and path.parent.name == "hooks"
 
 
@@ -500,13 +510,15 @@ def _configure_crew_guards(
             }
         )
         if include_git_guard:
+            guard_path = _worker_git_guard_path()
+            interpreter = guard_path.parents[2] / ".venv" / "bin" / "python"
             retained.append(
                 {
                     "matcher": "Bash",
                     "hooks": [
                         {
                             "type": "command",
-                            "command": shlex.join([str(_worker_git_guard_path())]),
+                            "command": shlex.join([str(interpreter), str(guard_path)]),
                         }
                     ],
                 }
