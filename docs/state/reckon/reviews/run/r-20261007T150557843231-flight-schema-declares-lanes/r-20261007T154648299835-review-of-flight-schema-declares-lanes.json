@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b8a145f64ac4a3c44d8ad880cdb8e4b294529664",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/flight.py:1351",
+    "reckon/_flight_schema.py:211",
+    "reckon/_flight_schema.py:358"
+  ],
+  "completed_at": "2026-10-07T16:03:24.407Z",
+  "dispatched_at": "2026-10-07T15:47:18Z",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": "1307",
+      "severity": "follow-on",
+      "text": "follow-on: LANE_MODEL_KEYS hand-mirrors LaneModelConfig's field list; a field added to the LinkML class (reckon/schema/flight.yaml) regenerates reckon/_flight_schema.py and passes the round-trip tests but is absent from LANE_MODEL_KEYS, so expand_lanes would silently omit it from every expanded entry, and no test ties the two lists. Carried from the prior review as the one residual coupling the delta does not close."
+    }
+  ],
+  "head_log_revision": "0c30da2f52c1bef8f70db06da26716acc1aaa2e0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 3ab8e606d; the reviewed run gained one commit, 0c30da2f5 (refactor), which moves the lanes source of truth from the hand-edited generated module reckon/_flight_schema.py into the LinkML source reckon/schema/flight.yaml (lanes/default_model/models slots; LaneConfig is_a BackendConfig; LaneModelConfig), regenerates reckon/_flight_schema.py and docs/_shared/flight.schema.json from it, teaches _inject_map_keys to name nested lanes.<lane>.models entries and to key the lanes map itself, excludes the injected name from lane_level, restores test_lane_expands_to_its_default_named_entry, and rewrites the evidence fragment to drop the schema-drift caveat.",
+    "done_when": "the plan section 1 done-when names three checks: tests covering a lane expanding to its default-named entry and its derived legacy entries with lane/model_key/derived_from plus a --set reaching the expanded entry; a no-value-moves proof over mounts.json; and a negative control. All three are present and reproduced: tests/test_flight_lanes.py:103 asserts backends[\"claude\"] (default model claude-sonnet-5-5, model_key sonnet, no derived_from, lane effort effort/time_budget), :120 covers the derived entry, :141 the --set; resolved-base.json vs resolved-head.json are byte-identical across all 15 projects (only module.__file__ differs), 0 declaring lanes; and RECKON_LANES_OVERRIDE_AFTER_EXPANSION=1 reddens exactly test_set_on_a_lane_model_reaches_the_expanded_entry (1 failed, EXIT=1).",
+    "goal": "the section's goal is that the flight schema declare lanes with models inside them and expand each lane into today's backends: entries. The delta completes it: the lanes block now lives in the LinkML source (reckon/schema/flight.yaml) with LaneConfig/LaneModelConfig and is regenerated, so the declaration survives regeneration; expansion in reckon/flight.py:1351 still produces the lane-named default entry and the derived <lane>-<key> entries, and a probe resolves backends[\"claude\"] to {model claude-sonnet-5-5, model_key sonnet, effort medium, time_budget 25m, lane claude} and backends[\"claude-opus\"] to the derived entry with derived_from lanes.claude.models.opus.",
+    "manifest": "read; the delta updates it to record the two commits (3ab8e606d, 0c30da2f5), the six changed paths including the two authorised out-of-plan ones, the gate command over the four flight test files with head 104 passed 0 skipped EXIT=0 against base 100 passed 0 skipped EXIT=0, names gate-head.log/gate-base.log/negative-control.log, and declares baseline_suite and after_suite arms each completed with failure_count 0 and empty failure_ids.",
+    "write_paths": "the delta touches docs/_shared/flight.schema.json, the evidence fragment, reckon/_flight_schema.py, reckon/flight.py, reckon/schema/flight.yaml and tests/test_flight_lanes.py. Four are inside the plan section 1 write paths (_flight_schema.py, flight.py, test_flight_lanes.py, evidence fragment); reckon/schema/flight.yaml and docs/_shared/flight.schema.json are outside the plan's declared write paths, which the manifest records as a coordinator-authorised exception necessary to close the schema-drift finding."
+  },
+  "justifications": {
+    "durability": "the drift risk the prior review named is closed at its root: the schema source is now reckon/schema/flight.yaml and the two round-trip tests compare the regenerated module and JSON Schema byte-for-byte, so a hand-edit or a stale artifact fails the gate. A regression dropping the default-named entry or the lane's default model now fails tests/test_flight_lanes.py:103. Residual: LANE_MODEL_KEYS at reckon/flight.py:1307 hand-mirrors LaneModelConfig's fields, so a field added to the LinkML class regenerates the module but not the mirror and expansion would silently drop it; no test ties the two.",
+    "evidence": "evidence is complete and I reproduced the parts that matter: the head gate ran here at 104 passed 0 skipped EXIT=0 (base arm 100 passed 0 skipped EXIT=0, EXIT=0 in gate-base.log), the no-value-moves proof re-checked here (15/15 projects byte-identical, only module path differs, 0 declaring lanes, 0 errors), and the negative control re-run here reddened exactly the --set test (1 failed, 3 passed, EXIT=1). The two LinkML round-trip tests now execute rather than skip, so the regeneration claim is proven rather than asserted.",
+    "fit": "the added names (LaneConfig, LaneModelConfig, default_model, models) describe mechanism with no version, plan or ticket identifier and match the schema's existing noun idiom; the change keeps the generated file generated. LANE_MODEL_KEYS:1307 remains a hand-maintained parallel to the schema class.",
+    "goal_fidelity": "the delta closes both prior-review findings and completes the section goal: the lanes declaration is now sourced from LinkML and regenerated (reckon/schema/flight.yaml -> reckon/_flight_schema.py:211 lanes: dict[str, LaneConfig], :330 LaneModelConfig, :358 LaneConfig(BackendConfig)), and expansion at reckon/flight.py:1351 yields backends[\"claude\"] = {model claude-sonnet-5-5, model_key sonnet, effort medium, time_budget 25m, lane claude} with no derived_from, plus the derived claude-opus entry.",
+    "reuse": "the delta reuses the generator path (scripts/regen_flight_schema.py), extends the existing _inject_map_keys/_KEYED_MAPS mechanism (reckon/flight.py:591, :60) rather than adding a parallel name injector, and reuses deep_merge and _lane_entry inside expand_lanes; no duplicated capability.",
+    "scope_discipline": "all six changed paths are declared, but two of them (reckon/schema/flight.yaml, docs/_shared/flight.schema.json) lie outside the plan section 1 write paths and outside the plan section's declared write scope; the manifest records the authority but the mismatch is a real, if authorised, deviation from the plan's stated scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section's goal is that the flight schema declare lanes with models inside them and expand each lane into today's backends: entries. The delta completes it: the lanes block now lives in the LinkML source (reckon/schema/flight.yaml) with LaneConfig/LaneModelConfig and is regenerated, so the declaration survives regeneration; expansion in reckon/flight.py:1351 still produces the lane-named default entry and the derived <lane>-<key> entries, and a probe resolves backends[\"claude\"] to {model claude-sonnet-5-5, model_key sonnet, effort medium, time_budget 25m, lane claude} and backends[\"claude-opus\"] to the derived entry with derived_from lanes.claude.models.opus.\nVERDICT done_when: the plan section 1 done-when names three checks -- tests covering a lane expanding to its default-named entry and its derived legacy entries with lane/model_key/derived_from plus a --set reaching the expanded entry; a no-value-moves proof over mounts.json; and a negative control. All three are present and reproduced: tests/test_flight_lanes.py:103 asserts backends[\"claude\"], :120 the derived entry, :141 the --set; resolved-base.json vs resolved-head.json are byte-    identical across all 15 projects; and RECKON_LANES_OVERRIDE_AFTER_EXPANSION=1 reddens exactly the --set test (1 failed, EXIT=1).\nVERDICT write_paths: the delta touches six paths; four are inside the plan section 1 write paths; reckon/schema/flight.yaml and docs/_shared/flight.schema.json are outside the plan's declared write paths, which the manifest records as a coordinator-authorised exception necessary to close the schema-drift finding.\nVERDICT manifest: read; the delta updates it to record the two commits (3ab8e606d, 0c30da2f5), the six changed paths, the gate command over the four flight test files with head 104 passed 0 skipped EXIT=0 against base 100 passed 0 skipped EXIT=0, names gate-head.log/gate-base.log/negative-control.log, and declares baseline_suite and after_suite arms each completed with failure_count 0 and empty failure_ids.\nVERDICT diff: read commit by commit against base 3ab8e606d; the reviewed run gained one commit 0c30da2f5 which moves the lanes block into the LinkML source, regenerates the module and JSON Schema, names nested lane model maps in _inject_map_keys, excludes the injected name from lane_level, restores the default-entry test, and drops the schema-drift caveat from the evidence fragment.\nCALL_SITES: reckon/flight.py:1351, reckon/_flight_schema.py:211, reckon/_flight_schema.py:358\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the delta closes both prior-review findings and completes the section goal: the lanes declaration is now sourced from LinkML and regenerated, and expansion yields backends[\"claude\"] with the default model and the derived claude-opus entry.\nSCORE evidence: 20\nJUSTIFICATION evidence: head gate reproduced (104 passed, 0 skipped), no-value-moves re-checked (15/15 projects byte-identical), negative control re-run (1 failed, EXIT=1), and the LinkML round-trip tests now execute rather than skip.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: four of six changed paths are inside the plan section 1 write paths; reckon/schema/flight.yaml and docs/_shared/flight.schema.json are a recorded, coordinator-authorised exception but still a deviation from the plan's stated scope.\nSCORE durability: 19\nJUSTIFICATION durability: the drift risk is closed at its root by sourcing the schema from LinkML and running byte-for-byte round-trip tests; the LANE_MODEL_KEYS hand-mirror remains the one unguarded coupling.\nSCORE fit: 18\nJUSTIFICATION fit: names describe mechanism with no plan/ticket identifiers and match the schema idiom; LANE_MODEL_KEYS stays a hand-maintained parallel to the schema class.\nSCORE reuse: 20\nJUSTIFICATION reuse: extends _inject_map_keys/_KEYED_MAPS and reuses the generator, deep_merge and _lane_entry; no duplicated capability.\nFINDING reckon/flight.py:1307 follow-on: LANE_MODEL_KEYS hand-mirrors LaneModelConfig's field list; a field added to the LinkML class regenerates the module and passes the round-trip tests but is absent from LANE_MODEL_KEYS, so expand_lanes would silently omit it from every expanded entry, and no test ties the two lists.\n",
+  "review_run_id": "r-20261007T154648299835-review-of-flight-schema-declares-lanes",
+  "reviewed_base_sha": "3ab8e606d34f8781b5c459241ce71b735f2fc2b6",
+  "reviewed_head_sha": "0c30da2f52c1bef8f70db06da26716acc1aaa2e0",
+  "reviewed_run_id": "r-20261007T150557843231-flight-schema-declares-lanes",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:56:00+00:00",
+  "total": 115
+}
