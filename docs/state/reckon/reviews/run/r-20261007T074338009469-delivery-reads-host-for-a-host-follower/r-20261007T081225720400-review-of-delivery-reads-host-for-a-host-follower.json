@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest's baseline_suite and after_suite fields are both null, so the reviewed run names no base gate log and no head gate log and the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:7411 dispatch admission branch",
+    "reckon/cli.py:2508 crew_dispatch"
+  ],
+  "completed_at": "2026-10-07T08:29:41.506Z",
+  "dispatched_at": "2026-10-07T08:13:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1337",
+      "severity": "follow-on",
+      "text": "SESSION_HOST_STATE_DIRECTORY = \"session-hosts\" (reckon/crew/dispatch.py:1337) and _session_host_record_path (reckon/crew/dispatch.py:1365) re-derive the directory the host writes its census to instead of resolving it through session_host._state_dir (reckon/crew/session_host.py:86-95), which owns that path and honours RECKON_SESSION_HOST_STATE_DIR (reckon/crew/session_host.py:59). Only RECORD_SUFFIX is imported (reckon/crew/dispatch.py:1363), so the suffix agrees while the directory does not: with the override set for the host process and not for the dispatch process, dispatch reads an empty directory and reports monitor for a host-delivered session \u2014 the very mis-report this node removes. _session_host_record_path also re-computes the CLAUDE_PID and start-tick stem that _session_host_fifo (reckon/crew/dispatch.py:1317-1330) already builds, so the two sibling resolvers can drift."
+    },
+    {
+      "file": "tests/test_dispatch_session_host.py",
+      "line": "158",
+      "severity": "follow-on",
+      "text": "_write_host_record (tests/test_dispatch_session_host.py:153-162) hardcodes config_home/\"crew\"/\"session-hosts\" and the \".json\" suffix rather than resolving them through the host module (reckon/crew/session_host.py _state_dir, RECORD_SUFFIX), so the fixture can drift from the writer the code under test reads in step: if the host's directory name or suffix changes, the fixture and _session_host_record_path are edited in different places and this test keeps passing against a directory the host never writes."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base 37b548ccf; bac56b6a4 adds SESSION_HOST_STATE_DIRECTORY, _session_host_record_path, _session_host_runs_follower and the elif branch in dispatch plus two cases to the test module; 636673866 adds the landing fragment.",
+    "done_when": "the done-when names tests/test_dispatch_session_host.py and tests/test_session_host.py ending in a bare EXIT=0; the manifest records that run and gate-host-delivery.log shows 14 passed, EXIT=0.",
+    "goal": "the node goal is to report delivery host whenever the calling session's host runs its follower; reckon/crew/dispatch.py:7411 sets session_delivery = \"host\" when the session's own host census names the live follower, so the payload reads host rather than monitor.",
+    "manifest": "read; it records head 636673866 and base 37b548ccf, gate 14 passed EXIT=0, a declared negative control whose log ends EXIT=1, and test_logs gate/regression/negative-control; baseline_suite and after_suite are null.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and the evidence fragment; git diff --stat 37b548ccf..636673866 names exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared negative control (_session_host_runs_follower returning False) reddens test_dispatch_reads_host_for_an_already_attached_host_follower with 1 failed, EXIT=1, a real guard, and the foreign-pid case (tests/test_dispatch_session_host.py:331+) fails if the match ignores the pid; but the fixture writes the host record into a directory and suffix it hardcodes rather than the host's, so the test can pass while the reader and the writer drift.",
+    "evidence": "gate-host-delivery.log records 14 passed EXIT=0 for tests/test_dispatch_session_host.py and tests/test_session_host.py, which is the done-when's measure; the gate log's first line names the base revision 37b548ccf rather than the landed 636673866, so the figure is not tied to the landed commit by its own header.",
+    "fit": "the added names SESSION_HOST_STATE_DIRECTORY, _session_host_record_path and _session_host_runs_follower are mechanism names with no plan, ticket or version id and no attribution; the comment at reckon/crew/dispatch.py:1359 overstates that the name dispatch reads is the host's own, since only the suffix is imported.",
+    "goal_fidelity": "reckon/crew/dispatch.py:7411 reads the calling session's host census and sets delivery \"host\" for a session already attached by that host's own follower, exactly the node goal; the foreign-follower case (tests/test_dispatch_session_host.py:331) still reads monitor.",
+    "reuse": "_session_host_record_path (reckon/crew/dispatch.py:1340) re-derives the census directory the host owns via session_host._state_dir (reckon/crew/session_host.py:86), importing only RECORD_SUFFIX, and re-computes the CLAUDE_PID/start-tick stem that _session_host_fifo (reckon/crew/dispatch.py:1317) already builds, extending neither owner.",
+    "scope_discipline": "git diff --stat reckon/crew/dispatch.py lists only the three files the manifest declares, all inside the fenced write paths; no figure was written though the scope allowed one, matching the done-when naming no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to report delivery host whenever the calling session\u2019s host runs its follower; reckon/crew/dispatch.py:7411 sets session_delivery = \"host\" when the session\u2019s own host census names the live follower, so the payload reads host rather than monitor.\nVERDICT done_when: the done-when names tests/test_dispatch_session_host.py and tests/test_session_host.py ending in a bare EXIT=0; the manifest records that run and gate-host-delivery.log shows 14 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and the evidence fragment; git diff --stat 37b548ccf..636673866 names exactly those three files and nothing else.\nVERDICT manifest: read; it records head 636673866 and base 37b548ccf, gate 14 passed EXIT=0, a declared negative control whose log ends EXIT=1, and test_logs gate/regression/negative-control; baseline_suite and after_suite are null.\nVERDICT diff: read against base 37b548ccf; bac56b6a4 adds SESSION_HOST_STATE_DIRECTORY, _session_host_record_path, _session_host_runs_follower and the elif branch in dispatch plus two cases to the test module; 636673866 adds the landing fragment.\nCALL_SITES: reckon/crew/dispatch.py:7411 dispatch admission branch, reckon/cli.py:2508 crew_dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:7411 reads the calling session\u2019s host census and sets delivery \"host\" for a session already attached by that host\u2019s own follower, exactly the node goal; the foreign-follower case (tests/test_dispatch_session_host.py:331) still reads monitor.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-host-delivery.log records 14 passed EXIT=0 for tests/test_dispatch_session_host.py and tests/test_session_host.py, which is the done-when\u2019s measure; the gate log\u2019s first line names the base revision 37b548ccf rather than the landed 636673866, so the figure is not tied to the landed commit by its own header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 37b548ccf..636673866 lists only the three files the manifest declares, all inside the fenced write paths; no figure was written though the scope allowed one, matching the done-when naming no artifact.\nSCORE durability: 15\nJUSTIFICATION durability: the declared negative control (_session_host_runs_follower returning False) reddens test_dispatch_reads_host_for_an_already_attached_host_follower with 15pct_EXIT_PLACEHOLDER\nSCORE fit: 17\nJUSTIFICATION fit: the added names SESSION_HOST_STATE_DIRECTORY, _session_host_record_path and _session_host_runs_follower are mechanism names with no plan, ticket or version id and no attribution; the comment at reckon/crew/dispatch.py:1359 overstates that the name dispatch reads is the host\u2019s own, since only the suffix is imported.\nSCORE reuse: 8\nJUSTIFICATION reuse: _session_host_record_path (reckon/crew/dispatch.py:1340) re-derives the census directory the host owns via session_host._state_dir (reckon/crew/session_host.py:86), importing only RECORD_SUFFIX, and re-computes the CLAUDE_PID/start-tick stem _session_host_follower_STEM_PLACEHOLDER\nFINDING reckon/crew/dispatch.py:1337 follow-on: SESSION_HOST_STATE_DIRECTORY = \"session-hosts\" (reckon/crew/dispatch.py:1337) and _session_host_record_path (reckon/crew/dispatch.py:1365) re-derive the directory the host writes its census to instead of resolving it through session_host._state_dir (reckon/crew/session_host.py:86-95), which owns that path and honours RECKON_SESSION_HOST_STATE_DIR (reckon/crew/session_host.py:59). Only RECORD_SUFFIX is imported (reckon/crew/dispatch.py:1363), so the suffix agrees while the directory does not: with the override set for the host process and not for the dispatch process, dispatch reads an empty directory and reports monitor for a host-delivered session \u2014 the very mis-report this node removes. _session_host_record_path also re-computes the CLAUDE_PID and start-tick stem that _session_host_fifo (reckon/crew/dispatch.py:1317-1330) already builds, so the two sibling resolvers can drift.\nFINDING tests/test_dispatch_session_host.py:158 follow-on: _write_host_record (tests/test_dispatch_session_host.py:153-162) hardcodes config_home/\"crew\"/\"session-hosts\" and the \".json\" suffix rather than resolving them through the host module (reckon/crew/session_host.py _state_dir, RECORD_SUFFIX), so the fixture can drift from the writer the code under test reads in step: if the host\u2019s directory name or suffix changes, the fixture and _session_host_record_path are edited in different places and this test keeps passing against a directory the host never writes.\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T074338009469-delivery-reads-host-for-a-host-follower.json",
+  "review_run_id": "r-20261007T081225720400-review-of-delivery-reads-host-for-a-host-follower",
+  "reviewed_base_sha": "37b548ccf845d9c2547b33931b390c3d61ae1460",
+  "reviewed_head_sha": "636673866279b58ac7b0a61b2252ec708d655131",
+  "reviewed_run_id": "r-20261007T074338009469-delivery-reads-host-for-a-host-follower",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:24:00+00:00",
+  "total": 95
+}
