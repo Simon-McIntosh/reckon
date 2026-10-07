@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="189">
+<meta name="plan-version" content="190">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -687,6 +687,11 @@
 <article class="r-fu" data-id="f-otmp-follow-ons-1007" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build one-typesafe-model-picker §6" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Close the follow-ons from the 2026-10-07 picker landings</h4>
     <div class="r-fu-body"><p>Follow-ons from the 2026-10-07 landings. None blocks §6.</p><ul><li><b>Pick latency.</b> 10 of 79 picks fell back when the pick hit its 5 s bound, while Jev itself answered in 0.46 s median. The whole pick took 1.9 s median and 5.0 s at the 90th percentile. Measure where state assembly spends that time (ledger reads, lane documents, the budget verdict) and cut it, rather than widening the bound.</li><li><b>codex-banked-reset.</b> The concurrency test never races two writers, and the lock docstring states the inverse of what the lock holds.</li><li><b>subscription-lanes-record-no-spend.</b> A project-layer <code>budget_group</code> override is not resolved, because <code>flight.resolve</code> is called with no project. One test named for <code>derive_routing</code> never exercises it.</li><li><b>Slow dispatch.</b> The claim grace is a fixed 15 s, the 3.8 s budget verdict is recomputed on every dispatch, and worktree provisioning checks out a 312 MB tree.</li><li><b>Pre-existing error at main.</b> <code>tests/test_member_friction.py::test_unnamed_dispatch_is_admitted_while_a_review_worker_is_alive</code> errors in both arms of the subscription-lanes merge check.</li></ul></div>
+    <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
+    </article>
+<article class="r-fu" data-id="f-otmp-one-figure-follow-ons" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build one-typesafe-model-picker §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Pass the authority on every pick path and make the estimate&#x27;s backend rule one</h4>
+    <div class="r-fu-body"><p>The review of <code>dispatch-context-estimate-is-one-figure</code> (111) left two follow-ons:</p><ul><li>The shadow pick and the dry-run pick (<code>reckon/cli.py</code>) do not pass the authority. They reach it through a resolution fallback in <code>dispatch_picker_selection</code> that catches five exception types and leaves the authority unset, so a failed resolution silently charges the granted fragment again on those two paths.</li><li>The request estimate is measured with no backend settings, while each candidate's block uses its own backend's settings. The two figures agree only where the backends' standing chains coincide.</li><li><code>tests/test_member_friction.py::test_unnamed_dispatch_is_admitted_while_a_review_worker_is_alive</code> compares the whole real crew store in its teardown. It should assert only that the test wrote nothing there.</li></ul><p>Hold anything that writes <code>reckon/crew/dispatch.py</code> or <code>reckon/cli.py</code> until reckon-9d's module split lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
     </article>
 </section>
