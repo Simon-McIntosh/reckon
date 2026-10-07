@@ -160,6 +160,45 @@ def test_stand_up_refuses_a_job_on_the_old_node(setup):
     assert actions.calls.count("submit") == 1
 
 
+def test_retry_requires_a_fresh_supervisor_readiness_response(setup):
+    path, actions = setup
+    actions.step = lambda argv: subprocess.CompletedProcess(argv, 1, "", "step failed")
+    with pytest.raises(fleet_migrate.MigrationError, match="did not confirm node"):
+        actions.migrate()
+    first_token = json.loads(path.read_text())["stand_up"]["ready_token"]
+    assert (actions.state / "migration" / f"ready-{first_token}.json").exists()
+    actions.step = lambda argv: subprocess.CompletedProcess(argv, 0, "new-node\n", "")
+    actions.send = lambda _job, _line: None
+    with pytest.raises(fleet_migrate.MigrationError, match="readiness"):
+        actions.migrate()
+    assert json.loads(path.read_text())["stand_up"]["ready_token"] != first_token
+    assert json.loads(path.read_text())["next_step"] == "stand-up"
+
+
+def test_promote_retry_preserves_records_from_before_the_first_attempt(setup):
+    path, actions = setup
+    actions.migrate()
+    send = actions.send
+
+    def interrupted(_job, line):
+        if line == "promote":
+            raise fleet_migrate.MigrationError("request interrupted")
+        send(_job, line)
+
+    actions.send = interrupted
+    with pytest.raises(fleet_migrate.MigrationError, match="request interrupted"):
+        actions.migrate()
+    ledger = json.loads(path.read_text())
+    assert ledger["next_step"] == "promote"
+    assert ledger["promotion"]["reservation_before"] == {"job_id": "old"}
+    assert actions.reservation["job_id"] == "new"
+    actions.send = send
+    result = actions.migrate()
+    assert 'reservation before: {"job_id": "old"}' in result
+    assert json.loads(path.read_text())["next_step"] == "cutover"
+    assert actions.calls.count("submit") == 1
+
+
 @pytest.mark.parametrize("step", ["stand-up", "promote"])
 @pytest.mark.parametrize("dry_run", [False, True])
 def test_session_is_refused_before_either_step_changes_state(setup, step, dry_run):

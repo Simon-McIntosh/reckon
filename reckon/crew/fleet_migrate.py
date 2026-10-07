@@ -553,7 +553,7 @@ def migrate(
             query_jobs=query_jobs,
             pause=pause,
         )
-        token = standing.get("ready_token") or secrets.token_hex(16)
+        token = secrets.token_hex(16)
         standing["ready_token"] = token
         path.write_text(json.dumps(ledger, indent=2) + "\n")
         response_path = state / "migration" / f"ready-{token}.json"
@@ -592,8 +592,13 @@ def migrate(
     if step == "promote":
         assert path is not None and ledger is not None
         standing = ledger["stand_up"]
-        before_fleet = read_fleet_record(state)
-        before_reservation = read_reservation()
+        promotion = ledger.setdefault("promotion", {})
+        if "fleet_before" not in promotion:
+            promotion["fleet_before"] = read_fleet_record(state)
+            promotion["reservation_before"] = read_reservation()
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
+        before_fleet = promotion["fleet_before"]
+        before_reservation = promotion["reservation_before"]
         job = _running_job(
             standing["job_id"],
             old_node=standing["old_record"]["node"],
@@ -620,13 +625,13 @@ def migrate(
             or after_reservation.get("job_id") != standing["job_id"]
         ):
             raise MigrationError("reservation did not retain the new job")
-        ledger["promotion"] = {
-            "fleet_before": before_fleet,
-            "fleet_after": after_fleet,
-            "reservation_before": before_reservation,
-            "reservation_after": after_reservation,
-            "replacement": replacement,
-        }
+        promotion.update(
+            {
+                "fleet_after": after_fleet,
+                "reservation_after": after_reservation,
+                "replacement": replacement,
+            }
+        )
         ledger["completed"].append("promote")
         ledger["next_step"] = "cutover"
         path.write_text(json.dumps(ledger, indent=2) + "\n")
