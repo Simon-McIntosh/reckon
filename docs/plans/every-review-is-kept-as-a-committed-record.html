@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.6">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -286,7 +286,10 @@
     <div class="r-comment-body"><p>A promotion now files a stored round that carries no review_run_id under review.derived_legacy_review_run_id of its bytes, marked review_run_id_source: derived, instead of skipping it; the subject rule has one spelling through names_a_review_subject (store_review, store_committed_review, plan_review.store_plan_review); resolve_record_times keeps a completion the run records supplied when the dispatch falls through to the record or the run id. Gate 30 passed, EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T050508320887-a-review-without-times-is-still-kept" data-who="reckon-build" data-when="2026-10-07T05:37:22.468Z">
-    <div class="r-comment-body"><p>store_committed_review now commits a review whose review run has no record anywhere and whose id encodes no dispatch instant, writing empty dispatched_at and completed_at with times_source &quot;unknown&quot; (never the store clock), while a review run whose own record exists but carries no dispatch stamp is still refused naming the run; gate 29 passed EXIT=0, negative control 1 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>store_committed_review now commits a review whose review run has no record anywhere and whose id encodes no dispatch instant, writing empty dispatched_at and completed_at with times_source "unknown" (never the store clock), while a review run whose own record exists but carries no dispatch stamp is still refused naming the run; gate 29 passed EXIT=0, negative control 1 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261007T053959083336-review-of-a-review-without-times-is-still-kept" data-who="reckon-build" data-when="2026-10-07T05:56:09.760Z">
+    <div class="r-comment-body"><p>An independent review of run r-20261007T050508320887-a-review-without-times-is-still-kept is stored as a parsed six-dimension record at both granted staging paths; it scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 17, fit 18, reuse 19 (total 112), records reviewed_base_sha 5f53ef9dee837bfda880fdd6c77ee04428cc1163 and reviewed_head_sha 8948df23a079efa0795599965360f99a1fc6c19c, carries added_failure_count null (unmeasured) with added_failure_ids [] because the reviewed manifest names no baseline_suite/after_suite gate logs, and reports two follow-on findings (an unreachable, untested retained refusal branch, and the reviewed manifest&#x27;s suite-field omission).</p></div>
 </div>
 </section>
 </main>

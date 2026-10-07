@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "scripts/import_host_reviews.py:346 store_committed_review",
+    "reckon/crew/promotion.py:8762 store_committed_review"
+  ],
+  "completed_at": "2026-10-07T05:56:09.760Z",
+  "dispatched_at": "2026-10-07T05:40:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1987",
+      "severity": "follow-on",
+      "text": "follow-on: the retained refusal branch at review.py:1987 is unreachable for any id in the standard run-id grammar, because the guard on `if encoded:` at review.py:1984 returns RUN_ID_TIMES_SOURCE first and every minted id encodes a dispatch instant. So a review run whose own record exists but carries no dispatch stamp is committed under times_source run-id rather than refused, contradicting the resolve_record_times docstring (review.py:2005-2009) and the store_committed_review docstring, which both state such a record is refused naming the run; the branch carries no test (the refusal case was replaced, not augmented), so nothing shows it fires."
+    },
+    {
+      "file": "tests/test_review_store_owns_identity_and_times.py",
+      "line": "179",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names its gate log only under test_logs and records no baseline_suite/after_suite suite fields, so the store's annotate_review_of_run derives no added-failure count for this run; the one-arm evidence cannot distinguish a change that added no failing test from one whose base arm was never taken. Recording the arm logs under the manifest's suite fields would let a later reader derive the delta."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read in full against base 5f53ef9d: run_record_times is split into _run_record_times_found plus a wrapper, and the terminal raise in resolve_record_times is replaced by an unknown-time commit behind a found-flag guard.",
+    "done_when": "the three-file gate ran 29 passed EXIT=0 (independent re-run at 8948df23); the refusal case was replaced by test_a_record_resolving_no_time_is_committed_marked_unknown and test_a_record_with_resolvable_times_keeps_them added; the reviewed manifest records the negative control red (1 failed EXIT=1).",
+    "goal": "the goal is exactly delivered; see the goal_fidelity justification.",
+    "manifest": "read; the head arm reads 29 passed EXIT=0 and the negative control 1 failed EXIT=1, but the manifest names its gate log under test_logs rather than the after_suite field the store reads and records no baseline_suite, so the store's added-failure derivation reads unmeasured.",
+    "write_paths": "the diff touches exactly review.py, the test file and the evidence fragment, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "test_a_record_resolving_no_time_is_committed_marked_unknown pins the new unknown branch and test_a_record_with_resolvable_times_keeps_them pins that the run-id path is unchanged, and the negative control reddens the former. But the retained refusal branch (own_run_record_found, review.py:1987) carries no test and is unreachable for any id in the run-id grammar, so the defect it claims to catch is never refused in production.",
+    "evidence": "The declared gate (three test files) ran to its summary line at head: I re-ran it at 8948df23, 29 passed EXIT=0; the reviewed manifest records the negative control red (1 failed, 28 passed, EXIT=1) and I read that log, which shows the restored refusal reddening test_a_record_resolving_no_time_is_committed_marked_unknown. The reviewed manifest names no baseline_suite/after_suite gate logs, so the added-failure count is not derivable and is recorded unmeasured (null), not a measured zero.",
+    "fit": "The added names describe mechanism \u2014 UNKNOWN_TIMES_SOURCE, _run_record_times_found \u2014 with no version, plan or ticket identifier and no attribution, and the docstrings explain the two branches. The resolve_record_times docstring (review.py:2005-2009) overstates the refusal's reach, claiming a run whose record exists but carries no dispatch stamp is refused, which the code does not do when the id encodes an instant.",
+    "goal_fidelity": "The stated goal is delivered and reproduced: a record whose review run has no record anywhere and whose id encodes no instant is committed rather than refused \u2014 store_committed_review now reaches resolve_record_times's new fall-through (review.py:2004) and stores empty dispatched_at/completed_at with times_source unknown (UNKNOWN_TIMES_SOURCE, review.py:1258), never the store timestamp; I re-ran the gate at 8948df23 and read the assertions that pin empty stamps, source unknown, and timestamp distinct from both stamps.",
+    "reuse": "run_record_times keeps its public, documented 2-tuple signature as a thin wrapper over the new private _run_record_times_found (review.py:1800), which the public function and resolve_record_times share, so the pointer/ledger lookup is written once and the found flag is added without a second reader of the run record, and no existing caller changes.",
+    "scope_discipline": "The diffstat over 5f53ef9d..8948df23 lists exactly reckon/crew/review.py, tests/test_review_store_owns_identity_and_times.py and the evidence fragment docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-review-without-times-is-still-kept.html \u2014 all inside the node's declared write paths; the declared figures directory was not created because the done-when names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 5f53ef9dee837bfda880fdd6c77ee04428cc1163\nreviewed_head_sha: 8948df23a079efa0795599965360f99a1fc6c19c\nVERDICT goal: the goal is exactly delivered; see the goal_fidelity justification.\nVERDICT done_when: the three-file gate ran 29 passed EXIT=0 (independent re-run at 8948df23); the refusal case was replaced by test_a_record_resolving_no_time_is_committed_marked_unknown and test_a_record_with_resolvable_times_keeps_them added; the reviewed manifest records the negative control red (1 failed EXIT=1).\nVERDICT write_paths: the diff touches exactly review.py, the test file and the evidence fragment, all inside the declared scope.\nVERDICT manifest: read; the head arm reads 29 passed EXIT=0 and the negative control 1 failed EXIT=1, but the manifest names its gate log under test_logs rather than the after_suite field the store reads and records no baseline_suite, so the store's added-failure derivation reads unmeasured.\nVERDICT diff: read in full against base 5f53ef9d: run_record_times is split into _run_record_times_found plus a wrapper, and the terminal raise in resolve_record_times is replaced by an unknown-time commit behind a found-flag guard.\nCALL_SITES: scripts/import_host_reviews.py:346 store_committed_review, reckon/crew/promotion.py:8762 store_committed_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The stated goal is delivered and reproduced: a record whose review run has no record anywhere and whose id encodes no instant is committed rather than refused \u2014 store_committed_review now reaches resolve_record_times's new fall-through (review.py:2004) and stores empty dispatched_at/completed_at with times_source unknown (UNKNOWN_TIMES_SOURCE, review.py:1258), never the store timestamp; I re-ran the gate at 8948df23 and read the assertions that pin empty stamps, source unknown, and timestamp distinct from both stamps.\nSCORE evidence: 18\nJUSTIFICATION evidence: The declared gate (three test files) ran to its summary line at head: I re-ran it at 8948df23, 29 passed EXIT=0; the reviewed manifest records the negative control red (1 failed, 28 passed, EXIT=1) and I read that log, which shows the restored refusal reddening test_a_record_resolving_no_time_is_committed_marked_unknown. The reviewed manifest names no baseline_suite/after_suite gate logs, so the added-failure count is not derivable and is recorded unmeasured (null), not a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diffstat over 5f53ef9d..8948df23 lists exactly reckon/crew/review.py, tests/test_review_store_owns_identity_and_times.py and the evidence fragment docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-review-without-times-is-still-kept.html \u2014 all inside the node's declared write paths; the declared figures directory was not created because the done-when names no artifact.\nSCORE durability: 17\nJUSTIFICATION durability: test_a_record_resolving_no_time_is_committed_marked_unknown pins the new unknown branch and test_a_record_with_resolvable_times_keeps_them pins that the run-id path is unchanged, and the negative control reddens the former. But the retained refusal branch (own_run_record_found, review.py:1987) carries no test and is unreachable for any id in the run-id grammar, so the defect it claims to catch is never refused in production.\nSCORE fit: 18\nJUSTIFICATION fit: The added names describe mechanism \u2014 UNKNOWN_TIMES_SOURCE, _run_record_times_found \u2014 with no version, plan or ticket identifier and no attribution, and the docstrings explain the two branches. The resolve_record_times docstring (review.py:2005-2009) overstates the refusal's reach, claiming a run whose record exists but carries no dispatch stamp is refused, which the code does not do when the id encodes an instant.\nSCORE reuse: 19\nJUSTIFICATION reuse: run_record_times keeps its public, documented 2-tuple signature as a thin wrapper over the new private _run_record_times_found (review.py:1800), which the public function and resolve_record_times share, so the pointer/ledger lookup is written once and the found flag is added without a second reader of the run record, and no existing caller changes.\nFINDING reckon/crew/review.py:1987 follow-on: the retained refusal branch at review.py:1987 is unreachable for any id in the standard run-id grammar, because the guard on `if encoded:` at review.py:1984 returns RUN_ID_TIMES_SOURCE first and every minted id encodes a dispatch instant. So a review run whose own record exists but carries no dispatch stamp is committed under times_source run-id rather than refused, contradicting the resolve_record_times docstring (review.py:2005-2009) and the store_committed_review docstring, which both state such a record is refused naming the run; the branch carries no test (the refusal case was replaced, not augmented), so nothing shows it fires.\nFINDING tests/test_review_store_owns_identity_and_times.py:179 follow-on: the reviewed manifest names its gate log only under test_logs and records no baseline_suite/after_suite suite fields, so the store's annotate_review_of_run derives no added-failure count for this run; the one-arm evidence cannot distinguish a change that added no failing test from one whose base arm was never taken. Recording the arm logs under the manifest's suite fields would let a later reader derive the delta.\n",
+  "review_run_id": "r-20261007T053959083336-review-of-a-review-without-times-is-still-kept",
+  "reviewed_base_sha": "5f53ef9dee837bfda880fdd6c77ee04428cc1163",
+  "reviewed_head_sha": "8948df23a079efa0795599965360f99a1fc6c19c",
+  "reviewed_run_id": "r-20261007T050508320887-a-review-without-times-is-still-kept",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T05:51:49.027271+00:00",
+  "total": 112
+}
