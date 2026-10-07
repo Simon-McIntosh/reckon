@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.875">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -393,6 +393,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261007T115357305934-dispositions-and-answers-survive-promotion" data-who="reckon-build" data-when="2026-10-07T12:29:01.252Z">
     <div class="r-comment-body"><p>Promotion merges dimension_dispositions, responses and response_events out of every staging copy of the record it commits and out of the committed file already at the target path, and record_response/record_dimension_disposition write and commit the committed copy when a promoted review has one, so an answer survives both promotion and a later re-store of the round. The declared gate runs 37 passed EXIT=0 at ff436d058, and each of the two declared negative controls is red on its own case.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20261007-s11-two-nodes" data-who="reckon-build" data-when="2026-10-07T13:01:00Z">
+    <div class="r-comment-body"><p>Section 11 runs as two nodes, one per repository, as its content review found it must: a node commits in one repository only. The imas-codex half, <code>misfiled-run-reviews-moved-to-their-runs</code>, has landed. Its commit <code>8d2dc46f1</code> moved both records unchanged (R100) to <code>run/&lt;reviewed-run-id&gt;/</code> and is merged into imas-codex <code>main</code>. <code>review.stored_record</code> returns each record, and no file carrying a <code>reviewed_run_id</code> remains under the plan tree. The routing fix in reckon, <code>store_committed_review</code>, is the second node.</p></div>
 </div>
 </section>
 </main>
