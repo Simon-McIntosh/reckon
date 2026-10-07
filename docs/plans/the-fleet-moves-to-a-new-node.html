@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -572,6 +572,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-20261007-hook-interpreter-landed" data-who="reckon-build" data-when="2026-10-07T10:12:00Z">
     <div class="r-comment-body"><p>Run <code>r-20261007T081349225506-worker-hooks-run-under-reckons-interpreter</code> landed on main through <code>fe49e7141</code>: the worker stop hook and the worker git guard are composed with the checkout's <code>.venv/bin/python</code> by both <code>reckon hooks install</code> and <code>reckon sync</code>, through one composer and one recogniser, and an installed settings file carrying the bare commands is upgraded in place. The first review scored 102 with two blocking findings in <code>reckon/cli.py</code>, the sync path and the recogniser; the repair was re-reviewed at 114. Merged-head gate: 246 passed against 242 at the base, no added failure. Its remaining follow-on, that the derived interpreter path is not checked for existence, is accepted as minor. The operator's own <code>~/.claude/settings.json</code> still carries the bare commands until <code>reckon hooks install</code> is run.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261007T100043546882-review-of-a-declared-service-runs-once-across-nodes" data-who="reckon-build" data-when="2026-10-07T10:20:00.026Z">
+    <div class="r-comment-body"><p>Independent review of r-20261007T093549967306-a-declared-service-runs-once-across-nodes stored a parsed six-dimension record at both granted paths (total 106: goal_fidelity 18, evidence 19, scope_discipline 17, durability 18, fit 18, reuse 16; one follow-on finding); the reviewed run added no failing tests (added_failure_count 0).</p></div>
 </div>
 </section>
 </main>

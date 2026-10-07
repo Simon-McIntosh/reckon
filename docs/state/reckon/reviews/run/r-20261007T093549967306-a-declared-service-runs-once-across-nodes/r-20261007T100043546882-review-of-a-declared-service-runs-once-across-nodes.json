@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9eecf97e342985efd809805c6d00babc107963f3",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:serve",
+    "reckon/crew/fleet_supervisor.py:handle_line",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices"
+  ],
+  "completed_at": "2026-10-07T10:20:00.026Z",
+  "dispatched_at": "2026-10-07T10:01:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "765",
+      "severity": "follow-on",
+      "text": "follow-on: _stop_locked returns early when state is None or state.pid is None, so the recorded-pid fallback at 770-771 is unreachable and a running service absent from self._states is no longer stopped by its recorded pid where the base revision stopped it; reach is narrow because reload only stops names it tracks, but the fallback is now dead code."
+    }
+  ],
+  "head_log_revision": "bc9404ddabe1d733804e8c6feee9ea03601515aa",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit -- 9b28ccd adds the lease primitive, 1fe1b9b wires the arbitration into DeclaredServices, bc9404d adds the tests; four files changed, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_host_lease.py and tests/test_fleet_supervisor_runs_declared_services.py; the manifest records that run (29 passed, EXIT=0) and the two-arm evidence it names, and the tests cover all three bullets -- one copy with the second host reporting the holder, a stale lease taken over and a fresh one not, and a temporary services config starting no real service.",
+    "goal": "the goal is to hold each declared fleet service to one copy across nodes via a shared-storage lease reusable by a later producer seat; reckon/crew/host_lease.py:26 HostLease names host, pid and job on the fleet state directory and reckon/crew/fleet_supervisor.py:665-704 gates every declared-service start on it, so the landed change does what the goal states.",
+    "manifest": "read; it states the gate command and its result, names final-gate.log and both arm logs, and records the baseline_suite and after_suite observations plus a declared negative control.",
+    "write_paths": "the manifest declares reckon/crew/host_lease.py, reckon/crew/fleet_supervisor.py, tests/test_host_lease.py and tests/test_fleet_supervisor_runs_declared_services.py; the diff touches exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_supervisor_runs_declared_services.py:240 fails with two PIDs at the base revision (baseline-arm.log), so the one-copy test reddens if the lease is removed.",
+    "evidence": "the manifest records final-gate.log (29 passed, EXIT=0) and the two arm logs; baseline-arm.log shows the one-copy test failing at 9eecf97 with two PIDs, so the evidence could have failed.",
+    "fit": "reckon/crew/host_lease.py:26 follows the surrounding crew-module idiom (frozen dataclass, atomic link, module docstring) and introduces no plan label, version or ticket reference.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:665-704 gates each declared-service start on lease.claim() and reckon/crew/host_lease.py:26 supplies the shared-storage lease the goal names.",
+    "reuse": "no owner exists for a renewable single-owner claim with time-based staleness; searching reckon/ found reckon/crew/dispatch.py:_claim_node_dispatch (exclusive-create claim, process-liveness staleness) and reckon/hooks/coordinator_obligations.py:producer_lease_is_live (renewed interval stamp), which HostLease neither extends nor duplicates.",
+    "scope_discipline": "the diff touches only the four declared write paths; fleet_supervisor.py:96-99 also drops a zellij ticket/version reference, inside an allowed file and aligned with the naming rule."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to hold each declared fleet service to one copy across nodes via a shared-storage lease reusable by a later producer seat; reckon/crew/host_lease.py:26 HostLease names host, pid and job on the fleet state directory and reckon/crew/fleet_supervisor.py:665-704 gates every declared-service start on it, so the landed change does what the goal states.\nVERDICT done_when: the done_when names tests/test_host_lease.py and tests/test_fleet_supervisor_runs_declared_services.py; the manifest records that run (29 passed, EXIT=0) and the two-arm evidence it names, and the tests cover all three bullets -- one copy with the second host reporting the holder, a stale lease taken over and a fresh one not, and a temporary services config starting no real service.\nVERDICT write_paths: the manifest declares reckon/crew/host_lease.py, reckon/crew/fleet_supervisor.py, tests/test_host_lease.py and tests/test_fleet_supervisor_runs_declared_services.py; the diff touches exactly those four files and nothing else.\nVERDICT manifest: read; it states the gate command and its result, names final-gate.log and both arm logs, and records the baseline_suite and after_suite observations plus a declared negative control.\nVERDICT diff: read commit by commit -- 9b28ccd adds the lease primitive, 1fe1b9b wires the arbitration into DeclaredServices, bc9404d adds the tests; four files changed, all inside the declared scope.\nCALL_SITES: reckon/crew/fleet_supervisor.py:serve, reckon/crew/fleet_supervisor.py:handle_line, reckon/crew/fleet_supervisor.py:DeclaredServices\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:665-704 gates each declared-service start on lease.claim() and reckon/crew/host_lease.py:26 supplies the shared-storage lease the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest records final-gate.log (29 passed, EXIT=0) and the two arm logs; baseline-arm.log shows the one-copy test failing at 9eecf97 with two PIDs, so the evidence could have failed.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff touches only the four declared write paths; fleet_supervisor.py:96-99 also drops a zellij ticket/version reference, inside an allowed file and aligned with the naming rule.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_fleet_supervisor_runs_declared_services.py:240 fails with two PIDs at the base revision (baseline-arm.log), so the one-copy test reddens if the lease is removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/host_lease.py:26 follows the surrounding crew-module idiom (frozen dataclass, atomic link, module docstring) and introduces no plan label, version or ticket reference.\nSCORE reuse: 16\nJUSTIFICATION reuse: no owner exists for a renewable single-owner claim with time-based staleness; searching reckon/ found reckon/crew/dispatch.py:_claim_node_dispatch (exclusive-create claim, process-liveness staleness) and reckon/hooks/coordinator_obligations.py:producer_lease_is_live (renewed interval stamp), which HostLease neither extends nor duplicates.\nFINDING reckon/crew/fleet_supervisor.py:765 follow-on: _stop_locked returns early when state is None or state.pid is None, so the recorded-pid fallback at 770-771 is unreachable and a running service absent from self._states is no longer stopped by its recorded pid where the base revision stopped it; reach is narrow because reload only stops names it tracks, but the fallback is now dead code.\nreviewed_base_sha: 9eecf97e342985efd809805c6d00babc107963f3\nreviewed_head_sha: bc9404ddabe1d733804e8c6feee9ea03601515aa",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T093549967306-a-declared-service-runs-once-across-nodes.json",
+  "review_run_id": "r-20261007T100043546882-review-of-a-declared-service-runs-once-across-nodes",
+  "reviewed_base_sha": "9eecf97e342985efd809805c6d00babc107963f3",
+  "reviewed_head_sha": "bc9404ddabe1d733804e8c6feee9ea03601515aa",
+  "reviewed_run_id": "r-20261007T093549967306-a-declared-service-runs-once-across-nodes",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:22:14.207266+00:00",
+  "total": 106
+}
