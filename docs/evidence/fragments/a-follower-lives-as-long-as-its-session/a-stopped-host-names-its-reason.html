@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
+  <meta name="plan-evidence-for" content="a-follower-lives-as-long-as-its-session">
+  <title>A stopped host names its reason | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-stopped-host-names-its-reason">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A stopped host names its reason</h2>
+      </header>
+      <p id="a-stopped-host-names-its-reason-landing">
+        <code>SessionHost.stop</code> takes its reason as a required argument, and the two
+        paths that previously left the final census's <code>stop_reason</code> null now name
+        one: the request descriptor reaching end-of-file records
+        <code>request stream ended</code>, and the entry point's <code>finally</code> records
+        <code>host exited</code>. The bare <code>request_stop()</code> fallback keeps the
+        signalled reason. <code>tests/test_session_host.py</code> and
+        <code>tests/test_dispatch_session_host.py</code> pass 24 tests with a bare
+        <code>EXIT=0</code>; the two new tests fail with <code>stop_reason: None</code> when
+        the end-of-file reason and the signalled fallback are removed.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
