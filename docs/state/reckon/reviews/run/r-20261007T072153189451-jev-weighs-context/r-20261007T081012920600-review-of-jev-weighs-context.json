@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from my own arms, because the reviewed manifest records baseline_suite null and after_suite at head only, so the reviewed run's own delta is unmeasured. I re-ran both arms in scratch trees extracted outside the reviewed worktree (copies of the head worktree; the 9 modified files reverted to base 0aad6627 for the base arm; the added test file removed). BASE 199 passed EXIT=0; HEAD 203 passed EXIT=0. The +4 is tests/test_jev_weighs_context.py; no test fails at head that passes at base, so added_failure_count is 0. The reviewed run's own gate-base.log (199 passed, BASE_EXIT=0) and gate-head.log (203 passed, EXIT=0) agree with my arms, though neither names the revision it ran at and the base arm ends BASE_EXIT= rather than EXIT=.",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5132 dispatch_picker_selection -> picker_snapshot.estimated_context_tokens",
+    "reckon/crew/picker/snapshot.py:415 candidates -> estimated_context_tokens (once per pick)",
+    "reckon/crew/picker/snapshot.py:489 candidates -> _fit(context_out=...) -> _context_block"
+  ],
+  "completed_at": "2026-10-07T08:30:50.615Z",
+  "dispatched_at": "2026-10-07T08:10:44Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/jev-weighs-context.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "done-when item 4 (evidence fragment with the distribution of estimated tokens against each lane's window and the rendered context block for one real node) was not produced: the review confirms the fragment path does not exist in the reviewed worktree, and the reviewed manifest's own checkpoint reads 'fragment not yet written' and its follow_ons repeat it. The node nonetheless declares status complete. The code and its tests (items 1-3) are delivered, so the node is a partial landing rather than a false one, but a named done-when artifact is missing."
+    },
+    {
+      "file": "tests/test_picker.py",
+      "line": "254",
+      "severity": "follow-on",
+      "text": "scope deviation, disclosed by the worker: four files outside the declared write fence were edited - tests/test_picker.py, tests/test_picker_pressure.py, tests/test_picker_return_time.py and tests/test_jev_prompt_carries_what_it_weighs.py - each widened (a new required 'context' key added to the expected candidate field sets, and rendered-size bounds raised: 1500*4->1500*5, 1500->2200). The edits are minimal and are forced by adding a required candidate field, but they were made without a scope extension; per the node contract a write outside the fence needs a granted extension. No concurrent node claims these paths, so no collision occurred."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "86",
+      "severity": "note",
+      "text": "residual: _peak_input_utilisation filters the lane's passed rows by backend and time only, while recent_outcomes in the same module also filters by role, spec_level and model. The spec's item 2 asks for 'recent promoted runs on that lane' (lane level), so a backend-only filter is defensible, but the utilisation p50/p90 mixes every node role on the lane rather than the role being dispatched. Not a defect against the spec; recorded so a later reader of the block knows what population a non-null figure is drawn from."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "69",
+      "severity": "note",
+      "text": "residual: estimated_context_tokens passes authority=None to routing._context_file_inputs while the context-fit verdict passes resolution.authority, so for a node with granted paths the request-level estimate can differ from the per-candidate estimate the same node receives in its context block. The spec's item 1 permits a single once-per-pick figure, so this is within scope; it is recorded because the two figures can disagree for authority-granted nodes."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "three: dispatch sets PickRequest.estimated_context once per pick; candidates measures the node estimate once per pick and reuses the per-backend verdict measurement through the _fit context_out out-parameter",
+    "diff": "read against base 0aad6627: single commit 10fca437 touches exactly the 10 files the manifest names (5 source/test in scope, 4 out-of-scope test files, 1 added test module); git diff --name-status lists those 10 and nothing else",
+    "done_when": "items 1-3 delivered and reproduced; item 4 (the evidence fragment) not produced; the node declares complete over an incomplete done-when",
+    "goal": "Jev must weigh context: a node whose estimate approaches or exceeds a lane's window goes to a lane that fits it, and the router can choose an external lane when the local lane cannot hold the node",
+    "manifest": "read; status complete, head 10fca437, base 0aad6627 (orientation), after_suite at head 0 failures, baseline_suite null; negative_control_log declared; commit body present and conventional",
+    "write_paths": "the node's declared fence lists 9 paths; the diff touches 5 in-scope plus 4 out-of-scope test files (disclosed in its follow_ons), and neither the fragment nor the figures directory was produced"
+  },
+  "justifications": {
+    "durability": "the tests pin the behaviour as a class, not one path: CONTEXT_KEYS fixes the exact key set so a dropped field fails, headroom is asserted at ~15% for an 85%-of-window node, the unbounded-window case is asserted to render null (not zero), and the rendered state is parsed as JSON and checked on every candidate. I reproduced the declared negative control independently by forcing estimated_context to 0 on the dispatch path in a scratch copy of head: 1 failed (test_dispatch_pick_carries_a_non_zero_estimated_context), 3 passed, EXIT=1 - exactly the id the head arm passes. Residual: the single mutation exercises only the dispatch estimate; the block's own rendering guards are set by the fixtures rather than by that mutation.",
+    "evidence": "the branch's declared gate is the picker, prompt, context and dispatch-speed tests plus the new module. I re-ran both arms in scratch trees outside the reviewed worktree, each header naming revision, tree, module.__file__ and cwd: HEAD 10fca437 203 passed EXIT=0; BASE 0aad6627 199 passed EXIT=0. The +4 is the new test module; zero added failures. The reviewed manifest stores baseline_suite null, so its own delta is unmeasured; I supplied the base negative above rather than a fabricated zero. The declared negative control reproduced independently.",
+    "fit": "the change follows the module's idiom: context joins the Candidate dataclass beside the other optional facts, the glossary and the candidate-state mapping gain one entry each, and the questions template names the block in the same sliding-scale language the file already uses. Comments state the mechanism (the estimate is advisory; a null figure is unknown, never zero) with no plan, ticket, gate or version identifier and no attribution. Symbol names describe what they measure.",
+    "goal_fidelity": "items 1-3 of the done-when are delivered and independently reproduced via the head gate (203 passed, EXIT=0): dispatch sets PickRequest.estimated_context (dispatch.py:5135-5168), each offered candidate carries the context block (snapshot.py:487-500, types.py:37, prompts.py:135), and the four scenarios the spec names are asserted in tests/test_jev_weighs_context.py. Item 4, the evidence fragment, was not written, and the node declares complete over it; that is the deduction.",
+    "reuse": "_context_block is the one builder for the three candidate population paths, and the verdict's own window measurement is handed forward through the _fit context_out out-parameter rather than measured a second time, avoiding a second git subprocess on the pick's critical path. No new dependency and no parallel helper were added. The node estimate is measured once per pick and reused as the no-window fallback.",
+    "scope_discipline": "git diff --name-status 0aad6627..10fca437 lists exactly 10 files; 5 are inside the fence and 4 (tests/test_picker.py, tests/test_picker_pressure.py, tests/test_picker_return_time.py, tests/test_jev_prompt_carries_what_it_weighs.py) are not, and the fragment/figures the fence names were not produced. The out-of-scope edits are minimal, forced by adding a required candidate field, and disclosed in the manifest's follow_ons, but they were made without a scope extension. Head is a clean descendant of base; no unrelated commits."
+  },
+  "project": "reckon",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T072153189451-jev-weighs-context.at-10fca437044a2c106bc7df715723db2a1bfc6963.json",
+  "review_run_id": "r-20261007T081012920600-review-of-jev-weighs-context",
+  "reviewed_base_sha": "0aad66278c349f47ec668be82382bf10e988cf8f",
+  "reviewed_head_sha": "10fca437044a2c106bc7df715723db2a1bfc6963",
+  "reviewed_run_id": "r-20261007T072153189451-jev-weighs-context",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:28:21.436507+00:00",
+  "total": 103
+}
