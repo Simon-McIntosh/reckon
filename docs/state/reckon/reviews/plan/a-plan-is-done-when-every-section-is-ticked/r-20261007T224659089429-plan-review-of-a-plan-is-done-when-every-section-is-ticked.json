@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T22:52:24.034Z",
+  "dispatched_at": "2026-10-07T22:47:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-plan-is-done-when-every-section-is-ticked/r-20261007T224659089429-plan-review-of-a-plan-is-done-when-every-section-is-ticked/plan.html:82",
+      "id": "reasoning-1",
+      "reason": "the implementer would follow the named call site, ship a `todos` field absent from the typed read, and \u00a74's SPA path would work while the MCP read silently does not; the plan must name `read_state` (the function both paths actually reach) as the coupling point, or add the typed-read wiring.",
+      "text": "\u00a73 says the `todos` derivation is \"called from `parse_plan` so both readers carry it\", naming the MCP typed read (`read_plan` summary and detail, through `reckon/mcp_views.py`) as the second reader; but the typed read never calls `parse_plan` \u2014 `reckon/mcp.py:_read_plan` \u2192 `reckon/_store.py:read_plan` \u2192 `_read_state` \u2192 `_plan_html.read_state_and_text_file` \u2192 `read_state`, and `mcp_views._summary` builds `result[\"sections\"]` from that `read_state` `data` (reckon/mcp_views.py:2671). Only `reckon/serve.py:3054` calls `parse_plan`. So a derivation wired into `parse_plan` reaches the SPA payload and not the typed read, and \u00a73's claim that both readers carry the field is false as written.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-plan-is-done-when-every-section-is-ticked/r-20261007T224659089429-plan-review-of-a-plan-is-done-when-every-section-is-ticked/plan.html:114",
+      "id": "reasoning-2",
+      "reason": "a node implementing \u00a75 as written would wire one text-path guard, then find the `todo-without-section` write unrefuseable; the plan must either drop the write-refusal for that direction (audit-only) or name the second mechanism and its path.",
+      "text": "\u00a75 says a write that would leave either `section-without-todo` (a heading with no declaration) or `todo-without-section` (a declaration naming no heading) is refused \"by widening `_require_new_section_contracts`\"; but that guard (reckon/_store.py:1662) is called only from `_replace_authored_html` (reckon/_store.py:1549), the text-replace path, and its `added` set is keyed on newly introduced `s<N>` headings only. The reverse direction \u2014 a declaration naming no heading \u2014 arises from a structured write, e.g. `set section_declarations.<id>` for an id with no record, which `_move_section_record` (reckon/_store.py:2183, whose docstring allows \"a declaration with no record yet\") permits and which never reaches the guard. So the named mechanism cannot produce the refusal \u00a75's done-when's reverse case asserts.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "149b0cc1e01181d50623f70af8c13ab188447cc2b93c6a85ed2511ca15fe62ca",
+  "plan_slug": "a-plan-is-done-when-every-section-is-ticked",
+  "plan_version": 7,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T22:54:12.359362+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-07T22:54:19.985437+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T22:54:12.359362+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T22:54:19.985437+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-done-when-every-section-is-ticked.v7.json",
+  "review_run_id": "r-20261007T224659089429-plan-review-of-a-plan-is-done-when-every-section-is-ticked",
+  "reviewed_blob_sha": "064bb507a0291c5ee5c306ddeaa8c6b8dbad7408",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit `c14913bd` resolves; `reckon/_plan_html.py`, `reckon/_store.py`, `reckon/crew/plan_review.py`, `reckon/crew/review_lifecycle.py`, `reckon/roadmap.py`, `reckon/mcp_views.py`, `reckon/serve.py`, the two `skills/` files and `docs/ui/` all exist; the extensionless hrefs `a-follower-lives-as-long-as-its-session` and `every-review-is-kept-as-a-committed-record` resolve as `<path>.html`.",
+    "done_when": "pass \u2014 each section names a measurable done-when with a declared negative control (\u00a73 declares a `keep_declarations=True` mutation; \u00a74 removes the render; \u00a75 and \u00a76 assert the refusal fails on current code; \u00a77 restores a collapse; \u00a79 asserts the current code waits for completion).",
+    "evidence_paths": "pass \u2014 the \u00a75/\u00a76 censuses are \"recorded with the evidence\" and gate logs land under the repository evidence record, not a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new names are mechanism-shaped (`todos`, the open-section predicate, the `c-close-<section>` comment id, the `section-without-todo`/`todo-without-section` audit codes), with no plan labels, stage names or ticket numbers reaching code.",
+    "reasoning": "a finding \u2014 \u00a73's named integration point does not reach the typed reader, and \u00a75's named guard cannot produce the refusal its done-when requires.",
+    "single_goal": "pass \u2014 \u00a73 (the todo derivation), \u00a75 (the coverage control) and \u00a76 (the terminal guard) each name one deliverable.",
+    "wiring": "pass \u2014 the plan declares `plan-blocks: plan-lifecycle-hygiene`, which resolves to the live `docs/plans/plan-lifecycle-hygiene.html`, and no depends-on/informs/gates relationship its content requires is absent."
+  },
+  "section_digests": {
+    "_document": "a9789f1fd1531ce410418ec12b093717ce66c35277fd186488ce68d6e64c6bcf",
+    "s1": "504d22771a3dd608a5f113f45b30b87012723b39ee6319c32160ad40e77b7adb",
+    "s2": "2d0220d0872dd77830193ee143573a19119b3152a998506dd5491a03a0f80500",
+    "s3": "02735bb345b33fcc9771e2a0c0f8608294ddbf5af4075e3948d31a7c2b869b53",
+    "s4": "f91b4fda0b5185501a0a7264c6ba88dc1586d9b53641cb27676fcd7d6e9a3bdc",
+    "s5": "cf6a6991caedf890c8c958bccaba23ab14915ff4391616958222fbfba7bbd217",
+    "s6": "0418ebb7e7cc2b3384ba2f3083c13055aecdc2822cb908d790ca11cde28f29bd",
+    "s7": "d7e441a3d1c0f7f50bbb675a73d8cbff3d2573d8ea49fbaf1befb81e245eab7b",
+    "s8": "2f36255141168e93b0b91e1ed13f26491a53c82783099452394a9c4e5c70a19d",
+    "s9": "c0656f7fc5ec3bf24b3eb07ac5fa7544d21f4582ccdb727766dd53fd387ee296"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T22:53:49.893323+00:00"
+}
