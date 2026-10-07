@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.7">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -302,6 +302,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20261007-lifecycle-derived" data-who="reckon-build" data-when="2026-10-07T06:05:09Z">
     <div class="r-comment-body"><p>Node <code>a-reviews-lifecycle-is-derived</code> landed on main (commit ef91711da): <code>reckon/crew/review_lifecycle.py</code> derives landed, superseded, open or answered for any stored review and writes nothing. Reviewed 108/120.</p><p>Coordinator decision: a run review is <strong>landed once its reviewed run has any ledger row</strong>, promoted or closed without promotion, rather than only when it is promoted. A review of a discarded or failed run has no work left to gate, and keeping it hot would leave it in the gate's view forever. Run-review findings carry no id (2,734 of 2,734 in the imported store), so a blocking run finding is unanswered until the run closes or a later review supersedes it.</p><p>Carried to the hot-set reader node: give the loader public accessors in place of <code>review._store_index</code> and <code>_store._docs_dir_for_project</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261007T054802217492-review-of-a-reviews-lifecycle-is-derived" data-who="reckon-build" data-when="2026-10-07T06:15:25.667Z">
+    <div class="r-comment-body"><p>Stored the parsed review of run r-20261007T051112533789-a-reviews-lifecycle-is-derived at both assigned review-record paths: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 17; total 108), reviewed_base_sha 352ff827e7fdb0fb3e01bd9420b5bee8dd74168c and reviewed_head_sha ef91711dad1aa7839143db5fcafd5d4e51ff4aa3, added_failure_count null and added_failure_ids empty because the reviewed manifest arms neither baseline_suite nor after_suite; two follow-on findings recorded.</p></div>
 </div>
 </section>
 </main>
