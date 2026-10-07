@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs logs/base_gate.log (EXIT=1, 2 failed) and logs/head_gate.log (EXIT=1, 1 failed): the head's sole survivor is a base failure, so the run added none; the reviewed manifest named those logs under test_logs, not baseline_suite and after_suite, so the read-time annotation reports the count unmeasured",
+  "after_suite": {
+    "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_help_names_its_state.py tests/test_codex_banked_reset.py tests/test_skill_contracts.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T083342191296-budget-reset-help-names-its-state/logs/head_gate.log",
+    "revision": "691bf2ad0a4518f6cf2083a9563e11e5a311ebf4"
+  },
+  "base_log_revision": "2f1c102aaaf8725e17ade121d46e8f314f197174",
+  "baseline_suite": {
+    "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_help_names_its_state.py tests/test_codex_banked_reset.py tests/test_skill_contracts.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition",
+      "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T083342191296-budget-reset-help-names-its-state/logs/base_gate.log",
+    "revision": "2f1c102aaaf8725e17ade121d46e8f314f197174"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:7469 crew budget-reset command registration and help surface"
+  ],
+  "completed_at": "2026-10-07T08:57:36.836Z",
+  "dispatched_at": "2026-10-07T08:41:40Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control removes the STATE_PHRASES row, which trips the set-equality at tests/test_crew_help_names_its_state.py:126 rather than the read of the help text; the assertion that actually guards the cli.py edit is line 132 (STATE_PHRASES[path] in first_line), so reverting the docstring while keeping the row, the on-point mutation, is not the control that was run, though line 132 does fail on it."
+    }
+  ],
+  "head_log_revision": "691bf2ad0a4518f6cf2083a9563e11e5a311ebf4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read against base 2f1c102aa; 691bf2ad0 rewrites one docstring first line in reckon/cli.py, adds one STATE_PHRASES row in tests/test_crew_help_names_its_state.py, and adds the landing fragment.",
+    "done_when": "the node's gate is tests/test_crew_help_names_its_state.py, tests/test_codex_banked_reset.py and tests/test_skill_contracts.py, base and head, judged by delta; the manifest records base 2 failed/70 passed and head 1 failed/71 passed and the target test flipping fail-to-pass.",
+    "goal": "the node goal is that the budget-reset verb's help names the condition it reads or sets; reckon/cli.py:7496 now opens \"Set, clear or read whether a budget group's banked reset is available or used.\"",
+    "manifest": "read; it records head 691bf2ad0 and base 2f1c102aa, the base/head gate as a delta, a declared negative-control log ending EXIT=1, and names the surviving test_skill_contracts failure as an out-of-scope follow-on.",
+    "write_paths": "the manifest declares reckon/cli.py, tests/test_crew_help_names_its_state.py and the evidence fragment; git diff --stat 2f1c102aa..691bf2ad0 names exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_help_names_its_state.py:132 asserts STATE_PHRASES[path] in first_line, where first_line is read from the command object at lines 89-90 rather than supplied by the test, so reverting the reckon/cli.py:7496 docstring reddens it; the declared control instead exercised the census half at line 126.",
+    "evidence": "the reviewed run's own gate logs base_gate.log and head_gate.log record base EXIT=1 and head EXIT=1 with 2 failed to 1 failed and the target test flipping fail-to-pass, which is the done-when's delta, though the manifest's baseline_suite and after_suite fields are null so the logs are named only under test_logs.",
+    "fit": "the added phrase matches the surrounding STATE_PHRASES idiom at tests/test_crew_help_names_its_state.py:16-57 and the reckon/cli.py:7496 line carries no plan, ticket or version id.",
+    "goal_fidelity": "the first line at reckon/cli.py:7496 now states the condition, a budget group's banked reset being available or used, that the verb reads or sets, which is the node goal in full.",
+    "reuse": "the change adds no definition, editing one docstring and one dict literal, so it introduces no mechanism to fork; a capability search over the crew help text and reckon/crew/budget_reset.py found no owner it duplicates.",
+    "scope_discipline": "git diff --stat 2f1c102aa..691bf2ad0 lists only reckon/cli.py, tests/test_crew_help_names_its_state.py and the evidence fragment, all inside the declared write paths, and no figure was written though the scope allowed one."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the budget-reset verb's help names the condition it reads or sets; reckon/cli.py:7496 now opens \"Set, clear or read whether a budget group's banked reset is available or used.\"\nVERDICT done_when: the node's gate is tests/test_crew_help_names_its_state.py, tests/test_codex_banked_reset.py and tests/test_skill_contracts.py, base and head, judged by delta; the manifest records base 2 failed/70 passed and head 1 failed/71 passed and the target test flipping fail-to-pass.\nVERDICT write_paths: the manifest declares reckon/cli.py, tests/test_crew_help_names_its_state.py and the evidence fragment; git diff --stat 2f1c102aa..691bf2ad0 names exactly those three files and nothing else.\nVERDICT manifest: read; it records head 691bf2ad0 and base 2f1c102aa, the base/head gate as a delta, a declared negative-control log ending EXIT=1, and names the surviving test_skill_contracts failure as an out-of-scope follow-on.\nVERDICT diff: read against base 2f1c102aa; 691bf2ad0 rewrites one docstring first line in reckon/cli.py, adds one STATE_PHRASES row in tests/test_crew_help_names_its_state.py, and adds the landing fragment.\nCALL_SITES: reckon/cli.py:7469 crew budget-reset command registration and help surface\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the first line at reckon/cli.py:7496 now states the condition, a budget group's banked reset being available or used, that the verb reads or sets, which is the node goal in full.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed run's own gate logs base_gate.log and head_gate.log record base EXIT=1 and head EXIT=1 with 2 failed to 1 failed and the target test flipping fail-to-pass, which is the done-when's delta, though the manifest's baseline_suite and after_suite fields are null so the logs are named only under test_logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2f1c102aa..691bf2ad0 lists only reckon/cli.py, tests/test_crew_help_names_its_state.py and the evidence fragment, all inside the declared write paths, and no figure was written though the scope allowed one.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_crew_help_names_its_state.py:132 asserts STATE_PHRASES[path] in first_line, where first_line is read from the command object at lines 89-90 rather than supplied by the test, so reverting the reckon/cli.py:7496 docstring reddens it; the declared control instead exercised the census half at line 126.\nSCORE fit: 17\nJUSTIFICATION fit: the added phrase matches the surrounding STATE_PHRASES idiom at tests/test_crew_help_names_its_state.py:16-57 and the reckon/cli.py:7496 line carries no plan, ticket or version id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition, editing one docstring and one dict literal, so it introduces no mechanism to fork; a capability search over the crew help text and reckon/crew/budget_reset.py found no owner it duplicates.\nFINDING tests/test_crew_help_names_its_state.py:20 follow-on: the declared negative control removes the STATE_PHRASES row, which trips the set-equality at tests/test_crew_help_names_its_state.py:126 rather than the read of the help text; the assertion that actually guards the cli.py edit is line 132 (STATE_PHRASES[path] in first_line), so reverting the docstring while keeping the row, the on-point mutation, is not the control that was run, though line 132 does fail on it.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T083342191296-budget-reset-help-names-its-state.at-691bf2ad0a4518f6cf2083a9563e11e5a311ebf4.json",
+  "review_run_id": "r-20261007T084109102538-review-of-budget-reset-help-names-its-state",
+  "reviewed_base_sha": "2f1c102aaaf8725e17ade121d46e8f314f197174",
+  "reviewed_head_sha": "691bf2ad0a4518f6cf2083a9563e11e5a311ebf4",
+  "reviewed_run_id": "r-20261007T083342191296-budget-reset-help-names-its-state",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:54:46.513646+00:00",
+  "total": 112
+}
