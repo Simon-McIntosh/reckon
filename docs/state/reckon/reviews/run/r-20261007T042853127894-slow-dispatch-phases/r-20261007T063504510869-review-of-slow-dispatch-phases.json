@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "completed_at": "2026-10-07T07:02:37.014Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "exempted",
+      "reason": "read-only measurement whose report and phase tables are under the run directory; the harness copy left on node-local /tmp is a provenance gap recorded in the plan followup that carries its three proposed fixes, and the outlier attribution is marked as inferred there",
+      "recorded_at": "2026-10-07T06:54:20.580939+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-07T06:35:24Z",
+  "findings": [
+    {
+      "file": "slow-dispatch-phases-report.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "the report states the harness (driver.py + setup_fixture.py) was 'kept outside the run dir; copies deposited as artifacts below', but no driver.py or setup_fixture.py exists anywhere in the run directory, and the manifest's artifacts list names neither; the only copy is /tmp/sdp/harness, node-local scratch that dies with the allocation, so the instrument that produced every phase number in the report is not durable evidence and the attribution cannot be re-derived."
+    },
+    {
+      "file": "slow-dispatch-phases-report.md",
+      "line": "75",
+      "severity": "follow-on",
+      "text": "the production 438 s outlier r-20261007T041913587977 \u2014 the slow dispatch this node was dispatched to explain \u2014 is attributed to the worktree checkout by inference, not measurement: its mint-to-pointer 264 s span is reconstructed from the mtimes of a fixture attempt killed at 300 s, and the '~26x under contention' figure compares that whole span against the clean run's ~10 s phase total plus one claim-write sample (4.533 s vs 0.079 s); no phase of an actual slow run was ever phase-attributed to completion, so 'attributed to a measured phase' holds for the last clean fixture only."
+    }
+  ],
+  "head_log_revision": null,
+  "item_verdicts": {
+    "call_sites": "none",
+    "diff": "no commit exists against the reviewed base 9635d54f (the reviewed worktree head equals its base, git rev-parse HEAD = 9635d54f42bf24355a7a1f4e945e60b665a2d42b and log shows only the promoted parent); every changed_path the manifest lists is under the one declared write path and no product code was touched.",
+    "done_when": "the done_when names a per-phase seconds table for the slow shape and a small two-path node; the report's tables A and B under 'Measured tables' record them and reconcile with diag-slow.log and diag-small.log (plan_dispatch 4.473 s, _budget_verdict 3.790 s, _raise_repository_scope_conflict 15.569 s x1, _repository_scope_claims 1.220 s x58).",
+    "goal": "the node goal is that a slow dispatch have its time attributed to a measured phase; the report (slow-dispatch-phases-report.md) attributes the fixture dispatches to named instrumented phases, but the production outlier is reconstructed rather than phase-measured.",
+    "manifest": "read; it records test_logs phases-small.json/diag-small.log/diag-slow.log, states tests: no suite run and baseline_suite/after_suite 'not run (no product change; single-pass measurement node)', and lists its changed_paths all inside the run directory.",
+    "write_paths": "the manifest declares the single exclusive write path /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T042853127894-slow-dispatch-phases; the role is read-only on the repository and every write is a log or the report under it."
+  },
+  "justifications": {
+    "durability": "no test exists to guard the deliverable and the measurement instrument is un-deposited in node-local /tmp (report:12), so nothing fails if the report's numbers or citations are edited, and the attribution cannot be re-derived.",
+    "evidence": "phases-small.json (exit_code 7) and diag-small.log reconcile with the report's table A, and phases-slow.json (exit_code 1) with table B, so the gate's numbers are recorded on disk rather than claimed; but the harness named at report:12 is retained only in /tmp/sdp, and the headline 'actually slow' case is inferred, so the evidence is real yet not fully reproducible.",
+    "fit": "the report and manifest follow the run-dir evidence idiom of sibling measurement nodes, use a phase-table form with units, and introduce no plan, sprint or ticket label into a filename or a symbol.",
+    "goal_fidelity": "the report attributes the clean fixture dispatch to measured phases (diag-slow.log: plan_dispatch 4.473 s, _budget_verdict 3.790 s) but the 438 s production outlier is reconstructed from a killed attempt's mtimes (report:75-101), not attributed to a completed phase measurement of a slow run.",
+    "reuse": "the run added no definition and forked no capability - it changed no source and has no commits against base 9635d54f; the only artefacts are evidence files under its own run directory.",
+    "scope_discipline": "every changed_path is under the one declared write path (the run directory) and no product code was touched; the scratch-root override and the fixture git-shim bypass are disclosed in the manifest's retry_failures rather than hidden."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a slow dispatch have its time attributed to a measured phase; the report (slow-dispatch-phases-report.md) attributes the fixture dispatches to named instrumented phases, but the production outlier is reconstructed rather than phase-measured.\nVERDICT done_when: the done_when names a per-phase seconds table for the slow shape and a small node; the report's tables A and B under 'Measured tables' record them and reconcile with diag-slow.log and diag-small.log.\nVERDICT write_paths: the manifest declares the single exclusive write path .../runs/r-20261007T042853127894-slow-dispatch-phases; every write is a log or the report under it.\nVERDICT manifest: read; it records phases-small.json/diag-small.log/diag-slow.log and states tests: no suite run, baseline_suite/after_suite 'not run'.\nVERDICT diff: no commit exists against base 9635d54f (head equals base); every changed_path is under the declared write path and no product code was touched.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nSCORE evidence: 14\nSCORE scope_discipline: 17\nSCORE durability: 9\nSCORE fit: 17\nSCORE reuse: 20\nFINDING slow-dispatch-phases-report.md:12 follow-on: the harness copies claimed 'deposited as artifacts below' do not exist in the run dir; only /tmp/sdp/harness holds them.\nFINDING slow-dispatch-phases-report.md:75 follow-on: the 438 s production outlier is inferred from a killed attempt's mtimes, not phase-measured.\n",
+  "review_run_id": "r-20261007T063504510869-review-of-slow-dispatch-phases",
+  "reviewed_base_sha": "9635d54f42bf24355a7a1f4e945e60b665a2d42b",
+  "reviewed_head_sha": "9635d54f42bf24355a7a1f4e945e60b665a2d42b",
+  "reviewed_run_id": "r-20261007T042853127894-slow-dispatch-phases",
+  "scores": {
+    "durability": 9,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:52:00+00:00",
+  "total": 92
+}
