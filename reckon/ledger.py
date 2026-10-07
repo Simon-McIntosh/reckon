@@ -2005,42 +2005,75 @@ def is_unmetered_backend(backend: str) -> bool:
     return str(backend or "").strip() in UNMETERED_BACKENDS
 
 
-def _model_catalogue() -> Mapping[str, Any]:
-    """Read reckon's own model catalogue, or ``{}`` when absent or unreadable.
+_RESOLVED_FLIGHT_CACHE: dict[tuple[Any, ...], Mapping[str, Any]] = {}
 
-    Read lazily and defensively: the catalogue is versioned data in the
-    checkout, so a wheel install carries none, and a read that fails must not
-    turn every ledger write into an error. The billing declaration lives there
-    rather than in a backend set in this module, so which lanes are
-    subscription-billed is data a project or host can see and change without
-    editing code.
+
+def _flight_layer_key() -> tuple[Any, ...]:
+    """A cache key naming the flight layer files and their content identity.
+
+    Keyed on the paths and their mtimes rather than on the resolved object, so
+    a catalogue or host layer rewritten between reads is re-resolved while the
+    repeated lookups within one promotion are cheap. A layer that cannot be
+    stat'd contributes its path alone, which stays stable across those reads —
+    the cache then holds the empty config a missing layer resolves to.
     """
     from reckon import flight
 
+    parts: list[Any] = []
+    for path in (
+        flight.shipped_defaults_path(),
+        flight.host_config_path(),
+        flight.model_catalogue_path(),
+    ):
+        resolved = str(path)
+        try:
+            stat = os.stat(path)
+        except OSError:
+            parts.append((resolved, None, None))
+        else:
+            parts.append((resolved, stat.st_mtime_ns, stat.st_size))
+    return tuple(parts)
+
+
+def _resolved_flight_config() -> Mapping[str, Any]:
+    """The flight config reckon runs under, or ``{}`` when it cannot be read.
+
+    Read lazily and defensively: the config is versioned data in the checkout,
+    so a wheel install carries none, and a malformed layer must not turn every
+    ledger write into an error. ``FlightConfigError`` covers a layer that does
+    not parse — a duplicate key or a schema refusal — and falls back to an
+    empty config, which declares no budget group and so leaves every lane
+    metered. Resolving the layers rather than reading the catalogue file alone
+    is what lets a host, project or override value for a backend's
+    ``budget_group`` reach this reader, so which lanes are subscription-billed
+    is a routing decision a project or host can change without editing code.
+    """
+    from reckon import flight
+
+    key = _flight_layer_key()
+    cached = _RESOLVED_FLIGHT_CACHE.get(key)
+    if cached is not None:
+        return cached
     try:
-        return flight.read_layer_file(flight.model_catalogue_path())
-    except (OSError, ValueError):
-        return {}
+        config = flight.resolve().config
+    except (flight.FlightConfigError, OSError, ValueError):
+        config = {}
+    _RESOLVED_FLIGHT_CACHE[key] = config
+    return config
 
 
 def backend_budget_group(backend: str) -> str | None:
-    """The budget group the catalogue declares for a backend, or ``None``.
+    """The budget group resolved flight config declares for a backend, or ``None``.
 
-    Only the catalogue is consulted: a backend it does not name declares no
-    group here, so a lane whose billing the catalogue does not state keeps
-    whatever its host layer declares and its recorded cost.
+    The lookup is delegated to the module that owns the declaration
+    (:mod:`reckon.crew.budget_group`), read over resolved config rather than
+    the catalogue file alone, so a host or project override of a backend's
+    ``budget_group`` is honoured. A backend the config does not name declares
+    no group here, so a lane whose billing nothing states keeps its cost.
     """
-    name = str(backend or "").strip()
-    if not name:
-        return None
-    backends = _model_catalogue().get("backends")
-    if not isinstance(backends, Mapping):
-        return None
-    settings = backends.get(name)
-    if not isinstance(settings, Mapping):
-        return None
-    value = settings.get("budget_group")
-    return value.strip() if isinstance(value, str) and value.strip() else None
+    from reckon.crew import budget_group as budget_group_module
+
+    return budget_group_module.declared_group_for(_resolved_flight_config(), backend)
 
 
 def is_subscription_backend(backend: str) -> bool:

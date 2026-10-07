@@ -654,12 +654,34 @@ def test_unmetered_backend_cost_is_recorded_as_an_explicit_flagged_absence() -> 
     assert record["budget"]["cost_usd_imputed"] is True
 
 
-def test_metered_backend_cost_is_unchanged() -> None:
+def test_metered_backend_cost_is_unchanged(home, monkeypatch, tmp_path) -> None:
+    # The backend is declared metered in this test's own layers, not by the
+    # suite-wide absent-catalogue shield: a host layer defines it, and the
+    # fixture catalogue assigns it an ordinary wallet (a group that does not end
+    # in ``-sub``). Stating both layers here means the assertion rests on a
+    # declaration rather than on no catalogue having been read.
+    (home / "flight.yaml").write_text(
+        "version: 1\n"
+        "\n"
+        "backends:\n"
+        "  metered-lane:\n"
+        "    command: codex\n"
+    )
+    catalogue = tmp_path / "catalogue.yaml"
+    catalogue.write_text(
+        "version: 1\n"
+        "\n"
+        "backends:\n"
+        "  metered-lane:\n"
+        "    budget_group: metered-openai\n"
+    )
+    monkeypatch.setenv("RECKON_MODEL_CATALOGUE", str(catalogue))
+
     record = ledger.build_record(
-        run_id="r-claude",
+        run_id="r-metered",
         plan="plan-a",
         gate="passed",
-        backend="claude",
+        backend="metered-lane",
         budget={"cost_usd": 1.61, "cost_usd_cumulative": 1.61},
     )
 
