@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T16:57:54.701Z",
+  "dispatched_at": "2026-10-07T16:47:33Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "86",
+      "severity": "blocking",
+      "text": "blocking: the sentence \"It is the only in-bound stage with a cold maximum at or past the bound\" is false against the report's own cold table (snapshot.candidates max 988 ms) and against the delivered cold arm, which contains no timeout; the 6.2 s and 13.6 s figures it cites come from a pre-fix arm run with the broken Jev stub and an earlier smoke run, not from the delivered arms, and the worker's own reasoning (stream record 19428) states the parenthetical is \"misleading as-is\"."
+    },
+    {
+      "file": "report.md",
+      "line": "83",
+      "severity": "follow-on",
+      "text": "follow-on: \"Warm median 956 ms\" is the cold median; the warm arm's snapshot.candidates median is 1,218 ms (timings.json), and analyse.py:253-255 builds the sentence from cold[\"stages\"] while labelling it Warm."
+    },
+    {
+      "file": "report.md",
+      "line": "323",
+      "severity": "follow-on",
+      "text": "follow-on: \"nothing else moves\" is contradicted by negative-control.log:7, which shows prompt_render_state at 2,076 ms beside lane_context_build at 2,076 ms, because lane_context.build is called inside prompts.render (prompts.py:213); the claim (also in the manifest's negative_control_note) should name the enclosing stage."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T161113210177-pick-latency-census/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the artifacts headline \"snapshot.candidates median 1,061 ms (cold arm) / max 6,170 ms contended\" disagrees with the delivered timings.json cold arm (median 956 ms, max 988 ms) and repeats an excluded run's maximum, so the headline metric does not reconcile with the artifact it cites."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed run made no commit (its manifest records commits: none), so base and head are both 8a4140a93c843dcd0240a614ba6fd51576c91dd0 and the deliverable is the report directory, not a code change.",
+    "done_when": "the measure asks for an out-of-process instrument, at least five cold and five warm repetitions with median and maximum per stage, two or three stages named with a call path and a proposed change marked for dispatch.py/cli.py, a report, timings and a figure, and a negative control; report.md:30-68 and timings.json:3-464 supply all of these, but the delivered cold arm contains no pick over 5 s.",
+    "goal": "the node's goal is to measure which stages of a production pick push it past its 5 s bound; the census times every stage of a mirrored dispatch and names snapshot.candidates (report.md:83) as the dominant in-bound stage.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T161113210177-pick-latency-census/manifest.md; it states both arms, the negative control and a headline, but its snapshot.candidates figure (median 1,061 ms cold, max 6,170 ms contended) does not match the timings.json it cites (cold median 956 ms, max 988 ms).",
+    "write_paths": "the manifest declares exactly one report directory and names no repository file (commits: none); every changed path it lists is inside that directory."
+  },
+  "justifications": {
+    "durability": "negative-control.log:7 shows lane_context_build moving 74 ms to 2,076 ms, the falsifier the done-when asked for, though report.md:323's \"nothing else moves\" ignores prompt_render_state moving to 2,076 ms in the same log.",
+    "evidence": "report.md:86 says snapshot.candidates is \"the only in-bound stage with a cold maximum at or past the bound\" while its own table gives 988 ms and timings.json records no cold timeout.",
+    "fit": "the report and driver read in the surrounding idiom and name no plan or version label, but analyse.py:310 carries a dead `if False else` guard in the report generator.",
+    "goal_fidelity": "report.md:83 names snapshot.candidates as the in-bound stage from a 956 ms median against a 1,042 ms pick (timings.json), which supports the goal, though no delivered run reproduces a pick past 5 s.",
+    "reuse": "no existing harness times a pick's stages, so the driver is the first owner; it re-mirrors dispatch.py:6908-6968 by hand and can drift from the call path it measures.",
+    "scope_discipline": "the manifest (lines 7-8) lists only files under the declared report directory and records no commit, so nothing outside the fence was written."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure which stages of a production pick push it past its 5 s bound; the census times every stage of a mirrored dispatch and names snapshot.candidates (report.md:83) as the dominant in-bound stage.\nVERDICT done_when: the measure asks for an out-of-process instrument, at least five cold and five warm repetitions with median and maximum per stage, two or three stages named with a call path and a proposed change marked for dispatch.py/cli.py, a report, timings and a figure, and a negative control; report.md:30-68 and timings.json:3-464 supply all of these, but the delivered cold arm contains no pick over 5 s.\nVERDICT write_paths: the manifest declares exactly one report directory and names no repository file (commits: none); every changed path it lists is inside that directory.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T161113210177-pick-latency-census/manifest.md; it states both arms, the negative control and a headline, but its snapshot.candidates figure (median 1,061 ms cold, max 6,170 ms contended) does not match the timings.json it cites (cold median 956 ms, max 988 ms).\nVERDICT diff: the reviewed run made no commit (its manifest records commits: none), so base and head are both 8a4140a93c843dcd0240a614ba6fd51576c91dd0 and the deliverable is the report directory, not a code change.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: report.md:83 names snapshot.candidates as the in-bound stage from a 956 ms median against a 1,042 ms pick (timings.json), which supports the goal, though no delivered run reproduces a pick past 5 s.\nSCORE evidence: 10\nJUSTIFICATION evidence: report.md:86 says snapshot.candidates is \"the only in-bound stage with a cold maximum at or past the bound\" while its own table gives 988 ms and timings.json records no cold timeout.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the manifest (lines 7-8) lists only files under the declared report directory and records no commit, so nothing outside the fence was written.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log:7 shows lane_context_build moving 74 ms to 2,076 ms, the falsifier the done-when asked for, though report.md:323's \"nothing else moves\" ignores prompt_render_state moving to 2,076 ms in the same log.\nSCORE fit: 17\nJUSTIFICATION fit: the report and driver read in the surrounding idiom and name no plan or version label, but analyse.py:310 carries a dead `if False else` guard in the report generator.\nSCORE reuse: 18\nJUSTIFICATION reuse: no existing harness times a pick's stages, so the driver is the first owner; it re-mirrors dispatch.py:6908-6968 by hand and can drift from the call path it measures.\nFINDING report.md:86 blocking: the sentence \"It is the only in-bound stage with a cold maximum at or past the bound\" is false against the report's own cold table (snapshot.candidates max 988 ms) and against the delivered cold arm, which contains no timeout; the 6.2 s and 13.6 s figures it cites come from a pre-fix arm run with the broken Jev stub and an earlier smoke run, not from the delivered arms, and the worker's own reasoning (stream record 19428) states the parenthetical is \"misleading as-is\".\nFINDING report.md:83 follow-on: \"Warm median 956 ms\" is the cold median; the warm arm's snapshot.candidates median is 1,218 ms (timings.json), and analyse.py:253-255 builds the sentence from cold[\"stages\"] while labelling it Warm.\nFINDING report.md:323 follow-on: \"nothing else moves\" is contradicted by negative-control.log:7, which shows prompt_render_state at 2,076 ms beside lane_context_build at 2,076 ms, because lane_context.build is called inside prompts.render (prompts.py:213); the claim (also in the manifest's negative_control_note) should name the enclosing stage.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T161113210177-pick-latency-census/manifest.md:17 follow-on: the artifacts headline \"snapshot.candidates median 1,061 ms (cold arm) / max 6,170 ms contended\" disagrees with the delivered timings.json cold arm (median 956 ms, max 988 ms) and repeats an excluded run's maximum, so the headline metric does not reconcile with the artifact it cites.\n",
+  "review_run_id": "r-20261007T164659242144-review-of-pick-latency-census",
+  "reviewed_base_sha": "8a4140a93c843dcd0240a614ba6fd51576c91dd0",
+  "reviewed_head_sha": "8a4140a93c843dcd0240a614ba6fd51576c91dd0",
+  "reviewed_run_id": "r-20261007T161113210177-pick-latency-census",
+  "scores": {
+    "durability": 16,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T16:56:53.349529+00:00",
+  "total": 96
+}
