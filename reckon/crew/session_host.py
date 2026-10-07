@@ -44,7 +44,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from reckon._store import write_json_atomically
+from reckon._store import cache_root, write_json_atomically
 from reckon.crew import fleet_supervisor
 from reckon.crew.obligation_snapshot import process_start_time
 from reckon.crew.runs import (
@@ -93,15 +93,17 @@ def _state_dir(environ: Mapping[str, str] | None = None) -> Path:
 
 
 def _log_dir(environ: Mapping[str, str] | None = None) -> Path:
-    """The directory holding a child's stderr, on the shared home."""
+    """The directory holding a child's stderr, on the shared home.
+
+    The explicit override wins; the default is resolved by the cache owner so
+    the whole precedence — environment variable, then XDG cache home, then the
+    user cache — lives in one place rather than being re-read here.
+    """
     environ = os.environ if environ is None else environ
     override = environ.get(LOG_DIR_ENV)
     if override:
         return Path(override)
-    cache_home = environ.get("XDG_CACHE_HOME")
-    if cache_home:
-        return Path(cache_home) / "reckon" / "session-host"
-    return Path.home() / ".cache" / "reckon" / "session-host"
+    return cache_root("session-host")
 
 
 def _poll_seconds(environ: Mapping[str, str] | None = None) -> float:

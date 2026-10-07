@@ -4988,7 +4988,7 @@ _ATTENTION_DEPRECATION = (
 def crew_host(
     owner_pid, owner_start, follower_command, fifo_path, fd_number, first_request
 ):
-    """Supervise this session's crew followers; run by the plugin, not by hand.
+    """Supervise one live session's crew followers for as long as it lives.
 
     Hidden from help because only the plugin entry point runs it. It reads one
     JSON request per line naming a ``project`` and a ``session``, and runs one
