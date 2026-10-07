@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T16:28:46.139Z",
+  "dispatched_at": "2026-10-07T16:09:42Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "test_logs",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest test_logs names census-actionable-2.log and its landing and notes cite it as the second-census evidence, but the file does not exist on disk. The probe command meant to write it passed the path as an argument (python - \"$RUN/census-actionable-2.log\") rather than redirecting stdout to it, and the probe script ignores that argument, so its records-to-import: 0 was printed to the terminal and never landed in the named log; a reader of test_logs cannot open the artifact the zero-to-import figure is attributed to."
+    },
+    {
+      "file": "scripts/import_host_reviews.py",
+      "line": "main",
+      "severity": "follow-on",
+      "text": "follow-on: the dry run prints the store inventory (recognised records, non-records, duplicates, delivered reports) but no records-to-import count, because the actionable set (a record whose committed path is absent) is computed only inside _import_records on the --write path. The brief step-4 figure therefore cannot be read from the command it names; it rests on an ad-hoc probe of the script own functions. Exposing the actionable count on the dry-run path would let the census reproduce its headline number."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the single commit 59896f13c against base a89812e20: 14 new JSON records (13 plan, 1 run) under docs/state/reckon/reviews/, 1131 insertions, 0 deletions, 84527 bytes; no source, test or plan file.",
+    "done_when": "section 13 node (2) done-when: the pre-import census lists reckon staging-only plan reviews with v81, v82, v84, v88 and v97 among them (census-actionable.log), and the post-import census finds none to import. The second dry run (census-dryrun-2.log) reports 0 non-records, 0 delivered reports without a record and 0 refused; the zero-to-import half was read from an ad-hoc probe whose log is missing (finding 1).",
+    "fit": "",
+    "goal": "plan section 13 node (2): commit each project staging-only plan reviews with scripts/import_host_reviews.py, list them in a pre-import census, and find none to import after; commit 59896f13c lands 14 records under docs/state/reckon/reviews/ and census-actionable.log lists exactly those 14.",
+    "manifest": "read; status complete, commit 59896f13c, landing states 14 imported by explicit path with 0 quarantined. test_logs names five logs; census-dryrun-1, census-actionable, census-write and census-dryrun-2 exist, census-actionable-2.log does not (finding 1).",
+    "write_paths": "the manifest declares docs/state/reckon/reviews; commit 59896f13c adds exactly 14 files there, 1131 insertions, 0 deletions, nothing outside, worktree clean."
+  },
+  "justifications": {
+    "durability": "the records are committed files under the project versioned tree, not host-only state, so they travel with the ledger. The result is idempotent by construction (a record whose committed path exists is not imported again), and the reviewed run second census reported no records to import; the durability of that claim is reduced by the missing artifact behind it (finding 1).",
+    "evidence": "the counts reconcile: dry run 1 census-dryrun-1.log and the write census-write.log both read 1799 recognised records (193 plan, 1606 run), the write imported 14 and left 1785 already present with 0 quarantined and 0 refused, and 14+1785=1799; commit 59896f13c is 14 files, 1131 insertions, 0 deletions, 84527 bytes, matching the manifest; I reproduced the actionable probe against head and read records to import 0 for records present at the census. The figure evidence is weakened by a cited log that was never created (finding 1) and by the dry-run command not emitting the count it is credited with (finding 2).",
+    "fit": "the change is data only: records written into the committed review tree in the layout the store owns (review_store.review_path and plan_review.plan_review_path), imported by the existing project script rather than by hand, following the repository store conventions and introducing no new naming.",
+    "goal_fidelity": "plan section 13 node (2) asks that each project staging-only plan reviews be committed with scripts/import_host_reviews.py, a pre-import census that lists them, and a second census that finds none to import. At head, commit 59896f13c adds 14 records (13 plan, 1 run) under docs/state/reckon/reviews/ and census-actionable.log lists exactly those 14 including this plan v81, v82, v84, v88 and v97; a post-import probe of the store against the committed tree read records to import 0.",
+    "reuse": "the import reused scripts/import_host_reviews.py and, for the actionable set the script does not expose, its own _plan function rather than reimplementing the resolution logic; the small ad-hoc probe merely filters _plan records on committed-path existence, duplicating one line of _import_records but justified by the gap in finding 2.",
+    "scope_discipline": "the manifest declares docs/state/reckon/reviews; commit 59896f13c touches exactly 14 new JSON records under that directory and no source, test, plan or other path, and the worktree is clean. The script itself updates the host store and report sidecars the brief permits."
+  },
+  "project": "reckon",
+  "raw_text": "VERD goal: plan section 13 node (2): commit each project staging-only plan reviews with scripts/import_host_reviews.py, list them in a pre-import census, and find none to import after; commit 59896f13c lands 14 records under docs/state/reckon/reviews/ and census-actionable.log lists exactly those 14.\nVERD done_when: section 13 node (2) done-when: the pre-import census lists reckon staging-only plan reviews with v81, v82, v84, v88 and v97 among them (census-actionable.log), and the post-import census finds none to import. The second dry run (census-dryrun-2.log) reports 0 non-records, 0 delivered reports without a record and 0 refused; the zero-to-import half was read from an ad-hoc probe whose log is missing (finding 1).\nVERD write_paths: the manifest declares docs/state/reckon/reviews; commit 59896f13c adds exactly 14 files there, 1131 insertions, 0 deletions, nothing outside, worktree clean.\nVERD manifest: read; status complete, commit 59896f13c, landing states 14 imported by explicit path with 0 quarantined. test_logs names five logs; census-dryrun-1, census-actionable, census-write and census-dryrun-2 exist, census-actionable-2.log does not (finding 1).\nVERD diff: read the single commit 59896f13c against base a89812e20: 14 new JSON records (13 plan, 1 run) under docs/state/reckon/reviews/, 1131 insertions, 0 deletions, 84527 bytes; no source, test or plan file.\nCALL_SITES: (none; the change adds committed data records and no product source)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: plan section 13 node (2) asks that each project staging-only plan reviews be committed with scripts/import_host_reviews.py, a pre-import census that lists them, and a second census that finds none to import. At head, commit 59896f13c adds 14 records (13 plan, 1 run) under docs/state/reckon/reviews/ and census-actionable.log lists exactly those 14 including this plan v81, v82, v84, v88 and v97; a post-import probe of the store against the committed tree read records to import 0.\nSCORE evidence: 15\nJUSTIFICATION evidence: the counts reconcile: dry run 1 census-dryrun-1.log and the write census-write.log both read 1799 recognised records (193 plan, 1606 run), the write imported 14 and left 1785 already present with 0 quarantined and 0 refused, and 14+1785=1799; commit 59896f13c is 14 files, 1131 insertions, 0 deletions, 84527 bytes, matching the manifest; I reproduced the actionable probe against head and read records to import 0 for records present at the census. The figure evidence is weakened by a cited log that was never created (finding 1) and by the dry-run command not emitting the count it is credited with (finding 2).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the manifest declares docs/state/reckon/reviews; commit 59896f13c touches exactly 14 new JSON records under that directory and no source, test, plan or other path, and the worktree is clean. The script itself updates the host store and report sidecars the brief permits.\nSCORE durability: 17\nJUSTIFICATION durability: the records are committed files under the project versioned tree, not host-only state, so they travel with the ledger. The result is idempotent by construction (a record whose committed path exists is not imported again), and the reviewed run second census reported no records to import; the durability of that claim is reduced by the missing artifact behind it (finding 1).\nSCORE fit: 19\nJUSTIFICATION fit: the change is data only: records written into the committed review tree in the layout the store owns (review_store.review_path and plan_review.plan_review_path), imported by the existing project script rather than by hand, following the repository store conventions and introducing no new naming.\nSCORE reuse: 18\nJUSTIFICATION reuse: the import reused scripts/import_host_reviews.py and, for the actionable set the script does not expose, its own _plan function rather than reimplementing the resolution logic; the small ad-hoc probe merely filters _plan records on committed-path existence, duplicating one line of _import_records but justified by the gap in finding 2.\nFINDING manifest.md:test_logs follow-on: the manifest test_logs names census-actionable-2.log and its landing and notes cite it as the second-census evidence, but the file does not exist on disk. The probe command meant to write it passed the path as an argument (python - \"$RUN/census-actionable-2.log\") rather than redirecting stdout to it, and the probe script ignores that argument, so its records-to-import: 0 was printed to the terminal and never landed in the named log; a reader of test_logs cannot open the artifact the zero-to-import figure is attributed to.\nFINDING scripts/import_host_reviews.py:main follow-on: the dry run prints the store inventory (recognised records, non-records, duplicates, delivered reports) but no records-to-import count, because the actionable set (a record whose committed path is absent) is computed only inside _import_records on the --write path. The brief step-4 figure therefore cannot be read from the command it names; it rests on an ad-hoc probe of the script own functions. Exposing the actionable count on the dry-run path would let the census reproduce its headline number.",
+  "review_run_id": "r-20261007T160921494537-review-of-reckon-staging-only-reviews-committed",
+  "reviewed_base_sha": "a89812e2074686123d307c0eccb3a4ce0fdc88ea",
+  "reviewed_head_sha": "59896f13c5fb8466e5a2543a2c2b1c1bff863ba2",
+  "reviewed_run_id": "r-20261007T155005587849-reckon-staging-only-reviews-committed",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T160921494537-review-of-reckon-staging-only-reviews-committed",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T16:23:45.846351+00:00",
+  "total": 108
+}
