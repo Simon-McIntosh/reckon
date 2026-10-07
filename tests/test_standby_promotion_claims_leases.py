@@ -45,17 +45,26 @@ def test_standby_claims_declared_service_lease_only_on_promotion(tmp_path):
         "SLURM_JOB_ID": "test-job",
         "PYTHONPATH": str(Path(fleet_supervisor.__file__).resolve().parents[2]),
     }
-    process = subprocess.Popen(
-        [sys.executable, "-m", "reckon.crew.fleet_supervisor", "--standby"],
-        env=env,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    supervisor_log = tmp_path / "supervisor.log"
+    with supervisor_log.open("w", encoding="utf-8") as output:
+        process = subprocess.Popen(
+            [sys.executable, "-m", "reckon.crew.fleet_supervisor", "--standby"],
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=output,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
     lease = HostLease(state, "demo", "observer", 0, "")
     try:
         _wait_for((runtime / "requests").exists)
+        _request(runtime, "standby-ready-probe")
+        _wait_for(
+            lambda: (
+                "unknown request: standby-ready-probe"
+                in supervisor_log.read_text(encoding="utf-8")
+            )
+        )
         assert lease.holder() is None
         assert not lease.path.exists()
         _request(runtime, "promote")
