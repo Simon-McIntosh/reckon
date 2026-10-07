@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/review.py:1758 store_review -> names_a_review_subject",
+    "reckon/crew/review.py:2009 store_committed_review -> names_a_review_subject",
+    "reckon/crew/plan_review.py:438 store_plan_review -> names_a_review_subject",
+    "reckon/crew/promotion.py:8461 _complete_locked -> _delivered_review_payloads_for_commit"
+  ],
+  "completed_at": "2026-10-07T04:24:07.967Z",
+  "dispatched_at": "2026-10-07T04:05:33Z",
+  "findings": [
+    {
+      "file": "tests/test_promotion_keeps_every_round.py",
+      "line": "251",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_real_subjectless_body_is_refused_by_both_writers exercises only review.store_review despite its name, so it does not cover store_committed_review; store_committed_review's refusal of a subjectless body through the real predicate is pinned only by the monkeypatched test at :231, which forces names_a_review_subject False and so does not show the real predicate rejects a subjectless body. plan_review.store_plan_review has no such test at all."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "438",
+      "severity": "follow-on",
+      "text": "follow-on: routing store_plan_review's subject test through names_a_review_subject newly refuses a plan record whose plan_version is present but not an integer (the replaced `if plan_version is None` check let it through and int(plan_version) at :451 then raised); no test exercises that refusal, so the changed branch is unguarded."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 3,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites across the changed writers and the promotion payload builder",
+    "diff": "read both commits against base c9eed7f77: ff3c1d4d7 carries the three source changes and the tests, 7eede70c0 the landing fragment; every changed path is the manifest's own.",
+    "done_when": "tests/test_promotion_keeps_every_round.py (new) covers the derived-legacy-id filing, the writer predicate routing and both completion fall-throughs; the two round-keeping cases are re-pinned in tests/test_a_review_without_its_run_id_still_promotes.py. I re-ran the five-file gate at head 30 passed EXIT=0 and reproduced the declared mutation red (2 failed EXIT=1).",
+    "goal": "the brief's three items are all delivered: promotion files an unnamed stored round under review.derived_legacy_review_run_id of its bytes marked review_run_id_source: derived (promotion.py:8076-8094) instead of skipping it; store_review, store_committed_review and plan_review.store_plan_review all call names_a_review_subject; resolve_record_times keeps the completion from whichever source supplied one while the dispatch fixes times_source (review.py:1940-1952).",
+    "manifest": "read; it records the head gate 30 passed EXIT=0, the negative-control log whose last line is EXIT=1, the two failing ids under the declared mutation, and a follow-on for two tests/test_plan_review_store.py failures at the base that I did not re-confirm because that file is the concurrent node metadata-scalar-tests-name-commits' exclusive write scope.",
+    "write_paths": "the two commits touch exactly the manifest's declared paths: promotion.py, review.py, plan_review.py, tests/test_promotion_keeps_every_round.py, tests/test_a_review_without_its_run_id_still_promotes.py and the landing fragment; the declared figures directory was not needed because no artifact was required."
+  },
+  "justifications": {
+    "durability": "the declared negative control fires exactly as recorded (I reproduced it: the derived-id filing removed reddens the two round-keeping cases, 2 failed EXIT=1) and the head arm passes them, so the item-1 guard is genuinely exercised. The item-3 fall-throughs are pinned by two focused tests. Two gaps remain: store_committed_review's real (unmonkeypatched) subjectless refusal is untested, and plan_review's new non-integer-plan_version refusal is untested (see findings), so two of the three predicate call sites are held only by monkeypatch or not at all.",
+    "evidence": "I re-ran the node's own gate independently in its worktree at head 7eede70c0 (PYTHONPATH=$PWD, the root venv interpreter, --basetemp=/tmp): 30 passed EXIT=0 (log review-head-gate.log). I reproduced the declared negative control in a scratch extraction of HEAD by replacing the derived-id filing with the old skip: 2 failed, 28 passed, EXIT=1, the same two ids the node recorded. The reviewed manifest declares no baseline_suite or after_suite arm, so added_failure_count is unmeasured (null) with added_failure_ids [] rather than a measured zero.",
+    "fit": "the added names describe mechanism (round_payload, review_run_id_source, derived_legacy_review_run_id, names_a_review_subject, own_completed) with no version, plan, sprint or ticket identifier and no author attribution, the docstrings follow the module idiom, and ruff on the changed files adds no finding (promotion.py keeps only its three pre-existing UP035/UP017/PERF403). The now-unused module logger and its logging import are removed cleanly with no dangling reference.",
+    "goal_fidelity": "all three brief items are delivered and read in the source: promotion.py:8076-8094 replaces the skip-with-warning for an unnamed stored round with a payload filed under review_module.derived_legacy_review_run_id(Path(path).read_bytes()) and marked review_run_id_source: derived, reusing the importer's derivation rather than re-deriving; review.py:1758 store_review, review.py:2009 store_committed_review and plan_review.py:438 store_plan_review all call names_a_review_subject(record) so the subject rule has one spelling; resolve_record_times (review.py:1934-1952) returns the dispatch from the first source that has it and `completed or own_completed` from whichever source supplied a completion, naming the dispatch's source under times_source. The delivered round is still keyed by the promoting run's id before the loop, so only a non-delivered unnamed round takes a derived id.",
+    "reuse": "item 1 reuses review.derived_legacy_review_run_id rather than re-deriving the id, item 2 folds three inline subject checks onto the one names_a_review_subject predicate (plan_review reaches it through _review_store, the module it already uses for carries_review_material), and item 3 keeps the existing run_record_times/absorb ladder rather than adding a second resolver; no duplicated logic is introduced.",
+    "scope_discipline": "git diff --stat c9eed7f77..7eede70c0 lists exactly the six declared paths and nothing else; the declared docs/figures directory was not created because the done-when names no artifact, and the diff is inside the declared write scope throughout."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: promotion files an unnamed stored round under review.derived_legacy_review_run_id of its bytes marked review_run_id_source: derived instead of skipping it (promotion.py:8076-8094); store_review, store_committed_review and plan_review.store_plan_review all call names_a_review_subject; resolve_record_times keeps the completion from whichever source supplied one while the dispatch fixes times_source (review.py:1940-1952).\nVERDICT done_when: tests/test_promotion_keeps_every_round.py covers the derived-id filing, the writer predicate routing and both completion fall-throughs; I re-ran the five-file gate at head 30 passed EXIT=0 and reproduced the declared mutation red (2 failed EXIT=1).\nVERDICT write_paths: the two commits touch exactly the manifest's declared paths, no out-of-scope file.\nVERDICT manifest: read; head gate 30 passed EXIT=0, negative control EXIT=1 with the two recorded ids, and a base-failure follow-on in test_plan_review_store.py reported rather than triaged (peer scope).\nVERDICT diff: read ff3c1d4d7 and 7eede70c0 against c9eed7f77; the first carries the three source changes and the tests, the second the landing fragment.\nCALL_SITES: reckon/crew/review.py:1758 store_review -> names_a_review_subject, reckon/crew/review.py:2009 store_committed_review -> names_a_review_subject, reckon/crew/plan_review.py:438 store_plan_review -> names_a_review_subject, reckon/crew/promotion.py:8461 _complete_locked -> _delivered_review_payloads_for_commit\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all three brief items delivered: the derived legacy id is filed with source derived (promotion.py:8076-8094), the subject predicate is called by all three writers (review.py:1758, review.py:2009, plan_review.py:438), and resolve_record_times keeps completed or own_completed while times_source names the dispatch's source (review.py:1940-1952); the delivered round is still keyed by the promoting run's id before the loop.\nSCORE evidence: 20\nJUSTIFICATION evidence: I re-ran the gate at head 7eede70c0 -> 30 passed EXIT=0, and reproduced the declared mutation in a scratch extraction of HEAD -> 2 failed, 28 passed, EXIT=1 with the same two ids; the reviewed manifest declares no baseline_suite/after_suite arm so added_failure_count is unmeasured (null) with added_failure_ids [].\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c9eed7f77..7eede70c0 lists exactly the six declared paths and nothing else; the declared figures directory was not needed.\nSCORE durability: 18\nJUSTIFICATION durability: the item-1 guard is shown to fire (mutation reddens the two round-keeping cases) and the item-3 fall-throughs are pinned by two tests, but store_committed_review's real subjectless refusal is held only by a monkeypatch and plan_review's new non-integer-plan_version refusal is untested (two findings).\nSCORE fit: 20\nJUSTIFICATION fit: mechanism-descriptive names, no plan/sprint/ticket identifier and no attribution, docstrings follow the module idiom, ruff adds no finding on the changed files, and the unused logger and logging import are removed with no dangling reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: item 1 reuses review.derived_legacy_review_run_id, item 2 folds three inline checks onto names_a_review_subject, item 3 keeps the existing run_record_times/absorb ladder; no duplicated logic.\nFINDING tests/test_promotion_keeps_every_round.py:251 follow-on: test_a_real_subjectless_body_is_refused_by_both_writers exercises only review.store_review despite its name, so store_committed_review's real subjectless refusal is pinned only by the monkeypatched test at :231; plan_review.store_plan_review has no such test.\nFINDING reckon/crew/plan_review.py:438 follow-on: routing store_plan_review's subject test through names_a_review_subject newly refuses a plan record whose plan_version is present but not an integer, where the replaced `plan_version is None` check let it through to int(plan_version) at :451; no test exercises that refusal.\n",
+  "review_run_id": "r-20261007T040450122116-review-of-promotion-keeps-every-round",
+  "reviewed_base_sha": "c9eed7f774453a932ce986381d6195ebbaf86749",
+  "reviewed_head_sha": "7eede70c0cf07a4b0d8988cf194b37abb3dcf8e3",
+  "reviewed_run_id": "r-20261007T032825749037-promotion-keeps-every-round",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:21:07+00:00",
+  "total": 118
+}
