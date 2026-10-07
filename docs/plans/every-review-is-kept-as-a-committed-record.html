@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.7">
-<meta name="plan-version" content="50">
+<meta name="plan-impl" content="0.89">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -98,27 +98,12 @@
       reads the committed archive; the per-day summary reproduces §1's per-section figure for 6 October from
       the imported records; and the raw-report retention runs on the host with its removals printed.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s5">§5 — Import the host store, and set aside what is not a record</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A migration script, <code>scripts/import_host_reviews.py</code>, dry run by
-      default and <code>--write</code> to act. It takes the contract of the existing importer
-      <code>scripts/import_runs_into_store.py</code> rather than inventing one:
-      <code>--project</code>/<code>--root</code>, the project resolved through the ordinary loader, and
-      re-runnable, so a second immediate pass imports nothing. It is a separate script because its source and
-      target differ: the host review store into the committed review tree, where the existing one copies the
-      committed ledger into the shadow run store. It is a script rather than a CLI command because it runs once
-      per host and should not join the command surface's 317 options. For each project it parses every
-      file under the host store. Each one matching the plan-review or run-review shape becomes a committed
-      record, timed from its run id and deduplicated by subject, reviewed sha and review run id. Everything else
-      is listed by path, size and modification time, then moved, not deleted, to a quarantine directory outside
-      the store. From then on a guard in the store's writer refuses anything that is not a record. The guard is a
-      check inside the existing writers, not a new command or refusal family. It retires the store's acceptance of
-      arbitrary files, which is how a session's scratch reached it. The 2.5 GB in
-      <code>nova</code> is the known case. Deleting quarantined content is a lead decision taken on the printed
-      inventory.</p>
-    <p><strong>Done when</strong> the dry run's inventory is recorded with counts and bytes per project; the
-      imported count per project equals the recognised records; a second immediate pass imports zero; the store
-      holds records only; and a test shows the guard refusing a non-record write.</p>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Every project's host review store is imported (reckon 1,657, nova 432, imas-ambix 444, imas-codex 202, imas-efit 67, imas-ink 27; 0 refused), the stores hold records only, and the writers refuse a non-record; nova's 2.55 GB of scratch sits in quarantine for a lead decision. <a href="s5">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-06</span>
@@ -173,10 +158,16 @@
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §3</pre>
     <p class="r-fu-outcome">Section 3 landed: six nodes and a hotfix merged and reviewed (112–119), live promotion verified, and 0 added suite failures. The import script for section 5 landed at 0f31936d4.</p>
     </article>
-<article class="r-fu" data-id="f-erkc-004" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="e4e34290" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-erkc-004" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="e4e34290" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="2026-10-07T07:25:54+00:00" data-resolved-by="9cf43820">
     <h4 class="r-fu-title">Finish §5: import every project, add the store guard, derive legacy ids at promotion; then §4</h4>
     <div class="r-fu-body"><p>The reckon import runs as node <code>reckon-host-reviews-imported</code>. Importing the other five projects (nova, imas-ambix, imas-codex, imas-efit, imas-ink) commits into their repositories and moves nova's 2.55 GB of scratch to quarantine, so it waits for the lead's go-ahead. The store guard edits <code>plan_review.py</code>, so it follows §16 of a plan is reviewed before it is built. Promotion should derive a legacy id for an unnamed round rather than skip it, matching the import. §4 follows the import.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §5</pre>
+    <p class="r-fu-outcome">All six projects are imported and merged, nova's scratch is quarantined, the store writers refuse a non-record, and promotion derives a legacy id for an unnamed round. Section 5 is closed. Section 4's lifecycle and raw-report retention have landed; the hot-set gate and the per-day summary remain.</p>
+    </article>
+<article class="r-fu" data-id="f-erkc-005" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Finish §4: the hot-set gate, the per-day summary, and one store cleanup</h4>
+    <div class="r-fu-body"><p>The per-day summary (<code>plan-review-view-summarises-a-day</code>) is in flight. The hot-set gate node is briefed and waits for a local-lane slot. One follow-on from the review of <code>the-review-store-keeps-no-unreachable-refusal</code> remains: <code>_run_record_times_found</code> still returns a <code>found</code> flag that nothing reads, under a docstring describing the removed refusal.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §4</pre>
     </article>
 </section>
 
@@ -296,6 +287,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T062215954650-the-review-store-keeps-no-unreachable-refusal" data-who="reckon-build" data-when="2026-10-07T06:55:16.669Z">
     <div class="r-comment-body"><p>reckon:every-review-is-kept-as-a-committed-record §5 — removed the unreachable refusal in resolve_record_times; a record whose times resolve from no source is committed times_source unknown with empty dispatched_at/completed_at; both docstrings corrected; a new case holds the unknown commit for a run record with no dispatch stamp under an id encoding no instant, and the companion committed-root case now asserts the same; gate 30 passed EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20261007-s5-closed" data-who="reckon-build" data-when="2026-10-07T07:35:00Z">
+    <div class="r-comment-body"><p>Node <code>the-review-store-keeps-no-unreachable-refusal</code> landed on main (head <code>faa71228d</code>): <code>resolve_record_times</code> commits any record whose times resolve from no source as <code>times_source: unknown</code>, with no refusal branch left. Its 7-file population went from 52 to 53 passed with 0 added failures, and the review scored 114/120 with two follow-ons. Section 5 closes with it.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T053609428174-review-of-raw-review-reports-are-pruned-once-committed" data-who="reckon-build" data-when="2026-10-07T05:52:43.509Z">
     <div class="r-comment-body"><p>review of r-20261007T050757595641-raw-review-reports-are-pruned-once-committed scored at C5: goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116), reviewed base 5f53ef9de head 5c1d172fe, one follow-on (the gc pass ignores run_id); the reviewed node's gate and its negative control both reproduce.</p></div>
