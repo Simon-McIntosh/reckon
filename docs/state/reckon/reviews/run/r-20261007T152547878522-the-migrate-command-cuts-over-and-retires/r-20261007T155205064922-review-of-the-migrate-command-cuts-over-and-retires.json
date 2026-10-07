@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:790",
+    "reckon/crew/fleet_migrate.py:957"
+  ],
+  "completed_at": "2026-10-07T16:06:52.109Z",
+  "dispatched_at": "2026-10-07T15:52:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_migrate.py",
+      "line": "397",
+      "severity": "follow-on",
+      "text": "follow-on: _local_session_processes re-implements the Claude-record/procStart join that _local_observation already owns in the same module at fleet_migrate.py:124-140 (read .claude/sessions/*.json, take pid+sessionId+cwd, read /proc/<pid>/stat field 19, compare against procStart); it extends the join with cmdline and a claude-command filter but does not reuse the owner, so the procStart field index and the record keys now live in two places that can drift."
+    },
+    {
+      "file": "reckon/crew/fleet_migrate.py",
+      "line": "364",
+      "severity": "follow-on",
+      "text": "follow-on: _active_sessions repeats the zellij list-sessions --no-formatting read already spelled by _local_observation at fleet_migrate.py:98 and by fleet_supervisor.session_running at fleet_supervisor.py:924; its unfiltered, EXITED-aware list differs from both, but the subprocess shape and the EXITED handling are a second copy that can drift from the owner."
+    }
+  ],
+  "head_log_revision": "50522014beeb295e8a88e9b494f57c7c7cede25c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s): reckon/cli.py:790 fleet_node_migrate calls migrate() with the three flags, and reckon/crew/fleet_migrate.py:957 dispatches inspect-session/end-session/list-sessions that the cutover and retire steps invoke over the placement argv.",
+    "diff": "read commit by commit against fdf6d957; ac993f4a7 adds the cutover and retire steps, the local end-session/inspect-session/list-sessions entry points, _active_sessions, _local_session_processes, _client process join, _worker_steps and _cancel_job plus tests/test_fleet_migrate_cutover.py, and 50522014 adds the evidence fragment, 662 insertions and 6 deletions across four files.",
+    "done_when": "the section done_when pairs a dry run at every step with a resume-after-interrupt case and a retire that cancels nothing without --confirm; test_cutover_lists_only_remaining_sessions_and_refuses_unknown asserts the cutover dry run changes the ledger nothing, test_cutover_requires_live_claude_and_preserves_retry_checkpoint asserts a second invocation resumes at phase old-ended without re-ending the session, and test_retire_refuses_steps_and_sessions_then_requires_confirmation asserts no cancel without --confirm and one cancel of job 1234 with it.",
+    "goal": "the node goal is the \u00a78 cutover and retire steps; reckon/crew/fleet_migrate.py:800 ends the old session, asks the new supervisor to start migrate-<session>.kdl and verifies each pane's tab, conversation id and cwd on the new node, and fleet_migrate.py:919 retires;  the retire branch confirms no worker steps and no zellij sessions then cancels only with --confirm.",
+    "manifest": "read; it records the ten-file gate 165 passed EXIT=0 in gate-absolute.log at revision 50522014, the standalone cutover file 11 passed EXIT=0 under failing scheduler binaries in cutover-path-stubs.log, and the retire no-confirm mutation red at EXIT=1 in negative-control.log.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/fleet_migrate.py, recovery.py, cli.py, tests/test_fleet_migrate_cutover.py, tests/test_fleet_migrate.py, the evidence fragment and the figures dir); the diff touches exactly fleet_migrate.py, the two test files and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "the retire --confirm guard is proven by mutation (negative-control.log reddens test_retire_refuses_steps_and_sessions_then_requires_confirmation at EXIT=1) and test_cutover_requires_live_claude_and_preserves_retry_checkpoint asserts the old-ended checkpoint survives a failed pane check, though the _worker_steps .batch/.extern filter at fleet_migrate.py:481 and the _active_sessions parser are injected in every test and have no direct assertion.",
+    "evidence": "the manifest records the gate result rather than claiming it: gate-absolute.log revision=50522014beeb295e8a88e9b494f57c7c7cede25c ends 165 passed in 119.41s with EXIT=0, and cutover-path-stubs.log runs the cutover file with sbatch/srun/scancel stubbed to exit 91, 11 passed EXIT=0.",
+    "fit": "the diff follows the module's injected-callable idiom (fleet_migrate.py:579 inspect_session/list_worker_steps/cancel_job default to the real reader), the ledger-write pattern and its type hints; no symbol or comment carries a plan, ticket or version label.",
+    "goal_fidelity": "fleet_migrate.py:800-880 ends the old session through end-session, sends session <name> migrate-<name> to the new supervisor and compares each pane's (tab, conversation, cwd) against the census before recording cutovers[<session>].status complete, and fleet_migrate.py:919-948 checks worker steps and old-node zellij sessions before a --confirm-gated scancel, so both \u00a78 steps are present.",
+    "reuse": "the cutover and retire steps reuse the ledger, placement_argv, _send_supervisor and _run_step owners, but fleet_migrate.py:397 re-implements the Claude-record/procStart join owned at fleet_migrate.py:124 and fleet_migrate.py:364 repeats the zellij list-sessions read owned at fleet_migrate.py:98 and fleet_supervisor.py:924.",
+    "scope_discipline": "the diff fdf6d957..50522014 touches exactly reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_cutover.py, tests/test_fleet_migrate.py and the evidence fragment, 662 insertions and 6 deletions, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is the \u00a78 cutover and retire steps; reckon/crew/fleet_migrate.py:800 ends the old session, asks the new supervisor to start migrate-<session>.kdl and verifies each pane's tab, conversation id and cwd on the new node, and fleet_migrate.py:919 retires; the retire branch confirms no worker steps and no zellij sessions then cancels only with --confirm.\nVERDICT done_when: the section done_when pairs a dry run at every step with a resume-after-interrupt case and a retire that cancels nothing without --confirm; test_cutover_lists_only_remaining_sessions_and_refuses_unknown asserts the cutover dry run changes the ledger nothing, test_cutover_requires_live_claude_and_preserves_retry_checkpoint asserts a second invocation resumes at phase old-ended without re-ending the session, and test_retire_refuses_steps_and_sessions_then_requires_confirmation asserts no cancel without --confirm and one cancel of job 1234 with it.\nVERDICT write_paths: read the manifest's declared paths; the diff touches exactly fleet_migrate.py, the two test files and the fragment, all inside them.\nVERDICT manifest: read; it records the ten-file gate 165 passed EXIT=0 in gate-absolute.log at revision 50522014, the standalone cutover file 11 passed EXIT=0 under failing scheduler binaries in cutover-path-stubs.log, and the retire no-confirm mutation red at EXIT=1 in negative-control.log.\nVERDICT diff: read commit by commit against fdf6d957; ac993f4a7 adds the cutover and retire steps, the local end-session/inspect-session/list-sessions entry points, _active_sessions, _local_session_processes, _worker_steps and _cancel_job plus tests/test_fleet_migrate_cutover.py, and 50522014 adds the evidence fragment, 662 insertions and 6 deletions across four files.\nCALL_SITES: reckon/cli.py:790, reckon/crew/fleet_migrate.py:957\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: fleet_migrate.py:800-880 ends the old session through end-session, sends session <name> migrate-<name> to the new supervisor and compares each pane's (tab, conversation, cwd) against the census before recording status complete, and fleet_migrate.py:919-948 checks worker steps and old-node zellij sessions before a --confirm-gated scancel.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the gate result rather than claiming it: gate-absolute.log revision=50522014beeb295e8a88e9b494f57c7c7cede25c ends 165 passed with EXIT=0, and cutover-path-stubs.log runs the cutover file with sbatch/srun/scancel stubbed to exit 91, 11 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff fdf6d957..50522014 touches exactly reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_cutover.py, tests/test_fleet_migrate.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the retire --confirm guard is proven by mutation (negative-control.log reddens test_retire_refuses_steps_and_sessions_then_requires_confirmation at EXIT=1) and test_cutover_requires_live_claude_and_preserves_retry_checkpoint asserts the old-ended checkpoint survives a failed pane check, though the _worker_steps .batch/.extern filter at fleet_migrate.py:481 and the _active_sessions parser have no direct assertion.\nSCORE fit: 19\nJUSTIFICATION fit: the diff follows the module's injected-callable idiom at fleet_migrate.py:579 and its ledger-write pattern with no symbol or comment carrying a plan, ticket or version label.\nSCORE reuse: 11\nJUSTIFICATION reuse: fleet_migrate.py:397 re-implements the Claude-record/procStart join owned at fleet_migrate.py:124 and fleet_migrate.py:364 repeats the zellij list-sessions read owned at fleet_migrate.py:98 and fleet_supervisor.py:924.\nFINDING reckon/crew/fleet_migrate.py:397 follow-on: _local_session_processes re-implements the Claude-record/procStart join that _local_observation already owns at fleet_migrate.py:124-140, so the procStart field index and the record keys now live in two places that can drift.\nFINDING reckon/crew/fleet_migrate.py:364 follow-on: _active_sessions repeats the zellij list-sessions --no-formatting read already spelled by _local_observation at fleet_migrate.py:98 and by fleet_supervisor.session_running at fleet_supervisor.py:924, a second copy of the subprocess shape and the EXITED handling.",
+  "review_run_id": "r-20261007T155205064922-review-of-the-migrate-command-cuts-over-and-retires",
+  "reviewed_base_sha": "fdf6d957bedcfc43c2f6812e39e76b7078ea6fcf",
+  "reviewed_head_sha": "50522014beeb295e8a88e9b494f57c7c7cede25c",
+  "reviewed_run_id": "r-20261007T152547878522-the-migrate-command-cuts-over-and-retires",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T155205064922-review-of-the-migrate-command-cuts-over-and-retires",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 11,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T16:23:32.640289+00:00",
+  "total": 102
+}

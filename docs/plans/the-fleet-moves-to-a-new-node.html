@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="61">
+<meta name="plan-version" content="62">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -584,6 +584,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20261007T1530-standup-promote-landed" data-who="reckon-build" data-when="2026-10-07T15:30:00Z">
     <div class="r-comment-body"><p>The migrate command's stand-up and promote steps landed on main through <code>41b3dc00a</code>. Stand-up holds a new allocation whose supervisor starts in standby, refuses a job on the old job's node, confirms readiness through a <code>ready</code> request the supervisor answers with a written response rather than log text, and runs one step inside the new job. Promote points the worker reservation at the new job through <code>placement.replace_reservation</code>, has the supervisor publish the fleet record, and prints both records before and after. Every scheduler, step and supervisor call is injected, and the tests pass with <code>sbatch</code>, <code>srun</code> and <code>scancel</code> failing on PATH.</p><p>The first review scored 94: the steps carried a second writer for the supervisor request FIFO. The repair shares <code>dispatch._write_fleet_request</code> and gives the FIFO one name; re-review 111. Gate: the 117-file dispatch, fleet and placement population added no failure against main, and 441 tests passed at the pushed head after main moved. The standby readiness and duplicated-helper follow-ons from §10 are closed by the shared request helper module. Cutover and retire are the section's next node.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T155205064922-review-of-the-migrate-command-cuts-over-and-retires" data-who="reckon-build" data-when="2026-10-07T16:06:52.109Z">
+    <div class="r-comment-body"><p>reviews/reckon/r-20261007T152547878522-the-migrate-command-cuts-over-and-retires.at-50522014beeb295e8a88e9b494f57c7c7cede25c.json — cutover and retire reviewed; six dimensions scored (total 102, min 11 reuse), no added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261007T084312491499-review-of-worker-hooks-run-under-reckons-interpreter" data-who="reckon-build" data-when="2026-10-07T09:11:56.217Z">
     <div class="r-comment-body"><p>The reviewed node's install.py change passes all three done-when clauses and its four-file gate (98 passed EXIT=0); two defects recorded at reckon/cli.py — the second composer of the worker git guard still emits the bare command (cli.py:509) and _is_worker_git_guard_group (cli.py:381) no longer recognises the composed guard group, so both composers together duplicate the guard.</p></div>
