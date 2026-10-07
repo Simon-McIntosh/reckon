@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -162,7 +162,7 @@
     </ul>
 
     <h2 id="s5">&sect;5 &mdash; A declared service runs once across nodes</h2>
-    <section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       A declared service is kept to one copy by a lock in the supervisor's runtime
       directory, which is node-local <code>/tmp</code>. During a move two supervisors
@@ -538,7 +538,7 @@
     <div class="r-comment-body"><p>bin/fleet-health gains the node-wide D-state trigger (FLEET_DSTATE_ALERT, default 50) and the one-minute-load trigger (FLEET_LOAD_ALERT, default 56), env-overridable like the existing three, and its process table now carries each process's thread count and wait channel plus a node-wide D-state listing; the sampling interval (FLEET_SNAPSHOT_INTERVAL, default 600) is overridable so the one-snapshot-per-interval limit is exercised; tests/test_fleet_health.py drives one pass per trigger against fixtures and reports 10 passed EXIT=0, with the declared negative control at 4 failed EXIT=1; the snapshot-bound case was repaired to keep its margins far from the loop spacing, failing 11 of 40 runs before and 0 of 40 after, and fragment docs/evidence/fragments/the-fleet-moves-to-a-new-node/fleet-health-names-a-stall.html records both.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261007T100330101802-review-of-fleet-health-names-a-stall" data-who="reckon-build" data-when="2026-10-07T10:24:30.541Z">
-    <div class="r-comment-body"><p>review stored for run r-20261007T065615607875-fleet-health-names-a-stall covering only the commits gained since the prior review (base 6a411e5b, head 27435b89): six dimensions scored, total 113/120; added_failure_count 0; the delta&#x27;s repair of the intermittent rate-limit case verified (base 3/30 fail, head 0/30 pass) and the trigger-removal negative control reproduced (4 failed, 6 passed, EXIT=1); one follow-on left open (the test module docstring still claims one pass per case).</p></div>
+    <div class="r-comment-body"><p>review stored for run r-20261007T065615607875-fleet-health-names-a-stall covering only the commits gained since the prior review (base 6a411e5b, head 27435b89): six dimensions scored, total 113/120; added_failure_count 0; the delta's repair of the intermittent rate-limit case verified (base 3/30 fail, head 0/30 pass) and the trigger-removal negative control reproduced (4 failed, 6 passed, EXIT=1); one follow-on left open (the test module docstring still claims one pass per case).</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261007T073459603891-review-of-the-reservation-can-be-replaced" data-who="reckon-build" data-when="2026-10-07T08:02:07.931Z">
     <div class="r-comment-body"><p>independent review of run r-20261007T065930311978-the-reservation-can-be-replaced (head 5af5e8561, base b8cc7f0f6) is stored as a parsed record scoring all six dimensions (goal_fidelity 18, evidence 16, scope_discipline 20, durability 16, fit 17, reuse 5; total 92), carrying added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own pre/post gate logs, with two follow-on findings</p></div>
@@ -584,6 +584,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T100043546882-review-of-a-declared-service-runs-once-across-nodes" data-who="reckon-build" data-when="2026-10-07T10:20:00.026Z">
     <div class="r-comment-body"><p>Independent review of r-20261007T093549967306-a-declared-service-runs-once-across-nodes stored a parsed six-dimension record at both granted paths (total 106: goal_fidelity 18, evidence 19, scope_discipline 17, durability 18, fit 18, reuse 16; one follow-on finding); the reviewed run added no failing tests (added_failure_count 0).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20261007-service-lease-landed" data-who="reckon-build" data-when="2026-10-07T10:45:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20261007T093549967306-a-declared-service-runs-once-across-nodes</code> landed at <code>337bbb56d</code>. <code>reckon/crew/host_lease.py</code> is one renewable lease on shared storage naming host, pid and job, stale past a named bound; the fleet supervisor starts a declared service only when no fresh lease is held by another host and removes only its own lease on stop. The first review scored 106 and found that a stop no longer reached a running service by its recorded pid when the in-memory state was missing; the repair restored that path with a test and was re-reviewed at 110 with no finding. The lease is the primitive §14 reuses for the producer seat.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261007T093549967306-a-declared-service-runs-once-across-nodes" data-who="reckon-build" data-when="2026-10-07T10:31:44Z">
+    <div class="r-comment-body"><p>Shared service leases and recorded-PID stop recovery landed; separate-host refusal, stale takeover, and missing-state stop pass in a 30-test gate (EXIT=0).</p></div>
 </div>
 </section>
 </main>
