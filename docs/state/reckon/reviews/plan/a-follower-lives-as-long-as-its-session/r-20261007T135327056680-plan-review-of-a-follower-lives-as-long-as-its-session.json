@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T13:57:48.283Z",
+  "dispatched_at": "2026-10-07T13:53:46Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:129",
+      "id": "anchors_resolve-1",
+      "reason": "the section's whole evidence trail is reached through this one link, and pointing it correctly to the landed record (absolute path plus the `#s8-session-end` fragment) is a one-line content change a build node should not carry.",
+      "text": "the s8 landed summary links its \"full record\" to the bare href `s8-session-end`, which is the id of a `<section id=\"s8-session-end\">` inside docs/evidence/archive/a-follower-lives-as-long-as-its-session-landed.html; the surface fetches `/<project>/s8-session-end.html`, and no file named `s8-session-end.html` exists anywhere in docs/, so the link a reader clicks to reach the live-proof evidence is dead \u2014 the sibling landed summaries on s3\u2013s7 all link to absolute fragment files, so this is not the house convention",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5c377bbea4c4fb9f797ffc1f8c390c59d4b5783aae8a602b579bed5c8b74d692",
+  "plan_slug": "a-follower-lives-as-long-as-its-session",
+  "plan_version": 39,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-07T13:58:58.778544+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T13:58:58.778544+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-follower-lives-as-long-as-its-session.v39.json",
+  "review_run_id": "r-20261007T135327056680-plan-review-of-a-follower-lives-as-long-as-its-session",
+  "reviewed_blob_sha": "595851942dc271465a9a50960a40761bdcff7e3b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the s8 landed summary's \"full record\" href does not resolve.",
+    "done_when": "pass \u2014 s10 names a negative control (\"fails on the current code with `watcher-required`\") and s11 names one for each of its two tests (\"current code writes neither field\"); both are measurably falsifiable.",
+    "evidence_paths": "pass \u2014 both sections put their gates in the repository's own test files (`tests/test_dispatch_session_host.py`, `tests/test_session_host.py`), which survive the run; no scratchpad or node-local temp path is named.",
+    "naming": "pass \u2014 the two new sections name test modules by what they test; no plan label, stage name, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "pass \u2014 s10's stated cause matches the code path (the dry run calls `plan_dispatch`, which never reaches `_ask_session_host_for_follower`, so it refuses before the host is asked), and s11's mechanism runs on the real stop path (`SessionHost.stop` is the finally-called terminator that already performs the final `_write_record(force=True)`).",
+    "single_goal": "pass \u2014 s10 carries one deliverable (a dry run that predicts host delivery without writing the FIFO) and s11 carries one (the host's final record carries a stop time and reason).",
+    "wiring": "pass \u2014 the plan's `plan-depends-on` names `a-follower-outlives-its-monitor`, which resolves (docs/plans/a-follower-outlives-its-monitor.html, status shipped); no informs/gates edge is declared and none is owed, so no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "6745d89f90f506baa07ad732745fb13b125179957cde6f9b56b5cabd47701729",
+    "s1": "a4eeecaff9300863f1a6f28d4f659a0977a7583ac703af75654ddf0622bd81d4",
+    "s10": "7dd4672bb7cf4d1be69d191b1b75168b2541ba034fb2e304aac73c5826be0125",
+    "s11": "e05ea2085f88e301a9bd3edd6b7f417b6926e799c9d5ce6ed68371c6b658880d",
+    "s2": "b9689c739005faa621201d6009e306831a98c253828e1da227693acd6b977ab2",
+    "s3": "27ff46e837af55f0eaba51e6b64d726f133b299233e5eb3f672ab5fc6b1ca9bd",
+    "s4": "9c4d2ab6d7ca5942dead1327565460770d77bccf4ecd90e73c42a2b6eef7d94d",
+    "s5": "42339a7b96242d9c43f0a11b39792c3a77586525b5e12fff673cb29b22b1f33d",
+    "s6": "c99082a11529fcb10ae0464cbc7f1ed142dfe25618098cdf03a199fd240978c8",
+    "s7": "c115e3e35b8c6fc3d8ce9a5648d440b39c7f571ee1afabdea4a1c2a395bc3a22",
+    "s8": "7870597c5f6c188f2c555f7f17bca65a25aa338f1f74d3557f870668b31f167f",
+    "s9": "36ff7b0447b49cb29d721d4956a0d47739c48e68212f6c9d6a1cd99f2195b73b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T13:58:52.535881+00:00"
+}

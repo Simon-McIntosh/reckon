@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T12:51:37.669Z",
+  "dispatched_at": "2026-10-07T12:45:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:126",
+      "id": "done_when-1",
+      "reason": "the done-when must also assert both records resolve at their run path so the migration's arrival is measured, not just its departure.",
+      "text": "\u00a711's done-when verifies the two misfiled records only left the plan tree, never that they arrived under `run/<reviewed-run-id>/<review-id>.json`; a node that deletes the two files, or files them anywhere other than the run path, satisfies the search while destroying the committed evidence, and the routing test in the first clause does not cover the pre-existing records",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "05b4f6dbfdf2bd4e9f51e3aba14dfb7fb4cffab76142fe021f0f9934b7cb7cb8",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 81,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T12:52:46.377022+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T12:52:46.377022+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v81.json",
+  "review_run_id": "r-20261007T124443761110-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "b840e47cf9a2c56e868cf5a3e77cd9d7bd596983",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `store_committed_review`, `names_a_review_subject`, both cited imas-codex record paths and the `run/<reviewed-run-id>/` shape all resolve against the tree at HEAD.",
+    "done_when": "a finding \u2014 \u00a711's migration half is measured only by \"a search of each project's committed plan tree finds no record carrying a `reviewed_run_id`\", which tests departure and never the stated arrival under `run/<reviewed-run-id>/`.",
+    "evidence_paths": "pass \u2014 \u00a711 declares a test and a search and names no scratchpad or node-local path; its gate log lands in the run directory under the crew runs tree.",
+    "naming": "pass \u2014 \u00a711 names only existing symbols (`store_committed_review`, `names_a_review_subject`, `plan_review_path`) and carries no ticket numbers or changelog prose into code.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (`review.py:2068`, the two committed records), the branch-order fix produces the done-when, and the path runs on named production callers (promotion and the import, both delegating to `store_committed_review`).",
+    "single_goal": "pass \u2014 \u00a711's one goal is that a run review is committed under its run; the routing fix and the migration repair of the two records already misrouted are two halves of that one subject.",
+    "wiring": "pass \u2014 \u00a711 declares no depends-on and changes `reckon/crew/review.py` plus two imas-codex files, disjoint from \u00a79's `plan_review.py`; followup f-erkc-009 orders \u00a711 before \u00a79 and gate g-erkc-1's precondition (the public store function) has already landed, so no relationship is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "178c24800ccaa383114e921949f94ab60f36a9a06eedb871109a84d29533a571",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "8d0aba34dd0bb47fd3a47aae5f17af780ad90bcb8bdad2372e1beca181de9d53",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "3cf741abf98d7c12640ed6a8aef997dad41038c459798a46a8eefa6e8a3035ad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T12:52:03.754042+00:00"
+}

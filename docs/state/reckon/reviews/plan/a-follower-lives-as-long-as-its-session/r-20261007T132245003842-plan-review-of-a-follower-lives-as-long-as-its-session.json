@@ -1,0 +1,148 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T13:30:25.595Z",
+  "dispatched_at": "2026-10-07T13:23:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:137",
+      "id": "reasoning-1",
+      "reason": "the clause as written directs the verifying node at an instrument the plan's evidence has already shown blind, so it would either fail spuriously or green on an empty read; it must name the `--owner-pid`/FIFO/parent-chain method the evidence actually used.",
+      "text": "\u00a78's done-when requires \"no `crew host` or `crew follow` process whose environment names the session's `CLAUDE_PID`, read from `/proc`\", but the plan's own landed record (docs/evidence/archive/a-follower-lives-as-long-as-its-session-landed.html) states `/proc/<pid>/environ` is unreadable for the host processes because they inherit Claude's non-dumpable flag, and that ownership is instead read from the `--owner-pid` argument, the FIFO name and the parent chain",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:137",
+      "id": "done_when-1",
+      "reason": "a done-when with no control cannot distinguish a real pass from a suite that passes on the unfixed code; both open nodes should name the mutation or red arm that reproduces the defect (the landed \u00a73\u2013\u00a77 siblings each carried one).",
+      "text": "\u00a78's done-when is four observational live-session assertions and names no negative control, so nothing in it shows the guard can fail; \u00a79's done-when (line 153) names two tests and a census figure but likewise declares no arm that fails when the cleanup is absent",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:127",
+      "id": "done_when-2",
+      "reason": "a deliverable with no closing measure can be left undone and still read as complete; the node cannot be closed on one verdict until the removal is in the done-when or dropped from the deliverable.",
+      "text": "\u00a78's deliverable includes \"Once that holds, remove the probe link\", but the done-when (lines 135\u2013139) lists only pane rows, the 60-minute window, the process check and the doctor check; the probe-link removal is measurable and is measured nowhere",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:126",
+      "id": "single_goal-1",
+      "reason": "a node dispatched against the title could fan work out to every mounted project that the lead ruling excludes, and two deliverables in one section cannot be closed on a single verdict; the title and deliverable should be narrowed to the one goal the body states.",
+      "text": "\u00a78's title promises \"Prove it in a live session, then link it everywhere\" while its body says \"syncing the other mounted projects ... is not part of this section\", and the section carries the live proof plus a contingent probe-link-removal cleanup",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:212",
+      "id": "anchors_resolve-1",
+      "reason": "these are historical review-comment bodies, not claims the build relies on, so a drifted line number misleads only a reader who follows it; filing it records the rot without altering the plan's work.",
+      "text": "the review comment names \"reckon/cli.py:4928 crew_host\" but line 4928 is `ticker_module.hidden_at_attach`, and the \u00a74 comment (line 239) cites the hidden `crew host` at \"reckon/cli.py:4743\" where the actual `def crew_host(` is at cli.py:5049",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f52ce2b314fc83f9319e2c53d8dab9def08d482e48109270610e09dab1327f98",
+  "plan_slug": "a-follower-lives-as-long-as-its-session",
+  "plan_version": 35,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T13:32:54.659442+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-07T13:33:02.821700+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-07T13:33:10.663989+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "follower-proof",
+      "finding": "reasoning-1",
+      "reason": "the instrument is not blind: an unfenced /proc read at 15:16:08 on 2026-10-07 read the environment of all 18 crew host and crew follow processes on the node (unreadable_environ=0); the EACCES the landed record reports came from the census worker's bwrap user namespace, not from non-dumpable processes. Section 8 now requires the read outside the worker fence, and the landed record is corrected",
+      "when": "2026-10-07T13:33:23.790024+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "follower-proof",
+      "finding": "anchors_resolve-1",
+      "reason": "the drifted line numbers sit in historical review-comment bodies that record what a reviewer read at a past revision; rewriting them would falsify that record, and no build step reads them",
+      "when": "2026-10-07T13:33:31.188884+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "follower-proof",
+      "reason": "the drifted line numbers sit in historical review-comment bodies that record what a reviewer read at a past revision; rewriting them would falsify that record, and no build step reads them",
+      "when": "2026-10-07T13:33:31.188884+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T13:32:54.659442+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T13:33:02.821700+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "follower-proof",
+      "reason": "the instrument is not blind: an unfenced /proc read at 15:16:08 on 2026-10-07 read the environment of all 18 crew host and crew follow processes on the node (unreadable_environ=0); the EACCES the landed record reports came from the census worker's bwrap user namespace, not from non-dumpable processes. Section 8 now requires the read outside the worker fence, and the landed record is corrected",
+      "when": "2026-10-07T13:33:23.790024+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T13:33:10.663989+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-follower-lives-as-long-as-its-session.v35.json",
+  "review_run_id": "r-20261007T132245003842-plan-review-of-a-follower-lives-as-long-as-its-session",
+  "reviewed_blob_sha": "1c7d89c4dcf755370c1cffe2b8c1ac8cebaf99bb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every authored href/cross-reference and every cited commit resolves, but two review-comment line anchors no longer point at the symbol they name.",
+    "done_when": "two findings \u2014 \u00a78's done-when third clause can pass vacuously, and neither open node names a negative control.",
+    "evidence_paths": "pass \u2014 \u00a78's evidence lands in `docs/evidence/archive/a-follower-lives-as-long-as-its-session-landed.html` (in-repo, durable) and \u00a79's gates name `tests/test_session_host.py` and `tests/test_session_host_plugin.py`, both present.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a symbol or comment; the `2.1.271`/`2.1.289` strings are cited harness versions and pid literals are runtime data.",
+    "reasoning": "a finding \u2014 \u00a78's done-when prescribes reading process environment from `/proc` for `CLAUDE_PID`, which the plan's own landed record reports is unreadable for exactly those processes.",
+    "single_goal": "a finding \u2014 \u00a78 carries the live proof plus a probe-link removal whose measure appears nowhere in its done-when, and its title asserts a \"link it everywhere\" scope its body disclaims.",
+    "wiring": "pass \u2014 `plan-depends-on: a-follower-outlives-its-monitor` resolves to an existing plan and is the correct relationship; no other dependency the build needs is missing."
+  },
+  "section_digests": {
+    "_document": "2e789cbc786cba7c07895f54a0a33d9ffce3b27623d9d3359c3f55bf6356e271",
+    "s1": "a4eeecaff9300863f1a6f28d4f659a0977a7583ac703af75654ddf0622bd81d4",
+    "s2": "b9689c739005faa621201d6009e306831a98c253828e1da227693acd6b977ab2",
+    "s3": "27ff46e837af55f0eaba51e6b64d726f133b299233e5eb3f672ab5fc6b1ca9bd",
+    "s4": "9c4d2ab6d7ca5942dead1327565460770d77bccf4ecd90e73c42a2b6eef7d94d",
+    "s5": "42339a7b96242d9c43f0a11b39792c3a77586525b5e12fff673cb29b22b1f33d",
+    "s6": "c99082a11529fcb10ae0464cbc7f1ed142dfe25618098cdf03a199fd240978c8",
+    "s7": "c115e3e35b8c6fc3d8ce9a5648d440b39c7f571ee1afabdea4a1c2a395bc3a22",
+    "s8": "bbe98613aa271826461de2a15962733f85f540f7fb76fbd66aaace52f9c392c3",
+    "s9": "43d9f97fc563e3e833553218baf15064f61b4eb6d78cd21e47eb79380c6dc06d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T13:31:58.227508+00:00"
+}

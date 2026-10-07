@@ -1,0 +1,105 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T14:54:36.484Z",
+  "dispatched_at": "2026-10-07T14:48:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:75",
+      "id": "reasoning-1",
+      "reason": "the done-when (\"the rendered state shows each lane's pressure exactly once\") is unreachable by the described mechanism alone, so the plan should name `build_state`/`prompts.py` as the carrier of the new key, not only the composition site in `lane_context.py`.",
+      "text": "the \u00a75 mechanism says the lanes block is composed in `lane_context.py build()` \"beside `return_times` and `local_lane`\", but `build_state` (`reckon/crew/picker/prompts.py:160-178`) assembles the rendered state from a fixed key set and lifts only `lane[\"return_times\"]` and `lane[\"local_lane\"]` by explicit key, so a new `lanes` key added to `build()`'s return is dropped before `state.jinja` (`{{ state|tojson }}`) renders it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:87",
+      "id": "done_when-1",
+      "reason": "the repository's orchestration rule requires a comparison measure to state which direction is the defect, and without it the node reports a number no reader can act on or close against.",
+      "text": "\u00a75's \"agreement with the recorded lane is measured and reported\" is a comparison measure with no named direction or threshold",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:148",
+      "id": "reasoning-2",
+      "reason": "the followup's action (`/reckon-build lane-and-model-routing \u00a71`) and its ordering are unchanged; only the wording of a precondition that is now satisfied is stale, so it misleads a reader without redirecting the work.",
+      "text": "followup `f-lmr-001` still reads \"after its design review and the three open decisions\" and \"the lead's choices on lane-identity, bare-model and derived-names-retire settle \u00a71 and \u00a74\", but those three decisions are now locked (`data-choice` set, `data-when=\"2026-10-07T14:47:36+00:00\"`), so the plan's own followup states a precondition that its decisions block shows is met",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "ca7e361a23daba67dc20b654106f43b1af3cea33450c521095a0af8cfd3a4671",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 5,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T14:56:31.296220+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T14:56:38.489411+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "f-lmr-001 carries the correct prompt for \u00a71, and it is resolved when \u00a71 lands, with the next followup written then; rewriting its body now would only re-trigger the document review.",
+      "when": "2026-10-07T14:56:46.165543+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T14:56:38.489411+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T14:56:31.296220+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "f-lmr-001 carries the correct prompt for \u00a71, and it is resolved when \u00a71 lands, with the next followup written then; rewriting its body now would only re-trigger the document review.",
+      "when": "2026-10-07T14:56:46.165543+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v5.json",
+  "review_run_id": "r-20261007T144755709098-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "e85c5e869db9633cf276b91b9c76c64ef81cb5f5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_backends.py` `_DIALECTS`, `reckon/crew/picker/lane_context.py` `build()`, `reckon/crew/budget_group.py`, `docs/state/reckon/model-catalogue.yaml` and every write path exist; the extensionless `one-typesafe-model-picker#s6` resolves to `docs/plans/one-typesafe-model-picker.html#s6` under the house `.html` convention.",
+    "done_when": "a finding \u2014 every section now names a negative control (the earlier done_when-1 is answered), but \u00a75's \"agreement with the recorded lane is measured and reported\" names no direction, so it cannot close the node on that bullet.",
+    "evidence_paths": "pass \u2014 every cited path is a repository path or a committed report path (`~/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md`); none is a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 the changed prose and the locked-decision rationales carry no phase/stage/ticket/version tags and no changelog prose; plan-slug references are permitted in plan HTML.",
+    "reasoning": "a finding \u2014 the \u00a75 mechanism names the composition site but not the propagation point, so the block it composes does not reach the rendered state its done-when measures.",
+    "single_goal": "pass \u2014 each of the seven sections names one deliverable and one done-when; \u00a75's four bullets all measure the one goal of Jev offering lane-and-model pairs.",
+    "wiring": "pass \u2014 s5 is gated by `g-lmr-1`, whose `required-evidence` is `one-typesafe-model-picker#s6`; `roadmap._gate_section_refs` (`reckon/roadmap.py:192,263`) parses that text into a cross-plan section dependency, so the one external relationship the plan needs is present and read by the roadmap, and no other section needs one."
+  },
+  "section_digests": {
+    "_document": "2f7102b84d909b9e0ee4af25c6712fc06b99ad931b82d3687d176dbfccd36790",
+    "s0": "b5d63387ffd64f95a18edf11d7ea37dfa445cd4813908d577f25210d053a6e3d",
+    "s1": "534b3c0f7bdbedabfabda2fa637d4c7ac968379079027773990e46f55211cf9b",
+    "s2": "11886c052315abac46df56285908fe2c17d0c7a0884bcb3a615ab76913b2b0b0",
+    "s3": "6eb728f13fd29a431b03dafb2f7dccb78c67e63db072d7ebf39607ade17bf8df",
+    "s4": "a9149501a3d5192976bf2036a74780936250f3edc562efa9c5ae06f1927e955c",
+    "s5": "41b91f44914d61aec0b317e105847fc009b4b0b8cc362ae318da9cce686f80ba",
+    "s6": "7a36f0fd1ecc81ff2694c8de4ed32db5c93a0aaf2a2e85920e68d06fb01dc5ac",
+    "s7": "96001795da5782242afc40deda206a6fd51d8a9132dca0c4358f3106d27c9e58"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T14:56:16.868011+00:00"
+}

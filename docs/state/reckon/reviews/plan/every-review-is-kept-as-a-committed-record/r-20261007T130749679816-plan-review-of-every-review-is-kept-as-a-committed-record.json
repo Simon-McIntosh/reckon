@@ -1,0 +1,88 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T13:14:54.280Z",
+  "dispatched_at": "2026-10-07T13:08:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:130",
+      "id": "reasoning-1",
+      "reason": "if the writer the trace shows is the worker's own write and not `store_review`, the node implements a merge its own reproduction cannot exercise, so the reproduced defect survives the fix.",
+      "text": "\u00a712 grounds its fix on a caller the code does not show: \"review.store_review, which a review worker calls to store its record\", yet the only in-repo caller is recovery.py:1939 (carry-forward, which stamps `carried_forward` on the record it writes) and store_review's docstring names the review worker's hand-written JSON as the production case; the traced `.at-543d3a99d6\u2026` sibling carries no `carried_forward` marker, so it was not written by the one repo caller, and a merge added inside `store_review` would not run on the path that produced it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:130",
+      "id": "reasoning-2",
+      "reason": "the deliverable (merge answers before the write) is unchanged by the miscount, and the done-when's headless-plain assumption still holds, so this only misdescribes the writer's mechanics.",
+      "text": "\u00a712 states `store_review` \"writes the plain file and its head-keyed `.at-<head>` sibling from the body it was given\", but `store_review` writes exactly one path per call: the revision-keyed `.at-<head>` sibling when a complete base/head pair is carried, and otherwise the plain (headless) path via `_partial_review_path` (review.py:1786-1797)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "74cc4f78f0f694752715070dcdfc6dde1e97d775c02d4ed56a158fb4fcb4e69d",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 84,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T13:27:56.957181+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-07T13:28:06.435748+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T13:27:56.957181+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T13:28:06.435748+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v84.json",
+  "review_run_id": "r-20261007T130749679816-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "be82e657541dba038c1d59134e3bcec273d4f63d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: \u00a710 and \u00a711 exist; `_merge_record_answers`, `_staging_copies_of_record` and `_committed_record_at` exist in `reckon/crew/review.py` (added by \u00a710 at ff436d058); `stored_record` exists; and the traced `.at-543d3a99d6\u2026` sibling for review run r-20261007T112539634375 resolves on disk with `dimension_dispositions` null as \u00a712 states.",
+    "done_when": "pass \u2014 \u00a712's done-when is measurable and declares a negative control (\"it fails when `store_review` stops merging\"): a headless plain staging file is skipped by the head-keyed reader, so the disposition read back at the head comes from the sibling and the test goes red on the unfixed writer.",
+    "evidence_paths": "pass \u2014 \u00a712 names no gate path, and its evidence is the node's own test and its recorded writer search, both of which live on the repository/run record rather than a scratchpad.",
+    "naming": "pass \u2014 \u00a712 introduces no plan labels, stage names, ticket numbers or version tags into code; the named symbols (`store_review`, `_merge_record_answers`) are mechanism-named, and `\u00a710`/`\u00a711` are document cross-references, not source identifiers.",
+    "reasoning": "a finding \u2014 \u00a712 names `review.store_review` as the function \"a review worker calls to store its record\", but that caller is not established: the only in-repo production caller of `store_review` is the carry-forward path at `reckon/crew/recovery.py:1939`, and `store_review`'s own docstring states the production case is \"a review worker writing its JSON by hand\" (review.py:1751-1755).",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (make every writer of a review record at a head merge answers already held); the writer search verifies that one goal rather than adding a second.",
+    "wiring": "pass \u2014 \u00a712 declares no depends-on/informs edge of its own, and its ordering against \u00a711 and \u00a79(b), which share `reckon/crew/review.py`, is recorded in followup f-erkc-010 (\"Build \u00a712 after \u00a711 releases review.py\"); no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "c1cdfd9684ee8cfb9c03709ad6cef1a0d430e75a3e01718be798d39230586b3e",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "0befbc0cb2f85b1a403b994354452ef2b7f4b4a6f1829bf13126a37f8d3b99e2",
+    "s12": "7b2480548a7a9186c52d7aa4e21e0efcc947b5eec3e1524685bc99d7d96db722",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "3cf741abf98d7c12640ed6a8aef997dad41038c459798a46a8eefa6e8a3035ad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T13:26:47.358916+00:00"
+}
