@@ -1755,6 +1755,11 @@ def store_review(
     reviewed_run_id = record.get("reviewed_run_id")
     if not project:
         raise ValueError("review record is missing project")
+    if not names_a_review_subject(record):
+        raise ValueError(
+            "review record names neither a reviewed run nor a plan, so it has "
+            "no subject"
+        )
     if not reviewed_run_id:
         raise ValueError("review record is missing reviewed_run_id")
     if not carries_review_material(record):
@@ -1904,8 +1909,9 @@ def resolve_record_times(
     3. the dispatch instant the review run id encodes.
 
     ``times_source`` is ``"run-record"``, ``"record"`` or ``"run-id"``. A
-    dispatch resolved only from the run id leaves ``completed_at`` empty rather
-    than defaulted, because a run id encodes no completion; a record that
+    dispatch resolved only from the run id leaves ``completed_at`` empty only
+    when no earlier source carried a completion, because a run id itself
+    encodes none and the clock is never substituted for one; a record that
     resolves no dispatch time at all raises, naming the run, rather than being
     stored with a time nobody recorded.
     """
@@ -1928,20 +1934,21 @@ def resolve_record_times(
             absorb(run_record_times(project, crew_run_id, root=root))
     if reviewed_run_id:
         absorb(run_record_times(project, reviewed_run_id, root=root))
-    if dispatched:
-        return dispatched, completed, RUN_RECORD_TIMES_SOURCE
-
     own_dispatched = str(record.get(DISPATCH_TIME_KEY) or "").strip()
+    own_completed = str(record.get(COMPLETION_TIME_KEY) or "").strip()
+    # The dispatch time fixes the source, but the completion is kept from
+    # whichever source supplied one: a run record can name a completion while
+    # its dispatch falls through to the record's own stamp or to the instant the
+    # run id encodes, and that earlier completion must survive the fall-through.
+    if dispatched:
+        return dispatched, completed or own_completed, RUN_RECORD_TIMES_SOURCE
+
     if own_dispatched:
-        return (
-            own_dispatched,
-            str(record.get(COMPLETION_TIME_KEY) or "").strip(),
-            RECORD_TIMES_SOURCE,
-        )
+        return own_dispatched, completed or own_completed, RECORD_TIMES_SOURCE
 
     encoded = run_id_dispatch_time(review_run_id)
     if encoded:
-        return encoded, "", RUN_ID_TIMES_SOURCE
+        return encoded, completed or own_completed, RUN_ID_TIMES_SOURCE
 
     raise ValueError(
         "no dispatch or completion time resolves for review run "
@@ -1999,12 +2006,12 @@ def store_committed_review(
             "a committed review record needs the review run id that names it; "
             "refusing to file it under the reviewed run"
         )
-    reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
-    if not reviewed_run_id and not str(record.get("plan_slug") or "").strip():
+    if not names_a_review_subject(record):
         raise ValueError(
             "review record names neither a reviewed run nor a plan, so it has "
             "no subject to be filed under"
         )
+    reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
     if not carries_review_material(record):
         raise ValueError(
             "review record carries no review material — findings, scores, a "
