@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="183">
+<meta name="plan-version" content="184">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -603,6 +603,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T043032932270-subscription-lanes-record-no-spend" data-who="reckon-build" data-when="2026-10-07T07:42:06.461Z">
     <div class="r-comment-body"><p>subscription lanes record no per-token spend: a budget group whose catalogue name ends in -sub is subscription-billed, the ledger reads resolved flight config through the budget-group owner, catches FlightConfigError so a malformed catalogue cannot stop a promotion, and nulls and flags such a lane's harness cost (preserving it as harness_reported_cost_usd); the cost surfaces read it as billing: subscription. Head gate tests/test_ledger*.py tests/test_capabilit*.py tests/test_picker_outcomes.py tests/test_flight_catalogue_layer.py tests/test_budget_group*.py tests/test_subscription_lanes_record_no_spend.py ran 328 passed at 1d88ab2f4 against 319 at the base revision.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T100905267774-review-of-watch-observer-is-host-aware" data-who="reckon-build" data-when="2026-10-07T10:22:36.748Z">
+    <div class="r-comment-body"><p>independent review of watch-observer-is-host-aware scored 120/120 across goal_fidelity, evidence, scope_discipline, durability, fit and reuse (each 20); the landed 10-line change at reckon/crew/runs.py:3194 makes watch_observer_alive return None for a registration naming a foreign host, its gate (tests/test_watch_observer_is_host_aware.py plus 37 importing files) records 442 passed EXIT=0 head against 438 EXIT=0 base with 0 added failures, and its declared negative control reddens the two foreign-host tests at EXIT=1; no blocking or follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>

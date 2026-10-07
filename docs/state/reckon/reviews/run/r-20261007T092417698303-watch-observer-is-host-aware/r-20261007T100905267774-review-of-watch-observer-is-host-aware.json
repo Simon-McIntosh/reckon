@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate arms. gate-base.log (revision 8c1fe22f) reports 438 passed, EXIT=0 with no FAILED/ERROR id; gate-head.log (revision b2f56f2c) reports 442 passed, EXIT=0 with no FAILED/ERROR id. Head failing ids minus base failing ids is empty, so added_failure_count 0, added_failure_ids [].",
+  "base_log_revision": "8c1fe22f02881a3c6deae6470df18b1776971021",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1254 _ensure_watch_producer",
+    "reckon/crew/runs.py:3242 project_watch_visibility",
+    "reckon/crew/dispatch.py:145 (the watch_observer_alive import)"
+  ],
+  "completed_at": "2026-10-07T10:22:36.748Z",
+  "dispatched_at": "2026-10-07T10:09:44Z",
+  "findings": [],
+  "head_log_revision": "b2f56f2cbb6721dffbe80cfc81a0fe4623205fc7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit b2f56f2c against base 8c1fe22f; +157/-1 across three files \u2014 a 10-line change to reckon/crew/runs.py, a 121-line new test at tests/test_watch_observer_is_host_aware.py and a 27-line evidence fragment \u2014 nothing outside the declared scope.",
+    "done_when": "the done_when names three behaviours and a gate over tests/test_watch_observer_is_host_aware.py plus every tests/ file importing watch_observer_alive, watch_state or _ensure_watch_producer; gate-head.log records 442 passed EXIT=0 at b2f56f2c and gate-base.log 438 passed EXIT=0 at 8c1fe22f, and I recomputed the file list from the head tree, whose 39 grep hits reduce to 38 test files once the tests/fixtures/crew-public-surface.txt fixture is excluded, matching the recorded list.",
+    "goal": "the node goal is that arming from the fleet node leaves a live login-node producer alone; the diff makes watch_observer_alive return None \u2014 unknown \u2014 for a registration naming a foreign host (reckon/crew/runs.py:3194), so dispatch._ensure_watch_producer's `is False` guard (reckon/crew/dispatch.py:1254) no longer reaches _stop_watch_producer_within.",
+    "manifest": "read the manifest; status complete, base 8c1fe22f, head b2f56f2c, baseline_suite and after_suite both present with their logs and revisions, negative_control_log declared, a landing line present, and the changed_paths and commits lines naming the three files and the one sha.",
+    "write_paths": "read the manifest's four declared paths; the diff's three files \u2014 reckon/crew/runs.py, tests/test_watch_observer_is_host_aware.py and docs/evidence/fragments/one-typesafe-model-picker/watch-observer-is-host-aware.html \u2014 all lie inside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows removing the foreign-host branch reddens tests/test_watch_observer_is_host_aware.py::test_a_foreign_host_registration_reads_unknown and ::test_arming_does_not_stop_a_foreign_host_producer at EXIT=1, and the two counter-direction tests (tests/test_watch_observer_is_host_aware.py:113 and :118) redden if the guard is widened to return None whenever a host field is present.",
+    "evidence": "both arms are on disk with revision, tree, module, cwd, command and summary lines (gate-head.log 442 passed EXIT=0 at b2f56f2c; gate-base.log 438 passed EXIT=0 at 8c1fe22f), and the +4 passes over the base arm's 438 equal the four tests the new file adds.",
+    "fit": "the early-return-unknown idiom and mechanism docstring at reckon/crew/runs.py:3186-3196 match the surrounding module, and the diff introduces no plan, ticket or version name.",
+    "goal_fidelity": "reckon/crew/runs.py:3194 early-returns None for _seat_names_a_foreign_host(registration), and the negative control shows the two foreign-host assertions redden without the branch, so the arming path no longer stops a live producer on another host.",
+    "reuse": "the change introduces no new definition and reuses the existing owner _seat_names_a_foreign_host (reckon/crew/runs.py:2300), already called at runs.py:2395, 2438 and 2469.",
+    "scope_discipline": "all three changed files lie inside the four declared write paths, the plan meta is untouched, and the evidence fragment is the declared landing record rather than new prose."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that arming from the fleet node leaves a live login-node producer alone; the diff makes watch_observer_alive return None \u2014 unknown \u2014 for a registration naming a foreign host (reckon/crew/runs.py:3194), so dispatch._ensure_watch_producer's `is False` guard (reckon/crew/dispatch.py:1254) no longer reaches _stop_watch_producer_within.\nVERDICT done_when: the done_when names three behaviours and a gate over tests/test_watch_observer_is_host_aware.py plus every tests/ file importing watch_observer_alive, watch_state or _ensure_watch_producer; gate-head.log records 442 passed EXIT=0 at b2f56f2c and gate-base.log 438 passed EXIT=0 at 8c1fe22f, and I recomputed the file list from the head tree, whose 39 grep hits reduce to 38 test files once the tests/fixtures/crew-public-surface.txt fixture is excluded, and the new test file is the one the base arm omits.\nVERDICT write_paths: read the manifest's four declared paths; the diff's three files \u2014 reckon/crew/runs.py, tests/test_watch_observer_is_host_aware.py and docs/evidence/fragments/one-typesafe-model-picker/watch-observer-is-host-aware.html \u2014 all lie inside them.\nVERDICT manifest: read the manifest; status complete, base 8c1fe22f, head b2f56f2c, baseline_suite and after_suite both present with their logs and revisions, negative_control_log declared, a landing line present, and the changed_paths and commits lines naming the three files and the one sha.\nVERDICT diff: read the single commit b2f56f2c against base 8c1fe22f; +157/-1 across three files \u2014 a 10-line change to reckon/crew/runs.py, a 121-line new test at tests/test_watch_observer_is_host_aware.py and a 27-line evidence fragment \u2014 nothing outside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:1254 (_ensure_watch_producer), reckon/crew/runs.py:3242 (project_watch_visibility), reckon/crew/dispatch.py:145 (the watch_observer_alive import)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3194 early-returns None for _seat_names_a_foreign_host(registration), and the negative control shows the two foreign-host assertions redden without the branch, so the arming path no longer stops a live producer on another host.\nSCORE evidence: 20\nJUSTIFICATION evidence: both arms are on disk with revision, tree, module, cwd, command and summary lines (gate-head.log 442 passed EXIT=0 at b2f56f2c; gate-base.log 438 passed EXIT=0 at 8c1fe22f), and the +4 passes over the base arm's 438 equal the four tests the new file adds.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three changed files lie inside the four declared write paths, the plan meta is untouched, and the evidence fragment is the declared landing record rather than new prose.\nSCORE durability: 20\nJUSTIFICATION durability: negative-control.log shows removing the foreign-host branch reddens tests/test_watch_observer_is_host_aware.py::test_a_foreign_host_registration_reads_unknown and ::test_arming_does_not_stop_a_foreign_host_producer at EXIT=1, and the two counter-direction tests (tests/test_watch_observer_is_host_aware.py:113 and :118) redden if the guard is widened to return None whenever a host field is present.\nSCORE fit: 20\nJUSTIFICATION fit: the early-return-unknown idiom and mechanism docstring at reckon/crew/runs.py:3186-3196 match the surrounding module, and the diff introduces no plan, ticket or version name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change introduces no new definition and reuses the existing owner _seat_names_a_foreign_host (reckon/crew/runs.py:2300), already called at runs.py:2395, 2438 and 2469.\n",
+  "review_run_id": "r-20261007T100905267774-review-of-watch-observer-is-host-aware",
+  "reviewed_base_sha": "8c1fe22f02881a3c6deae6470df18b1776971021",
+  "reviewed_head_sha": "b2f56f2cbb6721dffbe80cfc81a0fe4623205fc7",
+  "reviewed_run_id": "r-20261007T092417698303-watch-observer-is-host-aware",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:16:00+00:00",
+  "total": 120
+}
