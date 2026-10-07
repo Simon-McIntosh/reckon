@@ -2,17 +2,64 @@
 
 import json
 import math
+import os
 import time
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon.crew.runs import crew_home
 from reckon.resources import resource_scan_scope
 
 from . import client, prompts, snapshot
 from .types import Candidate, PickRequest, Selection
 
 __all__ = ["Candidate", "PickRequest", "Selection", "pick"]
+
+#: One JSON line per pick, appended under the crew home. Every production pick
+#: writes its per-stage times here, so a pick that spent its budget -- and one
+#: that finished after dispatch gave up -- can be attributed to the stage that
+#: spent it.
+PICK_TIMINGS_LOG = "pick-timings.jsonl"
+
+
+def _milliseconds(started: float) -> float:
+    return round((time.perf_counter() - started) * 1000, 3)
+
+
+def _dispatch_bound_seconds() -> float:
+    """The dispatch timeout a pick's within-bound flag is measured against.
+
+    Read from the dispatcher rather than mirrored, so the flag cannot drift from
+    the timeout dispatch actually applies to a pick. The dispatcher is already
+    imported on every pick path.
+    """
+    from importlib import import_module
+
+    dispatch = import_module("reckon.crew.dispatch")
+    return float(dispatch.PICKER_DISPATCH_TIMEOUT_SECONDS)
+
+
+def _record_pick_timings(line: dict[str, Any], *, latency_ms: float) -> None:
+    """Append one timing line under the crew home, best effort and bounded.
+
+    A pick must never fail or stall because its own record could not be written,
+    so every error is swallowed. One ``os.write`` on an ``O_APPEND`` descriptor
+    keeps a small line from interleaving with a concurrent pick's.
+    """
+    try:
+        line["within_bound"] = latency_ms <= _dispatch_bound_seconds() * 1000
+        path = crew_home() / PICK_TIMINGS_LOG
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = (json.dumps(line, separators=(",", ":"), default=str) + "\n").encode()
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        try:
+            os.write(descriptor, data)
+        finally:
+            os.close(descriptor)
+    except Exception:  # noqa: BLE001 - a pick never fails on its own record
+        return
 
 
 def _answer(
@@ -59,6 +106,16 @@ def pick(
 ) -> Selection:
     """Return one auditable selection; an excluded default cannot bypass gates."""
     started = time.perf_counter()
+    started_at = datetime.now(UTC).isoformat()
+    # One slot per timed stage, so a stage that did not run reads null rather
+    # than a measured zero.
+    stages: dict[str, float | None] = {
+        "snapshot_ms": None,
+        "estimate_ms": None,
+        "state_render_ms": None,
+        "questions_render_ms": None,
+        "jev_ms": None,
+    }
     rows = (
         snapshot.ledger.runs(request.project, root=repo) if records is None else records
     )
@@ -70,6 +127,7 @@ def pick(
         )
     )
     # One docs-tree scan serves every candidate's plan lookup in this pick.
+    snapshot_started = time.perf_counter()
     with resource_scan_scope():
         options = snapshotter(
             request,
@@ -81,27 +139,35 @@ def pick(
             cached_only=cached_only,
             authority=authority,
         )
+    stages["snapshot_ms"] = _milliseconds(snapshot_started)
     offered = [candidate for candidate in options if not candidate.reasons]
     excluded = [candidate.as_dict() for candidate in options if candidate.reasons]
-    rendered = prompts.render(
-        "state.jinja",
-        node=request.node,
-        capability=request.capability,
-        estimated_context=request.estimated_context,
-        comment=request.comment,
-        candidates=offered,
-        project=request.project,
-        records=rows,
-        budget_snapshot=view,
-        config=config,
-        attempts=request.attempts
-        if request.attempts is not None
-        else sum(
-            row.get("node") == request.node.id and row.get("plan") == request.node.plan
-            for row in rows
-        ),
-    )
+    state_started = time.perf_counter()
+    try:
+        rendered = prompts.render(
+            "state.jinja",
+            node=request.node,
+            capability=request.capability,
+            estimated_context=request.estimated_context,
+            comment=request.comment,
+            candidates=offered,
+            project=request.project,
+            records=rows,
+            budget_snapshot=view,
+            config=config,
+            attempts=request.attempts
+            if request.attempts is not None
+            else sum(
+                row.get("node") == request.node.id
+                and row.get("plan") == request.node.plan
+                for row in rows
+            ),
+        )
+    finally:
+        stages["state_render_ms"] = _milliseconds(state_started)
+    estimate_started = time.perf_counter()
     token_estimate = math.ceil(len(rendered) / 4)
+    stages["estimate_ms"] = _milliseconds(estimate_started)
     probabilities: dict[str, float] = {}
     confidence = None
     fallback_reason = None
@@ -113,24 +179,30 @@ def pick(
     if not offered:
         fallback_reason = "no-eligible-candidates"
     else:
-        call_started = time.perf_counter()
         try:
-            questions = json.loads(
-                prompts.render("questions.jinja", candidates=offered)
-            )
-            payload = caller(
-                json.loads(rendered), questions, env_path=client.credential_path()
-            )
-            choice, confidence, probabilities = _answer(payload, offered)
-            if choice == "hold":
-                action = "hold"
-            else:
-                selected = next(c for c in offered if c.backend == choice)
+            questions_started = time.perf_counter()
+            try:
+                questions = json.loads(
+                    prompts.render("questions.jinja", candidates=offered)
+                )
+            finally:
+                stages["questions_render_ms"] = _milliseconds(questions_started)
+            jev_started = time.perf_counter()
+            try:
+                payload = caller(
+                    json.loads(rendered), questions, env_path=client.credential_path()
+                )
+                choice, confidence, probabilities = _answer(payload, offered)
+                if choice == "hold":
+                    action = "hold"
+                else:
+                    selected = next(c for c in offered if c.backend == choice)
+            finally:
+                jev_ms = (time.perf_counter() - jev_started) * 1000
+                stages["jev_ms"] = round(jev_ms, 3)
         except Exception as exc:  # noqa: BLE001 - every Jev failure must produce a recorded fallback
             # Exception text may contain provider content or credentials; record its type only.
             fallback_reason = f"jev-error: {type(exc).__name__}"
-        finally:
-            jev_ms = (time.perf_counter() - call_started) * 1000
     if fallback_reason:
         source = "flight-default"
         action = "fallback"
@@ -141,6 +213,21 @@ def pick(
             fallback_reason += "; default-backend-ineligible"
             source = "refused"
             action = "refuse"
+    latency_ms = round((time.perf_counter() - started) * 1000, 3)
+    _record_pick_timings(
+        {
+            "started_at": started_at,
+            "project": request.project,
+            "node": request.node.id,
+            "session": request.session,
+            "latency_ms": latency_ms,
+            "outcome": action,
+            "decision_source": source,
+            "fallback_reason": fallback_reason,
+            **stages,
+        },
+        latency_ms=latency_ms,
+    )
     return Selection(
         action=action,
         backend=selected.backend if selected else None,
@@ -154,7 +241,7 @@ def pick(
         offered=[c.as_dict() | {"reason": "eligible"} for c in offered],
         excluded=excluded,
         rendered_token_estimate=token_estimate,
-        latency_ms=round((time.perf_counter() - started) * 1000, 3),
+        latency_ms=latency_ms,
         decision_source=source,
         comment=request.comment,
         jev_latency_ms=round(jev_ms, 3),
