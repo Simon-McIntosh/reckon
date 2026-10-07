@@ -76,6 +76,11 @@ def _module():
     return import_module("reckon.crew.session_host")
 
 
+def _console_script() -> str:
+    """The reckon console script the host is driven through."""
+    return _module()._reckon_console_script()
+
+
 def _start_time(pid: int) -> str:
     """The kernel start tick for a pid, read the way the host reads it."""
     return _module().process_start_time(pid) or ""
@@ -174,8 +179,13 @@ class HandArmedFollower:
             env=env,
         )
         os.close(slave)
+        self._ended = False
 
     def end(self) -> None:
+        """Stop the follower and release its pty; safe to call more than once."""
+        if self._ended:
+            return
+        self._ended = True
         if self.process.poll() is None:
             self.process.kill()
         self.process.wait()
@@ -215,9 +225,9 @@ class HostHarness:
         self._stdout_handle = self.stdout.open("wb")
         self._stderr_handle = self.stderr.open("wb")
         argv = [
-            sys.executable,
-            "-m",
-            "reckon.crew.session_host",
+            _console_script(),
+            "crew",
+            "host",
             "--owner-pid",
             str(self.owner.pid),
             "--owner-start",
@@ -392,6 +402,28 @@ def test_no_child_survives_its_owners_exit(host: HostHarness) -> None:
     )
 
 
+def test_the_host_takes_over_a_pair_once_a_foreign_follower_exits(
+    host: HostHarness,
+) -> None:
+    """A pair deferred to a live hand-armed follower is picked up when it ends.
+
+    A Monitor-armed follower holds the pair; the request starts no child, so the
+    host is not contending with it. When that follower ends, the next tick must
+    start the host's own child -- without a second request, and without waiting
+    for the next dispatch to re-request the pair.
+    """
+    follower = host.arm("alpha", "sess")
+    host.request("alpha", "sess")
+    time.sleep(0.5)
+    assert host.child_pids() == [], host.child_pids()
+    follower.end()
+    _wait_for(
+        lambda: len(host.child_pids()) >= 1,
+        timeout=START_BOUND,
+        description="the host's own child once the hand-armed follower ended",
+    )
+
+
 def test_the_defaults_read_the_process_environment(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -416,21 +448,23 @@ def test_the_defaults_read_the_process_environment(
     assert module._initial_backoff() == 1.25
 
     host = module.SessionHost()
-    expected = state_dir / f"{host.owner['pid']}-{host.owner['start_time'] or '0'}.json"
-    assert host.record_path == expected
+    stem = f"{host.owner['pid']}-{host.owner['start_time'] or '0'}"
+    assert host.record_path == state_dir / f"{stem}.json"
+    assert host._log_path == log_dir / f"{stem}.log"
 
 
-def test_a_first_request_starts_a_follower_and_the_next_one_starts_another(
+def test_the_crew_host_verb_reads_a_fifo_descriptor_and_a_pre_read_request(
     tmp_path: Path,
 ) -> None:
-    """The entry point's pre-read line is handled exactly like a read one.
+    """The CLI verb handles a pre-read line and a descriptor line alike.
 
-    The plugin reads one request line off the FIFO before it execs the host and
-    passes that line in with the still-open descriptor. The line supplied that
-    way must start its follower, and a second request arriving on the descriptor
-    afterwards must start the next -- the two orders produce the same two
-    children. The first request is the only one that is not written to the
-    descriptor, so a host that ignored it would start one child rather than two.
+    The plugin reads one request line off the FIFO before it execs ``reckon
+    crew host`` and passes that line in with the still-open descriptor. Here the
+    verb is run through click with ``--fd`` on an inherited FIFO descriptor and
+    ``--first-request``; the line supplied that way must start its follower, and
+    a second request written to the descriptor afterwards must start the next.
+    The first request is the only one not written to the descriptor, so a host
+    that ignored it would start one child rather than two.
     """
     owner = OwnerStub()
     marker = tmp_path / "children.txt"
@@ -444,50 +478,58 @@ def test_a_first_request_starts_a_follower_and_the_next_one_starts_another(
     environ["RECKON_SESSION_HOST_POLL_SECONDS"] = POLL_SECONDS
     environ["RECKON_SESSION_HOST_BACKOFF"] = BACKOFF_SECONDS
     environ["FAKE_FOLLOWER_MARKER"] = str(marker)
+    fifo = tmp_path / "requests.fifo"
+    os.mkfifo(fifo)
+    descriptor = os.open(fifo, os.O_RDWR)
     first = json.dumps({"project": "alpha", "session": "sess"})
     argv = [
-        sys.executable,
-        "-m",
-        "reckon.crew.session_host",
+        _console_script(),
+        "crew",
+        "host",
         "--owner-pid",
         str(owner.pid),
         "--owner-start",
         owner.start_time,
         "--follower-command",
         json.dumps([sys.executable, str(fake_follower)]),
+        "--fd",
+        str(descriptor),
         "--first-request",
         first,
     ]
-    process = subprocess.Popen(
-        argv,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        env=environ,
-    )
     try:
-        _wait_for(
-            lambda: marker.exists() and len(marker.read_text().split()) >= 1,
-            timeout=START_BOUND,
-            description="the first request's child from --first-request",
+        process = subprocess.Popen(
+            argv,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=environ,
+            pass_fds=(descriptor,),
         )
-        assert process.stdin is not None
-        process.stdin.write(
-            json.dumps({"project": "beta", "session": "sess"}).encode() + b"\n"
-        )
-        process.stdin.flush()
-        _wait_for(
-            lambda: marker.exists() and len(marker.read_text().split()) >= 2,
-            timeout=START_BOUND,
-            description="the second request's child read off the descriptor",
-        )
-        assert len(set(marker.read_text().split())) == 2, marker.read_text()
+        try:
+            _wait_for(
+                lambda: marker.exists() and len(marker.read_text().split()) >= 1,
+                timeout=START_BOUND,
+                description="the first request's child from --first-request",
+            )
+            os.write(
+                descriptor,
+                json.dumps({"project": "beta", "session": "sess"}).encode() + b"\n",
+            )
+            _wait_for(
+                lambda: marker.exists() and len(marker.read_text().split()) >= 2,
+                timeout=START_BOUND,
+                description="the second request's child read off the descriptor",
+            )
+            assert len(set(marker.read_text().split())) == 2, marker.read_text()
+        finally:
+            if process.poll() is None:
+                process.send_signal(signal.SIGTERM)
+                try:
+                    process.wait(timeout=STOP_BOUND)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            owner.end()
     finally:
-        if process.poll() is None:
-            process.send_signal(signal.SIGTERM)
-            try:
-                process.wait(timeout=STOP_BOUND)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
-        owner.end()
+        os.close(descriptor)

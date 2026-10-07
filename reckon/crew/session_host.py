@@ -48,6 +48,8 @@ from reckon._store import write_json_atomically
 from reckon.crew import fleet_supervisor
 from reckon.crew.obligation_snapshot import process_start_time
 from reckon.crew.runs import (
+    _FOLLOWER_OWNER_ENV,
+    _format_follower_owner,
     _reckon_console_script,
     crew_home,
     follower_state,
@@ -75,9 +77,9 @@ PARENT_DEATH_SIGNAL = signal.SIGTERM
 PR_SET_PDEATHSIG = 1
 
 # The owner identity is encoded the same way a follower's owner is, so a child
-# records this host as the process consuming its output.
-FOLLOWER_OWNER_ENV = "RECKON_FOLLOWER_OWNER"
-
+# records this host as the process consuming its output. Both the variable name
+# and the encoding are the follower's own, imported from ``runs`` so the two
+# are the same bytes rather than two spellings that agree today.
 RECORD_SUFFIX = ".json"
 
 
@@ -243,13 +245,14 @@ class SessionHost:
         self._stopping = False
         self._stopped = False
         self._last_record: str | None = None
-        self._record_path = _state_dir(self._environ) / self._record_name()
-        self._log_path = _log_dir(self._environ) / f"{self._record_name()}.log"
+        self._stem = f"{self._owner['pid']}-{self._owner['start_time'] or '0'}"
+        self._record_path = _state_dir(self._environ) / f"{self._stem}{RECORD_SUFFIX}"
+        self._log_path = _log_dir(self._environ) / f"{self._stem}.log"
 
     # -- identity -----------------------------------------------------------
 
     def _record_name(self) -> str:
-        return f"{self._owner['pid']}-{self._owner['start_time'] or '0'}{RECORD_SUFFIX}"
+        return f"{self._stem}{RECORD_SUFFIX}"
 
     @property
     def owner(self) -> dict[str, Any]:
@@ -307,6 +310,19 @@ class SessionHost:
         if key in self._children:
             return
         if self._foreign_live_follower(project, session, pid=None):
+            # A live follower this host did not start owns the pair -- a
+            # coordinator armed one by hand. The pair is wanted but deferred:
+            # record it with no pid and a retry due, so tick() starts this
+            # host's own follower once that one exits. A Monitor-armed follower
+            # ends at twenty-nine minutes, and without this the pair would go
+            # unwatched until the next dispatch re-requested it.
+            deferred = _Child(project=project, session=session)
+            deferred.delay = _initial_backoff(self._environ)
+            deferred.next_attempt = self._clock() + max(
+                deferred.delay, _poll_seconds(self._environ)
+            )
+            self._children[key] = deferred
+            self._write_record()
             return
         child = _Child(project=project, session=session)
         child.delay = _initial_backoff(self._environ)
@@ -340,8 +356,8 @@ class SessionHost:
             child.session,
         ]
         environ = dict(self._environ)
-        environ[FOLLOWER_OWNER_ENV] = json.dumps(
-            {"pid": os.getpid(), "start_time": process_start_time(os.getpid()) or ""}
+        environ[_FOLLOWER_OWNER_ENV] = _format_follower_owner(
+            (os.getpid(), process_start_time(os.getpid()) or "")
         )
         self._log_path.parent.mkdir(parents=True, exist_ok=True)
         parent = os.getpid()
@@ -527,40 +543,6 @@ def run(
     return 0
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Parse this module's arguments and run the host."""
-    arguments = list(sys.argv[1:] if argv is None else argv)
-    owner: dict[str, Any] = {}
-    follower_argv: list[str] | None = None
-    first_request: str | None = None
-    index = 0
-    while index < len(arguments):
-        argument = arguments[index]
-        if argument == "--owner-pid" and index + 1 < len(arguments):
-            owner["pid"] = int(arguments[index + 1])
-            index += 2
-        elif argument == "--owner-start" and index + 1 < len(arguments):
-            owner["start_time"] = arguments[index + 1]
-            index += 2
-        elif argument == "--follower-command" and index + 1 < len(arguments):
-            follower_argv = json.loads(arguments[index + 1])
-            index += 2
-        elif argument == "--first-request" and index + 1 < len(arguments):
-            first_request = arguments[index + 1]
-            index += 2
-        else:
-            index += 1
-    if not owner.get("pid"):
-        owner = default_owner()
-    elif not owner.get("start_time"):
-        owner["start_time"] = process_start_time(owner["pid"]) or ""
-    return run(
-        owner=owner,
-        follower_argv=follower_argv,
-        first_request=first_request,
-    )
-
-
 def _drain(descriptor: int) -> None:
     """Empty a non-blocking descriptor so its readable notify is cleared."""
     while True:
@@ -596,7 +578,3 @@ def _reap(pid: int) -> None:
 def _log(line: str) -> None:
     """Write one diagnostic line to stderr, never to the pane's stdout."""
     print(f"[session-host] {line}", file=sys.stderr, flush=True)
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
