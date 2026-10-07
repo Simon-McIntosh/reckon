@@ -41,6 +41,8 @@ DEFAULT_RUN_FIELDS = (
 )
 
 OPTIONAL_RUN_FIELDS = (
+    "lane",
+    "model_key",
     "member",
     "agent",
     "base_sha",
@@ -283,7 +285,10 @@ def _compact_row(
         worktree_exists=worktree_exists,
         process_alive=process_alive,
     )
+    identity = ledger.normalize_identity(record)
     complete = {
+        "lane": identity.get("lane"),
+        "model_key": identity.get("model_key"),
         "run_id": str(record.get("run_id") or ""),
         "node": str(node or ""),
         "plan": str(plan) if plan else None,
@@ -339,6 +344,8 @@ def _compact_row(
         ),
     }
     row = {field: complete[field] for field in selected_fields}
+    if identity.get("lane"):
+        row.update(lane=identity["lane"], model_key=identity.get("model_key"))
     if classified.get("lane_event"):
         row["lane_event"] = classified["lane_event"]
     # Only a brief run carries a brief digest. Leaving the key off a plan run's

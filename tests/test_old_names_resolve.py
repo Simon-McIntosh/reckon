@@ -241,3 +241,104 @@ def test_report_review_record_uses_shared_identity(monkeypatch, tmp_path):
     assert len(records) == 1
     assert pair(records[0][2]) == ("claude", "opus")
     assert row == {"backend": "claude-opus"}
+
+
+def test_lane_receipts_join_equivalent_names_but_keep_models_separate():
+    rows = [
+        {
+            "run_id": "alias-row",
+            "backend": "claude-opus",
+            "session_id": "alias-session",
+            "completed_at": "2030-01-01T00:00:00Z",
+        },
+        {
+            "run_id": "paired-row",
+            "backend": "claude",
+            "model": "opus",
+            "session_id": "paired-session",
+            "completed_at": "2030-01-02T00:00:00Z",
+        },
+        {
+            "run_id": "default-row",
+            "backend": "claude",
+            "session_id": "default-session",
+            "completed_at": "2030-01-03T00:00:00Z",
+        },
+    ]
+    latest = mcp_views._latest_backend_runs(rows)
+    assert latest[("claude", "opus")]["session_id"] == "paired-session"
+    assert latest[("claude", "sonnet")]["session_id"] == "default-session"
+    assert len(latest) == 2
+
+
+def test_lane_view_finds_historical_receipt_by_pair():
+    result = mcp_views.crew_lanes_view(
+        {"backends": {"claude": {"model": "opus"}}},
+        [
+            {
+                "run_id": "alias-row",
+                "backend": "claude-opus",
+                "session_id": "alias-session",
+                "completed_at": "2030-01-01T00:00:00Z",
+            }
+        ],
+        receipt_reader=lambda session: None,
+        composed_at="2030-01-02T00:00:00Z",
+    )
+    assert pair(result["lanes"][0]) == ("claude", "opus")
+    assert result["lanes"][0]["receipt_state"] != "unused"
+
+
+def test_parent_lane_disambiguates_nested_agent_model(catalogue):
+    data = yaml.safe_load(catalogue.read_text())
+    data["lanes"]["secondary"] = copy.deepcopy(data["lanes"]["claude"])
+    catalogue.write_text(yaml.safe_dump(data))
+    row = ledger.normalize_identity({"backend": "claude", "agent": {"model": "opus"}})
+    assert pair(row) == pair(row["agent"]) == ("claude", "opus")
+
+
+def test_explicit_model_wins_over_agent_default():
+    row = ledger.normalize_identity(
+        {
+            "backend": "claude",
+            "model": "opus",
+            "agent": {"backend": "claude"},
+        }
+    )
+    assert pair(row) == ("claude", "opus")
+
+
+def test_split_run_file_stays_byte_identical_and_index_reads_current_aliases(
+    tmp_path, catalogue
+):
+    directory = tmp_path / "docs/state/sample/runs"
+    directory.mkdir(parents=True)
+    path = directory / "fixture.json"
+    row = {"run_id": "fixture", "backend": "claude-opus"}
+    path.write_text(json.dumps(row))
+    before = path.read_bytes()
+    assert pair(ledger.runs("sample", tmp_path)[0]) == ("claude", "opus")
+    assert ledger.load("sample", tmp_path)[0]["runs"] == [row]
+    data = yaml.safe_load(catalogue.read_text())
+    del data["aliases"]["claude-opus"]
+    catalogue.write_text(yaml.safe_dump(data))
+    assert pair(ledger.runs("sample", tmp_path)[0]) == (None, None)
+    assert path.read_bytes() == before
+
+
+def test_mcp_runs_surface_reports_the_resolved_pair(tmp_path):
+    from reckon import mcp
+
+    path, _ = write_history(tmp_path)
+    before = path.read_bytes()
+    result = mcp._crew(
+        "sample",
+        view="runs",
+        checkout_path=str(tmp_path),
+        source="ledger",
+        fields=["lane", "model_key"],
+    )
+    assert result["ok"], result
+    assert result["count"] == 2
+    assert all(pair(row) == ("claude", "opus") for row in result["rows"])
+    assert path.read_bytes() == before

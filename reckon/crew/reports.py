@@ -1307,7 +1307,9 @@ def _reviewer_store_records(
             continue
         if record is None:
             continue
-        records.append((stored_at or candidate, reviewed_run_id, record))
+        records.append(
+            (stored_at or candidate, reviewed_run_id, ledger.normalize_identity(record))
+        )
     return records
 
 

@@ -21,7 +21,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
-from reckon import review_tiers
+from reckon import ledger, review_tiers
 from reckon._timestamps import parse_utc
 from reckon.capabilities import _charged_input_from_usage
 from reckon.crew import lane_document as _lane_document
@@ -345,7 +345,7 @@ def select_review_for_head(
         return None, ""
     stored = review_module.read_review(project, run_id, reviewed_head_sha=head)
     if stored is not None:
-        return stored, ""
+        return ledger.normalize_identity(stored), ""
     newest = review_module.read_review(project, run_id)
     if newest is None:
         return None, ""
@@ -353,9 +353,9 @@ def select_review_for_head(
     if not described:
         # A record naming no revision predates the field; refusing every review
         # stored before it existed would refuse older records that are correct.
-        return newest, ""
+        return ledger.normalize_identity(newest), ""
     if same_revision(described, head):
-        return newest, ""
+        return ledger.normalize_identity(newest), ""
     return None, described
 
 
@@ -873,7 +873,8 @@ def newest_review_for_headless_run(
     """
     if reclaimed:
         return None
-    return review_module.read_review(project, run_id)
+    review = review_module.read_review(project, run_id)
+    return ledger.normalize_identity(review) if review is not None else None
 
 
 def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str]:
@@ -2125,6 +2126,26 @@ def _failed_review_backend(record: Mapping[str, Any]) -> str:
     return backend
 
 
+def _review_backend_excluded(name: str, config: Mapping[str, Any]) -> bool:
+    """Compare an exclusion's pair, or every model when it names a lane."""
+    raw = {str(item).strip() for item in config.get(REVIEW_EXCLUDED_BACKENDS_KEY) or ()}
+    if name in raw:
+        return True
+    if not raw:
+        return False
+    settings = (config.get("backends") or {}).get(name) or {}
+    identity = ledger.normalize_identity({**settings, "backend": name})
+    for excluded in raw:
+        lane, key = ledger.resolve_name(excluded)
+        if (
+            lane
+            and identity.get("lane") == lane
+            and (excluded == lane or identity.get("model_key") == key)
+        ):
+            return True
+    return False
+
+
 def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
     """Backends the flight configuration removes from review routing.
 
@@ -2133,7 +2154,12 @@ def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
     around it.
     """
     raw = config.get(REVIEW_EXCLUDED_BACKENDS_KEY)
-    return {str(name).strip() for name in raw or () if str(name).strip()}
+    names = {str(name).strip() for name in raw or () if str(name).strip()}
+    return names | {
+        str(name)
+        for name in config.get("backends") or {}
+        if _review_backend_excluded(str(name), config)
+    }
 
 
 def _review_in_harness_backends(config: Mapping[str, Any]) -> set[str]:
@@ -2195,7 +2221,7 @@ def _ordered_review_lanes(
     for preferred in (owning, local):
         if (
             preferred
-            and preferred not in excluded
+            and not _review_backend_excluded(preferred, config)
             and preferred not in in_harness
             and preferred not in ordered
         ):
@@ -9191,7 +9217,10 @@ def classify_pointer(
         ),
         None,
     )
+    identity = ledger.normalize_identity(record)
     classified = {
+        "lane": identity.get("lane"),
+        "model_key": identity.get("model_key"),
         "run_id": run_id,
         "backend": str(record.get("backend") or ""),
         "lane_cause": lane_cause,
@@ -10406,6 +10435,8 @@ def _compute_watch_snapshot(
         # The dispatching session, so a reader can tell its own fleet from a
         # peer's on a stream that is necessarily project-wide.
         "session": str(pointer.get("session") or ""),
+        "lane": row.get("lane"),
+        "model_key": row.get("model_key"),
         "backend": str(agent_map.get("backend") or "").strip(),
         "model": str(agent_map.get("model") or "").strip(),
         "effort": str(agent_map.get("effort") or "").strip(),
