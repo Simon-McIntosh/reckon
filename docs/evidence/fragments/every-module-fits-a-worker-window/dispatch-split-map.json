@@ -1,0 +1,1914 @@
+{
+  "base": "d01750d7820528e2039869f8cb15c3f76870f8d2",
+  "module": "reckon/crew/dispatch.py",
+  "modules": [
+    {
+      "path": "reckon/crew/dispatch_sections.py",
+      "concern": "Project and plan section resolution",
+      "members": [
+        "DONE_WHEN_PLAN_TEXT_SPAN_WORDS",
+        "project_mount_repository",
+        "resolve_project_repository",
+        "_normalised_words",
+        "_section_heading_matches",
+        "_plan_section_text",
+        "_resolved_plan_section_text",
+        "_dispatch_section_routing",
+        "_section_routing_failure",
+        "_section_routing_evidence",
+        "_longest_contiguous_word_span",
+        "_done_when_plan_overlap_warning"
+      ],
+      "estimated_tokens": 3912
+    },
+    {
+      "path": "reckon/crew/dispatch_accounting.py",
+      "concern": "Coordinator transcript and spend accounting",
+      "members": [
+        "_jsonl_events",
+        "_charged_claude_tokens",
+        "_claude_authoring_turn",
+        "_codex_authoring_turn",
+        "_ancestor_processes",
+        "_latest_transcript",
+        "_coordinator_runtime",
+        "_coordinator_accounting"
+      ],
+      "estimated_tokens": 1967
+    },
+    {
+      "path": "reckon/crew/dispatch_watch.py",
+      "concern": "Watcher arming and session host follower delivery",
+      "members": [
+        "WATCHER_LOAD_BOUND_SECONDS",
+        "WATCH_ARMING_ENV",
+        "_PYTEST_TEMPORARY_ROOT",
+        "_watch_arming_intent",
+        "watch_arming_suppressed",
+        "_running_under_pytest",
+        "_current_and_ancestor_argvs",
+        "_declared_basetemp",
+        "_temporary_home_root",
+        "_refuse_arming_under_a_throwaway_home",
+        "_watch_executable",
+        "_WATCH_PRODUCER_SUPERVISOR",
+        "_watch_producer_argv",
+        "_SpawnedHandle",
+        "_start_watch_producer",
+        "_stop_watch_producer_within",
+        "_ensure_watch_producer",
+        "SESSION_HOST_DIRECTORY",
+        "_session_host_runtime_root",
+        "_session_host_fifo",
+        "_ask_session_host_for_follower",
+        "_released_follower_warning",
+        "_unmet_follower_conditions",
+        "_FollowerAdmissionUnmet",
+        "_watcher_delivery_admission"
+      ],
+      "estimated_tokens": 6744
+    },
+    {
+      "path": "reckon/crew/dispatch_claims.py",
+      "concern": "Repository scope and dispatch claim arbitration",
+      "members": [
+        "DirectoryClaimConflict",
+        "_UNLAUNCHED_CLAIM_PHASES",
+        "_RepositoryScopeClaim",
+        "_scope_derivation_project",
+        "_resolved_scope_entries",
+        "_repository_scope_claims",
+        "NODE_DISPATCH_CLAIM_DIRECTORY",
+        "_NODE_CLAIM_RECORD_ATTEMPTS",
+        "_NODE_CLAIM_RECORD_INTERVAL_SECONDS",
+        "_NODE_CLAIM_EMPTY_RECORD_STALE_SECONDS",
+        "_NODE_CLAIM_ATTEMPTS",
+        "_node_dispatch_claim_path",
+        "_read_node_dispatch_claim",
+        "_claim_holder_is_alive",
+        "_empty_claim_is_stale",
+        "_reclaim_stale_node_dispatch_claim",
+        "_node_dispatch_in_flight_text",
+        "_NodeDispatchClaim",
+        "_claim_node_dispatch",
+        "_publish_launch_claim",
+        "_release_launch_claim",
+        "_claim_released_on_refusal",
+        "_can_write_worktree",
+        "_shared_landing_paths",
+        "_landing_fragment_paths",
+        "_resolve_declared_path",
+        "_grant_landing_write_paths",
+        "_writes_its_landing_fragment",
+        "_compose_dispatch_prompt",
+        "_resolved_node_scope_entries",
+        "_granted_landing_paths",
+        "_candidate_scope_entries",
+        "_peer_scopes_without_shared_landing_paths",
+        "_live_conflict_rows",
+        "_absent_path_names_a_directory",
+        "_directory_claim_overlaps",
+        "_live_conflict_is_a_directory_claim",
+        "_live_conflict_path",
+        "_directory_claim_alternatives",
+        "_directory_claim_row",
+        "_directory_claim_acceptance_kwargs",
+        "_directory_claim_warning_line",
+        "_directory_claim_acceptance_line",
+        "_fractional_digits",
+        "_peer_claim_is_a_later_racing_arrival",
+        "RACING_WINNER_WAIT_SECONDS",
+        "RACING_WINNER_POLL_SECONDS",
+        "_peer_claim_is_an_unlaunched_racing_winner",
+        "_racing_claim_current",
+        "_racing_clock",
+        "_racing_pause",
+        "_settle_racing_winner",
+        "_raise_repository_scope_conflict",
+        "refuse_widen_scope_conflicts"
+      ],
+      "estimated_tokens": 17536
+    },
+    {
+      "path": "reckon/crew/dispatch_peer.py",
+      "concern": "Adjacent peer discovery and question channels",
+      "members": [
+        "_INOTIFY_EVENTS",
+        "_scoped_python_files",
+        "_module_aliases",
+        "_dotted_name",
+        "_python_references",
+        "_references_any_module",
+        "_nodes_are_adjacent",
+        "_adjacent_live_peers",
+        "_channel_root",
+        "_read_json",
+        "_update_peer_index",
+        "_wire_peer_channels",
+        "_unwire_peer_channels",
+        "peer_list",
+        "_resolve_peer",
+        "_question_path",
+        "peer_ask",
+        "peer_reply",
+        "_wait_seconds",
+        "_inotify_descriptor",
+        "_needs_help_for_question",
+        "peer_read",
+        "_supervisor_command",
+        "_peer_command",
+        "_stamp_agent_display"
+      ],
+      "estimated_tokens": 5869
+    },
+    {
+      "path": "reckon/crew/dispatch_admission.py",
+      "concern": "Capacity, lane gates, placement and write authority",
+      "members": [
+        "_actionable_budget_hold",
+        "_live_runs_on_backend",
+        "_live_runs_across_backends",
+        "_refuse_over_reservation_roster",
+        "_refuse_over_concurrency_ceiling",
+        "_refuse_against_the_bookend_reserve",
+        "_resolved_token_budget",
+        "_dispatch_lane_observation",
+        "_unmetered_dispatch_alternatives",
+        "_lane_declaration_evidence",
+        "_lane_declaration_finding",
+        "_LANE_ADVISORY_MINIMUM_SAMPLES",
+        "_LANE_ADVISORY_DEFAULT_HORIZON_SECONDS",
+        "_lane_advisory_lane",
+        "_lane_advisory_costs",
+        "_lane_advisory_cheaper_lane",
+        "_lane_advisory_ledger_runs",
+        "_lane_advisory_horizon_seconds",
+        "_lane_advisory_instant",
+        "_dispatch_lane_advisory",
+        "_lane_reading_unknown",
+        "_metric_number",
+        "_lane_reading_carry",
+        "_dispatch_lane_reading",
+        "_LANE_GATE_WAITING_STATES",
+        "_LANE_GATE_PAUSED_KEY",
+        "_LANE_GATE_REASON_KEY",
+        "_LANE_GATE_CONFIG_PATH_KEY",
+        "LANE_GATE_READ_DEADLINE_SECONDS",
+        "LanePaused",
+        "LaneHeld",
+        "_GateReadDeadline",
+        "_gate_text_reader",
+        "_read_text_under_deadline",
+        "_gate_paths_agree",
+        "_gate_path_check",
+        "_dispatch_lane_gate",
+        "_gate_rows_from_payload",
+        "ORCHESTRATOR_LANE_DECLARATION_KEY",
+        "ORCHESTRATOR_LANE_STOP_SEVERITY",
+        "_orchestrator_lane_discharge_candidates",
+        "_dispatch_orchestrator_lane_stop",
+        "_orchestrator_lane_stop_line",
+        "_path_is_tmpfs",
+        "_REQUIREMENT_PROBE_TIMEOUT_SECONDS",
+        "_is_node_local_path",
+        "_endpoint_answers",
+        "check_placement_requirements",
+        "_placement_requirement_targets",
+        "_resolved_write_paths",
+        "_require_write_paths_in_authority",
+        "_sandbox_reachability",
+        "_fence_write_roots",
+        "_brief_digest",
+        "_store_brief",
+        "_brief_record",
+        "_brief_text"
+      ],
+      "estimated_tokens": 19180
+    },
+    {
+      "path": "reckon/crew/dispatch_picker.py",
+      "concern": "Picker inputs, route selection and shadow reporting",
+      "members": [
+        "PICKER_DISPATCH_TIMEOUT_SECONDS",
+        "_PICKER_PER_CALL_FIELDS",
+        "_reportable_picker_selection",
+        "_picker_fallback",
+        "_picker_ledger_rows",
+        "_picker_verdict_inputs",
+        "_picker_budget_snapshot",
+        "_picker_input",
+        "build_picker_inputs",
+        "dispatch_picker_selection",
+        "_write_existing_pointer",
+        "_attach_shadow_picker_selection",
+        "_record_shadow_picker_selection",
+        "_start_shadow_picker_selection",
+        "_picker_refusal_reasons",
+        "resolve_dispatch_route"
+      ],
+      "estimated_tokens": 4506
+    },
+    {
+      "path": "reckon/crew/dispatch_plan.py",
+      "concern": "Plan dispatch composition, admission preflight and result type",
+      "members": [
+        "DispatchPlan",
+        "plan_dispatch",
+        "_session_unreconciled_refusal",
+        "_resolved_wave_id",
+        "SPEC_LEVEL_OPENNESS",
+        "ROLE_OPENNESS",
+        "UNKNOWN_OPENNESS",
+        "open_endedness_score",
+        "_plan_impl_at_dispatch",
+        "_repairs_ledger_root",
+        "_require_repairs_target",
+        "_lane_allowance_unknown",
+        "_lane_worker_allowance",
+        "_dispatch_lane_allowance"
+      ],
+      "estimated_tokens": 15950
+    },
+    {
+      "path": "reckon/crew/dispatch.py",
+      "concern": "Dispatch and shadow entry points and the compatibility import surface",
+      "members": [
+        "FENCE_WORKERS",
+        "shadow_source",
+        "_shadow_dispatch_config",
+        "shadow",
+        "dispatch",
+        "if __name__ == \"__main__\""
+      ],
+      "estimated_tokens": 25703
+    },
+    {
+      "path": "reckon/crew/dispatch_launch.py",
+      "concern": "Worker launch, reaping and supervisor lifecycle",
+      "members": [
+        "_LAUNCHED_WORKERS",
+        "_LAUNCHED_WORKER_RUNS",
+        "_LAUNCHED_WORKERS_LOCK",
+        "_LAUNCHED_WORKERS_WAKE",
+        "_LAUNCHED_WORKER_REAPER",
+        "LAUNCH_FAILED_PHASE",
+        "_LAUNCH_FAILURE_STDERR_BYTES",
+        "_launched_worker_record",
+        "_placement_job_state",
+        "_placement_job_alive",
+        "_placed_record_identity",
+        "_wait_status_record",
+        "_launch_failure_record",
+        "_empty_stream_launch_failure",
+        "_record_launch_failure",
+        "_reap_launched_workers",
+        "_worker_reaper_loop",
+        "_ensure_launched_worker_reaper",
+        "_LAUNCHED_WORKERS_HANDOVER_ENV",
+        "_export_launched_workers_for_reexec",
+        "_adopt_launched_workers_from_reexec",
+        "_launched_prior_session",
+        "LaunchResolutionError",
+        "_current_host_facts",
+        "_worker_shim_directory",
+        "_worker_git_shim_directory",
+        "_worker_host_line",
+        "launch_search_path",
+        "_shim_names",
+        "_persisted_worker_environment",
+        "WORKER_SCRATCH_ROOT_ENV",
+        "WORKER_SCRATCH_ROOT_NAME",
+        "WORKER_SCRATCH_ROOT_DEFAULT",
+        "WORKER_SCRATCH_BUDGET_BYTES",
+        "TmpHeadroomError",
+        "require_worker_scratch_headroom",
+        "worker_scratch_root",
+        "worker_scratch_dir",
+        "tree_size_bytes",
+        "ensure_worker_scratch",
+        "_removable_scratch_target",
+        "remove_worker_scratch",
+        "_worker_runtime_environment",
+        "_worker_runtime_plan",
+        "_worker_process_environment",
+        "harness_command_index",
+        "_unresolved_backend_command",
+        "preflight_launch_command",
+        "resolve_launch_executable",
+        "apply_backend_placement",
+        "_placement_hold_payload",
+        "resolve_backend_placement",
+        "_PLACEMENT_PROBE_TIMEOUT_SECONDS",
+        "_PLACEMENT_PROBE_ATTEMPTS",
+        "placement_job_id",
+        "assert_routable_backends_resolvable",
+        "_spawn",
+        "_VANISHED_BIND_REFUSAL_PHRASES",
+        "SANDBOX_STARTUP_WINDOW_SECONDS",
+        "VANISHED_BIND_STARTUP_POLL_SECONDS",
+        "_read_only_bind_sources",
+        "_refusal_names_a_bind_source",
+        "_died_over_a_vanished_bind_source",
+        "_spawn_worker_retrying_a_vanished_bind",
+        "_spawn_detached_worker",
+        "SUPERVISOR_SPEC_NAME",
+        "TREE_SNAPSHOT_NAME",
+        "WORKER_RECORD_NAME",
+        "EXIT_RECORD_NAME",
+        "ATTEMPT_RECORD_NAME",
+        "SUPERVISOR_ENTRY",
+        "_supervisor_write",
+        "_stream_record_facts",
+        "_attempt_artifact_path",
+        "_prepare_attempt_records",
+        "_attempt_is_current",
+        "_write_attempt_artifact",
+        "CREW_STATE_ENVIRONMENT",
+        "SUPERVISOR_SURVIVAL_SECONDS",
+        "SUPERVISOR_SURVIVAL_POLL_SECONDS",
+        "_carried_crew_environment",
+        "_supervisor_exit_detail",
+        "_supervisor_launched_worker",
+        "_confirm_supervisor_survived",
+        "_supervisor_spec",
+        "_supervisor_argv",
+        "FLEET_RECORD_PATH_ENV",
+        "FLEET_SPAWN_ENV",
+        "FLEET_FIFO_NAME",
+        "FLEET_SPAWN_ACK_NAME",
+        "FLEET_SPAWN_ACK_BOUND_SECONDS",
+        "FLEET_REQUEST_POLL_SECONDS",
+        "_fleet_record_path",
+        "_read_fleet_record",
+        "_fleet_spawn_enabled",
+        "_runs_inside_fleet_allocation",
+        "_fleet_runtime_dir",
+        "_watch_request_slug",
+        "_write_fleet_request",
+        "_read_spawn_ack",
+        "_spawn_through_fleet",
+        "supervised_launch",
+        "_start_supervisor",
+        "_spawn_detached_supervisor",
+        "_intermediate_failure_detail",
+        "_SUPERVISOR_LAUNCHER_SOURCE",
+        "_worker_default_signals",
+        "_wait_status_from_returncode",
+        "_WorkerPid",
+        "_supervisor_spawn_worker",
+        "_plan_composed_the_fence",
+        "_boundary_snapshot_roots",
+        "_write_boundary_tree_snapshot",
+        "_supervisor_tree_snapshot",
+        "_supervisor_exit_record",
+        "_record_launch_abandoned_before_spawn",
+        "_stop_is_requested",
+        "_record_stop_before_spawn",
+        "_record_is_this_attempt",
+        "_started_phase",
+        "_delivered_phase",
+        "_publish_stored_phase",
+        "_WORKER_DONE_MANIFEST_STATUSES",
+        "TERMINAL_MANIFEST_GRACE_ENV",
+        "TERMINAL_MANIFEST_GRACE_DEFAULT",
+        "_WORKER_MANIFEST_POLL_SECONDS",
+        "_WORKER_GRACE_KILL_SECONDS",
+        "STOP_GRACE_ENV",
+        "STOP_GRACE_DEFAULT",
+        "_WORKER_MANIFEST_QUIET_SECONDS",
+        "_WORKER_MANIFEST_CEILING_SECONDS",
+        "_terminal_manifest_grace_seconds",
+        "_stop_grace_seconds",
+        "_supervisor_manifest_path",
+        "_worker_manifest_done_status",
+        "_worker_manifest_is_whole",
+        "_iso_stamp_to_ns",
+        "_attempt_started_ns",
+        "_supervisor_manifest_baseline_ns",
+        "_reap_worker_on_its_terminal_manifest",
+        "_PR_SET_CHILD_SUBREAPER",
+        "_become_child_subreaper",
+        "_child_processes_of",
+        "_reap_the_launched_worker",
+        "_run_supervisor"
+      ],
+      "estimated_tokens": 34535
+    },
+    {
+      "path": "reckon/crew/dispatch_sessions.py",
+      "concern": "Run observation, resume and lane changes",
+      "members": [
+        "attach",
+        "_stored_phase_survives",
+        "_terminal_phase_survives",
+        "observe",
+        "_apply_orientation_check",
+        "_record_node_id",
+        "_record_plan",
+        "_is_review_run",
+        "_reviewed_run_id",
+        "_task_identity",
+        "_run_stream_path",
+        "_session_too_large_to_continue",
+        "_prior_same_task_run",
+        "_prior_session_still_held",
+        "_task_session_resolution",
+        "_dispatch_session_absence",
+        "_capture_session_absence",
+        "_capture_member_session",
+        "_current_harness_session",
+        "_names_the_fence",
+        "_harness_behind_the_fence",
+        "_backend_settings",
+        "_recorded_manifest_path",
+        "_carry_declared_placement",
+        "_carry_fence_unprotected",
+        "resume_plan",
+        "_recorded_task_node",
+        "_worktree_git_read",
+        "_inherited_worktree_reading",
+        "_lane_prompt",
+        "_restate_time_fence",
+        "change_lane",
+        "terminate",
+        "record_resumption"
+      ],
+      "estimated_tokens": 21657
+    }
+  ],
+  "edges": {
+    "reckon/crew/dispatch_sections.py": {
+      "module_level": {},
+      "function_level": {}
+    },
+    "reckon/crew/dispatch_accounting.py": {
+      "module_level": {},
+      "function_level": {}
+    },
+    "reckon/crew/dispatch_watch.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/dispatch_accounting.py": [
+          "_session_host_fifo -> _coordinator_runtime"
+        ],
+        "reckon/crew/dispatch_launch.py": [
+          "_ask_session_host_for_follower -> _write_fleet_request",
+          "_start_watch_producer -> FLEET_SPAWN_ACK_NAME",
+          "_start_watch_producer -> _fleet_runtime_dir",
+          "_start_watch_producer -> _fleet_spawn_enabled",
+          "_start_watch_producer -> _read_fleet_record",
+          "_start_watch_producer -> _runs_inside_fleet_allocation",
+          "_start_watch_producer -> _spawn_through_fleet",
+          "_start_watch_producer -> _watch_request_slug"
+        ],
+        "reckon/crew/dispatch_sessions.py": [
+          "_FollowerAdmissionUnmet -> attach",
+          "_released_follower_warning -> attach"
+        ]
+      }
+    },
+    "reckon/crew/dispatch_claims.py": {
+      "module_level": {},
+      "function_level": {}
+    },
+    "reckon/crew/dispatch_peer.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/dispatch_launch.py": [
+          "_peer_command -> SUPERVISOR_ENTRY",
+          "_supervisor_command -> _run_supervisor"
+        ]
+      }
+    },
+    "reckon/crew/dispatch_admission.py": {
+      "module_level": {},
+      "function_level": {}
+    },
+    "reckon/crew/dispatch_picker.py": {
+      "module_level": {},
+      "function_level": {}
+    },
+    "reckon/crew/dispatch_plan.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/dispatch_admission.py": [
+          "DispatchPlan -> _brief_record",
+          "_lane_worker_allowance -> _metric_number",
+          "plan_dispatch -> ORCHESTRATOR_LANE_DECLARATION_KEY",
+          "plan_dispatch -> _brief_digest",
+          "plan_dispatch -> _dispatch_lane_advisory",
+          "plan_dispatch -> _dispatch_lane_gate",
+          "plan_dispatch -> _dispatch_lane_observation",
+          "plan_dispatch -> _dispatch_lane_reading",
+          "plan_dispatch -> _dispatch_orchestrator_lane_stop",
+          "plan_dispatch -> _lane_advisory_cheaper_lane",
+          "plan_dispatch -> _lane_advisory_ledger_runs",
+          "plan_dispatch -> _lane_declaration_evidence",
+          "plan_dispatch -> _lane_declaration_finding",
+          "plan_dispatch -> _orchestrator_lane_stop_line",
+          "plan_dispatch -> _path_is_tmpfs",
+          "plan_dispatch -> _require_write_paths_in_authority",
+          "plan_dispatch -> _resolved_token_budget",
+          "plan_dispatch -> _resolved_write_paths",
+          "plan_dispatch -> _sandbox_reachability",
+          "plan_dispatch -> _unmetered_dispatch_alternatives",
+          "plan_dispatch -> check_placement_requirements"
+        ],
+        "reckon/crew/dispatch_claims.py": [
+          "plan_dispatch -> _can_write_worktree",
+          "plan_dispatch -> _directory_claim_acceptance_kwargs",
+          "plan_dispatch -> _directory_claim_acceptance_line",
+          "plan_dispatch -> _directory_claim_alternatives",
+          "plan_dispatch -> _directory_claim_warning_line",
+          "plan_dispatch -> _grant_landing_write_paths",
+          "plan_dispatch -> _live_conflict_is_a_directory_claim",
+          "plan_dispatch -> _live_conflict_rows",
+          "plan_dispatch -> _raise_repository_scope_conflict",
+          "plan_dispatch -> _repository_scope_claims"
+        ],
+        "reckon/crew/dispatch_launch.py": [
+          "plan_dispatch -> require_worker_scratch_headroom"
+        ],
+        "reckon/crew/dispatch_peer.py": [
+          "DispatchPlan -> _stamp_agent_display"
+        ],
+        "reckon/crew/dispatch_picker.py": [
+          "plan_dispatch -> _picker_fallback",
+          "plan_dispatch -> _picker_refusal_reasons",
+          "plan_dispatch -> _reportable_picker_selection",
+          "plan_dispatch -> resolve_dispatch_route"
+        ],
+        "reckon/crew/dispatch_sections.py": [
+          "plan_dispatch -> _dispatch_section_routing",
+          "plan_dispatch -> _done_when_plan_overlap_warning",
+          "plan_dispatch -> _section_routing_evidence",
+          "plan_dispatch -> project_mount_repository",
+          "plan_dispatch -> resolve_project_repository"
+        ],
+        "reckon/crew/dispatch_watch.py": [
+          "plan_dispatch -> _watcher_delivery_admission"
+        ]
+      }
+    },
+    "reckon/crew/dispatch_launch.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/dispatch_picker.py": [
+          "_publish_stored_phase -> _write_existing_pointer"
+        ],
+        "reckon/crew/dispatch_sessions.py": [
+          "_plan_composed_the_fence -> _harness_behind_the_fence",
+          "_supervisor_manifest_path -> _recorded_manifest_path",
+          "_supervisor_spawn_worker -> _recorded_manifest_path"
+        ]
+      }
+    },
+    "reckon/crew/dispatch_sessions.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/dispatch.py": [
+          "change_lane -> FENCE_WORKERS",
+          "resume_plan -> FENCE_WORKERS"
+        ],
+        "reckon/crew/dispatch_admission.py": [
+          "change_lane -> _actionable_budget_hold",
+          "change_lane -> _fence_write_roots",
+          "resume_plan -> _actionable_budget_hold",
+          "resume_plan -> _fence_write_roots"
+        ],
+        "reckon/crew/dispatch_launch.py": [
+          "_carry_fence_unprotected -> _plan_composed_the_fence",
+          "_recorded_manifest_path -> WORKER_RECORD_NAME",
+          "_stored_phase_survives -> LAUNCH_FAILED_PHASE",
+          "change_lane -> _launched_prior_session",
+          "change_lane -> _plan_composed_the_fence",
+          "change_lane -> _spawn",
+          "change_lane -> _worker_runtime_environment",
+          "change_lane -> _worker_runtime_plan",
+          "change_lane -> preflight_launch_command",
+          "change_lane -> resolve_launch_executable",
+          "observe -> LAUNCH_FAILED_PHASE",
+          "observe -> _empty_stream_launch_failure",
+          "resume_plan -> _launched_prior_session",
+          "resume_plan -> _plan_composed_the_fence",
+          "resume_plan -> _worker_runtime_plan",
+          "resume_plan -> preflight_launch_command",
+          "resume_plan -> resolve_backend_placement",
+          "resume_plan -> resolve_launch_executable"
+        ],
+        "reckon/crew/dispatch_peer.py": [
+          "change_lane -> _stamp_agent_display"
+        ],
+        "reckon/crew/dispatch_plan.py": [
+          "change_lane -> plan_dispatch"
+        ],
+        "reckon/crew/dispatch_sections.py": [
+          "resume_plan -> project_mount_repository",
+          "resume_plan -> resolve_project_repository"
+        ]
+      }
+    }
+  },
+  "census": {
+    "imports": {
+      "ATTEMPT_RECORD_NAME": [
+        "tests/test_a_stopped_run_ends_its_supervisor.py",
+        "tests/test_a_terminal_worker_exits_within_its_grace.py",
+        "tests/test_attempt_exit_waits_for_its_worker.py",
+        "tests/test_supervisor_starts_without_a_runpy_warning.py"
+      ],
+      "BudgetHold": [
+        "reckon/crew/recovery.py",
+        "reckon/crew/resumption.py",
+        "tests/test_dry_run_predicts_the_launcher.py"
+      ],
+      "CREW_STATE_ENVIRONMENT": [
+        "tests/test_fleet_lane_carries_the_dispatch_environment.py"
+      ],
+      "CrewError": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py",
+        "tests/test_picker_in_dispatch.py",
+        "tests/test_supervisor_outlives_its_launcher.py"
+      ],
+      "DONE_WHEN_PLAN_TEXT_SPAN_WORDS": [
+        "tests/test_a_brief_points_rather_than_quotes.py"
+      ],
+      "DispatchPlan": [
+        "reckon/crew/picker/snapshot.py",
+        "reckon/crew/routing.py",
+        "tests/test_context_estimate_reads_declared_files.py"
+      ],
+      "EXIT_RECORD_NAME": [
+        "tests/test_a_killed_worker_resumes_to_completion.py",
+        "tests/test_a_stopped_run_ends_its_supervisor.py",
+        "tests/test_an_early_exit_keeps_its_status.py",
+        "tests/test_attempt_exit_waits_for_its_worker.py",
+        "tests/test_dispatch_result_matches_launch.py",
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "FENCE_WORKERS": [
+        "tests/test_fence_is_on_again.py",
+        "tests/test_fenced_resume_reaches_its_harness.py"
+      ],
+      "FLEET_RECORD_PATH_ENV": [
+        "tests/test_unmanaged_producer_keeps_a_log.py"
+      ],
+      "FLEET_SPAWN_ENV": [
+        "tests/test_arm_lock_is_never_held_by_a_follower.py",
+        "tests/test_unmanaged_producer_keeps_a_log.py"
+      ],
+      "LAUNCH_FAILED_PHASE": [
+        "tests/test_crew_launch_failure.py",
+        "tests/test_spawn_retries_a_vanished_bind.py"
+      ],
+      "LanePaused": [
+        "reckon/cli.py",
+        "reckon/crew/recovery.py"
+      ],
+      "LaunchResolutionError": [
+        "tests/test_crew_placement.py"
+      ],
+      "PICKER_DISPATCH_TIMEOUT_SECONDS": [
+        "tests/test_routing_picker_key.py"
+      ],
+      "RACING_WINNER_WAIT_SECONDS": [
+        "tests/test_a_racing_loser_outlives_a_withdrawn_winner.py"
+      ],
+      "SANDBOX_STARTUP_WINDOW_SECONDS": [
+        "tests/test_spawn_retries_a_vanished_bind.py"
+      ],
+      "STOP_GRACE_DEFAULT": [
+        "tests/test_a_stopped_run_ends_its_supervisor.py"
+      ],
+      "STOP_GRACE_ENV": [
+        "tests/test_a_stopped_run_ends_its_supervisor.py"
+      ],
+      "SUPERVISOR_ENTRY": [
+        "reckon/crew/supervisor_main.py"
+      ],
+      "SUPERVISOR_SPEC_NAME": [
+        "tests/test_a_killed_worker_resumes_to_completion.py",
+        "tests/test_an_early_exit_keeps_its_status.py"
+      ],
+      "SUPERVISOR_SURVIVAL_SECONDS": [
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "ScopeConflict": [
+        "tests/test_review_record_is_one_runs_claim.py"
+      ],
+      "TERMINAL_MANIFEST_GRACE_ENV": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py",
+        "tests/test_attempt_exit_waits_for_its_worker.py"
+      ],
+      "TREE_SNAPSHOT_NAME": [
+        "tests/test_boundary_check_reads_two_trees.py"
+      ],
+      "TmpHeadroomError": [
+        "reckon/cli.py",
+        "tests/test_dispatch_refuses_without_tmp_headroom.py"
+      ],
+      "WATCHER_LOAD_BOUND_SECONDS": [
+        "tests/test_a_repair_hold_names_its_cause.py",
+        "tests/test_a_review_never_runs_in_harness.py",
+        "tests/test_a_review_waits_for_a_saturated_lane.py",
+        "tests/test_crew_dispatch_arming.py",
+        "tests/test_crew_orphan.py",
+        "tests/test_crew_session_delivery.py",
+        "tests/test_crew_watch_lifetime.py",
+        "tests/test_follow_observes_other_sessions.py",
+        "tests/test_reflex_dispatches_one_repair.py",
+        "tests/test_removed_flag_migration.py",
+        "tests/test_repair_skips_out_of_repo_findings.py",
+        "tests/test_rereview_keeps_its_lane.py",
+        "tests/test_review_lane_follows_its_run.py",
+        "tests/test_review_reflex_selects_a_backend.py",
+        "tests/test_review_reflex_sweep.py",
+        "tests/test_review_role_is_not_reviewed.py",
+        "tests/test_scoring_dispatches_its_review.py",
+        "tests/test_the_reflex_resumes_an_unpromoted_run.py"
+      ],
+      "WATCH_ARMING_ENV": [
+        "reckon/cli.py",
+        "tests/conftest.py",
+        "tests/test_arming_guard_knows_a_test_session.py",
+        "tests/test_dispatch_records_the_pace_row.py",
+        "tests/test_dispatch_spawns_through_the_fleet.py",
+        "tests/test_fleet_lane_carries_the_dispatch_environment.py",
+        "tests/test_test_watchers_are_reaped.py",
+        "tests/test_unmanaged_producer_keeps_a_log.py",
+        "tests/test_watch_arming_isolation.py"
+      ],
+      "WORKER_RECORD_NAME": [
+        "tests/test_a_stopped_run_ends_its_supervisor.py",
+        "tests/test_a_terminal_worker_exits_within_its_grace.py",
+        "tests/test_attempt_exit_waits_for_its_worker.py"
+      ],
+      "WORKER_SCRATCH_BUDGET_BYTES": [
+        "reckon/crew/promotion.py"
+      ],
+      "WORKER_SCRATCH_ROOT_DEFAULT": [
+        "tests/test_run_scratch_stays_in_its_temp_root.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "WORKER_SCRATCH_ROOT_ENV": [
+        "tests/conftest.py",
+        "tests/test_a_passing_run_clears_its_arms.py",
+        "tests/test_a_release_removes_all_worker_scratch.py",
+        "tests/test_a_runs_scratch_ends_with_the_run.py",
+        "tests/test_run_scratch_stays_in_its_temp_root.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "WORKER_SCRATCH_ROOT_NAME": [
+        "tests/conftest.py",
+        "tests/test_run_scratch_stays_in_its_temp_root.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "_LAUNCHED_WORKERS": [
+        "tests/test_a_reexec_keeps_its_children.py",
+        "tests/test_spawn_retries_a_vanished_bind.py"
+      ],
+      "_LAUNCHED_WORKERS_HANDOVER_ENV": [
+        "tests/test_a_reexec_keeps_its_children.py"
+      ],
+      "_LAUNCHED_WORKERS_LOCK": [
+        "tests/test_a_reexec_keeps_its_children.py",
+        "tests/test_crew_launch_failure.py",
+        "tests/test_spawn_retries_a_vanished_bind.py"
+      ],
+      "_LAUNCHED_WORKER_REAPER": [
+        "tests/test_a_reexec_keeps_its_children.py"
+      ],
+      "_LAUNCHED_WORKER_RUNS": [
+        "tests/test_crew_launch_failure.py",
+        "tests/test_spawn_retries_a_vanished_bind.py"
+      ],
+      "_RepositoryScopeClaim": [
+        "reckon/crew/runs.py",
+        "tests/test_a_racing_loser_outlives_a_withdrawn_winner.py",
+        "tests/test_one_of_two_racing_reviews_survives.py"
+      ],
+      "_UNLAUNCHED_CLAIM_PHASES": [
+        "reckon/crew/runs.py"
+      ],
+      "_WORKER_MANIFEST_POLL_SECONDS": [
+        "tests/test_a_stopped_run_ends_its_supervisor.py"
+      ],
+      "__file__": [
+        "tests/test_a_stopped_run_ends_its_supervisor.py",
+        "tests/test_dispatch_timestamps_reuse_the_parser.py",
+        "tests/test_reflex_review_outlives_its_follower.py",
+        "tests/test_supervisor_outlives_its_launcher.py"
+      ],
+      "_actionable_budget_hold": [
+        "reckon/crew/resumption.py",
+        "tests/test_dispatch_timestamps_reuse_the_parser.py"
+      ],
+      "_adopt_launched_workers_from_reexec": [
+        "reckon/cli.py",
+        "tests/test_a_reexec_keeps_its_children.py"
+      ],
+      "_attempt_artifact_path": [
+        "tests/test_attempt_exit_waits_for_its_worker.py"
+      ],
+      "_backend_settings": [
+        "reckon/crew/promotion.py",
+        "reckon/crew/resumption.py",
+        "tests/test_backend_reconstruction_settings.py",
+        "tests/test_crew_placed_promotion.py"
+      ],
+      "_backends": [
+        "tests/test_crew_interrupted_phase.py",
+        "tests/test_dispatch_spawns_through_the_fleet.py",
+        "tests/test_every_attempt_is_supervised.py",
+        "tests/test_refused_dispatch_leaves_no_pointer.py",
+        "tests/test_unprotected_paths_reach_every_launch.py"
+      ],
+      "_budget_verdict": [
+        "tests/test_crew_lane_change.py"
+      ],
+      "_can_write_worktree": [
+        "tests/test_landing_contract_and_gate_agree.py",
+        "tests/test_role_write_scope.py"
+      ],
+      "_capture_member_session": [
+        "reckon/crew/promotion.py"
+      ],
+      "_carried_crew_environment": [
+        "tests/test_fleet_lane_carries_the_dispatch_environment.py"
+      ],
+      "_claude_authoring_turn": [
+        "tests/test_crew_coordinator_spend.py"
+      ],
+      "_codex_authoring_turn": [
+        "tests/test_crew_coordinator_spend.py"
+      ],
+      "_compose_dispatch_prompt": [
+        "tests/test_a_time_fence_names_its_clock.py",
+        "tests/test_landing_contract_and_gate_agree.py",
+        "tests/test_landing_contract_follows_the_grant.py"
+      ],
+      "_confirm_supervisor_survived": [
+        "tests/test_dispatch_result_matches_launch.py",
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "_create_worktree": [
+        "tests/test_orchestrator_lane_fence.py"
+      ],
+      "_current_harness_session": [
+        "tests/test_dispatch_reads_the_resolved_session.py"
+      ],
+      "_declared_basetemp": [
+        "tests/test_arming_guard_knows_a_test_session.py"
+      ],
+      "_died_over_a_vanished_bind_source": [
+        "tests/test_an_early_exit_keeps_its_status.py"
+      ],
+      "_directory_claim_overlaps": [
+        "tests/test_directory_claim_asks_first.py"
+      ],
+      "_dispatch_lane_gate": [
+        "reckon/crew/picker/lane_context.py",
+        "reckon/crew/picker/snapshot.py"
+      ],
+      "_dispatch_lane_reading": [
+        "tests/test_lane_reading_at_dispatch.py"
+      ],
+      "_dispatch_orchestrator_lane_stop": [
+        "tests/test_orchestrator_lane_fence.py",
+        "tests/test_the_lane_rule_reaches_its_surfaces.py"
+      ],
+      "_ensure_launched_worker_reaper": [
+        "tests/test_a_reexec_keeps_its_children.py"
+      ],
+      "_ensure_watch_producer": [
+        "reckon/crew/runs.py",
+        "tests/test_arm_lock_is_never_held_by_a_follower.py",
+        "tests/test_unmanaged_producer_keeps_a_log.py",
+        "tests/test_watch_arming_isolation.py"
+      ],
+      "_export_launched_workers_for_reexec": [
+        "reckon/cli.py",
+        "tests/test_a_reexec_keeps_its_children.py"
+      ],
+      "_gate_text_reader": [
+        "tests/test_dispatch_holds_while_the_lane_is_paused.py"
+      ],
+      "_grant_landing_write_paths": [
+        "tests/test_context_estimate_excludes_granted_paths.py"
+      ],
+      "_inherited_worktree_reading": [
+        "tests/test_recovery_dispatch_blank_worktree_sites.py"
+      ],
+      "_inotify_descriptor": [
+        "tests/test_crew_peers.py"
+      ],
+      "_is_node_local_path": [
+        "reckon/host.py"
+      ],
+      "_is_review_run": [
+        "tests/test_plan_review_prefix_is_one_constant.py"
+      ],
+      "_iso_stamp_to_ns": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py"
+      ],
+      "_landing_fragment_paths": [
+        "reckon/crew/routing.py"
+      ],
+      "_lane_advisory_cheaper_lane": [
+        "tests/test_lane_advisory_on_dispatch.py"
+      ],
+      "_lane_advisory_costs": [
+        "tests/test_lane_advisory_on_dispatch.py"
+      ],
+      "_lane_advisory_instant": [
+        "tests/test_dispatch_timestamps_reuse_the_parser.py"
+      ],
+      "_lane_prompt": [
+        "tests/test_lane_change_reads_the_worktree.py"
+      ],
+      "_lane_reading_carry": [
+        "tests/test_dispatch_timestamps_reuse_the_parser.py",
+        "tests/test_lane_readers_share_the_gate_aware_headroom.py",
+        "tests/test_lane_reading_at_dispatch.py"
+      ],
+      "_lane_worker_allowance": [
+        "reckon/crew/picker/snapshot.py",
+        "reckon/crew/run_time_profile.py",
+        "tests/test_dispatch_counts_worker_slots.py"
+      ],
+      "_launch_failure_record": [
+        "tests/test_crew_placed_liveness.py"
+      ],
+      "_mutate_pointer": [
+        "tests/test_worker_env_export.py"
+      ],
+      "_names_the_fence": [
+        "tests/test_fenced_resume_reaches_its_harness.py"
+      ],
+      "_node_dispatch_claim_path": [
+        "tests/test_concurrent_dispatch_of_one_node.py"
+      ],
+      "_normalised_words": [
+        "reckon/crew/plan_review.py"
+      ],
+      "_path_is_tmpfs": [
+        "reckon/host.py",
+        "tests/test_host_facts.py"
+      ],
+      "_peer_claim_is_a_later_racing_arrival": [
+        "tests/test_one_of_two_racing_reviews_survives.py"
+      ],
+      "_persisted_worker_environment": [
+        "tests/test_worker_path_carries_shims.py"
+      ],
+      "_picker_budget_snapshot": [
+        "tests/test_picker_dispatch_pace.py",
+        "tests/test_stale_reading_reaches_jev.py"
+      ],
+      "_picker_ledger_rows": [
+        "tests/test_dispatch_speed.py"
+      ],
+      "_plan_impl_at_dispatch": [
+        "tests/test_promotion_requires_impl_move.py"
+      ],
+      "_plan_section_text": [
+        "tests/test_one_raw_text_section_reader.py",
+        "tests/test_section_routing_reaches_dispatch.py",
+        "tests/test_the_dispatch_brief_reads_the_section_prose.py"
+      ],
+      "_prepare_attempt_records": [
+        "tests/test_a_killed_worker_resumes_to_completion.py",
+        "tests/test_an_early_exit_keeps_its_status.py"
+      ],
+      "_prior_session_still_held": [
+        "tests/test_a_held_member_is_read.py"
+      ],
+      "_process_start_time": [
+        "tests/test_a_killed_worker_resumes_to_completion.py",
+        "tests/test_a_stopped_run_ends_its_supervisor.py",
+        "tests/test_concurrent_dispatch_of_one_node.py"
+      ],
+      "_publish_launch_claim": [
+        "tests/test_orchestrator_lane_fence.py"
+      ],
+      "_publish_stored_phase": [
+        "tests/test_dispatch_returns_without_worker.py",
+        "tests/test_stored_phase_advances.py",
+        "tests/test_terminal_stored_phase_has_one_writer.py"
+      ],
+      "_raise_repository_scope_conflict": [
+        "reckon/crew/runs.py",
+        "tests/test_a_racing_loser_outlives_a_withdrawn_winner.py",
+        "tests/test_crew_dispatch_guard.py",
+        "tests/test_fence_widening.py"
+      ],
+      "_read_only_bind_sources": [
+        "tests/test_spawn_retries_a_vanished_bind.py"
+      ],
+      "_reap_launched_workers": [
+        "tests/test_crew_launch_failure.py"
+      ],
+      "_record_launch_failure": [
+        "tests/test_crew_launch_failure.py",
+        "tests/test_crew_placed_liveness.py"
+      ],
+      "_record_shadow_picker_selection": [
+        "tests/test_shadow_pick_off_critical_path.py"
+      ],
+      "_recorded_task_node": [
+        "reckon/cli.py"
+      ],
+      "_refuse_against_the_bookend_reserve": [
+        "tests/test_reserve_judges_published_windows.py"
+      ],
+      "_refuse_arming_under_a_throwaway_home": [
+        "reckon/crew/runs.py",
+        "tests/test_arming_guard_knows_a_test_session.py",
+        "tests/test_watch_arming_isolation.py"
+      ],
+      "_refuse_over_concurrency_ceiling": [
+        "tests/test_crew_binding_bound.py",
+        "tests/test_dispatch_launch_is_not_its_own_conflict.py",
+        "tests/test_reservation_reach_reaches_dispatch.py",
+        "tests/test_the_cores_bound_reads_the_reservation.py"
+      ],
+      "_refuse_over_reservation_roster": [
+        "tests/test_crew_placement_reservation.py",
+        "tests/test_reservation_is_shared_across_projects.py",
+        "tests/test_the_roster_counts_live_placed_workers.py"
+      ],
+      "_release_launch_claim": [
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "_removable_scratch_target": [
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "_remove_worktree": [
+        "tests/test_dispatch_result_matches_launch.py"
+      ],
+      "_repository_scope_claims": [
+        "tests/test_concurrent_dispatch_of_one_node.py",
+        "tests/test_dispatch_reads_derivations_cheaply.py",
+        "tests/test_fence_widening.py"
+      ],
+      "_resolved_write_paths": [
+        "tests/test_crew_test_role.py"
+      ],
+      "_restate_time_fence": [
+        "tests/test_a_time_fence_names_its_clock.py"
+      ],
+      "_run_supervisor": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py",
+        "tests/test_an_early_exit_keeps_its_status.py",
+        "tests/test_attempt_exit_waits_for_its_worker.py",
+        "tests/test_stored_phase_advances.py"
+      ],
+      "_section_heading_matches": [
+        "tests/test_the_dispatch_brief_reads_the_section_prose.py"
+      ],
+      "_shadow_dispatch_config": [
+        "tests/test_crew_shadow_overrides.py"
+      ],
+      "_shared_landing_paths": [
+        "tests/test_shared_landing_paths.py"
+      ],
+      "_spawn": [
+        "tests/test_a_reexec_keeps_its_children.py",
+        "tests/test_backend_environment.py",
+        "tests/test_crew_launch_failure.py",
+        "tests/test_resume_reaps_its_child.py"
+      ],
+      "_spawn_detached_supervisor": [
+        "tests/test_supervisor_outlives_its_launcher.py"
+      ],
+      "_spawn_detached_worker": [
+        "tests/test_spawn_retries_a_vanished_bind.py"
+      ],
+      "_stamp_agent_display": [
+        "tests/test_crew_ticker_layout.py"
+      ],
+      "_start_supervisor": [
+        "tests/test_a_killed_worker_resumes_to_completion.py",
+        "tests/test_a_stopped_run_ends_its_supervisor.py"
+      ],
+      "_start_watch_producer": [
+        "tests/test_arm_lock_is_never_held_by_a_follower.py",
+        "tests/test_dispatch_spawns_through_the_fleet.py",
+        "tests/test_watch_arming_isolation.py"
+      ],
+      "_stop_grace_seconds": [
+        "tests/test_a_stopped_run_ends_its_supervisor.py"
+      ],
+      "_supervisor_argv": [
+        "tests/test_supervisor_starts_without_a_runpy_warning.py"
+      ],
+      "_supervisor_command": [
+        "reckon/crew/supervisor_main.py"
+      ],
+      "_supervisor_spawn_worker": [
+        "tests/test_spawn_retries_a_vanished_bind.py",
+        "tests/test_worker_env_export.py"
+      ],
+      "_supervisor_spec": [
+        "tests/test_a_killed_worker_resumes_to_completion.py",
+        "tests/test_an_early_exit_keeps_its_status.py",
+        "tests/test_supervisor_starts_without_a_runpy_warning.py",
+        "tests/test_worker_env_export.py",
+        "tests/test_worker_path_carries_shims.py"
+      ],
+      "_supervisor_tree_snapshot": [
+        "tests/test_boundary_check_reads_two_trees.py"
+      ],
+      "_supervisor_write": [
+        "tests/test_supervisor_write_reuses_the_store.py"
+      ],
+      "_task_session_resolution": [
+        "tests/test_dispatch_reads_the_resolved_session.py"
+      ],
+      "_temporary_home_root": [
+        "tests/test_arming_guard_knows_a_test_session.py"
+      ],
+      "_terminal_phase_survives": [
+        "tests/test_terminal_stored_phase_has_one_writer.py"
+      ],
+      "_utc_now": [
+        "tests/test_a_killed_worker_resumes_to_completion.py",
+        "tests/test_dispatch_timestamps_reuse_the_parser.py",
+        "tests/test_one_of_two_racing_reviews_survives.py"
+      ],
+      "_worker_host_line": [
+        "tests/test_the_host_line_allows_a_separate_partition_job.py",
+        "tests/test_worker_path_carries_shims.py"
+      ],
+      "_worker_manifest_done_status": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py"
+      ],
+      "_worker_process_environment": [
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "_worker_runtime_environment": [
+        "tests/test_a_release_removes_all_worker_scratch.py",
+        "tests/test_run_scratch_stays_in_its_temp_root.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "_write_boundary_tree_snapshot": [
+        "tests/test_boundary_check_reads_two_trees.py"
+      ],
+      "_write_json": [
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "_writes_its_landing_fragment": [
+        "tests/test_landing_contract_follows_the_grant.py"
+      ],
+      "apply_backend_placement": [
+        "tests/test_crew_lane_agnostic_placement.py",
+        "tests/test_crew_placement.py",
+        "tests/test_crew_placement_reservation.py",
+        "tests/test_placement_steps_under_reservation.py",
+        "tests/test_reservation_is_shared_across_projects.py"
+      ],
+      "assert_routable_backends_resolvable": [
+        "reckon/crew/recovery.py",
+        "reckon/crew/runs.py"
+      ],
+      "build_picker_inputs": [
+        "reckon/cli.py",
+        "tests/test_dispatch_speed.py"
+      ],
+      "change_lane": [
+        "reckon/cli.py",
+        "tests/test_brief_dispatch.py",
+        "tests/test_direct_resume_needs_an_observed_death.py",
+        "tests/test_dispatch_counts_worker_slots.py",
+        "tests/test_every_attempt_is_supervised.py",
+        "tests/test_resume_and_lane_change_follow_their_own_attempt.py",
+        "tests/test_routing_picker_key.py",
+        "tests/test_run_record_reports_actual_resume.py",
+        "tests/test_session_lives_on_its_run.py",
+        "tests/test_time_fence_follows_the_attempt.py",
+        "tests/test_unmeasured_horizon_never_refuses.py",
+        "tests/test_unprotected_paths_reach_every_launch.py",
+        "tests/test_worker_env_export.py"
+      ],
+      "dispatch": [
+        "reckon/crew/recovery.py",
+        "tests/test_boundary_check_reads_two_trees.py",
+        "tests/test_crew_orphan.py",
+        "tests/test_shadow_pick_off_critical_path.py",
+        "tests/test_the_fence_fails_closed.py",
+        "tests/test_unprotected_paths_reach_every_launch.py"
+      ],
+      "dispatch_picker_selection": [
+        "reckon/cli.py",
+        "tests/test_picker_dispatch_pace.py",
+        "tests/test_picker_in_dispatch.py",
+        "tests/test_picker_latency.py",
+        "tests/test_picker_pick_within_bound.py",
+        "tests/test_picker_route_keeps_availability_refusal.py"
+      ],
+      "ensure_worker_scratch": [
+        "tests/test_a_passing_run_clears_its_arms.py",
+        "tests/test_a_release_removes_all_worker_scratch.py",
+        "tests/test_a_runs_scratch_ends_with_the_run.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "harness_command_index": [
+        "tests/test_crew_launch_resolution.py"
+      ],
+      "launch_search_path": [
+        "tests/test_fenced_launch_resolves_the_backend.py",
+        "tests/test_shim_never_resolves_to_a_shim.py",
+        "tests/test_worker_path_carries_shims.py"
+      ],
+      "observe": [
+        "reckon/crew/recovery.py",
+        "tests/test_crew_interrupted_phase.py",
+        "tests/test_every_run_carries_a_session_id.py",
+        "tests/test_recovery_reads_the_exit_record.py"
+      ],
+      "os": [
+        "tests/test_dispatch_refuses_without_tmp_headroom.py"
+      ],
+      "peer_ask": [
+        "tests/test_crew_peers.py"
+      ],
+      "peer_list": [
+        "tests/test_crew_peers.py"
+      ],
+      "peer_read": [
+        "tests/test_crew_peers.py"
+      ],
+      "peer_reply": [
+        "tests/test_crew_peers.py"
+      ],
+      "placement_job_id": [
+        "tests/test_crew_placement.py"
+      ],
+      "plan_dispatch": [
+        "reckon/crew/recovery.py",
+        "tests/test_brief_beside_a_plan_section.py",
+        "tests/test_dispatch_refuses_without_tmp_headroom.py",
+        "tests/test_lane_advisory_on_dispatch.py",
+        "tests/test_shared_landing_paths.py"
+      ],
+      "pointer_path": [
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "project_mount_repository": [
+        "reckon/cli.py",
+        "reckon/crew/promotion.py",
+        "reckon/crew/resumption.py"
+      ],
+      "read_pointer": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py"
+      ],
+      "record_resumption": [
+        "reckon/crew/resumption.py",
+        "tests/test_a_stale_manifest_does_not_license_promotion.py",
+        "tests/test_dispatch_reads_the_resolved_session.py"
+      ],
+      "refuse_widen_scope_conflicts": [
+        "reckon/cli.py"
+      ],
+      "remove_worker_scratch": [
+        "reckon/crew/promotion.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "repository_identity": [
+        "tests/test_crew_cli_repository.py",
+        "tests/test_crew_repository_from_the_project.py"
+      ],
+      "require_worker_scratch_headroom": [
+        "tests/test_dispatch_refuses_without_tmp_headroom.py"
+      ],
+      "resolve_backend_placement": [
+        "tests/test_crew_placement_reservation.py",
+        "tests/test_dispatch_places_into_the_shared_reservation.py"
+      ],
+      "resolve_dispatch_route": [
+        "reckon/cli.py"
+      ],
+      "resolve_launch_executable": [
+        "tests/test_crew_launch_failure.py",
+        "tests/test_fenced_launch_resolves_the_backend.py",
+        "tests/test_worker_path_carries_shims.py"
+      ],
+      "resolve_project_repository": [
+        "reckon/cli.py",
+        "reckon/crew/promotion.py",
+        "reckon/crew/recovery.py",
+        "reckon/crew/resumption.py"
+      ],
+      "resume_plan": [
+        "reckon/crew/resumption.py",
+        "tests/test_a_killed_worker_resumes_to_completion.py",
+        "tests/test_crew_launch_resolution.py",
+        "tests/test_direct_resume_needs_an_observed_death.py",
+        "tests/test_dry_run_predicts_the_launcher.py",
+        "tests/test_resume_evidence_freshness.py",
+        "tests/test_resume_refuses_a_live_worker.py",
+        "tests/test_resume_refuses_a_session_over_the_window.py",
+        "tests/test_session_lives_on_its_run.py",
+        "tests/test_session_resumes_only_its_own_task.py",
+        "tests/test_the_fleet_allocation_is_adopted.py"
+      ],
+      "run_dir": [
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "shadow": [
+        "reckon/cli.py",
+        "tests/test_crew.py",
+        "tests/test_crew_shadow_paths.py",
+        "tests/test_routing_picker_key.py"
+      ],
+      "shadow_source": [
+        "reckon/cli.py"
+      ],
+      "shutil": [
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "subprocess": [
+        "tests/test_backend_environment.py",
+        "tests/test_shadow_pick_off_critical_path.py",
+        "tests/test_watch_arming_isolation.py",
+        "tests/test_worker_env_export.py"
+      ],
+      "supervised_launch": [
+        "reckon/crew/resumption.py",
+        "tests/test_a_terminal_worker_exits_within_its_grace.py"
+      ],
+      "terminate": [
+        "tests/test_a_stopped_run_ends_its_supervisor.py",
+        "tests/test_every_signal_caller_names_its_run_directory.py"
+      ],
+      "time": [
+        "tests/test_crew_peers.py"
+      ],
+      "tree_size_bytes": [
+        "reckon/crew/promotion.py",
+        "reckon/crew/routing.py"
+      ],
+      "watch_state": [
+        "tests/test_arm_lock_is_never_held_by_a_follower.py"
+      ],
+      "worker_scratch_dir": [
+        "reckon/worker_git_shim.py",
+        "tests/test_a_passing_run_clears_its_arms.py",
+        "tests/test_a_release_removes_all_worker_scratch.py",
+        "tests/test_a_runs_scratch_ends_with_the_run.py",
+        "tests/test_git_shim_checks_the_resolved_repo.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "worker_scratch_root": [
+        "reckon/crew/promotion.py",
+        "reckon/crew/routing.py",
+        "tests/test_run_scratch_stays_in_its_temp_root.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ]
+    },
+    "patches": {
+      "FENCE_WORKERS": [
+        "tests/test_backend_environment.py:223",
+        "tests/test_fenced_resume_reaches_its_harness.py:167",
+        "tests/test_fenced_resume_reaches_its_harness.py:199",
+        "tests/test_fenced_resume_reaches_its_harness.py:236",
+        "tests/test_fenced_resume_reaches_its_harness.py:266",
+        "tests/test_fleet_lane_carries_the_dispatch_environment.py:210",
+        "tests/test_resume_anchors_the_run_harness_home.py:89",
+        "tests/test_resume_and_lane_change_follow_their_own_attempt.py:269",
+        "tests/test_resume_and_lane_change_follow_their_own_attempt.py:292",
+        "tests/test_resume_and_lane_change_follow_their_own_attempt.py:325",
+        "tests/test_unprotected_paths_reach_every_launch.py:257",
+        "tests/test_unprotected_paths_reach_every_launch.py:282"
+      ],
+      "FLEET_SPAWN_ACK_BOUND_SECONDS": [
+        "tests/test_dispatch_spawns_through_the_fleet.py:368"
+      ],
+      "LANE_GATE_READ_DEADLINE_SECONDS": [
+        "tests/test_dispatch_holds_while_the_lane_is_paused.py:380",
+        "tests/test_dispatch_holds_while_the_lane_is_paused.py:444"
+      ],
+      "PICKER_DISPATCH_TIMEOUT_SECONDS": [
+        "tests/test_picker_in_dispatch.py:190",
+        "tests/test_picker_pick_within_bound.py:153"
+      ],
+      "WATCHER_LOAD_BOUND_SECONDS": [
+        "tests/test_unmanaged_producer_keeps_a_log.py:335"
+      ],
+      "_SUPERVISOR_LAUNCHER_SOURCE": [
+        "tests/test_supervisor_outlives_its_launcher.py:277"
+      ],
+      "_WORKER_MANIFEST_QUIET_SECONDS": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py:217"
+      ],
+      "_budget_verdict": [
+        "tests/test_crew_lane_change.py:309",
+        "tests/test_direct_resume_needs_an_observed_death.py:311",
+        "tests/test_dispatch_counts_worker_slots.py:476",
+        "tests/test_every_attempt_is_supervised.py:320",
+        "tests/test_picker_in_dispatch.py:354",
+        "tests/test_resume_and_lane_change_follow_their_own_attempt.py:253",
+        "tests/test_the_lane_override_is_explicit_and_recorded.py:131",
+        "tests/test_time_fence_follows_the_attempt.py:263",
+        "tests/test_unprotected_paths_reach_every_launch.py:301"
+      ],
+      "_can_write_worktree": [
+        "tests/test_crew.py:2769"
+      ],
+      "_coordinator_accounting": [
+        "tests/test_crew_coordinator_spend.py:100"
+      ],
+      "_create_worktree": [
+        "tests/test_a_raise_failure_is_visible.py:331",
+        "tests/test_a_review_never_runs_in_harness.py:153",
+        "tests/test_a_review_waits_for_a_saturated_lane.py:246",
+        "tests/test_a_running_review_finishes_across_a_resume.py:323",
+        "tests/test_concurrent_dispatch_of_one_node.py:201",
+        "tests/test_concurrent_dispatch_of_one_node.py:277",
+        "tests/test_concurrent_dispatch_of_one_node.py:328",
+        "tests/test_concurrent_dispatch_of_one_node.py:361",
+        "tests/test_concurrent_dispatch_of_one_node.py:388",
+        "tests/test_concurrent_dispatch_of_one_node.py:422",
+        "tests/test_concurrent_dispatch_of_one_node.py:451",
+        "tests/test_concurrent_dispatch_of_one_node.py:472",
+        "tests/test_crew_dispatch_arming.py:89",
+        "tests/test_crew_routes.py:493",
+        "tests/test_dispatch_holds_while_the_lane_is_paused.py:146",
+        "tests/test_dispatch_holds_while_the_lane_is_paused.py:542",
+        "tests/test_dispatch_launch_is_not_its_own_conflict.py:225",
+        "tests/test_dispatch_launch_is_not_its_own_conflict.py:269",
+        "tests/test_dispatch_launch_is_not_its_own_conflict.py:327",
+        "tests/test_dispatch_launch_is_not_its_own_conflict.py:370",
+        "tests/test_dispatch_launch_is_not_its_own_conflict.py:390",
+        "tests/test_dispatch_records_the_pace_row.py:254",
+        "tests/test_dispatch_spawns_through_the_fleet.py:202",
+        "tests/test_fleet_lane_carries_the_dispatch_environment.py:207",
+        "tests/test_no_member_dispatch_runs_alone.py:99",
+        "tests/test_one_of_two_racing_reviews_survives.py:234",
+        "tests/test_one_of_two_racing_reviews_survives.py:261",
+        "tests/test_one_of_two_racing_reviews_survives.py:293",
+        "tests/test_one_of_two_racing_reviews_survives.py:330",
+        "tests/test_one_of_two_racing_reviews_survives.py:364",
+        "tests/test_orchestrator_lane_fence.py:234",
+        "tests/test_reflex_dispatches_one_repair.py:147",
+        "tests/test_reflex_keys_on_reviewed_run_and_head.py:147",
+        "tests/test_repair_skips_out_of_repo_findings.py:140",
+        "tests/test_rereview_keeps_its_lane.py:140",
+        "tests/test_review_carries_forward.py:314",
+        "tests/test_review_lane_follows_its_run.py:137",
+        "tests/test_review_plan_command.py:463",
+        "tests/test_review_record_is_one_runs_claim.py:200",
+        "tests/test_review_reflex_selects_a_backend.py:118",
+        "tests/test_review_reflex_sweep.py:134",
+        "tests/test_review_role_is_not_reviewed.py:112",
+        "tests/test_scope_refusal_names_its_claimant.py:287",
+        "tests/test_scoring_dispatches_its_review.py:117",
+        "tests/test_the_fence_fails_closed.py:229",
+        "tests/test_the_reflex_resumes_an_unpromoted_run.py:123",
+        "tests/test_time_fence_follows_the_attempt.py:148",
+        "tests/test_watch_arming_isolation.py:101"
+      ],
+      "_current_and_ancestor_argvs": [
+        "tests/test_arming_guard_knows_a_test_session.py:125"
+      ],
+      "_current_host_facts": [
+        "tests/test_crew_lane_agnostic_placement.py:230",
+        "tests/test_crew_placement.py:115",
+        "tests/test_crew_placement.py:74"
+      ],
+      "_declared_basetemp": [
+        "tests/test_arming_guard_knows_a_test_session.py:114",
+        "tests/test_arming_guard_knows_a_test_session.py:138"
+      ],
+      "_dispatch_lane_observation": [
+        "tests/test_dispatch_names_its_backend.py:166",
+        "tests/test_lane_advisory_on_dispatch.py:119"
+      ],
+      "_dispatch_orchestrator_lane_stop": [
+        "tests/test_orchestrator_lane_fence.py:232"
+      ],
+      "_done_when_plan_overlap_warning": [
+        "tests/test_a_brief_points_rather_than_quotes.py:298",
+        "tests/test_a_brief_points_rather_than_quotes.py:304",
+        "tests/test_brief_beside_a_plan_section.py:191"
+      ],
+      "_ensure_watch_producer": [
+        "tests/test_crew_dispatch_guard.py:147",
+        "tests/test_no_member_dispatch_runs_alone.py:100",
+        "tests/test_shared_landing_paths.py:109",
+        "tests/test_unmanaged_producer_keeps_a_log.py:127",
+        "tests/test_watcher_arming_fallback.py:178"
+      ],
+      "_gate_text_reader": [
+        "tests/test_dispatch_holds_while_the_lane_is_paused.py:364",
+        "tests/test_dispatch_holds_while_the_lane_is_paused.py:386",
+        "tests/test_dispatch_holds_while_the_lane_is_paused.py:452"
+      ],
+      "_inotify_descriptor": [
+        "tests/test_crew_peers.py:173"
+      ],
+      "_lane_advisory_ledger_runs": [
+        "tests/test_lane_advisory_on_dispatch.py:138"
+      ],
+      "_mutate_pointer": [
+        "tests/test_crew_placed_liveness.py:185",
+        "tests/test_crew_placed_liveness.py:213"
+      ],
+      "_names_the_fence": [
+        "tests/test_fenced_resume_reaches_its_harness.py:267"
+      ],
+      "_persisted_worker_environment": [
+        "tests/test_worker_path_carries_shims.py:165"
+      ],
+      "_picker_ledger_rows": [
+        "tests/test_dispatch_speed.py:364"
+      ],
+      "_picker_verdict_inputs": [
+        "tests/test_picker_route_keeps_availability_refusal.py:374"
+      ],
+      "_placed_record_identity": [
+        "tests/test_crew_placed_liveness.py:178",
+        "tests/test_crew_placed_liveness.py:209"
+      ],
+      "_placement_job_alive": [
+        "tests/test_crew_placed_liveness.py:181"
+      ],
+      "_placement_job_state": [
+        "tests/test_crew_placed_liveness.py:143",
+        "tests/test_crew_placed_liveness.py:159"
+      ],
+      "_process_start_time": [
+        "tests/test_worker_env_export.py:63"
+      ],
+      "_publish_launch_claim": [
+        "tests/test_orchestrator_lane_fence.py:233"
+      ],
+      "_publish_stored_phase": [
+        "tests/test_stored_phase_advances.py:61"
+      ],
+      "_racing_claim_current": [
+        "tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:115"
+      ],
+      "_racing_clock": [
+        "tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:113"
+      ],
+      "_racing_pause": [
+        "tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:114"
+      ],
+      "_raise_repository_scope_conflict": [
+        "tests/test_crew_dispatch_guard.py:611",
+        "tests/test_ledger.py:857"
+      ],
+      "_reap_launched_workers": [
+        "tests/test_resume_reaps_its_child.py:307"
+      ],
+      "_reap_the_launched_worker": [
+        "tests/test_attempt_exit_waits_for_its_worker.py:74"
+      ],
+      "_reap_worker_on_its_terminal_manifest": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py:163"
+      ],
+      "_record_stop_before_spawn": [
+        "tests/test_stored_phase_advances.py:274"
+      ],
+      "_refuse_against_the_bookend_reserve": [
+        "tests/test_picker_in_dispatch.py:359"
+      ],
+      "_refuse_over_concurrency_ceiling": [
+        "tests/test_dispatch_launch_is_not_its_own_conflict.py:326"
+      ],
+      "_removable_scratch_target": [
+        "tests/test_worker_scratch_lives_with_its_run.py:428",
+        "tests/test_worker_scratch_lives_with_its_run.py:465"
+      ],
+      "_remove_worktree": [
+        "tests/test_a_rollback_keeps_its_cause.py:172",
+        "tests/test_a_rollback_keeps_its_cause.py:199",
+        "tests/test_dispatch_result_matches_launch.py:332"
+      ],
+      "_repository_scope_claims": [
+        "tests/test_concurrent_dispatch_of_one_node.py:218"
+      ],
+      "_repository_tree_snapshot": [
+        "tests/test_dispatch_result_matches_launch.py:299",
+        "tests/test_dispatch_result_matches_launch.py:333",
+        "tests/test_refused_dispatch_leaves_no_pointer.py:321"
+      ],
+      "_resolved_plan_section_text": [
+        "tests/test_a_brief_points_rather_than_quotes.py:281"
+      ],
+      "_signal_process_group": [
+        "tests/test_crew_lane_change.py:148",
+        "tests/test_crew_lane_change.py:217",
+        "tests/test_worker_env_export.py:224"
+      ],
+      "_spawn": [
+        "tests/test_crew_cli_repository.py:135",
+        "tests/test_crew_lane_change.py:155",
+        "tests/test_crew_lane_change.py:218"
+      ],
+      "_spawn_detached_supervisor": [
+        "tests/test_dispatch_spawns_through_the_fleet.py:322",
+        "tests/test_dispatch_spawns_through_the_fleet.py:349"
+      ],
+      "_spawn_through_fleet": [
+        "tests/test_unmanaged_producer_keeps_a_log.py:343"
+      ],
+      "_start_supervisor": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py:639",
+        "tests/test_dispatch_stdout_is_one_document.py:142",
+        "tests/test_worker_env_export.py:58"
+      ],
+      "_start_watch_producer": [
+        "tests/test_arm_lock_is_never_held_by_a_follower.py:110",
+        "tests/test_crew_dispatch_watcher_required.py:150",
+        "tests/test_follower_bounds_its_lifetime.py:832",
+        "tests/test_follower_bounds_its_lifetime.py:891"
+      ],
+      "_supervisor_manifest_baseline_ns": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py:169",
+        "tests/test_a_terminal_worker_exits_within_its_grace.py:198"
+      ],
+      "_supervisor_spawn_worker": [
+        "tests/test_stored_phase_advances.py:242"
+      ],
+      "_terminal_phase_survives": [
+        "tests/test_terminal_stored_phase_has_one_writer.py:64",
+        "tests/test_terminal_stored_phase_has_one_writer.py:77"
+      ],
+      "_utc_now": [
+        "tests/test_crew_refusal_visibility.py:358"
+      ],
+      "_watch_executable": [
+        "tests/test_arm_lock_is_never_held_by_a_follower.py:92",
+        "tests/test_unmanaged_producer_keeps_a_log.py:293",
+        "tests/test_unmanaged_producer_keeps_a_log.py:322",
+        "tests/test_watch_arming_isolation.py:266"
+      ],
+      "_wire_peer_channels": [
+        "tests/test_refused_dispatch_leaves_no_pointer.py:338"
+      ],
+      "_worker_host_line": [
+        "tests/test_the_host_line_allows_a_separate_partition_job.py:100"
+      ],
+      "_worker_manifest_done_status": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py:206"
+      ],
+      "_worker_manifest_is_whole": [
+        "tests/test_a_terminal_worker_exits_within_its_grace.py:214"
+      ],
+      "_write_json": [
+        "tests/test_dispatch_returns_without_worker.py:1341"
+      ],
+      "change_lane": [
+        "tests/test_crew_lane_change.py:351",
+        "tests/test_unmeasured_horizon_never_refuses.py:356"
+      ],
+      "dispatch": [
+        "tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py:147",
+        "tests/test_an_unmarked_finding_is_reported_not_repaired.py:269",
+        "tests/test_crew_obligations.py:313",
+        "tests/test_one_automatic_repair_round_per_run.py:188",
+        "tests/test_reflex_dispatches_one_repair.py:305",
+        "tests/test_reflex_dispatches_one_repair.py:334",
+        "tests/test_repair_answers_only_blocking_findings.py:296",
+        "tests/test_repair_skips_out_of_repo_findings.py:242",
+        "tests/test_review_plan_command.py:291",
+        "tests/test_review_plan_command.py:330",
+        "tests/test_review_store_reads_and_fences_by_head.py:225",
+        "tests/test_the_reflex_resumes_an_unpromoted_run.py:240"
+      ],
+      "dispatch_picker_selection": [
+        "tests/test_every_dry_run_refusal_carries_the_echo.py:203",
+        "tests/test_picker_route_keeps_availability_refusal.py:347"
+      ],
+      "list_live": [
+        "tests/test_a_held_member_is_read.py:181",
+        "tests/test_a_held_member_is_read.py:224"
+      ],
+      "member_in_flight_verdict": [
+        "tests/test_a_held_member_is_read.py:353",
+        "tests/test_a_held_member_is_read.py:361"
+      ],
+      "mounted_repository_projects": [
+        "tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:93"
+      ],
+      "new_run_id": [
+        "tests/test_a_brief_points_rather_than_quotes.py:296",
+        "tests/test_routing_picker_key.py:165"
+      ],
+      "observe": [
+        "tests/test_crew.py:3783",
+        "tests/test_crew_interrupted_phase.py:210",
+        "tests/test_crew_obligations.py:314"
+      ],
+      "plan_dispatch": [
+        "tests/test_direct_resume_needs_an_observed_death.py:310",
+        "tests/test_dispatch_counts_worker_slots.py:475",
+        "tests/test_every_attempt_is_supervised.py:316",
+        "tests/test_lane_advisory_on_dispatch.py:351",
+        "tests/test_resume_and_lane_change_follow_their_own_attempt.py:296",
+        "tests/test_resume_and_lane_change_follow_their_own_attempt.py:330",
+        "tests/test_time_fence_follows_the_attempt.py:262",
+        "tests/test_unprotected_paths_reach_every_launch.py:300"
+      ],
+      "process_alive": [
+        "tests/test_crew_lane_change.py:143",
+        "tests/test_crew_lane_change.py:216",
+        "tests/test_crew_recovery.py:849",
+        "tests/test_worker_env_export.py:223"
+      ],
+      "require_plan_reviewed": [
+        "tests/test_brief_beside_a_plan_section.py:188",
+        "tests/test_brief_beside_a_plan_section.py:220"
+      ],
+      "require_plan_section_visible": [
+        "tests/test_brief_beside_a_plan_section.py:185",
+        "tests/test_brief_beside_a_plan_section.py:214"
+      ],
+      "require_worker_scratch_headroom": [
+        "tests/conftest.py:744"
+      ],
+      "resolve_dispatch_ledger_root": [
+        "tests/test_direct_resume_needs_an_observed_death.py:312",
+        "tests/test_dispatch_counts_worker_slots.py:479",
+        "tests/test_every_attempt_is_supervised.py:317",
+        "tests/test_resume_and_lane_change_follow_their_own_attempt.py:256",
+        "tests/test_time_fence_follows_the_attempt.py:266",
+        "tests/test_unprotected_paths_reach_every_launch.py:304"
+      ],
+      "resolve_project_repository": [
+        "tests/test_every_dry_run_refusal_carries_the_echo.py:208"
+      ],
+      "scheduler_job_reason": [
+        "tests/test_crew_placed_liveness.py:144",
+        "tests/test_crew_placed_liveness.py:162"
+      ],
+      "section_prose": [
+        "tests/test_the_dispatch_brief_reads_the_section_prose.py:149"
+      ],
+      "subprocess": [
+        "tests/test_spawn_retries_a_vanished_bind.py:186"
+      ],
+      "watch_state": [
+        "tests/test_arm_lock_is_never_held_by_a_follower.py:238",
+        "tests/test_crew_cli_repository.py:140",
+        "tests/test_crew_dispatch_guard.py:146",
+        "tests/test_crew_launch_resolution.py:132",
+        "tests/test_crew_repository_from_the_project.py:130",
+        "tests/test_fenced_launch_resolves_the_backend.py:138",
+        "tests/test_no_member_dispatch_runs_alone.py:103",
+        "tests/test_shared_landing_paths.py:108"
+      ]
+    },
+    "source_reads": {
+      "tests/test_dispatch_timestamps_reuse_the_parser.py": [
+        "163: Path(dispatch.__file__).read_text()",
+        "182: Path(dispatch.__file__).read_text()"
+      ],
+      "tests/test_the_dispatch_brief_reads_the_section_prose.py": [
+        "225: inspect.getsource(dispatch._plan_section_text)"
+      ]
+    },
+    "module_state": {
+      "SPEC_LEVEL_OPENNESS": {
+        "path": "reckon/crew/dispatch_plan.py",
+        "members": [
+          "open_endedness_score"
+        ],
+        "value": "{'exact': 0.0, 'guided': 0.5, 'open': 1.0}",
+        "writers": []
+      },
+      "ROLE_OPENNESS": {
+        "path": "reckon/crew/dispatch_plan.py",
+        "members": [
+          "open_endedness_score"
+        ],
+        "value": "{'cleanup': 0.0, 'documentation': 0.0, 'review': 0.0, 'test': 0.0, 'verify': 0.0, 'implement': 0.5, 'design': 1.0, 'inve",
+        "writers": []
+      },
+      "_LAUNCHED_WORKERS": {
+        "path": "reckon/crew/dispatch_launch.py",
+        "members": [
+          "_adopt_launched_workers_from_reexec",
+          "_export_launched_workers_for_reexec",
+          "_reap_launched_workers",
+          "_spawn_detached_worker",
+          "_worker_reaper_loop"
+        ],
+        "value": "set()",
+        "writers": [
+          "_adopt_launched_workers_from_reexec",
+          "_reap_launched_workers",
+          "_spawn_detached_worker"
+        ]
+      },
+      "_LAUNCHED_WORKER_RUNS": {
+        "path": "reckon/crew/dispatch_launch.py",
+        "members": [
+          "_adopt_launched_workers_from_reexec",
+          "_export_launched_workers_for_reexec",
+          "_reap_launched_workers",
+          "_spawn_detached_worker"
+        ],
+        "value": "{}",
+        "writers": [
+          "_adopt_launched_workers_from_reexec",
+          "_reap_launched_workers",
+          "_spawn_detached_worker"
+        ]
+      },
+      "_LAUNCHED_WORKERS_LOCK": {
+        "path": "reckon/crew/dispatch_launch.py",
+        "members": [
+          "_adopt_launched_workers_from_reexec",
+          "_ensure_launched_worker_reaper",
+          "_export_launched_workers_for_reexec",
+          "_reap_launched_workers",
+          "_spawn_detached_worker",
+          "_worker_reaper_loop"
+        ],
+        "value": "threading.Lock()",
+        "writers": [
+          "_adopt_launched_workers_from_reexec",
+          "_ensure_launched_worker_reaper",
+          "_export_launched_workers_for_reexec",
+          "_reap_launched_workers",
+          "_spawn_detached_worker",
+          "_worker_reaper_loop"
+        ]
+      },
+      "_LAUNCHED_WORKERS_WAKE": {
+        "path": "reckon/crew/dispatch_launch.py",
+        "members": [
+          "_adopt_launched_workers_from_reexec",
+          "_spawn_detached_worker",
+          "_worker_reaper_loop"
+        ],
+        "value": "threading.Event()",
+        "writers": [
+          "_adopt_launched_workers_from_reexec",
+          "_spawn_detached_worker",
+          "_worker_reaper_loop"
+        ]
+      },
+      "_LAUNCHED_WORKER_REAPER": {
+        "path": "reckon/crew/dispatch_launch.py",
+        "members": [
+          "_ensure_launched_worker_reaper"
+        ],
+        "value": "{'thread': None}",
+        "writers": [
+          "_ensure_launched_worker_reaper"
+        ]
+      }
+    }
+  },
+  "commands": [
+    "git ls-files reckon tests scripts",
+    "git grep -n -E '(from reckon\\.crew\\.dispatch import|import reckon\\.crew\\.dispatch|from reckon\\.crew import dispatch)' -- reckon tests scripts",
+    "git grep -n -E '(monkeypatch\\.setattr|mock\\.patch|patch\\(|inspect\\.getsource|dispatch\\.py)' -- tests scripts reckon",
+    "git grep -n 'importlib.import_module(\"reckon.crew.dispatch\")' -- reckon tests scripts",
+    "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/9cf43820/dispatch-split-map /home/ITER/mcintos/Code/reckon/.venv/bin/python3 /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T084916687254-dispatch-split-map/build_map.py"
+  ]
+}
