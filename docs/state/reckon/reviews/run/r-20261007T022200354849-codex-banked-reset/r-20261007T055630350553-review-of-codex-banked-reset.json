@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5b947ae9eabe806a05523c957cfe14e4b13872ef",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/budget.py:2574 _group_allowance (reached through group_pace by the budget preflight and the picker snapshot)",
+    "reckon/cli.py:7171 crew_budget_reset"
+  ],
+  "completed_at": "2026-10-07T06:13:55.308Z",
+  "dispatched_at": "2026-10-07T05:56:53Z",
+  "findings": [
+    {
+      "file": "tests/test_codex_banked_reset.py",
+      "line": "205",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion `store.is_relative_to(home)` compares a path the test itself built as home/\"crew\"/STORE_FILENAME, so it is true by construction and can never fail; it does not show, as its comment claims, that no write landed outside the temp home, and a real isolation guard should assert the host crew state path was left untouched."
+    },
+    {
+      "file": "reckon/budget.py",
+      "line": "2045",
+      "severity": "follow-on",
+      "text": "follow-on: budget_reset.observe runs on every group's allowance derivation (group_pace reaches it through the picker and the budget preflight) and, once a record exists, rewrites the durable file unconditionally, so a concurrent `budget-reset --used` can be overwritten by an observe that read the record before the clear and wrote it back still available; the read-modify-write is not serialized."
+    },
+    {
+      "file": "reckon/budget.py",
+      "line": "2062",
+      "severity": "follow-on",
+      "text": "follow-on: reset_available is set on the group allowance but reckon/crew/picker/snapshot.py does not copy it onto the picker candidate, so Jev does not see why the pace moved; the node reported this as a follow-on rather than editing the file, which a concurrent node owns."
+    }
+  ],
+  "head_log_revision": "b68f4da6a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; b68f4da6a adds the module, the budget scaling and the CLI (635 insertions), 44636a5f0 adds only the 24-line evidence fragment.",
+    "done_when": "the plan \u00a76 fence asks for a durable atomic flag, a crew subcommand surface, pace counting one extra window with reset_available, automatic use-detection and tests; the manifest records the gate over tests/test_budget*.py, tests/test_picker_pressure.py, tests/test_burn_admission.py and tests/test_codex_banked_reset.py, base 152 passed / head 158 passed, both EXIT=0.",
+    "goal": "read the node goal (a banked codex reset adds one window of allowance until used) against the diff at 44636a5f0; reckon/crew/budget_reset.py:120 sets, clears and reads the flag, reckon/cli.py:7171 exposes the crew budget-reset subcommand, and reckon/budget.py:1965 scales the allowance by one window and stamps reset_available.",
+    "manifest": "read; it records base 152 passed / head 158 passed, the negative control EXIT=1 at negative-control.log, and its own follow-ons.",
+    "write_paths": "read the declared five-path scope; the diffstat over 5b947ae9..44636a5f0 lists exactly reckon/budget.py, reckon/cli.py, reckon/crew/budget_reset.py, tests/test_codex_banked_reset.py and the evidence fragment, all inside it."
+  },
+  "justifications": {
+    "durability": "the six tests in tests/test_codex_banked_reset.py plus a negative control that reddens the pace test guard the change, but the store-isolation assertion at tests/test_codex_banked_reset.py:205 is tautological and the observe read-modify-write at reckon/budget.py:2045 is untested against a concurrent clear.",
+    "evidence": "gate-base.log reads 152 passed in 38.68s EXIT=0 at 5b947ae9 and gate-head.log 158 passed in 47.99s EXIT=0 at b68f4da6a, and negative-control.log ends 1 failed EXIT=1.",
+    "fit": "reckon/crew/budget_reset.py:7 and the CLI docstring at reckon/cli.py:7172 name the mechanism rather than a plan and match the crew subcommand idiom (split-runs), but the test file name tests/test_codex_banked_reset.py is provider-specific for a group-generic mechanism.",
+    "goal_fidelity": "reckon/crew/budget_reset.py:120-223 sets, clears and reads the flag, reckon/budget.py:1965-2062 counts one extra window with reset_available, and reckon/budget_reset.py:226 detects a consumed reset, delivering the goal's four parts.",
+    "reuse": "the module reuses reckon/_store.py:write_json_atomically and reckon/crew/obligation_snapshot.py:crew_home, and a search over reckon/crew for a durable per-group flag (reserve.py, budget_group.py, hold.py, pace.py, window_reading.py) found no owner, so it forks no capability.",
+    "scope_discipline": "the diffstat over 5b947ae9..44636a5f0 (reckon/budget.py, reckon/cli.py, reckon/crew/budget_reset.py, tests/test_codex_banked_reset.py, docs/evidence/fragments/one-typesafe-model-picker/codex-banked-reset.html) is entirely inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 5b947ae9eabe806a05523c957cfe14e4b13872ef\nreviewed_head_sha: 44636a5f08a669dd18c565197e7945874eddb854\nVERDICT goal: read the node goal (a banked codex reset adds one window of allowance until used) against the diff at 44636a5f0; reckon/crew/budget_reset.py:120 sets, clears and reads the flag, reckon/cli.py:7171 exposes the crew budget-reset subcommand, and reckon/budget.py:1965 scales the allowance by one window and stamps reset_available.\nVERDICT done_when: the plan \u00a76 fence asks for a durable atomic flag, a crew subcommand surface, pace counting one extra window with reset_available, automatic use-detection and tests; the manifest records the gate over tests/test_budget*.py, tests/test_picker_pressure.py, tests/test_burn_admission.py and tests/test_codex_banked_reset.py, base 152 passed / head 158 passed, both EXIT=0.\nVERDICT write_paths: read the declared five-path scope; the diffstat over 5b947ae9..44636a5f0 lists exactly reckon/budget.py, reckon/cli.py, reckon/crew/budget_reset.py, tests/test_codex_banked_reset.py and the evidence fragment, all inside it.\nVERDICT manifest: read; it records base 152 passed / head 158 passed, the negative control EXIT=1 at negative-control.log, and its own follow-ons.\nVERDICT diff: read commit by commit; b68f4da6a adds the module, the budget scaling and the CLI (635 insertions), 44636a5f0 adds only the 24-line evidence fragment.\nCALL_SITES: reckon/budget.py:2574 _group_allowance (reached through group_pace by the budget preflight and the picker snapshot), reckon/cli.py:7171 crew_budget_reset\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/budget_reset.py:120-223 sets, clears and reads the flag, reckon/budget.py:1965-2062 counts one extra window with reset_available, and reckon/budget_reset.py:226 detects a consumed reset, delivering the goal's four parts.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-base.log reads 152 passed in 38.68s EXIT=0 at 5b947ae9 and gate-head.log 158 passed in 47.99s EXIT=0 at b68f4da6a, and negative-control.log ends 1 failed EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diffstat over 5b947ae9..44636a5f0 (reckon/budget.py, reckon/cli.py, reckon/crew/budget_reset.py, tests/test_codex_banked_reset.py, docs/evidence/fragments/one-typesafe-model-picker/codex-banked-reset.html) is entirely inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the six tests in tests/test_codex_banked_reset.py plus a negative control that reddens the pace test guard the change, but the store-isolation assertion at tests/test_codex_banked_reset.py:205 is tautological and the observe read-modify-write at reckon/budget.py:2045 is untested against a concurrent clear.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/budget_reset.py:7 and the CLI docstring at reckon/cli.py:7172 name the mechanism rather than a plan and match the crew subcommand idiom (split-runs), but the test file name tests/test_codex_banked_reset.py is provider-specific for a group-generic mechanism.\nSCORE reuse: 19\nJUSTIFICATION reuse: the module reuses reckon/_store.py:write_json_atomically and reckon/crew/obligation_snapshot.py:crew_home, and a search over reckon/crew for a durable per-group flag (reserve.py, budget_group.py, hold.py, pace.py, window_reading.py) found no owner, so it forks no capability.\nFINDING tests/test_codex_banked_reset.py:205 follow-on: the assertion `store.is_relative_to(home)` compares a path the test itself built as home/\"crew\"/STORE_FILENAME, so it is true by construction and can never fail; it does not show, as its comment claims, that no write landed outside the temp home, and a real isolation guard should assert the host crew state path was left untouched.\nFINDING reckon/budget.py:2045 follow-on: budget_reset.observe runs on every group's allowance derivation (group_pace reaches it through the picker and the budget preflight) and, once a record exists, rewrites the durable file unconditionally, so a concurrent `budget-reset --used` can be overwritten by an observe that read the record before the clear and wrote it back still available; the read-modify-write is not serialized.\nFINDING reckon/budget.py:2062 follow-on: reset_available is set on the group allowance but reckon/crew/picker/snapshot.py does not copy it onto the picker candidate, so Jev does not see why the pace moved; the node reported this as a follow-on rather than editing the file, which a concurrent node owns.\n",
+  "review_run_id": "r-20261007T055630350553-review-of-codex-banked-reset",
+  "reviewed_base_sha": "5b947ae9eabe806a05523c957cfe14e4b13872ef",
+  "reviewed_head_sha": "44636a5f08a669dd18c565197e7945874eddb854",
+  "reviewed_run_id": "r-20261007T022200354849-codex-banked-reset",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:10:39.409538+00:00",
+  "total": 112
+}
