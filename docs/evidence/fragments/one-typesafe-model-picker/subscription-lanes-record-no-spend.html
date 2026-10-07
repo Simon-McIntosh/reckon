@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Subscription lanes record no per-token spend</title>
+</head>
+<body>
+<article class="evidence-fragment" id="subscription-lanes-record-no-spend">
+  <h2 id="subscription-lanes-record-no-spend-title">Subscription lanes record no per-token spend</h2>
+
+  <p id="subscription-lanes-record-no-spend-defect">The ledger recorded the harness's
+  <code>total_cost_usd</code> as spend for the claude lanes, which run on the operator's
+  Claude subscription, and for the codex lanes on the codex <code>codex-sub</code> group.
+  Nothing is billed per token for either. Reports showed claude-opus at $35.77 for six
+  runs when nothing was charged per token, so a subscription lane could rank as the
+  dearest on any surface that ranks or sums <code>cost_usd</code>.</p>
+
+  <p id="subscription-lanes-record-no-spend-change">The model catalogue declares the
+  claude lanes' budget group (<code>claude-sub</code>); a budget group whose name ends in
+  <code>-sub</code> is subscription-billed. The flight schema admits no separate billing
+  key, so the group name carries the declaration. The ledger treats such a lane's harness
+  cost like an unmetered one: <code>cost_usd</code> and <code>cost_usd_cumulative</code>
+  are nulled, <code>cost_usd_imputed</code> is set, the figure is preserved under
+  <code>harness_reported_cost_usd</code>, and the lane is labelled
+  <code>billing: subscription</code>. An unmetered local lane (clive) keeps its original
+  shape. The cost surfaces (<code>capabilities</code> routing rows and the picker's
+  <code>metered_spend</code>) reinterpret already-committed rows from the catalogue at read
+  time and report subscription lanes as <code>billing: subscription</code>, not dollars;
+  no committed ledger row is rewritten.</p>
+
+  <p id="subscription-lanes-record-no-spend-evidence">Tests are in
+  <code>tests/test_subscription_lanes_record_no_spend.py</code>. The node gate
+  (<code>tests/test_ledger*.py</code>, <code>tests/test_capabilit*.py</code>,
+  <code>tests/test_picker_outcomes.py</code>,
+  <code>tests/test_flight_catalogue_layer.py</code>,
+  <code>tests/test_budget_group*.py</code> and the new
+  file) ran 324 passed at the committed head. The declared negative control — drop the
+  catalogue billing lookup so claude falls back to metered — turns
+  <code>test_a_claude_lane_budget_records_no_spend_and_the_flag</code> and
+  <code>test_an_existing_stored_claude_row_reads_as_subscription</code> red
+  (<code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
