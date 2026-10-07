@@ -177,10 +177,13 @@ def test_a_declared_service_starts_as_its_own_session_holding_its_lock(home):
     assert fleet_supervisor.lock_held("demo", home.runtime) is True
     assert fleet_supervisor.recorded_service_pid(home.runtime, "demo") == pid
     assert _alive(pid)
+    lease_path = HostLease(home.state, "demo", "reader", 0, "").path
+    assert lease_path.exists()
 
     manager.stop("demo")
     _wait_for(lambda: not _alive(pid), message="the service survived its stop")
     assert fleet_supervisor.lock_held("demo", home.runtime) is False
+    assert not lease_path.exists()
 
 
 def test_a_second_start_or_reload_starts_no_second_copy(home):
@@ -286,9 +289,16 @@ def test_stale_service_lease_moves_to_second_host(home, monkeypatch):
             lambda: second_pid in _instances(home.instances),
             message="the second host did not take over the stale lease",
         )
-        first.stop_all()
+        first.supervise_once(
+            now=time.monotonic() + fleet_supervisor.LEASE_RENEW_SECONDS
+        )
+        _wait_for(
+            lambda: not _alive(first_pid), message="the displaced service stayed up"
+        )
         assert json.loads(path.read_text(encoding="utf-8"))["host"] == "host-two"
         assert _alive(second_pid)
+        second.stop_all()
+        assert not path.exists()
     finally:
         second.stop_all()
         first.stop_all()
