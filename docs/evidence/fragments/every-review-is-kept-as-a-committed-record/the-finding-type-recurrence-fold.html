@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The finding-type recurrence fold in the plan-review day summary">
+  <meta name="plan-summary" content="The day summary carries a per-finding-type recurrence fold: the any share beside the acted share over consecutive reviews of each plan. The acted share reads the stored response's action; a fold that treats any same-type finding as acted turns red.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The finding-type recurrence fold in the plan-review day summary | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The finding-type recurrence fold in the plan-review day summary</h1>
+
+    <section id="the-finding-type-recurrence-fold-anchor">
+      <h2>Measure</h2>
+      <table>
+        <thead>
+          <tr><th>fact</th><th>value</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>fold</td>
+            <td><code>plan_review._finding_type_recurrence</code>, carried by
+              <code>review_day_summary</code> under
+              <code>finding_type_recurrence</code></td>
+          </tr>
+          <tr>
+            <td>gate</td>
+            <td><code>tests/test_plan_review_recurrence_fold.py</code>
+              with <code>tests/test_plan_review_day_summary.py</code></td>
+          </tr>
+          <tr><td>head arm</td><td>15 passed, EXIT=0</td></tr>
+          <tr>
+            <td>negative control</td>
+            <td>a preceding same-type finding counted as acted whatever its
+              stored response's action: 2 failed, 13 passed, EXIT=1 — the head
+              arm fails no test</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Changed paths</h2>
+      <ul>
+        <li><code>reckon/crew/plan_review.py</code> — the fold, its two
+          same-type helpers, and the summary key; the acted share keys on the
+          stored response's <code>acted</code> action</li>
+        <li><code>tests/test_plan_review_recurrence_fold.py</code> — a fixture
+          with a recurred-acted, a recurred-unacted and a fresh type</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
