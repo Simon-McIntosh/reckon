@@ -44,9 +44,13 @@ def test_candidates_are_offered_under_pressure(
         return {
             "answers": {
                 "route": {
-                    "choice": "remote",
+                    "choice": fixtures.REMOTE_PAIR,
                     "confidence": 0.23,
-                    "probabilities": {"local": 0.1, "remote": 0.5, "hold": 0.4},
+                    "probabilities": {
+                        fixtures.LOCAL_PAIR: 0.1,
+                        fixtures.REMOTE_PAIR: 0.5,
+                        "hold": 0.4,
+                    },
                 }
             }
         }
@@ -59,8 +63,10 @@ def test_candidates_are_offered_under_pressure(
     assert selection.confidence == 0.23
 
 
-def _answer(choice, candidates, confidence=0.2):
-    keys = [*candidates, "hold"]
+def _answer(choice, keys, confidence=0.2):
+    """An answer over exactly the option keys the questions offered."""
+
+    keys = list(keys)
     return {
         "answers": {
             "route": {
@@ -76,9 +82,13 @@ def test_hold_is_an_option_and_preserves_jevs_confidence(
     live_facts, request_node, config, tmp_path
 ):
     def caller(state, questions, **kwargs):
-        assert set(questions["route"]["criteria"]) == {"local", "remote", "hold"}
+        assert set(questions["route"]["criteria"]) == {
+            fixtures.LOCAL_PAIR,
+            fixtures.REMOTE_PAIR,
+            "hold",
+        }
         assert "wait for pressure to ease" in questions["route"]["criteria"]["hold"]
-        return _answer("hold", state["candidates"], confidence=0.17)
+        return _answer("hold", questions["route"]["criteria"], confidence=0.17)
 
     selection = pick(request_node, config, repo=tmp_path, records=[], caller=caller)
     assert selection.backend is None
@@ -93,7 +103,9 @@ def test_hold_is_an_option_and_preserves_jevs_confidence(
 
 def test_only_candidate_still_goes_to_jev(live_facts, request_node, config, tmp_path):
     config["backends"].pop("remote")
-    caller = Mock(return_value=_answer("local", ["local"]))
+    caller = Mock(
+        return_value=_answer(fixtures.LOCAL_PAIR, [fixtures.LOCAL_PAIR, "hold"])
+    )
     selection = pick(request_node, config, repo=tmp_path, records=[], caller=caller)
     assert selection.backend == "local"
     caller.assert_called_once()
@@ -136,10 +148,10 @@ def test_review_node_is_never_offered_a_review_excluded_backend(
 
     def caller(state, questions, **kwargs):
         seen.append(questions["route"]["criteria"])
-        return _answer("clive", state["candidates"])
+        return _answer(fixtures.LOCAL_PAIR, questions["route"]["criteria"])
 
     selection = pick(request_node, config, repo=tmp_path, records=[], caller=caller)
-    assert set(seen[0]) == {"clive", "hold"}
+    assert set(seen[0]) == {fixtures.LOCAL_PAIR, "hold"}
     assert {c["backend"] for c in selection.offered} == {"clive"}
     excluded = {c["backend"]: c["reasons"] for c in selection.excluded}
     assert excluded == {
@@ -219,7 +231,9 @@ def test_cached_only_reads_the_existing_cache_without_writing(
         repo=tmp_path,
         records=[],
         cached_only=True,
-        caller=lambda state, *a, **k: _answer("remote", state["candidates"]),
+        caller=lambda state, questions, *a, **k: _answer(
+            fixtures.REMOTE_PAIR, questions["route"]["criteria"]
+        ),
     )
     # A served observation is offered as served; an absent or unreadable cache
     # is an absence of evidence, so the candidate is offered as unknown.
@@ -305,7 +319,7 @@ def test_public_pick_renders_size_matched_return_time_and_budget_provenance(
 
     def caller(state, questions, **kwargs):
         seen.append(state)
-        return _answer("remote", state["candidates"])
+        return _answer(fixtures.REMOTE_PAIR, questions["route"]["criteria"])
 
     selection = pick(request_node, config, repo=tmp_path, caller=caller)
     assert selection.backend == "remote"
@@ -379,7 +393,7 @@ def test_live_attempts_are_counted_from_the_matching_node(
 
     def caller(state, questions, **kwargs):
         seen.append(state)
-        return _answer("local", state["candidates"])
+        return _answer(fixtures.LOCAL_PAIR, questions["route"]["criteria"])
 
     pick(request_node, config, repo=tmp_path, records=rows, caller=caller)
     assert seen[0]["node"]["attempts"] == 2
@@ -449,7 +463,7 @@ def test_representative_live_state_fits_the_token_bound(
 
     def caller(state, questions, **kwargs):
         seen.append(state)
-        return _answer("hold", state["candidates"])
+        return _answer("hold", questions["route"]["criteria"])
 
     selection = pick(
         request_node,

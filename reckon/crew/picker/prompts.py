@@ -189,25 +189,43 @@ def build_state(
     }
 
 
+def option_key(candidate: Any) -> str:
+    """The key Jev chooses a candidate by: its lane and model joined as one pair.
+
+    A pick has two linked parts, so an option is named ``<lane>:<model>``. A
+    candidate that names no model uses its backend name for the second part,
+    which keeps the pair form and keeps every offered key distinct.
+    """
+
+    lane = getattr(candidate, "family", None) or getattr(candidate, "backend", "")
+    model = getattr(candidate, "model", None) or getattr(candidate, "backend", "")
+    return f"{lane}:{model}"
+
+
 def build_questions(candidates: Sequence[Any]) -> dict[str, Any]:
     """Assemble the questions as one mapping.
 
-    The criteria carry one entry per offered backend plus the ``hold`` guidance
-    the template supplies; the per-candidate entries are values of a mapping, so
-    no candidate name can change the shape of the questions.
+    The criteria carry one entry per offered lane-and-model pair plus the
+    ``hold`` guidance the template supplies; the entries are values of a
+    mapping keyed by that pair, so no candidate name can change the shape of
+    the questions. Each entry also names the pair's parts and its backend, so
+    a chosen pair resolves to exactly one candidate.
     """
 
     return {
         "glossary": _GLOSSARY,
         "criteria_entries": {
-            candidate.backend: {
-                "family": candidate.family,
+            option_key(candidate): {
+                "backend": candidate.backend,
+                "lane": candidate.family,
                 "model": candidate.model,
                 "effort": candidate.effort,
                 "local": candidate.local,
                 "meaning": (
-                    "Execute the node using this configured backend; consult "
-                    "its matching live candidate state."
+                    "Execute the node as this lane and model pair; read the "
+                    "lane's shared pressure from the lanes block and this "
+                    "pair's own fit and serving observation from the candidate "
+                    "table."
                 ),
             }
             for candidate in candidates

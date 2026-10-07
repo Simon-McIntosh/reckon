@@ -101,14 +101,19 @@ def live_facts(monkeypatch, tmp_path):
     )
 
 
-def answer(choice="remote", confidence=0.9):
+#: The lane-and-model pair each configured backend is offered to Jev under.
+LOCAL_PAIR = "local:local-model"
+REMOTE_PAIR = "codex:remote-model"
+
+
+def answer(choice=REMOTE_PAIR, confidence=0.9):
     return {
         "model": "answering-snapshot",
         "answers": {
             "route": {
                 "choice": choice,
                 "confidence": confidence,
-                "probabilities": {"local": 0.2, "remote": 0.7, "hold": 0.1},
+                "probabilities": {LOCAL_PAIR: 0.2, REMOTE_PAIR: 0.7, "hold": 0.1},
             }
         },
     }
@@ -134,8 +139,9 @@ def test_refused_model_is_never_offered_to_jev(
         return answer()
 
     selection = run_pick(request_node, config, tmp_path, call)
-    assert len(seen) == 1 and "remote" in seen[0]
-    assert "codex-spark" not in seen[0]
+    # Jev is offered lane-and-model pairs; the refused model's pair is absent.
+    assert len(seen) == 1 and REMOTE_PAIR in seen[0]
+    assert set(seen[0]) == {LOCAL_PAIR, REMOTE_PAIR, "hold"}
     assert selection.backend == "remote"
     assert selection.excluded[0]["reasons"] == ["availability: refused"]
 
@@ -288,18 +294,20 @@ def test_missing_live_fact_raises(request_node):
         )
 
 
-@pytest.mark.parametrize("choice,confidence", [("remote", 0.1), ("local", 0.1)])
+@pytest.mark.parametrize(
+    "choice,backend", [(REMOTE_PAIR, "remote"), (LOCAL_PAIR, "local")]
+)
 def test_confidence_is_jevs_judgment(
-    live_facts, request_node, config, tmp_path, choice, confidence
+    live_facts, request_node, config, tmp_path, choice, backend
 ):
     selection = run_pick(
-        request_node, config, tmp_path, lambda *a, **k: answer(choice, confidence)
+        request_node, config, tmp_path, lambda *a, **k: answer(choice, 0.1)
     )
     assert selection.fallback_reason is None
-    assert selection.backend == choice
+    assert selection.backend == backend
     assert selection.action == "route"
-    assert selection.confidence == confidence
-    assert selection.probabilities == {"local": 0.2, "remote": 0.7, "hold": 0.1}
+    assert selection.confidence == 0.1
+    assert selection.probabilities == {LOCAL_PAIR: 0.2, REMOTE_PAIR: 0.7, "hold": 0.1}
 
 
 def test_unreachable_jev_has_explicit_fallback(

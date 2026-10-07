@@ -20,7 +20,8 @@ def _answer(
 ) -> tuple[str, float, dict[str, float]]:
     answer = payload["answers"]["route"]
     choice = answer["choice"]
-    keys = {candidate.backend for candidate in offered} | {"hold"}
+    # Jev answers by the lane-and-model pair each option is offered under.
+    keys = {prompts.option_key(candidate) for candidate in offered} | {"hold"}
     confidence = answer["confidence"]
     probabilities = answer["probabilities"]
     if (
@@ -125,7 +126,7 @@ def pick(
             if choice == "hold":
                 action = "hold"
             else:
-                selected = next(c for c in offered if c.backend == choice)
+                selected = next(c for c in offered if prompts.option_key(c) == choice)
         except Exception as exc:  # noqa: BLE001 - every Jev failure must produce a recorded fallback
             # Exception text may contain provider content or credentials; record its type only.
             fallback_reason = f"jev-error: {type(exc).__name__}"

@@ -51,4 +51,27 @@
     <code>negative-control.log</code> under the run directory, ending in an
     <code>EXIT=</code> line.
   </p>
+  <p id="jev-offers-lane-model-pairs-pair-keys">
+    <strong>Options are lane-and-model pairs (review f755b0c0307).</strong> The
+    options Jev is offered are now keyed as the pair the instructions name:
+    <code>build_questions</code> keys each criterion entry by
+    <code>&lt;lane&gt;:&lt;model&gt;</code> (a candidate naming no model uses its
+    backend as the second part), and <code>pick()</code> validates the answer
+    against those keys and resolves a chosen pair back to the one candidate
+    whose backend a dispatch launches. The pair rendering and resolution live
+    behind one builder, <code>prompts.option_key</code>, so the offered key and
+    the resolved candidate cannot drift apart. A new test asserts every offered
+    key is a <code>lane:model</code> pair and that each maps back to exactly one
+    configured backend. The two gate files that pinned the former
+    backend-keyed option contract (<code>tests/test_picker.py</code>,
+    <code>tests/test_picker_pressure.py</code>) were moved onto the pair keys,
+    since that contract is precisely what the finding changed.
+  </p>
+  <p id="jev-offers-lane-model-pairs-negative-control-pair-keys">
+    <strong>Negative control for the finding.</strong> Reverting the pair keys in
+    a scratch copy — keying the criteria by <code>candidate.backend</code> again
+    and resolving the choice by backend — reddens
+    <code>test_offered_keys_are_lane_model_pairs_that_map_back_to_a_backend</code>
+    (<code>EXIT=1</code>); the head arm passes it.
+  </p>
   </article>

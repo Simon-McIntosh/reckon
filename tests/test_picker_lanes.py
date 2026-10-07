@@ -19,7 +19,7 @@ import pytest
 
 from reckon import budget
 from reckon.crew.node import TaskNode
-from reckon.crew.picker import pick, prompts, snapshot
+from reckon.crew.picker import PickRequest, pick, prompts, snapshot
 from reckon.crew.picker import replay as replay_module
 from reckon.crew.picker.types import Candidate
 
@@ -156,6 +156,78 @@ def test_hostile_input_still_parses_and_keeps_one_lane_entry(isolated_lane):
     assert "injected" not in payload["lanes"]
     # The hostile name survives verbatim inside its own string, adding no key.
     assert payload["candidates"]["codex-astra"]["model"] == hostile
+
+
+# --- the options Jev is offered are lane:model pairs ---------------------------
+
+
+def _request():
+    return PickRequest("example", _node(), capability={}, estimated_context=8000)
+
+
+def _answer_pair(keys, pair):
+    """An answer that takes one offered pair and nothing else."""
+
+    probabilities = dict.fromkeys(keys, 0.0)
+    probabilities[pair] = 1.0
+    return {
+        "answers": {
+            "route": {
+                "choice": pair,
+                "confidence": 0.9,
+                "probabilities": probabilities,
+            }
+        }
+    }
+
+
+def test_offered_keys_are_lane_model_pairs_that_map_back_to_a_backend(
+    live_facts, tmp_path
+):
+    """Every option Jev is offered is `<lane>:<model>`, and each maps to a backend.
+
+    The instructions tell Jev to choose an offered lane-and-model pair, so the
+    keys it is given must be pairs and the pick must resolve a chosen pair to
+    the one backend a dispatch launches.
+    """
+
+    request = _request()
+    captured = {}
+
+    def capture(state, questions, **kwargs):
+        keys = list(questions["route"]["criteria"])
+        captured.update(dict.fromkeys(keys, True))
+        return _answer_pair(keys, "hold")
+
+    pick(request, CONFIG, repo=tmp_path, records=[], caller=capture)
+    pairs = set(captured) - {"hold"}
+    assert pairs, "Jev was offered no options"
+
+    offered = [
+        candidate
+        for candidate in snapshot.candidates(request, CONFIG, tmp_path, records=[])
+        if not candidate.reasons
+    ]
+    expected = {
+        prompts.option_key(candidate): candidate.backend for candidate in offered
+    }
+    assert set(expected) == pairs
+
+    for pair, backend in expected.items():
+        lane, colon, model = pair.partition(":")
+        assert colon and lane and model, f"option key {pair!r} is not a lane:model pair"
+        assert backend in CONFIG["backends"]
+        selection = pick(
+            request,
+            CONFIG,
+            repo=tmp_path,
+            records=[],
+            caller=lambda state, questions, pair=pair, **kwargs: _answer_pair(
+                list(questions["route"]["criteria"]), pair
+            ),
+        )
+        assert selection.decision_source == "jev"
+        assert selection.backend == backend
 
 
 # --- replay: recorded dispatches must never pick a refused model ---------------
