@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3fd343636354df919ede6c6dd41faebe95c35fbd",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T18:54:15.502Z",
+  "dispatched_at": "2026-10-03T18:49:05Z",
+  "findings": [
+    {
+      "file": "tests/test_preflight_pace.py",
+      "line": "1433",
+      "severity": "follow-on",
+      "text": "follow-on: the fix pins the probe seam but leaves no committed guard \u2014 removing the two probe_reader pins leaves the file green on a host whose codex login does not answer, which baseline-suite.log shows as 37 passed at base, so a regression to host-dependence would not redden in the routine suite; the node's own driver proves a committed regression test is feasible."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T183718977420-the-stamp-reader-test-pins-its-probe/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the answering-probe driver the done-when rests on (answering_probe_driver.py) exists only under node-local /tmp/reckon-crew-scratch, so the reproduction cannot be re-run from the run record once that scratch dies; only the log's command line and result are preserved."
+    }
+  ],
+  "head_log_revision": "996ee1812f0120a2eaf68ea9afd5bcdab8dd43f8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 3fd34363; the single commit adds the two probe_reader pins and no product source; the file is clean at head 996ee1812.",
+    "done_when": "the done-when names the one id passing with a simulated answering probe (gate-answering.log: 1 passed, EXIT=0) and without a driver (gate-plain.log: 1 passed, EXIT=0) plus the whole file (gate-file.log: 37 passed in 56.42 s, EXIT=0), each headed with the head revision, module.__file__ and cwd.",
+    "goal": "the goal is that the stamp test asserts the record stamp whatever the host's codex login answers; the diff adds probe_reader=lambda backend, settings: None to both crew_lanes_view calls (tests/test_preflight_pace.py:1433 and :1443) and reckon/mcp_views.py:741-750 adopts that reader so a None answer leaves the lane dated by _receipt_observed_at(run), the record stamp.",
+    "manifest": "read; status complete, one commit 996ee1812, arms recorded with revision headers; its baseline_suite and after_suite are both the plain non-answering arms, both 37 passed, so the structured suite delta is zero and the reproduction lives only in the scratch-driver logs.",
+    "write_paths": "read the manifest's three declared paths; the diff touches only tests/test_preflight_pace.py, and the fragment and figure paths are correctly left unwritten for a small node whose done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "the change is test-only and no committed test reddens if the two pins are reverted on a host whose codex probe does not answer (baseline-suite.log shows the file green at base, 37 passed), so the regression the node fixes is guarded only by a scratch driver rather than by a committed test.",
+    "evidence": "the gate arms are recorded with revision, module.__file__ and cwd and end in EXIT lines, but the two structured suite arms (baseline-suite.log, gate-file.log) are both green 37 passed so they carry no signal about the defect, and the answering-probe reproduction instrument (answering_probe_driver.py) survives only in node-local /tmp scratch.",
+    "fit": "the injected probe_reader=lambda backend, settings: None matches the idiom already used in tests/test_lanes_view_is_live.py:223 and tests/test_crew_lanes_view.py:501, the subject is conventional with a body, and no forbidden name is introduced.",
+    "goal_fidelity": "tests/test_preflight_pace.py:1433 and :1443 pin probe_reader to None so mcp_views.py:741-750 adopts it and the lane carries _receipt_observed_at(run), the record stamp, independent of the host's codex login.",
+    "scope_discipline": "the 2-line diff touches only tests/test_preflight_pace.py, inside the declared write paths, and changes no product file and no assertion."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the stamp test asserts the record stamp whatever the host's codex login answers; the diff adds probe_reader=lambda backend, settings: None to both crew_lanes_view calls (tests/test_preflight_pace.py:1433 and :1443) and reckon/mcp_views.py:741-750 adopts that reader so a None answer leaves the lane dated by _receipt_observed_at(run), the record stamp.\nVERDICT done_when: the done-when names the one id passing with a simulated answering probe (gate-answering.log: 1 passed, EXIT=0) and without a driver (gate-plain.log: 1 passed, EXIT=0) plus the whole file (gate-file.log: 37 passed in 56.42 s, EXIT=0), each headed with the head revision, module.__file__ and cwd.\nVERDICT write_paths: read the manifest's three declared paths; the diff touches only tests/test_preflight_pace.py, and the fragment and figure paths are correctly left unwritten for a small node whose done-when names no artifact.\nVERDICT manifest: read; status complete, one commit 996ee1812, arms recorded with revision headers; its baseline_suite and after_suite are both the plain non-answering arms, both 37 passed, so the structured suite delta is zero and the reproduction lives only in the scratch-driver logs.\nVERDICT diff: read commit by commit against base 3fd34363; the single commit adds the two probe_reader pins and no product source; the file is clean at head 996ee1812.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_preflight_pace.py:1433 and :1443 pin probe_reader to None so mcp_views.py:741-750 adopts it and the lane carries _receipt_observed_at(run), the record stamp, independent of the host's codex login.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate arms are recorded with revision, module.__file__ and cwd and end in EXIT lines, but the two structured suite arms (baseline-suite.log, gate-file.log) are both green 37 passed so they carry no signal about the defect, and the answering-probe reproduction instrument (answering_probe_driver.py) survives only in node-local /tmp scratch.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 2-line diff touches only tests/test_preflight_pace.py, inside the declared write paths, and changes no product file and no assertion.\nSCORE durability: 13\nJUSTIFICATION durability: the change is test-only and no committed test reddens if the two pins are reverted on a host whose codex probe does not answer (baseline-suite.log shows the file green at base, 37 passed), so the regression the node fixes is guarded only by a scratch driver rather than by a committed test.\nSCORE fit: 18\nJUSTIFICATION fit: the injected probe_reader=lambda backend, settings: None matches the idiom already used in tests/test_lanes_view_is_live.py:223 and tests/test_crew_lanes_view.py:501, the subject is conventional with a body, and no forbidden name is introduced.\nFINDING tests/test_preflight_pace.py:1433 follow-on: the fix pins the probe seam but leaves no committed guard \u2014 removing the two probe_reader pins leaves the file green on a host whose codex login does not answer, which baseline-suite.log shows as 37 passed at base, so a regression to host-dependence would not redden in the routine suite; the node's own driver proves a committed regression test is feasible.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T183718977420-the-stamp-reader-test-pins-its-probe/manifest.md:14 follow-on: the answering-probe driver the done-when rests on (answering_probe_driver.py) exists only under node-local /tmp/reckon-crew-scratch, so the reproduction cannot be re-run from the run record once that scratch dies; only the log's command line and result are preserved.\n",
+  "review_run_id": "r-20261003T184850061777-review-of-the-stamp-reader-test-pins-its-probe",
+  "reviewed_base_sha": "3fd343636354df919ede6c6dd41faebe95c35fbd",
+  "reviewed_head_sha": "996ee1812f0120a2eaf68ea9afd5bcdab8dd43f8",
+  "reviewed_run_id": "r-20261003T183718977420-the-stamp-reader-test-pins-its-probe",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T18:52:19.450837+00:00",
+  "total": 85
+}

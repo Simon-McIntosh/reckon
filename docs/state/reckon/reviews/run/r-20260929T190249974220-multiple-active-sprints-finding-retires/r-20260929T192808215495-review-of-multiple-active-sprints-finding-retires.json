@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190249974220-multiple-active-sprints-finding-retires/after-suite.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190249974220-multiple-active-sprints-finding-retires/baseline-suite.log",
+    "note": "set difference of pytest failure node ids between the reviewed run's own baseline_suite and after_suite logs, read from its manifest"
+  },
+  "base_log_revision": "0ed58e2266e9979d9d454023779d5ac2f1407120",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:4870 the only consumer of _audit_sprint_findings inside _audit",
+    "reckon/mcp.py:1634 the push operation description read by the plan-edit surface"
+  ],
+  "completed_at": "2026-09-29T21:00:37.835Z",
+  "dispatched_at": "2026-09-29T19:28:28Z",
+  "findings": [],
+  "head_log_revision": "595b27e0ec154abdb682b040732cb2a296fab170",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base 0ed58e22 -- 3 paths, 96 insertions, 14 deletions: reckon/mcp.py deletes the 10-line emission from _audit_sprint_findings (reckon/mcp.py:2073 at base) and rewrites the push description at reckon/mcp.py:1634, the deleted block being byte-identical to the base function's corresponding lines; the test half replaces test_audit_raises_two_active_sprints_at_error_severity with test_audit_is_quiet_on_two_active_sprints (tests/test_sprint_push_status.py:158) and adds the end-to-end file.",
+    "done_when": "the measure's clauses all hold at the reviewed head -- I re-ran the single test it names against a clean archive of 595b27e0e and it passed (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T192808215495-review-of-multiple-active-sprints-finding-retires/review-head-single-test.log:7, EXIT=0), the reviewed run's own arms record 186 passed at base and 187 at head with zero failures each (baseline-suite.log:9, after-suite.log:7), and the declared mutation restores the finding and reddens that test (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T192808215495-review-of-multiple-active-sprints-finding-retires/review-negative-control.log:45, EXIT=1).",
+    "goal": "the goal asks that the audit no longer report a multiple-active-sprints finding now that pushing a sprint leaves every other sprint active, and at 595b27e0e reckon/ carries 0 emissions of that code against 1 at 0ed58e22, with tests/test_sprint_push_keeps_both_active.py:72 pushing a second sprint beside an active one and asserting the audit stays quiet.",
+    "manifest": "the reviewed run's manifest (bytes and sha256 recorded in this record) names commit 595b27e0e, its three changed paths, a landing line, both suite arms as one-line JSON with failure_count 0 and failure_ids [], and the negative-control log; every claim I checked reconciles with the artifacts, and its single follow-on names skills/reckon-status/SKILL.md:182, outside its fence, as still listing the retired code.",
+    "write_paths": "the commit's three paths are the declared scope -- reckon/mcp.py and tests/test_sprint_push_keeps_both_active.py inside the original fence and tests/test_sprint_push_status.py covered by the coordinator widening recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190249974220-multiple-active-sprints-finding-retires/resume-1-advice.txt:1 -- and nothing outside them is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_sprint_push_keeps_both_active.py:92 asserts the retired code is absent after a two-sprint push and it fails on the exact regression -- reinstating the deleted block produced the same single failure the node recorded (review-negative-control.log:45) -- so the guard names the condition under which it reddens.",
+    "evidence": "the arms' own logs name the revisions they measured with 186 and 187 passed and zero failures (baseline-suite.log:9, after-suite.log:7), and my independent re-run of the named test on a clean archive of head reproduced the pass (review-head-single-test.log:7).",
+    "fit": "the change edits one function and one description string in place with no new name, and the new module's filename and symbols follow the mechanism-naming idiom (tests/test_sprint_push_keeps_both_active.py:72).",
+    "goal_fidelity": "reckon/mcp.py:2058-2084 at head contains no multiple-active-sprints emission and the push description at reckon/mcp.py:1634 no longer claims a demotion, which is the whole of the goal.",
+    "scope_discipline": "the diff against base is exactly the three declared paths with nothing else, and the one path outside the original fence carries the coordinator's widening at resume-1-advice.txt:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that the audit no longer report a multiple-active-sprints finding now that pushing a sprint leaves every other sprint active, and at 595b27e0e reckon/ carries 0 emissions of that code against 1 at 0ed58e22, with tests/test_sprint_push_keeps_both_active.py:72 pushing a second sprint beside an active one and asserting the audit stays quiet.\nVERDICT done_when: the measure's clauses all hold at the reviewed head -- I re-ran the single test it names against a clean archive of 595b27e0e and it passed (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T192808215495-review-of-multiple-active-sprints-finding-retires/review-head-single-test.log:7, EXIT=0), the reviewed run's own arms record 186 passed at base and 187 at head with zero failures each (baseline-suite.log:9, after-suite.log:7), and the declared mutation restores the finding and reddens that test (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T192808215495-review-of-multiple-active-sprints-finding-retires/review-negative-control.log:45, EXIT=1).\nVERDICT write_paths: the commit's three paths are the declared scope -- reckon/mcp.py and tests/test_sprint_push_keeps_both_active.py inside the original fence and tests/test_sprint_push_status.py covered by the coordinator widening recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190249974220-multiple-active-sprints-finding-retires/resume-1-advice.txt:1 -- and nothing outside them is touched.\nVERDICT manifest: the reviewed run's manifest (bytes and sha256 recorded in this record) names commit 595b27e0e, its three changed paths, a landing line, both suite arms as one-line JSON with failure_count 0 and failure_ids [], and the negative-control log; every claim I checked reconciles with the artifacts, and its single follow-on names skills/reckon-status/SKILL.md:182, outside its fence, as still listing the retired code.\nVERDICT diff: read against base 0ed58e22 -- 3 paths, 96 insertions, 14 deletions: reckon/mcp.py deletes the 10-line emission from _audit_sprint_findings (reckon/mcp.py:2073 at base) and rewrites the push description at reckon/mcp.py:1634, the deleted block being byte-identical to the base function's corresponding lines; the test half replaces test_audit_raises_two_active_sprints_at_error_severity with test_audit_is_quiet_on_two_active_sprints (tests/test_sprint_push_status.py:158) and adds the end-to-end file.\nCALL_SITES: reckon/mcp.py:4870 the only consumer of _audit_sprint_findings inside _audit, reckon/mcp.py:1634 the push operation description read by the plan-edit surface\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2058-2084 at head contains no multiple-active-sprints emission and the push description at reckon/mcp.py:1634 no longer claims a demotion, which is the whole of the goal.\nSCORE evidence: 20\nJUSTIFICATION evidence: the arms' own logs name the revisions they measured with 186 and 187 passed and zero failures (baseline-suite.log:9, after-suite.log:7), and my independent re-run of the named test on a clean archive of head reproduced the pass (review-head-single-test.log:7).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff against base is exactly the three declared paths with nothing else, and the one path outside the original fence carries the coordinator's widening at resume-1-advice.txt:1.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_sprint_push_keeps_both_active.py:92 asserts the retired code is absent after a two-sprint push and it fails on the exact regression -- reinstating the deleted block produced the same single failure the node recorded (review-negative-control.log:45) -- so the guard names the condition under which it reddens.\nSCORE fit: 20\nJUSTIFICATION fit: the change edits one function and one description string in place with no new name, and the new module's filename and symbols follow the mechanism-naming idiom (tests/test_sprint_push_keeps_both_active.py:72).\n",
+  "review_run_id": "r-20260929T192808215495-review-of-multiple-active-sprints-finding-retires",
+  "reviewed_base_sha": "0ed58e2266e9979d9d454023779d5ac2f1407120",
+  "reviewed_commits": [
+    "595b27e0ec154abdb682b040732cb2a296fab170"
+  ],
+  "reviewed_head_sha": "595b27e0ec154abdb682b040732cb2a296fab170",
+  "reviewed_manifest": {
+    "bytes": 7375,
+    "last_modified": "2026-09-29T19:27:14.171158+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190249974220-multiple-active-sprints-finding-retires/manifest.md",
+    "sha256": "367a661288380dd57323b9147907d340602dc2246d23493b014c9b2a306086c6"
+  },
+  "reviewed_run_id": "r-20260929T190249974220-multiple-active-sprints-finding-retires",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/multiple-active-sprints-finding-retires",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-multiple-active-sprints-finding-retires",
+  "reviewer_run_id": "r-20260929T192808215495-review-of-multiple-active-sprints-finding-retires",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T20:35:46.599414+00:00",
+  "total": 100
+}

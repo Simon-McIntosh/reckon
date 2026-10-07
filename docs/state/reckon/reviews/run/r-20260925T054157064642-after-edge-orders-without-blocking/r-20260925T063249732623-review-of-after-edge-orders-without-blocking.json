@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/roadmap.py:1460 (_build_roadmap inventory)",
+    "reckon/serve.py:1564 (discovery row drops after)",
+    "reckon/mcp.py:1498 (_inventory_row drops after)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T06:32:49.732623+00:00",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "1564",
+      "text": "the discovery row copies depends_on and blocks but not after, and _attach_ready_set (serve.py:1705) and flight.py:1319 hand exactly these rows to build_roadmap, so an after edge in a real plan is invisible to the HTTP roadmap, the ready-set projection and the portfolio rollup."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "1498",
+      "text": "_inventory_row copies depends_on and blocks but not after, and the MCP roadmap tool (mcp.py:3309) builds its inventory from that row, so the soft edge is invisible over MCP as well; the landed change is inert until both row builders carry the key."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against 83ea60fa; the three modules are additive, the plan section appends with zero deletions, and the archive record's only two deletions are the plan-summary and plan-verifies lines it extends.",
+    "done_when": "the source prompt's done-when asks for a two-ready-plus-unshipped-third fixture, both staying in ready_now, the carrier ordered behind or annotated, depends_on to the same target still blocked; tests/test_after_edge_orders_without_blocking.py:54,74,86,100 assert exactly those four clauses and the control log makes the stays-ready case fail first.",
+    "goal": "the node's goal is a soft after edge that orders and annotates the ready set and never blocks it; reckon/roadmap.py:412 resolves the refs into annotation rows and the ready predicate is untouched, though no production inventory carries the key (see both findings).",
+    "manifest": "read; it records the gate, the base/head subset delta and the bounded 84-file arm honestly, but its \"8 passed in 0.20 s at the delivered head (gate-tests.log)\" matches neither that log's revision stamp (rev=83ea60fa) nor its duration (0.37s).",
+    "write_paths": "the manifest declares eight paths and git diff --name-only 83ea60fa 4a87503f lists exactly those eight and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens the stays-ready assertion first (negative-control.log:20-21), and the ordering assertion at tests/test_after_edge_orders_without_blocking.py:83 is load-bearing because the final tie-break is the slug, though line 146 asserts only that the meta name reappears rather than its value.",
+    "evidence": "the gate passes at the reviewed head (re-run: 8 passed in 0.31s, module.__file__ under the reviewed tree) and the control log repeats the declared string, but gate-tests.log stamps rev=83ea60fa for a run of a test that revision does not contain, and the stated 84-file arm is recorded incomplete (gate-head.log, EXIT=124).",
+    "fit": "_after_edges at reckon/roadmap.py:412 mirrors _blocking_row's row shape and reuses parse_plan_ref and plan_section_anchors, the priority component at reckon/roadmap.py:2200 carries its mechanism comment, and no plan label or version suffix appears in the new code.",
+    "goal_fidelity": "reckon/roadmap.py:412 implements ordering and annotation without a blocker, but the edge reaches no reader because reckon/serve.py:1564 and reckon/mcp.py:1498 both drop it from the inventories the roadmap consumes.",
+    "scope_discipline": "every path in git diff --name-only 83ea60fa 4a87503f is inside the manifest's eight declared write paths, the plan record appends with zero deletions, and the archive's two deletions are the meta lines it extends."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a soft after edge that orders and annotates the ready set and never blocks it; reckon/roadmap.py:412 resolves the refs into annotation rows and the ready predicate is untouched, though no production inventory carries the key (see both findings).\nVERDICT done_when: the source prompt's done-when asks for a two-ready-plus-unshipped-third fixture, both staying in ready_now, the carrier ordered behind or annotated, depends_on to the same target still blocked; tests/test_after_edge_orders_without_blocking.py:54,74,86,100 assert exactly those four clauses and the control log makes the stays-ready case fail first.\nVERDICT write_paths: the manifest declares eight paths and git diff --name-only 83ea60fa 4a87503f lists exactly those eight and nothing else.\nVERDICT manifest: read; it records the gate, the base/head subset delta and the bounded 84-file arm honestly, but its \"8 passed in 0.20 s at the delivered head (gate-tests.log)\" matches neither that log's revision stamp (rev=83ea60fa) nor its duration (0.37s).\nVERDICT diff: read both commits against 83ea60fa; the three modules are additive, the plan section appends with zero deletions, and the archive record's only two deletions are the plan-summary and plan-verifies lines it extends.\nCALL_SITES: reckon/roadmap.py:1460 (_build_roadmap inventory), reckon/serve.py:1564 (discovery row drops after), reckon/mcp.py:1498 (_inventory_row drops after)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:412 implements ordering and annotation without a blocker, but the edge reaches no reader because reckon/serve.py:1564 and reckon/mcp.py:1498 both drop it from the inventories the roadmap consumes.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate passes at the reviewed head (re-run: 8 passed in 0.31s, module.__file__ under the reviewed tree) and the control log repeats the declared string, but gate-tests.log stamps rev=83ea60fa for a run of a test that revision does not contain, and the stated 84-file arm is recorded incomplete (gate-head.log, EXIT=124).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-only 83ea60fa 4a87503f is inside the manifest's eight declared write paths, the plan record appends with zero deletions, and the archive's two deletions are the meta lines it extends.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation reddens the stays-ready assertion first (negative-control.log:20-21), and the ordering assertion at tests/test_after_edge_orders_without_blocking.py:83 is load-bearing because the final tie-break is the slug, though line 146 asserts only that the meta name reappears rather than its value.\nSCORE fit: 18\nJUSTIFICATION fit: _after_edges at reckon/roadmap.py:412 mirrors _blocking_row's row shape and reuses parse_plan_ref and plan_section_anchors, the priority component at reckon/roadmap.py:2200 carries its mechanism comment, and no plan label or version suffix appears in the new code.\nFINDING reckon/serve.py:1564 the discovery row copies depends_on and blocks but not after, and _attach_ready_set (serve.py:1705) and flight.py:1319 hand exactly these rows to build_roadmap, so an after edge in a real plan is invisible to the HTTP roadmap, the ready-set projection and the portfolio rollup.\nFINDING reckon/mcp.py:1498 _inventory_row copies depends_on and blocks but not after, and the MCP roadmap tool (mcp.py:3309) builds its inventory from that row, so the soft edge is invisible over MCP as well; the landed change is inert until both row builders carry the key.\n",
+  "review_run_id": "r-20260925T063249732623-review-of-after-edge-orders-without-blocking",
+  "reviewed_base_sha": "83ea60fad2310f8f24e73b504d45521f9b9138c1",
+  "reviewed_head_sha": "4a87503ff60672d2304867402ed23f1c72b750d2",
+  "reviewed_run_id": "r-20260925T054157064642-after-edge-orders-without-blocking",
+  "reviewer": "review-of-after-edge-orders-without-blocking",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T06:50:16.153856+00:00",
+  "total": 86
+}

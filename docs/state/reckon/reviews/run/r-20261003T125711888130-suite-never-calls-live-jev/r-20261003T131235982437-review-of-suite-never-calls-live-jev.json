@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "03aeaae69153a3177fea18dbc88821973b95842d",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:120",
+    "reckon/crew/picker/client.py:63"
+  ],
+  "carried_forward": {
+    "at": "2026-10-03T13:21:22Z",
+    "from": "fa06460a7169234bd7dc408c879c17ff50816214",
+    "paths": [
+      "docs/evidence/fragments/one-typesafe-model-picker/suite-never-calls-live-jev.html",
+      "tests/conftest.py",
+      "tests/test_suite_never_calls_live_jev.py"
+    ],
+    "to": "2c9850c52997134d245ea8ee164f35ef8f98c964"
+  },
+  "completed_at": "2026-10-03T13:19:40.865Z",
+  "dispatched_at": "2026-10-03T13:13:05Z",
+  "findings": [
+    {
+      "file": "tests/conftest.py",
+      "line": "105",
+      "severity": "follow-on",
+      "text": "follow-on: isolation rests on the credential being absent rather than on the HTTP call being blocked, so a test that sets OPENROUTER_API_KEY_RECKON and dispatches with the default caller would still reach the live service; a urlopen-level autouse stub would harden the guard."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/suite-never-calls-live-jev.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite arm ran at a530745b while the reviewed head is fa06460a (a docs-only commit), so the gate log names a revision one commit below the tree head; behaviour is unaffected."
+    }
+  ],
+  "head_log_revision": "a530745b6b858f82f9126fb84092026fdcf9f3f4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against base 03aeaae69153a3177fea18dbc88821973b95842d; the first commit changes client.py and conftest.py and adds the test file, the second adds the evidence fragment, all inside the declared scope.",
+    "done_when": "The done_when names tests/test_suite_never_calls_live_jev.py plus tests/test_the_protected_set_is_declared.py and the picker suites; the manifest records head 154 passed against base 152 passed with EXIT=0 at the two run-dir logs, the base arm run with the fixture absent and the network blocked.",
+    "goal": "The node goal is \"No test reaches the live Jev service or reads its credential\"; reckon/crew/picker/client.py:16 adds CREDENTIAL_ENV and :19 LiveJevDisabledError, and :47 makes load_key raise it, while tests/conftest.py:104 adds the autouse no_live_jev fixture that clears the key and points resolution at an absent path, so the request is never built.",
+    "manifest": "Read; it states head 154 passed against base 152 passed, names head.log and base.log, and its negative control note names the fixture-removal mutation that reddens both new tests with EXIT=1.",
+    "write_paths": "Read the source manifest's declared paths (tests/conftest.py, reckon/crew/picker/client.py, tests/test_suite_never_calls_live_jev.py, the evidence fragment, the figures dir); every changed path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_suite_never_calls_live_jev.py:103 asserts the urlopen spy is never reached and the negative-control log shows both new tests redden (EXIT=1) when the autouse fixture is removed.",
+    "evidence": "the manifest's head.log and base.log record 154 and 152 passed with EXIT=0, matching the done_when's named gate, though the head arm header reads a530745b while the reviewed head fa06460a is the docs-only commit above it.",
+    "fit": "reckon/crew/picker/client.py:19 adds a named RuntimeError subclass beside the module's constants and tests/conftest.py:104 follows the autouse-fixture idiom already used in that file.",
+    "goal_fidelity": "reckon/crew/picker/client.py:47 raises LiveJevDisabledError before the request is built, so reckon/crew/picker/__init__.py:127 records \"jev-error: LiveJevDisabledError\" and the urlopen spy in tests/test_suite_never_calls_live_jev.py:103 confirms no request is sent.",
+    "scope_discipline": "the two-commit diff from 03aeaae69153a3177fea18dbc88821973b95842d touches only the four files the manifest declares and nothing outside the fenced paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is \"No test reaches the live Jev service or reads its credential\"; reckon/crew/picker/client.py:16 adds CREDENTIAL_ENV and :19 LiveJevDisabledError, and :47 makes load_key raise it, while tests/conftest.py:104 adds the autouse no_live_jev fixture that clears the key and points resolution at an absent path, so the request is never built.\nVERDICT done_when: The done_when names tests/test_suite_never_calls_live_jev.py plus tests/test_the_protected_set_is_declared.py and the picker suites; the manifest records head 154 passed against base 152 passed with EXIT=0 at the two run-dir logs, the base arm run with the fixture absent and the network blocked.\nVERDICT write_paths: Read the source manifest's declared paths (tests/conftest.py, reckon/crew/picker/client.py, tests/test_suite_never_calls_live_jev.py, the evidence fragment, the figures dir); every changed path in the diff is inside them.\nVERDICT manifest: Read; it states head 154 passed against base 152 passed, names head.log and base.log, and its negative control note names the fixture-removal mutation that reddens both new tests with EXIT=1.\nVERDICT diff: Read commit by commit against base 03aeaae69153a3177fea18dbc88821973b95842d; the first commit changes client.py and conftest.py and adds the test file, the second adds the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/picker/__init__.py:120, reckon/crew/picker/client.py:63\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/client.py:47 raises LiveJevDisabledError before the request is built, so reckon/crew/picker/__init__.py:127 records \"jev-error: LiveJevDisabledError\" and the urlopen spy in tests/test_suite_never_calls_live_jev.py:103 confirms no request is sent.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's head.log and base.log record 154 and 152 passed with EXIT=0, matching the done_when's named gate, though the head arm header reads a530745b while the reviewed head fa06460a is the docs-only commit above it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two-commit diff from 03aeaae69153a3177fea18dbc88821973b95842d touches only the four files the manifest declares and nothing outside the fenced paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_suite_never_calls_live_jev.py:103 asserts the urlopen spy is never reached and the negative-control log shows both new tests redden (EXIT=1) when the autouse fixture is removed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/picker/client.py:19 adds a named RuntimeError subclass beside the module's constants and tests/conftest.py:104 follows the autouse-fixture idiom already used in that file.\nFINDING tests/conftest.py:105 follow-on: isolation rests on the credential being absent rather than on the HTTP call being blocked, so a test that sets OPENROUTER_API_KEY_RECKON and dispatches with the default caller would still reach the live service; a urlopen-level autouse stub would harden the guard.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/suite-never-calls-live-jev.html:1 follow-on: the after_suite arm ran at a530745b while the reviewed head is fa06460a (a docs-only commit), so the gate log names a revision one commit below the tree head; behaviour is unaffected.\n",
+  "review_run_id": "r-20261003T131235982437-review-of-suite-never-calls-live-jev",
+  "reviewed_base_sha": "fa06460a7169234bd7dc408c879c17ff50816214",
+  "reviewed_commits": [
+    "a530745b6b858f82f9126fb84092026fdcf9f3f4",
+    "fa06460a7169234bd7dc408c879c17ff50816214"
+  ],
+  "reviewed_head_sha": "2c9850c52997134d245ea8ee164f35ef8f98c964",
+  "reviewed_run_id": "r-20261003T125711888130-suite-never-calls-live-jev",
+  "reviewer_run_id": "r-20261003T131235982437-review-of-suite-never-calls-live-jev",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T13:21:22Z",
+  "total": 94
+}

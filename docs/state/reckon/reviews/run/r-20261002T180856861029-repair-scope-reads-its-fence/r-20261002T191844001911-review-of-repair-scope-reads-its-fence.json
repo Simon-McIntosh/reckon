@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured zero: the reviewed manifest names its arms under tests and test_logs (tests-base.log 31 passed, tests-head.log 35 passed, both listing no failing node ids); a positive control confirmed the failure-id parser finds the known failing id in negative-control.log. reads through reckon.crew.review.read_review annotate from the armed baseline_suite/after_suite fields, which this manifest omits, so a read-time view reports the count unmeasured \u2014 see the follow-on finding.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:2944",
+    "reckon/crew/resumption.py:1071",
+    "reckon/cli.py:2177",
+    "reckon/cli.py:4277",
+    "reckon/mcp.py:4545"
+  ],
+  "completed_at": "2026-10-02T19:31:25.817Z",
+  "dispatched_at": "2026-10-02T19:19:15Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T180856861029-repair-scope-reads-its-fence/manifest.md",
+      "line": "9",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names its base and head gate logs only under tests and test_logs, not under the armed baseline_suite and after_suite fields, so reckon/crew/review.py annotate_review_of_run derives an unmeasured added_failure_count (None) for a review of this run; the logs exist and both list no failing ids, so the count is a measured zero once read from the named arm logs, and carrying the two suite objects would let the read path derive it without a second source."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 2e37ee39a; the single commit 8747e6bde is conventional with a body, carries no attribution trailer, and its recovery.py change is exactly the four behaviours the goal names, with the tests that assert each.",
+    "done_when": "the evidence fence's four cases are each carried by a test \u2014 tests/test_reflex_dispatches_one_repair.py::test_an_in_fence_figure_finding_reaches_the_scope for the fenced docs/figures finding, tests/test_repair_skips_out_of_repo_findings.py::test_a_follow_on_source_path_does_not_open_an_empty_scope_round for the population fix, that file's test_an_empty_composed_scope_records_a_decline for the empty-scope decline, and test_a_review_store_only_finding_declines for the still-declines case; the manifest records the head arm at 35 passed and the base arm at 31 passed over the same three modules.",
+    "goal": "the node goal is that a repair round grants the in-fence paths its blocking findings name and declines any round whose scope comes out empty; reckon/crew/recovery.py:2325 passes the reviewed run's record into the composition, recovery.py:1876 makes a path inside the run's fence repairable however it is spelled, recovery.py:2371 reads the decline from blocking_findings, and recovery.py:2406 records a decline rather than resuming with no scope.",
+    "manifest": "read; it records base 31 passed and head 35 passed at EXIT=0, names tests-head.log, tests-base.log and negative-control.log, and reproduces red at EXIT=1; its suite observations are named under tests and test_logs rather than the armed baseline_suite and after_suite objects, so the added-failure count was derived from its own two arm logs.",
+    "write_paths": "the diff 2e37ee39a..8747e6bde touches exactly reckon/crew/recovery.py, tests/test_repair_skips_out_of_repo_findings.py and tests/test_reflex_dispatches_one_repair.py, the three declared write paths, with no file outside them."
+  },
+  "justifications": {
+    "durability": "reverting recovery.py:2325 to fence=reviewed_run_test_paths(record) reddens test_an_in_fence_figure_finding_reaches_the_scope (independent rerun, EXIT=1, assert fence_dir in scope), test_a_follow_on_source_path_does_not_open_an_empty_scope_round fails without recovery.py:2371, and test_an_empty_composed_scope_records_a_decline fails without recovery.py:2406.",
+    "evidence": "the manifest's tests-head.log is 35 passed and tests-base.log is 31 passed, both EXIT=0, and negative-control.log reproduces red at EXIT=1; one point withheld because the reviewed manifest names its arm logs only under tests and test_logs, not the armed baseline_suite and after_suite objects the review read path annotates from.",
+    "fit": "_within_fence, _is_record_path and _repairable_scope carry mechanism docstrings in the module's own style, add no plan or ticket identifier and no version suffix, and follow reckon/crew/recovery.py's existing guard idiom.",
+    "goal_fidelity": "recovery.py:2325 passes run_record=record, recovery.py:1876 makes the record filter fence-aware so an in-fence figure or evidence path is repairable, recovery.py:2371 reads blocking_findings, and recovery.py:2406 records the empty-scope decline \u2014 every clause of the goal.",
+    "scope_discipline": "the diff 2e37ee39a..8747e6bde touches only the three declared write paths and mutates no shared plan, index or sprint state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a repair round grants the in-fence paths its blocking findings name and declines any round whose scope comes out empty; reckon/crew/recovery.py:2325 passes the reviewed run's record into the composition, recovery.py:1876 makes a path inside the run's fence repairable however it is spelled, recovery.py:2371 reads the decline from blocking_findings, and recovery.py:2406 records a decline rather than resuming with no scope.\nVERDICT done_when: the evidence fence's four cases are each carried by a test \u2014 tests/test_reflex_dispatches_one_repair.py::test_an_in_fence_figure_finding_reaches_the_scope for the fenced docs/figures finding, tests/test_repair_skips_out_of_repo_findings.py::test_a_follow_on_source_path_does_not_open_an_empty_scope_round for the population fix, that file's test_an_empty_composed_scope_records_a_decline for the empty-scope decline, and test_a_review_store_only_finding_declines for the still-declines case; the manifest records the head arm at 35 passed and the base arm at 31 passed over the same three modules.\nVERDICT write_paths: the diff 2e37ee39a..8747e6bde touches exactly reckon/crew/recovery.py, tests/test_repair_skips_out_of_repo_findings.py and tests/test_reflex_dispatches_one_repair.py, the three declared write paths, with no file outside them.\nVERDICT manifest: read; it records base 31 passed and head 35 passed at EXIT=0, names tests-head.log, tests-base.log and negative-control.log, and reproduces red at EXIT=1; its suite observations are named under tests and test_logs rather than the armed baseline_suite and after_suite objects, so the added-failure count was derived from its own two arm logs.\nVERDICT diff: read commit by commit against 2e37ee39a; the single commit 8747e6bde is conventional with a body, carries no attribution trailer, and its recovery.py change is exactly the four behaviours the goal names, with the tests that assert each.\nCALL_SITES: reckon/crew/recovery.py:2944, reckon/crew/resumption.py:1071, reckon/cli.py:2177, reckon/cli.py:4277, reckon/mcp.py:4545\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: recovery.py:2325 passes run_record=record, recovery.py:1876 makes the record filter fence-aware so an in-fence figure or evidence path is repairable, recovery.py:2371 reads blocking_findings, and recovery.py:2406 records the empty-scope decline \u2014 every clause of the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's tests-head.log is 35 passed and tests-base.log is 31 passed, both EXIT=0, and negative-control.log reproduces red at EXIT=1; one point withheld because the reviewed manifest names its arm logs only under tests and test_logs, not the armed baseline_suite and after_suite objects the review read path annotates from.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 2e37ee39a..8747e6bde touches only the three declared write paths and mutates no shared plan, index or sprint state.\nSCORE durability: 20\nJUSTIFICATION durability: reverting recovery.py:2325 to fence=reviewed_run_test_paths(record) reddens test_an_in_fence_figure_finding_reaches_the_scope (independent rerun, EXIT=1, assert fence_dir in scope), test_a_follow_on_source_path_does_not_open_an_empty_scope_round fails without recovery.py:2371, and test_an_empty_composed_scope_records_a_decline fails without recovery.py:2406.\nSCORE fit: 20\nJUSTIFICATION fit: _within_fence, _is_record_path and _repairable_scope carry mechanism docstrings in the module's own style, add no plan or ticket identifier and no version suffix, and follow reckon/crew/recovery.py's existing guard idiom.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T180856861029-repair-scope-reads-its-fence/manifest.md:9 follow-on: the reviewed manifest names its base and head gate logs only under tests and test_logs, not under the armed baseline_suite and after_suite fields, so reckon/crew/review.py annotate_review_of_run derives an unmeasured added_failure_count (None) for a review of this run; the logs exist and both list no failing ids, so the count is a measured zero once read from the named arm logs, and carrying the two suite objects would let the read path derive it without a second source.\nreviewed_base_sha: 2e37ee39affe9ec213f3005cae621f4fb4c7bb7d\nreviewed_head_sha: 8747e6bde2c6b2adec441257649965f23c181cb8",
+  "review_run_id": "r-20261002T191844001911-review-of-repair-scope-reads-its-fence",
+  "reviewed_base_sha": "2e37ee39affe9ec213f3005cae621f4fb4c7bb7d",
+  "reviewed_head_sha": "8747e6bde2c6b2adec441257649965f23c181cb8",
+  "reviewed_run_id": "r-20261002T180856861029-repair-scope-reads-its-fence",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T191844001911-review-of-repair-scope-reads-its-fence",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T19:29:46.519483+00:00",
+  "total": 99
+}

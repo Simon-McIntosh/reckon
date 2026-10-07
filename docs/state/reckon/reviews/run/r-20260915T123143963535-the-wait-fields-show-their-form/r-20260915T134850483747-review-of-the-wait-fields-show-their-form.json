@@ -1,0 +1,38 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T13:48:50.483747+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "239",
+      "text": "the new checkpoint manifest key is kept as an unknown key by the tolerant reader and referenced nowhere in reckon/crew/reports.py, so a resumed worker's checkpoint is informational only - no promotion, recovery or classification path reads it."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_crew_prompts.py:125 and :132 fail if the literal wait examples or the checkpoint line are removed or reverted to prose, and both were confirmed failing at the base revision.",
+    "evidence": "the two gate tests in tests/test_crew_prompts.py:125-143 fail at base (reproduced independently, 2 failed against the archived base tree) and pass at commit (reproduced, 2 passed at reviewed HEAD), and the manifest's recorded gate logs exist on disk and match.",
+    "fit": "the new checkpoint line follows the one-key-per-line manifest idiom and the existing wait_* instruction style at reckon/crew/prompts.py:236, but nothing downstream reads the checkpoint key.",
+    "goal_fidelity": "the composed prompt at reckon/crew/prompts.py:236-239 now carries the literal wait_probe example [\"squeue\",\"-h\",\"-j\",\"1271081\"], the literal wait_terminal example exit:0, and a checkpoint line scoped to not-waiting, each asserted verbatim by the two gate tests.",
+    "scope_discipline": "both commits touch exactly the four declared write paths - reckon/crew/prompts.py, tests/test_crew_prompts.py and the two plan/evidence docs - with the source commit (9c51724b) fenced to the two code files and the docs commit (448d891b) fenced to the two HTML files."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the composed prompt at reckon/crew/prompts.py:236-239 now carries the literal wait_probe example [\"squeue\",\"-h\",\"-j\",\"1271081\"], the literal wait_terminal example exit:0, and a checkpoint line scoped to not-waiting, each asserted verbatim by the two gate tests.\nSCORE evidence: 19\nJUSTIFICATION evidence: the two gate tests in tests/test_crew_prompts.py:125-143 fail at base (reproduced independently, 2 failed against the archived base tree) and pass at commit (reproduced, 2 passed at reviewed HEAD), and the manifest's recorded gate logs exist on disk and match.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch exactly the four declared write paths - reckon/crew/prompts.py, tests/test_crew_prompts.py and the two plan/evidence docs - with the source commit (9c51724b) fenced to the two code files and the docs commit (448d891b) fenced to the two HTML files.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_crew_prompts.py:125 and :132 fail if the literal wait examples or the checkpoint line are removed or reverted to prose, and both were confirmed failing at the base revision.\nSCORE fit: 18\nJUSTIFICATION fit: the new checkpoint line follows the one-key-per-line manifest idiom and the existing wait_* instruction style at reckon/crew/prompts.py:236, but nothing downstream reads the checkpoint key.\nFINDING reckon/crew/prompts.py:239 the new checkpoint manifest key is kept as an unknown key by the tolerant reader and referenced nowhere in reckon/crew/reports.py, so a resumed worker's checkpoint is informational only - no promotion, recovery or classification path reads it.\n",
+  "review_run_id": "r-20260915T134850483747-review-of-the-wait-fields-show-their-form",
+  "reviewed_base": "733f4097c16640860956dfa08cb19a7faead4ad7",
+  "reviewed_commit": "448d891bf8b802cccba7877bf7498f3a557886f3",
+  "reviewed_run_id": "r-20260915T123143963535-the-wait-fields-show-their-form",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T14:28:16.154217+00:00",
+  "total": 96
+}

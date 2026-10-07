@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_crew_watch_lifetime.py::test_dispatch_is_admitted_during_the_stale_terminal_window",
+    "tests/test_follow_lifetime.py::test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on"
+  ],
+  "added_failures_source": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T140145622178-follow-reads-whole-lines/gates/head-selection.log",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T140145622178-follow-reads-whole-lines/gates/base-selection.log",
+    "method": "pytest FAILED/ERROR node ids in the after log minus the base log, via reckon.crew.review.added_failures_from_gate_logs",
+    "note": "both ids were re-measured at head and base in this review: six isolated runs per arm all passed, so the pair is a flaky machine-state assertion, not a regression the change introduced (see the review run's logs/flake-*.log and logs/positive-control-*.log)"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:_follow_watch_lines",
+    "reckon/cli.py:_follow_boundary",
+    "reckon/crew/runs.py:watch_stream_cursor"
+  ],
+  "completed_at": "2026-09-29T16:03:26.872Z",
+  "dispatched_at": "2026-09-29T15:06:25Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T140145622178-follow-reads-whole-lines/manifest.md",
+      "line": "46",
+      "text": "the failure_attribution states a focused six-run-per-arm re-run (base failed 4 of 6, head 1 of 6) but names no log for it and the run directory retains none, so the single flake claim carrying the head arm's failure cannot be checked against the artifact it came from."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 77429b6f; 6f0d623f adds read_whole_line and line_boundary to reckon/crew/runs.py, rewires reckon/cli.py::_follow_boundary and the watch loop through them and snaps the watch cursor's offset to a line boundary, with a new test file; 3ae563ad adds only the evidence fragment.",
+    "done_when": "the done-when names tests/test_follow_reads_whole_lines.py and the worker's gate ran its two cases; I re-ran that file at the reviewed head and got 2 passed, EXIT=0, and the reviewed run's own base arm shows both cases failing there with the intended messages.",
+    "goal": "the node's goal is that the follower deliver a stream record once and whole while its producer is still writing it; reckon/crew/runs.py:1190 read_whole_line restores the handle to the start of a newline-less tail and reckon/cli.py:3029 reads the follow loop through it, so a record is emitted once, when its newline lands.",
+    "manifest": "read; it names commit 6f0d623f, the base arm's revision 77429b6f and the head arm's 6f0d623f, each with its tree and log path, and its failure_attribution quotes a focused re-run (base failed 4 of 6, head 1 of 6) for which no log or path survives in the run directory.",
+    "write_paths": "read the manifest's declared paths; every path in the two commits is inside them, though the second hunk in reckon/cli.py sits beyond the brief's narrower sentence that only _follow_boundary changes there."
+  },
+  "justifications": {
+    "durability": "reinstating the defect (admitting a newline-less line) reddens test_a_record_half_written_across_a_loop_read_arrives_once_whole, as the negative-control log shows with 1 failed, 1 passed, EXIT=1, and the boundary case fails at base by measuring the probe's own reads.",
+    "evidence": "the gate file passes at head (2 passed, EXIT=0, re-run at 3ae563ad) and both new cases fail at base (gates/base-selection.log), and the negative control's first line repeats the declared string verbatim, but the manifest's focused re-run claim retains no log.",
+    "fit": "read_whole_line and line_boundary (reckon/crew/runs.py:1190, 1215) are named for the mechanism, the deferred import in _follow_boundary follows that file's existing idiom, and no plan, sprint or ticket identifier appears in the diff.",
+    "goal_fidelity": "reckon/cli.py:3029 reads through runs.read_whole_line (reckon/crew/runs.py:1190), which seeks back to the line start until the newline arrives, and every offset written is a line boundary (reckon/cli.py:3034, 3052; reckon/crew/runs.py:1399).",
+    "scope_discipline": "every changed path is inside the declared write fence, and the second reckon/cli.py hunk is the minimum edit making the done-when true because the follow loop lives in that file, disclosed in follow_ons rather than absorbed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the follower deliver a stream record once and whole while its producer is still writing it; reckon/crew/runs.py:1190 read_whole_line restores the handle to the start of a newline-less tail and reckon/cli.py:3029 reads the follow loop through it, so a record is emitted once, when its newline lands.\nVERDICT done_when: the done-when names tests/test_follow_reads_whole_lines.py and the worker's gate ran its two cases; I re-ran that file at the reviewed head and got 2 passed, EXIT=0, and the reviewed run's own base arm shows both cases failing there with the intended messages.\nVERDICT write_paths: read the manifest's declared paths; every path in the two commits is inside them, though the second hunk in reckon/cli.py sits beyond the brief's narrower sentence that only _follow_boundary changes there.\nVERDICT manifest: read; it names commit 6f0d623f, the base arm's revision 77429b6f and the head arm's 6f0d623f, each with its tree and log path, and its failure_attribution quotes a focused re-run (base failed 4 of 6, head 1 of 6) for which no log or path survives in the run directory.\nVERDICT diff: read commit by commit against 77429b6f; 6f0d623f adds read_whole_line and line_boundary to reckon/crew/runs.py, rewires reckon/cli.py::_follow_boundary and the watch loop through them and snaps the watch cursor's offset to a line boundary, with a new test file; 3ae563ad adds only the evidence fragment.\nCALL_SITES: reckon/cli.py:_follow_watch_lines, reckon/cli.py:_follow_boundary, reckon/crew/runs.py:watch_stream_cursor\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:3029 reads through runs.read_whole_line (reckon/crew/runs.py:1190), which seeks back to the line start until the newline arrives, and every offset written is a line boundary (reckon/cli.py:3034, 3052; reckon/crew/runs.py:1399).\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate file passes at head (2 passed, EXIT=0, re-run at 3ae563ad) and both new cases fail at base (gates/base-selection.log), and the negative control's first line repeats the declared string verbatim, but the manifest's focused re-run claim retains no log.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the declared write fence, and the second reckon/cli.py hunk is the minimum edit making the done-when true because the follow loop lives in that file, disclosed in follow_ons rather than absorbed.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the defect (admitting a newline-less line) reddens test_a_record_half_written_across_a_loop_read_arrives_once_whole, as the negative-control log shows with 1 failed, 1 passed, EXIT=1, and the boundary case fails at base by measuring the probe's own reads.\nSCORE fit: 19\nJUSTIFICATION fit: read_whole_line and line_boundary (reckon/crew/runs.py:1190, 1215) are named for the mechanism, the deferred import in _follow_boundary follows that file's existing idiom, and no plan, sprint or ticket identifier appears in the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T140145622178-follow-reads-whole-lines/manifest.md:46 the failure_attribution states a focused six-run-per-arm re-run (base failed 4 of 6, head 1 of 6) but names no log for it and the run directory retains none, so the single flake claim carrying the head arm's failure cannot be checked against the artifact it came from.\n",
+  "review_run_id": "r-20260929T150602234973-review-of-follow-reads-whole-lines",
+  "reviewed_base_sha": "77429b6fd472e399b9eb6987033d7518b16eaf6f",
+  "reviewed_head_sha": "3ae563ad6d9e597bca06cb7cbea67130407561e4",
+  "reviewed_run_id": "r-20260929T140145622178-follow-reads-whole-lines",
+  "reviewer": "review-of-follow-reads-whole-lines",
+  "reviewer_run_id": "r-20260929T150602234973-review-of-follow-reads-whole-lines",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T15:58:42.451370+00:00",
+  "total": 90
+}

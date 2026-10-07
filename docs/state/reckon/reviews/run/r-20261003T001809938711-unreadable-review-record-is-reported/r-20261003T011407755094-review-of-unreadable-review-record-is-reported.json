@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d5015e7538d91c4813ed04ceb1562008f2ce6451",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:685 (fleet_state drains the skipped records into the state)",
+    "reckon/crew/obligation_snapshot.py:835 (sweep calls fleet_state, the only production caller)"
+  ],
+  "completed_at": "2026-10-03T01:25:48.008Z",
+  "dispatched_at": "2026-10-03T01:14:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1351",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's third clause -- records written atomically so a reader never sees a partial one -- holds only for store_review's programmatic path (write_json_atomically at :1978) and not for the production case the incident describes, a review worker composing its JSON by hand: that writer is still non-atomic, so the reader-side skip added here remains the only guard against a truncated record. If atomicity is required of the hand-written case too, the worker's own writer needs it too."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "487",
+      "severity": "follow-on",
+      "text": "follow-on: findings travel in the stored snapshot document but are stripped by live_payload, which is what the hook renders, so the checklist a coordinator actually reads does not show a skipped record -- the reader meets it only by opening the snapshot store directly. The node's own follow_ons records this; payload_for must carry the findings and the live_payload parity extended with them before the coordinator sees them in the checklist."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1397",
+      "severity": "follow-on",
+      "text": "follow-on: _SKIPPED_RECORDS is process-global mutable state shared by every reader of the store, not only the sweep: a review worker's own read_review accumulates entries (deduped by path) that a later sweep drains and attributes to its snapshot as findings about a file some other reader met, and a long-lived process that never sweeps accumulates distinct unreadable paths without bound."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "255",
+      "severity": "follow-on",
+      "text": "follow-on: this file is written though it is absent from the node's own FENCE -- SCOPE list, which names review.py, obligation_snapshot.py, coordinator_obligations.py, the new test and the two fragments. The edit is correct and plan-directed (f-tohras-008 asks the new-session worker-slots fallback be gated on the admission block's presence), and the manifest discloses it in evidence_inputs, but the dispatch fence did not cover it and the manifest's orientation_write_paths echoes the narrower set rather than the dispatch scope."
+    }
+  ],
+  "head_log_revision": "e2d680f80734233d51e0af7a4e4a7bb1c80fc028",
+  "item_aggregate": 8,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against d5015e753; e2d680f80 makes stored_record skip an unreadable candidate and keep its path and error for drain_read_failures, adds findings to the published document, catches a failed fleet_state or a failed slice inside sweep and logs it, removes the dead resolve() from coordinator_obligations.py, gates the new-session worker-slots fallback on the admission block's presence, corrects the stop-hook fragment's plan-verifies and evidence-commit, and adds the new case file; 37122e362 adds only the landing fragment.",
+    "done_when": "the three readings are met. A truncated record beside a valid one is skipped and named: test_a_truncated_record_is_skipped_and_named_in_the_snapshot asserts the valid duty still publishes, the truncated path appears in document findings, and its error is a JSONDecodeError. One failing slice and one failing fleet_state are logged and cost only themselves, each with its own case. The negative control restores the raise: 1 failed, EXIT=1 at the designed case, the sweep publishing nothing. The atomic-write clause is pre-existing (write_json_atomically) rather than added, and covers only the programmatic store path -- see the review's first finding.",
+    "goal": "the node goal is that one unreadable review record cannot stop the sweep: reckon/crew/review.py:1472-1481 skips a candidate that cannot be read or parsed and keeps it for drain_read_failures, reckon/crew/obligation_snapshot.py:830-853 catches a failed fleet_state or a failed slice and logs it rather than letting it kill the sweep, and reckon/crew/obligation_snapshot.py:531 carries the findings into every session's published document.",
+    "manifest": "read; it reads status complete, records the base and head arms with their revisions, completed true and literal absolute commands, the negative control with its log and its named failing case, and added_failure_count 0 with no ids. Two orientation_write_paths omissions noted under scope.",
+    "write_paths": "the diff d5015e753..37122e362 touches reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, reckon/crew/review.py, reckon/hooks/coordinator_obligations.py, tests/test_unreadable_review_record_is_reported.py and the two evidence fragments. obligations.py is outside the node's FENCE -- SCOPE list and is disclosed in the manifest; every other path is inside it."
+  },
+  "justifications": {
+    "durability": "the guard is shown to fire: the negative control at negative-control.log restores stored_record's raise and reds exactly test_a_truncated_record_is_skipped_and_named_in_the_snapshot (1 failed, EXIT=1, the JSONDecodeError reaching the sweep's own catch so nothing is published), and an independent drive of stored_record over a truncated file returns (None, None) without raising and drains one finding naming the path and its JSONDecodeError, so the skip is a recorded reading rather than a suppression. The two adjacent suites that reach the change pass independently (36 passed, EXIT=0). Residual: the process-global skip list is shared by every reader of the store, not only the sweep (see findings).",
+    "evidence": "the head arm at head-arm.log runs twenty pre-existing files plus the new case file at revision e2d680f80, 182 passed EXIT=0, and the base arm at base-arm.log runs the same twenty at d5015e753, 179 passed EXIT=0, neither with a failure id, so added_failure_count is 0. The negative control is a real red on the designed case with its traceback, and the reproduction is quoted in the landing fragment. Minor: the head arm ran at the code commit e2d680f80 rather than the delivered head 37122e362 (a docs-only commit over it), and the base-arm log header names the module under test but not the resolved working directory the scratch-tree arm contract asks a header to carry.",
+    "fit": "the new names state their mechanism -- drain_read_failures, _note_skipped_record, _report_sweep_failure, _FINDINGS -- with no plan label, version, section or ticket reference, and the module docstrings explain why a skip is a reading a publisher must name rather than a silent absence. The removed resolve() leaves no caller behind (verified by import: hasattr(resolve) is False, locate_session still present).",
+    "goal_fidelity": "reckon/crew/review.py:1469-1481 answers from the records it could read and keeps each unreadable path with its error, reckon/crew/obligation_snapshot.py:830-853 keeps a failed sweep or slice from costing the others and logs its traceback, and :531 puts the findings on every published document, which is what the goal states. Counted 18 rather than higher because the done-when's atomic-write clause is only pre-existing for the programmatic store path and not for the hand-written production case the incident came from.",
+    "scope_discipline": "the diff stays inside the declared fence except for reckon/crew/obligations.py, which is outside it; the manifest discloses that file and the change is directed by f-tohras-008, but the node's own FENCE -- SCOPE list omits it and the manifest's orientation_write_paths echoes a narrower set (also dropping the in-scope stop-hook fragment), so the record's declared paths do not match the work."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that one unreadable review record cannot stop the sweep: reckon/crew/review.py:1472-1481 skips a candidate that cannot be read or parsed and keeps it for drain_read_failures, reckon/crew/obligation_snapshot.py:830-853 catches a failed fleet_state or a failed slice and logs it rather than letting it kill the sweep, and reckon/crew/obligation_snapshot.py:531 carries the findings into every session's published document.\nVERDICT done_when: the three readings are met. A truncated record beside a valid one is skipped and named: test_a_truncated_record_is_skipped_and_named_in_the_snapshot asserts the valid duty still publishes, the truncated path appears in document findings, and its error is a JSONDecodeError. One failing slice and one failing fleet_state are logged and cost only themselves, each with its own case. The negative control restores the raise: 1 failed, EXIT=1 at the designed case, the sweep publishing nothing. The atomic-write clause is pre-existing (write_json_atomically) rather than added, and covers only the programmatic store path -- see the review's first finding.\nVERDICT write_paths: the diff d5015e753..37122e362 touches reckon/crew/obligation_snapshot.py, reckon/crew/review.py, reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, tests/test_unreadable_review_record_is_reported.py and the two evidence fragments. obligations.py is outside the node's FENCE -- SCOPE list and is disclosed in the manifest; every other path is inside it.\nVERDICT manifest: read; it reads status complete, records the base and head arms with their revisions, completed true and literal absolute commands, the negative control with its log and its named failing case, and added_failure_count 0 with no ids. Two orientation_write_paths omissions noted under scope.\nVERDICT diff: read commit by commit against d5015e753; e2d680f80 makes stored_record skip an unreadable candidate and keep its path and error for drain_read_failures, adds findings to the published document, catches a failed fleet_state or a failed slice inside sweep and logs it, removes the dead resolve() from coordinator_obligations.py, gates the new-session worker-slots fallback on the admission block's presence, corrects the stop-hook fragment's plan-verifies and evidence-commit, and adds the new case file; 37122e362 adds only the landing fragment.\nCALL_SITES: reckon/crew/obligation_snapshot.py:685 (fleet_state drains the skipped records into the state), reckon/crew/obligation_snapshot.py:835 (sweep calls fleet_state, the only production caller)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1469-1481 answers from the records it could read and keeps each unreadable path with its error, reckon/crew/obligation_snapshot.py:830-853 keeps a failed sweep or slice from costing the others and logs its traceback, and :531 puts the findings on every published document, which is what the goal states. Counted 18 rather than higher because the done-when's atomic-write clause is only pre-existing for the programmatic store path and not for the hand-written production case the incident came from.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head arm at head-arm.log runs twenty pre-existing files plus the new case file at revision e2d680f80, 182 passed EXIT=0, and the base arm at base-arm.log runs the same twenty at d5015e753, 179 passed EXIT=0, neither with a failure id, so added_failure_count is 0. The negative control is a real red on the fallback case with its traceback, and the reproduction is quoted in the landing fragment.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff stays inside the declared fence except for reckon/crew/obligations.py, which is outside it; the node's own FENCE -- SCOPE list omits it and the manifest's orientation_write_paths echoes a narrower set (also dropping the in-scope stop-hook fragment), so the record's declared paths do not match the work.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at negative-control.log restores stored_record's raise and reds exactly test_a_truncated_record_is_skipped_and_named_in_the_snapshot (1 failed, EXIT=1), and an independent drive of stored_record over a truncated file returns (None, None) without raising and drains one finding naming the path and its JSONDecodeError; the two adjacent suites pass independently (36 passed, EXIT=0).\nSCORE fit: 19\nJUSTIFICATION fit: the new names state their mechanism -- drain_read_failures, _note_skipped_record, _report_sweep_failure, _FINDINGS -- with no plan label, version, section or ticket reference; the removed resolve() leaves no caller behind.\nFINDING reckon/crew/review.py:1351 follow-on: the done-when's third clause -- records written atomically -- holds only for store_review's programmatic path and not for the hand-written production case, so the reader-side skip is the only guard against a partial record there.\nFINDING reckon/crew/obligation_snapshot.py:487 follow-on: findings travel in the stored snapshot but are stripped by live_payload, so the hook's checklist does not show a skipped record.\nFINDING reckon/crew/review.py:1397 follow-on: _SKIPPED_RECORDS is process-global mutable state shared by every reader of the store, not only the sweep.\nFINDING reckon/crew/obligations.py:255 follow-on: this file is written though it is absent from the node's own FENCE -- SCOPE list; the edit is correct and plan-directed and the manifest discloses it, but the declared paths do not match the work.\nreviewed_base_sha: d5015e7538d91c4813ed04ceb1562008f2ce6451\nreviewed_head_sha: 37122e36216ff4d4855215ffb21d9807616cb94d",
+  "review_run_id": "r-20261003T011407755094-review-of-unreadable-review-record-is-reported",
+  "reviewed_base_sha": "d5015e7538d91c4813ed04ceb1562008f2ce6451",
+  "reviewed_head_sha": "37122e36216ff4d4855215ffb21d9807616cb94d",
+  "reviewed_run_id": "r-20261003T001809938711-unreadable-review-record-is-reported",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T01:23:00.000000+00:00",
+  "total": 90
+}

@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T21:35:50.762Z",
+  "dispatched_at": "2026-10-05T21:32:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:1514",
+      "id": "reuse_search-1",
+      "reason": "the section must either extend the count path with a parity assertion (as it already does for the prose swap) or keep `count_open_decisions` on the bare expression, because an unproven behaviour change to an inventory count is exactly the silent regression the plan's byte-proof discipline exists to prevent.",
+      "text": "\u00a716 re-expresses `count_open_decisions` over the new `strip_tags`, but `strip_tags` does three things the current call site's `_TAG_RE.sub(\"\", \u2026)` does not (drop `_PROSE_SKIP_TAGS` interiors, `html.unescape` entities, collapse whitespace); the only consumer today is line 1525, and a rationale that is empty-but-for-an-entity (e.g. `&nbsp;`) currently reads non-empty and flips to empty, changing `rec[\"dec_open\"]` at `parse_meta`. \u00a716 is otherwise at pains to prove the prose-parser swap byte-identical across every plan but gives the count path no such proof.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:224",
+      "id": "duplicate_owner-1",
+      "reason": "the section must state whether routing re-exports `section_record_id` (leaving the five crew-layer import sites untouched) or the move must repoint them, otherwise the \u00a717 importer gate is either unsatisfiable or silently vacuous for the name it hoists.",
+      "text": "the plan hoists `section_record_id`/`section_id_candidates` into `reckon/_plan_html.py` but its importer census names only `plan_review.py` (for `landed_section_ids`); `section_record_id` is also imported from `reckon.crew.routing` at `reckon/mcp_views.py:1600,1695,1778`, `reckon/evidence.py:302`, `reckon/roadmap.py:2266` and `reckon/crew/promotion.py:4700`, and the plan does not say whether those are repointed or whether routing re-exports the hoisted name, while \u00a717's done-when requires every importer of a moved name to import it from its new home.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0209f6829da2485ac1ac3912cac2b9d7d949bd1eece9cf8b0c83585bf0f99638",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 134,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T213145526594-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "cd94a3a57816a2ec6a04bc487e3d2fdf2657ebcf",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 hides one raw-text read behind a private `_StructuredSectionSpanParser` and exposes only projections (`plan_headings`, `structured_section_spans`), so the complexity is behind a smaller interface than it hides.",
+    "duplicate_owner": "a finding \u2014 the hoist of `section_record_id`/`section_id_candidates` into `reckon/_plan_html.py` under-enumerates the consumers it must repoint; the plan names only `plan_review`'s use of `landed_section_ids` while `section_record_id` is imported from `reckon.crew.routing` at five further sites.",
+    "interface_budget": "pass \u2014 public_definitions 1478, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 (\"one public definition is added here, `strip_tags` \u2026 nothing is retired\") and \u00a717 (\"two public definitions are added \u2026 `plan_headings` \u2026 the machinery-element predicate \u2026 `landed_section_ids` is retired from `_store.py` and added on `_plan_html.py` under the same name \u2026 the net is two\") each carry an Interface accounting paragraph naming the addition and stating why nothing can be retired, so neither adds surface without accounting for it.",
+    "reuse_search": "a finding \u2014 the plan reuses `_TAG_RE` by wrapping it in `strip_tags`, but routing its one existing caller, `count_open_decisions`, through the richer stripper changes that caller's output without the byte-parity proof \u00a716 demands for the prose-parser swap.",
+    "thin_wrapper": "pass \u2014 \u00a716 extends the existing `_TAG_RE` expression in place as one public `strip_tags`, and \u00a717 extends `_StructuredSectionSpanParser` and the shared attribute/identity helpers rather than adding parallel readers."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.763337+00:00"
+}

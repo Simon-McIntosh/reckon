@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T07:07:02.495Z",
+  "dispatched_at": "2026-10-06T07:03:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html#s3",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend review_path/plan_review_path to accept the committed state root rather than mint a parallel resolver in ledger.py.",
+      "text": "\u00a73 places review-path composition in reckon/ledger.py, but reckon/crew/review.py:1242 review_path and reckon/crew/plan_review.py:330 plan_review_path already own how a review path is composed (keyed by reviewed run id with an .at-<sha> sibling, and by plan slug/version with an .at-<blob8> sibling), and reckon/_store.py:215 state_path owns the docs/state/<project>/ rule that ledger_path (reckon/ledger.py:618) already delegates to; a review-path rule added to ledger.py is a third path rule beside the two that exist, exactly the fork the section's own text disowns (\"not by a second path rule\")",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "scripts/import_runs_into_store.py:1",
+      "id": "reuse_search-1",
+      "reason": "the plan should cite the existing importer and reuse or extend its pattern rather than propose a parallel one without saying what it searched.",
+      "text": "\u00a75 adds scripts/import_review_store.py to parse a host store, deduplicate by identity and re-run idempotently, but the repository already carries scripts/import_runs_into_store.py doing the same host-store-to-store import over the crew ledger, and a reusable importer returning per-project counts already exists there as the shape this plan reinvents",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html#s7",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the refusal surface it adds, as the rubric holds every section that adds to a tracked family to do.",
+      "text": "\u00a77 makes crew review-plan refuse on a hold, the sweep skip a held plan and the gate refuse a build of it, and adds a plan-review-hold scalar merged into PLAN_METADATA_SCALARS, adding to the refusal surface (refusal_families 23) without naming any refusal it retires or merges, or stating why none can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0d0cb0150059d299439c4609095802d286414042152488803a215b19b989b55f",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T070337956905-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "9de784012997fc8e4ab4a36613aced902ac75141",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73 hides the record shape, the committed store and the committed-first join behind one store function (store_delivered_reviews) and one reader extending reckon/crew/review.py, and \u00a74 derives the lifecycle in Python rather than storing it.",
+    "duplicate_owner": "a finding \u2014 \u00a73 resolves the committed review path through reckon/ledger.py and calls it \"the owner of the committed state tree\", but review-path composition is already owned by review.review_path/review_store_root and plan_review.plan_review_path, and the docs/state/<project> rule is owned by _store.state_path, which ledger_path already delegates to.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a77 adds refusal conditions (the sweep skips a held plan, crew review-plan refuses, the gate refuses a build) and a new plan-metadata scalar without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites ledger.py, review.py, plan_review.py, promotion.py and recovery.py for the code it extends, but \u00a75 adds a one-shot host-store import script without citing the existing scripts/import_runs_into_store.py, which is the same host-store-to-store import shape.",
+    "thin_wrapper": "pass \u2014 \u00a73 changes where the existing store function writes, \u00a74 folds a summary into the existing crew(view=\"plan-review\") rather than adding a view, and \u00a77 reuses the existing set op and PLAN_METADATA_SCALARS exclusion set; each is an extension, and each says so."
+  },
+  "section_digests": {
+    "_document": "03002f5c13e403a6a4e1a381705cc8a02f38a763f65f6690ed61554bb818963f",
+    "s1": "d333aa7f2c925cc28d10652f937427775e80946ff9334b6bcd9145aff3e04b91",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "1deaae93170da54c61978307dbab3da40c3c48a84f99317725e133633ac2ef5f",
+    "s4": "dea334f0d090c1767f8a7fc0d2447619076d332ae2ad1eedfd7bcdbbd3e633df",
+    "s5": "049b059cf1b7f88d13015349cd5ec13979bc801dbe26d0bdee08b0bee6abe02a",
+    "s6": "575c9d89e9e8fc362d3192fcff31c77d7a1b6353f3a2971d2410d183570e3358",
+    "s7": "25a9982c5350cf821a2704cd37f14481c3f75e262726ee9efa7d8e7fdeff5c6e",
+    "s8": "b9ad6cbd95673381cecbab7e03b74058aaae945bd4185b4c1f6d51658433b081"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T13:42:26.599999+00:00"
+}

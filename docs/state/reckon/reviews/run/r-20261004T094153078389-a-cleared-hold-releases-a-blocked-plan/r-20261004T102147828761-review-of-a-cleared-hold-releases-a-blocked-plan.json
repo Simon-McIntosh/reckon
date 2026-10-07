@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/roadmap.py:2253",
+    "reckon/roadmap.py:2369",
+    "reckon/roadmap.py:2871"
+  ],
+  "completed_at": "2026-10-04T10:27:06.792Z",
+  "dispatched_at": "2026-10-04T10:22:04Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1893",
+      "severity": "follow-on",
+      "text": "follow-on: resolve_graph_target builds a second readiness list whose membership still requires _status(plan) in _AUTHORISED_STATUSES, so a plan released by this change (persisted blocked, held blocker cleared) is absent from a graph target's ready set even though the roadmap-served ready_set lists it ready_now. The worker discloses this in evidence_inputs and it lies outside \u00a72's done-when (\"reads ready on the roadmap\"), but it means the same readiness fact now has two computations and only one was updated; a parity check between the roadmap ready set and the graph ready list would have caught it."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2148",
+      "severity": "follow-on",
+      "text": "follow-on: _plans_released_by_cleared_blockers releases only when every recorded blocker is status 'cleared' with a non-empty cleared_reason; the multi-blocker partial-clear case (one blocker cleared, one still holding) and the cleared-with-empty-reason case are handled by the break/for-else but are not driven by a test, so a future change to the break ordering would not be caught."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's manifest baseline_suite.command and after_suite.command carry an angle-bracket placeholder ('<44 absolute test paths under the worktree>/tests') rather than the literal command; the literal command is only in the log headers (logs/base-population.log, logs/head-population.log). The counters derived here are read from those log headers and summaries, not from the manifest's command strings."
+    }
+  ],
+  "item_aggregate": 7,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites of released_by_clear in _build_roadmap: the orphaned-blocked-status guard at :2369, the persisted-blocker synthesis guard at :2858, and the authorised override at :2871.",
+    "diff": "read 5ed4492d3 and 858d0ffe9 against base 39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271; two commits, three files, +254/-4. Production change is reckon/roadmap.py only (+84/-4, one new helper and three guard sites); 858d0ffe9 is docs/evidence only, so the code under review is the 5ed4492d3 diff and the head 858d0ffe9 shares that code.",
+    "done_when": "the done-when asks for the release case to read ready and the orphan case to stay blocked, each covered by a test; the new test file's two cases assert exactly this and I reproduced both arms myself \u2014 head 2 passed EXIT=0, base 1 failed/1 passed EXIT=1.",
+    "goal": "the change reads the plan-to-blocker attachment from the raw sprint records because composition drops a cleared blocker, exposes the released set as _plans_released_by_cleared_blockers, and consumes it at the orphan finding, the persisted-blocker synthesis and the authorisation check so a plan whose only blocker is a probe-cleared held blocker reads ready_now.",
+    "manifest": "read; status complete, base 39ed4f2d8 to head 858d0ffe9, two commits, focused head gate 2 passed EXIT=0, base negative control 1 failed/1 passed EXIT=1, population arms 402 passed/0 failed at both revisions, negative_control_log present and red.",
+    "write_paths": "all three changed files (reckon/roadmap.py, tests/test_cleared_hold_releases_a_blocked_plan.py, docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-cleared-hold-releases-a-blocked-plan.html) lie inside the node's declared write paths; no out-of-scope write."
+  },
+  "justifications": {
+    "durability": "tests/test_cleared_hold_releases_a_blocked_plan.py:88 reddens at base against the exact readiness resource the fix must produce (assert released['bucket'] == 'ready_now' fails with 'blocked' at 39ed4f2d8) and passes at head, while :112 pins the orphan case so the release cannot be a blanket unblock of every persisted blocked status; the partial-clear and empty-reason branches of the release helper are left undriven.",
+    "evidence": "the reviewed manifest records both gate arms at revisions matching the reviewed base and head: baseline_suite revision 39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271 with log logs/base-population.log (402 passed, EXIT=0) and after_suite revision 858d0ffe9 with log logs/head-population.log (402 passed, EXIT=0), on the identical 44-file importer list, so added_failure_count is 0; the focused arms logs/base-new-test.log (1 failed/1 passed, EXIT=1) and logs/head-new-test.log (2 passed, EXIT=0) are the negative control, and I reproduced both arms myself (logs/reviewer-two-arm-reproduction.log, HEAD_EXIT=0, BASE_EXIT=1) after confirming the scratch base tree's roadmap.py is byte-identical to git's 39ed4f2d8 copy; the manifest's command strings carry angle-bracket placeholders but the log headers carry the literal commands.",
+    "fit": "the helper reuses read_resource and the existing (OSError, ProjectStateError, ValueError) tolerance idiom, is named by what it does, and its docstring states why the raw sprint record rather than the composed state is the source; the three consumers read as guard clauses in the surrounding code, and the comment on the persisted-blocker synthesis explains both the existing decision-scoped case and the new released case; the change adds one disk read per sprint and per blocker on every roadmap build, which is small at this project's scale but is a cost the previous code paid only through composition.",
+    "goal_fidelity": "both clauses of \u00a72 land: _plans_released_by_cleared_blockers (roadmap.py:2128) returns plan slugs whose every recorded blocker resource is status 'cleared' with a reason, and _build_roadmap consumes the set at :2369 (no orphaned-blocked-status finding for a released plan), :2858 (no re-synthesis of the persisted blocker) and :2871 (authorised like other open work), so the release case reads ready_now while the orphan case with no blocker resource stays blocked; both are asserted by the new test and I reproduced head-pass/base-fail.",
+    "scope_discipline": "three files changed, all declared write paths; the production edit is confined to reckon/roadmap.py and carries nothing \u00a72 does not imply; no shared plan, sprint or index state was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the change reads the plan-to-blocker attachment from the raw sprint records because composition drops a cleared blocker, exposes the released set as _plans_released_by_cleared_blockers, and consumes it at the orphan finding, the persisted-blocker synthesis and the authorisation check so a plan whose only blocker is a probe-cleared held blocker reads ready_now.\nVERDICT done_when: the done-when asks for the release case to read ready and the orphan case to stay blocked, each covered by a test; the new test file's two cases assert exactly this and I reproduced both arms myself \u2014 head 2 passed EXIT=0, base 1 failed/1 passed EXIT=1.\nVERDICT write_paths: all three changed files lie inside the node's declared write paths; no out-of-scope write.\nVERDICT manifest: read; status complete, base 39ed4f2d8 to head 858d0ffe9, two commits, focused head gate 2 passed EXIT=0, base negative control 1 failed/1 passed EXIT=1, population arms 402 passed/0 failed at both revisions, negative_control_log present and red.\nVERDICT diff: read 5ed4492d3 and 858d0ffe9 against base 39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271; two commits, three files, +254/-4, production change reckon/roadmap.py only.\nCALL_SITES: reckon/roadmap.py:2253, reckon/roadmap.py:2369, reckon/roadmap.py:2871\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both clauses of \u00a72 land: _plans_released_by_cleared_blockers (roadmap.py:2128) returns plan slugs whose every recorded blocker resource is status 'cleared' with a reason, and _build_roadmap consumes the set at :2369, :2858 and :2871, so the release case reads ready_now while the orphan case with no blocker resource stays blocked; both are asserted by the new test and I reproduced head-pass/base-fail.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed manifest records both gate arms at revisions matching the reviewed base and head: baseline_suite revision 39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271 (logs/base-population.log, 402 passed EXIT=0) and after_suite revision 858d0ffe9 (logs/head-population.log, 402 passed EXIT=0) on the identical 44-file importer list, so added_failure_count is 0; the focused arms logs/base-new-test.log (1 failed/1 passed EXIT=1) and logs/head-new-test.log (2 passed EXIT=0) are the negative control, and I reproduced both arms myself; the manifest's command strings carry angle-bracket placeholders while the log headers carry the literal commands.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: three files changed, all declared write paths; the production edit is confined to reckon/roadmap.py and carries nothing \u00a72 does not imply; no shared plan, sprint or index state was touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_cleared_hold_releases_a_blocked_plan.py:88 reddens at base against the exact readiness resource the fix must produce (assert released['bucket'] == 'ready_now' fails with 'blocked' at 39ed4f2d8) and passes at head, while :112 pins the orphan case so the release cannot be a blanket unblock; the partial-clear and empty-reason branches of the release helper are left undriven.\nSCORE fit: 19\nJUSTIFICATION fit: the helper reuses read_resource and the existing (OSError, ProjectStateError, ValueError) tolerance idiom, is named by what it does, and its docstring states why the raw sprint record rather than the composed state is the source; the three consumers read as guard clauses in the surrounding code, and the change adds one disk read per sprint and per blocker on every roadmap build.\nFINDING reckon/roadmap.py:1893 follow-on: resolve_graph_target builds a second readiness list whose membership still requires _status(plan) in _AUTHORISED_STATUSES, so a plan released by this change is absent from a graph target's ready set even though the roadmap-served ready_set lists it ready_now; disclosed in evidence_inputs and outside \u00a72's done-when, but the same readiness fact now has two computations and only one was updated.\nFINDING reckon/roadmap.py:2148 follow-on: _plans_released_by_cleared_blockers releases only when every recorded blocker is 'cleared' with a non-empty cleared_reason; the multi-blocker partial-clear case and the cleared-with-empty-reason case are handled by the break/for-else but are not driven by a test.\nFINDING manifest.md:1 follow-on: the reviewed run's manifest baseline_suite.command and after_suite.command carry an angle-bracket placeholder rather than the literal command; the literal command is in the log headers, which is where the counters were read from.\n",
+  "review_run_id": "r-20261004T102147828761-review-of-a-cleared-hold-releases-a-blocked-plan",
+  "reviewed_base_sha": "39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271",
+  "reviewed_head_sha": "858d0ffe915408145dfc6879979b4f94d0bfd3f3",
+  "reviewed_run_id": "r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T102147828761-review-of-a-cleared-hold-releases-a-blocked-plan",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T10:32:00+00:00",
+  "total": 97
+}

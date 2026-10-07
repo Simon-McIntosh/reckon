@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run carries no suite arms: its manifest records no baseline_suite or after_suite key, its only test_logs entry is replay.log (a measurement log, not a gate), and no gate-base/gate-head log exists in its run directory. It is a documentation node whose sole commit 14568acf7 adds one evidence fragment and no product source or test, so no arm exists from which to derive added failures; count 0 and ids [] are the correct derivation from an absent arm pair, not a missing measurement.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T21:10:16.962Z",
+  "dispatched_at": "2026-10-02T20:54:28Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html",
+      "line": "80",
+      "severity": "follow-on",
+      "text": "follow-on: the sentence \"so the eligibility gate was live and its exclusions differed row from row\" is not supported by the JSON it cites. On all 20 rows the excluded set is identical -- claude, claude-haiku, claude-opus, clive and native, each with reason \"availability: unavailable\" -- and the offered set is identical too (codex, codex-astra, codex-luna, codex-terra). What varies row to row is the picker's pick (codex 11, codex-astra 6, codex-terra 3) and the per-candidate detail fields (clive congestion running 10..15, clive outcomes, worker_slots 1..3), not the exclusions. The section's conclusion (the eligibility gate was live) stands on the presence of 4 offered and 5 excluded candidates on every row; the \"differed row from row\" clause should be dropped or replaced by the varying pick distribution and confidence range (0.19..0.65)."
+    }
+  ],
+  "item_aggregate": null,
+  "item_verdicts": {
+    "done_when": "(1) one live run from this worktree at the named revision -- met (855d0a6d9, EXIT=0, 184 s). (2) table of one row per dispatch with actual backend and gate outcome beside picked action, backend and confidence -- met (20 rows). (3) summary with agreement, holds, fallbacks with reasons, median and maximum pick latency, median Jev latency with its count -- met (0.05, 0, 0, 2285.3 ms, 120.6 s, 305.4 ms over 20 calls). (4) one rendered Jev state quoted verbatim with non-null return_times and local_lane -- met (equals jev-states.jsonl line 0). (5) raw JSON and log under the run directory and named in the manifest -- met. All five clauses satisfied.",
+    "goal": "Publish a live 20-dispatch replay through the finished picker: met. The fragment at docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html is committed at 14568acf7 and publishes one live run of `reckon crew pick --project reckon --replay 20` at revision 855d0a6d9, from the node's own worktree; the 20-row table and the summary are present and every stated figure reproduces from the raw payload.",
+    "write_paths": "commit 14568acf7 modifies exactly docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html, one of the two declared write paths; no file outside the fence is touched and no figure directory is created (none was required)."
+  },
+  "justifications": {
+    "durability": "A documentation and measurement node with no behaviour change: its single commit adds one evidence fragment and no product source or test, so there is no guard whose revert could redden and no negative control is owed (write paths are docs only). Durability rests on the evidence being reproducible from the named revision and the run's raw JSON, which the report names explicitly. Points withheld only because nothing re-runs the replay automatically and the report carries no re-run script; the command is stated verbatim, which is what a later reader needs.",
+    "evidence": "Every headline figure reconciles with the raw payload at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T202124445000-picker-replay-measure/replay.json: count 20, agreement_rate 0.05, fallback_rate 0.0, jev_calls 20, median_jev_latency_ms 305.368, median_latency_ms 2285.3145, max_latency_ms 120622.907, no_selection_count 0, refused_model_picks 0, cost_usd 0.00192192 -- each equal to the report's stated figure. The table's per-row claims hold against the rows array: 20 rows all action \"route\", 4 offered and 5 excluded per row, picks over 3 backends with confidence 0.19..0.65, actual backends clive 17 / codex 1 / codex-astra 1 / codex-terra 1, agreement 1 of 20. The tree-identity claim is independently reproducible: sha256 of reckon/crew/picker/replay.py in the worktree and at git show HEAD equal 66913303bdffd2912024ca454b90c2e7486632fa70ec43b9bf2308fc088e4611, matching the log. The report blob sha256 0d7f6c933d757ce6a31134103fd0dbf91a5b11c79c63ce9bddd1fe41c89f1dfa matches in worktree and HEAD. The quoted Jev state equals jev-states.jsonl line 0 after unwrapping its rendered_state string, with non-null return_times and local_lane blocks. The uniform-column check demanded by the contract is present and correct. One sentence overstates its evidence (the follow-on finding), so not full marks.",
+    "fit": "conventional commit subject with a body stating what changed and why; no attribution trailer (the only 'claude' match is the lane name used as subject matter); the fragment is idiomatic landed-report HTML with data-node set and no plan, sprint or ticket identifier anywhere in it.",
+    "goal_fidelity": "All five done-when clauses are met and each is verified against the raw JSON, not against the report's prose.",
+    "scope_discipline": "commit 14568acf7 touches one file, the declared write path docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html; it mutates no plan, index or sprint state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: met - the report docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html publishes one live `crew pick --project reckon --replay 20` at revision 855d0a6d9 from the node's worktree, committed at 14568acf7; the 20-row table and every summary figure reproduce from the run's replay.json.\nVERDICT done_when: all five clauses met and verified against the raw payload: (1) live run at the named revision EXIT=0; (2) 20-row table with actual backend/gate beside picked action/backend/confidence; (3) agreement 0.05, holds 0, fallbacks 0, median pick 2285.3 ms, max 120622.9 ms, median Jev 305.4 ms over 20 calls; (4) verbatim Jev state equal to jev-states.jsonl line 0 with non-null return_times and local_lane; (5) raw JSON and log under the run directory and named in the manifest.\nVERDICT write_paths: commit 14568acf7 touches only docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html - inside the declared fence, no plan/index/sprint mutation.\nVERDICT manifest: read; status complete; it honestly flags that agreement 0.05 is a lane-availability property, that zero fallbacks means the deliberate-fallback switch condition was NOT exercised, and that the .err file is child-process noise; the reviewed node is a documentation node with no suite arms, so added_failure_count 0 / ids [] derive from an absent arm pair.\nCALL_SITES: none (documentation node; commit changes no product source)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every done-when clause is met and each is verified against the JSON rather than the prose; the one withheld point reflects the evidence-accuracy follow-on below rather than any missing deliverable.\nSCORE evidence: 17\nJUSTIFICATION evidence: all headline figures, the tree-identity sha256, the report blob sha256 and the quoted state reconcile exactly with the raw payload; the uniform-column check is present; one sentence overstates its evidence (finding on line 80).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: one file changed, the declared write path; no shared plan or product file touched.\nSCORE durability: 17\nJUSTIFICATION durability: no behaviour change so no guard is owed and no negative control applies (docs-only write paths); evidence is reproducible from the named revision and raw JSON, but no re-run script is provided.\nJUSTIFICATION durability_note: a measurement node's durability is its reproducibility; the named revision and raw JSON supply it.\nSCORE fit: 18\nJUSTIFICATION fit: conventional commit with a body; no attribution trailer; idiomatic fragment with no plan/sprint/ticket identifier.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html:80 follow-on: the claim that the picker's exclusions \"differed row from row\" is contradicted by the cited JSON - the excluded set (claude, claude-haiku, claude-opus, clive, native, reason availability) and offered set are identical on all 20 rows; only the picks and per-candidate detail fields vary.\nreviewed_base_sha: 855d0a6d91471e2ee942261b3743579945a8de6d\nreviewed_head_sha: 14568acf713723c11264b948b0c62855cff9c39e",
+  "review_run_id": "r-20261002T205353930612-review-of-picker-replay-measure",
+  "reviewed_base_sha": "855d0a6d91471e2ee942261b3743579945a8de6d",
+  "reviewed_head_sha": "14568acf713723c11264b948b0c62855cff9c39e",
+  "reviewed_run_id": "r-20261002T202124445000-picker-replay-measure",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T205353930612-review-of-picker-replay-measure",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T21:08:02.345392+00:00",
+  "total": 90
+}

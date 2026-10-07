@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "zero added failures, derived as far as the reviewed run's own gate logs allow. logs/base-arm.log and logs/head-arm.log are truncated mid-run (65 and 70 progress dots, no pytest summary line and no EXIT= line) because the run was SIGKILLed at 2026-10-02T10:03:25Z while re-running the arms; neither log is readable to a summary, so the manifest's completed:true for baseline_suite/after_suite is not supported by the bytes on disk. The delta is corroborated two ways: (1) the reviewed product module reckon/crew/promotion.py is byte-identical between e2934c4ef, whose arms the reviewed run recorded as 259 passed with zero failures, and head af59c3640, since git diff e2934c4ef..af59c3640 touches only the test file, so no product-code test outcome can differ from the earlier complete arms; (2) the only head change, af59c3640, is test-only and its file passes 5/5 at head (logs/node-gate.log, independently reproduced). No newly failing test id is attributable to this node.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:_fleet_state_reading"
+  ],
+  "completed_at": "2026-10-02T10:40:02.391Z",
+  "dispatched_at": "2026-10-02T10:09:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records/logs/head-arm.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the suite arms logs/base-arm.log and logs/head-arm.log are truncated mid-run (65 and 70 progress dots, no pytest summary line and no EXIT= line) yet the reviewed run's manifest records baseline_suite.completed and after_suite.completed as true, so the recorded zero-failure delta cannot be read from the bytes on disk; the truncation dates to the run being SIGKILLed at 2026-10-02T10:03:25Z during the arm re-run. Fix: record completed:false for a log that never reached its summary, or re-run the arms at the reviewed head to completion and repoint the manifest."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "6088",
+      "severity": "follow-on",
+      "text": "follow-on: _unreconciled_live_runs re-implements the drain's per-pointer liveness-and-classification composition (local_liveness, classify_pointer over the process_alive override, closure_disposition_valid) rather than sharing one helper, so a future change to that composition in runs.drain will not propagate and the two can drift silently; the equivalence test guards only the fleet shapes it enumerates. Fix: extract the shared per-pointer composition into one function both call, or delegate the count to a runs helper."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s): reckon/crew/promotion.py:_fleet_state_reading",
+    "diff": "Read commit by commit against base 57dfae0345a5d8ecee9377da3706e8b1ea5dee3b; three commits, three files (+234/-7): 0bdecbed5 replaces drain(project) with _unreconciled_live_runs in reckon/crew/promotion.py, e2934c4ef adds the evidence fragment, af59c3640 is test-only (+39/-1) adding a still-working branch case.",
+    "done_when": "The done-when names a test that the bounded read gives the same answer as the full read on a synthetic repository, plus a negative control; tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py holds 5 cases and passes 5/5 at head (logs/node-gate.log, EXIT=0, independently reproduced), and two mutations redden (logs/negative-control.log EXIT=1, logs/negative-control-classification.log EXIT=1).",
+    "goal": "The node's goal is that a promotion's fleet-state reading computes only the fields its ledger row records; reckon/crew/promotion.py:6119 _fleet_state_reading now derives unreconciled_runs from the live pointers alone via _unreconciled_live_runs (promotion.py:6088) instead of running the closure drain, dropping the drain's plan-inventory read.",
+    "manifest": "Read; status complete, baseline_suite and after_suite each claim completed:true with zero failures but their cited logs (logs/base-arm.log, logs/head-arm.log) are truncated mid-run and unreadable to a summary; negative_control_log names logs/negative-control.log (EXIT=1).",
+    "write_paths": "Declared promotion.py, the new test file, an evidence fragment and a figures directory; the base..head diff touches promotion.py, the test and the fragment, all declared, and the declared figures directory is unemitted."
+  },
+  "justifications": {
+    "durability": "The guard test_the_bounded_reading_does_not_run_the_closure_drain reddens when drain is reinstated (logs/negative-control.log EXIT=1); test_the_bounded_reading_agrees_with_the_full_drain compares the bounded reading to runs.drain as an independent reference across four fleet shapes; and af59c3640 closes the previously missing still-working branch (logs/negative-control-classification.log EXIT=1), the one case where closure_disposition_valid turns on the re-derived classification.",
+    "evidence": "The node gate tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py passes 5/5 at head (logs/node-gate.log EXIT=0, independently reproduced) and two negative controls redden EXIT=1; deducted because the broader suite arms logs/base-arm.log and logs/head-arm.log are truncated mid-run with no summary while the manifest records completed:true, so the recorded suite delta is not readable from the reviewed run's own logs.",
+    "fit": "_unreconciled_live_runs (reckon/crew/promotion.py:6088) mirrors rather than shares the drain's per-pointer composition (local_liveness, classify_pointer over the process_alive override, closure_disposition_valid), leaving two copies that can drift; the row.get(\"classification\") or row.get(\"recovery_classification\") fallback is a needless expression difference from the drain (classification is always set); and promotion.py retains drain as a noqa: F401 import, which is purely the monkeypatch seam the guard test uses.",
+    "goal_fidelity": "_fleet_state_reading (reckon/crew/promotion.py:6119) drops the drain(project) call and computes unreconciled_runs through _unreconciled_live_runs (promotion.py:6088) from the pointers it already lists, consuming exactly the row's field; an independent check reproduced equality with runs.drain across empty, handed-off, still-working, unknown-disposition, missing-disposition and mixed fleets and confirmed the drain is never invoked.",
+    "scope_discipline": "The base..head diff is confined to reckon/crew/promotion.py, tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py and the evidence fragment, all declared write paths; the declared figures directory is unemitted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a promotion's fleet-state reading computes only the fields its ledger row records; reckon/crew/promotion.py:6119 _fleet_state_reading now derives unreconciled_runs from the live pointers alone via _unreconciled_live_runs (promotion.py:6088) instead of running the closure drain, dropping the drain's plan-inventory read.\nVERDICT done_when: The done-when names a test that the bounded read gives the same answer as the full read on a synthetic repository, plus a negative control; tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py holds 5 cases and passes 5/5 at head (logs/node-gate.log, EXIT=0, independently reproduced), and two mutations redden (logs/negative-control.log EXIT=1, logs/negative-control-classification.log EXIT=1).\nVERDICT write_paths: Declared promotion.py, the new test file, an evidence fragment and a figures directory; the base..head diff touches promotion.py, the test and the fragment, all declared, and the declared figures directory is unemitted.\nVERDICT manifest: Read; status complete, baseline_suite and after_suite each claim completed:true with zero failures but their cited logs are truncated mid-run and unreadable to a summary; negative_control_log names logs/negative-control.log (EXIT=1).\nVERDICT diff: Read commit by commit against base 57dfae0345a5d8ecee9377da3706e8b1ea5dee3b; three commits, three files (+234/-7): promotion.py replaces drain(project) with _unreconciled_live_runs over the pointers it already lists, e2934c4ef adds the evidence fragment, and af59c3640 is test-only adding a still-working branch case.\nCALL_SITES: reckon/crew/promotion.py:_fleet_state_reading\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: _fleet_state_reading (reckon/crew/promotion.py:6119) drops the drain(project) call and computes unreconciled_runs through _unreconciled_live_runs (promotion.py:6088) from the pointers it already lists, consuming exactly the row's field; an independent check reproduced equality with runs.drain across empty, handed-off, still-working, unknown-disposition, missing-disposition and mixed fleets and confirmed the drain is never invoked.\nSCORE evidence: 17\nJUSTIFICATION evidence: the node gate tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py passes 5/5 at head (logs/node-gate.log EXIT=0, independently reproduced) and two negative controls redden EXIT=1; deducted because the broader suite arms logs/base-arm.log and logs/head-arm.log are truncated mid-run with no summary while the manifest records completed:true, so the evidence cannot be read from the reviewed run's own logs.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the base..head diff is confined to reckon/crew/promotion.py, tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py and the evidence fragment, all declared write paths; the declared figures directory is unemitted.\nSCORE durability: 19\nJUSTIFICATION durability: the guard test_the_bounded_reading_does_not_run_the_closure_drain reddens when drain is reinstated (logs/negative-control.log EXIT=1), test_the_bounded_reading_agrees_with_the_full_drain compares the bounded reading to runs.drain as an independent reference across four fleet shapes, and af59c3640 closes the previously missing still-working branch (logs/negative-control-classification.log EXIT=1).\nSCORE fit: 17\nJUSTIFICATION fit: _unreconciled_live_runs (reckon/crew/promotion.py:6088) mirrors rather than shares the drain's per-pointer composition, leaving two copies that can drift; the row.get(\"classification\") or row.get(\"recovery_classification\") fallback is a needless expression difference from the drain; and promotion.py retains drain as a noqa: F401 import, purely the monkeypatch seam the guard test uses.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records/logs/head-arm.log:5 follow-on: the suite arms are truncated mid-run with no summary while the manifest records completed:true, so the recorded zero-failure delta is unreadable from disk; the truncation dates to the run's SIGKILL at 2026-10-02T10:03:25Z during the arm re-run. Fix: record completed:false for a log that never reached its summary, or re-run the arms to completion.\nFINDING reckon/crew/promotion.py:6088 follow-on: _unreconciled_live_runs duplicates the drain's per-pointer liveness-and-classification composition instead of sharing one helper, so the two can drift; the equivalence test guards only the enumerated fleet shapes. Fix: extract the shared composition into one function both call.",
+  "review_run_id": "r-20261002T100841220627-review-of-a-promotion-reads-only-the-fleet-fields-it-records",
+  "reviewed_base_sha": "57dfae0345a5d8ecee9377da3706e8b1ea5dee3b",
+  "reviewed_head_sha": "af59c36403a5f24a8709404c15de1f782a0c9f84",
+  "reviewed_run_id": "r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T10:29:05.593234+00:00",
+  "total": 92
+}

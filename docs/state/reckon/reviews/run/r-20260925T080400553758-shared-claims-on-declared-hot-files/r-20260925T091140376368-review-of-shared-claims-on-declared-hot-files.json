@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T09:11:40.376368+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "853",
+      "text": "the exemption cannot fire in production because _raise_live_scope_conflict has had no caller since aaf15fd0 (2026-08-24) and a real crew dispatch refuses through _raise_repository_scope_conflict (reckon/crew/dispatch.py:3689, defined at :1253), which never reads docs/state/<project>/shared-write-paths.json, so two live nodes on a declared hot file are still refused and the plan landing record at docs/plans/the-local-lane-is-the-default.html:49 (\"now reads\") presents as live behaviour what the node's own evidence anchor correctly disclaims at docs/evidence/archive/the-local-lane-is-the-default-landed.html:782."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base a898092d; 9e54d079 lands the reader, the exemption and the contract test, 26b2f499 appends the plan landing record and the cumulative evidence anchor, nothing outside the fence is touched, and no added assertion compares a value against the same variable the test passed in.",
+    "done_when": "the done_when names four cases asserted by a synthesized-repository test plus a negative control that ignores the list; tests/test_shared_claims_on_declared_hot_files.py:56-127 asserts all four (plus a fifth read-model case) and logs/negative-control.log shows case one red with _shared_write_paths rebound to the empty set.",
+    "goal": "read the dispatch goal and the landing; runs.py:794-810 adds _shared_write_paths and runs.py:848-853 admits a co-claimant of a declared file while refusing every other overlap exactly as the goal states, but _raise_live_scope_conflict has had no production caller since aaf15fd0 (2026-08-24), so the effect the goal describes is not reached by a real dispatch.",
+    "manifest": "read; it names both commits, both gate arms (base 4 failed/69 passed EXIT=1, head 73 passed EXIT=0) and the negative control, and each claim matches the log it names, including my own re-run of the gate file at the reviewed head (5 passed).",
+    "write_paths": "read the fence; the five paths in a898092d..26b2f499 (runs.py, the new test, the declaration JSON, the plan page, the evidence anchor) all lie inside the six declared write paths, and the granted figure directory is legitimately unused rather than skipped."
+  },
+  "justifications": {
+    "durability": "the control at logs/negative-control.log reddens test_a_declared_shared_file_admits_two_live_claimants when the list is ignored, so the exemption itself is guarded, but nothing fails while the lane stays serialised because the guarded function has no production caller and no case builds the claim through _live_scope_claims from a pointer.",
+    "evidence": "gate-head.log, gate-base.log and negative-control.log assert exactly the done_when's four cases and I reproduced tests/test_shared_claims_on_declared_hot_files.py at the reviewed head (5 passed), with the base arm noted as signature-driven beside a behavioural control.",
+    "fit": "the new helpers follow the module's idiom (a private reader reusing _repository_relative_scope at runs.py:809, a frozenset return, mechanism-only docstrings and no plan or ticket reference), with the one deviation that docs/state/reckon/shared-write-paths.json:29 lacks the trailing newline its two sibling state files carry.",
+    "goal_fidelity": "runs.py:853 implements the admission the goal names but with no caller a second claimant of a declared file is still refused by the live path at reckon/crew/dispatch.py:3689, so the lane-width purpose the section states is not yet delivered.",
+    "scope_discipline": "every path in a898092d..26b2f499 lies inside the declared write paths (reckon/crew/runs.py, the new test, docs/state/reckon/shared-write-paths.json, the plan page, the evidence anchor) and no other file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the dispatch goal and the landing; runs.py:794-810 adds _shared_write_paths and runs.py:848-853 admits a co-claimant of a declared file while refusing every other overlap exactly as the goal states, but _raise_live_scope_conflict has had no production caller since aaf15fd0 (2026-08-24), so the effect the goal describes is not reached by a real dispatch.\nVERDICT done_when: the done_when names four cases asserted by a synthesized-repository test plus a negative control that ignores the list; tests/test_shared_claims_on_declared_hot_files.py:56-127 asserts all four (plus a fifth read-model case) and logs/negative-control.log shows case one red with _shared_write_paths rebound to the empty set.\nVERDICT write_paths: read the fence; the five paths in a898092d..26b2f499 (runs.py, the new test, the declaration JSON, the plan page, the evidence anchor) all lie inside the six declared write paths, and the granted figure directory is legitimately unused rather than skipped.\nVERDICT manifest: read; it names both commits, both gate arms (base 4 failed/69 passed EXIT=1, head 73 passed EXIT=0) and the negative control, and each claim matches the log it names, including my own re-run of the gate file at the reviewed head (5 passed).\nVERDICT diff: read commit by commit against base a898092d; 9e54d079 lands the reader, the exemption and the contract test, 26b2f499 appends the plan landing record and the cumulative evidence anchor, nothing outside the fence is touched, and no added assertion compares a value against the same variable the test passed in.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: runs.py:853 implements the admission the goal names but with no caller a second claimant of a declared file is still refused by the live path at reckon/crew/dispatch.py:3689, so the lane-width purpose the section states is not yet delivered.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log, gate-base.log and negative-control.log assert exactly the done_when's four cases and I reproduced tests/test_shared_claims_on_declared_hot_files.py at the reviewed head (5 passed), with the base arm noted as signature-driven beside a behavioural control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in a898092d..26b2f499 lies inside the declared write paths (reckon/crew/runs.py, the new test, docs/state/reckon/shared-write-paths.json, the plan page, the evidence anchor) and no other file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: the control at logs/negative-control.log reddens test_a_declared_shared_file_admits_two_live_claimants when the list is ignored, so the exemption itself is guarded, but nothing fails while the lane stays serialised because the guarded function has no production caller and no case builds the claim through _live_scope_claims from a pointer.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers follow the module's idiom (a private reader reusing _repository_relative_scope at runs.py:809, a frozenset return, mechanism-only docstrings and no plan or ticket reference), with the one deviation that docs/state/reckon/shared-write-paths.json:29 lacks the trailing newline its two sibling state files carry.\nFINDING reckon/crew/runs.py:853 the exemption cannot fire in production because _raise_live_scope_conflict has had no caller since aaf15fd0 (2026-08-24) and a real crew dispatch refuses through _raise_repository_scope_conflict (reckon/crew/dispatch.py:3689, defined at :1253), which never reads docs/state/<project>/shared-write-paths.json, so two live nodes on a declared hot file are still refused and the plan landing record at docs/plans/the-local-lane-is-the-default.html:49 (\"now reads\") presents as live behaviour what the node's own evidence anchor correctly disclaims at docs/evidence/archive/the-local-lane-is-the-default-landed.html:782.",
+  "review_run_id": "r-20260925T091140376368-review-of-shared-claims-on-declared-hot-files",
+  "reviewed_base_sha": "a898092d0574bbbe3ed82cb1d9dc3d8e1ca43e61",
+  "reviewed_head_sha": "26b2f49931ce651d49978e62a224dfd75e98dbeb",
+  "reviewed_run_id": "r-20260925T080400553758-shared-claims-on-declared-hot-files",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T10:03:47.805236+00:00",
+  "total": 86
+}

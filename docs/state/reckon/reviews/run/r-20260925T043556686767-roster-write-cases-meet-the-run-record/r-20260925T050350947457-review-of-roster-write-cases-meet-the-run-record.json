@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/runs.py:capture_run_session",
+    "reckon/crew/runs.py:read_pointer",
+    "reckon/crew/dispatch.py:_capture_member_session",
+    "reckon/ledger.py:member"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T05:03:50.947457+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 8ea87c3a; three test files rewritten first, then the plan, archive and figure additions appended, with no reckon/ source path in any commit.",
+    "done_when": "the done_when names the four cases, the importer-population comparison and a declared negative control; the manifest records each run with its log, and the control log shows all four cases failing under the restored member write.",
+    "goal": "the node's goal is to make the four rewritten cases assert the roster member's session fields unchanged and the captured session on the run record, which is the falsifier plan section 3 states; the diff rewrites exactly those cases and no production file.",
+    "manifest": "read at the reviewed head; it carries the three commits, the four-case recheck result, both suite arms with their failure counts and the attribution of the nine removals to the baseline pin.",
+    "write_paths": "read the manifest's declared write paths; every path in the diff is inside them - the three test files, the plan page, the evidence archive and one figure."
+  },
+  "justifications": {
+    "durability": "roster_before is a byte snapshot taken before the dispatch and read_pointer returns a fresh dict on each call, so no assertion compares a value against the read that produced it, and the declared control restores the member write at the capture site and reddens the roster assertion in all four cases.",
+    "evidence": "I re-ran the four cases from the reviewed tree (4 passed, exit 0) and recomputed the suite delta from the saved JUnit XMLs (24 to 15 failures, none added, 9 removed); the removals come from the peer production merge inside the pinned baseline arm, which the manifest itself states.",
+    "fit": "the rewritten cases keep the surrounding dispatch and fixture helpers, the changed docstring reads as the new behaviour rather than the old, and the plan and archive entries are appended rather than rewritten.",
+    "goal_fidelity": "the four cases snapshot the roster bytes before a dispatch and require them unchanged after observe, which is the falsifier plan section 3 states, and the reproduction log shows all four failing at the integrated base before the repair.",
+    "scope_discipline": "the three commits touch only tests/test_crew.py, tests/test_ledger.py, tests/test_crew_members.py, the plan page, the evidence archive and one figure; no reckon/ source file appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the four rewritten cases assert the roster member's session fields unchanged and the captured session on the run record, which is the falsifier plan section 3 states; the diff rewrites exactly those cases and no production file.\nVERDICT done_when: the done_when names the four cases, the importer-population comparison and a declared negative control; the manifest records each run with its log, and the control log shows all four cases failing under the restored member write.\nVERDICT write_paths: read the manifest's declared write paths; every path in the diff is inside them - the three test files, the plan page, the evidence archive and one figure.\nVERDICT manifest: read at the reviewed head; it carries the three commits, the four-case recheck result, both suite arms with their failure counts and the attribution of the nine removals to the baseline pin.\nVERDICT diff: read commit by commit against base 8ea87c3a; three test files rewritten first, then the plan, archive and figure additions appended, with no reckon/ source path in any commit.\nCALL_SITES: reckon/crew/runs.py:capture_run_session, reckon/crew/runs.py:read_pointer, reckon/crew/dispatch.py:_capture_member_session, reckon/ledger.py:member\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the four cases snapshot the roster bytes before a dispatch and require them unchanged after observe, which is the falsifier plan section 3 states, and the reproduction log shows all four failing at the integrated base before the repair.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran the four cases from the reviewed tree (4 passed, exit 0) and recomputed the suite delta from the saved JUnit XMLs (24 to 15 failures, none added, 9 removed); the removals come from the peer production merge inside the pinned baseline arm, which the manifest itself states.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three commits touch only tests/test_crew.py, tests/test_ledger.py, tests/test_crew_members.py, the plan page, the evidence archive and one figure; no reckon/ source file appears in the diff.\nSCORE durability: 18\nJUSTIFICATION durability: roster_before is a byte snapshot taken before the dispatch and read_pointer returns a fresh dict on each call, so no assertion compares a value against the read that produced it, and the declared control restores the member write at the capture site and reddens the roster assertion in all four cases.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten cases keep the surrounding dispatch and fixture helpers, the changed docstring reads as the new behaviour rather than the old, and the plan and archive entries are appended rather than rewritten.\n",
+  "review_run_id": "r-20260925T050350947457-review-of-roster-write-cases-meet-the-run-record",
+  "reviewed_base_sha": "8ea87c3a186069bb9f67ec8b2b4d0b3c0a6d5f78",
+  "reviewed_head_sha": "05f20e0ddf1b39759db5a2c05de99b75a89850b5",
+  "reviewed_run_id": "r-20260925T043556686767-roster-write-cases-meet-the-run-record",
+  "reviewer": "review-of-roster-write-cases-meet-the-run-record",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T05:19:15.957375+00:00",
+  "total": 92
+}

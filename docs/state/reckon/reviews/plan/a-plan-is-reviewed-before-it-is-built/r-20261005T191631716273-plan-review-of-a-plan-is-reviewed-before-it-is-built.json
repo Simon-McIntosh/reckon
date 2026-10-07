@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T19:23:01.265Z",
+  "dispatched_at": "2026-10-05T19:16:51Z",
+  "findings": [
+    {
+      "anchor": "reckon/followup_pointers.py:105",
+      "id": "duplicate_owner-1",
+      "reason": "a node dispatched to \u00a718 cannot resolve `followup_verdict`, and the reader the plan means to converge is `classify_followup`, so the citation must be corrected before the node is released.",
+      "text": "\u00a718 names `followup_pointers.followup_verdict` as one of the five readers of the still-work rule, directs the shared classification predicate into it (\"the followup verdict keeps its two verdict words\"), and its done-when pins that function's docstring and a cross-reader agreement test, but no symbol `followup_verdict` exists anywhere in the repo (`grep -rn followup_verdict` returns nothing); the live reader is `classify_followup`, whose implementable test is the census line the plan counts (line 150)",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1a9cec90cc1ef2bf641e033f76ff601c389fc7675a8b6c21bd6895a429830c85",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 117,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T191631716273-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "e3d7f81fec50309417f7d6ac430432f33663a596",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 concentrates the raw-text span parser, the identity derivation, the four tag helpers and the card recogniser into reckon/_plan_html.py behind a small public surface (`plan_headings`, with `structured_section_spans` re-expressed as a projection rather than a second read), and \u00a716/\u00a718 keep the fingerprint and still-work rules as one private helper (`_section_digests`) and one predicate; the change is many-into-one, not a spread of shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a718's census of the \"which sections are still work\" readers names `followup_pointers.followup_verdict`, a symbol that does not exist in the repository; the live reader is `classify_followup`. Every other duplicate the plan touches is named with its owner and disposition (run-comment prefix \u2192 `plan_review.RUN_COMMENT_PREFIX`; section-spelling core \u2192 `reckon/_plan_html.py`; landed-card class \u2192 one exported constant; heading walks \u2192 `plan_headings`).",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716, \u00a717 and \u00a718 each state in their own text what they add and that nothing can be retired (the identity digest and prose walk keep their names; `landed_section_ids` moves and leaves the family unchanged; the plan-review-missing refusal is reused), so each section adding surface accounts for it.",
+    "reuse_search": "pass \u2014 the plan searched the package and cites the mechanism it extends at each step, verified present at f43735ba: `_StructuredSectionSpanParser`/`structured_section_spans` (reckon/_plan_html.py:44,94), `landed_section_ids` and the raw-text span helpers (reckon/_store.py:1075, 875-1093), `section_record_id`/`section_id_candidates` (reckon/crew/routing.py:224,243), `_TAG_RE`/`count_open_decisions` (reckon/_plan_html.py:1506,1514), and `read_trees`/`definitions` (reckon/interface_counts.py:441,74) as the census host.",
+    "thin_wrapper": "pass \u2014 `strip_tags` over the existing `_TAG_RE`, the machinery-element predicate over the `data-reckon` attribute, and the coverage predicate each replace an N-site inline spelling and each states in its own section why the existing mechanism is extended (the expression kept one caller; fourteen attribute spellings converged; the reader joins two existing readers) rather than wrapped."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.799413+00:00"
+}

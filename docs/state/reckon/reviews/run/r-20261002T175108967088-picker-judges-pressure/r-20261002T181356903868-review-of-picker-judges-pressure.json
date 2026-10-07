@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's own baseline_suite and after_suite both carry the same two failing ids (tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt and tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition) over the same six test files, so the head arm adds zero failure ids; reproduced here independently \u2014 head 2 failed / 124 passed and a base-equal run in this reviewer's own worktree also fails the same two ids.",
+  "base_log_revision": "ba5ac01e746ecaa66f94fb1d2a8709401da30c23",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:1178",
+    "reckon/crew/picker/replay.py:72",
+    "reckon/crew/picker/snapshot.py:173"
+  ],
+  "completed_at": "2026-10-02T18:37:11.492Z",
+  "dispatched_at": "2026-10-02T18:14:27Z",
+  "findings": [],
+  "head_log_revision": "a3df11428e9c7cb87094bf5842fe2800e86b76dd",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the changed pick signature and its cached_only/action contract reach production through reckon/cli.py:1178 (crew pick) and reckon/crew/picker/replay.py:72; budget_view is reached from snapshot.candidates:173 and from pick's default budget composition.",
+    "diff": "read commit by commit against ba5ac01e; two commits: the product/test change (d422ea309) and the evidence-fragment-only commit (a3df11428), both conventional with bodies and no AI attribution, and the reviewed worktree reports a clean tree at the fragment head.",
+    "done_when": "all seven bullets in the reviewed prompt's evidence fence: (1) pressure offered with figures in rendered state; (2) exact-local rule removed and every nonempty pick calls Jev; (3) hold option returns no backend, action hold, Jev's confidence; (4) alignment only in templates plus a no-numeric-threshold guard; (5) per-candidate provenance and node difficulty through the public pick; (6) representative state at or under 1500 tokens; (7) zero added failure ids across the named gate files.",
+    "goal": "plan section 10 makes lane pressure Jev's judgment: code filters a candidate only when it cannot run, keeps burn/pace/return-time/congestion/difficulty as state, and adds a hold option aligned in the templates rather than Python.",
+    "manifest": "read; it claims base 2 failed / 109 passed and head 2 failed / 124 passed over the six named files, a declared negative control on the burned-exclusion restore, the shared cached_only/action contract, and a clean committed delivery at a3df11428.",
+    "write_paths": "diff ba5ac01e..a3df11428 touches exactly the declared fence: reckon/crew/picker/*, tests/test_picker.py, tests/test_picker_pressure.py and docs/evidence/fragments/one-typesafe-model-picker/picker-judges-pressure.html, with no file outside and no plan, index or sprint mutation."
+  },
+  "justifications": {
+    "durability": "the guard fires when the guarded thing is made to happen: restoring the burned exclusion turns the offered-under-pressure test red, and the new hard-exclusion tests assert both directions (burn 3.4x pace and zero local slots both offered; utilisation at or above the ceiling refuses even when serving is recorded; a cached refused/unavailable/logged-out status refuses without probing). The no-numeric-threshold guard carries an inline positive control (it matches a synthetic burn>pace comparison) before asserting the picker source is free of such comparisons.",
+    "evidence": "independently reproduced at head: the six files give 2 failed / 124 passed with the two pre-existing ids; a base-equal run in this reviewer's own worktree (which contains no picker change since ba5ac01e) fails the same two ids, so added_failure_count is 0 by construction and by measurement. The declared negative control is a real red receipt (EXIT=1, test_candidates_are_offered_under_pressure fails with offered {'local'} against {'local','remote'}), and the token figure reconciles with head.log line 35 (1165/1500). The representative token estimate is timestamp-sensitive (this reviewer's replay produced 1162/1500), so the recorded 1165 is a point-in-time value and not a fixed constant.",
+    "fit": "the module's conventions hold: reason strings keep the '<name>: <detail>' shape, unknown facts stay None rather than zero, the new comment on cached_only states the mechanism (disable the budget-refresh probe; availability comes from the cache), the Selection dataclass places the defaulted action after the required fields, and scoped ruff reports clean. No plan, sprint or ticket identifier appears in source, templates or the fragment, and the template alignment is plain mechanism text.",
+    "goal_fidelity": "every behaviour the plan names is present and enforced: the burn-exceeds-pace exclusion, the exact-to-local shortcut and the local-no-slots hold are all gone from reckon/crew/picker/snapshot.py and __init__.py, the only remaining candidate exclusions are serving refused/unavailable/logged-out, context fit, competence, paused/unreadable gate, and utilisation at or above the configured hard ceiling (UNSET_CEILING_PCT=100 by default); a hold choice returns backend None with the confidence preserved; the sliding-scale alignment lives only in the questions and state templates. The one point withheld: dropping the fixed LOCAL_CONFIDENCE/METERED_CONFIDENCE pick threshold is authorised by the evidence fence but is a wider behaviour change than the plan's 'What this replaces' list, and neither the code comment nor the manifest calls that out.",
+    "scope_discipline": "the diff ba5ac01e..a3df11428 touches exactly the declared source, test and evidence-fragment paths; no file outside the fence, no shared plan/index/sprint mutation, and the worktree is clean and committed at the delivery head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 10 makes lane pressure Jev's judgment rather than a coded exclusion; the picker now removes a candidate only when it cannot run and carries burn, pace allowance, remaining window, days to reset, budget provenance, congestion, size-matched return time, recent outcomes and node difficulty as state, with a hold option aligned in the templates.\nVERDICT done_when: all seven bullets hold: pressure candidates (burn 3.4x pace, zero local slots) are offered with the figures in rendered state; the exact-to-local rule is removed and every nonempty pick calls Jev; hold returns backend None, action hold and Jev's confidence; alignment lives only in templates and a guard asserts no numeric burn or pace threshold in picker source or templates; per-candidate provenance and node difficulty reach the public pick, including a non-null size-matched return time from synthetic ledger rows; the representative nine-candidate state is 1165/1500 tokens; the named gate adds zero failure ids.\nVERDICT write_paths: diff ba5ac01e..a3df11428 touches exactly the declared fence paths, no file outside, no plan/index/sprint mutation.\nVERDICT manifest: read; base 2 failed / 109 passed, head 2 failed / 124 passed over the six named files, a declared negative control, the shared cached_only/action contract, clean committed delivery at a3df11428.\nVERDICT diff: two commits against ba5ac01e, the product/test change and the fragment-only commit, both conventional with bodies and no AI attribution.\nCALL_SITES: reckon/cli.py:1178, reckon/crew/picker/replay.py:72, reckon/crew/picker/snapshot.py:173\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every plan behaviour is present and enforced; the only withheld point is that removing the fixed confidence pick threshold is wider than the plan's 'What this replaces' list, though the evidence fence authorises it.\nSCORE evidence: 18\nJUSTIFICATION evidence: head reproduced at 2 failed / 124 passed and a base-equal run reproduces the same two pre-existing ids; the negative control is a real red receipt; the manifest is complete and reconciles with head.log. One point withheld because the representative token figure is timestamp-sensitive and is recorded as one point-in-time value.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is confined to the declared source, test and fragment paths with no shared-state change and a clean committed tree.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the burned exclusion turns the offered-under-pressure test red; new tests assert both directions of every hard gate; the no-threshold guard carries an inline positive control.\nSCORE fit: 19\nJUSTIFICATION fit: module conventions and comment style are kept, scoped ruff is clean, and no plan or ticket identifier appears in source, templates or fragment.\nreviewed_base_sha: ba5ac01e746ecaa66f94fb1d2a8709401da30c23\nreviewed_head_sha: a3df11428e9c7cb87094bf5842fe2800e86b76dd",
+  "review_run_id": "r-20261002T181356903868-review-of-picker-judges-pressure",
+  "reviewed_base_sha": "ba5ac01e746ecaa66f94fb1d2a8709401da30c23",
+  "reviewed_head_sha": "a3df11428e9c7cb87094bf5842fe2800e86b76dd",
+  "reviewed_run_id": "r-20261002T175108967088-picker-judges-pressure",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T181356903868-review-of-picker-judges-pressure",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T18:27:00.000000+00:00",
+  "total": 95
+}

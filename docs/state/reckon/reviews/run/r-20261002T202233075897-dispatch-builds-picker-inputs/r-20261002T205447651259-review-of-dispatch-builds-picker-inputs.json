@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4146 dispatch_picker_selection",
+    "reckon/crew/dispatch.py:5547 picker_records and picker_inputs and picker_budget at the dispatch entry",
+    "reckon/crew/routing.py:2548 _estimated_hours"
+  ],
+  "completed_at": "2026-10-02T21:07:57.434Z",
+  "dispatched_at": "2026-10-02T20:55:16Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 48f35389b against base e6cfdeea; it adds two test functions and changes nothing else.",
+    "done_when": "the done_when names two tests and their mutations; both pass at head (head-picker-tests.log, 77 passed) and each reddens under its recorded mutation (negative-control-dispatch-args.log and negative-control-planless-return.log, both EXIT=1).",
+    "goal": "the node goal is to prove dispatch itself hands the picker its precomputed inputs; tests/test_picker_in_dispatch.py:154 drives the dispatch entry with the picker stubbed and asserts the stub received non-null records, verdict_inputs and budget_snapshot.",
+    "manifest": "read; it records both arms as completed with failure_ids [tests/test_picker_return_time.py::test_lane_document_is_read], zero added failure ids, and four named log paths.",
+    "write_paths": "the node declared four paths (tests/test_picker_in_dispatch.py, tests/test_picker_latency.py, the evidence fragment and the figures dir); git diff --numstat e6cfdeea..48f35389b lists only the two test files (+22/+48), both declared, and touches no product source."
+  },
+  "justifications": {
+    "durability": "both added assertions are independent of the value they guard and each reddens under the node's own recorded mutation (tests/test_picker_in_dispatch.py:171 on the removed call-site args; tests/test_picker_latency.py:238 on the dropped planless guard), so a regression fails the suite.",
+    "evidence": "base-picker-tests.log and head-picker-tests.log record both arms completed (1 failed, 75 passed then 77 passed) and both negative-control logs record EXIT=1 with a red test the head arm does not fail, though the base arm ran in a scratch copy rather than the reviewed worktree at base.",
+    "fit": "tests/test_picker_latency.py:193 reuses the file's nine_candidate_config, live_facts and Mock idioms and both new names describe the mechanism they assert, with ruff reporting no finding on either changed file.",
+    "goal_fidelity": "tests/test_picker_in_dispatch.py:154 stubs reckon.crew.picker.pick and asserts via the real CLI dispatch entry that records, verdict_inputs and budget_snapshot arrive non-null, which is the goal literally.",
+    "scope_discipline": "git diff --numstat e6cfdeea..48f35389b lists only tests/test_picker_in_dispatch.py and tests/test_picker_latency.py, both inside the declared write paths, and the worktree is clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to prove dispatch itself hands the picker its precomputed inputs; tests/test_picker_in_dispatch.py:154 drives the dispatch entry with the picker stubbed and asserts the stub received non-null records, verdict_inputs and budget_snapshot.\nVERDICT done_when: the done_when names two tests and their mutations; both pass at head (head-picker-tests.log, 77 passed) and each reddens under its recorded mutation (negative-control-dispatch-args.log and negative-control-planless-return.log, both EXIT=1).\nVERDICT write_paths: the node declared four paths (tests/test_picker_in_dispatch.py, tests/test_picker_latency.py, the evidence fragment and the figures dir); git diff --numstat e6cfdeea..48f35389b lists only the two test files (+22/+48), both declared, and touches no product source.\nVERDICT manifest: read; it records both arms as completed with failure_ids [tests/test_picker_return_time.py::test_lane_document_is_read], zero added failure ids, and four named log paths.\nVERDICT diff: read the single commit 48f35389b against base e6cfdeea; it adds two test functions and changes nothing else.\nCALL_SITES: reckon/crew/dispatch.py:4146 dispatch_picker_selection, reckon/crew/dispatch.py:5547 picker_records and picker_inputs and picker_budget at the dispatch entry, reckon/crew/routing.py:2548 _estimated_hours\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_picker_in_dispatch.py:154 stubs reckon.crew.picker.pick and asserts via the real CLI dispatch entry that records, verdict_inputs and budget_snapshot arrive non-null, which is the goal literally.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-picker-tests.log and head-picker-tests.log record both arms completed (1 failed, 75 passed then 77 passed) and both negative-control logs record EXIT=1 with a red test the head arm does not fail, though the base arm ran in a scratch copy rather than the reviewed worktree at base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat e6cfdeea..48f35389b lists only tests/test_picker_in_dispatch.py and tests/test_picker_latency.py, both inside the declared write paths, and the worktree is clean.\nSCORE durability: 20\nJUSTIFICATION durability: both added assertions are independent of the value they guard and each reddens under the node's own recorded mutation (tests/test_picker_in_dispatch.py:171 on the removed call-site args; tests/test_picker_latency.py:238 on the dropped planless guard), so a regression fails the suite.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_picker_latency.py:193 reuses the file's nine_candidate_config, live_facts and Mock idioms and both new names describe the mechanism they assert, with ruff reporting no finding on either changed file.",
+  "review_run_id": "r-20261002T205447651259-review-of-dispatch-builds-picker-inputs",
+  "reviewed_base_sha": "e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef",
+  "reviewed_head_sha": "48f35389b1b91f6267f1a659c72103678b48d174",
+  "reviewed_run_id": "r-20261002T202233075897-dispatch-builds-picker-inputs",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.380848+00:00",
+  "total": 98
+}

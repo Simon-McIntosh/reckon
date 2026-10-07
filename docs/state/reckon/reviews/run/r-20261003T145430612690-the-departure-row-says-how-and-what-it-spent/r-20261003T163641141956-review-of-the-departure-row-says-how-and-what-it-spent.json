@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "52962e0123c6c24d46aaae57d210f67fa05cce8b",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:classify_pointer",
+    "reckon/crew/recovery.py:_watch_verdict",
+    "reckon/crew/recovery.py:fleet_transitions",
+    "reckon/crew/recovery.py:_watch_transition",
+    "reckon/crew/runs.py:_drain_row"
+  ],
+  "completed_at": "2026-10-03T16:46:17.762Z",
+  "dispatched_at": "2026-10-03T16:37:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8786",
+      "severity": "follow-on",
+      "text": "follow-on: _promote_record_holds now returns True for a commitless ledger row, so classify_pointer sets classification \"promoted\" while its own fleet_verdict names the same run \"recorded\"; reproduced at head 70ddee8b against a row {\"commits\": []} as classification=promoted, fleet_verdict.state=recorded, so the section's promoted-means-commits rule is not held on this consumed classification field."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "9256",
+      "severity": "follow-on",
+      "text": "follow-on: _promote_record_holds catches (OSError, ValueError) but not ledger.LedgerError, which ledger.run_path raises for a run_id failing _SAFE_ID, so a pointer carrying a malformed run_id raises instead of returning False as the docstring promises; reproduced at head with {\"run_id\": \"bad id\"} raising LedgerError, where the immediately prior revision caught LedgerError here."
+    }
+  ],
+  "head_log_revision": "1137979ab5fc48c60381d3578e1539091f551776",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit against base 422d114dc; ddab3b65 and 2583015c land the first repair and its evidence, 1137979a rewrites _promote_record_holds to settle on row presence, adds _recorded_pointer_word and FLEET_SETTLED_STATES, and threads the recorded word through runs.py and ticker.py, and 70ddee8b extends the evidence fragment with the correction and the stacked arms.",
+    "done_when": "The done-when names tests/test_the_departure_row_says_how_and_what_it_spent.py passing at head with base and head arms over the departure population; the run's own arms are resume-watch-base-main.log (579 passed, EXIT=0) and resume-watch-head.log (580 passed, EXIT=0), both completed true with zero failure ids, so added_failure_count is 0 and no failing id was added; the run's reconstructed 46-file population collects 579 base tests against the coordinator's 600, which the run records as a blocker.",
+    "goal": "The node's aim is that the watch transition says how a run left and carries the spend its ledger row already resolved; at head 70ddee8b recovery.py:_promote_record_holds settles any committed ledger row, recovery.py:_recorded_pointer_word names promoted for a row with commits and recorded for a commitless completion, and recovery.py:_recorded_transition_spend copies the row's throughput, with both the commitless settlement and the promoted spend asserted in tests/test_the_departure_row_says_how_and_what_it_spent.py.",
+    "manifest": "status complete; commits ddab3b65, 2583015c, 1137979a and 70ddee8b; baseline_suite revision 52962e01 failure_count 0 and after_suite revision 1137979a failure_count 0, both completed true with the named logs; negative_control_log named with three failing ids; every sha and run id quoted resolves here.",
+    "write_paths": "All changed paths sit inside the declared write paths plus the four fixtures the resume advice added to scope: reckon/crew/recovery.py, reckon/crew/runs.py and reckon/crew/ticker.py carry the source change, tests/test_the_departure_row_says_how_and_what_it_spent.py and four fixture files carry the tests, and the evidence fragment carries prose; the declared tests/test_crew_ticker.py, tests/test_ticker_reads_cleanly.py and tests/test_transition_extraction.py are unchanged."
+  },
+  "justifications": {
+    "durability": "tests/test_the_departure_row_says_how_and_what_it_spent.py:101 fails if a commitless row claims promoted and tests/test_a_promoted_live_run_does_not_reannounce.py:129 fails if such a row re-announces, but neither covers the classification divergence or the dropped LedgerError catch named below.",
+    "evidence": "the two arms at repaired head 1137979a are recorded as 580 passed and 579 passed with EXIT lines in resume-watch-head.log and resume-watch-base-main.log, and negative-control-no-commit-and-spend.log reddens the no-commit and missing-spend ids the head arm passes.",
+    "fit": "the recorded word is threaded through recovery.py FLEET_SETTLED_STATES (recovery.py:9959), runs.py WATCH_PROGRESS_STATES and ticker.py SETTLED_STATES and STATE_HUE consistently, and no changed name carries a plan or ticket identifier.",
+    "goal_fidelity": "recovery.py:9260 _recorded_pointer_word renders recorded for a commitless row and promoted only where row.get(\"commits\") is truthy (recovery.py:9277), so the watch surface keeps the goal's \"promoted only where commits are recorded\".",
+    "scope_discipline": "every changed path is inside the declared write paths or the four fixtures the resume advice added to scope, and no file outside them changed in any of the four commits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's aim is that the watch transition says how a run left and carries the spend its ledger row already resolved; at head 70ddee8b recovery.py:_promote_record_holds settles any committed ledger row, recovery.py:_recorded_pointer_word names promoted for a row with commits and recorded for a commitless completion, and recovery.py:_recorded_transition_spend copies the row's throughput, with both the commitless settlement and the promoted spend asserted in tests/test_the_departure_row_says_how_and_what_it_spent.py.\nVERDICT done_when: The done-when names tests/test_the_departure_row_says_how_and_what_it_spent.py passing at head with base and head arms over the departure population; the run's own arms are resume-watch-base-main.log (579 passed, EXIT=0) and resume-watch-head.log (580 passed, EXIT=0), both completed true with zero failure ids, so added_failure_count is 0 and no failing id was added; the run's reconstructed 46-file population collects 579 base tests against the coordinator's 600, which the run records as a blocker.\nVERDICT write_paths: All changed paths sit inside the declared write paths plus the four fixtures the resume advice added to scope: reckon/crew/recovery.py, reckon/crew/runs.py and reckon/crew/ticker.py carry the source change, tests/test_the_departure_row_says_how_and_what_it_spent.py and four fixture files carry the tests, and the evidence fragment carries prose; the declared tests/test_crew_ticker.py, tests/test_ticker_reads_cleanly.py and tests/test_transition_extraction.py are unchanged.\nVERDICT manifest: status complete; commits ddab3b65, 2583015c, 1137979a and 70ddee8b; baseline_suite revision 52962e01 failure_count 0 and after_suite revision 1137979a failure_count 0, both completed true with the named logs; negative_control_log named with three failing ids; every sha and run id quoted resolves here.\nVERDICT diff: Read commit by commit against base 422d114dc; ddab3b65 and 2583015c land the first repair and its evidence, 1137979a rewrites _promote_record_holds to settle on row presence, adds _recorded_pointer_word and FLEET_SETTLED_STATES, and threads the recorded word through runs.py and ticker.py, and 70ddee8b extends the evidence fragment with the correction and the stacked arms.\nCALL_SITES: reckon/crew/recovery.py:classify_pointer, reckon/crew/recovery.py:_watch_verdict, reckon/crew/recovery.py:fleet_transitions, reckon/crew/recovery.py:_watch_transition, reckon/crew/runs.py:_drain_row\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: recovery.py:9260 _recorded_pointer_word renders recorded for a commitless row and promoted only where row.get(\"commits\") is truthy (recovery.py:9277), so the watch surface keeps the goal's \"promoted only where commits are recorded\".\nSCORE evidence: 17\nJUSTIFICATION evidence: the two arms at repaired head 1137979a are recorded as 580 passed and 579 passed with EXIT lines in resume-watch-head.log and resume-watch-base-main.log, and negative-control-no-commit-and-spend.log reddens the no-commit and missing-spend ids the head arm passes.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths or the four fixtures the resume advice added to scope, and no file outside them changed in any of the four commits.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_departure_row_says_how_and_what_it_spent.py:101 fails if a commitless row claims promoted and tests/test_a_promoted_live_run_does_not_reannounce.py:129 fails if such a row re-announces, but neither covers the classification divergence or the dropped LedgerError catch named below.\nSCORE fit: 18\nJUSTIFICATION fit: the recorded word is threaded through recovery.py FLEET_SETTLED_STATES (recovery.py:9959), runs.py WATCH_PROGRESS_STATES and ticker.py SETTLED_STATES and STATE_HUE consistently, and no changed name carries a plan or ticket identifier.\nFINDING reckon/crew/recovery.py:8786 follow-on: _promote_record_holds now returns True for a commitless ledger row, so classify_pointer sets classification \"promoted\" while its own fleet_verdict names the same run \"recorded\"; reproduced at head 70ddee8b against a row {\"commits\": []} as classification=promoted, fleet_verdict.state=recorded, so the section's promoted-means-commits rule is not held on this consumed classification field.\nFINDING reckon/crew/recovery.py:9256 follow-on: _promote_record_holds catches (OSError, ValueError) but not ledger.LedgerError, which ledger.run_path raises for a run_id failing _SAFE_ID, so a pointer carrying a malformed run_id raises instead of returning False as the docstring promises; reproduced at head with {\"run_id\": \"bad id\"} raising LedgerError, where the immediately prior revision caught LedgerError here.\n",
+  "review_run_id": "r-20261003T163641141956-review-of-the-departure-row-says-how-and-what-it-spent",
+  "reviewed_base_sha": "422d114dce724c0aabb5861d19acf0ab47be53d2",
+  "reviewed_head_sha": "70ddee8b968062f9b3c5b3bb7e1c56f3497b7055",
+  "reviewed_run_id": "r-20261003T145430612690-the-departure-row-says-how-and-what-it-spent",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T16:45:21.906921+00:00",
+  "total": 86
+}

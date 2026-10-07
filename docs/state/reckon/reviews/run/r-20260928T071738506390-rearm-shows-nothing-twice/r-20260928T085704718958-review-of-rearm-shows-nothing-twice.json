@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/after-suite.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/baseline-suite.log",
+    "note": "the reviewed manifest records baseline_suite and after_suite as the JSON objects this read path scans; the count and ids are the set difference over the two gate logs it names, computed with the module's own added_failures_from_gate_logs"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:1804 _follow_selects refuses a rendered line naming neither the session nor the run",
+    "reckon/cli.py:3235 the follower-resume branch gates the burst on _follow_replay_visible",
+    "reckon/cli.py:2876 _follow_replay_visible is the reader's own-stream test",
+    "reckon/cli.py:2895 _follow_history_burst composes the framed burst"
+  ],
+  "completed_at": "2026-09-28T09:38:39.653Z",
+  "dispatched_at": "2026-09-28T08:57:24Z",
+  "findings": [
+    {
+      "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+      "line": "469",
+      "text": "the withdrawal assertion depends on ambient process state: with RECKON_FOLLOWER_OWNER naming a dead pid the arming ends at its first tick, the third arming delivers nothing and the required row never arrives (1 failed in 1.39s), while the same test passes with the stamp removed (1 passed in 4.63s), so the recorded green rests on the stamped process being alive rather than on the fix."
+    },
+    {
+      "file": "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "line": "682",
+      "text": "the head-gate row records 3 failed, 39 passed against after-suite.log, whose own final line reads 42 passed in 48.03s, and calls the superseded tests an outstanding follow-on that the manifest records as resolved by the widen grant, so the archive contradicts both the log it cites and the run's own record."
+    },
+    {
+      "file": "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "line": "675",
+      "text": "the landing figure is named in prose only and never embedded, unlike the twelve figures elsewhere in the file that carry a project-absolute img, so the evidence the paragraph points at cannot be seen by its reader."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from b75b1a05 in the reviewed worktree \u2014 three hunks in reckon/cli.py (the legacy gate, the reader's-own-stream test and the framed burst), the new test file, three rewritten tests in test_follow_rearm_continues.py, and the two docs artifacts, with no stray edits.",
+    "done_when": "the manifest records 34 passed at b75b1a05 and 42 passed at 5b5fad19 with both logs on disk, but the case the gate table's first row names does not reproduce green here \u2014 re-run at the reviewed head it fails in 1.39s (gate-ambient-stamp.log) and passes only once the ambient owner stamp is removed (1 passed in 4.63s, gate-owner-stamp-removed.log).",
+    "goal": "the operative goal is a re-armed follower showing no transition it has already shown, and the delivered pair is the terminal-only history burst gated at reckon/cli.py:3235 by _follow_replay_visible (reckon/cli.py:2876) and the unattributable-line refusal in _follow_selects (reckon/cli.py:1804), which are the two leaks the archive describes.",
+    "manifest": "read, and it states complete with the three commit ids, both gate logs and a declared negative control; the one contradiction is the head-gate row of the archive it wrote (docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:682), which reports 3 failed, 39 passed against a log that reads 42 passed.",
+    "write_paths": "the three commits 213a9393, 8447b93b and 5b5fad19 touch seven paths, every one inside the declared set once tests/test_follow_rearm_continues.py is counted by its recorded mid-run widen (resume-1-advice.txt), and nothing outside it."
+  },
+  "justifications": {
+    "durability": "the no-replay guard at tests/test_follower_rearm_shows_nothing_twice.py:469 is green only while the process named by the ambient RECKON_FOLLOWER_OWNER stamp is alive (runs.follower_owner, reckon/crew/runs.py:2039, drives _check_consumer at reckon/cli.py:2399), so a future reader holding a stale stamp sees the guard redden for a reason unrelated to the change.",
+    "evidence": "the run's own logs exist, are headed with tree, revision and command, and its negative control reddens at base; the weakness is that the recorded head arm is a claim about this environment at a moment rather than about the change, since the case it names fails in 1.39s at the reviewed head here unless the ambient owner stamp is removed.",
+    "fit": "the new symbols follow the file's mechanism-named idiom at reckon/cli.py:2876 and :2895 with no plan or tracker labels, but the archive's landing row at :682 contradicts the log it cites and the figure at :675 is named in prose without the img embed the file's other twelve figures carry.",
+    "goal_fidelity": "both named defects are closed at their emitters \u2014 the unresolved rendered line no longer reaches a scoped follower (reckon/cli.py:1804) and the restored history is withheld from a pipe and framed under one line when the reader's stdout is a terminal (reckon/cli.py:3235, :2876).",
+    "scope_discipline": "every path in the three commits is declared or covered by the recorded widen, no file outside the set is touched, and both comparison arms ran in scratch trees under /tmp rather than in the shared checkout."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the operative goal is a re-armed follower showing no transition it has already shown, and the delivered pair is the terminal-only history burst gated at reckon/cli.py:3235 by _follow_replay_visible (reckon/cli.py:2876) and the unattributable-line refusal in _follow_selects (reckon/cli.py:1804), which are the two leaks the archive describes.\nVERDICT done_when: the manifest records 34 passed at b75b1a05 and 42 passed at 5b5fad19 with both logs on disk, but the case the gate table's first row names does not reproduce green here \u2014 re-run at the reviewed head it fails in 1.39s (gate-ambient-stamp.log) and passes only once the ambient owner stamp is removed (1 passed in 4.63s, gate-owner-stamp-removed.log).\nVERDICT write_paths: the three commits 213a9393, 8447b93b and 5b5fad19 touch seven paths, every one inside the declared set once tests/test_follow_rearm_continues.py is counted by its recorded mid-run widen (resume-1-advice.txt), and nothing outside it.\nVERDICT manifest: read, and it states complete with the three commit ids, both gate logs and a declared negative control; the one contradiction is the head-gate row of the archive it wrote (docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:682), which reports 3 failed, 39 passed against a log that reads 42 passed.\nVERDICT diff: read commit by commit from b75b1a05 in the reviewed worktree \u2014 three hunks in reckon/cli.py (the legacy gate, the reader's-own-stream test and the framed burst), the new test file, three rewritten tests in test_follow_rearm_continues.py, and the two docs artifacts, with no stray edits.\nCALL_SITES: reckon/cli.py:1804 _follow_selects refuses a rendered line naming neither the session nor the run, reckon/cli.py:3235 the follower-resume branch gates the burst on _follow_replay_visible, reckon/cli.py:2876 _follow_replay_visible is the reader's own-stream test, reckon/cli.py:2895 _follow_history_burst composes the framed burst\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both named defects are closed at their emitters \u2014 the unresolved rendered line no longer reaches a scoped follower (reckon/cli.py:1804) and the restored history is withheld from a pipe and framed under one line when the reader's stdout is a terminal (reckon/cli.py:3235, :2876).\nSCORE evidence: 13\nJUSTIFICATION evidence: the run's own logs exist, are headed with tree, revision and command, and its negative control reddens at base; the weakness is that the recorded head arm is a claim about this environment at a moment rather than about the change, since the case it names fails in 1.39s at the reviewed head here unless the ambient owner stamp is removed.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the three commits is declared or covered by the recorded widen, no file outside the set is touched, and both comparison arms ran in scratch trees under /tmp rather than in the shared checkout.\nSCORE durability: 9\nJUSTIFICATION durability: the no-replay guard at tests/test_follower_rearm_shows_nothing_twice.py:469 is green only while the process named by the ambient RECKON_FOLLOWER_OWNER stamp is alive (runs.follower_owner, reckon/crew/runs.py:2039, drives _check_consumer at reckon/cli.py:2399), so a future reader holding a stale stamp sees the guard redden for a reason unrelated to the change.\nSCORE fit: 14\nJUSTIFICATION fit: the new symbols follow the file's mechanism-named idiom at reckon/cli.py:2876 and :2895 with no plan or tracker labels, but the archive's landing row at :682 contradicts the log it cites and the figure at :675 is named in prose without the img embed the file's other twelve figures carry.\nFINDING tests/test_follower_rearm_shows_nothing_twice.py:469 the withdrawal assertion depends on ambient process state: with RECKON_FOLLOWER_OWNER naming a dead pid the arming ends at its first tick, the third arming delivers nothing and the required row never arrives (1 failed in 1.39s), while the same test passes with the stamp removed (1 passed in 4.63s), so the recorded green rests on the stamped process being alive rather than on the fix.\nFINDING docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:682 the head-gate row records 3 failed, 39 passed against after-suite.log, whose own final line reads 42 passed in 48.03s, and calls the superseded tests an outstanding follow-on that the manifest records as resolved by the widen grant, so the archive contradicts both the log it cites and the run's own record.\nFINDING docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:675 the landing figure is named in prose only and never embedded, unlike the twelve figures elsewhere in the file that carry a project-absolute img, so the evidence the paragraph points at cannot be seen by its reader.\n",
+  "review_run_id": "r-20260928T085704718958-review-of-rearm-shows-nothing-twice",
+  "reviewed_base_sha": "b75b1a05f8a0d98bf9ac29913889771cfd0a5240",
+  "reviewed_head_sha": "5b5fad19fc8feac5cf35fd9b9e7a239589990211",
+  "reviewed_run_id": "r-20260928T071738506390-rearm-shows-nothing-twice",
+  "scores": {
+    "durability": 9,
+    "evidence": 13,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T09:35:29.420131+00:00",
+  "total": 72
+}

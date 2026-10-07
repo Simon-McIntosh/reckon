@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: the baseline arm logs/audit_fragment_ids.base_arm.log (revision 07ad28145) reads 23 duplicate-element-id findings and EXIT=1, and the after arm logs/audit_fragment_ids.head.log (revision 0fda5bbef) reads 0 findings and EXIT=0; the set of findings the head arm adds over the baseline is empty, so added_failure_count is 0 and added_failure_ids is []. The reviewed node is a docs-only rename that ran audit arms rather than a pytest suite, so its manifest baseline_suite and after_suite fields are empty and the two audit logs are the gate arms.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T13:04:26.757Z",
+  "dispatched_at": "2026-10-04T12:48:37Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "docs-only change; no production call site.",
+    "diff": "read commit by commit against base 07ad28145; 5c4da26fb changes 30 fragment files 107 lines replaced on the id attribute alone and 0fda5bbef adds one 24-line landing fragment; every changed line is an id attribute value whose new spelling is the file stem plus the old id.",
+    "done_when": "so each composed record audits clean: audit_fragment_ids reports 0 findings over the three directories at head 0fda5bbef, reproduced independently, against 23 at base 07ad28145; the plan's 'Done when' adds 'that repair may be its own node', which this batch is, and remaining directories are batch a and batch c.",
+    "goal": "the node goal, the rename half of crew-observability-truth section 40, is met for the three plans in this batch: 107 bare colliding element ids across 30 committed fragments are prefixed with their node ids so each composed record audits clean.",
+    "manifest": "read; it records the rename committed at 5c4da26fb and the landing record at 0fda5bbef, the audit_fragment_ids head arm 0 findings EXIT=0 and base arm 23 findings EXIT=1, verify_rename.py EXIT=0 and check_links.py EXIT=0, and the repo-wide remainder of 46 findings outside its three directories.",
+    "write_paths": "the manifest declares the landing fragment and its 29 sibling fragment files plus an unused docs/figures path; every changed path in commits 5c4da26fb and 0fda5bbef lies inside the declared paths."
+  },
+  "justifications": {
+    "durability": "the renames are committed fragment data, and the composed-record id audit that runs at check-manifest and audit-doc at closure is the ongoing guard that catches a re-introduced bare colliding id; the landing record is committed. Weaker than the code arm: no committed test asserts these 23 base collisions stay gone or pins the rename convention, so the rename's only regression guard is the generic composition audit, and the verification helpers (rename_ids.py, verify_rename.py, check_links.py) live in the run directory rather than the tree.",
+    "evidence": "strong: two gate arms with logs that name revision, tree, module and cwd; independently reproduced by materialising the three directories' bytes at 07ad28145 and 0fda5bbef into a scratch tree under TMPDIR and running the audit via the module the reviewed run names \u2014 base 23 findings EXIT=1, head 0 findings EXIT=0, matching the run's logs; the attribute-only claim, the stem-prefix convention and the previously-colliding condition were re-derived file by file against the run's own bytes (30 files, 107 renames, no problem but the expected new landing fragment); the repo-wide remainder of 46 findings was reproduced exactly. Two caveats, neither affecting the renamed ids: the manifest's baseline_suite/after_suite are empty because the node ran audit arms rather than a pytest suite (correct for a docs-only change, but a reader must fall back to the audit logs for the arm figures), and check_links.py drops a same-file bare anchor outside the node directories (docs/evidence/archive/flight-control-config-landed.html#provenance), so its 'elsewhere' list under-reports by one \u2014 no link into a renamed fragment exists either way.",
+    "fit": "the rename convention follows the already-prefixed fragments elsewhere (new id = fragment file stem + '-' + old id), which is the node id, so a sibling fragment composed into one record cannot claim the same anchor; the landing record is placed in the plan directory the id-prefix rule belongs to and carries no element ids, so it adds none to the composition it is checked by; the change reuses the existing reckon.doccheck.audit_fragment_ids rather than introducing a new check.",
+    "goal_fidelity": "the node goal is the rename half of crew-observability-truth section 40: the pre-existing bare-id collisions in committed fragments are renamed under their node ids, plan by plan, so each composed record audits clean. Commit 5c4da26fb prefixes 107 colliding element ids across the 30 committed fragments of the a-review-dies-where-nobody-is-looking, crew-observability-truth and scoring-should-stop-a-promotion directories; audit_fragment_ids reads 0 findings over the three directories at head 0fda5bbef where it read 23 (9+8+6) at base 07ad28145, reproduced independently.",
+    "scope_discipline": "commit 5c4da26fb changes only the 30 fragment files and commit 0fda5bbef adds only docs/evidence/fragments/crew-observability-truth/fragment-ids-renamed-batch-b.html; all 31 changed paths are in the manifest's changed_paths. Conventional subjects with bodies; no plan HTML, plan state, index or sprint file touched. The declared write path docs/figures/crew-observability-truth/fragment-ids-renamed-batch-b was not written (the done-when names no figure), which is an unused declaration rather than an out-of-scope change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal, the rename half of crew-observability-truth section 40, is met for the three plans in this batch: 107 bare colliding element ids across 30 committed fragments are prefixed with their node ids so each composed record audits clean.\nVERDICT done_when: so each composed record audits clean: audit_fragment_ids reports 0 findings over the three directories at head 0fda5bbef, reproduced independently, against 23 at base 07ad28145; the plan's 'Done when' adds 'that repair may be its own node', which this batch is, and remaining directories are batch a and batch c.\nVERDICT write_paths: the manifest declares the landing fragment and its 29 sibling fragment files plus an unused docs/figures path; every changed path in commits 5c4da26fb and 0fda5bbef lies inside the declared paths.\nVERDICT manifest: read; it records the rename committed at 5c4da26fb and the landing record at 0fda5bbef, the audit_fragment_ids head arm 0 findings EXIT=0 and base arm 23 findings EXIT=1, verify_rename.py EXIT=0 and check_links.py EXIT=0, and the repo-wide remainder of 46 findings outside its three directories.\nVERDICT diff: read commit by commit against base 07ad28145; 5c4da26fb changes 30 fragment files 107 lines replaced on the id attribute alone and 0fda5bbef adds one 24-line landing fragment; every changed line is an id attribute value whose new spelling is the file stem plus the old id.\nCALL_SITES: none (docs-only change)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the node goal is the rename half of crew-observability-truth section 40: the pre-existing bare-id collisions in committed fragments are renamed under their node ids, plan by plan, so each composed record audits clean. Commit 5c4da26fb prefixes 107 colliding element ids across the three directories' 30 committed fragments; audit_fragment_ids reads 0 findings over the three directories at head 0fda5bbef where it read 23 (9+8+6) at base 07ad28145, reproduced independently.\nSCORE evidence: 19\nJUSTIFICATION evidence: independently reproduced both gate arms by materialising the three directories' bytes at 07ad28145 and 0fda5bbef in a scratch tree and running the audit the run names \u2014 base 23 findings EXIT=1 and head 0 findings EXIT=0, matching the logs; the attribute-only, stem-prefix and previously-colliding claims were re-derived file by file (30 files, 107 renames). Caveats: the manifest's baseline_suite/after_suite are empty because the node ran audit arms not a pytest suite, and check_links.py drops a same-file bare anchor outside the node directories; neither affects a renamed id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 5c4da26fb changes only the 30 fragment files and commit 0fda5bbef adds only the landing fragment, all inside changed_paths; conventional subjects with bodies; no plan, state, index or sprint file touched; one declared write path under docs/figures was unused.\nSCORE durability: 18\nJUSTIFICATION durability: the renames are committed fragment data guarded by the composed-record id audit at closure, and the landing record is committed; no committed test asserts the base collisions stay gone or pins the rename convention, and the verification helpers live in the run directory rather than the tree.\nSCORE fit: 19\nJUSTIFICATION fit: the convention follows already-prefixed fragments (new id = file stem + '-' + old id), the landing record sits in the plan's own fragment directory and carries no element ids, and the change reuses reckon.doccheck.audit_fragment_ids rather than adding a new check.\n",
+  "review_run_id": "r-20261004T124806302932-review-of-fragment-ids-renamed-batch-b",
+  "reviewed_base_sha": "07ad28145c987ee3a9f0154d8470b0808ade6e62",
+  "reviewed_head_sha": "0fda5bbef7ac9a5a4798c6a86357597ad671ec85",
+  "reviewed_run_id": "r-20261004T122614283925-fragment-ids-renamed-batch-b",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T124806302932-review-of-fragment-ids-renamed-batch-b",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T12:59:14+00:00",
+  "total": 96
+}

@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": [
+    "added failures 0 by id: the reviewed run is read-only (no code change), so its baseline_suite and after_suite both cite its own logs/cohort.log at revision 1c20ca68; reckon.crew.review.added_failures_from_gate_logs over that log returns (0, []). Positive control: the same extractor over the same log text plus a FAILED and an ERROR line returns (2, ['tests/test_known_error.py::test_err', 'tests/test_known_present.py::test_red']), so the reader is shown to see failures."
+  ],
+  "backend": "clive",
+  "base_log_revision": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T21:53:11.764Z",
+  "dispatched_at": "2026-09-30T21:44:47Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md",
+      "line": "73",
+      "text": "the done-when requires each unmet item's smallest reproduction to be \"run and logged\", but F5's is written as an instruction to be performed (\"create a temp repo with one merged branch ... call reckon.crew.routing.garbage_collect(repo=<tmp>, apply=False) and assert classification == \"integrated)\" and no reproduction log exists for it; the run's logs/ holds only cohort.log, arrivals.log, parity_case.log and ledger_review.log, so a repair node and a reviewing reader cannot check the reproduction was executed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md",
+      "line": "99",
+      "text": "F7's reproduction is the only mutation the report claims to have observed (\"mutate ... read_lane_counts ... and run that single case \u2014 it stays green at main\") yet logs/parity_case.log records the unmutated case alone (1 passed), so the green-on-mutation claim the coordinator will dispatch against is asserted rather than shown."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md",
+      "line": "25",
+      "text": "the anchor named for F1-b's fence, reckon/crew/dispatch.py:4963, is the call site that passes needs_help_after_failures into the prompt builder, not the fence itself; the counted decision and its scaffold/substance behaviour the report says is missing live at reckon/crew/prompts.py:597 (parameter at prompts.py:358), so a repair node sent to 4963 finds the argument rather than the behaviour to change."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T212028516427-currency-crew-observability-truth/logs/ledger_review.log",
+      "line": "1",
+      "text": "the header records its command as prose \u2014 \"cmd: python3 heredoc reading docs/state/reckon/crew.json\" \u2014 rather than the literal command with absolute paths the manifest contract requires, so the executed checks the F2, F6 and section 19 verdicts rest on (2042 rows, 431 reviewed, outcome empty on 1871) are not reproducible from the log alone."
+    }
+  ],
+  "head_log_revision": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no repository diff \u2014 the node is read-only, its worktree HEAD equals the base 1c20ca68, and its deliverable is report.md and the four logs, all outside any checkout.",
+    "done_when": "the done_when asks each item to carry an anchor read from the revision named on the report's first line, one executed check for a met item and a run-and-logged reproduction for an unmet one, an end-of-report dispatch order, and no repository change; report.md:1 names revision 1c20ca680a2b35119f6256431c5c62ef53b7bc34 (the worktree HEAD), the worktree at that revision is clean, and report.md:181-205 gives the dispatch order, but several unmet items state a reproduction rather than run it (see FINDING).",
+    "goal": "the node goal is to establish, at main, which open followups and implementable sections of crew-observability-truth still describe unmet work; report.md:13-21 tabulates all seven open followups and report.md:161-176 all nine roadmap-implementable sections, each with a verdict, so the deliverable answers the goal item by item.",
+    "manifest": "read; it names status complete, commits none (read-only node), the four gate logs and their headline figures, baseline_suite and after_suite both citing logs/cohort.log at 1c20ca68, and follow_ons/blockers none.",
+    "write_paths": "read the manifest's one declared path; the node wrote exactly report.md under /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth plus four logs under its own run directory, and git -C <reviewed worktree> status --short and <base>..HEAD are both empty at 1c20ca680a2b35119f6256431c5c62ef53b7bc34."
+  },
+  "justifications": {
+    "durability": "the deliverable is a triage report \u2014 nothing reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md and crew/reports is not under version control, so a later edit to a verdict or an anchor would fail nothing.",
+    "evidence": "the declared gate log logs/cohort.log records 207 passed EXIT=0 at revision 1c20ca68, but it runs the seven plan-surface test files and asserts nothing about the report, and the \"reproduction\" for F5 (report.md:73), F7 (report.md:99-100) and sections 12, 15, 17, 18, 19, 22 is stated in prose with no log on disk \u2014 see FINDING.",
+    "fit": "the report follows the repo's triage idiom (a verdict table then a per-item section naming the anchor, the reproduction and a repair's write paths) and cites plan section ids as content rather than in any symbol or filename.",
+    "goal_fidelity": "report.md:13-21 gives all seven open followups a met/partly-met/unmet verdict and report.md:161-176 all nine implementable sections, each with the file and line settling it and the commit that landed anything met, which is the triage the goal names.",
+    "scope_discipline": "the read-only node wrote exactly /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md plus its own run-directory logs, its worktree is clean at 1c20ca68, and the /tmp scratch is recorded deleted."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to establish, at main, which open followups and implementable sections of crew-observability-truth still describe unmet work; report.md:13-21 tabulates all seven open followups and report.md:161-176 all nine roadmap-implementable sections, each with a verdict, so the deliverable answers the goal item by item.\nVERDICT done_when: the done_when asks each item to carry an anchor read from the revision named on the report's first line, one executed check for a met item and a run-and-logged reproduction for an unmet one, an end-of-report dispatch order, and no repository change; report.md:1 names revision 1c20ca680a2b35119f6256431c5c62ef53b7bc34 (the worktree HEAD), the worktree at that revision is clean, and report.md:181-205 gives the dispatch order, but several unmet items state a reproduction rather than run it (see FINDING).\nVERDICT write_paths: read the manifest's one declared path; the node wrote exactly report.md under /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth plus four logs under its own run directory, and git -C <reviewed worktree> status --short and <base>..HEAD are both empty at 1c20ca680a2b35119f6256431c5c62ef53b7bc34.\nVERDICT manifest: read; it names status complete, commits none (read-only node), the four gate logs and their headline figures, baseline_suite and after_suite both citing logs/cohort.log at 1c20ca68, and follow_ons/blockers none.\nVERDICT diff: there is no repository diff \u2014 the node is read-only, its worktree HEAD equals the base 1c20ca68, and its deliverable is report.md and the four logs, all outside any checkout.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:13-21 gives all seven open followups a met/partly-met/unmet verdict and report.md:161-176 all nine implementable sections, each with the file and line settling it and the commit that landed anything met, which is the triage the goal names.\nSCORE evidence: 14\nJUSTIFICATION evidence: the declared gate log logs/cohort.log records 207 passed EXIT=0 at revision 1c20ca68, but it runs the seven plan-surface test files and asserts nothing about the report, and the \"reproduction\" for F5 (report.md:73), F7 (report.md:99-100) and sections 12, 15, 17, 18, 19, 22 is stated in prose with no log on disk \u2014 see FINDING.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the read-only node wrote exactly /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md plus its own run-directory logs, its worktree is clean at 1c20ca68, and the /tmp scratch is recorded deleted.\nSCORE durability: 5\nJUSTIFICATION durability: the deliverable is a triage report \u2014 nothing reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md and crew/reports is not under version control, so a later edit to a verdict or an anchor would fail nothing.\nSCORE fit: 18\nJUSTIFICATION fit: the report follows the repo's triage idiom (a verdict table then a per-item section naming the anchor, the reproduction and a repair's write paths) and cites plan section ids as content rather than in any symbol or filename.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md:73 the done-when requires each unmet item's smallest reproduction to be \"run and logged\", but F5's is written as an instruction to be performed (\"create a temp repo with one merged branch ... call reckon.crew.routing.garbage_collect(repo=<tmp>, apply=False) and assert classification == \"integrated)\" and no reproduction log exists for it; the run's logs/ holds only cohort.log, arrivals.log, parity_case.log and ledger_review.log, so a repair node and a reviewing reader cannot check the reproduction was executed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md:99 F7's reproduction is the only mutation the report claims to have observed (\"mutate ... read_lane_counts ... and run that single case \u2014 it stays green at main\") yet logs/parity_case.log records the unmutated case alone (1 passed), so the green-on-mutation claim the coordinator will dispatch against is asserted rather than shown.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-crew-observability-truth/report.md:25 the anchor named for F1-b's fence, reckon/crew/dispatch.py:4963, is the call site that passes needs_help_after_failures into the prompt builder, not the fence itself; the counted decision and its scaffold/substance behaviour the report says is missing live at reckon/crew/prompts.py:597 (parameter at prompts.py:358), so a repair node sent to 4963 finds the argument rather than the behaviour to change.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T212028516427-currency-crew-observability-truth/logs/ledger_review.log:1 the header records its command as prose \u2014 \"cmd: python3 heredoc reading docs/state/reckon/crew.json\" \u2014 rather than the literal command with absolute paths the manifest contract requires, so the executed checks the F2, F6 and section 19 verdicts rest on (2042 rows, 431 reviewed, outcome empty on 1871) are not reproducible from the log alone.\n",
+  "review_run_id": "r-20260930T214426463463-review-of-currency-crew-observability-truth",
+  "reviewed_base_sha": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "reviewed_head_sha": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "reviewed_run_id": "r-20260930T212028516427-currency-crew-observability-truth",
+  "scores": {
+    "durability": 5,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T21:50:42.437706+00:00",
+  "total": 75
+}

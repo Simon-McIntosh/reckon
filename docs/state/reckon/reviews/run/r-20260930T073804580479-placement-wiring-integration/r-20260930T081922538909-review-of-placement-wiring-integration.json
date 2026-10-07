@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4911 dispatch reaches resolve_backend_placement",
+    "reckon/crew/dispatch.py:6045 resolve_backend_placement reaches placement.ensure_reservation",
+    "reckon/crew/runs.py:3083 ensure_placement_reservation reaches the same ensure"
+  ],
+  "completed_at": "2026-09-30T08:47:09.749Z",
+  "dispatched_at": "2026-09-30T08:19:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073804580479-placement-wiring-integration/arm-base-cbd90e41e.log",
+      "line": "1",
+      "text": "the first line writes revision=<sha> where the store's recorded_log_revision (reckon/crew/review.py:507) accepts revision: <sha> or revision <sha>; the head log's first line has the identical shape, so annotate_review_of_run records base_log_revision and head_log_revision as null for this run (positive control: the same reader returns 4568a5553f0883b4dea3a4ea0c860ff645f7b533 from r-20260929T104521381409's log whose first line is `revision: <sha>`), and a reader of the annotated record cannot tie the count to the commits the logs measured even though the manifest's own suite records name both revisions."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "the node changed no repository file so its own diff is empty; the change it measured is merge e46347e98, whose delta is the single incoming commit 3209ea006 across five paths, product-confined to reckon/crew/dispatch.py where resolve_backend_placement (dispatch.py:6018) is reached from the placed-dispatch site (dispatch.py:4911) and calls placement.ensure_reservation (placement.py:380), with four cases added in tests/test_dispatch_places_into_the_shared_reservation.py against a recording scheduler (4 passed in 0.23s at head).",
+    "done_when": "every clause of the done-when holds \u2014 the report is 18269 bytes (under 200 KB), names the revision pair, and lists the 99-path population that is identical to a fresh `git grep -l -E 'reckon\\.crew\\.(dispatch|placement)' e46347e98 -- tests/`; each arm log is headed with revision, tree and the literal command and ends EXIT=1; each arm's FAILED/ERROR ids are listed and match the logs exactly (18 and 15, the head set a strict subset of the base set); /tmp df is recorded before each arm (14G and 42G against the 5 GB stop); and /tmp/s21-pwi was removed with the deletion's output logged (cleanup.log: RMRF_EXIT=0 with the after-check finding no such directory) \u2014 with one caveat recorded as a FINDING below: neither arm log's first line parses under the store's own recorded_log_revision.",
+    "goal": "the goal is to measure the failures the placement wiring merge added across the tests importing reckon.crew.dispatch or reckon.crew.placement, and the report (s21-placement-wiring-integration.md:7) states 0 added ids for merge e46347e98 against first parent cbd90e41e over 99 files, which I re-derived myself from the two arm logs (18 base ids, 15 head ids, head-minus-base empty).",
+    "manifest": "read with its logs; its baseline_suite and after_suite records carry completed true with 18 and 15 failure_ids that equal the ids in the logs each names, the 0-added claim and the 1088+4+3=1095 pass reconciliation hold, and failure_attribution is empty as an empty added set requires; the log-revision reader the record counts on reads nothing from these logs (FINDING).",
+    "write_paths": "the declared write path was the report alone; the reviewed worktree is clean at be2a2b8b3 (git status --porcelain empty and HEAD unmoved from its orientation_base_sha) and every other write is the manifest and logs inside its own run directory."
+  },
+  "justifications": {
+    "durability": "the measurement is re-derivable \u2014 the population grep is re-runnable at a pinned revision and all 99 paths are also listed in the report:98-199, with the arm and isolation logs and the population files on durable storage \u2014 though the scratch trees are gone and must be re-extracted with git archive.",
+    "evidence": "the store's own instrument (reckon/crew/review.py:1022 annotate_review_of_run) re-derives added_failure_count 0 and no ids from the manifest's baseline_suite and after_suite logs, and each arm's failure text carries its own tree's shim path (/tmp/s21-pwi/base vs /tmp/s21-pwi/head) so neither arm imported the other's tree, but the revision tie the annotated record carries is null because the logs' first line writes revision=<sha> where reckon/crew/review.py:507 accepts revision: <sha>.",
+    "fit": "the report and manifest follow the run-directory conventions and introduce no forbidden name, but the gate-log first line (arm-base-cbd90e41e.log:1 `gate-log: revision=<sha> tree=<path> command=<cmd>`) departs from the header spelling reckon/crew/review.py:503 documents as conventional.",
+    "goal_fidelity": "the report at s21-placement-wiring-integration.md:7 answers the goal with 0 added ids and separates the 3 removed and 15 pre-existing ids, and I reproduced the added set from arm-base-cbd90e41e.log and arm-head-e46347e98.log as 0.",
+    "scope_discipline": "the reviewed tree is clean at be2a2b8b3 and every path written \u2014 report, manifest, arm logs, isolation logs, cleanup log \u2014 lies in its declared report path or its own run directory."
+  },
+  "node": "review-of-placement-wiring-integration",
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260930T073804580479-placement-wiring-integration (role test, spec exact, plan a-placement-with-no-reservation-mints-one-per-worker \u00a73), read from the reviewed run's report, manifest, two arm logs, eighteen isolation logs, cleanup log and population lists, and from git at cbd90e41e and e46347e98.\n\nVERDICT goal: the goal is to measure the failures the placement wiring merge added across the tests importing reckon.crew.dispatch or reckon.crew.placement, and the report (s21-placement-wiring-integration.md:7) states 0 added ids for merge e46347e98 against first parent cbd90e41e over 99 files, which I re-derived myself from the two arm logs (18 base ids, 15 head ids, head-minus-base empty).\nVERDICT done_when: every clause of the done-when holds \u2014 the report is 18269 bytes (under 200 KB), names the revision pair, and lists the 99-path population that is identical to a fresh `git grep -l -E 'reckon\\.crew\\.(dispatch|placement)' e46347e98 -- tests/`; each arm log is headed with revision, tree and the literal command and ends EXIT=1; each arm's FAILED/ERROR ids are listed and match the logs exactly (18 and 15, the head set a strict subset of the base set); /tmp df is recorded before each arm (14G and 42G against the 5 GB stop); and /tmp/s21-pwi was removed with the deletion's output logged (cleanup.log: RMRF_EXIT=0 with the after-check finding no such directory) \u2014 with one caveat recorded as a FINDING below: neither arm log's first line parses under the store's own recorded_log_revision.\nVERDICT write_paths: the declared write path was the report alone; the reviewed worktree is clean at be2a2b8b3 (git status --porcelain empty and HEAD unmoved from its orientation_base_sha) and every other write is the manifest and logs inside its own run directory.\nVERDICT manifest: read with its logs; its baseline_suite and after_suite records carry completed true with 18 and 15 failure_ids that equal the ids in the logs each names, the 0-added claim and the 1088+4+3=1095 pass reconciliation hold, and failure_attribution is empty as an empty added set requires; the log-revision reader the record counts on reads nothing from these logs (FINDING).\nVERDICT diff: the node changed no repository file so its own diff is empty; the change it measured is merge e46347e98, whose delta is the single incoming commit 3209ea006 across five paths, product-confined to reckon/crew/dispatch.py where resolve_backend_placement (dispatch.py:6018) is reached from the placed-dispatch site (dispatch.py:4911) and calls placement.ensure_reservation (placement.py:380), with four cases added in tests/test_dispatch_places_into_the_shared_reservation.py against a recording scheduler (4 passed in 0.23s at head).\nCALL_SITES: reckon/crew/dispatch.py:4911 dispatch reaches resolve_backend_placement, reckon/crew/dispatch.py:6045 resolve_backend_placement reaches placement.ensure_reservation, reckon/crew/runs.py:3083 ensure_placement_reservation reaches the same ensure\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the report at s21-placement-wiring-integration.md:7 answers the goal with 0 added ids and separates the 3 removed and 15 pre-existing ids, and I reproduced the added set from arm-base-cbd90e41e.log and arm-head-e46347e98.log as 0.\nSCORE evidence: 18\nJUSTIFICATION evidence: the store's own instrument (reckon/crew/review.py:1022 annotate_review_of_run) re-derives added_failure_count 0 and no ids from the manifest's baseline_suite and after_suite logs, and each arm's failure text carries its own tree's shim path (/tmp/s21-pwi/base vs /tmp/s21-pwi/head) so neither arm imported the other's tree, but the revision tie the annotated record carries is null because the logs' first line writes revision=<sha> where reckon/crew/review.py:507 accepts revision: <sha>.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed tree is clean at be2a2b8b3 and every path written \u2014 report, manifest, arm logs, isolation logs, cleanup log \u2014 lies in its declared report path or its own run directory.\nSCORE durability: 19\nJUSTIFICATION durability: the measurement is re-derivable \u2014 the population grep is re-runnable at a pinned revision and all 99 paths are also listed in the report:98-199, with the arm and isolation logs and the population files on durable storage \u2014 though the scratch trees are gone and must be re-extracted with git archive.\nSCORE fit: 19\nJUSTIFICATION fit: the report and manifest follow the run-directory conventions and introduce no forbidden name, but the gate-log first line (arm-base-cbd90e41e.log:1 `gate-log: revision=<sha> tree=<path> command=<cmd>`) departs from the header spelling reckon/crew/review.py:503 documents as conventional.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073804580479-placement-wiring-integration/arm-base-cbd90e41e.log:1 the first line writes revision=<sha> where the store's recorded_log_revision (reckon/crew/review.py:507) accepts revision: <sha> or revision <sha>; the head log's first line has the identical shape, so annotate_review_of_run records base_log_revision and head_log_revision as null for this run (positive control: the same reader returns 4568a5553f0883b4dea3a4ea0c860ff645f7b533 from r-20260929T104521381409's log whose first line is `revision: <sha>`), and a reader of the annotated record cannot tie the count to the commits the logs measured even though the manifest's own suite records name both revisions.\n",
+  "review_run_id": "r-20260930T081922538909-review-of-placement-wiring-integration",
+  "reviewed_base_sha": "be2a2b8b3f1578f81441120a2d8b6b56d23f72b8",
+  "reviewed_head_sha": "be2a2b8b3f1578f81441120a2d8b6b56d23f72b8",
+  "reviewed_run_id": "r-20260930T073804580479-placement-wiring-integration",
+  "reviewer": "review-of-placement-wiring-integration",
+  "reviewer_run_id": "r-20260930T081922538909-review-of-placement-wiring-integration",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T08:42:46.048315+00:00",
+  "total": 96
+}

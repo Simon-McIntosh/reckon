@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/query.py:172 (project_live_rows)",
+    "reckon/crew/query.py:479 (runs_view)",
+    "reckon/crew/recovery.py:10597 (recover)"
+  ],
+  "completed_at": "2026-10-03T10:14:49.741Z",
+  "dispatched_at": "2026-10-03T10:07:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "7126",
+      "severity": "follow-on",
+      "text": "follow-on: group_terminal_lane_events merges every same-backend terminal that ends inside the 30 s window regardless of cause and labels the cluster a lane event with cause \"undetermined\" when no member carries a lane_cause, so two runs that failed independently on one backend within the window read as one event; requiring a shared lane_cause, or surfacing an undetermined cluster distinctly, would keep a real catalog drop grouped while not fusing unrelated failures."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "167",
+      "severity": "follow-on",
+      "text": "follow-on: the lane-event-to-resume mapping is never exercised -- no test asserts recovery == resume for a grouped row, nor supplies the plan's measure-4 negative of a member that genuinely died with an empty worktree -- so resume is offered for every member including one whose session no longer exists."
+    }
+  ],
+  "head_log_revision": "3b689808c339a2cbacec015ffaa7f69ae28a7531",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 7fbe5fd8; 5fa8c4f7 adds LANE_EVENT_WINDOW_SECONDS, _terminal_lane_signal, group_terminal_lane_events and the classify_pointer fields to recovery.py plus the query.py wiring, 0df57957 adds the grouping test, 3b689808 adds the stderr negative test, 613aaef7 adds only the evidence fragment.",
+    "done_when": "the done-when asks that the grouping live in recovery.py and be reported once by the query.py fleet surfaces, with a test built on temporary live pointers that fails at base; tests/test_simultaneous_ends_are_one_lane_event.py drives project_live_rows, runs_view and recover, its five assertions fail at base 7fbe5fd8 and pass at head, and the declared window=0 mutation reddens the grouping case (1 failed, 4 passed, EXIT=1).",
+    "goal": "the node's declared goal is that runs ending together on one backend are one lane event, not N worker failures; group_terminal_lane_events (reckon/crew/recovery.py:7126), wired at reckon/crew/query.py:172 and :479 and reckon/crew/recovery.py:10597, folds three same-backend terminals ending within LANE_EVENT_WINDOW_SECONDS=30 into one lane-event row naming backend 'shared' and {r-first, r-second, r-third}, while a fourth terminal on another backend and a fifth on the same backend 8 minutes later stay individual; docked because any same-backend terminals inside the window merge even with no shared cause, so a pair of independently-failed runs can be reported as one 'undetermined' lane event.",
+    "manifest": "read; status complete, four commits (0df57957, 5fa8c4f7, 3b689808, 613aaef7), both suites recorded as JSON with log paths and literal commands, the negative-control log named and executed, and the one remaining head failure declared as a base-existing follow-on.",
+    "write_paths": "the diff base..head touches exactly reckon/crew/recovery.py, reckon/crew/query.py, tests/test_simultaneous_ends_are_one_lane_event.py and the done-when-named fragment docs/evidence/fragments/crew-observability-truth/simultaneous-ends-are-one-lane-event.html, all inside the manifest's declared write paths; no file outside scope is modified."
+  },
+  "justifications": {
+    "durability": "the negative control set LANE_EVENT_WINDOW_SECONDS to 0 and reddened test_simultaneous_terminals_are_one_lane_event (1 failed, 4 passed, EXIT=1), and the new test drives the real entry points project_live_rows, runs_view and recover rather than a private helper; docked because no test asserts the offered resume action for a grouped row nor the plan's empty-worktree negative, so the resume offer is guarded by nothing.",
+    "evidence": "the base and head arms ran at both revisions and the logs are on disk -- base 7fbe5fd8 reads 6 failed, 150 passed and head 3b689808 reads 1 failed, 155 passed, head-minus-base over pytest node ids is empty so added_failure_count is 0 -- but the base arm's tree carried tests/test_simultaneous_ends_are_one_lane_event.py which is absent from the base revision, so five of the six base failure ids name tests the base commit does not contain.",
+    "fit": "group_terminal_lane_events, _terminal_lane_signal, LANE_EVENT_WINDOW_SECONDS and the lane-event classification extend the existing RECOVERY_CLASSES and RECOVERY_VERBS tables in place and follow the module's classify-then-group idiom with no plan label or version suffix; docked for the precedence-dependent ternary at reckon/crew/query.py:235.",
+    "goal_fidelity": "group_terminal_lane_events (reckon/crew/recovery.py:7126) plus the wiring at reckon/crew/query.py:172 and :479 and recover at reckon/crew/recovery.py:10597 deliver exactly the declared goal for the recorded fixture, but the merge is broader than the goal implies because any same-backend terminals inside the window group even with no shared cause.",
+    "scope_discipline": "the diff spans exactly the four declared write paths and the fragment was named by the done-when, so nothing outside the granted scope was touched and no shared index or plan state was mutated."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's declared goal is that runs ending together on one backend are one lane event, not N worker failures; group_terminal_lane_events (reckon/crew/recovery.py:7126), wired at reckon/crew/query.py:172 and :479 and reckon/crew/recovery.py:10597, folds three same-backend terminals ending within LANE_EVENT_WINDOW_SECONDS=30 into one lane-event row naming backend 'shared' and {r-first, r-second, r-third}, while a fourth terminal on another backend and a fifth on the same backend 8 minutes later stay individual; docked because any same-backend terminals inside the window merge even with no shared cause, so a pair of independently-failed runs can be reported as one 'undetermined' lane event.\nVERDICT done_when: the done-when asks that the grouping live in recovery.py and be reported once by the query.py fleet surfaces, with a test built on temporary live pointers that fails at base; tests/test_simultaneous_ends_are_one_lane_event.py drives project_live_rows, runs_view and recover, its five assertions fail at base 7fbe5fd8 and pass at head, and the declared window=0 mutation reddens the grouping case (1 failed, 4 passed, EXIT=1).\nVERDICT write_paths: the diff base..head touches exactly reckon/crew/recovery.py, reckon/crew/query.py, tests/test_simultaneous_ends_are_one_lane_event.py and the done-when-named fragment docs/evidence/fragments/crew-observability-truth/simultaneous-ends-are-one-lane-event.html, all inside the manifest's declared write paths; no file outside scope is modified.\nVERDICT manifest: read; status complete, four commits (0df57957, 5fa8c4f7, 3b689808, 613aaef7), both suites recorded as JSON with log paths and literal commands, the negative-control log named and executed, and the one remaining head failure declared as a base-existing follow-on.\nVERDICT diff: read commit by commit against base 7fbe5fd8; 5fa8c4f7 adds LANE_EVENT_WINDOW_SECONDS, _terminal_lane_signal, group_terminal_lane_events and the classify_pointer fields to recovery.py plus the query.py wiring, 0df57957 adds the grouping test, 3b689808 adds the stderr negative test, 613aaef7 adds only the evidence fragment.\nCALL_SITES: reckon/crew/query.py:172 (project_live_rows), reckon/crew/query.py:479 (runs_view), reckon/crew/recovery.py:10597 (recover)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: group_terminal_lane_events (reckon/crew/recovery.py:7126) plus the wiring at reckon/crew/query.py:172 and :479 and recover at reckon/crew/recovery.py:10597 deliver exactly the declared goal for the recorded fixture, but the merge is broader than the goal implies because any same-backend terminals inside the window group even with no shared cause.\nSCORE evidence: 17\nJUSTIFICATION evidence: the base and head arms ran at both revisions and the logs are on disk -- base 7fbe5fd8 reads 6 failed, 150 passed and head 3b689808 reads 1 failed, 155 passed, head-minus-base over pytest node ids is empty so added_failure_count is 0 -- but the base arm's tree carried tests/test_simultaneous_ends_are_one_lane_event.py which is absent from the base revision, so five of the six base failure ids name tests the base commit does not contain.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff spans exactly the four declared write paths and the fragment was named by the done-when, so nothing outside the granted scope was touched and no shared index or plan state was mutated.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control set LANE_EVENT_WINDOW_SECONDS to 0 and reddened test_simultaneous_terminals_are_one_lane_event (1 failed, 4 passed, EXIT=1), and the new test drives the real entry points project_live_rows, runs_view and recover rather than a private helper; docked because no test asserts the offered resume action for a grouped row nor the plan's empty-worktree negative, so the resume offer is guarded by nothing.\nSCORE fit: 19\nJUSTIFICATION fit: group_terminal_lane_events, _terminal_lane_signal, LANE_EVENT_WINDOW_SECONDS and the lane-event classification extend the existing RECOVERY_CLASSES and RECOVERY_VERBS tables in place and follow the module's classify-then-group idiom with no plan label or version suffix; docked for the precedence-dependent ternary at reckon/crew/query.py:235.\nFINDING reckon/crew/recovery.py:7126 follow-on: group_terminal_lane_events merges every same-backend terminal that ends inside the 30 s window regardless of cause and labels the cluster a lane event with cause \"undetermined\" when no member carries a lane_cause, so two runs that failed independently on one backend within the window read as one event; requiring a shared lane_cause, or surfacing an undetermined cluster distinctly, would keep a real catalog drop grouped while not fusing unrelated failures.\nFINDING reckon/crew/recovery.py:167 follow-on: the lane-event-to-resume mapping is never exercised -- no test asserts recovery == resume for a grouped row, nor supplies the plan's measure-4 negative of a member that genuinely died with an empty worktree -- so resume is offered for every member including one whose session no longer exists.\n",
+  "review_run_id": "r-20261003T100654972783-review-of-simultaneous-ends-are-one-lane-event",
+  "reviewed_base_sha": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "reviewed_head_sha": "613aaef7fd38dc98f25b496ae0271ff9843ee5b8",
+  "reviewed_run_id": "r-20261003T093007340648-simultaneous-ends-are-one-lane-event",
+  "reviewer": {
+    "backend": "local",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T10:13:50.775567+00:00",
+  "total": 90
+}

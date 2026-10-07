@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest did not arm baseline_suite/after_suite (implement-role node); the delta is derived from the reviewed run's own gate logs it names under test_logs - population-base-dispatch-returns.log (7 passed, 0 FAILED) vs population-head-dispatch-returns.log (7 passed, 0 FAILED), and the 214-passed/1-skipped base and head slice arms - giving 0 added failures.",
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T17:59:56.191Z",
+  "dispatched_at": "2026-10-04T17:50:53Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "881",
+      "severity": "follow-on",
+      "text": "the declared negative control does not reach the derived bound - joining the supervisor makes dispatch hang while the case holds the scan open, so the case fails at the 60.0 s driver-wait timeout, not at the bound assertions at :906 and :911; a dispatch that returned slowly rather than never is not shown to be caught, and the bound's headroom under load heavier than the 8-spinner arm is argued rather than measured."
+    },
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-reads-its-machine.html",
+      "line": "35",
+      "severity": "follow-on",
+      "text": "the fragment reports the 20-run arm's startup loadavg as 5.9-10.2, where measured/head-returns.summary records 4.32 7.80 10.80; the quoted triple matches the mutation arm's summary (5.93 7.58 10.18), so the figure is misfiled to the wrong arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 9fe9b48fa and 3bf809e04 against 0513a121e; +90/-14 in the test file, replacing the fixed DISPATCH_EXIT_BOUND with the survival window plus a measured reference, beside a new evidence fragment; no product file changed.",
+    "done_when": "section 14's done-when asks the bound be derived from a same-host measured reference and still fail on a mutation that joins the supervisor; the 20-run contended arm and the negative control are recorded on disk.",
+    "goal": "the node derives test_dispatch_returns_once_its_supervisor_runs's dispatch-exit bound from a reference measured on the dispatch's own host at the moment of the dispatch; tests/test_dispatch_returns_without_worker.py:800 _measured_reference_seconds and :834 _dispatch_exit_bound carry it.",
+    "manifest": "read; status complete, base 0513a121e to head 3bf809e04, changed_paths match the grant, negative_control_log present and red, baseline_suite and after_suite not armed for this implement-role node.",
+    "write_paths": "the node was fenced to tests/test_dispatch_returns_without_worker.py, the evidence fragment and a figures directory; the two commits change the first two and nothing else."
+  },
+  "justifications": {
+    "durability": "the case reddens under the declared mutation that joins the supervisor, reproduced here as 1 failed in 64.03 s EXIT=1; docked because that failure lands at the outer SPAWN_BOUND=60.0 driver wait at tests/test_dispatch_returns_without_worker.py:881 rather than at either derived-bound assertion at :906 and :911.",
+    "evidence": "the 20-run arm's per-run reports carry reference_seconds, dispatch_exit_bound and dispatch_seconds (measured/head-returns/reports/run-1.json: 0.976/9.809/5.148) and both base and head arms report 0 FAILED; docked because the fragment at line 35 and the manifest quote loadavg 5.9-10.2 for the 20-run arm where measured/head-returns.summary records 4.32 7.80 10.80.",
+    "fit": "the helpers extend the existing case in tests/test_dispatch_returns_without_worker.py and read the window from reckon/crew/dispatch.py:9418 rather than restating it, reusing the driver's reported startup_seconds at :217 as a second sample; no existing bound-measuring mechanism is duplicated.",
+    "goal_fidelity": "tests/test_dispatch_returns_without_worker.py:834 _dispatch_exit_bound returns SUPERVISOR_SURVIVAL_SECONDS + 8 x the reference measured at :800 beside the dispatch, replacing the fixed constant that failed at load near 50.",
+    "scope_discipline": "the two commits touch exactly tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-reads-its-machine.html, the node's declared write paths, and edit no plan state."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node derives test_dispatch_returns_once_its_supervisor_runs's dispatch-exit bound from a reference measured on the dispatch's own host at the moment of the dispatch; tests/test_dispatch_returns_without_worker.py:800 _measured_reference_seconds and :834 _dispatch_exit_bound carry it.\nVERDICT done_when: section 14's done-when asks the bound be derived from a same-host measured reference and still fail on a mutation that joins the supervisor; the 20-run contended arm (measured/head-returns.summary: 20 pass, 0 fail) and the negative control (negative-control-join-supervisor.log: 1 failed, EXIT=1) are recorded on disk.\nVERDICT write_paths: the node was fenced to tests/test_dispatch_returns_without_worker.py, docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-reads-its-machine.html and a figures directory; commits 9fe9b48fa and 3bf809e04 change the first two and nothing else.\nVERDICT manifest: read; status complete, base 0513a121e to head 3bf809e04, changed_paths match the grant, negative_control_log present and red, baseline_suite and after_suite not armed for this implement-role node.\nVERDICT diff: read 9fe9b48fa and 3bf809e04 against 0513a121e; +90/-14 in the test file, replacing the fixed DISPATCH_EXIT_BOUND with the survival window plus a measured reference, beside a new evidence fragment; no product file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_dispatch_returns_without_worker.py:834 _dispatch_exit_bound returns SUPERVISOR_SURVIVAL_SECONDS + 8 x the reference measured at :800 beside the dispatch, replacing the fixed constant that failed at load near 50.\nSCORE evidence: 18\nJUSTIFICATION evidence: the 20-run arm's per-run reports carry reference_seconds, dispatch_exit_bound and dispatch_seconds (measured/head-returns/reports/run-1.json: 0.976/9.809/5.148) and both base and head arms report 0 FAILED; docked because the fragment at line 35 and the manifest quote loadavg 5.9-10.2 for the 20-run arm where measured/head-returns.summary records 4.32 7.80 10.80, and the head arm header names the base tree as the module under test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch exactly tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-reads-its-machine.html, the node's declared write paths, and edit no plan state.\nSCORE durability: 17\nJUSTIFICATION durability: the case reddens under the declared mutation that joins the supervisor, reproduced here as 1 failed in 64.03 s EXIT=1; docked because that failure lands at the outer SPAWN_BOUND=60.0 driver wait at tests/test_dispatch_returns_without_worker.py:881 rather than at either derived-bound assertion at :906 and :911, so the bound itself is not what the negative control exercises.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers extend the existing case in tests/test_dispatch_returns_without_worker.py and read the window from reckon/crew/dispatch.py:9418 rather than restating it, reusing the driver's reported startup_seconds at :217 as a second sample; no existing bound-measuring mechanism is duplicated.\nFINDING tests/test_dispatch_returns_without_worker.py:881 follow-on: the declared negative control does not reach the derived bound - joining the supervisor makes dispatch hang while the case holds the scan open, so the case fails at the 60.0 s driver-wait timeout, not at the bound assertions at :906 and :911; a dispatch that returned slowly rather than never is not shown to be caught, and the bound's headroom under load heavier than the 8-spinner arm is argued rather than measured.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-reads-its-machine.html:35 follow-on: the fragment reports the 20-run arm's startup loadavg as 5.9-10.2, where measured/head-returns.summary records 4.32 7.80 10.80; the quoted triple matches the mutation arm's summary (5.93 7.58 10.18), so the figure is misfiled to the wrong arm.\n",
+  "review_run_id": "r-20261004T175036779580-review-of-the-dispatch-exit-bound-reads-its-machine",
+  "reviewed_base_sha": "0513a121e210a6a603eece16e7c0f803b758dfa7",
+  "reviewed_head_sha": "3bf809e04cfdb2c254565fd02e57e5446bba1717",
+  "reviewed_run_id": "r-20261004T163020727842-the-dispatch-exit-bound-reads-its-machine",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T18:02:00+00:00",
+  "total": 93
+}

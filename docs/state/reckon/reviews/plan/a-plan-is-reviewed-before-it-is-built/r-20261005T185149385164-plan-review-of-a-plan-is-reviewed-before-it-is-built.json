@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T18:56:59.809Z",
+  "dispatched_at": "2026-10-05T18:52:26Z",
+  "findings": [
+    {
+      "anchor": "reckon/followup_pointers.py:150",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a718's own thesis (one owner of the rule) is falsified by a site it omits, so \u00a718 must name `followup_pointers.py` as a fourth consumer and route it through the predicate, exactly as it does for `implementable_sections`, `plan_executable_remainder` and `_implementable_section_ids`.",
+      "text": "\u00a718 states the declaration map is read for \"which sections are still work\" by three readers and consolidates their inline `== \"implementable\"` comparison into one predicate, but `followup_pointers.py:150` (`followup_verdict`, returning `FollowupVerdict(True, \"implementable-section\")`) is a fourth site that applies the identical rule inline; the plan's predicate would leave a duplicate spelling alive, and the \u00a718 done-when does not name it.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "52d1476ea89347cb8e3dea7e7ed3041095e495745e2ca96c37d3eba139827d21",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 113,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T185149385164-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "b8722e0c94a5961ea2af4b9a834bb6af91d40303",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 s17 puts one deep module in `reckon/_plan_html.py`: a single raw-text parser hides heading span location, level, wrapper-id identity resolution and landed-card recognition behind `plan_headings` plus the `structured_section_spans` projection, replacing the store, the prose parser and the MCP view's separate walks.",
+    "duplicate_owner": "a finding \u2014 s18 centralises the \"a section is still work\" rule into one predicate on `reckon/_schema.py`, but its enumeration of the sites that spell the rule today misses `reckon/followup_pointers.py:150`.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, refusal_families 23; the sections that add public surface (s17 adds `plan_headings` and the machinery-element predicate, s18 adds the classification predicate) each name in their own text what they add and state why nothing can be retired, and none adds a CLI option, MCP view or refusal family (s16 states the refusal reuses the existing `plan-review-missing` family).",
+    "reuse_search": "pass \u2014 the design sections s16\u2013s18 name the existing machinery they extend or replace and cite it by file and symbol (`_StructuredSectionSpanParser` and `structured_section_spans` in `reckon/_plan_html.py`, `landed_section_ids` in `reckon/_store.py`, `section_record_id`/`section_id_candidates` in `reckon/crew/routing.py`, `plan_fingerprint`/`_fingerprint_forms`/`_AuthoredProseParser` in `reckon/crew/plan_review.py`, the three \"still work\" readers), each of which exists as described.",
+    "thin_wrapper": "pass \u2014 no section adds an unjustified layer: `section_record_id` gains one optional parameter in place, `structured_section_spans` is re-expressed as a projection rather than duplicated, and every new reader states why the existing mechanism cannot be extended instead (s17 cannot shrink the family because `structured_section_spans` and `landed_section_ids` keep external callers; s16 makes its coverage predicate module-private rather than a wrapper over `read_plan_review`)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.805423+00:00"
+}

@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "zero added failures, derived from the reviewed run's own gate logs: base-arm.log 0 failing ids, head-arm.log 0, set difference empty; both logs reach their pytest summary line and a bare EXIT=0.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/serve.py:_handle_plan_write"
+  ],
+  "completed_at": "2026-10-02T10:58:01.706Z",
+  "dispatched_at": "2026-10-02T10:48:00Z",
+  "findings": [
+    {
+      "file": "tests/test_landing_patch_refuses_a_hiding_followup.py",
+      "line": "124",
+      "severity": "follow-on",
+      "text": "follow-on: assert \"hides\" in str(excinfo.value) matches the fixed remedy text (\"...hides work...\") that every refusal carries, so it holds for any refusal and adds no signal beyond the reason word and the id assertions beside it; drop it or assert on text unique to this case's refusal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 853fa75c4; 989a5287d adds tests/test_landing_patch_refuses_a_hiding_followup.py and ba2028bb7 appends the trailing newline, 1 file +185 lines, nothing else.",
+    "done_when": "the done_when names a test that rejects a hiding followup with the reason word and accepts a pointer followup, plus a negative control that removes the call from validate_landing_patch; tests/test_landing_patch_refuses_a_hiding_followup.py holds those cases and the manifest records both arms and the mutant.",
+    "goal": "the node goal is that a test proves the HTTP landing patch refuses a followup that hides work through validate_landing_patch and accepts one that points at an implementable section; the new file drives that validator on merged plan state in a temporary docs directory.",
+    "manifest": "read; status complete, baseline_suite and after_suite each completed true with 0 failures, their logs (base-arm.log, head-arm.log) run to \"30 passed\" and a bare EXIT=0, and negative_control_log names negative-control-mutated.log (2 failed, EXIT=1).",
+    "write_paths": "declared tests/test_landing_patch_refuses_a_hiding_followup.py, an evidence fragment and a figures directory; the base..head diff touches only the test file, and the fragment and figure are intentionally unemitted for a small node."
+  },
+  "justifications": {
+    "durability": "the two refusal cases redden when _refuse_appended_hiding_followups is removed from validate_landing_patch (reproduced independently), and by reading test_resending_a_stored_hiding_followup_is_not_an_append (line 148) fails if _followups_before_the_patch misreads the stored ids; that second guard rests on reading, not a recorded mutation.",
+    "evidence": "the gate (new file + tests/test_a_followup_that_hides_work_is_refused.py + tests/test_continuation.py) is recorded at 30 passed EXIT=0 at base and head in complete logs, and I independently re-ran the new file at head (4 passed) and reproduced the mutant (2 failed); the base arm repeats the same product code so the arm pair alone separates nothing and the load-bearing proof is the recorded mutant.",
+    "fit": "the file mirrors its sibling tests/test_a_followup_that_hides_work_is_refused.py (same _write_plan/temp-docs idiom and importlib.reload), and carries no plan, ticket or version identifier in names or comments.",
+    "goal_fidelity": "tests/test_landing_patch_refuses_a_hiding_followup.py:114-115 runs serve_mod._patch_into then _store_module.validate_landing_patch, the same order the HTTP handler at reckon/serve.py:3408-3415 uses before persisting, so the test drives the real write path.",
+    "scope_discipline": "git diff --stat 853fa75c4 ba2028bb7 is one file, tests/test_landing_patch_refuses_a_hiding_followup.py (+185), inside the declared write paths; the declared fragment and figure are correctly unemitted for a small node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a test proves the HTTP landing patch refuses a followup that hides work through validate_landing_patch and accepts one that points at an implementable section; the new file drives that validator on merged plan state in a temporary docs directory.\nVERDICT done_when: the done_when names a test that rejects a hiding followup with the reason word and accepts a pointer followup, plus a negative control that removes the call from validate_landing_patch; tests/test_landing_patch_refuses_a_hiding_followup.py holds those cases and the manifest records both arms and the mutant.\nVERDICT write_paths: declared tests/test_landing_patch_refuses_a_hiding_followup.py, an evidence fragment and a figures directory; the base..head diff touches only the test file, and the fragment and figure are intentionally unemitted for a small node.\nVERDICT manifest: read; status complete, baseline_suite and after_suite each completed true with 0 failures, their logs (base-arm.log, head-arm.log) run to \"30 passed\" and a bare EXIT=0, and negative_control_log names negative-control-mutated.log (2 failed, EXIT=1).\nVERDICT diff: read commit by commit against base 853fa75c4; 989a5287d adds tests/test_landing_patch_refuses_a_hiding_followup.py and ba2028bb7 appends the trailing newline, 1 file +185 lines, nothing else.\nCALL_SITES: reckon/serve.py:_handle_plan_write\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_landing_patch_refuses_a_hiding_followup.py:114-115 runs serve_mod._patch_into then _store_module.validate_landing_patch, the same order the HTTP handler at reckon/serve.py:3408-3415 uses before persisting, so the test drives the real write path.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate (new file + tests/test_a_followup_that_hides_work_is_refused.py + tests/test_continuation.py) is recorded at 30 passed EXIT=0 at base and head in complete logs, and I independently re-ran the new file at head (4 passed) and reproduced the mutant (2 failed); the base arm repeats the same product code so the arm pair alone separates nothing and the load-bearing proof is the recorded mutant.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 853fa75c4 ba2028bb7 is one file, tests/test_landing_patch_refuses_a_hiding_followup.py (+185), inside the declared write paths; the declared fragment and figure are correctly unemitted for a small node.\nSCORE durability: 19\nJUSTIFICATION durability: the two refusal cases redden when _refuse_appended_hiding_followups is removed from validate_landing_patch (reproduced independently), and by reading test_resending_a_stored_hiding_followup_is_not_an_append (line 148) fails if _followups_before_the_patch misreads the stored ids; that second guard rests on reading, not a recorded mutation.\nSCORE fit: 20\nJUSTIFICATION fit: the file mirrors its sibling tests/test_a_followup_that_hides_work_is_refused.py (same _write_plan/temp-docs idiom and importlib.reload), and carries no plan, ticket or version identifier in names or comments.\nFINDING tests/test_landing_patch_refuses_a_hiding_followup.py:124 follow-on: assert \"hides\" in str(excinfo.value) matches the fixed remedy text (\"...hides work...\") that every refusal carries, so it holds for any refusal and adds no signal beyond the reason word and the id assertions beside it; drop it or assert on text unique to this case's refusal.\n",
+  "review_run_id": "r-20261002T104735239064-review-of-landing-patch-refuses-a-hiding-followup",
+  "reviewed_base_sha": "853fa75c4501ef40e57c8770d88c9ea413ee52e6",
+  "reviewed_head_sha": "ba2028bb77801b2b3f86f0868d44d8e7268b8da8",
+  "reviewed_run_id": "r-20261002T100633181228-landing-patch-refuses-a-hiding-followup",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T10:55:45.402094+00:00",
+  "total": 98
+}

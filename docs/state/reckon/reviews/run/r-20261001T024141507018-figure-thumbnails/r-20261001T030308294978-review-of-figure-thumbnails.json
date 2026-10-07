@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:2947",
+    "docs/ui/shell-plans.jsx:429"
+  ],
+  "completed_at": "2026-10-01T03:11:32.601Z",
+  "dispatched_at": "2026-10-01T03:03:38Z",
+  "findings": [
+    {
+      "file": "tests/test_figure_thumbnails.py",
+      "line": "295",
+      "severity": "follow-on",
+      "text": "follow-on: the shell case asserts the served module carries \"src: artifactImageSrc(item)\" and probes the helper, but no case asserts the row keeps loading=\"lazy\" (or decoding=\"async\"), so the \"drawn lazily\" half of \u00a76 is unguarded \u2014 a regression that drops the attribute would leave every test green."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 2976d71a; 56952fa9b adds the thumbnail route, its cache and the artifactImageSrc helper plus Pillow to pyproject/uv.lock, and 02f67bd45 adds the 97-line evidence fragment; no source file outside the six declared paths is touched.",
+    "done_when": "the done_when names tests/test_figure_thumbnails.py serving a 2000x1500 PNG and asserting a 200-px long edge and a byte size under a tenth, a 304 on the ETag counted through an installed counter, an SVG returned unchanged, and a negative control whose size assertion fails; the test file exists and each of those cases is present (tests/test_figure_thumbnails.py:146, :161, :171, :234), the head gate is recorded as 38 passed/EXIT=0 and I reproduced that in the reviewed worktree, and negative-control.log records the declared failure \"thumbnail is 9013744 bytes against a 9013744-byte source\" with 5 failed/EXIT=1.",
+    "goal": "\u00a76 asks for a /_thumb/<project>/<path> route returning a PNG bounded at 200 px on its long edge, rendered once into a cache under the configuration home keyed by the source stat identity, revalidated by ETag, SVG passed through, the figure list drawing rows from that URL lazily, and Pillow declared in pyproject.toml; the diff implements every clause \u2014 reckon/serve.py:2288 defines _serve_thumbnail, THUMB_MAX_EDGE=200 at reckon/serve.py:333, the cache path hashes the stat identity at reckon/serve.py:2139, the ETag is built from that identity at reckon/serve.py:2319, the SVG suffix is passed through at reckon/serve.py:2314, docs/ui/shell-plans.jsx:228 adds artifactImageSrc and :429 draws the row from it, and pyproject.toml:29 declares pillow.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T024141507018-figure-thumbnails/manifest.md; status complete, commits 56952fa9b (code) and 02f67bd45 (record), head-gate.log and base-gate.log named with their revisions, negative-control.log named and closing EXIT=1, baseline_suite and after_suite both recorded with exit_status 0 and completed true.",
+    "write_paths": "the reviewed manifest declares reckon/serve.py, docs/ui/shell-plans.jsx, pyproject.toml, uv.lock, tests/test_figure_thumbnails.py and the evidence fragment; the diff 2976d71a..02f67bd45 touches exactly those six files and nothing else, so the diff is a subset of the declared scope."
+  },
+  "justifications": {
+    "durability": "the guards are real and independent \u2014 reinstating the regression (serving the source) reddens the byte-ratio case, a removed downscale reddens tests/test_figure_thumbnails.py:167, and a route that re-renders on every request reddens the render counter at tests/test_figure_thumbnails.py:177 \u2014 but the \"lazily\" clause is not guarded, since no case asserts the row keeps loading=\"lazy\".",
+    "evidence": "the gate asserts exactly what the done_when names (tests/test_figure_thumbnails.py:152 the byte ratio, :156 the 200-px long edge, :185 the 304 with the render counter at 1, :240 the unchanged SVG), the head run is recorded as 38 passed/EXIT=0 which I reproduced in the reviewed worktree, and negative-control.log reddens the declared size assertion with EXIT=1.",
+    "fit": "the new names (THUMB_MAX_EDGE, _thumbnail_cache_path, _render_thumbnail, _thumbnail_bytes, _serve_thumbnail, artifactImageSrc) are mechanism-named with no plan, phase or ticket label, the ETag check at reckon/serve.py:2322 mirrors the same idiom at reckon/serve.py:2270 and :2376, and the comments state the mechanism rather than a changelog.",
+    "goal_fidelity": "every clause of \u00a76 is present in the diff \u2014 reckon/serve.py:2288 serves the 200-px thumbnail, reckon/serve.py:2139 keys the disk cache on the stat identity, reckon/serve.py:2319 revalidates by ETag, reckon/serve.py:2314 passes SVG through, docs/ui/shell-plans.jsx:429 draws the row from artifactImageSrc with loading=\"lazy\" retained, and pyproject.toml:29 declares pillow directly.",
+    "scope_discipline": "the diff 2976d71a..02f67bd45 is exactly the six declared paths (reckon/serve.py, docs/ui/shell-plans.jsx, pyproject.toml, uv.lock, tests/test_figure_thumbnails.py, the evidence fragment) with no file outside them, and the reviewed worktree is clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a76 asks for a /_thumb/<project>/<path> route returning a PNG bounded at 200 px on its long edge, rendered once into a cache under the configuration home keyed by the source stat identity, revalidated by ETag, SVG passed through, the figure list drawing rows from that URL lazily, and Pillow declared in pyproject.toml; the diff implements every clause \u2014 reckon/serve.py:2288 defines _serve_thumbnail, THUMB_MAX_EDGE=200 at reckon/serve.py:333, the cache path hashes the stat identity at reckon/serve.py:2139, the ETag is built from that identity at reckon/serve.py:2319, the SVG suffix is passed through at reckon/serve.py:2314, docs/ui/shell-plans.jsx:228 adds artifactImageSrc and :429 draws the row from it, and pyproject.toml:29 declares pillow.\nVERDICT done_when: the done_when names tests/test_figure_thumbnails.py serving a 2000x1500 PNG and asserting a 200-px long edge and a byte size under a tenth, a 304 on the ETag counted through an installed counter, an SVG returned unchanged, and a negative control whose size assertion fails; the test file exists and each of those cases is present (tests/test_figure_thumbnails.py:146, :161, :171, :234), the head gate is recorded as 38 passed/EXIT=0 and I reproduced that in the reviewed worktree, and negative-control.log records the declared failure \"thumbnail is 9013744 bytes against a 9013744-byte source\" with 5 failed/EXIT=1.\nVERDICT write_paths: the reviewed manifest declares reckon/serve.py, docs/ui/shell-plans.jsx, pyproject.toml, uv.lock, tests/test_figure_thumbnails.py and the evidence fragment; the diff 2976d71a..02f67bd45 touches exactly those six files and nothing else, so the diff is a subset of the declared scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T024141507018-figure-thumbnails/manifest.md; status complete, commits 56952fa9b (code) and 02f67bd45 (record), head-gate.log and base-gate.log named with their revisions, negative-control.log named and closing EXIT=1, baseline_suite and after_suite both recorded with exit_status 0 and completed true.\nVERDICT diff: read commit by commit against base 2976d71a; 56952fa9b adds the thumbnail route, its cache and the artifactImageSrc helper plus Pillow to pyproject/uv.lock, and 02f67bd45 adds the 97-line evidence fragment; no source file outside the six declared paths is touched.\nCALL_SITES: reckon/serve.py:2947, docs/ui/shell-plans.jsx:429\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every clause of \u00a76 is present in the diff \u2014 reckon/serve.py:2288 serves the 200-px thumbnail, reckon/serve.py:2139 keys the disk cache on the stat identity, reckon/serve.py:2319 revalidates by ETag, reckon/serve.py:2314 passes SVG through, docs/ui/shell-plans.jsx:429 draws the row from artifactImageSrc with loading=\"lazy\" retained, and pyproject.toml:29 declares pillow directly.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate asserts exactly what the done_when names (tests/test_figure_thumbnails.py:152 the byte ratio, :156 the 200-px long edge, :185 the 304 with the render counter at 1, :240 the unchanged SVG), the head run is recorded as 38 passed/EXIT=0 which I reproduced in the reviewed worktree, and negative-control.log reddens the declared size assertion with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 2976d71a..02f67bd45 is exactly the six declared paths (reckon/serve.py, docs/ui/shell-plans.jsx, pyproject.toml, uv.lock, tests/test_figure_thumbnails.py, the evidence fragment) with no file outside them, and the reviewed worktree is clean.\nSCORE durability: 19\nJUSTIFICATION durability: the guards are real and independent \u2014 reinstating the regression (serving the source) reddens the byte-ratio case, a removed downscale reddens tests/test_figure_thumbnails.py:167, and a route that re-renders on every request reddens the render counter at tests/test_figure_thumbnails.py:177 \u2014 but the \"lazily\" clause is not guarded, since no case asserts the row keeps loading=\"lazy\".\nSCORE fit: 20\nJUSTIFICATION fit: the new names (THUMB_MAX_EDGE, _thumbnail_cache_path, _render_thumbnail, _thumbnail_bytes, _serve_thumbnail, artifactImageSrc) are mechanism-named with no plan, phase or ticket label, the ETag check at reckon/serve.py:2322 mirrors the same idiom at reckon/serve.py:2270 and :2376, and the comments state the mechanism rather than a changelog.\nFINDING tests/test_figure_thumbnails.py:295 follow-on: the shell case asserts the served module carries \"src: artifactImageSrc(item)\" and probes the helper, but no case asserts the row keeps loading=\"lazy\" (or decoding=\"async\"), so the \"drawn lazily\" half of \u00a76 is unguarded \u2014 a regression that drops the attribute would leave every test green.\n",
+  "review_run_id": "r-20261001T030308294978-review-of-figure-thumbnails",
+  "reviewed_base_sha": "2976d71aebe251ac06ab46ffcd74c667ee4e3d24",
+  "reviewed_head_sha": "02f67bd45061cb6cc18b11f36414a9ca672e444b",
+  "reviewed_run_id": "r-20261001T024141507018-figure-thumbnails",
+  "reviewer_run_id": "r-20261001T030308294978-review-of-figure-thumbnails",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.076498+00:00",
+  "total": 99
+}

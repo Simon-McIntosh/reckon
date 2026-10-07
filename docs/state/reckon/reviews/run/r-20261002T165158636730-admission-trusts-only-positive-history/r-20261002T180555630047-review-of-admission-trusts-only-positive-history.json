@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "89690489f0b9c717bc6f532fdce7e5a275e8faed",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_dispatch_lane_allowance",
+    "reckon/crew/picker/snapshot.py:_lane"
+  ],
+  "completed_at": "2026-10-02T18:30:07.607Z",
+  "dispatched_at": "2026-10-02T18:06:24Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_counts_worker_slots.py",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the module comment still states the superseded rule - 'the allowance falls back to headroom only for a block that states no window at all' - but after 9a25db160 a zero or negative observed_seconds also falls back, so the comment now contradicts the case added 250 lines below it."
+    },
+    {
+      "file": "tests/test_dispatch_counts_worker_slots.py",
+      "line": "247",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring of test_a_stated_window_is_trusted_as_the_router_publishes_it still says 'Only a block stating no window at all is distrusted', which the new predicate narrows; it should name the positive-window rule the code now implements."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "62",
+      "severity": "follow-on",
+      "text": "follow-on: _lane takes the allowance from _lane_worker_allowance (so it inherits the fix) but the picker's local-rule comparison at picker/__init__.py:88 and the published figure in run_time_profile.py local_lane_load read the admission worker_slots without the positive-window guard; if a router ever publishes slot figures beside a zero observed_seconds those consumers still act on them."
+    }
+  ],
+  "head_log_revision": "9a25db160",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit - 9a25db160 changes dispatch.py (history_is_trusted requires observed > 0, comments and docstring updated) and tests/test_dispatch_counts_worker_slots.py (new nonpositive-window case plus the reflow of the 89-character monkeypatch line); bb934a5a3 adds the evidence fragment; both inside scope.",
+    "done_when": "the done-when is met - a zero or below observed_seconds is read as no history (dispatch.py history_is_trusted gains `and observed > 0`), the new case fails at base and passes at head (independently reproduced here: base EXIT=1 with allowance 4 vs 2, head EXIT=0), and ruff format --check tests/test_dispatch_counts_worker_slots.py reports `1 file already formatted`, EXIT=0.",
+    "goal": "the node's goal is a router's zero-or-below observed_seconds read as no history, so dispatch falls through to the next slot figure exactly as it does for a missing window; reckon/crew/dispatch.py _lane_worker_allowance counts a published slot figure only when history_is_trusted, which now requires observed > 0.",
+    "manifest": "read; its baseline_suite (89690489f, 1 failed) and after_suite (9a25db160, 52 passed) reconcile with gate-base.log and gate-head.log, and the declared negative control gate-negative-control.log is red (1 failed / 51 passed, EXIT=1); the derived added-failure count is 0.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_dispatch_counts_worker_slots.py and the evidence fragment; the diff over 89690489f..bb934a5a3 changes exactly those three files and no file outside them."
+  },
+  "justifications": {
+    "durability": "the negative control is a real guard - dropping `and observed > 0` reddens the new assertion (gate-negative-control.log, 1 failed / 51 passed, EXIT=1) - and the boundary is exercised around zero (0, 0.0, -1, and an existing test at a 320 s window of 57 slots); docked two because the same admission worker_slots figure still reaches reckon/crew/picker/snapshot.py:_lane and reckon/crew/run_time_profile.py local_lane_load without the positive-window guard this repair adds, so a router publishing slot figures beside a zero window would still steer local routing and be published by the profile.",
+    "evidence": "gate-base.log (89690489f with the head test overlaid) reddens only test_a_nonpositive_window_is_read_as_no_history, gate-head.log (9a25db160) is 52 passed, and gate-negative-control.log reddens the same id with the `and observed > 0` clause removed; I re-derived the base failure and the head pass from git archive extractions and confirmed ruff format --check on the test file is clean, so the recorded result reconciles with every quote in the fragment.",
+    "fit": "the fix reuses the existing history_is_trusted predicate and mechanism-named helpers and matches the module's comment idiom; docked three because the change left two stale comments in the test file it edited - the module note at tests/test_dispatch_counts_worker_slots.py:47-49 still says the allowance falls back 'only for a block that states no window at all', and the docstring at tests/test_dispatch_counts_worker_slots.py:247 still says 'Only a block stating no window at all is distrusted', both of which the new predicate narrows.",
+    "goal_fidelity": "reckon/crew/dispatch.py _lane_worker_allowance makes history_is_trusted require observed > 0, so a zero or negative window skips every published slot figure and the allowance falls to the request headroom exactly as when the key is absent; the test asserts decision == _allowance(no_window) for observed in (0, 0.0, -1), which is the done-when's `exactly as it does for a missing value`; docked one because the plan's phrasing 'falls through to the next slot figure' is looser than the implemented and correct behaviour of falling through to headroom.",
+    "scope_discipline": "the diff over 89690489f..bb934a5a3 touches only reckon/crew/dispatch.py, tests/test_dispatch_counts_worker_slots.py and the evidence fragment, all inside the manifest's declared write paths, and the 89-character monkeypatch reflow is required by the done-when's second clause and was the finding the prior review raised."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a router's zero-or-below observed_seconds read as no history, so dispatch falls through to the next slot figure exactly as it does for a missing window; reckon/crew/dispatch.py _lane_worker_allowance counts a published slot figure only when history_is_trusted, which now requires observed > 0.\nVERDICT done_when: the done-when is met - a zero or below observed_seconds is read as no history (dispatch.py history_is_trusted gains `and observed > 0`), the new case fails at base and passes at head (independently reproduced here: base EXIT=1 with allowance 4 vs 2, head EXIT=0), and ruff format --check tests/test_dispatch_counts_worker_slots.py reports `1 file already formatted`, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_dispatch_counts_worker_slots.py and the evidence fragment; the diff over 89690489f..bb934a5a3 changes exactly those three files and no file outside them.\nVERDICT manifest: read; its baseline_suite (89690489f, 1 failed) and after_suite (9a25db160, 52 passed) reconcile with gate-base.log and gate-head.log, and the declared negative control gate-negative-control.log is red (1 failed / 51 passed, EXIT=1); the derived added-failure count is 0.\nVERDICT diff: read commit by commit - 9a25db160 changes dispatch.py (history_is_trusted requires observed > 0, comments and docstring updated) and tests/test_dispatch_counts_worker_slots.py (new nonpositive-window case plus the reflow of the 89-character monkeypatch line); bb934a5a3 adds the evidence fragment; both inside scope.\nCALL_SITES: reckon/crew/dispatch.py:_dispatch_lane_allowance, reckon/crew/picker/snapshot.py:_lane\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py _lane_worker_allowance makes history_is_trusted require observed > 0, so a zero or negative window skips every published slot figure and the allowance falls to the request headroom exactly as when the key is absent; the test asserts decision == _allowance(no_window) for observed in (0, 0.0, -1), which is the done-when's `exactly as it does for a missing value`; docked one because the plan's phrasing 'falls through to the next slot figure' is looser than the implemented and correct behaviour of falling through to headroom.\nSCORE evidence: 20\nJUSTIFICATION evidence: gate-base.log (89690489f with the head test overlaid) reddens only test_a_nonpositive_window_is_read_as_no_history, gate-head.log (9a25db160) is 52 passed, and gate-negative-control.log reddens the same id with the `and observed > 0` clause removed; I re-derived the base failure and the head pass from git archive extractions and confirmed ruff format --check on the test file is clean, so the recorded result reconciles with every quote in the fragment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff over 89690489f..bb934a5a3 touches only reckon/crew/dispatch.py, tests/test_dispatch_counts_worker_slots.py and the evidence fragment, all inside the manifest's declared write paths, and the 89-character monkeypatch reflow is required by the done-when's second clause and was the finding the prior review raised.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control is a real guard - dropping `and observed > 0` reddens the new assertion (gate-negative-control.log, 1 failed / 51 passed, EXIT=1) - and the boundary is exercised around zero (0, 0.0, -1, and an existing test at a 320 s window of 57 slots); docked two because the same admission worker_slots figure still reaches reckon/crew/picker/snapshot.py:_lane and reckon/crew/run_time_profile.py local_lane_load without the positive-window guard this repair adds, so a router publishing slot figures beside a zero window would still steer local routing and be published by the profile.\nSCORE fit: 17\nJUSTIFICATION fit: the fix reuses the existing history_is_trusted predicate and mechanism-named helpers and matches the module's comment idiom; docked three because the change left two stale comments in the test file it edited - the module note at tests/test_dispatch_counts_worker_slots.py:47-49 still says the allowance falls back 'only for a block that states no window at all', and the docstring at tests/test_dispatch_counts_worker_slots.py:247 still says 'Only a block stating no window at all is distrusted', both of which the new predicate narrows.\nFINDING tests/test_dispatch_counts_worker_slots.py:47 follow-on: the module comment still states the superseded rule - 'the allowance falls back to headroom only for a block that states no window at all' - but after 9a25db160 a zero or negative observed_seconds also falls back, so the comment now contradicts the case added 250 lines below it.\nFINDING tests/test_dispatch_counts_worker_slots.py:247 follow-on: the docstring of test_a_stated_window_is_trusted_as_the_router_publishes_it still says 'Only a block stating no window at all is distrusted', which the new predicate narrows; it should name the positive-window rule the code now implements.\nFINDING reckon/crew/picker/snapshot.py:62 follow-on: _lane takes the allowance from _lane_worker_allowance (so it inherits the fix) but the picker's local-rule comparison at picker/__init__.py:88 and the published figure in run_time_profile.py local_lane_load read the admission worker_slots without the positive-window guard; if a router ever publishes slot figures beside a zero observed_seconds those consumers still act on them.\n",
+  "review_run_id": "r-20261002T180555630047-review-of-admission-trusts-only-positive-history",
+  "reviewed_base_sha": "89690489f0b9c717bc6f532fdce7e5a275e8faed",
+  "reviewed_head_sha": "bb934a5a39b6317b8b29744457038c93f94c2bf6",
+  "reviewed_run_id": "r-20261002T165158636730-admission-trusts-only-positive-history",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T18:28:36.659917+00:00",
+  "total": 94
+}

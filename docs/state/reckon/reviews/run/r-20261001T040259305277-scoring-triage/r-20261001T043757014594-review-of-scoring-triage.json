@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite field: the reviewed node is an investigate node that changed no repository file (manifest commits: none), so base and head are one revision cc70241a and no test can have been added; its own head gate (gates/focused-tests.log, revision cc70241a, 42 passed / 0 failed) confirms no failing test at the reviewed revision",
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T05:12:48.894Z",
+  "dispatched_at": "2026-10-01T04:38:16Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "278",
+      "severity": "follow-on",
+      "text": "follow-on: the MET verdicts for f-ssp-added-failures-normalise-node-ids and f-ssp-canonical-id-edges rest on the focused suite passing (42 passed), not on the negative controls their done-when names \u2014 the followup asks the verbatim-comparison control's first case to fail; a green suite shows the guards do not misfire, not that they fire, which is the distinction this node's own contract draws."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no repository diff \u2014 the deliverable is the report; its cited revisions and paths were read from the committed blob at cc70241a, and I confirmed the three cited modules are byte-identical at cc70241a and HEAD.",
+    "done_when": "the done-when asks each item's status plus the settling file:line at the named main revision and, where met, the landing commit; report.md carries both and I re-read the sampled citations from the committed blob at cc70241a \u2014 e.g. reckon/crew/review.py:553 and reckon/_plan_html.py:667.",
+    "goal": "the node's goal is a currency check of nine open followups of scoring-should-stop-a-promotion read against main; report.md states met, partly-met or unmet item-by-item with the file:line that settles each.",
+    "manifest": "read; status complete, changed_paths names the report and its three logs, tests records 42 passed EXIT=0, and follow_ons records the one item its fence excluded.",
+    "write_paths": "the node was fenced to reports/reckon/s22-coord/scoring-triage and wrote only report.md and three gate logs under it; no repository file changed."
+  },
+  "justifications": {
+    "durability": "the report's unmet items ship runnable reproductions (gates/reproductions.log) and its met items cite the test that covers them, so a verdict can be indexed by the report itself; nothing, however, reddens if a met/unmet verdict later diverges from the code, so the check is a reading rather than a guard.",
+    "evidence": "every sampled claim held against the blob at cc70241a \u2014 _LOGGED_REVISION_RE (reckon/crew/review.py:553) does not match revision=<sha>, read_state (reckon/_plan_html.py:667) selects only the comments section, and annotate_added_failures (reckon/crew/review.py:1152) still writes its cap note unconditionally \u2014 with the two unmet reproductions logged in gates/reproductions.log; but the two MET items whose done-when names a negative control are shown green rather than shown to redden.",
+    "fit": "the report's own gate logs open with the revision, tree and command header the dispatch contract requires (gates/focused-tests.log:1), and the report's one-line-per-followup close matches the fold/resolve idiom of the plan.",
+    "goal_fidelity": "report.md covers exactly the nine followups its goal names, with a per-item verdict for each item I sampled (f-ssp-004 items 1/2/4 met, item 3 unmet; f-ssp-005 met; f-ssp-006 items 2/3 met, item 1 partly met; guard and read-fallback items unmet).",
+    "scope_discipline": "every path the node wrote is under its fenced reports directory (report.md plus gates/focused-tests.log, gates/reproductions.log, gates/ruff-ledger.log) and no repository file changed."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a currency check of nine open followups of scoring-should-stop-a-promotion read against main; report.md states met, partly-met or unmet item-by-item with the file:line that settles each.\nVERDICT done_when: the done-when asks each item's status plus the settling file:line at the named main revision and, where met, the landing commit; report.md carries both and I re-read the sampled citations from the committed blob at cc70241a \u2014 e.g. reckon/crew/review.py:553 and reckon/_plan_html.py:667.\nVERDICT write_paths: the node was fenced to reports/reckon/s22-coord/scoring-triage and wrote only report.md and three gate logs under it; no repository file changed.\nVERDICT manifest: read; status complete, changed_paths names the report and its three logs, tests records 42 passed EXIT=0, and follow_ons records the one item its fence excluded.\nVERDICT manifest: read; status complete, changed_paths names the report and its three logs, tests records 42 passed EXIT=0, and follow_ons records the one item its fence excluded.\nVERDICT diff: there is no repository diff \u2014 the deliverable is the report; its cited revisions and paths were read from the committed blob at cc70241a, and I confirmed the three cited modules are byte-identical at cc70241a and HEAD.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md covers exactly the nine followups its goal names, with a per-item verdict for each item I sampled (f-ssp-004 items 1/2/4 met, item 3 unmet; f-ssp-005 met; f-ssp-006 items 2/3 met, item 1 partly met; guard and read-fallback items unmet).\nSCORE evidence: 17\nJUSTIFICATION evidence: every sampled claim held against the blob at cc70241a \u2014 _LOGGED_REVISION_RE (reckon/crew/review.py:553) does not match revision=<sha>, read_state (reckon/_plan_html.py:667) selects only the comments section, and annotate_added_failures (reckon/crew/review.py:1152) still writes its cap note unconditionally \u2014 with the two unmet reproductions logged in gates/reproductions.log; but the two MET items whose done-when names a negative control are shown green rather than shown to redden.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the node wrote is under its fenced reports directory (report.md plus gates/focused-tests.log, gates/reproductions.log, gates/ruff-ledger.log) and no repository file changed.\nSCORE durability: 15\nJUSTIFICATION durability: the report's unmet items ship runnable reproductions (gates/reproductions.log) and its met items cite the test that covers them, so a verdict can be indexed by the report itself; nothing, however, reddens if a met/unmet verdict later diverges from the code, so the check is a reading rather than a guard.\nSCORE fit: 19\nJUSTIFICATION fit: the report's own gate logs open with the revision, tree and command header the dispatch contract requires (gates/focused-tests.log:1), and the report's one-line-per-followup close matches the fold/resolve idiom of the plan.\nFINDING report.md:278 follow-on: the MET verdicts for f-ssp-added-failures-normalise-node-ids and f-ssp-canonical-id-edges rest on the focused suite passing (42 passed), not on the negative controls their done-when names \u2014 the followup asks the verbatim-comparison control's first case to fail; a green suite shows the guards do not misfire, not that they fire, which is the distinction this node's own contract draws.",
+  "review_run_id": "r-20261001T043757014594-review-of-scoring-triage",
+  "reviewed_base_sha": "cc70241a6729180e276cf3a57d7bfacac4daee34",
+  "reviewed_head_sha": "cc70241a6729180e276cf3a57d7bfacac4daee34",
+  "reviewed_run_id": "r-20261001T040259305277-scoring-triage",
+  "reviewer_run_id": "r-20261001T043757014594-review-of-scoring-triage",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.249077+00:00",
+  "total": 90
+}

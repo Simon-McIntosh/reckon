@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:2048",
+    "reckon/serve.py:2982"
+  ],
+  "completed_at": "2026-10-04T20:16:00.572Z",
+  "dispatched_at": "2026-10-04T20:09:13Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "726",
+      "severity": "follow-on",
+      "text": "follow-on: the except TypeError around ledger.load(headers_only=True) is unreachable because reckon/ledger.py:1049 declares headers_only a real keyword, so the fallback is a defensive shim no test can exercise."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "693",
+      "severity": "follow-on",
+      "text": "follow-on: _crew_plan_details re-implements the 16384-byte head slice and </head> split that _plan_html.parse_meta already owns and memoises (reckon/_plan_html.py:1571), then runs the un-memoised BeautifulSoup read_state, so the fast path can cost more than parse_meta on a repeated read of the same plan."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against f31a38d8; af7577adc short-circuits the phase, a5c209881 populates the latency fixture, 0185df065 adds roster-header and plan-head reads, and the two docs commits register the landing.",
+    "done_when": "the done-when names both halves and tests/test_a_launched_run_reads_launching_on_crew.py asserts both, the first-response phase not idle before the stream exists (line 96) and GET /crew under 1.0 s over 40 pointers (line 127), both recorded.",
+    "goal": "the node goal is a dispatched run reading launching or working from the first GET /crew response before its stream exists and /crew answering under one second over 40 live pointers; reckon/serve.py:753 short-circuits classification for a non-pre-spawn recorded phase and the fixture test at tests/test_a_launched_run_reads_launching_on_crew.py:87 pins the no-stream case.",
+    "manifest": "read; it records the head and base gate arms, the negative control, the 696-passed population and the five scaffolding build failures the base arm carried.",
+    "write_paths": "read the manifest's declared write paths; the diff's three changed paths, reckon/serve.py, the test and the evidence fragment, are all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_launched_run_reads_launching_on_crew.py:96 fails with 'idle' when the phase comes from the stream alone and the same file:127 fails at 2.041 s when full classification is reinstated, so each assertion guards its half.",
+    "evidence": "both assertions in tests/test_a_launched_run_reads_launching_on_crew.py redden on their reinstated defects, the stream-only control at negative-control.log (EXIT=1) and the base arm at review-base-timing-final.log (2.041 s), and both are recorded.",
+    "fit": "the change extends the existing _crew_rows owner and reads the same classify_pointer judgement, but reckon/serve.py:726 adds an unreachable TypeError fallback and reckon/serve.py:693 duplicates the head slice parse_meta already owns.",
+    "goal_fidelity": "reckon/serve.py:753 reads the recorded phase directly for a pointer past launch and the full classifier only for a pre-spawn or empty phase, so a no-stream run reads launching and the 40-pointer fixture answers in 0.321 s.",
+    "scope_discipline": "the diff touches only reckon/serve.py, tests/test_a_launched_run_reads_launching_on_crew.py and the evidence fragment, every one of them inside the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a dispatched run reading launching or working from the first GET /crew response before its stream exists and /crew answering under one second over 40 live pointers; reckon/serve.py:753 short-circuits classification for a non-pre-spawn recorded phase and the fixture test at tests/test_a_launched_run_reads_launching_on_crew.py:87 pins the no-stream case.\nVERDICT done_when: the done-when names both halves and tests/test_a_launched_run_reads_launching_on_crew.py asserts both, the first-response phase not idle before the stream exists (line 96) and GET /crew under 1.0 s over 40 pointers (line 127), both recorded.\nVERDICT write_paths: read the manifest's declared write paths; the diff's three changed paths, reckon/serve.py, the test and the evidence fragment, are all inside them.\nVERDICT manifest: read; it records the head and base gate arms, the negative control, the 696-passed population and the five scaffolding build failures the base arm carried.\nVERDICT diff: read commit by commit against f31a38d8; af7577adc short-circuits the phase, a5c209881 populates the latency fixture, 0185df065 adds roster-header and plan-head reads, and the two docs commits register the landing.\nCALL_SITES: reckon/serve.py:2048, reckon/serve.py:2982\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:753 reads the recorded phase directly for a pointer past launch and the full classifier only for a pre-spawn or empty phase, so a no-stream run reads launching and the 40-pointer fixture answers in 0.321 s.\nSCORE evidence: 19\nJUSTIFICATION evidence: both assertions in tests/test_a_launched_run_reads_launching_on_crew.py redden on their reinstated defects, the stream-only control at negative-control.log (EXIT=1) and the base arm at review-base-timing-final.log (2.041 s), and both are recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/serve.py, tests/test_a_launched_run_reads_launching_on_crew.py and the evidence fragment, every one of them inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_launched_run_reads_launching_on_crew.py:96 fails with 'idle' when the phase comes from the stream alone and the same file:127 fails at 2.041 s when full classification is reinstated, so each assertion guards its half.\nSCORE fit: 18\nJUSTIFICATION fit: the change extends the existing _crew_rows owner and reads the same classify_pointer judgement, but reckon/serve.py:726 adds an unreachable TypeError fallback and reckon/serve.py:693 duplicates the head slice parse_meta already owns.\nFINDING reckon/serve.py:726 follow-on: the except TypeError around ledger.load(headers_only=True) is unreachable because reckon/ledger.py:1049 declares headers_only a real keyword, so the fallback is a defensive shim no test can exercise.\nFINDING reckon/serve.py:693 follow-on: _crew_plan_details re-implements the 16384-byte head slice and </head> split that _plan_html.parse_meta already owns and memoises (reckon/_plan_html.py:1571), then runs the un-memoised BeautifulSoup read_state, so the fast path can cost more than parse_meta on a repeated read of the same plan.\n",
+  "review_run_id": "r-20261004T200854439155-review-of-a-launched-run-reads-launching-on-crew",
+  "reviewed_base_sha": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "reviewed_commits": [
+    "af7577adca6d791aeb344e1e5a7dbb0f4cbd7102",
+    "2926da4edd859527b69e7de3bddd9ca5c1ec84e1",
+    "a5c2098816b4f7812430e4665d663302a5b49111",
+    "0185df0659596540096394293318244f3e12d4b5",
+    "b8c14c1b21ad612f35c0b4efd3e520c951730660"
+  ],
+  "reviewed_head_sha": "b8c14c1b21ad612f35c0b4efd3e520c951730660",
+  "reviewed_run_id": "r-20261004T191242154747-a-launched-run-reads-launching-on-crew",
+  "reviewer_run_id": "r-20261004T200854439155-review-of-a-launched-run-reads-launching-on-crew",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T20:14:37.667822+00:00",
+  "total": 95
+}

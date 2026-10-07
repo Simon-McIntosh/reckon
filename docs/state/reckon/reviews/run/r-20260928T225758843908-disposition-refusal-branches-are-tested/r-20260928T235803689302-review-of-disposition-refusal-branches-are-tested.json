@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T00:20:52.077Z",
+  "dispatched_at": "2026-09-28T23:58:25Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 38c1cb2f; c1660880 adds the two cases and splits the existing helper into _dispose_run at tests/test_sub_floor_disposition_has_a_writer.py:210 plus a wrapper at :226 so a second run id can be named, f9fa91ee is docs only, and the assertions read the command's own output and the store rather than restating values the cases handed in.",
+    "done_when": "the measure is the whole test file green at both arms plus a scratch-copy control that reddens the mismatched-head case, and the logs support every part -- logs/baseline-suite.log ends 15 passed EXIT=0 at 38c1cb2f, logs/after-suite.log ends 17 passed EXIT=0 at c1660880, logs/negative-control.log ends 1 failed 16 passed EXIT=1 with the declared mutation on its first line, and my own re-run of the two cases at the reviewed head returned 2 passed, 15 deselected, EXIT=0.",
+    "goal": "the goal is one case per head refusal of the disposition command in the existing test file, and tests/test_sub_floor_disposition_has_a_writer.py:437 and :501 add exactly those two cases while git diff --stat 38c1cb2f f9fa91ee leaves every file under reckon/ untouched.",
+    "manifest": "read; both suite fields are one JSON object naming revision, command, log_path, exit_status 0, completed true and empty failure_ids, the head arm's empty diff against the final head (git diff --stat c1660880 f9fa91ee -- tests/ reckon/ prints nothing) is written out rather than left implicit, and the landing line names the fragment commit.",
+    "write_paths": "the declared paths are the test file, the evidence fragment and its figures directory, and the two commits touch exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "deleting the mismatched-head refusal at reckon/cli.py:3944 reddens the case through the sibling text it forbids (negative-control.log), and the no-record case at tests/test_sub_floor_disposition_has_a_writer.py:501 reads the refusal's own words at reckon/cli.py:3950, though that half is argued by reading rather than shown by a mutation.",
+    "evidence": "the gate is the file the measure names and both arms are recorded with their logs and exit lines, the control is green at base and red at head with the declared mutation on its first line, and the corpus-wide premise that no case reached the branch is confirmed by the two refusal strings appearing under tests/ only in tests/test_sub_floor_disposition_has_a_writer.py.",
+    "fit": "the cases follow the file's naming and docstring idiom and _dispose_run extends its helper style, the only reuse left undone being the inline repo setup at tests/test_sub_floor_disposition_has_a_writer.py:514 where the _unrelated_repository helper at :118 exists for a differently-purposed tree.",
+    "goal_fidelity": "tests/test_sub_floor_disposition_has_a_writer.py:437 and :501 assert one refusal each, reuse the file's fixture and helpers, and no file under reckon/ moved between 38c1cb2f and f9fa91ee.",
+    "scope_discipline": "git diff --stat 38c1cb2f f9fa91ee lists tests/test_sub_floor_disposition_has_a_writer.py, the fragment and its figure, which are the declared write paths exactly."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 38c1cb2fc45679e814839a21daa64b23313d60e3\nreviewed_head_sha: f9fa91ee7423649a2411150153ecb1b6b3a532f4\nVERDICT goal: the goal is one case per head refusal of the disposition command in the existing test file, and tests/test_sub_floor_disposition_has_a_writer.py:437 and :501 add exactly those two cases while git diff --stat 38c1cb2f f9fa91ee leaves every file under reckon/ untouched.\nVERDICT done_when: the measure is the whole test file green at both arms plus a scratch-copy control that reddens the mismatched-head case, and the logs support every part -- logs/baseline-suite.log ends 15 passed EXIT=0 at 38c1cb2f, logs/after-suite.log ends 17 passed EXIT=0 at c1660880, logs/negative-control.log ends 1 failed 16 passed EXIT=1 with the declared mutation on its first line, and my own re-run of the two cases at the reviewed head returned 2 passed, 15 deselected, EXIT=0.\nVERDICT write_paths: the declared paths are the test file, the evidence fragment and its figures directory, and the two commits touch exactly those three paths and nothing else.\nVERDICT manifest: read; both suite fields are one JSON object naming revision, command, log_path, exit_status 0, completed true and empty failure_ids, the head arm's empty diff against the final head (git diff --stat c1660880 f9fa91ee -- tests/ reckon/ prints nothing) is written out rather than left implicit, and the landing line names the fragment commit.\nVERDICT diff: read commit by commit against 38c1cb2f; c1660880 adds the two cases and splits the existing helper into _dispose_run at tests/test_sub_floor_disposition_has_a_writer.py:210 plus a wrapper at :226 so a second run id can be named, f9fa91ee is docs only, and the assertions read the command's own output and the store rather than restating values the cases handed in.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_sub_floor_disposition_has_a_writer.py:437 and :501 assert one refusal each, reuse the file's fixture and helpers, and no file under reckon/ moved between 38c1cb2f and f9fa91ee.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate is the file the measure names and both arms are recorded with their logs and exit lines, the control is green at base and red at head with the declared mutation on its first line, and the corpus-wide premise that no case reached the branch is confirmed by the two refusal strings appearing under tests/ only in tests/test_sub_floor_disposition_has_a_writer.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 38c1cb2f f9fa91ee lists tests/test_sub_floor_disposition_has_a_writer.py, the fragment and its figure, which are the declared write paths exactly.\nSCORE durability: 19\nJUSTIFICATION durability: deleting the mismatched-head refusal at reckon/cli.py:3944 reddens the case through the sibling text it forbids (negative-control.log), and the no-record case at tests/test_sub_floor_disposition_has_a_writer.py:501 reads the refusal's own words at reckon/cli.py:3950, though that half is argued by reading rather than shown by a mutation.\nSCORE fit: 19\nJUSTIFICATION fit: the cases follow the file's naming and docstring idiom and _dispose_run extends its helper style, the only reuse left undone being the inline repo setup at tests/test_sub_floor_disposition_has_a_writer.py:514 where the _unrelated_repository helper at :118 exists for a differently-purposed tree.",
+  "review_run_id": "r-20260928T235803689302-review-of-disposition-refusal-branches-are-tested",
+  "reviewed_base_sha": "38c1cb2fc45679e814839a21daa64b23313d60e3",
+  "reviewed_head_sha": "f9fa91ee7423649a2411150153ecb1b6b3a532f4",
+  "reviewed_run_id": "r-20260928T225758843908-disposition-refusal-branches-are-tested",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260928T235803689302-review-of-disposition-refusal-branches-are-tested",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T00:11:30.351800+00:00",
+  "total": 97
+}

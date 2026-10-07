@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured by the reviewer's own arms over the 31 test files importing reckon.roadmap: base aeb59e548 is 2 failed/345 passed and head 5a0b0f87 is 347 passed, so the two failures the prior review added are gone and this repair adds none; the reviewed run's own logs/after-suite.log (d7056b829, 354 passed) agrees",
+  "after_suite": {
+    "command": "bash /tmp/reckon-crew-scratch/r-20261003T154424197630-review-of-roadmap-reports-section-edges/run_arm.sh /tmp/reckon-crew-scratch/r-20261003T154424197630-review-of-roadmap-reports-section-edges/arms/head 5a0b0f87548f7696b2915b95135c304376024960 /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T154424197630-review-of-roadmap-reports-section-edges/reviewer-head-arm.log",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T154424197630-review-of-roadmap-reports-section-edges/reviewer-head-arm.log",
+    "revision": "5a0b0f87548f7696b2915b95135c304376024960"
+  },
+  "baseline_suite": {
+    "command": "bash /tmp/reckon-crew-scratch/r-20261003T154424197630-review-of-roadmap-reports-section-edges/run_arm.sh /tmp/reckon-crew-scratch/r-20261003T154424197630-review-of-roadmap-reports-section-edges/arms/base aeb59e5480e7bde0caf2ecce8081d7d7ec158275 /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T154424197630-review-of-roadmap-reports-section-edges/reviewer-base-arm.log",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_roadmap.py::test_roadmap_returns_ready_work_and_hourly_critical_path",
+      "tests/test_sprint_summary_lists_pending.py::test_summary_without_sprint_is_unchanged"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T154424197630-review-of-roadmap-reports-section-edges/reviewer-base-arm.log",
+    "revision": "aeb59e5480e7bde0caf2ecce8081d7d7ec158275"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/roadmap.py::_build_roadmap"
+  ],
+  "completed_at": "2026-10-03T16:01:47.979Z",
+  "dispatched_at": "2026-10-03T15:44:43Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "32",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's baseline_suite and after_suite read not run, so a reader deriving added failures from the manifest at the reviewed head gets an unmeasured count, though the run's own logs name arms."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1446",
+      "severity": "follow-on",
+      "text": "follow-on: at the reviewed head the feature diff still carries formatting-only rewrites of _sprint_member_counts, sprint_summary_rows and _drift_is_member_progress introduced before this review's base; the repair of that follow-on landed as d7056b829, past the reviewed head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "aeb59e548..5a0b0f87 is 7363fe596 (drops the edges key from critical_path and adds the shape test) and 5a0b0f87 (updates the evidence fragment); the code change is the filter at reckon/roadmap.py:3020.",
+    "done_when": "the reviewed node's done_when is section 6's roadmap clause; the gained commits keep the two nova section edges on the raw view and the importing-file suite is green at head (347 passed), so the clause holds.",
+    "goal": "the gained commits answer the prior review's two blocking findings -- 7363fe596 restores critical_path's established key set while keeping the section on the raw view's open_paths entries -- and reckon/roadmap.py:3020 shows the filter that drops the edges key.",
+    "manifest": "the reviewed manifest names both findings by id (acted f975156daf9: 7363fe596, acted f5588159491: 7363fe596) and the repair, but its baseline_suite/after_suite still read not run at the reviewed head.",
+    "write_paths": "the gained commits touch exactly reckon/roadmap.py, tests/test_roadmap_reports_section_edges.py and docs/evidence/fragments/section-contract-and-computed-impl/roadmap-reports-section-edges.html, all inside the node's declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_roadmap_reports_section_edges.py::test_the_critical_path_keeps_the_shape_every_summary_carries compares the key set to a literal and fails when the edges key is reinstated (demonstrated).",
+    "evidence": "the fragment's repair table cites logs/repair-head.log (60 passed) and logs/repair-negative-control.log (2 failed), but the reviewed manifest's baseline_suite/after_suite name no readable gate log at the reviewed head.",
+    "fit": "reckon/roadmap.py:3016-3020 follows the surrounding dict-comprehension idiom with an explanatory comment and introduces no forbidden name.",
+    "goal_fidelity": "reckon/roadmap.py:3020 filters the edges key out of critical_path while the open_paths entry keeps it, matching the repair brief exactly.",
+    "scope_discipline": "git diff --name-only aeb59e548..5a0b0f87 names exactly the three declared paths and nothing else."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T154424197630-review-of-roadmap-reports-section-edges/reviewer-mutation-arm.log",
+  "negative_control_note": "reinstated the edges key on critical_path in a scratch copy of the head tree; test_the_critical_path_keeps_the_shape_every_summary_carries fails (1 failed, 6 passed)",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits answer the prior review's two blocking findings -- 7363fe596 restores critical_path's established key set while keeping the section on the raw view's open_paths entries -- and reckon/roadmap.py:3020 shows the filter that drops the edges key.\nVERDICT done_when: the reviewed node's done_when is section 6's roadmap clause; the gained commits keep the two nova section edges on the raw view and the importing-file suite is green at head (347 passed), so the clause holds.\nVERDICT write_paths: the gained commits touch exactly reckon/roadmap.py, tests/test_roadmap_reports_section_edges.py and docs/evidence/fragments/section-contract-and-computed-impl/roadmap-reports-section-edges.html, all inside the node's declared scope.\nVERDICT manifest: the reviewed manifest names both findings by id (acted f975156daf9: 7363fe596, acted f5588159491: 7363fe596) and the repair, but its baseline_suite/after_suite still read not run at the reviewed head.\nVERDICT diff: aeb59e548..5a0b0f87 is 7363fe596 (drops the edges key from critical_path and adds the shape test) and 5a0b0f87 (updates the evidence fragment); the code change is the filter at reckon/roadmap.py:3020.\nCALL_SITES: reckon/roadmap.py::_build_roadmap\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3020 filters the edges key out of critical_path while the open_paths entry keeps it, matching the repair brief exactly.\nSCORE evidence: 15\nJUSTIFICATION evidence: the fragment's repair table cites logs/repair-head.log (60 passed) and logs/repair-negative-control.log (2 failed), but the reviewed manifest's baseline_suite/after_suite name no readable gate log at the reviewed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only aeb59e548..5a0b0f87 names exactly the three declared paths and nothing else.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_roadmap_reports_section_edges.py::test_the_critical_path_keeps_the_shape_every_summary_carries compares the key set to a literal and fails when the edges key is reinstated (demonstrated).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/roadmap.py:3016-3020 follows the surrounding dict-comprehension idiom with an explanatory comment and introduces no forbidden name.\nFINDING manifest.md:32 follow-on: the reviewed run's baseline_suite and after_suite read not run, so a reader deriving added failures from the manifest at the reviewed head gets an unmeasured count, though the run's own logs name arms.\nFINDING reckon/roadmap.py:1446 follow-on: at the reviewed head the feature diff still carries formatting-only rewrites of _sprint_member_counts, sprint_summary_rows and _drift_is_member_progress introduced before this review's base; the repair of that follow-on landed as d7056b829, past the reviewed head.\n",
+  "review_run_id": "r-20261003T154424197630-review-of-roadmap-reports-section-edges",
+  "reviewed_base_sha": "aeb59e5480e7bde0caf2ecce8081d7d7ec158275",
+  "reviewed_head_sha": "5a0b0f87548f7696b2915b95135c304376024960",
+  "reviewed_run_id": "r-20261003T135140647796-roadmap-reports-section-edges",
+  "reviewer_run_id": "r-20261003T154424197630-review-of-roadmap-reports-section-edges",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T15:59:55.972155+00:00",
+  "total": 90
+}

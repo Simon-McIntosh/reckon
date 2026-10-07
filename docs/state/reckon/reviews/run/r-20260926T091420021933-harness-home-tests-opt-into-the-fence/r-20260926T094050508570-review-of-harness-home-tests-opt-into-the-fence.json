@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T10:19:11.763Z",
+  "dispatched_at": "2026-09-26T09:41:01Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 4b0ccd34; six commits, each with a body and no AI trailer, the product-side change confined to the one test file and the rest the mandated plan note, cumulative evidence anchor and figure.",
+    "done_when": "the done_when names the five failing ids, a one-path product diff, three neighbour files, an executed negative control and a commit; the manifest records all five, and I reproduced both arms myself (12 passed at the reviewed head; a base archive at 4b0ccd34 gives 5 failed, 6 passed with exactly the five named ids).",
+    "goal": "the goal asks that the five carry cases state the fence they depend on, with no product code touched; at head 6fdccc6b tests/test_harness_home_carries_the_operator_config.py:176 states fence=True on the settings-carry case, its four siblings follow, and the diff carries no product file.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091420021933-harness-home-tests-opt-into-the-fence/manifest.md; every absolute path it names resolves, and its negative-control log's first line repeats the declared string verbatim.",
+    "write_paths": "the manifest declares tests/test_harness_home_carries_the_operator_config.py, docs/evidence/archive/a-worker-cannot-write-your-home-landed.html, docs/figures/a-worker-cannot-write-your-home and docs/plans/a-worker-cannot-write-your-home.html, and all eight paths of git diff --name-only 4b0ccd34 HEAD lie inside them."
+  },
+  "justifications": {
+    "durability": "removing the opt-in at tests/test_harness_home_carries_the_operator_config.py:176 reddens the case with KeyError CLAUDE_CONFIG_DIR at :177, and the assertions at :310-312 each name the code change that reddens them; no unfenced codex case exists, though the one gate at reckon/_backends.py:2291 covers both dialects.",
+    "evidence": "I reproduced 12 passed at the workers' head and 5 failed, 6 passed in a base archive, but gate-harness-home-carry-opt-in-head.txt:1 names rev f0944805 rather than the shipping 6fdccc6b (the test blob is identical, c1654c39, at both, so the result transfers) and gate-harness-home-carry-opt-in-neighbours.txt:1 names 1854ee37 while the manifest says \"at head\".",
+    "fit": "ruff check and ruff format --check pass on the committed file, and the comment at tests/test_harness_home_carries_the_operator_config.py:174-175 states the mechanism rather than a tracker reference or plan label.",
+    "goal_fidelity": "tests/test_harness_home_carries_the_operator_config.py:176 opts the settings-carry case into the fence and :297-312 adds the unfenced case the goal asks for, with no product file in the diff.",
+    "scope_discipline": "git diff --name-only 4b0ccd34 HEAD lists eight paths and every one lies inside the manifest's four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that the five carry cases state the fence they depend on, with no product code touched; at head 6fdccc6b tests/test_harness_home_carries_the_operator_config.py:176 states fence=True on the settings-carry case, its four siblings follow, and the diff carries no product file.\nVERDICT done_when: the done_when names the five failing ids, a one-path product diff, three neighbour files, an executed negative control and a commit; the manifest records all five, and I reproduced both arms myself (12 passed at the reviewed head; a base archive at 4b0ccd34 gives 5 failed, 6 passed with exactly the five named ids).\nVERDICT write_paths: the manifest declares tests/test_harness_home_carries_the_operator_config.py, docs/evidence/archive/a-worker-cannot-write-your-home-landed.html, docs/figures/a-worker-cannot-write-your-home and docs/plans/a-worker-cannot-write-your-home.html, and all eight paths of git diff --name-only 4b0ccd34 HEAD lie inside them.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091420021933-harness-home-tests-opt-into-the-fence/manifest.md; every absolute path it names resolves, and its negative-control log's first line repeats the declared string verbatim.\nVERDICT diff: read commit by commit against 4b0ccd34; six commits, each with a body and no AI trailer, the product-side change confined to the one test file and the rest the mandated plan note, cumulative evidence anchor and figure.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_harness_home_carries_the_operator_config.py:176 opts the settings-carry case into the fence and :297-312 adds the unfenced case the goal asks for, with no product file in the diff.\nSCORE evidence: 17\nJUSTIFICATION evidence: I reproduced 12 passed at the workers' head and 5 failed, 6 passed in a base archive, but gate-harness-home-carry-opt-in-head.txt:1 names rev f0944805 rather than the shipping 6fdccc6b (the test blob is identical, c1654c39, at both, so the result transfers) and gate-harness-home-carry-opt-in-neighbours.txt:1 names 1854ee37 while the manifest says \"at head\".\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 4b0ccd34 HEAD lists eight paths and every one lies inside the manifest's four declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: removing the opt-in at tests/test_harness_home_carries_the_operator_config.py:176 reddens the case with KeyError CLAUDE_CONFIG_DIR at :177, and the assertions at :310-312 each name the code change that reddens them; no unfenced codex case exists, though the one gate at reckon/_backends.py:2291 covers both dialects.\nSCORE fit: 19\nJUSTIFICATION fit: ruff check and ruff format --check pass on the committed file, and the comment at tests/test_harness_home_carries_the_operator_config.py:174-175 states the mechanism rather than a tracker reference or plan label.\n",
+  "review_run_id": "r-20260926T094050508570-review-of-harness-home-tests-opt-into-the-fence",
+  "reviewed_base_sha": "4b0ccd340ed992d28e0fb7accc22f91bba39db6b",
+  "reviewed_head_sha": "6fdccc6b32f53d9fe209f725c2b80ae75e147976",
+  "reviewed_run_id": "r-20260926T091420021933-harness-home-tests-opt-into-the-fence",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T10:11:57.498445+00:00",
+  "total": 93
+}

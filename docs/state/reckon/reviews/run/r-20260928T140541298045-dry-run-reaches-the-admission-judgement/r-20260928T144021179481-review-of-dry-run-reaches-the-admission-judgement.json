@@ -1,0 +1,117 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absence_control": "a missing log returns (None, []) - unmeasured, never a measured zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/head-arm.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/base-arm.log",
+    "count_derivation": "added_failures_from_gate_logs over the two gate logs the reviewed manifest names at manifest.md:16; both logs read, so the count is a measured zero and annotate_review_of_run leaves the total uncapped",
+    "note": "the reviewed manifest leaves baseline_suite/after_suite empty (manifest.md:21-22), so annotate_review_of_run on read reports the count unmeasured; the arms it names under test_logs (manifest.md:16) were read instead, and the count below is the same set difference added_failures_from_gate_logs takes over them",
+    "positive_control": {
+      "count": 1,
+      "ids": [
+        "tests/test_dry_run_reaches_admission.py::test_dry_run_reports_the_released_follower_proceeding_with_the_rearm_warning"
+      ],
+      "log_as_baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/negative-control.log",
+      "log_as_head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/base-arm.log",
+      "mutation": "the run's own red arm (session/watch_required/watch_override removed from the dry-run branch) taken as the baseline against the base arm as head: the head then carries one failure id that baseline lacks and the extractor emits it, so an empty result on the real pairing is a measured zero rather than a check that never speaks",
+      "raw_parse": {
+        "baseline_log_ids": [
+          "tests/test_dry_run_reaches_admission.py::test_dry_run_refuses_a_never_registered_follower_as_watcher_required",
+          "tests/test_dry_run_reaches_admission.py::test_dry_run_reports_the_released_follower_proceeding_with_the_rearm_warning"
+        ],
+        "red_arm_log_ids": [
+          "tests/test_dry_run_reaches_admission.py::test_dry_run_refuses_a_never_registered_follower_as_watcher_required"
+        ]
+      }
+    }
+  },
+  "after_suite": {
+    "completed": true,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/head-arm.log",
+    "recorded_exit_status": 0,
+    "revision_stamp": "fb7475289c1d5e0230e6c146dc44891b02a23420 (parent revision; the tree measured was pre-commit)"
+  },
+  "baseline_suite": {
+    "completed": true,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_dry_run_reaches_admission.py::test_dry_run_refuses_a_never_registered_follower_as_watcher_required",
+      "tests/test_dry_run_reaches_admission.py::test_dry_run_reports_the_released_follower_proceeding_with_the_rearm_warning"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/base-arm.log",
+    "module_under_test": "/tmp/dry-run-base-arm/reckon/__init__.py",
+    "note": "the log's own EXIT=0 contradicts its summary; see the finding at base-arm.log:68",
+    "recorded_exit_status": 0,
+    "revision": "fb7475289c1d5e0230e6c146dc44891b02a23420"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:crew_dispatch",
+    "reckon/crew/dispatch.py:plan_dispatch",
+    "reckon/crew/dispatch.py:dispatch"
+  ],
+  "completed_at": "2026-09-28T15:38:21.495Z",
+  "dispatched_at": "2026-09-28T14:40:36Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/base-arm.log",
+      "line": "68",
+      "text": "records EXIT=0 beside the same log's \"2 failed, 4 passed\"; pytest exits 1 on failures, so a reader scanning EXIT= reads the base arm as green, while the same run's /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/negative-control.log:36 records EXIT=1 correctly."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/head-arm.log",
+      "line": "1",
+      "text": "stamps \"head arm revision: fb7475289c1d5e0230e6c146dc44891b02a23420\" - the parent revision that cannot contain the change - with no qualifier that a dirty tree was measured, so neither arm's revision label identifies its tree, while the same run's /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/negative-control.log:2 shows the qualifying idiom (\"working tree mutated: ...\") in use."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against fb747528; b6b8742a adds 18 lines to reckon/cli.py and a 212-line test file, and 0f119dcd appends a landing record, an evidence anchor whose plan-commits and plan-artifacts lines add this node's entries without dropping the prior nodes', and the figure.",
+    "done_when": "the run's done-when asks for two CLI cases in a synthesised project, a base and a head arm whose headers name revision and module, and an applied negative control; tests/test_dry_run_reaches_admission.py:165 and :190 assert the released and never-registered verdicts, the manifest records head-arm.log (6 passed) and base-arm.log (2 failed, 4 passed), and negative-control.log repeats the declared mutation with \"assert 0 == 8\" and EXIT=1.",
+    "goal": "the node's goal is to pass the session and the watch requirement from the dispatch command's dry-run branch to plan_dispatch, and reckon/cli.py:1440-1442 now passes session=session, watch_required=True and watch_override=no_watch there, with WatcherRequired mapped to the watcher-required key at reckon/cli.py:1466-1480 on exit 8.",
+    "manifest": "read; it reads complete with commits b6b8742a and 0f119dcd, both arm logs and the parity figure named, and the negative control's log repeating the declared string verbatim on its first line.",
+    "write_paths": "read the run's fence against the two commits; the five changed paths reckon/cli.py, tests/test_dry_run_reaches_admission.py, docs/plans/a-refusal-is-about-the-work.html, docs/evidence/archive/a-refusal-is-about-the-work-landed.html and docs/figures/a-refusal-is-about-the-work/dry-run-admission-parity.svg are exactly the five declared write paths."
+  },
+  "justifications": {
+    "durability": "both new tests fail on unpatched cli.py (base arm 2 failed, and the declared mutation shows \"assert 0 == 8\"), but tests/test_dry_run_reaches_admission.py:184 takes its expected re-arm string from runs.watch_state, the same production helper that composes the CLI's warning.",
+    "evidence": "the arms and the negative control are recorded with headers naming revision, tree, module path and command, but base-arm.log:68 records EXIT=0 beside its own \"2 failed, 4 passed\", and head-arm.log:1 stamps the parent revision fb747528 with no qualifier for the pre-commit tree it measured.",
+    "fit": "the diff mirrors the launching branch's three arguments at reckon/cli.py:1525-1526 and the real branch's WatcherRequired handler at reckon/cli.py:1599-1609, and the new handler precedes the generic CrewError handler because WatcherRequired subclasses it (reckon/crew/node.py:409).",
+    "goal_fidelity": "reckon/cli.py:1440-1442 passes the caller's session, watch_required=True and the resolved override to plan_dispatch, and my own run of the two named test files at the reviewed head 0f119dcd reproduced both verdicts (6 passed, exit 0).",
+    "scope_discipline": "both commits touch only the five declared paths, and docs/evidence/archive/a-refusal-is-about-the-work-landed.html:12-14 updates plan-verifies, plan-commits and plan-artifacts additively, keeping the prior nodes' entries."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to pass the session and the watch requirement from the dispatch command's dry-run branch to plan_dispatch, and reckon/cli.py:1440-1442 now passes session=session, watch_required=True and watch_override=no_watch there, with WatcherRequired mapped to the watcher-required key at reckon/cli.py:1466-1480 on exit 8.\nVERDICT done_when: the run's done-when asks for two CLI cases in a synthesised project, a base and a head arm whose headers name revision and module, and an applied negative control; tests/test_dry_run_reaches_admission.py:165 and :190 assert the released and never-registered verdicts, the manifest records head-arm.log (6 passed) and base-arm.log (2 failed, 4 passed), and negative-control.log repeats the declared mutation with \"assert 0 == 8\" and EXIT=1.\nVERDICT write_paths: read the run's fence against the two commits; the five changed paths reckon/cli.py, tests/test_dry_run_reaches_admission.py, docs/plans/a-refusal-is-about-the-work.html, docs/evidence/archive/a-refusal-is-about-the-work-landed.html and docs/figures/a-refusal-is-about-the-work/dry-run-admission-parity.svg are exactly the five declared write paths.\nVERDICT manifest: read; it reads complete with commits b6b8742a and 0f119dcd, both arm logs and the parity figure named, and the negative control's log repeating the declared string verbatim on its first line.\nVERDICT diff: read commit by commit against fb747528; b6b8742a adds 18 lines to reckon/cli.py and a 212-line test file, and 0f119dcd appends a landing record, an evidence anchor whose plan-commits and plan-artifacts lines add this node's entries without dropping the prior nodes', and the figure.\nCALL_SITES: reckon/cli.py:crew_dispatch, reckon/crew/dispatch.py:plan_dispatch, reckon/crew/dispatch.py:dispatch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/cli.py:1440-1442 passes the caller's session, watch_required=True and the resolved override to plan_dispatch, and my own run of the two named test files at the reviewed head 0f119dcd reproduced both verdicts (6 passed, exit 0).\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms and the negative control are recorded with headers naming revision, tree, module path and command, but base-arm.log:68 records EXIT=0 beside its own \"2 failed, 4 passed\", and head-arm.log:1 stamps the parent revision fb747528 with no qualifier for the pre-commit tree it measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only the five declared paths, and docs/evidence/archive/a-refusal-is-about-the-work-landed.html:12-14 updates plan-verifies, plan-commits and plan-artifacts additively, keeping the prior nodes' entries.\nSCORE durability: 18\nJUSTIFICATION durability: both new tests fail on unpatched cli.py (base arm 2 failed, and the declared mutation shows \"assert 0 == 8\"), but tests/test_dry_run_reaches_admission.py:184 takes its expected re-arm string from runs.watch_state, the same production helper that composes the CLI's warning.\nSCORE fit: 19\nJUSTIFICATION fit: the diff mirrors the launching branch's three arguments at reckon/cli.py:1525-1526 and the real branch's WatcherRequired handler at reckon/cli.py:1599-1609, and the new handler precedes the generic CrewError handler because WatcherRequired subclasses it (reckon/crew/node.py:409).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/base-arm.log:68 records EXIT=0 beside the same log's \"2 failed, 4 passed\"; pytest exits 1 on failures, so a reader scanning EXIT= reads the base arm as green, while the same run's /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/negative-control.log:36 records EXIT=1 correctly.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/head-arm.log:1 stamps \"head arm revision: fb7475289c1d5e0230e6c146dc44891b02a23420\" - the parent revision that cannot contain the change - with no qualifier that a dirty tree was measured, so neither arm's revision label identifies its tree, while the same run's /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140541298045-dry-run-reaches-the-admission-judgement/negative-control.log:2 shows the qualifying idiom (\"working tree mutated: ...\") in use.",
+  "review_run_id": "r-20260928T144021179481-review-of-dry-run-reaches-the-admission-judgement",
+  "reviewed_base_sha": "fb7475289c1d5e0230e6c146dc44891b02a23420",
+  "reviewed_head_sha": "0f119dcdb504545cf428e178dcc29d6a0296e815",
+  "reviewed_run_id": "r-20260928T140541298045-dry-run-reaches-the-admission-judgement",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T15:21:20.428459+00:00",
+  "total": 93,
+  "verification": {
+    "command": "env -C /tmp PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/review-of-dry-run-reaches-the-admission-judgement /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/review-of-dry-run-reaches-the-admission-judgement/tests/test_dry_run_reaches_admission.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/review-of-dry-run-reaches-the-admission-judgement/tests/test_expired_follower_keeps_dispatching.py",
+    "cwd": "/tmp",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144021179481-review-of-dry-run-reaches-the-admission-judgement/review-head-verification.log",
+    "module_under_test": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/review-of-dry-run-reaches-the-admission-judgement/reckon/__init__.py",
+    "result": "6 passed in 12.32s; EXIT=0",
+    "revision": "0f119dcdb504545cf428e178dcc29d6a0296e815"
+  }
+}

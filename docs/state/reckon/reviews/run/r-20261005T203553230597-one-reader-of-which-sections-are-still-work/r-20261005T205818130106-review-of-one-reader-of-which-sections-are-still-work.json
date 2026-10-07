@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5827941a7a61d756c6c3c097957ecd1f6b14636f",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/roadmap.py:107",
+    "reckon/doccheck.py:1017",
+    "reckon/followup_pointers.py:118",
+    "reckon/crew/promotion.py:7236",
+    "reckon/_schema.py:797"
+  ],
+  "completed_at": "2026-10-05T21:07:49.867Z",
+  "dispatched_at": "2026-10-05T20:58:36Z",
+  "findings": [
+    {
+      "file": "tests/test_one_reader_of_remaining_work.py",
+      "line": "74",
+      "severity": "follow-on",
+      "text": "follow-on: the five-reader agreement is asserted over a single hand-built synthetic plan; a second plan exercising the document-check heading fallback and the promotion anchors fallback together with landing subtraction would widen the guard, so this is a follow-on rather than a defect."
+    }
+  ],
+  "head_log_revision": "fd124bc33fd1061e4bdadc7f050ece603fb760e0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the full source diff base..head; it is the coherent \u00a718 refactor with no unrelated change.",
+    "done_when": "all clauses independently reproduced at head (greps, 22-case test, scratch negative control, public_definitions delta 1477->1478).",
+    "goal": "met \u2014 five readers now share one classification predicate and the landing-comment prefix has one owner.",
+    "manifest": "the reviewed manifest names both gate logs (baseline_suite->baseline.log, after_suite->head.log) and its counts reconcile with the logs (base 339 passed, head 361 passed).",
+    "write_paths": "the diff is confined to the eight declared paths; nothing outside them changed."
+  },
+  "justifications": {
+    "durability": "The invariant is guarded rather than asserted: test_run_comment_prefix_has_one_owner fails if a second owner of the literal appears, test_all_remaining_work_readers_call_the_schema_predicate fails if a reader stops calling the predicate or the schema gains an upward import, and test_readers_keep_landed_work_until_reclassification pins the agreed selection on a synthetic plan with a landed, an implementable and a done section. Docked one because the five-reader agreement is pinned only against one hand-built plan.",
+    "evidence": "I re-ran every done-when grep at the head myself: 'c-run-' appears once in reckon/crew/plan_review.py; 'startswith(' in plan_review.py and promotion.py names only unrelated sha, JSON and plan- name prefixes, never the comment prefix; '== \"implementable\"' returns exactly two lines at head (_plan_html.py:353 and _schema.py:795) against six at base; public_definitions is 1477 at base and 1478 at head. The added test file carries 22 cases and passes (22 passed in 1.13s) when run independently at the reviewed head. I reproduced the negative control in a scratch copy: appending a second 'c-run-' literal to promotion.py reddens test_run_comment_prefix_has_one_owner with EXIT=1. Docked one because the head gate log ran at fd124bc33, the source commit, not at the evidence commit 8d32d2478 the review reads; the evidence commit adds only an HTML fragment so the code is identical, but the owned gate was not re-run at the reviewed head.",
+    "fit": "is_implementable_section sits in reckon/_schema.py beside the declaration enum it interprets and below both consumers, so no import runs upward (the added test asserts this). _is_run_comment sits beside its public RUN_COMMENT_PREFIX on plan_review.py, the crew module the section names as the one owner, and the core layer keeps out of crew vocabulary. Every touched docstring states the landing rule in mechanism terms; no plan, stage or ticket label appears in the changed source.",
+    "goal_fidelity": "Every condition in \u00a718's done-when holds at the reviewed head 8d32d2478. The classification rule is one public predicate, _schema.is_implementable_section, and all five readers named in the section call it: roadmap.implementable_sections, _schema.plan_executable_remainder, doccheck._implementable_section_ids, promotion._plan_remaining_sections and followup_pointers.classify_followup. Each reader keeps its own question, ordering, fallback and landing subtraction; the rule changes in one place.",
+    "reuse": "The change retires four inline spellings of the classification comparison and two owners of the landing-comment literal into one predicate and one constant with a private recogniser, and the interface census shows exactly one public definition added for the five callers it serves.",
+    "scope_discipline": "The base..head diff touches exactly the eight declared write paths (six source modules, the added test, the evidence fragment) with 287 insertions and 27 deletions, and the reviewed worktree is clean at the reviewed head."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: Every condition in \u00a718's done-when holds at the reviewed head 8d32d2478. The classification rule is one public predicate, _schema.is_implementable_section, and all five readers named in the section call it: roadmap.implementable_sections, _schema.plan_executable_remainder, doccheck._implementable_section_ids, promotion._plan_remaining_sections and followup_pointers.classify_followup. Each reader keeps its own question, ordering, fallback and landing subtraction; the rule changes in one place.\nSCORE evidence: 19\nJUSTIFICATION evidence: I re-ran every done-when grep at the head myself: 'c-run-' appears once in reckon/crew/plan_review.py; 'startswith(' in plan_review.py and promotion.py names only unrelated sha, JSON and plan- name prefixes, never the comment prefix; '== \"implementable\"' returns exactly two lines at head (_plan_html.py:353 and _schema.py:795) against six at base; public_definitions is 1477 at base and 1478 at head. The added test file carries 22 cases and passes (22 passed in 1.13s) when run independently at the reviewed head. I reproduced the negative control in a scratch copy: appending a second 'c-run-' literal to promotion.py reddens test_run_comment_prefix_has_one_owner with EXIT=1. Docked one because the head gate log ran at fd124bc33, the source commit, not at the evidence commit 8d32d2478 the review reads; the evidence commit adds only an HTML fragment so the code is identical, but the owned gate was not re-run at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base..head diff touches exactly the eight declared write paths (six source modules, the added test, the evidence fragment) with 287 insertions and 27 deletions, and the reviewed worktree is clean at the reviewed head.\nSCORE durability: 19\nJUSTIFICATION durability: The invariant is guarded rather than asserted: test_run_comment_prefix_has_one_owner fails if a second owner of the literal appears, test_all_remaining_work_readers_call_the_schema_predicate fails if a reader stops calling the predicate or the schema gains an upward import, and test_readers_keep_landed_work_until_reclassification pins the agreed selection on a synthetic plan with a landed, an implementable and a done section. Docked one because the five-reader agreement is pinned only against one hand-built plan.\nSCORE fit: 20\nJUSTIFICATION fit: is_implementable_section sits in reckon/_schema.py beside the declaration enum it interprets and below both consumers, so no import runs upward (the added test asserts this). _is_run_comment sits beside its public RUN_COMMENT_PREFIX on plan_review.py, the crew module the section names as the one owner, and the core layer keeps out of crew vocabulary. Every touched docstring states the landing rule in mechanism terms; no plan, stage or ticket label appears in the changed source.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change retires four inline spellings of the classification comparison and two owners of the landing-comment literal into one predicate and one constant with a private recogniser, and the interface census shows exactly one public definition added for the five callers it serves.\nVERDICT goal: met \u2014 five readers now share one classification predicate and the landing-comment prefix has one owner.\nVERDICT done_when: all clauses independently reproduced at head (greps, 22-case test, scratch negative control, public_definitions delta 1477->1478).\nVERDICT write_paths: the diff is confined to the eight declared paths; nothing outside them changed.\nVERDICT manifest: the reviewed manifest names both gate logs (baseline_suite->baseline.log, after_suite->head.log) and its counts reconcile with the logs (base 339 passed, head 361 passed).\nVERDICT diff: read the full source diff base..head; it is the coherent \u00a718 refactor with no unrelated change.\nCALL_SITES: reckon/roadmap.py:107, reckon/doccheck.py:1017, reckon/followup_pointers.py:118, reckon/crew/promotion.py:7236, reckon/_schema.py:797\nFINDING tests/test_one_reader_of_remaining_work.py:74 follow-on: the five-reader agreement is asserted over a single hand-built synthetic plan; a second plan exercising the document-check heading fallback and the promotion anchors fallback together with landing subtraction would widen the guard, so this is a follow-on rather than a defect.\n",
+  "review_run_id": "r-20261005T205818130106-review-of-one-reader-of-which-sections-are-still-work",
+  "reviewed_base_sha": "5827941a7a61d756c6c3c097957ecd1f6b14636f",
+  "reviewed_head_sha": "8d32d2478c36eaf9502ccda328fe716a2975c8d9",
+  "reviewed_run_id": "r-20261005T203553230597-one-reader-of-which-sections-are-still-work",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T21:07:35.456383+00:00",
+  "total": 118
+}

@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:49:09.994Z",
+  "dispatched_at": "2026-10-05T17:44:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16 (owners: reckon/_store.py:1779, reckon/roadmap.py:170)",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name these two owners and state each one's disposition \u2014 route it through the hoisted expression/derivation, or keep it with a reason \u2014 otherwise the consolidation its done-when asserts is neither complete nor checkable, which is the same hand-written-list undercount \u00a717 itself says every prior review of this design produced.",
+      "text": "\u00a716 fixes the shared section-spelling expression by enumerating \"Four grammars recognise a section spelling today\" (routing's _SECTION_IDENTITY, ledger.normalize_section, evidence._section_key, doccheck._NUMBERED_SECTION_ID) and \u00a717's done-when greps the package for section-spelling regular expressions \"and requires that one\", but two further sites recognise or emit section identities and appear in neither enumeration: reckon/_store.py:1779 compiles re.compile(r\"^s[0-9]+$\") inline inside _require_new_section_contracts (a narrower full-match numbering grammar of the same shape as doccheck's, which \u00a716 does route through the derivation), and reckon/roadmap.py:170 compiles _SECTION_WORD_RE whose matches at roadmap.py:253 bind gate-text references into f\"s{int(number)}\" identities. The plan's stated count of four, its \"which grammar wins is stated here\" rule, and its claim that ledger and evidence are \"otherwise unchanged\" are therefore incomplete, and \u00a717's one-expression done-when is in tension with them.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e8fa237f78a3922ff8a525efefca74a9bf07b865863ae624769e8b6ef0580b8a",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 103,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T174349930662-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "53d8ee9ffe779e083d11990847f5cd453b8f8c76",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 hides raw-text section span, heading level, identity, extent, card recognition and machinery-element recognition behind one private parser plus a small set of shared predicates on reckon/_plan_html.py, and \u00a716 collapses the whole-document fingerprint into a per-section digest map behind one module-private helper; no new module family of shallow wrappers is introduced.",
+    "duplicate_owner": "a finding \u2014 the section-spelling grammar the plan consolidates has two more owners than \u00a716 names, in reckon/_store.py:1779 and reckon/roadmap.py:170.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 states no public definition is added and retires plan_fingerprint's public `legacy` flag, \u00a717 names its two additions and the landed_section_ids move, and \u00a718 names its one addition and the RUN_COMMENT_PREFIX move, so every section that adds surface accounts for it against the family.",
+    "reuse_search": "pass \u2014 the plan opens the code it would extend and cites the owner of each mechanism it extends (the span parser and record reader in reckon/_plan_html.py, section_record_id/section_id_candidates in reckon/crew/routing.py, landed_section_ids in reckon/_store.py, the AST census read_trees/definitions in reckon/interface_counts.py, list_plan_reviews in reckon/crew/plan_review.py), so the reuse map is present and machine-checked by grep done-whens.",
+    "thin_wrapper": "pass \u2014 the single new public accessor, plan_headings, is justified in \u00a717's own text (the parser is shared by five consumers across a package boundary and must stay private), and each new predicate replaces three existing spellings of one test rather than forwarding to a single existing caller, so no wrapper lacks its \"why not extend\" reason."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.828884+00:00"
+}

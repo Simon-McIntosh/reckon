@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:install_skills",
+    "reckon/agent_context.py:_discover_skills"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T02:47:07.302912+00:00",
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "544",
+      "text": "the absence assertion guards one of the five retired registration sites and misses two of the retired phrasings: it reads only SKILL.md while sprint-orchestration.md:118, 129, 228 and 688 hold four of the sites, and its pattern does not match \"members are registered on demand\" or \"registering members\" \u2014 so re-adding the wording the review of build-skill-review-findings-closed named as its third finding leaves all three gate files green and the regression ships unpinned."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; 5acc405e restores the four pinned sentences and the directory guidance, rewrites the five registration sites (SKILL.md:79; sprint-orchestration.md:118, 129, 228, 688) to the disposable-worker rule, replaces the pin at tests/test_skill_contracts.py:543-549 and records the crew-path exemption, and 4c6de0f3 appends only the plan comment, the evidence section and the figure.",
+    "done_when": "the measure names three gate files, the grep, the estimate pair and a declared negative control; from the reviewed tree at 4c6de0f3 I re-ran exactly those three files (77 passed, EXIT=0, review-gate.log), reproduced the estimate pair 14,446 -> 14,734 against the 15,000 bound at tests/test_skill_contracts.py:576, and re-derived the control in memory: the new pin's regex is green on head SKILL.md and red on the reconstructed \"register one.\" restoration (review-falsify.log).",
+    "goal": "the goal is that the build skill carries every rule its contract tests pin and no instruction to register members for concurrency, and at head that holds \u2014 the four prompt-derived sentences and the crew(view=\"directory\") paragraph stand in skills/reckon-build/SKILL.md, the five registration sites read the disposable-worker rule, and my own flattened scan of skills/ (instrument control: the retired sentence appended in memory hits) returns no instruction of that class.",
+    "manifest": "read; it records the three gate results, the grep EXIT=1, the budget pair, the negative control with its byte-identical SHA-256 restore, and the crew-path census exemption as a flagged judgment call; I independently reproduced the gate run, the budget pair and the regex falsification, and its base claims check out \u2014 base SKILL.md carries neither directory phrase and base reckon/cli.py already registers the path verb, so the census red it cleared was pre-existing.",
+    "write_paths": "the seven declared paths are skills/reckon-build/SKILL.md, skills/reckon-build/references/sprint-orchestration.md, skills/reckon-build/references/conditional-guidance.md, tests/test_skill_contracts.py, docs/plans/reckon-skill-overhaul.html, docs/evidence/archive/reckon-skill-overhaul-landed.html and docs/figures/reckon-skill-overhaul; `git diff --numstat 59a62004..4c6de0f3` returns six files, every one inside that set, with the plan and the evidence anchor appended (3 and 107 added lines, zero deletions) and the conditional reference untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_skill_contracts.py:544-549 fails on a re-added \"register one.\" but reads only SKILL.md and matches only register+determiner forms, so the four reference-file sites and the \"registered on demand\" wording carry no guard.",
+    "evidence": "the gate the measure names is the three files re-run from the reviewed tree (77 passed, EXIT=0, review-gate.log) and the declared negative control reddens the pin in my own in-memory reconstruction (review-falsify.log).",
+    "fit": "the added lines carry no plan label or version token (a scan of the 199 added lines is clean apart from SVG colour literals) and tests/test_skill_contracts.py:818 follows the exemption dict's mechanism-reason idiom.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:784-790 carries the prompt's landing contract verbatim and skills/reckon-build/references/sprint-orchestration.md:118-120 states the disposable-worker rule, so both halves of the goal hold at the head.",
+    "scope_discipline": "every changed path in `git diff 59a62004..4c6de0f3` is inside the declared write paths, and the sole edit beyond the stated work \u2014 the census exemption at tests/test_skill_contracts.py:818 \u2014 repairs a pre-existing red the measure requires green and is flagged in the manifest."
+  },
+  "node": "review-of-build-skill-keeps-its-pinned-rules",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260925T020811336251-build-skill-keeps-its-pinned-rules,\nread at its landed head 4c6de0f3 against base 59a62004.\n\nVERDICT goal: the goal is that the build skill carries every rule its contract tests pin and no instruction to register members for concurrency, and at head that holds \u2014 the four prompt-derived sentences and the crew(view=\"directory\") paragraph stand in skills/reckon-build/SKILL.md, the five registration sites read the disposable-worker rule, and my own flattened scan of skills/ (instrument control: the retired sentence appended in memory hits) returns no instruction of that class.\nVERDICT done_when: the measure names three gate files, the grep, the estimate pair and a declared negative control; from the reviewed tree at 4c6de0f3 I re-ran exactly those three files (77 passed, EXIT=0, review-gate.log), reproduced the estimate pair 14,446 -> 14,734 against the 15,000 bound at tests/test_skill_contracts.py:576, and re-derived the control in memory: the new pin's regex is green on head SKILL.md and red on the reconstructed \"register one.\" restoration (review-falsify.log).\nVERDICT write_paths: the seven declared paths are skills/reckon-build/SKILL.md, skills/reckon-build/references/sprint-orchestration.md, skills/reckon-build/references/conditional-guidance.md, tests/test_skill_contracts.py, docs/plans/reckon-skill-overhaul.html, docs/evidence/archive/reckon-skill-overhaul-landed.html and docs/figures/reckon-skill-overhaul; `git diff --numstat 59a62004..4c6de0f3` returns six files, every one inside that set, with the plan and the evidence anchor appended (3 and 107 added lines, zero deletions) and the conditional reference untouched.\nVERDICT manifest: read; it records the three gate results, the grep EXIT=1, the budget pair, the negative control with its byte-identical SHA-256 restore, and the crew-path census exemption as a flagged judgment call; I independently reproduced the gate run, the budget pair and the regex falsification, and its base claims check out \u2014 base SKILL.md carries neither directory phrase and base reckon/cli.py already registers the path verb, so the census red it cleared was pre-existing.\nVERDICT diff: read commit by commit; 5acc405e restores the four pinned sentences and the directory guidance, rewrites the five registration sites (SKILL.md:79; sprint-orchestration.md:118, 129, 228, 688) to the disposable-worker rule, replaces the pin at tests/test_skill_contracts.py:543-549 and records the crew-path exemption, and 4c6de0f3 appends only the plan comment, the evidence section and the figure.\nCALL_SITES: reckon/cli.py:install_skills, reckon/agent_context.py:_discover_skills\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:784-790 carries the prompt's landing contract verbatim and skills/reckon-build/references/sprint-orchestration.md:118-120 states the disposable-worker rule, so both halves of the goal hold at the head.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate the measure names is the three files re-run from the reviewed tree (77 passed, EXIT=0, review-gate.log) and the declared negative control reddens the pin in my own in-memory reconstruction (review-falsify.log).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path in `git diff 59a62004..4c6de0f3` is inside the declared write paths, and the sole edit beyond the stated work \u2014 the census exemption at tests/test_skill_contracts.py:818 \u2014 repairs a pre-existing red the measure requires green and is flagged in the manifest.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_skill_contracts.py:544-549 fails on a re-added \"register one.\" but reads only SKILL.md and matches only register+determiner forms, so the four reference-file sites and the \"registered on demand\" wording carry no guard.\nSCORE fit: 18\nJUSTIFICATION fit: the added lines carry no plan label or version token (a scan of the 199 added lines is clean apart from SVG colour literals) and tests/test_skill_contracts.py:818 follows the exemption dict's mechanism-reason idiom.\nFINDING tests/test_skill_contracts.py:544 the absence assertion guards one of the five retired registration sites and misses two of the retired phrasings: it reads only SKILL.md while sprint-orchestration.md:118, 129, 228 and 688 hold four of the sites, and its pattern does not match \"members are registered on demand\" or \"registering members\" \u2014 so re-adding the wording the review of build-skill-review-findings-closed named as its third finding leaves all three gate files green and the regression ships unpinned.",
+  "review_run_id": "r-20260925T024707302912-review-of-build-skill-keeps-its-pinned-rules",
+  "reviewed_base_sha": "59a6200456608296810145eb60b7c394f4cf3540",
+  "reviewed_head_sha": "4c6de0f39e05067e1ac787012b45e3564684614f",
+  "reviewed_run_id": "r-20260925T020811336251-build-skill-keeps-its-pinned-rules",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T03:07:55.853162+00:00",
+  "total": 88
+}

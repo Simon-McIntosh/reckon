@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "derived from the reviewed run's own suite fields: baseline_suite names logs/base-arm.log (revision f31a38d86, completed, 1023 passed/3 skipped, failure_count 0) and after_suite names logs/after-arm.log (revision 6367ab1e8, completed, 1024 passed/3 skipped, failure_count 0); review.py added_failures_from_gate_logs reads both arms, each with no FAILED/ERROR summary line, so the head has no failing id the base lacks \u2014 added_failure_count 0, added_failure_ids [].",
+  "base_log_revision": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:4128",
+    "reckon/flight.py:684"
+  ],
+  "completed_at": "2026-10-04T19:48:48.179Z",
+  "dispatched_at": "2026-10-04T19:40:35Z",
+  "findings": [
+    {
+      "file": "tests/test_plan_settle_window_is_declared.py",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "the node's new test file is not ruff-clean: `ruff check` reports W292 (no newline at end of file, 26:69) and `ruff format --check` would reformat it, against the repository's stated ruff target; the new file is content the node introduced, so this is a finding it added rather than a pre-existing one. It does not hold the node: the test is green at head and red when the key is deleted. The added evidence fragment docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-settle-window-is-declared-in-defaults.html likewise ends without a newline."
+    }
+  ],
+  "head_log_revision": "6367ab1e8e221c25bc4719b42306188cad797d0f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/recovery.py:4128 flight.plan_review_settle_seconds(resolved) inside the sweeping branch reads the key to skip a plan whose mtime sits within the window, and the accessor is reckon/flight.py:684.",
+    "diff": "read against the base: the diff adds five lines to flight-defaults.yaml (the comment block and plan_settle_seconds: 600), adds tests/test_plan_settle_window_is_declared.py, and adds the evidence fragment; reckon/flight.py is unchanged by this run, so the accessor and validator it leans on were already present at base.",
+    "done_when": "verified: the shipped layer names the key (flight-defaults.yaml review.plan_settle_seconds: 600), flight.validate_layer checks its shape (reckon/flight.py:863-867), and the new test asserts resolved.origin('review.plan_settle_seconds') == 'shipped' plus the resolved mapping carries 600; I reproduced the module 1 passed EXIT=0 at head and, deleting the key from an extracted head tree, 1 failed EXIT=1 at the provenance assertion (None == 'shipped') in my own scratch tree.",
+    "goal": "verified: section 7 asks that review.plan_settle_seconds be declared in reckon/schema/flight-defaults.yaml beside review.tiers, validated, with a test pinning the resolved value to the file; at the reviewed head 6367ab1e8 the key is present in the shipped layer, validate_layer accepts it, and tests/test_plan_settle_window_is_declared.py asserts origin 'shipped', key presence and value 600.",
+    "manifest": "read: it declares status complete, the three changed paths, names its gate logs under test_logs, and arms baseline_suite (base-arm.log, rev f31a38d86, completed, 0 failures) and after_suite (after-arm.log, rev 6367ab1e8, completed, 0 failures); the two arms plus the negative control reproduce.",
+    "write_paths": "verified: git diff f31a38d86..6367ab1e8 changes exactly reckon/schema/flight-defaults.yaml, tests/test_plan_settle_window_is_declared.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-settle-window-is-declared-in-defaults.html (3 files, 42 insertions), all inside the manifest's declared write paths and nothing else."
+  },
+  "justifications": {
+    "durability": "one commit 6367ab1e8 carries a conventional subject and a body with no attribution, plan label or version number; the manifest was written incrementally and is complete; all gate logs sit under the run directory; the reviewed worktree remains on disk with a committed tree.",
+    "evidence": "strong and independently reproduced: the base and head population arms are durable run-dir logs (1023 vs 1024 passed, 0 failures, both completed to summary) bracketing the change, the negative control is red EXIT=1, and I reproduced the head module green (1 passed) and the key-deleted tree red at the provenance assertion; one point withheld because the focused gate result (1 passed) is asserted in the manifest's tests field but no focused-gate log file is stored beside base-arm.log/after-arm.log, so that single figure is reproduced by me rather than readable from the run's own evidence.",
+    "fit": "the change reuses the machinery already in reckon/flight.py rather than forking it, keeps the key out of the generated LinkML schema through the existing _schema_view exclusion, and reads like the surrounding defaults; two points withheld because the new test file tests/test_plan_settle_window_is_declared.py fails ruff on its own new content (W292, no newline at end of file, 26:69) and ruff format would reformat it, and the evidence fragment likewise lacks a trailing newline.",
+    "goal_fidelity": "the change does exactly what section 7 asked and no more: review.plan_settle_seconds: 600 joins review.tiers in reckon/schema/flight-defaults.yaml:133, flight.validate_layer validates it at reckon/flight.py:863-867, and the test pins the value to the file by provenance rather than to the accessor's fallback, which also answers 600 (reckon/flight.py:688).",
+    "scope_discipline": "the commit touches only the three declared paths and nothing outside them; flight.py, the module offering the accessor and validator, is untouched, so the node did not reach into a file it did not own."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 7 asks that review.plan_settle_seconds be declared in reckon/schema/flight-defaults.yaml beside review.tiers, validated, with a test pinning the resolved value to the file; at the reviewed head 6367ab1e8 the key is present in the shipped layer, validate_layer accepts it, and tests/test_plan_settle_window_is_declared.py asserts origin 'shipped' and origin's key presence and value 600, so the goal is met.\nVERDICT done_when: the shipped layer names the key (flight-defaults.yaml review.plan_settle_seconds: 600), reckon/flight.py:863 validates its shape, and the new test asserts resolved.origin('review.plan_settle_seconds') == 'shipped' plus the resolved mapping carries 600; I reproduced the module 1 passed EXIT=0 at head and 1 failed EXIT=1 (None == 'shipped') when the key is deleted from an extracted head tree.\nVERDICT write_paths: git diff f31a38d86..6367ab1e8 changes exactly reckon/schema/flight-defaults.yaml, tests/test_plan_settle_window_is_declared.py and the evidence fragment (3 files, 42 insertions), all inside the manifest's declared write paths.\nVERDICT manifest: read; status complete, the three changed paths declared and named under test_logs, baseline_suite (base-arm.log f31a38d86, completed, 0 failures) and after_suite (after-arm.log 6367ab1e8, completed, 0 failures) both armed and reproduced.\nVERDICT diff: read against the base; the diff adds the five-line defaults block, the new test, and the evidence fragment; reckon/flight.py is unchanged by this run, so the accessor and validator it uses predate it.\nCALL_SITES: reckon/crew/recovery.py:4128, reckon/flight.py:684\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the change does exactly what section 7 asked and no more: review.plan_settle_seconds: 600 joins review.tiers in reckon/schema/flight-defaults.yaml:133, flight.validate_layer validates it at reckon/flight.py:863-867, and the test pins the value to the file by provenance rather than to the accessor's fallback which also answers 600 (reckon/flight.py:688).\nSCORE evidence: 19\nJUSTIFICATION evidence: the base and head population arms are durable run-dir logs (1023 vs 1024 passed, 0 failures, both completed) bracketing the change, the negative control is red EXIT=1, and I reproduced the head test green and the key-deleted tree red at the provenance assertion; deducted one because the focused gate figure (1 passed) sits in the manifest's tests field with no focused-gate log stored beside the two arm logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only the three declared paths; reckon/flight.py, the module offering the accessor and validator, is untouched, so nothing outside the node's scope was reached.\nSCORE durability: 20\nJUSTIFICATION durability: one commit 6367ab1e8 carries a conventional subject and a body with no attribution, plan label or version number; the manifest is complete and was written incrementally; the gate logs sit under the run directory; the reviewed worktree remains on disk with a committed tree.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses reckon/flight.py rather than forking it and keeps the key out of the generated schema through the existing _schema_view exclusion; deducted two because the new test file fails ruff (W292, 26:69) and would be reformatted, against the repository's ruff target, and the evidence fragment also lacks a trailing newline.\nFINDING tests/test_plan_settle_window_is_declared.py:26 follow-on: the node's new test file is not ruff-clean (W292 no newline at end of file, and ruff format would reformat it); the new file is content the node introduced, so it is a finding it added, and it does not hold the node because the test is green at head and red when the key is deleted.",
+  "review_run_id": "r-20261004T194017618136-review-of-the-settle-window-is-declared-in-defaults",
+  "reviewed_base_sha": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "reviewed_head_sha": "6367ab1e8e221c25bc4719b42306188cad797d0f",
+  "reviewed_run_id": "r-20261004T191138845689-the-settle-window-is-declared-in-defaults",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T19:45:51Z",
+  "total": 97
+}

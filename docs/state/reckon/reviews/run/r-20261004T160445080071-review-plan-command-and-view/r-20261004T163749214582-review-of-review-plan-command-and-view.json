@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/resumption.py:1334",
+    "reckon/crew/recovery.py:11374",
+    "reckon/cli.py:2592",
+    "reckon/mcp.py:_crew"
+  ],
+  "completed_at": "2026-10-04T16:43:16.346Z",
+  "dispatched_at": "2026-10-04T16:38:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "524",
+      "severity": "follow-on",
+      "text": "follow-on: review-plan --dry-run still calls _review_dispatch_fields, which creates the report directory and writes brief.md, plan.html and plan-review.json before the dry_run guard is reached, so a preview that must not act leaves composition artifacts on disk; a distinct run id is minted per call so repeated previews accumulate report directories that store_delivered_report never consumes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read eaffcf874 and 789867093 against 357025eac; +893/-71 across the four product files and the new test file \u2014 recovery.py generalises the composer to a plan subject, cli.py adds one subcommand, mcp.py one view, flight.py one validated read-only key.",
+    "done_when": "the brief's done_when names the composer fields, the sweep eligibility (quiet past the settle window, unreviewed at its fingerprint, no delivered-unstored report, at most one in flight), the dry-run resolution, the refused empty decline and the MCP view; tests/test_review_plan_command.py adds a case for each and the manifest records head 191 passed / base 172 passed.",
+    "goal": "the node composes a plan review \u2014 node id plan-review-of-<slug>, role review, a brief built from the plan-design rubric plus the plan path and repository roots, a sidecar naming plan_slug, plan_version, reviewed_blob_sha, plan_fingerprint and rubric, and a per-run report directory as the write path \u2014 dispatches it through the shared composer, sweeps quiet unreviewed active/draft plans, and exposes one crew review-plan subcommand and one MCP plan-review view; reckon/crew/recovery.py:438 plan_review_subject and the plan branch at reckon/crew/recovery.py:516 carry it.",
+    "manifest": "read; status complete, base 357025eac to head 789867093, changed_paths match the grant, negative_control_log present and red (1 failed EXIT=1), baseline_suite and after_suite both present with failure_count 0.",
+    "write_paths": "the node is fenced to reckon/crew/recovery.py, reckon/cli.py, reckon/mcp.py, reckon/flight.py and tests/test_review_plan_command.py; the diff touches exactly those five files and no plan or evidence-fragment file."
+  },
+  "justifications": {
+    "durability": "tests/test_review_plan_command.py:159 reddens on the sweep's ignored stored-review lookup under the recorded negative control, and :414 forces a live metadata edit so the sidecar provenance assertion compares against an independently computed git hash; docked because several cases assert passed-in wiring (session, local) rather than a code-independent property.",
+    "evidence": "the reviewed manifest's head-gate.log and baseline.log are both on disk with headers naming revision, tree and command, and their 191/172 passed with 0 FAILED lines yield added_failure_count 0; docked because the two arms use two different basetemp paths and the base arm omits the new test file, so the head/base delta is a count of added tests rather than a common-set comparison.",
+    "fit": "the change extends the existing composer, store and review store rather than adding a module, and names mechanisms (plan_review_subject, plan_review_settle_seconds, plan-review-of-) with no plan label; reckon/crew/flight.py:684 is the one new read.",
+    "goal_fidelity": "reckon/crew/recovery.py:438 plan_review_subject and the plan branch of _review_dispatch_fields compose the declared brief, sidecar and report directory, and reckon/cli.py:2530 adds the one review-plan subcommand.",
+    "scope_discipline": "the diff touches exactly reckon/crew/recovery.py, reckon/cli.py, reckon/mcp.py, reckon/flight.py and tests/test_review_plan_command.py, the declared write paths, and edits no plan state or evidence fragment."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node composes a plan review \u2014 node id plan-review-of-<slug>, role review, a brief built from the plan-design rubric plus the plan path and repository roots, a sidecar naming plan_slug, plan_version, reviewed_blob_sha, plan_fingerprint and rubric, and a per-run report directory as the write path \u2014 dispatches it through the shared composer, sweeps quiet unreviewed active/draft plans, and exposes one crew review-plan subcommand and one MCP plan-review view; reckon/crew/recovery.py:438 plan_review_subject and the plan branch at reckon/crew/recovery.py:516 carry it.\nVERDICT done_when: the brief's done_when names the composer fields, the sweep eligibility (quiet past the settle window, unreviewed at its fingerprint, no delivered-unstored report, at most one in flight), the dry-run resolution, the refused empty decline and the MCP view; tests/test_review_plan_command.py adds a case for each and the manifest records head 191 passed / base 172 passed.\nVERDICT write_paths: the node is fenced to reckon/crew/recovery.py, reckon/cli.py, reckon/mcp.py, reckon/flight.py and tests/test_review_plan_command.py; the diff touches exactly those five files and no plan or evidence-fragment file.\nVERDICT manifest: read; status complete, base 357025eac to head 789867093, changed_paths match the grant, negative_control_log present and red (1 failed EXIT=1), baseline_suite and after_suite both present with failure_count 0.\nVERDICT diff: read eaffcf874 and 789867093 against 357025eac; +893/-71 across the four product files and the new test file \u2014 recovery.py generalises the composer to a plan subject, cli.py adds one subcommand, mcp.py one view, flight.py one validated read-only key.\nCALL_SITES: reckon/crew/resumption.py:1334, reckon/crew/recovery.py:11374, reckon/cli.py:2592, reckon/mcp.py:_crew\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:438 plan_review_subject and the plan branch of _review_dispatch_fields compose the declared brief, sidecar and report directory, and reckon/cli.py:2530 adds the one review-plan subcommand.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed manifest's head-gate.log and baseline.log are both on disk with headers naming revision, tree and command, and their 191/172 passed with 0 FAILED lines yield added_failure_count 0; docked because the two arms use two different basetemp paths and the base arm omits the new test file, so the head/base delta is a count of added tests rather than a common-set comparison.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly reckon/crew/recovery.py, reckon/cli.py, reckon/mcp.py, reckon/flight.py and tests/test_review_plan_command.py, the declared write paths, and edits no plan state or evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_plan_command.py:159 reddens on the sweep's ignored stored-review lookup under the recorded negative control, and :414 forces a live metadata edit so the sidecar provenance assertion compares against an independently computed git hash; docked because several cases assert passed-in wiring (session, local) rather than a code-independent property.\nSCORE fit: 19\nJUSTIFICATION fit: the change extends the existing composer, store and review store rather than adding a module, and names mechanisms (plan_review_subject, plan_review_settle_seconds, plan-review-of-) with no plan label; reckon/crew/flight.py:684 is the one new read.\nFINDING reckon/crew/recovery.py:524 follow-on: review-plan --dry-run still calls _review_dispatch_fields, which creates the report directory and writes brief.md, plan.html and plan-review.json before the dry_run guard is reached, so a preview that must not act leaves composition artifacts on disk; a distinct run id is minted per call so repeated previews accumulate report directories that store_delivered_report never consumes.\n",
+  "review_run_id": "r-20261004T163749214582-review-of-review-plan-command-and-view",
+  "reviewed_base_sha": "357025eace484e38f5b33aa86a60521421c5bee1",
+  "reviewed_head_sha": "789867093dec0c6a908e495e5700ca4b51b4285b",
+  "reviewed_run_id": "r-20261004T160445080071-review-plan-command-and-view",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:08.512773+00:00",
+  "total": 94
+}

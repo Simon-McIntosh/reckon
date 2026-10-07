@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 27,
+  "added_failure_ids": [
+    "tests/test_a_reexec_keeps_its_children.py::test_the_reloader_exports_launched_pids_beside_the_checkpoint",
+    "tests/test_bookkeeping_follows_the_run.py::test_a_corrective_attempt_promotes_exempt_and_needs_no_impl_flag[redispatch]",
+    "tests/test_bookkeeping_follows_the_run.py::test_a_corrective_attempt_promotes_exempt_and_needs_no_impl_flag[resume]",
+    "tests/test_bookkeeping_follows_the_run.py::test_a_review_runs_outcome_defaults_to_its_stored_review",
+    "tests/test_crew.py::test_opt_in_budget_watchdog_stops_and_records_the_run_phase",
+    "tests/test_crew.py::test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts",
+    "tests/test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source",
+    "tests/test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree",
+    "tests/test_crew_recovery.py::test_watchdog_still_stops_a_live_over_grace_worker_with_a_token_budget",
+    "tests/test_dispatch_declares_the_run_it_repairs.py::test_a_repairs_dispatch_records_the_field_and_promotes_exempt",
+    "tests/test_dispatch_timestamps_reuse_the_parser.py::test_only_the_lane_reading_retains_fromisoformat",
+    "tests/test_promotion_requires_impl_move.py::test_a_non_passing_gate_is_exempt",
+    "tests/test_promotion_requires_impl_move.py::test_a_recorded_reason_waives_the_refusal_and_lands_on_the_ledger_row",
+    "tests/test_promotion_requires_impl_move.py::test_a_run_dispatched_before_the_check_is_exempt_and_says_so",
+    "tests/test_promotion_requires_impl_move.py::test_an_impl_that_moved_promotes_without_a_reason",
+    "tests/test_promotion_requires_impl_move.py::test_negative_results_and_correct_refusals_are_exempt[correct-refusal]",
+    "tests/test_promotion_requires_impl_move.py::test_negative_results_and_correct_refusals_are_exempt[negative-result]",
+    "tests/test_promotion_requires_impl_move.py::test_non_implementing_roles_are_exempt[cleanup]",
+    "tests/test_promotion_requires_impl_move.py::test_non_implementing_roles_are_exempt[investigate]",
+    "tests/test_promotion_requires_impl_move.py::test_non_implementing_roles_are_exempt[review]",
+    "tests/test_promotion_requires_impl_move.py::test_the_cli_flag_promotes_a_landing_that_did_not_move_the_plan",
+    "tests/test_receipt_after_release.py::test_a_live_writer_is_ended_first_and_its_receipt_is_folded",
+    "tests/test_receipt_after_release.py::test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback",
+    "tests/test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion",
+    "tests/test_receipt_after_release.py::test_the_pre_release_gate_is_the_release_gates_signal",
+    "tests/test_terminal_run_elapsed.py::test_watchdog_still_stops_a_live_over_grace_cli_worker",
+    "tests/test_worker_env_export.py::test_an_in_harness_lane_change_carries_the_attempt_environment"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "b5dbaaa2f0acb92f69f9439c5d319ddc9c2fc792",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T04:16:59.337Z",
+  "dispatched_at": "2026-10-02T04:09:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T032036121368-suite-remeasure-after-repairs/parse_failures.py",
+      "line": "25",
+      "severity": "follow-on",
+      "text": "follow-on: the block-header matcher requires five or more underscores on both sides (^_{5,} .* _{5,}$) but pytest emits a four-underscore left run for the longest test names, so those blocks are never registered and 5 of 27 ids are recorded with first_error \"\" though solo-rerun.log carries an E line for each (test_a_recorded_reason_waives_the_refusal_and_lands_on_the_ledger_row at solo-rerun.log:765); the done-when asked for every failing id with its first error line, so this is an evidence gap that changes neither the count nor the attribution."
+    }
+  ],
+  "head_log_revision": "3b883745b34d85fe612736519ded2a6ada178f25",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed worktree is clean at 3b883745 and the manifest cites no commit; the change read is the report and its scripts under the run directory, judged against the b5dbaaa2 baseline.",
+    "done_when": "the done-when names the exact -n 8 pytest command, the counts, the serial re-run and the b5dbaaa2 comparison; the manifest records all four and both gate logs carry the results.",
+    "goal": "the goal is one attributed full-suite measurement at the integrated head after the repair round; suite-remeasure.md Step 1 records the head revision 3b883745b34d85fe612736519ded2a6ada178f25 and Step 3 attributes every failing id to a candidate commit.",
+    "manifest": "read; it states the full-suite command with 27 failed / 9838 passed / 76 skipped / 0 errors and the 27-id serial re-run at 27 failed, and names suite-remeasure.log and solo-rerun.log.",
+    "write_paths": "the one granted path is the run directory r-20261002T032036121368-suite-remeasure-after-repairs; every artifact the node wrote lies inside it, plus the brief-mandated copies under crew/reports/reckon/."
+  },
+  "justifications": {
+    "durability": "the measurement leaves no product change to regress, but its reproducibility rests on parse_failures.py:25 whose block-header matcher is untested and demonstrably drops the longest test names, so the retained evidence is not fully sound.",
+    "evidence": "the added-failure derivation reproduces independently - added_failures_from_gate_logs over suite-remeasure.log against suite-integrated.log returns 27 with the same ids and the base log's 10 ids are all absent from the head - but 5 of the 27 ids carry an empty first_error in suite-remeasure.json though solo-rerun.log prints an E line for them.",
+    "fit": "suite-remeasure.md and suite-remeasure.json follow the brief's declared shapes and keys, and the helper names parse_failures.py and build_report.py carry no plan or sprint identifiers.",
+    "goal_fidelity": "suite-remeasure.md Step 1 records the full-suite result at 3b883745b34d85fe612736519ded2a6ada178f25 and Step 3 attributes every one of the 27 failing ids to a candidate commit, which is the goal's attributed measurement.",
+    "scope_discipline": "the reviewed worktree is clean at 3b883745 (git status empty, no commit cited) and every artifact lies under the granted run directory, so the read-only role was held."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one attributed full-suite measurement at the integrated head after the repair round; suite-remeasure.md Step 1 records the head revision 3b883745b34d85fe612736519ded2a6ada178f25 and Step 3 attributes every failing id to a candidate commit.\nVERDICT done_when: the done-when names the exact -n 8 pytest command, the counts, the serial re-run and the b5dbaaa2 comparison; the manifest records all four and both gate logs carry the results.\nVERDICT write_paths: the one granted path is the run directory r-20261002T032036121368-suite-remeasure-after-repairs; every artifact the node wrote lies inside it, plus the brief-mandated copies under crew/reports/reckon/.\nVERDICT manifest: read; it states the full-suite command with 27 failed / 9838 passed / 76 skipped / 0 errors and the 27-id serial re-run at 27 failed, and names suite-remeasure.log and solo-rerun.log.\nVERDICT diff: the reviewed worktree is clean at 3b883745 and the manifest cites no commit; the change read is the report and its scripts under the run directory, judged against the b5dbaaa2 baseline.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: suite-remeasure.md Step 1 records the full-suite result at 3b883745b34d85fe612736519ded2a6ada178f25 and Step 3 attributes every one of the 27 failing ids to a candidate commit, which is the goal's attributed measurement.\nSCORE evidence: 17\nJUSTIFICATION evidence: the added-failure derivation reproduces independently - added_failures_from_gate_logs over suite-remeasure.log against suite-integrated.log returns 27 with the same ids and the base log's 10 ids are all absent from the head - but 5 of the 27 ids carry an empty first_error in suite-remeasure.json though solo-rerun.log prints an E line for them.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at 3b883745 (git status empty, no commit cited) and every artifact lies under the granted run directory, so the read-only role was held.\nSCORE durability: 15\nJUSTIFICATION durability: the measurement leaves no product change to regress, but its reproducibility rests on parse_failures.py:25 whose block-header matcher is untested and demonstrably drops the longest test names, so the retained evidence is not fully sound.\nSCORE fit: 18\nJUSTIFICATION fit: suite-remeasure.md and suite-remeasure.json follow the brief's declared shapes and keys, and the helper names parse_failures.py and build_report.py carry no plan or sprint identifiers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T032036121368-suite-remeasure-after-repairs/parse_failures.py:25 follow-on: the block-header matcher requires five or more underscores on both sides (^_{5,} .* _{5,}$) but pytest emits a four-underscore left run for the longest test names, so those blocks are never registered and 5 of 27 ids are recorded with first_error \"\" though solo-rerun.log carries an E line for each (test_a_recorded_reason_waives_the_refusal_and_lands_on_the_ledger_row at solo-rerun.log:765); the done-when asked for every failing id with its first error line, so this is an evidence gap that changes neither the count nor the attribution.\n",
+  "review_run_id": "r-20261002T040913963766-review-of-suite-remeasure-after-repairs",
+  "reviewed_base_sha": "b5dbaaa2f0acb92f69f9439c5d319ddc9c2fc792",
+  "reviewed_head_sha": "3b883745b34d85fe612736519ded2a6ada178f25",
+  "reviewed_run_id": "r-20261002T032036121368-suite-remeasure-after-repairs",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.325458+00:00",
+  "total": 90
+}

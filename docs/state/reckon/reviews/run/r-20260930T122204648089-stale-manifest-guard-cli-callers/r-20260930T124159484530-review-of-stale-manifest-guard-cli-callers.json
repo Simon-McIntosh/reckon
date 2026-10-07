@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4663e8f47d835ce2452f37a79a107ef7ea4b52e1",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:5165",
+    "reckon/crew/promotion.py:3427",
+    "reckon/crew/promotion.py:3842"
+  ],
+  "completed_at": "2026-09-30T12:52:08.102Z",
+  "dispatched_at": "2026-09-30T12:42:18Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T122204648089-stale-manifest-guard-cli-callers/manifest.md",
+      "line": "13",
+      "text": "the measurement_cwd value carries prose beside the path (/tmp/smg-cli-callers/head followed by \"merged arm; base arm /tmp/smg-cli-callers/base\") where the contract's shape is a bare path, and reckon/crew/review.py:1159-1182 only attributes a recorded directory to an arm whose own command contains it, so the reader returns no directory for either arm and the per-arm id reduction the field exists for cannot run; it is inert here only because each log prints repository-relative FAILED ids, and a log printing the scratch-tree prefix would be compared under two spellings while the count still read 0."
+    },
+    {
+      "file": "merged_41e8d410_replicate.log",
+      "line": "1",
+      "text": "the replicate log's first line reads \"revision: smoke\", so a log the manifest keeps as evidence names no revision the repository's own reader recognises (reckon/crew/review.py:507); the report discloses the mislabel at report.md:88-91 and the log is not one the suite fields name, so nothing downstream misreads it, but the artifact cannot be tied to the revision it measured without the prose beside it."
+    }
+  ],
+  "head_log_revision": "41e8d410039e7de6d6b2cdaf87c561aa4227d0a9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "there is no diff to read - the node landed no repository file, so its worktree stands at its own base c33acd82 with no commit over it; the reviewable artifact is the measurement record itself, which is what prompt.txt:33's exact spec asks a test role to produce.",
+    "done_when": "prompt.txt:83-101 names the report path, the population rule with six files that must appear in it, both arms at -n 8 in git-archive scratch trees under /tmp, a per-log first line naming revision, tree and module under test with a bare EXIT= terminator, both failure-id sets, the added-id clause, the /tmp deletion and the three suite fields; report.md carries each, all six named files are listed, and I read the log headers (baseline_4663e8f4.log:1 revision 4663e8f4, merged_41e8d410.log:1 revision 41e8d410) and their bare EXIT=1 terminators on disk.",
+    "goal": "prompt.txt:30 asks whether the stale-manifest guard merge adds a failing test id among the test files that drive promotion through the reckon crew complete command line; report.md:8 answers no (0 added, 0 removed) over the 15-file rule at report.md:29, and my own AST scan of tests/ at 41e8d410 (extracted with git archive, 653 files) returns the same 15 files modulo exactly the two boundary cases report.md:46-52 names and reasons about.",
+    "manifest": "read; baseline_suite and after_suite carry both commands, revisions, exit statuses 1, failure_count 1 and the same single id, and the repository's own reader (reckon.crew.review.annotate_review_of_run) over this manifest returns added_failure_count 0 with an empty id list and parses base_log_revision 4663e8f47d835ce2452f37a79a107ef7ea4b52e1 and head_log_revision 41e8d410039e7de6d6b2cdaf87c561aa4227d0a9.",
+    "write_paths": "prompt.txt:68 fences the node to the report directory; every artifact the manifest names lies under /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/stale-manifest-guard-cli-callers, and the reviewed worktree at c33acd82f8543249124e2e1c0c561ced9b484a83 shows git log c33acd82..HEAD empty and git status --porcelain empty, so no repository file was changed."
+  },
+  "justifications": {
+    "durability": "a measurement has no code to regress, so its durability is whether the zero is a measurement rather than a silence - the base revision's own failure is reported by id in both arms (tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition) and the two arms provably differ in the guarded code, which I reproduced by counting the merge's marker at both revisions.",
+    "evidence": "both arm logs exist, name revision, tree and module under test on line 1, and end on a bare EXIT=1 with 1 failed, 324 passed each, and the repository's own added_failures_from_gate_logs over those two texts returns 0 added ids; deducted for manifest.md:13, whose prose value leaves both arms without a recorded directory and disables the per-arm id reduction that field exists for.",
+    "fit": "the artifact names (report.md, baseline_4663e8f4.log, merged_41e8d410.log) carry no plan, sprint or ticket identifier and the report follows the evidence idiom of the neighbouring reports under reports/reckon/, with a small deduction for the mislabelled replicate header at merged_41e8d410_replicate.log:1.",
+    "goal_fidelity": "the answer at report.md:8 reproduces independently - my own scan of tests/ at 41e8d410 yields the same file list with both boundary cases named, and the positive control at report.md:110-113 reproduces: _worker_launched_after_manifest occurs 0 times in reckon/crew/promotion.py at 4663e8f4 and 2 times at 41e8d410.",
+    "scope_discipline": "every artifact lies inside the single path prompt.txt:68 grants, and the reviewed worktree at c33acd82 carries neither a commit over its base nor a modification."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks whether the stale-manifest guard merge adds a failing test id among the test files that drive promotion through the reckon crew complete command line; report.md:8 answers no (0 added, 0 removed) over the 15-file rule at report.md:29, and my own AST scan of tests/ at 41e8d410 (extracted with git archive, 653 files) returns the same 15 files modulo exactly the two boundary cases report.md:46-52 names and reasons about.\nVERDICT done_when: prompt.txt:83-101 names the report path, the population rule with six files that must appear in it, both arms at -n 8 in git-archive scratch trees under /tmp, a per-log first line naming revision, tree and module under test with a bare EXIT= terminator, both failure-id sets, the added-id clause, the /tmp deletion and the three suite fields; report.md carries each, all six named files are listed, and I read the log headers (baseline_4663e8f4.log:1 revision 4663e8f4, merged_41e8d410.log:1 revision 41e8d410) and their bare EXIT=1 terminators on disk.\nVERDICT write_paths: prompt.txt:68 fences the node to the report directory; every artifact the manifest names lies under /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/stale-manifest-guard-cli-callers, and the reviewed worktree at c33acd82f8543249124e2e1c0c561ced9b484a83 shows git log c33acd82..HEAD empty and git status --porcelain empty, so no repository file was changed.\nVERDICT manifest: read; baseline_suite and after_suite carry both commands, revisions, exit statuses 1, failure_count 1 and the same single id, and the repository's own reader (reckon.crew.review.annotate_review_of_run) over this manifest returns added_failure_count 0 with an empty id list and parses base_log_revision 4663e8f47d835ce2452f37a79a107ef7ea4b52e1 and head_log_revision 41e8d410039e7de6d6b2cdaf87c561aa4227d0a9.\nVERDICT diff: there is no diff to read - the node landed no repository file, so its worktree stands at its own base c33acd82 with no commit over it; the reviewable artifact is the measurement record itself, which is what prompt.txt:33's exact spec asks a test role to produce.\nCALL_SITES: reckon/cli.py:5165, reckon/crew/promotion.py:3427, reckon/crew/promotion.py:3842\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the answer at report.md:8 reproduces independently - my own scan of tests/ at 41e8d410 yields the same file list with both boundary cases named, and the positive control at report.md:110-113 reproduces: _worker_launched_after_manifest occurs 0 times in reckon/crew/promotion.py at 4663e8f4 and 2 times at 41e8d410.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arm logs exist, name revision, tree and module under test on line 1, and end on a bare EXIT=1 with 1 failed, 324 passed each, and the repository's own added_failures_from_gate_logs over those two texts returns 0 added ids; deducted for manifest.md:13, whose prose value leaves both arms without a recorded directory and disables the per-arm id reduction that field exists for.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every artifact lies inside the single path prompt.txt:68 grants, and the reviewed worktree at c33acd82 carries neither a commit over its base nor a modification.\nSCORE durability: 17\nJUSTIFICATION durability: a measurement has no code to regress, so its durability is whether the zero is a measurement rather than a silence - the base revision's own failure is reported by id in both arms (tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition) and the two arms provably differ in the guarded code, which I reproduced by counting the merge's marker at both revisions.\nSCORE fit: 18\nJUSTIFICATION fit: the artifact names (report.md, baseline_4663e8f4.log, merged_41e8d410.log) carry no plan, sprint or ticket identifier and the report follows the evidence idiom of the neighbouring reports under reports/reckon/, with a small deduction for the mislabelled replicate header at merged_41e8d410_replicate.log:1.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T122204648089-stale-manifest-guard-cli-callers/manifest.md:13 the measurement_cwd value carries prose beside the path (/tmp/smg-cli-callers/head followed by \"merged arm; base arm /tmp/smg-cli-callers/base\") where the contract's shape is a bare path, and reckon/crew/review.py:1159-1182 only attributes a recorded directory to an arm whose own command contains it, so the reader returns no directory for either arm and the per-arm id reduction the field exists for cannot run; it is inert here only because each log prints repository-relative FAILED ids, and a log printing the scratch-tree prefix would be compared under two spellings while the count still read 0.\nFINDING merged_41e8d410_replicate.log:1 the replicate log's first line reads \"revision: smoke\", so a log the manifest keeps as evidence names no revision the repository's own reader recognises (reckon/crew/review.py:507); the report discloses the mislabel at report.md:88-91 and the log is not one the suite fields name, so nothing downstream misreads it, but the artifact cannot be tied to the revision it measured without the prose beside it.",
+  "review_run_id": "r-20260930T124159484530-review-of-stale-manifest-guard-cli-callers",
+  "reviewed_base_sha": "c33acd82f8543249124e2e1c0c561ced9b484a83",
+  "reviewed_head_sha": "c33acd82f8543249124e2e1c0c561ced9b484a83",
+  "reviewed_run_id": "r-20260930T122204648089-stale-manifest-guard-cli-callers",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T12:50:10.158174+00:00",
+  "total": 90
+}

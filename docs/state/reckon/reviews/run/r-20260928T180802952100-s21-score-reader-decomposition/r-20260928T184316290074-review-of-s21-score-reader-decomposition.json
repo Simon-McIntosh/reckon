@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-28T19:06:50.624Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "exempted",
+      "reason": "coordinator-owned: the node was fenced to a report under ~/.config/reckon/crew/reports, outside any repository, so no conduct of the worker could make something fail if it regresses; this is the unversioned-document case crew-observability-truth \u00a721 records, and its fix is the per-role rubric (N4), not a repair of this run",
+      "recorded_at": "2026-09-28T19:08:17.131273+00:00"
+    }
+  },
+  "dispatched_at": "2026-09-28T18:43:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s21-score-reader-decomposition/report.md",
+      "line": "221",
+      "text": "M7's second unlanded half has no node proposal, so after all five proposals land the measure \"queryable ... against the work it generated\" is still unmet and no dispatchable node closes it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s21-score-reader-decomposition/report.md",
+      "line": "291",
+      "text": "the N1 ordering line cites \"N7-repair selection\", a node id absent from the five proposals, sending a lead to a deliverable that does not exist."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s21-score-reader-decomposition/report.md",
+      "line": "160",
+      "text": "the sentence that a document-shaped deliverable \"is real and gated on a review\" overreads its citation: the gate's own term `changed_repository` (reckon/crew/promotion.py:2952, tested at :2960) comes from `_manifest_repository_paths` (reckon/crew/promotion.py:2808-2820), which is empty for a run whose only declared paths are outside the repository, so an investigate node writing its report to the config home is not gated at all."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff to read commit by commit \u2014 the reviewed worktree HEAD is f90aa56a, identical to the base its own manifest declares, with no commits since it and a clean status, so the deliverable is the out-of-repository report alone.",
+    "done_when": "the done-when is a content assertion over the report plus an empty `git status --porcelain` in the reviewed worktree; the node recorded its one executed test in manifest.md `tests:` and in negative-control.log, and I re-ran that same test at f90aa56a myself (3 passed in 8.91s, exit 0).",
+    "goal": "the node goal is to decompose \u00a721's eight measures into dispatchable single-deliverable nodes against the code at HEAD, and report.md:16-27 does carry a verdict for all eight while report.md:266-390 proposes five nodes each with a goal, a failing-at-base statement, exclusive write paths, a negative control and its ordering.",
+    "manifest": "manifest.md reads `status: complete` with `commits: none (repository worktree remained clean)` and `tests: ... 3 passed in 8.52s, exit 0`, which is the same figure its negative-control.log records; its `artifacts:` field names the report path, and that file exists.",
+    "write_paths": "the single declared path holds the report (30,629 bytes at report.md), and the reviewed worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/s21-score-reader-decomposition prints nothing for `git status --porcelain` at f90aa56a, so no repository path was written."
+  },
+  "justifications": {
+    "durability": "the deliverable is a single report at a path under ~/.config/reckon/crew/reports (report.md:1-14) outside any repository that no code path reads, so nothing fails if it regresses \u2014 the coordinator-owned limitation \u00a721 records for its two measured durability-5 document landings.",
+    "evidence": "I reproduced the headline measurement at f90aa56a exactly (461 ledger rows, 173 carrying a review block with key set exactly absent/scores/status/total, against a positive control of 461 rows carrying a gate) and every sampled citation resolved, but report.md:160 reads its own citation at promotion.py:2928 as gating document deliverables generally where the gate's predicate requires a path changed inside the run's repository.",
+    "fit": "the report follows the section's own idiom \u2014 committed-blob citations, an instrument control for its absence greps (report.md:29-33), node proposals naming write paths, negative controls and ordering, and an overlap ledger \u2014 but report.md:291 names a node \"N7\" that its proposal set does not contain.",
+    "goal_fidelity": "all eight measures carry a committed-blob verdict and five nodes are proposed with the required fields, but report.md:221 leaves M7's second unlanded half \u2014 the join onward to the work a run generated \u2014 without a node proposal, so that measure stays unmet after every proposal lands.",
+    "scope_discipline": "the report is written to the one declared path and the reviewed worktree at f90aa56a is clean with no commits, so the node wrote nothing it was not fenced to write."
+  },
+  "project": "reckon",
+  "raw_text": "# Emitted review \u2014 independent review of run r-20260928T180802952100-s21-score-reader-decomposition\n# Reviewed at base = head = f90aa56ac7708f34e34385bc9e08f99b5a954b27 (the reviewed node\n# changed no repository file, so its diff is empty and its worktree head is its base).\n# Every citation below was re-read from the committed blob at f90aa56a in this turn.\n\nVERDICT goal: the node goal is to decompose \u00a721's eight measures into dispatchable single-deliverable nodes against the code at HEAD, and report.md:16-27 does carry a verdict for all eight while report.md:266-390 proposes five nodes each with a goal, a failing-at-base statement, exclusive write paths, a negative control and its ordering.\nVERDICT done_when: the done-when is a content assertion over the report plus an empty `git status --porcelain` in the reviewed worktree; the node recorded its one executed test in manifest.md `tests:` and in negative-control.log, and I re-ran that same test at f90aa56a myself (3 passed in 8.91s, exit 0).\nVERDICT write_paths: the single declared path holds the report (30,629 bytes at report.md), and the reviewed worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/s21-score-reader-decomposition prints nothing for `git status --porcelain` at f90aa56a, so no repository path was written.\nVERDICT manifest: manifest.md reads `status: complete` with `commits: none (repository worktree remained clean)` and `tests: ... 3 passed in 8.52s, exit 0`, which is the same figure its negative-control.log records; its `artifacts:` field names the report path, and that file exists.\nVERDICT diff: there is no diff to read commit by commit \u2014 the reviewed worktree HEAD is f90aa56a, identical to the base its own manifest declares, with no commits since it and a clean status, so the deliverable is the out-of-repository report alone.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all eight measures carry a committed-blob verdict and five nodes are proposed with the required fields, but report.md:221 leaves M7's second unlanded half \u2014 the join onward to the work a run generated \u2014 without a node proposal, so that measure stays unmet after every proposal lands.\nSCORE evidence: 17\nJUSTIFICATION evidence: I reproduced the headline measurement at f90aa56a exactly (461 ledger rows, 173 carrying a review block with key set exactly absent/scores/status/total, against a positive control of 461 rows carrying a gate) and every sampled citation resolved, but report.md:160 reads its own citation at promotion.py:2928 as gating document deliverables generally where the gate's predicate requires a path changed inside the run's repository.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the report is written to the one declared path and the reviewed worktree at f90aa56a is clean with no commits, so the node wrote nothing it was not fenced to write.\nSCORE durability: 5\nJUSTIFICATION durability: the deliverable is a single report at a path under ~/.config/reckon/crew/reports (report.md:1-14) outside any repository that no code path reads, so nothing fails if it regresses \u2014 the coordinator-owned limitation \u00a721 records for its two measured durability-5 document landings.\nSCORE fit: 18\nJUSTIFICATION fit: the report follows the section's own idiom \u2014 committed-blob citations, an instrument control for its absence greps (report.md:29-33), node proposals naming write paths, negative controls and ordering, and an overlap ledger \u2014 but report.md:291 names a node \"N7\" that its proposal set does not contain.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s21-score-reader-decomposition/report.md:221 M7's second unlanded half has no node proposal, so after all five proposals land the measure \"queryable ... against the work it generated\" is still unmet and no dispatchable node closes it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s21-score-reader-decomposition/report.md:291 the N1 ordering line cites \"N7-repair selection\", a node id absent from the five proposals, sending a lead to a deliverable that does not exist.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s21-score-reader-decomposition/report.md:160 the sentence that a document-shaped deliverable \"is real and gated on a review\" overreads its citation: the gate's own term `changed_repository` (reckon/crew/promotion.py:2952, tested at :2960) comes from `_manifest_repository_paths` (reckon/crew/promotion.py:2808-2820), which is empty for a run whose only declared paths are outside the repository, so an investigate node writing its report to the config home is not gated at all.",
+  "review_run_id": "r-20260928T184316290074-review-of-s21-score-reader-decomposition",
+  "reviewed_base_sha": "f90aa56ac7708f34e34385bc9e08f99b5a954b27",
+  "reviewed_head_sha": "f90aa56ac7708f34e34385bc9e08f99b5a954b27",
+  "reviewed_run_id": "r-20260928T180802952100-s21-score-reader-decomposition",
+  "reviewer_node": "review-of-s21-score-reader-decomposition",
+  "scores": {
+    "durability": 5,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T19:00:11.876868+00:00",
+  "total": 78
+}

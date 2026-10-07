@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T00:37:09.760304+00:00",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "667",
+      "text": "a lane rendered quota_source \"borrowed\" carries probe_status \"unmatched\" while the same pool-divergence refusal on a lane that keeps its own receipt renders probe_status \"answered\" (reckon/mcp_views.py:660), so one status conflates two mutually exclusive reasons and a reader correlating quota_source with probe_status cannot distinguish \"windows did not match\" from \"account not owned\"."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "528",
+      "text": "pool_by_backend is populated before the unmetered skip, so an unmetered backend that declares a quota_pool appears in the top-level quota_pools map (reckon/mcp_views.py:543), labelling a backend that draws on no measured quota as a member of a shared account pool (reachable only if config declares a pool on an unmetered backend)."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_crew_lanes_view.py:416 fails if the borrow guard is removed and test_identical_reset_schedules_never_group_without_a_declared_pool at tests/test_crew_lanes_view.py:479 pins declared-only grouping.",
+    "evidence": "the gate reproduces 1 failed / 12 passed at the reviewed head 6c18dd4 with the three new tests asserting the three done-when clauses, and the base delta is proven by byte-identical fenced files across a76cb93..e5762ec (/tmp/rev_bf_gate2.log).",
+    "fit": "the mechanism-named helpers _declared_quota_pool and _probe_is_lane_owned at reckon/mcp_views.py:437 and :466 match the surrounding idiom with no new lint or format findings, but the borrowed state is surfaced through a probe_status that also names unmatched windows.",
+    "goal_fidelity": "spark with no reading of its own renders quota_source \"borrowed\" with no figure while the shared probe is adopted only when every codex-declaring backend shares the lane's declared pool (reckon/mcp_views.py:466).",
+    "scope_discipline": "the single commit 6c18dd4 touches exactly the two declared write paths reckon/mcp_views.py and tests/test_crew_lanes_view.py."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "An independent review of run r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own.\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: spark with no reading of its own renders quota_source \"borrowed\" with no figure while the shared probe is adopted only when every codex-declaring backend shares the lane's declared pool (reckon/mcp_views.py:466).\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate reproduces 1 failed / 12 passed at the reviewed head 6c18dd4 with the three new tests asserting the three done-when clauses, and the base delta is proven by byte-identical fenced files across a76cb93..e5762ec (/tmp/rev_bf_gate2.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single commit 6c18dd4 touches exactly the two declared write paths reckon/mcp_views.py and tests/test_crew_lanes_view.py.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_lanes_view.py:416 fails if the borrow guard is removed and test_identical_reset_schedules_never_group_without_a_declared_pool at tests/test_crew_lanes_view.py:479 pins declared-only grouping.\nSCORE fit: 17\nJUSTIFICATION fit: the mechanism-named helpers _declared_quota_pool and _probe_is_lane_owned at reckon/mcp_views.py:437 and :466 match the surrounding idiom with no new lint or format findings, but the borrowed state is surfaced through a probe_status that also names unmatched windows.\nFINDING reckon/mcp_views.py:667 a lane rendered quota_source \"borrowed\" carries probe_status \"unmatched\" while the same pool-divergence refusal on a lane that keeps its own receipt renders probe_status \"answered\" (reckon/mcp_views.py:660), so one status conflates two mutually exclusive reasons and a reader correlating quota_source with probe_status cannot distinguish \"windows did not match\" from \"account not owned\".\nFINDING reckon/mcp_views.py:528 pool_by_backend is populated before the unmetered skip, so an unmetered backend that declares a quota_pool appears in the top-level quota_pools map (reckon/mcp_views.py:543), labelling a backend that draws on no measured quota as a member of a shared account pool (reachable only if config declares a pool on an unmetered backend).\n",
+  "review_run_id": "r-20260915T003709760304-rev-borrowed-figure",
+  "reviewed_base": "e5762ec633f9d983572028d6d52b5216ac513ff6",
+  "reviewed_commit": "6c18dd479c856c5ee24ec168ae3067c5eca63a51",
+  "reviewed_run_id": "r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T00:50:30.508052+00:00",
+  "total": 93
+}

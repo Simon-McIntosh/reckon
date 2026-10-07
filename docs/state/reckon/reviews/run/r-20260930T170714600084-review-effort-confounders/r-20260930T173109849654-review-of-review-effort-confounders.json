@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T17:45:12.198Z",
+  "dispatched_at": "2026-09-30T17:31:22Z",
+  "findings": [
+    {
+      "file": "analysis/collect.py",
+      "line": "19",
+      "text": "the durable copy hardcodes the reviewed node's own worktree root and a /tmp scratch path the run deleted, so the reproduction report.md:110-124 promises cannot be run from analysis/ alone and a later reader must rewrite both paths - the same defect appears at analyse.py:19, control.py:24 and plot.py:18."
+    },
+    {
+      "file": "analysis/plot.py",
+      "line": "70",
+      "text": "a dead conditional, ax.set_xlim(-0.7, 3.7) if False else ax.set_xlim(-0.7, 3.7), ships in a stored script and leaves a reader unable to tell whether a different limit was ever intended."
+    },
+    {
+      "file": "analysis/control.py",
+      "line": "75",
+      "text": "the placebo restriction is built from the five differing confounders rebuildable from one row, while the restricted rate the report leans on at report.md:15 uses eight, so the control does not exercise the procedure it is cited against; the direction of the real restriction, which raises the xhigh rate rather than lowering it, is what keeps the verdict sound."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the manifest records no commits, so the landed change is the report directory, read file by file - report.md, analysis/collect.py, analyse.py, control.py, plot.py, results.json, analysis.txt, negative-control.log and the two figures.",
+    "done_when": "the dispatched measure names a per-confounder inside/outside comparison, a restriction of xhigh to the high cell's range on each differing confounder, a three-word verdict, the population and smallest separating sample, and one figure; report.md:30-45, report.md:67-90 and analysis/analysis.txt carry every one of them and analysis/analysis.txt:103-125 records the per-day series.",
+    "goal": "the node goal is to establish whether the review/high vs review/xhigh death-rate gap survives its confounders; report.md:3 states the verdict effort and report.md:10-18 carries both cells with three restricted xhigh rates, and my own re-walk of the ledger through the same scanner reproduced the high cell exactly at 1/46 and a 110-attempt xhigh sample at 30.0% against the recorded 29.4%.",
+    "manifest": "read; it reports the measure complete, names the four analysis scripts, both figures and both logs, and its claim that /tmp/review-effort-confounders was deleted I confirmed by listing /tmp.",
+    "write_paths": "the declared scope was the report directory alone; every artifact the manifest lists lies inside it, the repository worktree at e8b396da673f4817ac199ec2510e7fb822dd846f is clean with no commits, and the scratch named for the run is absent from /tmp."
+  },
+  "justifications": {
+    "durability": "analysis/control.py:41-136 is the falsifier this measure rests on - the classifier reading both outcomes and 200 placebo restrictions never reaching the high cell's rate - and its red-line evidence is durable in analysis/negative-control.log, but the scripts cannot be re-executed as stored.",
+    "evidence": "analysis/analysis.txt:1-2 and analysis/results.json record the counts, and my independent recomputation of the exact Fisher p gave 6.18e-06 against the report's 6.2e-06 and the Clopper-Pearson interval for 1/46 reproduced as (0.000550, 0.115272).",
+    "fit": "analysis/plot.py:75-77 despines the axes and disables the grid as the plot mandate requires, but analysis/plot.py:70 keeps a dead conditional and every script pins absolute paths it cannot resolve after cleanup.",
+    "goal_fidelity": "report.md:3 answers the question the goal poses and report.md:86-87 names the population and the 31 attempts per arm a re-dispatch needs, which is what the goal says the answer is for.",
+    "scope_discipline": "report.md and analysis/ sit inside the single declared write path, git -C on the reviewed worktree at e8b396da reports a clean tree with HEAD equal to the base, and the only over-delivery is the second figure at report.md:75, which the non-stationary daily series at analysis/analysis.txt:103-125 makes load-bearing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to establish whether the review/high vs review/xhigh death-rate gap survives its confounders; report.md:3 states the verdict effort and report.md:10-18 carries both cells with three restricted xhigh rates, and my own re-walk of the ledger through the same scanner reproduced the high cell exactly at 1/46 and a 110-attempt xhigh sample at 30.0% against the recorded 29.4%.\nVERDICT done_when: the dispatched measure names a per-confounder inside/outside comparison, a restriction of xhigh to the high cell's range on each differing confounder, a three-word verdict, the population and smallest separating sample, and one figure; report.md:30-45, report.md:67-90 and analysis/analysis.txt carry every one of them and analysis/analysis.txt:103-125 records the per-day series.\nVERDICT write_paths: the declared scope was the report directory alone; every artifact the manifest lists lies inside it, the repository worktree at e8b396da673f4817ac199ec2510e7fb822dd846f is clean with no commits, and the scratch named for the run is absent from /tmp.\nVERDICT manifest: read; it reports the measure complete, names the four analysis scripts, both figures and both logs, and its claim that /tmp/review-effort-confounders was deleted I confirmed by listing /tmp.\nVERDICT diff: the manifest records no commits, so the landed change is the report directory, read file by file - report.md, analysis/collect.py, analyse.py, control.py, plot.py, results.json, analysis.txt, negative-control.log and the two figures.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:3 answers the question the goal poses and report.md:86-87 names the population and the 31 attempts per arm a re-dispatch needs, which is what the goal says the answer is for.\nSCORE evidence: 18\nJUSTIFICATION evidence: analysis/analysis.txt:1-2 and analysis/results.json record the counts, and my independent recomputation of the exact Fisher p gave 6.18e-06 against the report's 6.2e-06 and the Clopper-Pearson interval for 1/46 reproduced as (0.000550, 0.115272).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: report.md and analysis/ sit inside the single declared write path, git -C on the reviewed worktree at e8b396da reports a clean tree with HEAD equal to the base, and the only over-delivery is the second figure at report.md:75, which the non-stationary daily series at analysis/analysis.txt:103-125 makes load-bearing.\nSCORE durability: 15\nJUSTIFICATION durability: analysis/control.py:41-136 is the falsifier this measure rests on - the classifier reading both outcomes and 200 placebo restrictions never reaching the high cell's rate - and its red-line evidence is durable in analysis/negative-control.log, but the scripts cannot be re-executed as stored.\nSCORE fit: 16\nJUSTIFICATION fit: analysis/plot.py:75-77 despines the axes and disables the grid as the plot mandate requires, but analysis/plot.py:70 keeps a dead conditional and every script pins absolute paths it cannot resolve after cleanup.\nFINDING analysis/collect.py:19 the durable copy hardcodes the reviewed node's own worktree root and a /tmp scratch path the run deleted, so the reproduction report.md:110-124 promises cannot be run from analysis/ alone and a later reader must rewrite both paths - the same defect appears at analyse.py:19, control.py:24 and plot.py:18.\nFINDING analysis/plot.py:70 a dead conditional, ax.set_xlim(-0.7, 3.7) if False else ax.set_xlim(-0.7, 3.7), ships in a stored script and leaves a reader unable to tell whether a different limit was ever intended.\nFINDING analysis/control.py:75 the placebo restriction is built from the five differing confounders rebuildable from one row, while the restricted rate the report leans on at report.md:15 uses eight, so the control does not exercise the procedure it is cited against; the direction of the real restriction, which raises the xhigh rate rather than lowering it, is what keeps the verdict sound.",
+  "review_run_id": "r-20260930T173109849654-review-of-review-effort-confounders",
+  "reviewed_base_sha": "e8b396da673f4817ac199ec2510e7fb822dd846f",
+  "reviewed_head_sha": "e8b396da673f4817ac199ec2510e7fb822dd846f",
+  "reviewed_run_id": "r-20260930T170714600084-review-effort-confounders",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T17:41:43.130331+00:00",
+  "total": 87
+}

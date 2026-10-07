@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the two gate logs print the same six FAILED ids, so the head arm adds none",
+  "added_failures_source": {
+    "after_suite": {
+      "completed": true,
+      "failure_count": 6,
+      "failure_ids": [
+        "tests/test_crew_prompts.py::test_repo_writing_role_is_told_to_land_both_records_in_the_tree",
+        "tests/test_crew_prompts.py::test_landing_clause_names_the_figure_convention_and_src_form",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[SKILL.md]",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[worker-protocol.md]",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[sprint-orchestration.md]",
+        "tests/test_skill_contract_parity.py::test_the_extracted_sentences_are_the_prompt_s_own_words"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163317812547-template-says-what-completed-holds/logs/after_suite.log",
+      "revision": "4ee76537e2b4fd27ad6cd74e6329cdc73f9c45ba"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "failure_count": 6,
+      "failure_ids": [
+        "tests/test_crew_prompts.py::test_repo_writing_role_is_told_to_land_both_records_in_the_tree",
+        "tests/test_crew_prompts.py::test_landing_clause_names_the_figure_convention_and_src_form",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[SKILL.md]",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[worker-protocol.md]",
+        "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[sprint-orchestration.md]",
+        "tests/test_skill_contract_parity.py::test_the_extracted_sentences_are_the_prompt_s_own_words"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163317812547-template-says-what-completed-holds/logs/baseline_suite.log",
+      "revision": "9202f42cec6a2a15046a412982c9a540b8bff86f"
+    },
+    "derivation": "set(after failure_ids) - set(baseline failure_ids) over the FAILED lines the reviewed run's own two gate logs print; each log's command line was parsed and both name the same 22 test modules, so the arms are compared like for like, and the six ids are unchanged between them"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1467 _compose_dispatch_prompt, whose call at dispatch.py:4668 is the production path that renders the manifest contract into every dispatched worker prompt"
+  ],
+  "completed_at": "2026-09-29T17:07:15.391Z",
+  "dispatched_at": "2026-09-29T16:49:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "572",
+      "text": "the new clause gives `false` as the ordinary value -- \"completed is true only when the suite ran to its summary line, false otherwise\" -- and calls only null or absent unreadable, while reckon/ledger.py:259 (suite_observation_missing_fields) and reckon/crew/promotion.py:5072/5105 treat `false` exactly as they treat null: the arm is named missing and both suite readers return None. A worker whose suite did not reach its summary line writes false as the contract now tells them to, and that arm is refused on the same terms as the null arm this node was dispatched to explain -- the surprise removed for one value and left standing for the next."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "one production call site reaches the changed text: reckon/crew/dispatch.py:1467 composes through reckon/crew/prompts.py:350 compose_prompt at dispatch.py:4668, and I read that path to confirm the manifest block is rendered into worker prompts rather than kept inert in the module.",
+    "diff": "commit 4ee76537 replaces the one-sided `completed=false is absent evidence` clause on both arms of the manifest block with `completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable`, and adds the COMPLETED_RULE constant, the _arm_line helper and two assertions to tests/test_brief_prompt.py; commit fe9140e2 adds the 39-line evidence fragment. The wording does not match the readers for the `false` value, which is what the finding names.",
+    "done_when": "the measure is whether the stated rule is held by a check that can fail, and it is: tests/test_brief_prompt.py:404 reddens when the two former lines are restored (AssertionError: assert 0 == 2), which I reproduced independently in a scratch copy of the head tree (2 failed, 14 passed, EXIT=1) and which is green at head (16 passed, EXIT=0), with each run's own imported module.__file__ printed under /tmp/rv-completed-rule/.",
+    "goal": "the node's goal is that the manifest template state what a suite arm's `completed` key holds, and reckon/crew/prompts.py:572-573 now carry a rule on both arms; the null and absent cases are stated outright and correctly, but the clause's `false` branch names a value both readers refuse exactly as they refuse null, so one of the surprises the goal was written against survives.",
+    "manifest": "the manifest's claims check out against the artefacts: both arm JSONs match the logs' own FAILED lines and counts (6 failed, 229 passed at base; 6 failed, 231 passed at head), the two arms' 22-module sets are identical, its negative-control first line names the mutation its log actually applies, its shared-failure attribution is confirmed by the log traceback failing at tests/test_skill_contract_parity.py:179 inside the landing-requirement slice, and its commit shas resolve in the reviewed worktree.",
+    "write_paths": "the two commits touch only reckon/crew/prompts.py, tests/test_brief_prompt.py and docs/evidence/fragments/crew-runtime-positive-controls/template-says-what-completed-holds.html against base 9202f42c (3 files, 79 insertions, 4 deletions), all inside the node's declared paths; the worktree is clean at head and no plan, sprint or index file is in the diff."
+  },
+  "justifications": {
+    "durability": "tests/test_brief_prompt.py:404 fails on the regression it guards -- reinstating both former lines reddened it with assert 0 == 2 in my own scratch run -- while the second added assertion, tests/test_brief_prompt.py:413 over PLAN_PROMPT_SNAPSHOT, compares two test-file constants and stayed green under that same mutation, and neither assertion can fail when the wording drifts semantically from the readers, which is the exposure the finding describes.",
+    "evidence": "the gate is real and its result is recorded: each of the reviewed run's logs names its revision, tree, imported module.__file__ and command, both arms cover the identical 22 modules, the added-failure count is 0 whether read from the logs' FAILED lines or from the manifest's recorded sets, and I re-performed the negative control in an isolated copy (2 failed, 14 passed, EXIT=1, assert 0 == 2); it is not 20 only because the run's own control log deselected the remaining 15 cases, so it does not show that the byte-identity test reddens under the same mutation as mine does.",
+    "fit": "the wording lives in the contract text beside the keys it governs (reckon/crew/prompts.py:572-573), the test follows the file's existing composed-prompt idiom with the snapshot held in step, the fragment carries the docs-project/reckon-type/plan-slug meta tags its readers parse, and both commits are conventional with bodies, no attribution and no plan, sprint or ticket label in code, comments or filenames.",
+    "goal_fidelity": "the rule now sits on both suite arms and states null or absent as unreadable, which is the refusal the node was dispatched to make legible, but its `false` branch describes as ordinary a value that reckon/ledger.py:259 and reckon/crew/promotion.py:5072 both refuse exactly as they refuse null, so the node's own failure mode survives for the one value left.",
+    "scope_discipline": "commit 4ee76537 changes two declared paths and fe9140e2 the third, `git diff --stat 9202f42c..fe9140e2` shows no fourth file, the reviewed worktree is clean at head, and the fragment records the six shared failures as follow-ons instead of repairing them outside the fence."
+  },
+  "negative_control": {
+    "declared": "restore the two former baseline_suite/after_suite template lines in reckon/crew/prompts.py; the new completed-rule assertion in tests/test_brief_prompt.py fails",
+    "observed": "1 failed, 15 deselected in the node's log; independently reproduced by the reviewer at 2 failed, 14 passed with AssertionError: assert 0 == 2"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the manifest template state what a suite arm's `completed` key holds, and reckon/crew/prompts.py:572-573 now carry a rule on both arms; the null and absent cases are stated outright and correctly, but the clause's `false` branch names a value both readers refuse exactly as they refuse null, so one of the surprises the goal was written against survives.\nVERDICT done_when: the measure is whether the stated rule is held by a check that can fail, and it is: tests/test_brief_prompt.py:404 reddens when the two former lines are restored (AssertionError: assert 0 == 2), which I reproduced independently in a scratch copy of the head tree (2 failed, 14 passed, EXIT=1) and which is green at head (16 passed, EXIT=0), with each run's own imported module.__file__ printed under /tmp/rv-completed-rule/.\nVERDICT write_paths: the two commits touch only reckon/crew/prompts.py, tests/test_brief_prompt.py and docs/evidence/fragments/crew-runtime-positive-controls/template-says-what-completed-holds.html against base 9202f42c (3 files, 79 insertions, 4 deletions), all inside the node's declared paths; the worktree is clean at head and no plan, sprint or index file is in the diff.\nVERDICT manifest: the manifest's claims check out against the artefacts: both arm JSONs match the logs' own FAILED lines and counts (6 failed, 229 passed at base; 6 failed, 231 passed at head), the two arms' 22-module sets are identical, its negative-control first line names the mutation its log actually applies, its shared-failure attribution is confirmed by the log traceback failing at tests/test_skill_contract_parity.py:179 inside the landing-requirement slice, and its commit shas resolve in the reviewed worktree.\nVERDICT diff: commit 4ee76537 replaces the one-sided `completed=false is absent evidence` clause on both arms of the manifest block with `completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable`, and adds the COMPLETED_RULE constant, the _arm_line helper and two assertions to tests/test_brief_prompt.py; commit fe9140e2 adds the 39-line evidence fragment. The wording does not match the readers for the `false` value, which is what the finding names.\nCALL_SITES: reckon/crew/dispatch.py:1467 _compose_dispatch_prompt, whose call at dispatch.py:4668 is the production path that renders the manifest contract into every dispatched worker prompt\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the rule now sits on both suite arms and states null or absent as unreadable, which is the refusal the node was dispatched to make legible, but its `false` branch describes as ordinary a value that reckon/ledger.py:259 and reckon/crew/promotion.py:5072 both refuse exactly as they refuse null, so the node's own failure mode survives for the one value left.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate is real and its result is recorded: each of the reviewed run's logs names its revision, tree, imported module.__file__ and command, both arms cover the identical 22 modules, the added-failure count is 0 whether read from the logs' FAILED lines or from the manifest's recorded sets, and I re-performed the negative control in an isolated copy (2 failed, 14 passed, EXIT=1, assert 0 == 2); it is not 20 only because the run's own control log deselected the remaining 15 cases, so it does not show that the byte-identity test reddens under the same mutation as mine does.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 4ee76537 changes two declared paths and fe9140e2 the third, `git diff --stat 9202f42c..fe9140e2` shows no fourth file, the reviewed worktree is clean at head, and the fragment records the six shared failures as follow-ons instead of repairing them outside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_brief_prompt.py:404 fails on the regression it guards -- reinstating both former lines reddened it with assert 0 == 2 in my own scratch run -- while the second added assertion, tests/test_brief_prompt.py:413 over PLAN_PROMPT_SNAPSHOT, compares two test-file constants and stayed green under that same mutation, and neither assertion can fail when the wording drifts semantically from the readers, which is the exposure the finding describes.\nSCORE fit: 19\nJUSTIFICATION fit: the wording lives in the contract text beside the keys it governs (reckon/crew/prompts.py:572-573), the test follows the file's existing composed-prompt idiom with the snapshot held in step, the fragment carries the docs-project/reckon-type/plan-slug meta tags its readers parse, and both commits are conventional with bodies, no attribution and no plan, sprint or ticket label in code, comments or filenames.\nFINDING reckon/crew/prompts.py:572 the new clause gives `false` as the ordinary value -- \"completed is true only when the suite ran to its summary line, false otherwise\" -- and calls only null or absent unreadable, while reckon/ledger.py:259 and reckon/crew/promotion.py:5072/5105 treat `false` exactly as they treat null, so a worker whose suite did not reach its summary line writes false as the contract tells them to and their arm is refused on the same terms as the null arm this node was dispatched to explain.\nreviewed_base_sha: 9202f42cec6a2a15046a412982c9a540b8bff86f\nreviewed_head_sha: fe9140e26a5300df503fe8e97d410b149744731b\n",
+  "review_run_id": "r-20260929T164936742734-review-of-template-says-what-completed-holds",
+  "reviewed_base_note": "base 9202f42c and head fe9140e2 are two commits apart in one worktree: 4ee76537 carries the template and test change, fe9140e2 the evidence fragment; both arms of the reviewed gate ran in that worktree and their logs name it.",
+  "reviewed_base_sha": "9202f42cec6a2a15046a412982c9a540b8bff86f",
+  "reviewed_commits": [
+    "4ee76537e2b4fd27ad6cd74e6329cdc73f9c45ba",
+    "fe9140e26a5300df503fe8e97d410b149744731b"
+  ],
+  "reviewed_head_sha": "fe9140e26a5300df503fe8e97d410b149744731b",
+  "reviewed_manifest": {
+    "bytes": 7055,
+    "last_modified": "2026-09-29T18:47:34.977178+02:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163317812547-template-says-what-completed-holds/manifest.md",
+    "sha256": "8e5f0974023f339d13bdadde8f43450f09ebc2a129a48d403e78b2d97f142947"
+  },
+  "reviewed_run_id": "r-20260929T163317812547-template-says-what-completed-holds",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/template-says-what-completed-holds",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-template-says-what-completed-holds",
+  "reviewer_run_id": "r-20260929T164936742734-review-of-template-says-what-completed-holds",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T17:04:44.206915+00:00",
+  "total": 93
+}

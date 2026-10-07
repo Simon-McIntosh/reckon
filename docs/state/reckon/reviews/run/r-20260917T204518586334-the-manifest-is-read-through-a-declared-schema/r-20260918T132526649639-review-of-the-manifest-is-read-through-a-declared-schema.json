@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-18T13:25:26.649639+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "439",
+      "text": "a composed mapping key under a list field reaches dict() and raises TypeError, unhashable dict as a dict key."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "559",
+      "text": "the mapping-under-list refusal is over-strict at this revision: 26 of the 27 worker manifests in the durable corpus, all accepted at base, are refused at 37b04bf8, against the done-when clause keeping every manifest currently on disk readable or converting it."
+    },
+    {
+      "file": "tests/test_manifest_declared_schema.py",
+      "line": "112",
+      "text": "the case pins the refusal of a mapping body under a list field, the behaviour the corpus shows was wrong, so the landed suite asserts a shape its repair had to change."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_manifest_declared_schema.py carries the regression cases and its defect cases genuinely fail at the base revision (7 failed/1 passed, logs/review-arm-base-reader.log), but no case covers the corpus-compatibility clause that failed, and tests/test_manifest_declared_schema.py:112 pins the mapping-under-list refusal the corpus shows was wrong.",
+    "evidence": "the reviewed run's logs record the five-file cohort at 7 failed/173 passed for base a880113f and 180 passed for head 37b04bf8, and I reproduced both readings myself (head 180 passed, logs/review-arm-head-gate.log; the base failing cases, logs/review-arm-base-reader.log), but no arm measures the compatibility clause the done-when names, which is exactly the half that regressed, so the evidence is true and incomplete.",
+    "fit": "read the module docstring in reckon/crew/reports.py (why yaml.compose preserves a scalar's literal text so 1e5 is not retyped) and the commit subjects and bodies at eb74752d, 2a94b12c, 3132277c, 37b04bf8: naming is mechanism-level with no plan labels, and the declaration stands in the module that owns the reader, docked because the docstring's promised refusal naming the field is violated by reports.py:439.",
+    "goal_fidelity": "read the diff of 37b04bf89fca3128128d8f617d8028f2387195c2 against base a880113f360f5de617c5c9e338af4d2749f02252 (commits eb74752d, 2a94b12c, 3132277c, 37b04bf8): reckon/crew/reports.py gains a declared field-shape read through yaml.compose with a refusal naming the field, and the four declared defects fail at base and pass at head, but the done-when clause keeping every manifest currently on disk readable or converting it fails at this revision, because the 27-path durable corpus (~/.config/reckon/crew/reports/reader-regression-corpus.txt) reads ok=27/refused=0/crashed=0 at base and ok=0/refused=26/crashed=1 at head (logs/review-corpus-base.log, logs/review-corpus-head.log).",
+    "scope_discipline": "the 37b04bf8 diff against base a880113f touches exactly the declared write paths (reckon/crew/reports.py, tests/test_manifest_declared_schema.py, the plan, one evidence doc, one figure), the reviewed worktree is clean at its head, and nothing outside the declaration was touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: read the diff of 37b04bf89fca3128128d8f617d8028f2387195c2 against base a880113f360f5de617c5c9e338af4d2749f02252 (commits eb74752d, 2a94b12c, 3132277c, 37b04bf8): reckon/crew/reports.py gains a declared field-shape read through yaml.compose with a refusal naming the field, and the four declared defects fail at base and pass at head, but the done-when clause keeping every manifest currently on disk readable or converting it fails at this revision, because the 27-path durable corpus (~/.config/reckon/crew/reports/reader-regression-corpus.txt) reads ok=27/refused=0/crashed=0 at base and ok=0/refused=26/crashed=1 at head (logs/review-corpus-base.log, logs/review-corpus-head.log).\nSCORE evidence: 15\nJUSTIFICATION evidence: the reviewed run's logs record the five-file cohort at 7 failed/173 passed for base a880113f and 180 passed for head 37b04bf8, and I reproduced both readings myself (head 180 passed, logs/review-arm-head-gate.log; the base failing cases, logs/review-arm-base-reader.log), but no arm measures the compatibility clause the done-when names, which is exactly the half that regressed, so the evidence is true and incomplete.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 37b04bf8 diff against base a880113f touches exactly the declared write paths (reckon/crew/reports.py, tests/test_manifest_declared_schema.py, the plan, one evidence doc, one figure), the reviewed worktree is clean at its head, and nothing outside the declaration was touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_manifest_declared_schema.py carries the regression cases and its defect cases genuinely fail at the base revision (7 failed/1 passed, logs/review-arm-base-reader.log), but no case covers the corpus-compatibility clause that failed, and tests/test_manifest_declared_schema.py:112 pins the mapping-under-list refusal the corpus shows was wrong.\nSCORE fit: 18\nJUSTIFICATION fit: read the module docstring in reckon/crew/reports.py (why yaml.compose preserves a scalar's literal text so 1e5 is not retyped) and the commit subjects and bodies at eb74752d, 2a94b12c, 3132277c, 37b04bf8: naming is mechanism-level with no plan labels, and the declaration stands in the module that owns the reader, docked because the docstring's promised refusal naming the field is violated by reports.py:439.\nFINDING reckon/crew/reports.py:439 a composed mapping key under a list field reaches dict() and raises TypeError, unhashable dict as a dict key.\nFINDING reckon/crew/reports.py:559 the mapping-under-list refusal is over-strict at this revision: 26 of the 27 worker manifests in the durable corpus, all accepted at base, are refused at 37b04bf8, against the done-when clause keeping every manifest currently on disk readable or converting it.\nFINDING tests/test_manifest_declared_schema.py:112 the case pins the refusal of a mapping body under a list field, the behaviour the corpus shows was wrong, so the landed suite asserts a shape its repair had to change.",
+  "review_run_id": "r-20260918T132526649639-review-of-the-manifest-is-read-through-a-declared-schema",
+  "reviewed_base": "a880113f360f5de617c5c9e338af4d2749f02252",
+  "reviewed_commit": "37b04bf89fca3128128d8f617d8028f2387195c2",
+  "reviewed_run_id": "r-20260917T204518586334-the-manifest-is-read-through-a-declared-schema",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-18T15:14:18.778803+00:00",
+  "total": 82
+}

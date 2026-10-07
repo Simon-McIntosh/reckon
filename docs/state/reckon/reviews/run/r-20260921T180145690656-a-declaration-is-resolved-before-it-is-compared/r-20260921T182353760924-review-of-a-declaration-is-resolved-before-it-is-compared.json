@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:crew_check_manifest",
+    "reckon/crew.py:193 facade re-export of audit_manifest"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T18:23:53.760924+00:00",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "2452",
+      "text": "crew check-manifest passes neither worktree nor repository to audit_manifest, so the resolution falls back to the caller's working directory and the write-time surface still refuses what promotion accepts whenever the caller is not standing in the run's worktree; measured, the same absolute inside declaration reads ok=True from the run's worktree and ok=False \"changed paths outside the write scope\" from the main checkout while promotion accepts it, and the pointer this command already reads carries the run's worktree and repo, so the refusal the node removed is re-created for that caller."
+    },
+    {
+      "file": "docs/plans/work-does-not-fall-to-the-coordinator.html",
+      "line": "714",
+      "text": "the landing comment is stamped data-when=\"2026-09-21T20:10:00Z\" while the commit carrying it, c9942d1e, is 2026-09-21T18:18:39Z, so the plan orders this landing 1h51m after it happened and the value is a local wall clock labelled Z; the comments landed today elsewhere in the file carry true UTC (16:46:12Z, 17:41:06.145Z) and the sibling comment at 19:40:00Z shows the same slip, so a reader cannot tell a correct stamp from this one by form."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit, 2c8aa281 adds the resolution and its cases and c9942d1e adds the landing record, evidence section and figure; the new worktree and repository keywords default to the working directory, and no path outside the five declared ones is touched.",
+    "done_when": "the done-when asks for an absolute table of at least four pairs, both named directions, the relative cases unchanged, the file green, and a mutation that reddens the absolute cases; tests/test_write_scope_agreement.py:49 carries five absolute cases, :160 asserts their agreement with promotion case by case, :129 and :139 assert the two named directions, the file reads 17 passed here, and logs/negative-control.txt line 1 repeats the node's declared mutation verbatim (pointer node.negative_control) with 6 failed, 11 passed.",
+    "goal": "the goal is to resolve a declared write path against the worktree and the repository before comparing a changed path to it so an absolute declaration is accepted where promotion accepts it; reckon/crew/reports.py:1069 now derives its roots from _declared_scope_roots:1075, which delegates to promotion's own mapping, and the two surfaces agree on all five absolute pairs and both named directions, but only while the auditing caller stands in the run's worktree because audit_manifest defaults worktree and repository to Path.cwd().",
+    "manifest": "read, and its checkable claims hold; the gate command and its 17-passed result match logs/gate.txt, negative_control_log exists with the declared mutation verbatim on line 1, the omitted suite keys are explained by the pointer's null suite_armed rather than by an absent run, and the six collateral failures re-run in a tree without the fix (base an ancestor, fix absent) fail with an identical id set, so the change added none.",
+    "write_paths": "the five declared paths are the whole of what the two commits touch, reckon/crew/reports.py (51 lines), tests/test_write_scope_agreement.py (83), the evidence record (79), the figure (74) and the plan (3 added lines, the s9 comment div alone, with no plan-version or plan-modified edit); every deliverable landed under the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_write_scope_agreement.py reddens six of its cases under the literal-compare mutation, so the predicate's own regression is caught, but no case enters the resolution through crew check-manifest, so a caller outside the run's worktree is not covered.",
+    "evidence": "tests/test_write_scope_agreement.py reads 17 passed at the reviewed revision here, and logs/negative-control.txt:1 reproduces the declared mutation verbatim, reddening exactly the six absolute cases while the seven relative pairs and the outside-rejection control stay green.",
+    "fit": "delegating to promotion's own mapping instead of growing a second rule follows the surrounding idiom, but the landing comment at docs/plans/work-does-not-fall-to-the-coordinator.html:714 stamps data-when=\"2026-09-21T20:10:00Z\" while the commit carrying it is 2026-09-21T18:18:39Z.",
+    "goal_fidelity": "measured at reckon/cli.py:2452's call shape, audit_manifest(text, node) reads ok=True from the run's worktree but ok=False with \"changed paths outside the write scope\" from the main checkout, where promotion._outside_declared_scope:955 accepts the same input.",
+    "scope_discipline": "git diff 71462872..c9942d1e touches only the five declared paths, and the plan edit is the one s9 comment div with the meta lines untouched."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared at c9942d1e, read against its base 71462872. The node's gate was re-run here at the reviewed revision (tests/test_write_scope_agreement.py -> 17 passed, exit 0), and three measurements were taken that the node's record does not contain: the base predicate read verbatim from reports.py at 71462872, a cwd sweep of audit_manifest entered in its production call shape, and the six collateral failures re-run in a tree that does not carry the fix.\n\nVERDICT goal: the goal is to resolve a declared write path against the worktree and the repository before comparing a changed path to it so an absolute declaration is accepted where promotion accepts it; reckon/crew/reports.py:1069 now derives its roots from _declared_scope_roots:1075, which delegates to promotion's own mapping, and the two surfaces agree on all five absolute pairs and both named directions, but only while the auditing caller stands in the run's worktree because audit_manifest defaults worktree and repository to Path.cwd().\n\nVERDICT done_when: the done-when asks for an absolute table of at least four pairs, both named directions, the relative cases unchanged, the file green, and a mutation that reddens the absolute cases; tests/test_write_scope_agreement.py:49 carries five absolute cases, :160 asserts their agreement with promotion case by case, :129 and :139 assert the two named directions, the file reads 17 passed here, and logs/negative-control.txt line 1 repeats the node's declared mutation verbatim (pointer node.negative_control) with 6 failed, 11 passed.\n\nVERDICT write_paths: the five declared paths are the whole of what the two commits touch, reckon/crew/reports.py (51 lines), tests/test_write_scope_agreement.py (83), the evidence record (79), the figure (74) and the plan (3 added lines, the s9 comment div alone, with no plan-version or plan-modified edit); every deliverable landed under the fence.\n\nVERDICT manifest: read, and its checkable claims hold; the gate command and its 17-passed result match logs/gate.txt, negative_control_log exists with the declared mutation verbatim on line 1, the omitted suite keys are explained by the pointer's null suite_armed rather than by an absent run, and the six collateral failures re-run in a tree without the fix (base an ancestor, fix absent) fail with an identical id set, so the change added none.\n\nVERDICT diff: read commit by commit, 2c8aa281 adds the resolution and its cases and c9942d1e adds the landing record, evidence section and figure; the new worktree and repository keywords default to the working directory, and no path outside the five declared ones is touched.\n\nCALL_SITES: reckon/cli.py:crew_check_manifest, reckon/crew.py:193 facade re-export of audit_manifest\n\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: measured at reckon/cli.py:2452's call shape, audit_manifest(text, node) reads ok=True from the run's worktree but ok=False with \"changed paths outside the write scope\" from the main checkout, where promotion._outside_declared_scope:955 accepts the same input.\n\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_write_scope_agreement.py reads 17 passed at the reviewed revision here, and logs/negative-control.txt:1 reproduces the declared mutation verbatim, reddening exactly the six absolute cases while the seven relative pairs and the outside-rejection control stay green.\n\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 71462872..c9942d1e touches only the five declared paths, and the plan edit is the one s9 comment div with the meta lines untouched.\n\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_write_scope_agreement.py reddens six of its cases under the literal-compare mutation, so the predicate's own regression is caught, but no case enters the resolution through crew check-manifest, so a caller outside the run's worktree is not covered.\n\nSCORE fit: 15\nJUSTIFICATION fit: delegating to promotion's own mapping instead of growing a second rule follows the surrounding idiom, but the landing comment at docs/plans/work-does-not-fall-to-the-coordinator.html:714 stamps data-when=\"2026-09-21T20:10:00Z\" while the commit carrying it is 2026-09-21T18:18:39Z.\n\nFINDING reckon/cli.py:2452 crew check-manifest passes neither worktree nor repository to audit_manifest, so the resolution falls back to the caller's working directory and the write-time surface still refuses what promotion accepts whenever the caller is not standing in the run's worktree; measured, the same absolute inside declaration reads ok=True from the run's worktree and ok=False \"changed paths outside the write scope\" from the main checkout while promotion accepts it, and the pointer this command already reads carries the run's worktree and repo, so the refusal the node removed is re-created for that caller.\n\nFINDING docs/plans/work-does-not-fall-to-the-coordinator.html:714 the landing comment is stamped data-when=\"2026-09-21T20:10:00Z\" while the commit carrying it, c9942d1e, is 2026-09-21T18:18:39Z, so the plan orders this landing 1h51m after it happened and the value is a local wall clock labelled Z; the comments landed today elsewhere in the file carry true UTC (16:46:12Z, 17:41:06.145Z) and the sibling comment at 19:40:00Z shows the same slip, so a reader cannot tell a correct stamp from this one by form.",
+  "review_run_id": "r-20260921T182353760924-review-of-a-declaration-is-resolved-before-it-is-compared",
+  "reviewed_base": "71462872a5d8d4966043f86bd8aec5444e3df9de",
+  "reviewed_commit": "c9942d1ecdb65afbc30386550b09665575b5cd2b",
+  "reviewed_run_id": "r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260921T182353760924-review-of-a-declaration-is-resolved-before-it-is-compared",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T18:34:15.228841+00:00",
+  "total": 90
+}

@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "commits_read": [
+    "799a4adc6a5e50eee516cbc926a333bab1875805",
+    "b91600f385bda521eb8a5ea112d6246961887a9e"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-18T16:25:22.212173+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "497",
+      "text": "the refusal branch appends a generator expression (refused.append(report for report in (report,))) so the refused list of dispatch_awaiting_reviews holds generator objects, not the report dicts its docstring describes, and any reader taking run_id or reason from it fails."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "459",
+      "text": "dispatch_awaiting_reviews is called nowhere in the tree, so the peer of the shipped sweep is dead code while recover repeats the same loop inline at :3682."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3682",
+      "text": "the only wiring that makes a scoring run dispatch its own review is covered by no test, because the four tests call dispatch_review_for_run directly, so a regression removing this list comprehension passes the gate."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "299",
+      "text": "the docstring cites plan provenance (the plan's own review of this node found) where the mechanism carries the reason on its own, which the repository comment rules forbid."
+    }
+  ],
+  "justifications": {
+    "durability": "the reflex's decisions are exercised by the four tests, but no test calls recover(), so deleting the wiring at reckon/crew/recovery.py:3682 would turn the feature off with the suite still green.",
+    "evidence": "the four tests at tests/test_scoring_dispatches_its_review.py:189-283 assert every part of the done-when with the contained half first, the cohort delta is recorded with digits and log receipts (/tmp/base4.log 3 failed 191 passed at cabde677 against /tmp/head4.log 3 failed 195 passed at 799a4adc with identical failure ids), and I re-ran the module myself: 4 passed in 5.37s.",
+    "fit": "the module's explanatory idiom is followed, but reckon/crew/recovery.py:388 reaches its own dispatch module through importlib.import_module where :389 imports from that module directly, and the docstring at :299 leans on plan provenance instead of the mechanism.",
+    "goal_fidelity": "reckon/crew/recovery.py:3682 launches the composed review dispatch for every scoring run and this very review run exists because of it, the source run's pointer recording review_dispatch status dispatched at 2026-09-18T16:28:15Z, but the launch rides the recover sweep rather than a run entering scoring, since ticker.py sits outside this node's fence.",
+    "scope_discipline": "both commits stay inside the four declared write paths, reckon/crew/recovery.py and tests/test_scoring_dispatches_its_review.py in 799a4adc and the plan and its evidence record in b91600f3, with nothing else touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:3682 launches the composed review dispatch for every scoring run and this very review run exists because of it, the source run's pointer recording review_dispatch status dispatched at 2026-09-18T16:28:15Z, but the launch rides the recover sweep rather than a run entering scoring, since ticker.py sits outside this node's fence.\nSCORE evidence: 19\nJUSTIFICATION evidence: the four tests at tests/test_scoring_dispatches_its_review.py:189-283 assert every part of the done-when with the contained half first, the cohort delta is recorded with digits and log receipts (/tmp/base4.log 3 failed 191 passed at cabde677 against /tmp/head4.log 3 failed 195 passed at 799a4adc with identical failure ids), and I re-ran the module myself: 4 passed in 5.37s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits stay inside the four declared write paths, reckon/crew/recovery.py and tests/test_scoring_dispatches_its_review.py in 799a4adc and the plan and its evidence record in b91600f3, with nothing else touched.\nSCORE durability: 15\nJUSTIFICATION durability: the reflex's decisions are exercised by the four tests, but no test calls recover(), so deleting the wiring at reckon/crew/recovery.py:3682 would turn the feature off with the suite still green.\nSCORE fit: 16\nJUSTIFICATION fit: the module's explanatory idiom is followed, but reckon/crew/recovery.py:388 reaches its own dispatch module through importlib.import_module where :389 imports from that module directly, and the docstring at :299 leans on plan provenance instead of the mechanism.\nFINDING reckon/crew/recovery.py:497 the refusal branch appends a generator expression (refused.append(report for report in (report,))) so the refused list of dispatch_awaiting_reviews holds generator objects, not the report dicts its docstring describes, and any reader taking run_id or reason from it fails.\nFINDING reckon/crew/recovery.py:459 dispatch_awaiting_reviews is called nowhere in the tree, so the peer of the shipped sweep is dead code while recover repeats the same loop inline at :3682.\nFINDING reckon/crew/recovery.py:3682 the only wiring that makes a scoring run dispatch its own review is covered by no test, because the four tests call dispatch_review_for_run directly, so a regression removing this list comprehension passes the gate.\nFINDING reckon/crew/recovery.py:299 the docstring cites plan provenance (the plan's own review of this node found) where the mechanism carries the reason on its own, which the repository comment rules forbid.\n",
+  "review_run_id": "r-20260918T162522212173-review-of-a-scoring-run-dispatches-its-own-review",
+  "reviewed_run_id": "r-20260918T132259762278-a-scoring-run-dispatches-its-own-review",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-18T17:19:26.164576+00:00",
+  "total": 88
+}

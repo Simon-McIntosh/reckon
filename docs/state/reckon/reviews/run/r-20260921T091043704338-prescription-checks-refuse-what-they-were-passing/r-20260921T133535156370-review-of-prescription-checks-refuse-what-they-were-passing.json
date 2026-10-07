@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "local",
+  "commits_read": [
+    "3b7dbf66fb9fa4c0ca585cc8caffd545b5eb9cd4",
+    "4a15844ad9e048d935eaa68030a4f9eb984898ec"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T13:35:35.156370+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "182",
+      "text": "a direct call with negative_control=\"none\" returns prescribed True, because the check only rejects the none: prefix; reckon/crew/node.py:628-631 treats bare none as the same no-mutation exemption, so this is still a literal-negative-control fail-open case"
+    },
+    {
+      "file": "reckon/crew/prescription.py",
+      "line": "83",
+      "text": "BASELINE_VALUE_RE only requires a baseline marker and a number within forty characters of the gate quantity; direct calls accept \"pytest reports 3 passing tests, previously the README said 4\", although the prior value is not stated as the test gate's measurement"
+    },
+    {
+      "file": "tests/test_prescription.py",
+      "line": "42",
+      "text": "REVIEWER_FALSE_POSITIVE and its comment carry role attribution into source; the repository naming rules require naming this token-only false-positive mechanism rather than the reviewer"
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against 39bbc7c9; the diff changes the exact artifact cardinality, binds numeric gates to quantities and baselines, makes helpers private, expands regression coverage, and records the result in the two landing documents",
+    "done_when": "read the stated 46-case gate and independently reran tests/test_prescription.py at the landed head; it passed 46 tests, while direct probes confirmed zero artifacts and the recorded false positive are each sole refusals",
+    "goal": "read the source run manifest and plan section \u00a72b; the landed source closes the zero-artifact and token-co-occurrence holes, hides the two helper functions, and replaces plan-specific fixtures with synthetic names",
+    "manifest": "read the completed source manifest; it records commits 3b7dbf66 and 4a15844a, the 46-pass gate, the three-failure negative control, and no blockers",
+    "write_paths": "read the manifest and commit stats; the two implementation commits touch only reckon/crew/prescription.py and tests/test_prescription.py, while the landing commit touches only the two declared documentation paths"
+  },
+  "justifications": {
+    "durability": "tests/test_prescription.py:149-289 has 29 test functions and 46 cases covering exact artifact cardinality, eight near-miss gate strings, public callable surface, and each sole failure, but it does not cover bare none or unrelated baseline values",
+    "evidence": "the worker manifest records the declared negative control as three failures and 43 passes, and the independent focused-review-tests.log records 46 passed at 4a15844a",
+    "fit": "reckon/crew/prescription.py:96-127 makes the helpers private and tests/test_prescription.py:321-338 uses synthetic plan and node names, but line 42 retains role attribution and line 182 diverges from node.py's negative-control semantics",
+    "goal_fidelity": "reckon/crew/prescription.py:145-179 now requires exactly one artifact and a quantity-plus-baseline gate, and tests/test_prescription.py:149-244 directly asserts both repaired holes and the public surface",
+    "scope_discipline": "the target manifest declares four paths and the reviewed commits contain exactly those four paths, with no product or test changes outside the fence"
+  },
+  "merged_head_gate": {
+    "command": "PYTHONPATH=<prescription-checks-refuse-what-they-were-passing> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_prescription.py",
+    "elapsed": "0.43s",
+    "exit_status": 0,
+    "failed": 0,
+    "file": "tests/test_prescription.py",
+    "line": "1",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T133535156370-review-of-prescription-checks-refuse-what-they-were-passing/focused-review-tests.log",
+    "passed": 46,
+    "revision": "4a15844a"
+  },
+  "negative_control_check": {
+    "declared_mutation": "restore the greater-than-one comparison for the artifact count so a zero-artifact node passes again; tests/test_prescription.py must fail",
+    "failed": 3,
+    "failure_tests": [
+      "test_zero_non_test_artifacts_are_refused_naming_one_artifact_only",
+      "test_a_node_declaring_no_write_paths_at_all_is_refused",
+      "test_landing_records_alone_leave_the_node_with_no_artifact"
+    ],
+    "file": "tests/test_prescription.py",
+    "line": "146",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T091043704338-prescription-checks-refuse-what-they-were-passing/negative-control.log",
+    "only_artifact_cardinality_tests_failed": true,
+    "passed": 43
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source run manifest and plan section \u00a72b; the landed source closes the zero-artifact and token-co-occurrence holes, hides the two helper functions, and replaces plan-specific fixtures with synthetic names.\nVERDICT done_when: read the stated 46-case gate and independently reran tests/test_prescription.py at the landed head; it passed 46 tests, while direct probes confirmed zero artifacts and the recorded false positive are each sole refusals.\nVERDICT write_paths: read the manifest and commit stats; the two implementation commits touch only reckon/crew/prescription.py and tests/test_prescription.py, while the landing commit touches only the two declared documentation paths.\nVERDICT manifest: read the completed source manifest; it records commits 3b7dbf66 and 4a15844a, the 46-pass gate, the three-failure negative control, and no blockers.\nVERDICT diff: read both commits against 39bbc7c9; the diff changes the exact artifact cardinality, binds numeric gates to quantities and baselines, makes helpers private, expands regression coverage, and records the result in the two landing documents.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prescription.py:145-179 now requires exactly one artifact and a quantity-plus-baseline gate, and tests/test_prescription.py:149-244 directly asserts both repaired holes and the public surface.\nSCORE evidence: 19\nJUSTIFICATION evidence: the worker manifest records the declared negative control as three failures and 43 passes, and the independent focused-review-tests.log records 46 passed at 4a15844a.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the target manifest declares four paths and the reviewed commits contain exactly those four paths, with no product or test changes outside the fence.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_prescription.py:149-289 has 29 test functions and 46 cases covering exact artifact cardinality, eight near-miss gate strings, public callable surface, and each sole failure, but it does not cover bare none or unrelated baseline values.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/prescription.py:96-127 makes the helpers private and tests/test_prescription.py:321-338 uses synthetic plan and node names, but line 42 retains role attribution and line 182 diverges from node.py's negative-control semantics.\nFINDING reckon/crew/prescription.py:182 a direct call with negative_control=\"none\" returns prescribed True, because the check only rejects the none: prefix; reckon/crew/node.py:628-631 treats bare none as the same no-mutation exemption, so this is still a literal-negative-control fail-open case.\nFINDING reckon/crew/prescription.py:83 BASELINE_VALUE_RE only requires a baseline marker and a number within forty characters of the gate quantity; direct calls accept \"pytest reports 3 passing tests, previously the README said 4\", although the prior value is not stated as the test gate's measurement.\nFINDING tests/test_prescription.py:42 REVIEWER_FALSE_POSITIVE and its comment carry role attribution into source; the repository naming rules require naming this token-only false-positive mechanism rather than the reviewer.",
+  "review_run_id": "r-20260921T133535156370-review-of-prescription-checks-refuse-what-they-were-passing",
+  "reviewed_base_sha": "39bbc7c939e3c857c43e4a2d5b96fc9d470815fe",
+  "reviewed_head_sha": "4a15844ad9e048d935eaa68030a4f9eb984898ec",
+  "reviewed_run_id": "r-20260921T091043704338-prescription-checks-refuse-what-they-were-passing",
+  "reviewer_head_sha": "fc09f75d37386d3b5bf5c14c1f7ac013aba95415",
+  "reviewer_run_id": "r-20260921T133535156370-review-of-prescription-checks-refuse-what-they-were-passing",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T15:39:58+02:00",
+  "total": 92
+}

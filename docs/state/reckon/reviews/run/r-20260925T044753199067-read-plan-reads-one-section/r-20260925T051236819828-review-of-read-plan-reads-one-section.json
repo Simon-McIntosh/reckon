@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp.py:_read_plan",
+    "reckon/mcp.py:_read_plan_tool",
+    "reckon/mcp.py:_read_plan_view",
+    "reckon/mcp.py:_matches_search",
+    "reckon/mcp_views.py:resource_view",
+    "reckon/mcp_views.py:_response_schema"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T05:12:36.819828+00:00",
+  "findings": [
+    {
+      "file": "tests/test_read_plan_section_view.py",
+      "line": "180",
+      "text": "the adjacent-record assertion checks only that the record's own markup is absent from the returned html, so replacing the record-skip at reckon/mcp_views.py:1441 with break still passes while the authored prose after the record is silently dropped from the section (probed on a scratch copy of the reviewed head: returned html was just the heading, prose after the record survived False)."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "1443",
+      "text": "no test selects a plan's terminal authored section, so disabling the structured-record stop lets followup and comment records bleed into the returned section while all five node tests stay green (probed on a scratch copy of the reviewed head and on the real plan shape, where section s6 is followed by a structured followups record)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "I read the whole diff in the reviewed worktree; reckon/mcp_views.py adds authored_plan_text, the heading splitter and _section_response with named refusals (section_required, invalid_section, section_not_found listing available ids), and reckon/mcp.py plumbs the selector through the three read entry points and enriches discovery rows with body_text before stripping it from the returned payload.",
+    "done_when": "I re-ran the node's declared gate at f05c311d in its own worktree (57 passed, exit 0, 6.44s) and independently reproduced the recorded real-plan measurement exactly (docs/plans/a-worker-knows-it-is-on-compute.html section s3 = 11354 compact JSON characters against raw 7357, ratio 1.543292); the absent-section named refusal, the body-only discovery match and the synthetic present-section payload each hold as written.",
+    "goal": "I read plan \u00a76 of docs/plans/the-mcp-answers-within-its-ceiling.html and both commits, and the change does what that section states: read_plan gains a section view returning one authored section, and discovery search now matches authored plan body prose.",
+    "manifest": "the node's manifest records both commit shas, the six changed paths, the gate command with its 57-passed result, six logs, and a negative-control log whose first line repeats its declared string verbatim (\"remove the section view arm; revision=6d407358864ed21c589eebd0216d2fc72c118660\") followed by the failure that string predicts.",
+    "write_paths": "the reviewed range 6d407358..f05c311d changes six paths, all inside the node's declared fence \u2014 reckon/mcp.py, reckon/mcp_views.py, tests/test_read_plan_section_view.py, docs/plans/the-mcp-answers-within-its-ceiling.html, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html and docs/figures/the-mcp-answers-within-its-ceiling/section-read-view.svg \u2014 with nothing outside it."
+  },
+  "justifications": {
+    "durability": "two guards the suite appears to cover do not fail under mutation \u2014 the adjacent-record skip at reckon/mcp_views.py:1441 and the structured-record stop at reckon/mcp_views.py:1443 \u2014 both demonstrated green-under-mutation in scratch copies of f05c311d.",
+    "evidence": "the gate re-run and the exactly reproduced 11354/7357/1.543292 measurement are strong, but negative-control.log and real-plan-lengths.log carry headers naming revision=6d407358864ed21c589eebd0216d2fc72c118660 while their content came from an uncommitted tree \u2014 at that revision the node's own base-defect.log shows the logged failure shape is impossible.",
+    "fit": "the authored-prose splitter lives in reckon/mcp_views.py exactly as the measure requires with reckon/_plan_html.py untouched, and the new refusals reuse the module's ViewRequestError code convention (invalid_section_view, section_required, invalid_section, section_not_found) beside the existing invalid_view and invalid_cursor, with a section arm added to _response_schema.",
+    "goal_fidelity": "all four done-when bullets resolve to named code \u2014 reckon/mcp_views.py:1385 _section_response returns heading, text, html, declaration, record and the anchored comments, and the registered tool exposes an optional selector.",
+    "scope_discipline": "every changed path is one the fence names, and the single unexplained touch is a one-word comment reword in reckon/mcp.py (read from the plan's own header, to from its own header) carried alongside the discovery change."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 6d407358864ed21c589eebd0216d2fc72c118660\nreviewed_head_sha: f05c311da5bc0062e38f060c0e249e160e6bef36\nVERDICT goal: I read plan \u00a76 of docs/plans/the-mcp-answers-within-its-ceiling.html and both commits, and the change does what that section states: read_plan gains a section view returning one authored section, and discovery search now matches authored plan body prose.\nVERDICT done_when: I re-ran the node's declared gate at f05c311d in its own worktree (57 passed, exit 0, 6.44s) and independently reproduced the recorded real-plan measurement exactly (docs/plans/a-worker-knows-it-is-on-compute.html section s3 = 11354 compact JSON characters against raw 7357, ratio 1.543292); the absent-section named refusal, the body-only discovery match and the synthetic present-section payload each hold as written.\nVERDICT write_paths: the reviewed range 6d407358..f05c311d changes six paths, all inside the node's declared fence \u2014 reckon/mcp.py, reckon/mcp_views.py, tests/test_read_plan_section_view.py, docs/plans/the-mcp-answers-within-its-ceiling.html, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html and docs/figures/the-mcp-answers-within-its-ceiling/section-read-view.svg \u2014 with nothing outside it.\nVERDICT manifest: the node's manifest records both commit shas, the six changed paths, the gate command with its 57-passed result, six logs, and a negative-control log whose first line repeats its declared string verbatim (\"remove the section view arm; revision=6d407358864ed21c589eebd0216d2fc72c118660\") followed by the failure that string predicts.\nVERDICT diff: I read the whole diff in the reviewed worktree; reckon/mcp_views.py adds authored_plan_text, the heading splitter and _section_response with named refusals (section_required, invalid_section, section_not_found listing available ids), and reckon/mcp.py plumbs the selector through the three read entry points and enriches discovery rows with body_text before stripping it from the returned payload.\nCALL_SITES: reckon/mcp.py:_read_plan, reckon/mcp.py:_read_plan_tool, reckon/mcp.py:_read_plan_view, reckon/mcp.py:_matches_search, reckon/mcp_views.py:resource_view, reckon/mcp_views.py:_response_schema\nSCORE goal_fidelity: 20\nSCORE evidence: 18\nSCORE scope_discipline: 19\nSCORE durability: 15\nSCORE fit: 20\nJUSTIFICATION goal_fidelity: all four done-when bullets resolve to named code \u2014 reckon/mcp_views.py:1385 _section_response returns heading, text, html, declaration, record and the anchored comments, and the registered tool exposes an optional selector.\nJUSTIFICATION evidence: the gate re-run and the exactly reproduced 11354/7357/1.543292 measurement are strong, but negative-control.log and real-plan-lengths.log carry headers naming revision=6d407358864ed21c589eebd0216d2fc72c118660 while their content came from an uncommitted tree \u2014 at that revision the node's own base-defect.log shows the logged failure shape is impossible.\nJUSTIFICATION scope_discipline: every changed path is one the fence names, and the single unexplained touch is a one-word comment reword in reckon/mcp.py (read from the plan's own header, to from its own header) carried alongside the discovery change.\nJUSTIFICATION durability: two guards the suite appears to cover do not fail under mutation \u2014 the adjacent-record skip at reckon/mcp_views.py:1441 and the structured-record stop at reckon/mcp_views.py:1443 \u2014 both demonstrated green-under-mutation in scratch copies of f05c311d.\nJUSTIFICATION fit: the authored-prose splitter lives in reckon/mcp_views.py exactly as the measure requires with reckon/_plan_html.py untouched, and the new refusals reuse the module's ViewRequestError code convention (invalid_section_view, section_required, invalid_section, section_not_found) beside the existing invalid_view and invalid_cursor, with a section arm added to _response_schema.\nFINDING tests/test_read_plan_section_view.py:180 the adjacent-record assertion checks only that the record's own markup is absent from the returned html, so replacing the record-skip at reckon/mcp_views.py:1441 with break still passes while the authored prose after the record is silently dropped from the section (probed on a scratch copy of the reviewed head: returned html was just the heading, prose after the record survived False).\nFINDING reckon/mcp_views.py:1443 no test selects a plan's terminal authored section, so disabling the structured-record stop lets followup and comment records bleed into the returned section while all five node tests stay green (probed on a scratch copy of the reviewed head and on the real plan shape, where section s6 is followed by a structured followups record).",
+  "review_run_id": "r-20260925T051236819828-review-of-read-plan-reads-one-section",
+  "reviewed_base_sha": "6d407358864ed21c589eebd0216d2fc72c118660",
+  "reviewed_head_sha": "f05c311da5bc0062e38f060c0e249e160e6bef36",
+  "reviewed_run_id": "r-20260925T044753199067-read-plan-reads-one-section",
+  "reviewer": "review-of-read-plan-reads-one-section",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T05:41:05.972233+00:00",
+  "total": 92
+}

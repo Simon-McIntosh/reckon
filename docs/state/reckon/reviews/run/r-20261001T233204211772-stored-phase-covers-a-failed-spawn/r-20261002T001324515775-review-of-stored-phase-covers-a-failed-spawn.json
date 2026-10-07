@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "(cd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/stored-phase-covers-a-failed-spawn && PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/stored-phase-covers-a-failed-spawn /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_stored_phase_advances.py tests/test_crew_interrupted_phase.py)",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T233204211772-stored-phase-covers-a-failed-spawn/logs/head-arm.txt",
+    "revision": "3f07fc003fab2c8e36813a90bd703c10c437eeca"
+  },
+  "baseline_suite": {
+    "command": "(cd /tmp/reckon-crew-scratch/r-20261001T233204211772-stored-phase-covers-a-failed-spawn/base-stored-phase && PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T233204211772-stored-phase-covers-a-failed-spawn/base-stored-phase /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_stored_phase_advances.py tests/test_crew_interrupted_phase.py)",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T233204211772-stored-phase-covers-a-failed-spawn/logs/base-arm.txt",
+    "revision": "c8087d0bc5cf9f821cee71bed4ea006e7ffa9261"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:8228",
+    "reckon/crew/dispatch.py:8410"
+  ],
+  "completed_at": "2026-10-02T00:32:07.890Z",
+  "dispatched_at": "2026-10-02T00:13:41Z",
+  "findings": [
+    {
+      "file": "tests/test_stored_phase_advances.py",
+      "line": "313",
+      "severity": "follow-on",
+      "text": "follow-on: the commit body, the manifest and the evidence fragment all say the change \"adds three cases\" while the diff adds four test functions (spawn failure, abandoned launch, stale-attempt guard, discarded-pointer guard); the code is right and the gate result of 15 passed is right, but the stated count disagrees with the diff in three prose places."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read c8087d0bc5cf9f821cee71bed4ea006e7ffa9261..3f07fc003fab2c8e36813a90bd703c10c437eeca file by file -- dispatch.py +19/-19 lifting each branch's exit record into a named local and adding one publish call per branch, tests/test_stored_phase_advances.py +116 over four new cases, and a 27-line evidence fragment; commits 8b9dd16 and 3f07fc003, both conventional and bodied, no AI attribution.",
+    "done_when": "the reviewed done-when asks both pre-spawn-end paths to publish launch-failed and the writer's attempt and discard guards to be asserted; tests/test_stored_phase_advances.py:222 and :256 drive the real _run_supervisor to the spawn-failure and abandoned-launch branches and read launch-failed, :288 and :313 assert the stale-attempt and discarded-pointer guards, and the manifest names a logged negative control -- every element is present.",
+    "goal": "both paths that end a launch before a worker exists now publish the stored phase -- the spawn-failure except in _run_supervisor (reckon/crew/dispatch.py:8395-8411) and _record_launch_abandoned_before_spawn (:8228) each call _publish_stored_phase with their own exit record, whose ended_during \"launch\" resolves through _delivered_phase (:8304-8308) to launch-failed, so a reader of the live pointer can tell a launch that never reached a model from one still being placed.",
+    "manifest": "read; it records status complete, head arm 15 passed EXIT=0, base arm 11 passed EXIT=0, negative control 1 failed/4 passed EXIT=1, and names all three logs, each of which I reproduced.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/stored-phase-covers-a-failed-spawn.html; git diff --stat c8087d0bc5cf9f821cee71bed4ea006e7ffa9261..3f07fc003fab2c8e36813a90bd703c10c437eeca touches exactly those three and creates no figures directory."
+  },
+  "justifications": {
+    "durability": "the guard is genuine -- removing the spawn-failure branch's publish turns its case red (negative control), the abandoned-launch case and the two writer guards now asserted pin the behaviour, and the signal-handler restoration asserted in both supervisor-driving cases stops the leak the earlier review named; the residual is the two-writers-of-record question the node already records as a follow-on.",
+    "evidence": "every figure reproduces -- I ran the two-file head gate at 3f07fc003fab2c8e36813a90bd703c10c437eeca (15 passed, EXIT=0), reproduced the declared mutation on the spawn-failure branch (1 failed/4 passed, EXIT=1, the case reading starting), and ran the head test file against base source (2 failed/3 passed), which is the defect-reproduces claim; the arms' added-failure delta is 0 with my parser shown to see a failure on the negative-control log.",
+    "fit": "the new calls compose the existing writer idiom verbatim, the commit subjects and bodies are conventional and carry no plan, ticket or AI attribution, and the new tests follow the file's helper and stub-run pattern -- the -2 is three prose places calling the addition three cases when the diff adds four tests, a count that does not match the code.",
+    "goal_fidelity": "both pre-spawn-end branches route through the existing _publish_stored_phase writer and _delivered_phase maps ended_during \"launch\" to LAUNCH_FAILED_PHASE, so the pointer a reader sees moves from starting to launch-failed exactly on the two paths the goal names; the -1 is that the invariant is carried only by the writer's docstring, not by a single enforced choke point, which is the parent node's follow-on and unchanged here.",
+    "scope_discipline": "the diff touches only reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the declared evidence fragment, all inside the fence, with no unrelated edit and no stray directory."
+  },
+  "project": "reckon",
+  "raw_text": "Review of run r-20261001T233204211772-stored-phase-covers-a-failed-spawn (node stored-phase-covers-a-failed-spawn), read at base c8087d0bc5cf9f821cee71bed4ea006e7ffa9261..head 3f07fc003fab2c8e36813a90bd703c10c437eeca, reconsidered after the earlier review of 8b9dd16df asked that the supervisor-driving cases stop leaking the process-wide SIGTERM/SIGHUP handlers they install.\nVERDICT goal: both paths that end a launch before a worker exists now publish the stored phase -- the spawn-failure except in _run_supervisor (reckon/crew/dispatch.py:8395-8411) and _record_launch_abandoned_before_spawn (:8228) each call _publish_stored_phase with their own exit record, whose ended_during \"launch\" resolves through _delivered_phase (:8304-8308) to launch-failed, so a reader of the live pointer can tell a launch that never reached a model from one still being placed.\nVERDICT done_when: the reviewed done-when asks both pre-spawn-end paths to publish launch-failed and the writer's attempt and discard guards to be asserted; tests/test_stored_phase_advances.py:222 and :256 drive the real _run_supervisor to the spawn-failure and abandoned-launch branches and read launch-failed, :288 and :313 assert the stale-attempt and discarded-pointer guards, and the manifest names a logged negative control -- every element is present.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/stored-phase-covers-a-failed-spawn.html; git diff --stat c8087d0bc5cf9f821cee71bed4ea006e7ffa9261..3f07fc003fab2c8e36813a90bd703c10c437eeca touches exactly those three and creates no figures directory.\nVERDICT manifest: read; it records status complete, head arm 15 passed EXIT=0, base arm 11 passed EXIT=0, negative control 1 failed/4 passed EXIT=1, and names all three logs, each of which I reproduced.\nVERDICT diff: read c8087d0bc5cf9f821cee71bed4ea006e7ffa9261..3f07fc003fab2c8e36813a90bd703c10c437eeca file by file -- dispatch.py +19/-19 lifting each branch's exit record into a named local and adding one publish call per branch, tests/test_stored_phase_advances.py +116 over four new cases, and a 27-line evidence fragment; commits 8b9dd16 and 3f07fc003, both conventional and bodied, no AI attribution.\nCALL_SITES: reckon/crew/dispatch.py:8228, reckon/crew/dispatch.py:8410\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both pre-spawn-end branches route through the existing _publish_stored_phase writer and _delivered_phase maps ended_during \"launch\" to LAUNCH_FAILED_PHASE, so the pointer a reader sees moves from starting to launch-failed exactly on the two paths the goal names; the -1 is that the invariant is carried only by the writer's docstring, not by a single enforced choke point, which is the parent node's follow-on and unchanged here.\nSCORE evidence: 18\nJUSTIFICATION evidence: every figure reproduces -- I ran the two-file head gate at 3f07fc003fab2c8e36813a90bd703c10c437eeca (15 passed, EXIT=0), reproduced the declared mutation on the spawn-failure branch (1 failed/4 passed, EXIT=1, the case reading starting), and ran the head test file against base source (2 failed/3 passed), which is the defect-reproduces claim; the arms' added-failure delta is 0 with my parser shown to see a failure on the negative-control log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the declared evidence fragment, all inside the fence, with no unrelated edit and no stray directory.\nSCORE durability: 19\nJUSTIFICATION durability: the guard is genuine -- removing the spawn-failure branch's publish turns its case red (negative control), the abandoned-launch case and the two writer guards now asserted pin the behaviour, and the signal-handler restoration asserted in both supervisor-driving cases stops the leak the earlier review named; the residual is the two-writers-of-record question the node already records as a follow-on.\nSCORE fit: 18\nJUSTIFICATION fit: the new calls compose the existing writer idiom verbatim, the commit subjects and bodies are conventional and carry no plan, ticket or AI attribution, and the new tests follow the file's helper and stub-run pattern -- the -2 is three prose places calling the addition three cases when the diff adds four tests, a count that does not match the code.\nFINDING tests/test_stored_phase_advances.py:313 follow-on: the commit body, the manifest and the evidence fragment all say the change \"adds three cases\" while the diff adds four test functions (spawn failure, abandoned launch, stale-attempt guard, discarded-pointer guard); the code is right and the gate result of 15 passed is right, but the stated count disagrees with the diff in three prose places.\nreviewed_base_sha: c8087d0bc5cf9f821cee71bed4ea006e7ffa9261\nreviewed_head_sha: 3f07fc003fab2c8e36813a90bd703c10c437eeca\n",
+  "review_run_id": "r-20261002T001324515775-review-of-stored-phase-covers-a-failed-spawn",
+  "reviewed_base_sha": "c8087d0bc5cf9f821cee71bed4ea006e7ffa9261",
+  "reviewed_head_sha": "3f07fc003fab2c8e36813a90bd703c10c437eeca",
+  "reviewed_run_id": "r-20261001T233204211772-stored-phase-covers-a-failed-spawn",
+  "reviewer_run_id": "r-20261002T001324515775-review-of-stored-phase-covers-a-failed-spawn",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T00:29:10.977680+00:00",
+  "total": 94
+}

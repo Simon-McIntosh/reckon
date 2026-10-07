@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:_record_repair_dispatch"
+  ],
+  "completed_at": "2026-10-01T07:26:54.758Z",
+  "dispatched_at": "2026-10-01T07:15:16Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the two commits against base 29560d96: 1987e648 changes only _record_repair_dispatch in reckon/crew/recovery.py (+12/-4) and adds the new case (+44), and 1f1bac86 adds only the evidence fragment (+31) with no source.",
+    "done_when": "the done-when names a new case in tests/test_the_reflex_resumes_an_unpromoted_run.py where a run whose earlier round recorded two attempts opens a new round and its first resume records attempt 1, not 3, with the run-wide cap stubbed open; the manifest records the module green and I independently re-ran it at head 1f1bac86 (7 passed, EXIT=0).",
+    "goal": "the goal is that the reflex count a repair round's resume attempts per round rather than across rounds; recovery.py:1913-1919 keys the recorded attempt to the round_id being written (same_round), so a round the pointer did not last carry starts at attempt 1.",
+    "manifest": "read; it declares status complete with commits 1987e648 and 1f1bac86, records the gate as 7 passed EXIT=0 and the negative control as 0 passed 1 failed EXIT=1, and both cited logs resolve to files I opened; it records no baseline_suite/after_suite arm.",
+    "write_paths": "git diff --numstat between base 29560d96 and head 1f1bac86 touches exactly three files, all inside the four declared write paths; the declared figures directory is untouched."
+  },
+  "justifications": {
+    "durability": "the per-round regression is guarded by test_a_new_round_starts_its_attempt_count_at_one, which seeds an earlier round's two attempts and asserts the new round's first resume records attempt 1; the negative control proves that case fails on a return to the prior formula (assert 3 == 1), so a regression in the keying is caught. The case is deterministic (temporary config home and repo, a fixed earlier-round id, no date-derived literal). Docked one because the case stubs recovery._opened_repair_rounds open, so the interaction between a new round's fresh attempt count and the run-wide one-round cap is not itself exercised.",
+    "evidence": "the focused gate reproduces independently at head 1f1bac86: I ran the file with the reviewed worktree's recovery.py as the imported module (module.__file__ printed from that tree) and got 7 passed, EXIT=0 (reviewer-gate.log). The declared negative control reproduces in a scratch copy of the reviewed tree: reverting the keying to the prior formula int(prior.get(\"attempt\") or 0) + 1 reddens the new case with assert 3 == 1, 1 failed, EXIT=1 (reviewer-negative-control.log). Both logs end with a bare EXIT= line. Deduction: the reviewed manifest records no baseline_suite and no after_suite arm, so no base/head population comparison was taken for this run \u2014 its own done-when scoped the gate to the named test file and left the wider population to a merge-time suite, so the added-failure count is unmeasured rather than zero.",
+    "fit": "the change reuses the module's existing idioms \u2014 the same round-id comparison the retry cap already makes against durable.get(REPAIR_DISPATCH_FIELD) \u2014 adds locals named by mechanism (prior, same_round, attempt), updates the docstring to state why the count belongs to the round, and introduces no plan, phase, ticket or version label in names, comments or docstrings.",
+    "goal_fidelity": "the node's goal is that the reflex count a repair round's resume attempts per round rather than across rounds, and reckon/crew/recovery.py:1913-1919 now does exactly that: _record_repair_dispatch reads prior = pointer[\"repair_dispatch\"], computes same_round = str(prior.get(\"round_id\") or \"\") == str(round_id or \"\"), and sets attempt = int(prior.get(\"attempt\") or 0) + 1 if same_round else 1, so a write for a round the pointer did not last carry starts at 1 whatever an earlier round recorded. The within-round retry cap at recovery.py:2387-2391 already gated its own prior read on the same round-id comparison, so it now reads a figure belonging to the round it bounds, and the run-wide one-round-per-run cap (the opened_rounds count/round_id comparison at recovery.py:2188-2198) is untouched. The value returned by _record_repair_dispatch is the recorded attempt, and the resume path at recovery.py:2440-2453 returns it as \"attempt\".",
+    "scope_discipline": "git diff --numstat 29560d96633faf84024d625290af205f97125fa1 1f1bac86a52b7c1a846a44165873f157b43afa50 lists exactly three files \u2014 reckon/crew/recovery.py (+12/-4), tests/test_the_reflex_resumes_an_unpromoted_run.py (+44), and docs/evidence/fragments/a-review-is-sized-to-its-risk/resume-attempts-count-per-round.html (+31) \u2014 every one inside the four declared write paths; the declared figures directory was touched by nothing, and the reviewed worktree is clean at head."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the reflex count a repair round's resume attempts per round rather than across rounds; recovery.py:1913-1919 keys the recorded attempt to the round_id being written (same_round), so a round the pointer did not last carry starts at attempt 1.\nVERDICT done_when: the done-when names a new case in tests/test_the_reflex_resumes_an_unpromoted_run.py where a run whose earlier round recorded two attempts opens a new round and its first resume records attempt 1, not 3, with the run-wide cap stubbed open; the manifest records the module green and I independently re-ran it at head 1f1bac86 (7 passed, EXIT=0).\nVERDICT write_paths: git diff --numstat between base 29560d96 and head 1f1bac86 touches exactly three files, all inside the four declared write paths; the declared figures directory is untouched.\nVERDICT manifest: read; it declares status complete with commits 1987e648 and 1f1bac86, records the gate as 7 passed EXIT=0 and the negative control as 0 passed 1 failed EXIT=1, and both cited logs resolve to files I opened; it records no baseline_suite/after_suite arm.\nVERDICT diff: read the two commits against base 29560d96: 1987e648 changes only _record_repair_dispatch in reckon/crew/recovery.py (+12/-4) and adds the new case (+44), and 1f1bac86 adds only the evidence fragment (+31) with no source.\nCALL_SITES: reckon/crew/recovery.py:_record_repair_dispatch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the node's goal is that the reflex count a repair round's resume attempts per round rather than across rounds, and reckon/crew/recovery.py:1913-1919 now does exactly that: _record_repair_dispatch reads prior = pointer[\"repair_dispatch\"], computes same_round = str(prior.get(\"round_id\") or \"\") == str(round_id or \"\"), and sets attempt = int(prior.get(\"attempt\") or 0) + 1 if same_round else 1, so a write for a round the pointer did not last carry starts at 1 whatever an earlier round recorded. The within-round retry cap at recovery.py:2387-2391 already gated its own prior read on the same round-id comparison, so it now reads a figure belonging to the round it bounds, and the run-wide one-round-per-run cap (the opened_rounds count/round_id comparison at recovery.py:2188-2198) is untouched. The value returned by _record_repair_dispatch is the recorded attempt, and the resume path at recovery.py:2440-2453 returns it as \"attempt\".\nSCORE evidence: 18\nJUSTIFICATION evidence: the focused gate reproduces independently at head 1f1bac86: I ran the file with the reviewed worktree's recovery.py as the imported module (module.__file__ printed from that tree) and got 7 passed, EXIT=0 (reviewer-gate.log). The declared negative control reproduces in a scratch copy of the reviewed tree: reverting the keying to the prior formula int(prior.get(\"attempt\") or 0) + 1 reddens the new case with assert 3 == 1, 1 failed, EXIT=1 (reviewer-negative-control.log). Both logs end with a bare EXIT= line. Deduction: the reviewed manifest records no baseline_suite and no after_suite arm, so no base/head population comparison was taken for this run \u2014 its own done-when scoped the gate to the named test file and left the wider population to a merge-time suite, so the added-failure count is unmeasured rather than zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 29560d96633faf84024d625290af205f97125fa1 1f1bac86a52b7c1a846a44165873f157b43afa50 lists exactly three files \u2014 reckon/crew/recovery.py (+12/-4), tests/test_the_reflex_resumes_an_unpromoted_run.py (+44), and docs/evidence/fragments/a-review-is-sized-to-its-risk/resume-attempts-count-per-round.html (+31) \u2014 every one inside the four declared write paths; the declared figures directory was touched by nothing, and the reviewed worktree is clean at head.\nSCORE durability: 19\nJUSTIFICATION durability: the per-round regression is guarded by test_a_new_round_starts_its_attempt_count_at_one, which seeds an earlier round's two attempts and asserts the new round's first resume records attempt 1; the negative control proves that case fails on a return to the prior formula (assert 3 == 1), so a regression in the keying is caught. The case is deterministic (temporary config home and repo, a fixed earlier-round id, no date-derived literal). Docked one because the case stubs recovery._opened_repair_rounds open, so the interaction between a new round's fresh attempt count and the run-wide one-round cap is not itself exercised.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the module's existing idioms \u2014 the same round-id comparison the retry cap already makes against durable.get(REPAIR_DISPATCH_FIELD) \u2014 adds locals named by mechanism (prior, same_round, attempt), updates the docstring to state why the count belongs to the round, and introduces no plan, phase, ticket or version label in names, comments or docstrings.",
+  "review_run_id": "r-20261001T071455448553-review-of-resume-attempts-count-per-round",
+  "reviewed_base_sha": "29560d96633faf84024d625290af205f97125fa1",
+  "reviewed_commit": "1f1bac86a52b7c1a846a44165873f157b43afa50",
+  "reviewed_head_sha": "1f1bac86a52b7c1a846a44165873f157b43afa50",
+  "reviewed_run_id": "r-20261001T070535631632-resume-attempts-count-per-round",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.355819+00:00",
+  "total": 96
+}

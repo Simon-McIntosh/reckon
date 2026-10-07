@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "commits_read": [
+    "c8178dd4036998fb9523ee0ee7710c629b67be55",
+    "b8f946aa2504a2b62955e680b5d4d7d122f96de5"
+  ],
+  "completed_at": "",
+  "coverage": {
+    "durability": "examined: each new case is falsified by the mutation it exists for, and the base replay shows the coverage gap the tests close was real \u2014 the same substitution leaves the 14-case base file green",
+    "evidence": "examined and re-run: head 17 passed exit 0, base 0bf94fd5 14 passed exit 0, zero added failures; the recorded==0 mutation replayed as a pytest plugin fails only the new acceptance case at head and nothing at base; the emptied _UNEXECUTED_EXIT_CODES mutation fails exactly the two new refusal parameters beside the pre-existing exit-127 case; all four of the node's cited run-directory logs match",
+    "fit": "examined and clean: helper reuse and comment idiom match the surrounding tests, ruff check and format clean on the changed file at both revisions, banned-label and changelog-prose scans over the added test lines empty",
+    "goal_fidelity": "examined and clean: read the node's dispatch goal and done-when from its prompt, the driving followup text on the plan, and both new tests; the acceptance case was exercised through the CLI at the merged head and through the recorded mutation",
+    "scope_discipline": "examined and clean: diffstat against 0bf94fd5 is the three declared paths only (76 insertions in the test file, the plan comment plus version meta, the evidence section), no deletions beyond the 487\u2192488 meta line, and the node worktree is clean"
+  },
+  "dispatched_at": "2026-09-19T13:09:48.494061+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "tests/test_crew_gate_log_agrees.py:225 fails under the recorded==0 substitution while the refusal pair at tests/test_crew_gate_log_agrees.py:267 fails under the emptied _UNEXECUTED_EXIT_CODES, so both branches of reckon/crew/promotion.py:405 are falsified by the mutation they exist for and neither is pinned at base.",
+    "evidence": "reproduced first-hand at the merged head \u2014 the focused gate is 17 passed exit 0 against 14 passed exit 0 on a materialised 0bf94fd5 tree with zero added failures, the recorded==0 mutation is green at base (14 passed) and red at head (1 failed, 16 passed), and the emptied-set mutation fails 3 against 14 passed \u2014 every figure matching the node's manifest, plan comment and evidence record.",
+    "fit": "the new cases reuse _write_pointer and _complete_arguments, match the module's run-id and section-comment idioms, ruff check and ruff format report no findings on the changed file at either revision, and the banned-label scans over the 76 added test lines are empty.",
+    "goal_fidelity": "the followup asked for both halves in this file and both landed \u2014 test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted at tests/test_crew_gate_log_agrees.py:225 accepts a quoted diagnostic beside EXIT=1, and test_a_recorded_unexecuted_exit_beside_a_quoted_diagnostic_is_refused at tests/test_crew_gate_log_agrees.py:267 refuses EXIT=126 and EXIT=127, naming \"diagnostic at line 1\" and the matched line text.",
+    "scope_discipline": "git diff 0bf94fd5..b8f946aa --stat lists exactly the three declared repository paths (tests/test_crew_gate_log_agrees.py, docs/plans/crew-observability-truth.html, docs/evidence/archive/crew-observability-truth-landed.html), the plan-version bump 487\u2192488 is the landing append's own write, and the reviewed worktree reports clean."
+  },
+  "not_examined": [
+    "the runner-summary branch of _log_shows_the_command_ran (a quoted result summary beside an unexecuted sentinel is accepted) was not re-derived; it is unchanged by these commits and was settled at the base node this followup came from",
+    "the merged-head integration run is the subject of a separately dispatched test node, per the reviewed node's own fence"
+  ],
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the followup asked for both halves in this file and both landed \u2014 test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted at tests/test_crew_gate_log_agrees.py:225 accepts a quoted diagnostic beside EXIT=1, and test_a_recorded_unexecuted_exit_beside_a_quoted_diagnostic_is_refused at tests/test_crew_gate_log_agrees.py:267 refuses EXIT=126 and EXIT=127, naming \"diagnostic at line 1\" and the matched line text.\nSCORE evidence: 20\nJUSTIFICATION evidence: reproduced first-hand at the merged head \u2014 the focused gate is 17 passed exit 0 against 14 passed exit 0 on a materialised 0bf94fd5 tree with zero added failures, the recorded==0 mutation is green at base (14 passed) and red at head (1 failed, 16 passed), and the emptied-set mutation fails 3 against 14 passed \u2014 every figure matching the node's manifest, plan comment and evidence record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0bf94fd5..b8f946aa --stat lists exactly the three declared repository paths (tests/test_crew_gate_log_agrees.py, docs/plans/crew-observability-truth.html, docs/evidence/archive/crew-observability-truth-landed.html), the plan-version bump 487\u2192488 is the landing append's own write, and the reviewed worktree reports clean.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_crew_gate_log_agrees.py:225 fails under the recorded==0 substitution while the refusal pair at tests/test_crew_gate_log_agrees.py:267 fails under the emptied _UNEXECUTED_EXIT_CODES, so both branches of reckon/crew/promotion.py:405 are falsified by the mutation they exist for and neither is pinned at base.\nSCORE fit: 20\nJUSTIFICATION fit: the new cases reuse _write_pointer and _complete_arguments, match the module's run-id and section-comment idioms, ruff check and ruff format report no findings on the changed file at either revision, and the banned-label scans over the 76 added test lines are empty.\n",
+  "review_run_id": "r-20260919T130948494061-review-of-cot-sentinel-acceptance-test",
+  "reviewed_base_sha": "0bf94fd5f7bdb7be9529245bf5ec55cb64b9bc39",
+  "reviewed_head_sha": "b8f946aa2504a2b62955e680b5d4d7d122f96de5",
+  "reviewed_node": "cot-sentinel-acceptance-test",
+  "reviewed_run_id": "r-20260919T130222850716-cot-sentinel-acceptance-test",
+  "reviewer_node": "review-of-cot-sentinel-acceptance-test",
+  "reviewer_run_id": "r-20260919T130948494061-review-of-cot-sentinel-acceptance-test",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-19T13:19:10.941439+00:00",
+  "total": 100
+}

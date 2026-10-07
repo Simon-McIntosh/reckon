@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:_crew",
+    "reckon/cli.py ledger records view",
+    "reckon/ledger.py:read_records",
+    "reckon/crew/summary.py:run_rows"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T18:07:39.926234+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/work-does-not-fall-to-the-coordinator.html",
+      "line": "717",
+      "text": "the comment is stamped data-when=\"2026-09-21T20:10:00Z\" while the commit carrying it is 2026-09-21T18:01:10Z, so the record dates itself two hours after it was written and a reader ordering events by this stamp places the landing later than it happened; the same local-time-labelled-Z slip appears in this file's 19:40:00Z comment, and this line adds one more instance."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 5c7f5538 \u2014 53 insertions and 12 deletions in the test module, 139 insertions across the evidence record, the figure and the plan comment, four paths, and no product file touched.",
+    "done_when": "every part of the done-when is recorded and the two that carry the claim were reproduced here \u2014 green.log's nine passes (the named case re-run reads 1 passed), probe.log's early pre-filter=2 post-filter=1 surface=2, and negative_control.log carrying the declared mutation on line 1 with 1 failed, 8 passed.",
+    "goal": "the goal asks for a fixture whose width differs before and after the plan filter; tests/test_derived_figures_reach_a_reader.py:55 moves the run covering early's dispatch instant into plan beta and :253 derives the selection's own count as 1, so the case can now tell the two orders apart.",
+    "manifest": "read; its gate command and nine-passed result match green.log, its negative_control_log path exists with the declared mutation verbatim on line 1, and its ledger.py sha256 claim matches the file in the reviewed worktree.",
+    "write_paths": "the four paths declared in the manifest are the whole of what the two commits touch, and the product file the mutation names still derives before it filters at reckon/ledger.py:1861-1867 with its sha256 unchanged."
+  },
+  "justifications": {
+    "durability": "the mutation at negative_control.log:1 reddens this case alone, and a fixture edit that removes the difference reddens the derived assertion at tests/test_derived_figures_reach_a_reader.py:253.",
+    "evidence": "the recorded probe at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart/probe.log:3 reads early pre-filter=2 post-filter=1 surface=2, and both it and the case's pass at tests/test_derived_figures_reach_a_reader.py:231 were reproduced here.",
+    "fit": "the helper at tests/test_derived_figures_reach_a_reader.py:208 mirrors the inclusive span rule of reckon/crew/summary.py:578 and states why it exists, but the plan comment this node landed stamps its own instant wrongly.",
+    "goal_fidelity": "tests/test_derived_figures_reach_a_reader.py:253 derives the selection's own count as 1 beneath a surface value of 2, which is the difference the goal asks the fixture to create.",
+    "scope_discipline": "the two commits change only the four paths the manifest declares, and reckon/ledger.py is byte-identical to the base at the reviewed revision."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart at 2124271d, read against its base 5c7f5538. Two artefacts were reproduced here rather than taken on the manifest's word: the named case was re-run at the reviewed revision (1 passed, 8 deselected) and the probe was re-run, which again read pre-filter=2 post-filter=1 surface=2 from the fixture's own stamps.\n\nVERDICT goal: the goal asks for a fixture whose width differs before and after the plan filter; tests/test_derived_figures_reach_a_reader.py:55 moves the run covering early's dispatch instant into plan beta and :253 derives the selection's own count as 1, so the case can now tell the two orders apart.\nVERDICT done_when: every part of the done-when is recorded and the two that carry the claim were reproduced here \u2014 green.log's nine passes (the named case re-run reads 1 passed), probe.log's early pre-filter=2 post-filter=1 surface=2, and negative_control.log carrying the declared mutation on line 1 with 1 failed, 8 passed.\nVERDICT write_paths: the four paths declared in the manifest are the whole of what the two commits touch, and the product file the mutation names still derives before it filters at reckon/ledger.py:1861-1867 with its sha256 unchanged.\nVERDICT manifest: read; its gate command and nine-passed result match green.log, its negative_control_log path exists with the declared mutation verbatim on line 1, and its ledger.py sha256 claim matches the file in the reviewed worktree.\nVERDICT diff: read commit by commit against base 5c7f5538 \u2014 53 insertions and 12 deletions in the test module, 139 insertions across the evidence record, the figure and the plan comment, four paths, and no product file touched.\nCALL_SITES: reckon/mcp.py:_crew, reckon/cli.py ledger records view, reckon/ledger.py:read_records, reckon/crew/summary.py:run_rows\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_derived_figures_reach_a_reader.py:253 derives the selection's own count as 1 beneath a surface value of 2, which is the difference the goal asks the fixture to create.\nSCORE evidence: 20\nJUSTIFICATION evidence: the recorded probe at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart/probe.log:3 reads early pre-filter=2 post-filter=1 surface=2, and both it and the case's pass at tests/test_derived_figures_reach_a_reader.py:231 were reproduced here.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change only the four paths the manifest declares, and reckon/ledger.py is byte-identical to the base at the reviewed revision.\nSCORE durability: 20\nJUSTIFICATION durability: the mutation at negative_control.log:1 reddens this case alone, and a fixture edit that removes the difference reddens the derived assertion at tests/test_derived_figures_reach_a_reader.py:253.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at tests/test_derived_figures_reach_a_reader.py:208 mirrors the inclusive span rule of reckon/crew/summary.py:578 and states why it exists, but the plan comment this node landed stamps its own instant wrongly.\nFINDING docs/plans/work-does-not-fall-to-the-coordinator.html:717 the comment is stamped data-when=\"2026-09-21T20:10:00Z\" while the commit carrying it is 2026-09-21T18:01:10Z, so the record dates itself two hours after it was written and a reader ordering events by this stamp places the landing later than it happened; the same local-time-labelled-Z slip appears in this file's 19:40:00Z comment, and this line adds one more instance.",
+  "review_run_id": "r-20260921T180739926234-review-of-the-discriminating-filter-order-case",
+  "reviewed_base": "5c7f5538ae459fe3298c272bbd6f63c03491e681",
+  "reviewed_commit": "2124271d36862e9d6d328c10ecabf0c913d066ee",
+  "reviewed_run_id": "r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260921T180739926234-review-of-the-discriminating-filter-order-case",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T18:21:05.715417+00:00",
+  "total": 99
+}

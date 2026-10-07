@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "added_failure_count": 19,
+  "added_failure_ids": [
+    "tests/test_crew_promotion.py::test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row",
+    "tests/test_crew_promotion.py::test_a_run_promoted_without_a_review_is_distinguishable_from_a_zero_scored_one",
+    "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs",
+    "tests/test_promotion_reads_the_terminal_record.py::test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback",
+    "tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row",
+    "tests/test_receipt_after_release.py::test_a_live_writer_is_ended_first_and_its_receipt_is_folded",
+    "tests/test_receipt_after_release.py::test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback",
+    "tests/test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion",
+    "tests/test_receipt_after_release.py::test_an_already_terminal_quiet_run_is_unchanged",
+    "tests/test_routing_evidence_fields.py::test_a_coordinator_supplied_predecessor_is_recorded",
+    "tests/test_routing_evidence_fields.py::test_a_predecessor_derived_from_the_base_names_the_earlier_run",
+    "tests/test_routing_evidence_fields.py::test_a_promoted_row_carries_all_three_fields_together",
+    "tests/test_routing_evidence_fields.py::test_a_run_with_no_predecessor_omits_the_continuation_link",
+    "tests/test_routing_evidence_fields.py::test_promotion_records_a_stated_dispute_count",
+    "tests/test_routing_evidence_fields.py::test_promotion_records_an_empty_follow_on_list_not_a_missing_key",
+    "tests/test_routing_evidence_fields.py::test_promotion_records_paths_named_in_follow_ons",
+    "tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet",
+    "tests/test_section_body_records_are_read.py::test_an_edited_write_preserves_a_corpus_section_body_record",
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit"
+  ],
+  "added_failures_note": "derived from the reviewed run's own gate logs (base-population.log, head-population.log): the base arm truncated at 97 percent so pytest printed no FAILED summary and the set difference yields all 19 head ids as added; the base arm's own progress line shows failures, and the manifest records baseline_suite.completed=false, so this count is an artifact of the unreadable base arm, not evidence that the change added these failures.",
+  "backend": "local",
+  "completed_at": "2026-10-03T18:00:59.689Z",
+  "dispatched_at": "2026-10-03T17:52:27Z",
+  "findings": [
+    {
+      "file": "reckon/doccheck.py",
+      "line": "749",
+      "severity": "follow-on",
+      "text": "_scalar_duplicate_findings' docstring and its duplicate-plan-scalar message (reckon/doccheck.py:774, 'the reader takes the last one') still state last-wins, which the landed reader change contradicts, so an audit error now tells the reader the opposite of what reckon/_plan_html.py:489 does; out of this node's write scope."
+    }
+  ],
+  "justifications": {
+    "durability": "the negative control runs the new module against base source and it fails 4/4 (negative-control.log), including the declared swapped-copies case, so the adjacency assertion and the first-wins assertion each name a condition under which they fail.",
+    "evidence": "the gate is recorded (head-gate.log, 4 passed EXIT=0) and the negative control fires (negative-control.log, 4 failed), but the done_when's required base-and-head population arms are not both readable - base-population.log stops at 97% with no summary (manifest baseline_suite.completed=false) - so the population delta the measure asks for is unestablished.",
+    "fit": "_set_meta_block (reckon/_plan_html.py:1166) reuses the _set_meta/_remove_meta idiom and house docstring style, and no added symbol, filename or comment carries a plan label or ticket reference.",
+    "goal_fidelity": "reckon/_plan_html.py:1166 emits impl/version/modified as one block and :489 makes both readers first-wins, so the deliverable lands, though the goal named reckon/_store.py for the writer while the emission lives in write_state (reckon/_plan_html.py:1355) that both store write paths call.",
+    "scope_discipline": "the diff touches only reckon/_plan_html.py, tests/test_plan_scalars_are_one_block.py and the evidence fragment, every one a declared write path, and mutates no plan, index or sprint state."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the plan writer emit impl/version/modified as one contiguous block and the reader resolve a duplicated plan scalar by a stated rule; reckon/_plan_html.py:1166 adds _set_meta_block and :1355 routes the three scalars through it, and :489/:1508 make both reader paths first-occurrence-wins with a warning, so both halves are present.\nVERDICT done_when: it names tests/test_plan_scalars_are_one_block.py passing at head plus base-and-head arms over every file importing reckon._store or reckon._plan_html; the gate ran (head-gate.log, 4 passed EXIT=0) but the base population arm did not complete, so the population half of the measure is unmet.\nVERDICT write_paths: read the manifest's declared paths - reckon/_store.py, reckon/_plan_html.py, the new test and the fragment; the diff touches reckon/_plan_html.py, tests/test_plan_scalars_are_one_block.py and the fragment, all inside them, and no path outside.\nVERDICT manifest: read; it records the 4-passed gate at head and the 4-failed negative control at base, and it declares the base population arm incomplete and the node blocked on it.\nVERDICT diff: read the three landed shas 1ff243d09, 8002ad989, bedc70f83 against base 4d1feeed9; the source diff is confined to reckon/_plan_html.py.\nCALL_SITES: reckon/_store.py:_write_state_locked, reckon/_store.py:_read_state, reckon/doccheck.py:1147, reckon/mcp.py:1079, reckon/project_state.py:1186, reckon/metadata_index.py:139, reckon/crew/plan_review.py:215\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:1166 emits impl/version/modified as one block and :489 makes both readers first-wins, so the deliverable lands, though the goal named reckon/_store.py for the writer while the emission lives in write_state (reckon/_plan_html.py:1355) that both store write paths call.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate is recorded (head-gate.log, 4 passed EXIT=0) and the negative control fires (negative-control.log, 4 failed), but the done_when's required base-and-head population arms are not both readable - base-population.log stops at 97% with no summary (manifest baseline_suite.completed=false) - so the population delta the measure asks for is unestablished.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/_plan_html.py, tests/test_plan_scalars_are_one_block.py and the evidence fragment, every one a declared write path, and mutates no plan, index or sprint state.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control runs the new module against base source and it fails 4/4 (negative-control.log), including the declared swapped-copies case, so the adjacency assertion and the first-wins assertion each name a condition under which they fail.\nSCORE fit: 18\nJUSTIFICATION fit: _set_meta_block (reckon/_plan_html.py:1166) reuses the _set_meta/_remove_meta idiom and house docstring style, and no added symbol, filename or comment carries a plan label or ticket reference.\nFINDING reckon/doccheck.py:749 follow-on: _scalar_duplicate_findings' docstring and its duplicate-plan-scalar message (reckon/doccheck.py:774, 'the reader takes the last one') still state last-wins, which the landed reader change contradicts, so an audit error now tells the reader the opposite of what reckon/_plan_html.py:489 does; out of this node's write scope.\n",
+  "review_run_id": "r-20261003T175210090922-review-of-plan-scalars-are-one-block",
+  "reviewed_base": "4d1feeed905d145a3130e71293f2cfdf1233f1d7",
+  "reviewed_base_sha": "4d1feeed905d145a3130e71293f2cfdf1233f1d7",
+  "reviewed_commit": "bedc70f83a29e86cb0cfc74afd49666316987fec",
+  "reviewed_head_sha": "bedc70f83a29e86cb0cfc74afd49666316987fec",
+  "reviewed_run_id": "r-20261003T162938204236-plan-scalars-are-one-block",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T18:00:09.280830+00:00",
+  "total": 86
+}

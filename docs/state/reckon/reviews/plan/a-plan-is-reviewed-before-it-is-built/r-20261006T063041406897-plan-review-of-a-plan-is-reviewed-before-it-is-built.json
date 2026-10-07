@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:36:13.303Z",
+  "dispatched_at": "2026-10-06T06:31:01Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:866",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a721 leans on the single-owner claim to justify reusing the path resolver instead of adding one; correcting it means either deriving `delivered_reports`' root from the owner or qualifying the claim, which changes \u00a721's text.",
+      "text": "`delivered_reports` builds `reports_dir() / project / \"plan-review\" / plan_slug` while \u00a721 declares `review_report_directory` (line 791) the single owner of that layout and derives the new snapshot path from it; two spellings of one layout in one file drift when the layout moves, and \u00a721's reuse justification rests on an ownership claim that is not true as written \u2014 the owner to extend is `review_report_directory` at reckon/crew/plan_review.py:791, and the duplicate to fold is the root at line 866",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "44c9d550a592de190b0ea0abbfc2fe5ecaa82e84b01223f7071efda1fece6e57",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 175,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T063041406897-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "d4c3f34ff96a34af67145a84d9ed8665013feb63",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716's `section_prose` on `reckon/_plan_html.py` is one function hiding span discovery, protected-span subtraction, entity decoding and tag stripping behind an ordered `(identity, prose)` sequence, and \u00a722 extends `_review_coverage` (a test, a locator and a declaration comparison behind the one predicate) rather than spreading wrappers over it.",
+    "duplicate_owner": "a finding \u2014 \u00a721 names `review_report_directory` (reckon/crew/plan_review.py:791) \"the one owner of the report-directory layout\" and adds \"no second spelling of the layout\", but `delivered_reports` re-spells the same layout at reckon/crew/plan_review.py:866, so the owner \u00a721 relies on for its snapshot path is not single.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds the public `section_prose` and offsets it against the interim public `strip_tags` it privatises (net +1 to the family over the section, stated in its own text), \u00a722 adds `plan_review_settings` and retires `plan_review_settle_seconds` in the same change (net 0) and reuses the `plan-review-missing` refusal family with the uncovered units in its detail (no refusal family added), and \u00a723 adds the public `store_delivered_reviews` while stating its only retirement is routing's uncounted private copy- each section accounts for its surface in its own text.",
+    "reuse_search": "pass \u2014 every mechanism the four sections extend is named and present: `_section_digests`, `_review_coverage`/`_fingerprint_forms`, `plan_review_path`, `review_report_directory`, `write_review_sidecar`, `store_delivered_report`/`delivered_reports` in `reckon/crew/plan_review.py`, `plan_review_settle_seconds` and its \u00a77 schema-exclusion path in `reckon/flight.py:684`/`:322`/`:863`, and `section_record_id`/`structured_section_spans`/`strip_tags` in `reckon/_plan_html.py`; \u00a722's word-level edit share has no prior helper in the tree (no `difflib`/`SequenceMatcher`/change-ratio use exists), so nothing is rebuilt.",
+    "thin_wrapper": "pass \u2014 \u00a716 deletes the interim `_prose_slices` rather than leaving it a delegator (grep-enforced in its done-when) and folds `_strip_tags` back to private, and \u00a723 hoists `routing._store_delivered_plan_review` to `plan_review.store_delivered_reviews` and retires the routing copy rather than layering a second store step over it."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "a85d3d5b6115911cebee511fc8dcb878e34525faa6ed760e6c6d5e252a745c18",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "72ad92b52a650ea1abc0d70ca740ce40c853d798c5dfe84f0dbac9cac2368b92",
+    "s22": "0d179320da16ea25bd04dcadc260d12243ff41cc52b7e7f67bc485e929737c52",
+    "s23": "d5923a18f9f600d2f9d1b10ce797bf2b5ce80a57c5b5544c167824fd936b4515",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:22:13.026846+00:00"
+}

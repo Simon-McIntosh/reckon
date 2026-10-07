@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T20:14:22.103Z",
+  "dispatched_at": "2026-09-26T19:23:59Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md",
+      "line": "192",
+      "text": "the \u00a73 exclusion of `recovery.unwatch` rests on the successor producer's registration at 18:45:23Z, but the arming path signals before it registers (dispatch.py:884 unwatch, :888 _start_watch_producer), so this ordering does not exclude the candidate \u2014 an arm at ~18:45:19Z predicts exactly the observed record \u2014 and the bundle's own attempt to settle it came back empty (logs/pgid-compare.txt:1-5); \u00a72's matching consequence-not-cause claim at line 139 rests on the same inverted inference. State a basis that excludes, or mark the candidate unresolved."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md",
+      "line": "167",
+      "text": "\u00a73 declares the sender not determinable while the bundle it indexes carries an explicit operative attribution \u2014 logs/killed-review-run-exit.txt:28, killed 'by an operator-side watcher restart, not by anything you did' \u2014 which the report never quotes or assesses, so a reader cannot tell whether the arming path was ruled out or merely overlooked."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md",
+      "line": "49",
+      "text": "the claim that no scheduler word appears anywhere in the route fails a grep of the two named files at 52f751aa (dispatch.py:4759 prompt string, fleet_supervisor.py:3 docstring) though the intended claim \u2014 no scheduler verb is invoked \u2014 is sound; say invoked."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md",
+      "line": "25",
+      "text": "the citation block is annotated as grepped at 2026-09-26T19:11Z, but main's HEAD reflog places 52f751aa at HEAD only from 19:16:14Z and the anchors file's own mtime is 19:16:18Z, so a reproducer reading main at the stated time sees a different revision than the anchors resolve at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no code diff to read \u2014 commits: none and the worktree HEAD equals the base 6dea8ea1, so the reviewed change is the report artefact written outside any repository; I read the report in full (267 lines) as the delivered change.",
+    "done_when": "the brief's measure (prompt.txt:52-53) is answered item by item \u2014 every route site cited at main's head (report lines 34-54), what sacct, the supervisor records and the producer seat show for 18:44-18:47Z, the yes/no/not-determinable verdict with the missing observation named (report lines 154-203), and the four SIGTERM runs answered (report lines 207-236); all 39 cited anchors resolve at the named revision 52f751aa against 2/2 injected false anchors flagged (my logs/anchor-verify-with-control.txt).",
+    "goal": "read the node goal at prompt.txt:25 beside its deliverable; the report answers the route half as a firm no through an enumerated mechanism surface with positive controls (report lines 32-54, 70-90), names slurmstepd as the SIGKILL's immediate sender acting on a signal to the run's srun client, and leaves the ultimate sender not determinable with the gap named (report lines 166-184).",
+    "manifest": "read at the run's manifest.md; status complete, commits none with the reason stated (a read-only investigate node), four named instrument outcomes with results, test_logs and evidence_inputs lists, negative_control_log = logs/fleet-route-instruments.txt with its note, three follow_ons \u2014 and all 17 logs it references exist.",
+    "write_paths": "the manifest declares one write path (manifest.md:3, the report) and nothing outside it was found \u2014 the report exists there, the reviewed worktree stands at its base 6dea8ea1 with `git status --porcelain` empty including untracked files, and every measurement sits under the run directory's logs/ as the done-when requires."
+  },
+  "justifications": {
+    "durability": "no test can regress-guard a report, so what stands in is the archived, re-checkable evidence bundle under logs/ (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:255-267) \u2014 real, but nothing reddens if a claim such as the \u00a73 exclusion goes stale.",
+    "evidence": "the instruments are controlled and calibrated (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:70-90; logs/fleet-route-instruments.txt) but /home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:192 excludes `recovery.unwatch` on an ordering its own code path inverts \u2014 dispatch.py:884 unwatch precedes :888 _start_watch_producer \u2014 and never engages the attribution recorded at logs/killed-review-run-exit.txt:28.",
+    "fit": "the report keeps the store's markdown idiom with `file:line` anchors at a named revision and AGENTS.md's absence-claim discipline invoked at line 70, and the naming checks over it hit only the domain term `step` for SLURM steps and its own \u00a7N cross-references, no plan label.",
+    "goal_fidelity": "the route half of the goal is answered with three independent instruments and the sender half with the immediate sender named, and the gap recorded at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:154-184, which is the measure the node's own brief defines (prompt.txt:53).",
+    "scope_discipline": "every artefact found sits inside the declared write path or the run directory the done-when names (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md exists; manifest.md:3), and the reviewed worktree is clean at base 6dea8ea1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal at prompt.txt:25 beside its deliverable; the report answers the route half as a firm no through an enumerated mechanism surface with positive controls (report lines 32-54, 70-90), names slurmstepd as the SIGKILL's immediate sender acting on a signal to the run's srun client, and leaves the ultimate sender not determinable with the gap named (report lines 166-184).\nVERDICT done_when: the brief's measure (prompt.txt:52-53) is answered item by item \u2014 every route site cited at main's head (report lines 34-54), what sacct, the supervisor records and the producer seat show for 18:44-18:47Z, the yes/no/not-determinable verdict with the missing observation named (report lines 154-203), and the four SIGTERM runs answered (report lines 207-236); all 39 cited anchors resolve at the named revision 52f751aa against 2/2 injected false anchors flagged (my logs/anchor-verify-with-control.txt).\nVERDICT write_paths: the manifest declares one write path (manifest.md:3, the report) and nothing outside it was found \u2014 the report exists there, the reviewed worktree stands at its base 6dea8ea1 with `git status --porcelain` empty including untracked files, and every measurement sits under the run directory's logs/ as the done-when requires.\nVERDICT manifest: read at the run's manifest.md; status complete, commits none with the reason stated (a read-only investigate node), four named instrument outcomes with results, test_logs and evidence_inputs lists, negative_control_log = logs/fleet-route-instruments.txt with its note, three follow_ons \u2014 and all 17 logs it references exist.\nVERDICT diff: there is no code diff to read \u2014 commits: none and the worktree HEAD equals the base 6dea8ea1, so the reviewed change is the report artefact written outside any repository; I read the report in full (267 lines) as the delivered change.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the route half of the goal is answered with three independent instruments and the sender half with the immediate sender named, and the gap recorded at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:154-184, which is the measure the node's own brief defines (prompt.txt:53).\nSCORE evidence: 15\nJUSTIFICATION evidence: the instruments are controlled and calibrated (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:70-90; logs/fleet-route-instruments.txt) but /home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:192 excludes `recovery.unwatch` on an ordering its own code path inverts \u2014 dispatch.py:884 unwatch precedes :888 _start_watch_producer \u2014 and never engages the attribution recorded at logs/killed-review-run-exit.txt:28.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every artefact found sits inside the declared write path or the run directory the done-when names (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md exists; manifest.md:3), and the reviewed worktree is clean at base 6dea8ea1.\nSCORE durability: 16\nJUSTIFICATION durability: no test can regress-guard a report, so what stands in is the archived, re-checkable evidence bundle under logs/ (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:255-267) \u2014 real, but nothing reddens if a claim such as the \u00a73 exclusion goes stale.\nSCORE fit: 18\nJUSTIFICATION fit: the report keeps the store's markdown idiom with `file:line` anchors at a named revision and AGENTS.md's absence-claim discipline invoked at line 70, and the naming checks over it hit only the domain term `step` for SLURM steps and its own \u00a7N cross-references, no plan label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:192 the \u00a73 exclusion of `recovery.unwatch` rests on the successor producer's registration at 18:45:23Z, but the arming path signals before it registers (dispatch.py:884 unwatch, :888 _start_watch_producer), so this ordering does not exclude the candidate \u2014 an arm at ~18:45:19Z predicts exactly the observed record \u2014 and the bundle's own attempt to settle it came back empty (logs/pgid-compare.txt:1-5); \u00a72's matching consequence-not-cause claim at line 139 rests on the same inverted inference. State a basis that excludes, or mark the candidate unresolved.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:167 \u00a73 declares the sender not determinable while the bundle it indexes carries an explicit operative attribution \u2014 logs/killed-review-run-exit.txt:28, killed 'by an operator-side watcher restart, not by anything you did' \u2014 which the report never quotes or assesses, so a reader cannot tell whether the arming path was ruled out or merely overlooked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:49 the claim that no scheduler word appears anywhere in the route fails a grep of the two named files at 52f751aa (dispatch.py:4759 prompt string, fleet_supervisor.py:3 docstring) though the intended claim \u2014 no scheduler verb is invoked \u2014 is sound; say invoked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md:25 the citation block is annotated as grepped at 2026-09-26T19:11Z, but main's HEAD reflog places 52f751aa at HEAD only from 19:16:14Z and the anchors file's own mtime is 19:16:18Z, so a reproducer reading main at the stated time sees a different revision than the anchors resolve at.",
+  "review_run_id": "r-20260926T192348155133-review-of-fleet-spawn-and-the-cancelled-step",
+  "reviewed_base_sha": "6dea8ea10cdb9bc23bd7d5ff14dbdb0cc4cdc8cc",
+  "reviewed_head_sha": "6dea8ea10cdb9bc23bd7d5ff14dbdb0cc4cdc8cc",
+  "reviewed_run_id": "r-20260926T185215633094-fleet-spawn-and-the-cancelled-step",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T20:11:29.179110+00:00",
+  "total": 87
+}

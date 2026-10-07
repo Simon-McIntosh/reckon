@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "completed_at": "2026-10-01T05:43:39.306Z",
+  "dispatched_at": "2026-10-01T05:12:54Z",
+  "effort": "xhigh",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "text": "follow-on: the after_suite arm measures merge tree a07635672bbea1687f244a881110b5d8e0829e7d, which git cat-file -t reports as a tree object rather than a commit and which is not the revision this record is keyed by (reviewed_head_sha cda83bd6e94d9b4313e3c389b087863bd2ad9b8f, the run's own unchanged worktree head and the base arm). The node made no commits, so its tree head is the only revision a review can be keyed by, and the report names the merge and its two parents explicitly, so this does not hold the node; but a reader that selects the review by the run's head reads an after_suite naming a different, non-commit revision, and the merge is a hypothetical tree that was never committed."
+    },
+    {
+      "file": "log-head.txt",
+      "line": "1",
+      "text": "follow-on: both arm logs name their revision on the first line as 'rev=<sha>' (log-head.txt line 1, log-base.txt line 1), a spelling the repository's own reckon/crew/review.py:recorded_log_revision regex ('revision' <sha>) does not match, so I confirmed recorded_log_revision returns None for each log and the read-time annotation stores base_log_revision/head_log_revision as null for this run's review even though the manifest's baseline_suite/after_suite JSON carries both revisions. The dispatch fence required only that the log's first line name its revision or tree, which it does, so this is a follow-on; the machine-readable tie between a stored added-failure count and the revision it measured is lost for this run."
+    }
+  ],
+  "justifications": {
+    "durability": "The guard against a false 'no added failures' is the two-arm set difference itself, and it demonstrably discriminates: the base-only teardown ERROR in tests/test_member_friction.py is present in log-base and absent from log-head, so the comparison is not inert, and the change's own guard tests/test_section_routing_reaches_dispatch.py is carried green in the head arm (head arm 1557 passed against base 1553, a +4 matching that file). Docked three, because the run ships no persistent guard of its own (its deliverable is an attribution), no code-caused positive control was executed, and the solitary head-file re-run the report cites ('4 passed in 6.14s') has no delivered log and cannot be re-run now that both extracted trees were deleted as fenced.",
+    "evidence": "Both suite objects carry revision, command, exit_status, completed, failure_count and failure_ids, and the derivation falls out clean. I rebuilt the population independently and the base tree yielded exactly population_base.txt (140 files, byte-identical to git grep -lE over cda83bd6), the delivered logs hash to the sha256 pair the report states (log-base 31882a1f..., log-head adccf543...), and I re-derived the added set from the two shipped logs with the production reader (reckon/crew/review.py:added_failures_from_gate_logs) to added_failure_count 0 and added_failure_ids []. Docked two for the keying/heading gaps in the two findings.",
+    "fit": "The node follows the repository's evidence idioms: the run is a measurement role, it writes only under its granted report directory, its two arm logs are copied in and hashed, both arm lists are written beside the report, and the merge tree it measured is confirmed to carry the change (a0763567 holds tests/test_section_routing_reaches_dispatch.py and a _dispatch_section_routing call in reckon/crew/dispatch.py that cda83bd6 lacks). No plan, sprint or ticket label appears in the delivered report, population files or manifest keys. Docked two for the log-header spelling that does not fit the reader the repository already ships (finding above).",
+    "goal_fidelity": "The node's goal is to measure whether merging section-routing-reaches-dispatch (97012665650b2784534e102241ae90b89671e0e7) into main (cda83bd6...) adds any test failure across the tests that reach dispatch, routing or the flight schema, and it did exactly that: it built the population once from the base tree with the fence's own regex (I reproduced 140 files identically), included the change's new file for the head arm only, ran both arms from their own extracted trees with the pinned interpreter, and reported head-only 0 and base-only 1 with the base-only id explained as an environment-sensitive teardown ERROR. The answer is delivered as an attribution, exactly as the fence asked.",
+    "scope_discipline": "The node changed no repository file (commits: none) and its worktree is clean (git status --porcelain empty); its five delivered files all sit under the one declared write path, reports/reckon/s22-coord/section-routing-population; the scratch trees and basetemps lived under node-local /tmp and both extracted trees and basetemps were deleted before the run read complete; the population was frozen once from the base tree rather than re-derived per arm. Nothing the goal does not imply was carried."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure whether merging section-routing-reaches-dispatch (970126656) into main (cda83bd6) adds any test failure across the tests that reach dispatch, routing or the flight schema; report.md and the two arm logs answer it with head-only 0 and base-only 1.\nVERDICT done_when: the done-when is the two-arm comparison over the frozen population; the manifest's baseline_suite and after_suite each carry revision, command, exit_status, completed, failure_count and failure_ids, and I re-derived added_failure_count 0 with the production reader from the two shipped logs.\nVERDICT write_paths: the manifest declares one write path, reports/reckon/s22-coord/section-routing-population; the five delivered files sit inside it and the run worktree is clean (git status --porcelain empty).\nVERDICT manifest: read; it records commits none, both arm gates, failure_attribution {}; its two failure_ids lists match the two logs I hashed (base 17 ids, head 16 ids).\nVERDICT diff: the node changed no repository file, so the artefact is the report plus logs; I confirmed head arm a0763567 is a tree object carrying the change (new test file present, _dispatch_section_routing added to reckon/crew/dispatch.py) while base cda83bd6 lacks both.\nCALL_SITES: reckon/crew/dispatch.py:plan_dispatch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: report.md and population_base.txt answer the node's exact question, and I reproduced the 140-file population byte-identically from the base tree with the fence's own regex at cda83bd6.\nSCORE evidence: 18\nJUSTIFICATION evidence: I rebuilt the population, matched both log sha256 values, and re-derived added_failure_count 0 / added_failure_ids [] from the shipped logs with reckon/crew/review.py:added_failures_from_gate_logs; docked two for the after-arm keying gap and the log-header spelling in the findings.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git status --porcelain empty, commits none, and every delivered file sits under the single declared write path reports/reckon/s22-coord/section-routing-population with both extracted trees and basetemps deleted before completion.\nSCORE durability: 17\nJUSTIFICATION durability: the two-arm set difference demonstrably discriminates (the base-only tests/test_member_friction.py teardown ERROR is in log-base and not log-head) and the change's own tests/test_section_routing_reaches_dispatch.py is carried green at head, but the node ships no guard of its own and no code-caused positive control.\nSCORE fit: 18\nJUSTIFICATION fit: the report, the two population lists and the hashed arm logs follow the repository's report idioms and carry no plan or sprint label; docked two because the arm logs' 'rev=' header does not fit the reader the repository already ships (reckon/crew/review.py:recorded_log_revision).\nFINDING manifest.md:16 follow-on: the after_suite arm measures merge tree a07635672bbea1687f244a881110b5d8e0829e7d, which git cat-file -t reports as a tree rather than a commit and which is not the revision this record is keyed by (reviewed_head_sha cda83bd6, the run's unchanged worktree head and the base arm); the node made no commits so its tree head is the only revision available to key on, but a reader selecting by head reads an after_suite naming a different, non-commit revision.\nFINDING log-head.txt:1 follow-on: both arm logs name their revision as 'rev=<sha>' on the first line, a spelling reckon/crew/review.py:recorded_log_revision does not match, so read_review stores base_log_revision/head_log_revision null for this run although the manifest's suite JSON carries both revisions.\n",
+  "review_run_id": "r-20261001T051238857380-review-of-section-routing-population",
+  "reviewed_base": "cda83bd6e94d9b4313e3c389b087863bd2ad9b8f",
+  "reviewed_base_sha": "cda83bd6e94d9b4313e3c389b087863bd2ad9b8f",
+  "reviewed_commit": "cda83bd6e94d9b4313e3c389b087863bd2ad9b8f",
+  "reviewed_head_sha": "cda83bd6e94d9b4313e3c389b087863bd2ad9b8f",
+  "reviewed_run_id": "r-20261001T042515203633-section-routing-population",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T051238857380-review-of-section-routing-population",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T05:42:43.230247+00:00",
+  "total": 93
+}

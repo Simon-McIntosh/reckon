@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:5424 (crew complete calls crew_module.complete)",
+    "reckon/crew/promotion.py:4719 (_landing_preconditions reached from complete)",
+    "reckon/crew/promotion.py:6715 (_landing_preconditions reached from _complete_locked)"
+  ],
+  "completed_at": "2026-10-01T20:03:12.336Z",
+  "dispatched_at": "2026-10-01T19:57:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3158",
+      "severity": "follow-on",
+      "text": "follow-on: the marker set covers merge, rebase and cherry-pick as the goal names but omits REVERT_HEAD, so an open `git revert` leaves the checkout in the same owned-index state without being refused."
+    }
+  ],
+  "head_log_revision": "9dc9476934d5717abb726b7de8c7d5bc2043f9be",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; 972dbcaec adds _open_operation_state and the refusal in _require_committable_checkout, the marker table resolving each path through git rev-parse --git-path, and the test file, while 9dc947693 adds the linked-worktree case and the evidence fragment, with no path outside the declared scope in either.",
+    "done_when": "the done_when names tests/test_complete_refuses_an_open_merge.py building a scratch repo, refusing before either store is written for MERGE_HEAD, both rebase state directories and CHERRY_PICK_HEAD with the refusal naming the state, a clean checkout still promoting, a linked worktree resolving its own marker, a logged negative control and zero added failures over tests/test_crew_promotion.py; the manifest records 50 passed at base 2c49c0457 and 56 passed at head, and the named refusal strings are asserted at tests/test_complete_refuses_an_open_merge.py:157.",
+    "goal": "the goal is that crew complete refuses while the checkout has a merge, rebase or cherry-pick open so a landing commit cannot conclude a peer's operation; reckon/crew/promotion.py:3166 _open_operation_state detects the four markers and promotion.py:3214 raises before either store is written, naming the state.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191722772125-complete-refuses-an-open-merge/manifest.md; it states status complete, two commits, the head gate command at 56 passed EXIT=0, the base arm at 50 passed EXIT=0 and a negative-control log at 5 failed EXIT=1, all three logs present on disk.",
+    "write_paths": "the manifest declares four paths; git diff --stat 2c49c0457 9dc947693 touches three files, reckon/crew/promotion.py, tests/test_complete_refuses_an_open_merge.py and the evidence fragment, every one inside the declared scope, and the fourth (a figures directory) was legitimately not written."
+  },
+  "justifications": {
+    "durability": "the declared negative control was executed and logged (negative-control.log: MERGE_HEAD case promotes with DID NOT RAISE CrewError and the rebase and cherry-pick cases go red, 5 failed ids the head arm does not fail), so the new tests at tests/test_complete_refuses_an_open_merge.py:153 are verified by reinstating the regression rather than by watching them pass.",
+    "evidence": "the manifest records base 50 passed and head 56 passed with both logs on disk and the negative-control log red at 5 failed ids, and the gate asserts the done_when's own conditions, though the head log carries no cwd header and so its working directory rides the manifest's measurement_cwd rather than the log.",
+    "fit": "the guard reuses the existing _worktree_git_paths helper at promotion.py:523 beside the pre-existing _require_committable_checkout, its symbols are mechanism-named with no plan labels, and the comments state the mechanism rather than a tracker reference.",
+    "goal_fidelity": "promotion.py:3158 lists MERGE_HEAD, rebase-merge, rebase-apply and CHERRY_PICK_HEAD and promotion.py:3214 raises before the ledger row or plan comment is written, so the refusal matches the goal's three states exactly and names each.",
+    "scope_discipline": "every path in git diff --stat 2c49c0457 9dc947693 is one of the manifest's declared write paths and the change carries no edit the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that crew complete refuses while the checkout has a merge, rebase or cherry-pick open so a landing commit cannot conclude a peer's operation; reckon/crew/promotion.py:3166 _open_operation_state detects the four markers and promotion.py:3214 raises before either store is written, naming the state.\nVERDICT done_when: the done_when names tests/test_complete_refuses_an_open_merge.py building a scratch repo, refusing before either store is written for MERGE_HEAD, both rebase state directories and CHERRY_PICK_HEAD with the refusal naming the state, a clean checkout still promoting, a linked worktree resolving its own marker, a logged negative control and zero added failures over tests/test_crew_promotion.py; the manifest records 50 passed at base 2c49c0457 and 56 passed at head, and the named refusal strings are asserted at tests/test_complete_refuses_an_open_merge.py:157.\nVERDICT write_paths: the manifest declares four paths; git diff --stat 2c49c0457 9dc947693 touches three files, reckon/crew/promotion.py, tests/test_complete_refuses_an_open_merge.py and the evidence fragment, every one inside the declared scope, and the fourth (a figures directory) was legitimately not written.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191722772125-complete-refuses-an-open-merge/manifest.md; it states status complete, two commits, the head gate command at 56 passed EXIT=0, the base arm at 50 passed EXIT=0 and a negative-control log at 5 failed EXIT=1, all three logs present on disk.\nVERDICT diff: read commit by commit; 972dbcaec adds _open_operation_state and the refusal in _require_committable_checkout, the marker table resolving each path through git rev-parse --git-path, and the test file, while 9dc947693 adds the linked-worktree case and the evidence fragment, with no path outside the declared scope in either.\nCALL_SITES: reckon/cli.py:5424 (crew complete calls crew_module.complete), reckon/crew/promotion.py:4719 (_landing_preconditions reached from complete), reckon/crew/promotion.py:6715 (_landing_preconditions reached from _complete_locked)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:3158 lists MERGE_HEAD, rebase-merge, rebase-apply and CHERRY_PICK_HEAD and promotion.py:3214 raises before the ledger row or plan comment is written, so the refusal matches the goal's three states exactly and names each.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest records base 50 passed and head 56 passed with both logs on disk and the negative-control log red at 5 failed ids, and the gate asserts the done_when's own conditions, though the head log carries no cwd header and so its working directory rides the manifest's measurement_cwd rather than the log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 2c49c0457 9dc947693 is one of the manifest's declared write paths and the change carries no edit the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control was executed and logged (negative-control.log: MERGE_HEAD case promotes with DID NOT RAISE CrewError and the rebase and cherry-pick cases go red, 5 failed ids the head arm does not fail), so the new tests at tests/test_complete_refuses_an_open_merge.py:153 are verified by reinstating the regression rather than by watching them pass.\nSCORE fit: 19\nJUSTIFICATION fit: the guard reuses the existing _worktree_git_paths helper at promotion.py:523 beside the pre-existing _require_committable_checkout, its symbols are mechanism-named with no plan labels, and the comments state the mechanism rather than a tracker reference.\nFINDING reckon/crew/promotion.py:3158 follow-on: the marker set covers merge, rebase and cherry-pick as the goal names but omits REVERT_HEAD, so an open `git revert` leaves the checkout in the same owned-index state without being refused.",
+  "review_run_id": "r-20261001T195658523315-review-of-complete-refuses-an-open-merge",
+  "reviewed_base_sha": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+  "reviewed_head_sha": "9dc9476934d5717abb726b7de8c7d5bc2043f9be",
+  "reviewed_run_id": "r-20261001T191722772125-complete-refuses-an-open-merge",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T20:02:09.869115+00:00",
+  "total": 97
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3e91424667d185bf51e165e1501b7c2c6fdd4522",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/resumption.py:1297"
+  ],
+  "completed_at": "2026-10-02T16:56:40.138Z",
+  "dispatched_at": "2026-10-02T16:34:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T123840473293-clean-review-promotes-itself/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite arm runs the new acceptance test while the baseline arm (manifest.md:16) is the three importer modules, so the two gate logs the added-failure derivation reads are different test populations and the count is vacuous; the matching head arm (head-importer-arm.log, 50/92/96 passed) exists but is not named by after_suite."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2872",
+      "severity": "follow-on",
+      "text": "follow-on: _commits_missing_from(checkout, commits) returns an empty list when the manifest names no commits, so acceptance proceeds to the merged-head gate re-run without confirming the run is on the branch; all four cases name a commit, so acceptance's 'never merges, stands down for an unmerged run' property is untested for a commit-less manifest."
+    }
+  ],
+  "head_log_revision": "6f8fbd0c617e3af59d980bd72220d7c130f57b76",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 3e91424667 -- a5779361 the accepting branch, e93b268b the ancestor guard, 6f8fbd0c the evidence fragment; 678 insertions across five files, no runtime change outside the declared scope.",
+    "done_when": "the done_when names three cases; tests/test_review_acceptance_promotes.py:264 (a clean review promotes), :279 (a review carrying one finding does not promote) and :300 (a gate failing at the merged head does not promote) all exist and pass; the manifest records 6 passed EXIT=0 and I re-ran the file at the reviewed head to the same 6 passed.",
+    "goal": "the node's goal is plan section 4 of a-review-is-sized-to-its-risk -- a clean stored review promotes the run it read with no coordinator command; reckon/crew/recovery.py:2813 accept_clean_review, reached by the sweep at recovery.py:3044, adds the accepting branch beside the promotion refusal.",
+    "manifest": "read; status complete, records the head arm 6 passed and the importer arms 50/92/96 passed, names its gate command and negative-control logs; its baseline_suite/after_suite pairing is mismatched (see finding).",
+    "write_paths": "the manifest declares five write paths; every path in the diff (reckon/crew/promotion.py, reckon/crew/recovery.py, reckon/ledger.py, tests/test_review_acceptance_promotes.py, the evidence fragment) is inside them."
+  },
+  "justifications": {
+    "durability": "recovery.py:2718 REVIEW_ACCEPTANCE_FLOOR is the floor; removing the accepting branch reddens three cases and removing the ancestor check reddens tests/test_review_acceptance_promotes.py:322 (both negative-control logs EXIT=1), but the ancestor guard is vacuous for a manifest naming no commit.",
+    "evidence": "the three done_when cases exist at tests/test_review_acceptance_promotes.py:264, 279 and 300 and pass (I re-ran the file at the reviewed head: 6 passed), but the manifest's baseline_suite (importer modules) and after_suite (the acceptance test) are different test populations, so the recorded added-failure pair is vacuous.",
+    "fit": "recovery.py:2716-2740 follows the module's constant-then-helper idiom, the comment at ledger.py:154 is mechanism-focused, and no symbol or comment names a plan, sprint or ticket identifier.",
+    "goal_fidelity": "recovery.py:2860 requires the run's commits to be ancestors of the checkout HEAD and acceptance never merges, so the plan's 'with the run merged' is enforced as a precondition a coordinator must satisfy and the fresh post-review state the node itself records at tests/test_review_acceptance_promotes.py:241 stands down.",
+    "scope_discipline": "the five changed paths are exactly the manifest's declared write paths and the diff touches nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is plan section 4 of a-review-is-sized-to-its-risk -- a clean stored review promotes the run it read with no coordinator command; reckon/crew/recovery.py:2813 accept_clean_review, reached by the sweep at recovery.py:3044, adds the accepting branch beside the promotion refusal.\nVERDICT done_when: the done_when names three cases; tests/test_review_acceptance_promotes.py:264 (a clean review promotes), :279 (a review carrying one finding does not promote) and :300 (a gate failing at the merged head does not promote) all exist and pass; the manifest records 6 passed EXIT=0 and I re-ran the file at the reviewed head to the same 6 passed.\nVERDICT write_paths: the manifest declares five write paths; every path in the diff (reckon/crew/promotion.py, reckon/crew/recovery.py, reckon/ledger.py, tests/test_review_acceptance_promotes.py, the evidence fragment) is inside them.\nVERDICT manifest: read; status complete, records the head arm 6 passed and the importer arms 50/92/96 passed, names its gate command and negative-control logs; its baseline_suite/after_suite pairing is mismatched (see finding).\nVERDICT diff: read commit by commit against base 3e91424667 -- a5779361 the accepting branch, e93b268b the ancestor guard, 6f8fbd0c the evidence fragment; 678 insertions across five files, no runtime change outside the declared scope.\nCALL_SITES: reckon/crew/resumption.py:1297\nSCORE goal_fidelity: 17\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 17\nSCORE fit: 19\nJUSTIFICATION goal_fidelity: recovery.py:2860 requires the run's commits to be ancestors of the checkout HEAD and acceptance never merges, so the plan's 'with the run merged' is enforced as a precondition a coordinator must satisfy and the fresh post-review state the node itself records at tests/test_review_acceptance_promotes.py:241 stands down.\nJUSTIFICATION evidence: the three done_when cases exist at tests/test_review_acceptance_promotes.py:264, 279 and 300 and pass (I re-ran the file at the reviewed head: 6 passed), but the manifest's baseline_suite (importer modules) and after_suite (the acceptance test) are different test populations, so the recorded added-failure pair is vacuous.\nJUSTIFICATION scope_discipline: the five changed paths are exactly the manifest's declared write paths and the diff touches nothing else.\nJUSTIFICATION durability: recovery.py:2718 REVIEW_ACCEPTANCE_FLOOR is the floor; removing the accepting branch reddens three cases and removing the ancestor check reddens tests/test_review_acceptance_promotes.py:322 (both negative-control logs EXIT=1), but the ancestor guard is vacuous for a manifest naming no commit.\nJUSTIFICATION fit: recovery.py:2716-2740 follows the module's constant-then-helper idiom, the comment at ledger.py:154 is mechanism-focused, and no symbol or comment names a plan, sprint or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T123840473293-clean-review-promotes-itself/manifest.md:15 follow-on: the after_suite arm runs the new acceptance test while the baseline arm (manifest.md:16) is the three importer modules, so the two gate logs the added-failure derivation reads are different test populations and the count is vacuous; the matching head arm (head-importer-arm.log, 50/92/96 passed) exists but is not named by after_suite.\nFINDING reckon/crew/recovery.py:2872 follow-on: _commits_missing_from(checkout, commits) returns an empty list when the manifest names no commits, so acceptance proceeds to the merged-head gate re-run without confirming the run is on the branch; all four cases name a commit, so acceptance's 'never merges, stands down for an unmerged run' property is untested for a commit-less manifest.",
+  "review_run_id": "r-20261002T163421797355-review-of-clean-review-promotes-itself",
+  "reviewed_base_sha": "3e91424667d185bf51e165e1501b7c2c6fdd4522",
+  "reviewed_head_sha": "6f8fbd0c617e3af59d980bd72220d7c130f57b76",
+  "reviewed_run_id": "r-20261002T123840473293-clean-review-promotes-itself",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T16:48:52.264967+00:00",
+  "total": 90
+}

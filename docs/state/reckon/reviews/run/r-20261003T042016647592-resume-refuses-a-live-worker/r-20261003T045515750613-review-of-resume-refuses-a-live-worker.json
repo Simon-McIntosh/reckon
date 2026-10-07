@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "d6017d33e2ca3e2489de9d2305667495cb5d6cc6",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:10734",
+    "reckon/crew/dispatch.py:11249",
+    "reckon/crew/resumption.py:1281"
+  ],
+  "completed_at": "2026-10-03T05:03:19.009Z",
+  "dispatched_at": "2026-10-03T04:55:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "605",
+      "severity": "follow-on",
+      "text": "follow-on: the launcher's first guard refuses a pointer-pid-alive run with \"still has a live process\" and names no pid, so the goal's pid naming holds only for the worker-record shape and this message is frozen by parity with dispatch.py:10676, so it cannot be extended from this module."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "9669",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's fold-in -- no exit record while an adopted worker lives -- is half met; the reader half is pinned here, but the signal short-circuit in _reap_the_launched_worker still lets the supervisor write an early exit record and dispatch.py is outside this node's write scope."
+    },
+    {
+      "file": "tests/test_resume_refuses_a_live_worker.py",
+      "line": "107",
+      "severity": "follow-on",
+      "text": "follow-on: the real-crew-home isolation receipt iterates _RUN_IDS (\"r-manual-live-worker\", \"r-sweep-live-worker\", \"r-live-under-record\") while the sweep case at line 309 writes \"r-sweep-live-under-record\", so a leak of that case's paths into the live home is not caught by the receipt."
+    }
+  ],
+  "head_log_revision": "15e9287afa72ce28cc991f669ada497ee1174174",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit d6017d33..15e9287af: recovery.py adds live_worker_pid at 6404, resumption.py names the pid in the shared observed-end refusal at 666, a 354-line test file is added, and the fragment is docs-only.",
+    "done_when": "the done_when names tests/test_resume_refuses_a_live_worker.py and both resume doors; the manifest records base 38 passed / head 42 passed, both EXIT=0; I ran the new file at the reviewed head (4 passed, EXIT=0) and derived the added-failure set myself from the arm logs, which is empty.",
+    "goal": "the node's goal is that a resume of a run whose worker still lives is refused naming the worker's pid; live_worker_pid at reckon/crew/recovery.py:6404 returns the pid (the pointer's pid, else the run-directory worker record a supervisor's early exit leaves) and resumption.py names it; I reproduced it directly \u2014 live_worker_pid returned a live child's pid 1266680 from the reviewed tree, and the new test file's refusal carries the pid.",
+    "manifest": "read; status complete, baseline_suite 38 passed at d6017d33, after_suite 42 passed at 15e9287af, negative_control_log ends EXIT=1, and measurement_module/measurement_cwd are backed by the arm logs' module.__file__ and cwd header lines.",
+    "write_paths": "read the manifest's declared paths; the four changed files (reckon/crew/recovery.py, reckon/crew/resumption.py, tests/test_resume_refuses_a_live_worker.py, the evidence fragment) are all inside them; the one declared figure path produced nothing, which the done-when permits."
+  },
+  "justifications": {
+    "durability": "the negative control at gate/negative-control.log reinstates the regression and reddens two cases at EXIT=1, which the head arm passes; the isolation receipt at tests/test_resume_refuses_a_live_worker.py:107 omits the sweep case's run id.",
+    "evidence": "gate/base-focus.log and gate/head-focus-4.log each carry revision=, module.__file__, cwd= and a bare EXIT= line with zero FAILED ids, so the added count I derived is zero; the done-when's exit fold-in is only half delivered.",
+    "fit": "live_worker_pid composes the same two host-gated reads as local_liveness at reckon/crew/recovery.py:6380 and the refusal reuses the shared _observed_end_refusal both doors consult; comments state mechanism with no plan or author reference.",
+    "goal_fidelity": "the refusal names the pid for the worker-record shape the bug took (reckon/crew/resumption.py:666), but the pointer-pid-alive door refuses at reckon/crew/resumption.py:605 naming no pid, so \"naming the worker's pid\" holds for one shape only.",
+    "scope_discipline": "git diff d6017d33 15e9287af changes exactly the four declared paths and the worktree is clean at 15e9287af; the declared figure path is unused, which the done-when allows."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a resume of a run whose worker still lives is refused naming the worker's pid; live_worker_pid at reckon/crew/recovery.py:6404 returns the pid (the pointer's pid, else the run-directory worker record a supervisor's early exit leaves) and resumption.py names it; I reproduced it directly \u2014 live_worker_pid returned a live child's pid 1266680 from the reviewed tree, and the new test file's refusal carries the pid.\nVERDICT done_when: the done_when names tests/test_resume_refuses_a_live_worker.py and both resume doors; the manifest records base 38 passed / head 42 passed, both EXIT=0; I ran the new file at the reviewed head (4 passed, EXIT=0) and derived the added-failure set myself from the arm logs, which is empty.\nVERDICT write_paths: read the manifest's declared paths; the four changed files (reckon/crew/recovery.py, reckon/crew/resumption.py, tests/test_resume_refuses_a_live_worker.py, the evidence fragment) are all inside them; the one declared figure path produced nothing, which the done-when permits.\nVERDICT manifest: read; status complete, baseline_suite 38 passed at d6017d33, after_suite 42 passed at 15e9287af, negative_control_log ends EXIT=1, and measurement_module/measurement_cwd are backed by the arm logs' module.__file__ and cwd header lines.\nVERDICT diff: read commit by commit d6017d33..15e9287af: recovery.py adds live_worker_pid at 6404, resumption.py names the pid in the shared observed-end refusal at 666, a 354-line test file is added, and the fragment is docs-only.\nCALL_SITES: reckon/crew/dispatch.py:10734, reckon/crew/dispatch.py:11249, reckon/crew/resumption.py:1281\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the refusal names the pid for the worker-record shape the bug took (reckon/crew/resumption.py:666), but the pointer-pid-alive door refuses at reckon/crew/resumption.py:605 naming no pid, so \"naming the worker's pid\" holds for one shape only.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate/base-focus.log and gate/head-focus-4.log each carry revision=, module.__file__, cwd= and a bare EXIT= line with zero FAILED ids, so the added count I derived is zero; the done-when's exit fold-in is only half delivered.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff d6017d33 15e9287af changes exactly the four declared paths and the worktree is clean at 15e9287af; the declared figure path is unused, which the done-when allows.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control at gate/negative-control.log reinstates the regression and reddens two cases at EXIT=1, which the head arm passes; the isolation receipt at tests/test_resume_refuses_a_live_worker.py:107 omits the sweep case's run id.\nSCORE fit: 18\nJUSTIFICATION fit: live_worker_pid composes the same two host-gated reads as local_liveness at reckon/crew/recovery.py:6380 and the refusal reuses the shared _observed_end_refusal both doors consult; comments state mechanism with no plan or author reference.\nFINDING reckon/crew/resumption.py:605 follow-on: the launcher's first guard refuses a pointer-pid-alive run with \"still has a live process\" and names no pid, so the goal's pid naming holds only for the worker-record shape and this message is frozen by parity with dispatch.py:10676, so it cannot be extended from this module.\nFINDING reckon/crew/dispatch.py:9669 follow-on: the done-when's fold-in -- no exit record while an adopted worker lives -- is half met; the reader half is pinned here, but the signal short-circuit in _reap_the_launched_worker still lets the supervisor write an early exit record and dispatch.py is outside this node's write scope.\nFINDING tests/test_resume_refuses_a_live_worker.py:107 follow-on: the real-crew-home isolation receipt iterates _RUN_IDS (\"r-manual-live-worker\", \"r-sweep-live-worker\", \"r-live-under-record\") while the sweep case at line 309 writes \"r-sweep-live-under-record\", so a leak of that case's paths into the live home is not caught by the receipt.\n",
+  "review_run_id": "r-20261003T045515750613-review-of-resume-refuses-a-live-worker",
+  "reviewed_base_sha": "d6017d33e2ca3e2489de9d2305667495cb5d6cc6",
+  "reviewed_head_sha": "15e9287afa72ce28cc991f669ada497ee1174174",
+  "reviewed_run_id": "r-20261003T042016647592-resume-refuses-a-live-worker",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.979891+00:00",
+  "total": 88
+}

@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/node.py:465 (the watcher refusal names this harness reference)",
+    "reckon/cli.py:6218 (reckon doctor enumerates skills/*/SKILL.md)",
+    "reckon/cli.py:6591 (install-skills copies the source SKILL.md set)",
+    "reckon/agent_context.py:399 (skill metadata records over */SKILL.md)"
+  ],
+  "completed_at": "2026-09-30T09:17:55.188Z",
+  "dispatched_at": "2026-09-30T08:57:13Z",
+  "findings": [
+    {
+      "file": "skills/reckon-build/references/orchestrator-harness/claude-code.md",
+      "line": "277",
+      "text": "the reference tells a coordinator to install the hooks with `reckon hooks install --scope user [--write]`, and at this head that command exits 2 with \"No such command 'hooks'\" (run against the reviewed tree), so the install step the added section exists to document cannot be performed and the done-when's clause to verify it by its --help is unmet; the node records the gap in its fragment, but the reference a coordinator reads carries no note that the verb is not yet there."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074401332971-obligations-view-is-the-inbox/gate-head.log",
+      "line": "1",
+      "text": "the head log's first line names no revision (`# arm: HEAD (worktree)`; the revision sits on line 2), so reckon.crew.review.recorded_log_revision -- the reader the review store uses to tie the added-failure count to a commit -- returns None for both arms and the stored record's base_log_revision and head_log_revision are null, which is what the manifest contract's \"a gate log's first line names the revision it ran at\" prevents; gate-base.log:1 has the same shape, against the conforming `revision: <sha>` first line the sibling run's logs carry."
+    },
+    {
+      "file": "docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html",
+      "line": "49",
+      "text": "the fragment calls tests/test_skill_contracts.py, tests/test_skill_contract_parity.py and tests/test_crew_monitor_output.py \"the reachable set -- the files that read the changed artifacts\", but tests/test_monitor_invocation_docs.py reads the changed reference and asserts on its content (\"persistent\" not in it, and its parsed arming examples counted against text.count(\"Monitor({\")) while tests/test_crew_directory.py reads the changed SKILL.md; neither ran in either arm, and I ran both at this head (16 passed), so no regression was hidden -- the coverage claim is simply broader than the arms performed."
+    },
+    {
+      "file": "docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html",
+      "line": "57",
+      "text": "\"Logs: logs/\" names a directory that exists nowhere beside the fragment (that directory holds only the two HTML fragments), so a reader cannot open the evidence the sentence points at; the logs live in the run directory the manifest names."
+    },
+    {
+      "file": "docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html",
+      "line": "8",
+      "text": "the fragment's meta block omits the plan-slug meta the doc contract requires: `reckon audit-doc` on it exits 1 with \"missing required <meta name=\\\"plan-slug\\\">\", while the sibling fragment docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/crew-ack-defers-an-obligation.html passes the same command with exit 0."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074401332971-obligations-view-is-the-inbox/manifest.md",
+      "line": "15",
+      "text": "the after_suite revision \"2ea3fd77eb02608e0b18eed63e848c3dcd1b0090 + d2ddb2c3f (working tree)\" is not what the log it names measured: gate-head.log:2 reads \"4bbf682eb9c3719aa2a3073d032c6693d0841c32 + working tree (widened scope)\", and the commit times confirm the log (2ea3fd77e was committed mid-run at 10:50:29 and the log closed at 10:51:55), so the revision the landing line promotes onto the plan is not the revision the head arm ran at."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "four commits read against base 4e05e287a -- the \u00a74d/\u00a75 inbox rule, the reference's hook-install section, the test pin with the verb-map entries, then the widened verb resolution and its evidence -- every message conventional with a body, and the ack and suite verbs it documents confirmed by --help.",
+    "done_when": "the dispatch's measure names four clauses; the seven skill-reading test files ran in a base arm and a head arm with a mutation log, and I reproduced the added-failure delta of 0 independently, but the clause requiring the install command to be checked against the CLI's own --help is unmet and is recorded as such at docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html:88 rather than satisfied.",
+    "goal": "the goal asks the skill to name the obligations view as the coordinator's inbox, worked to empty or acknowledged with `reckon crew ack` before a turn ends, enforced by the hook when installed; skills/reckon-build/SKILL.md:738 (\u00a74d) and :797 (\u00a75) carry exactly that, and the reference's new section documents both hook modes and the install step.",
+    "manifest": "read; status complete; its suite counts (base 4 failed/106 passed against head 3 failed/108 passed), its SKILL.md token figures (14,936 -> 15,159 against the raised 15,200 bound) and its ruff delta (4 -> 4) all reproduce from the artefacts, while its after_suite revision string contradicts the header of the log it names.",
+    "write_paths": "the four changed paths (skills/reckon-build/SKILL.md, skills/reckon-build/references/orchestrator-harness/claude-code.md, tests/test_skill_contracts.py, the node's evidence fragment) are all inside the five declared; the declared figures directory is unused and no figure is claimed."
+  },
+  "justifications": {
+    "durability": "tests/test_skill_contracts.py:1251 test_the_obligations_view_is_the_coordinator_inbox asserts literals against the skill's \u00a74d/\u00a75 slices and the reference's text, and the declared mutation (deleting the \u00a74d inbox sentence) was observed to red it, 1 failed EXIT=1 in the log the manifest names.",
+    "evidence": "the two logs at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074401332971-obligations-view-is-the-inbox/gate-base.log and gate-head.log support the 0 added failures I re-derived, but the reachable-set claim at docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html:49 omits two files that read the changed artefacts, neither log's first line names the revision it ran at so the store's own reckon.crew.review.recorded_log_revision returns None from both, and the install clause is unmet.",
+    "fit": "the skill additions follow the file's own bold-lead rule style and the token ratchet is raised with its reason beside it at tests/test_skill_contracts.py:641, but the node's evidence fragment drops the plan-slug meta its sibling fragment carries and fails reckon audit-doc, and its log pointer is dead.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:738 and :797 state the inbox duty in both sections the goal names, and the rule they point at is carried by the Stop mode of reckon/hooks/coordinator_obligations.py, which blocks while a duty is unacknowledged; the one step a reader cannot perform is the install command the reference documents.",
+    "scope_discipline": "git diff 4e05e287a..d2ddb2c3f touches only the four declared paths, 220 insertions, and the verb-map widening stays inside the declared test and skill files that guard exactly the text this node edits."
+  },
+  "node": "review-of-obligations-view-is-the-inbox",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the skill to name the obligations view as the coordinator's inbox, worked to empty or acknowledged with `reckon crew ack` before a turn ends, enforced by the hook when installed; skills/reckon-build/SKILL.md:738 (\u00a74d) and :797 (\u00a75) carry exactly that, and the reference's new section documents both hook modes and the install step.\nVERDICT done_when: the dispatch's measure names four clauses; the seven skill-reading test files ran in a base arm and a head arm with a mutation log, and I reproduced the added-failure delta of 0 independently, but the clause requiring the install command to be checked against the CLI's own --help is unmet and is recorded as such at docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html:88 rather than satisfied.\nVERDICT write_paths: the four changed paths (skills/reckon-build/SKILL.md, skills/reckon-build/references/orchestrator-harness/claude-code.md, tests/test_skill_contracts.py, the node's evidence fragment) are all inside the five declared; the declared figures directory is unused and no figure is claimed.\nVERDICT manifest: read; status complete; its suite counts (base 4 failed/106 passed against head 3 failed/108 passed), its SKILL.md token figures (14,936 -> 15,159 against the raised 15,200 bound) and its ruff delta (4 -> 4) all reproduce from the artefacts, while its after_suite revision string contradicts the header of the log it names.\nVERDICT diff: four commits read against base 4e05e287a -- the \u00a74d/\u00a75 inbox rule, the reference's hook-install section, the test pin with the verb-map entries, then the widened verb resolution and its evidence -- every message conventional with a body, and the ack and suite verbs it documents confirmed by --help.\nCALL_SITES: reckon/crew/node.py:465 (the watcher refusal names this harness reference), reckon/cli.py:6218 (reckon doctor enumerates skills/*/SKILL.md), reckon/cli.py:6591 (install-skills copies the source SKILL.md set), reckon/agent_context.py:399 (skill metadata records over */SKILL.md)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:738 and :797 state the inbox duty in both sections the goal names, and the rule they point at is carried by the Stop mode of reckon/hooks/coordinator_obligations.py, which blocks while a duty is unacknowledged; the one step a reader cannot perform is the install command the reference documents.\nSCORE evidence: 14\nJUSTIFICATION evidence: the two logs at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074401332971-obligations-view-is-the-inbox/gate-base.log and gate-head.log support the 0 added failures I re-derived, but the reachable-set claim at docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html:49 omits two files that read the changed artefacts, neither log's first line names the revision it ran at so the store's own reckon.crew.review.recorded_log_revision returns None from both, and the install clause is unmet.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 4e05e287a..d2ddb2c3f touches only the four declared paths, 220 insertions, and the verb-map widening stays inside the declared test and skill files that guard exactly the text this node edits.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_skill_contracts.py:1251 test_the_obligations_view_is_the_coordinator_inbox asserts literals against the skill's \u00a74d/\u00a75 slices and the reference's text, and the declared mutation (deleting the \u00a74d inbox sentence) was observed to red it, 1 failed EXIT=1 in the log the manifest names.\nSCORE fit: 16\nJUSTIFICATION fit: the skill additions follow the file's own bold-lead rule style and the token ratchet is raised with its reason beside it at tests/test_skill_contracts.py:641, but the node's evidence fragment drops the plan-slug meta its sibling fragment carries and fails reckon audit-doc, and its log pointer is dead.\nFINDING skills/reckon-build/references/orchestrator-harness/claude-code.md:277 the reference tells a coordinator to install the hooks with `reckon hooks install --scope user [--write]`, and at this head that command exits 2 with \"No such command 'hooks'\" (run against the reviewed tree), so the install step the added section exists to document cannot be performed and the done-when's clause to verify it by its --help is unmet; the node records the gap in its fragment, but the reference a coordinator reads carries no note that the verb is not yet there.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074401332971-obligations-view-is-the-inbox/gate-head.log:1 the head log's first line names no revision (`# arm: HEAD (worktree)`; the revision sits on line 2), so reckon.crew.review.recorded_log_revision -- the reader the review store uses to tie the added-failure count to a commit -- returns None for both arms and the stored record's base_log_revision and head_log_revision are null, which is what the manifest contract's \"a gate log's first line names the revision it ran at\" prevents; gate-base.log:1 has the same shape, against the conforming `revision: <sha>` first line the sibling run's logs carry.\nFINDING docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html:49 the fragment calls tests/test_skill_contracts.py, tests/test_skill_contract_parity.py and tests/test_crew_monitor_output.py \"the reachable set -- the files that read the changed artifacts\", but tests/test_monitor_invocation_docs.py reads the changed reference and asserts on its content (\"persistent\" not in it, and its parsed arming examples counted against text.count(\"Monitor({\")) while tests/test_crew_directory.py reads the changed SKILL.md; neither ran in either arm, and I ran both at this head (16 passed), so no regression was hidden -- the coverage claim is simply broader than the arms performed.\nFINDING docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html:57 \"Logs: logs/\" names a directory that exists nowhere beside the fragment (that directory holds only the two HTML fragments), so a reader cannot open the evidence the sentence points at; the logs live in the run directory the manifest names.\nFINDING docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/obligations-view-is-the-inbox.html:8 the fragment's meta block omits the plan-slug meta the doc contract requires: `reckon audit-doc` on it exits 1 with \"missing required <meta name=\\\"plan-slug\\\">\", while the sibling fragment docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/crew-ack-defers-an-obligation.html passes the same command with exit 0.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074401332971-obligations-view-is-the-inbox/manifest.md:15 the after_suite revision \"2ea3fd77eb02608e0b18eed63e848c3dcd1b0090 + d2ddb2c3f (working tree)\" is not what the log it names measured: gate-head.log:2 reads \"4bbf682eb9c3719aa2a3073d032c6693d0841c32 + working tree (widened scope)\", and the commit times confirm the log (2ea3fd77e was committed mid-run at 10:50:29 and the log closed at 10:51:55), so the revision the landing line promotes onto the plan is not the revision the head arm ran at.\n",
+  "review_run_id": "r-20260930T085651080799-review-of-obligations-view-is-the-inbox",
+  "reviewed_base_sha": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "reviewed_head_sha": "d2ddb2c3f5d3641dbe195bcbb05ab223bfe66b1a",
+  "reviewed_run_id": "r-20260930T074401332971-obligations-view-is-the-inbox",
+  "reviewer_run_id": "r-20260930T085651080799-review-of-obligations-view-is-the-inbox",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T09:14:48.236299+00:00",
+  "total": 85
+}

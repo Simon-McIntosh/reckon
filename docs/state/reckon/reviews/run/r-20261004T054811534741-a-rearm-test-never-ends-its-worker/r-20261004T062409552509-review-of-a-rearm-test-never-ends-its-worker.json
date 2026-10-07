@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "0f5941a18ae161c9746a3296ce35f759d3c444ba",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T06:26:37.430Z",
+  "dispatched_at": "2026-10-04T06:24:26Z",
+  "findings": [],
+  "head_log_revision": "1b0fa5af3b62bf30a8ac8d14a55bcba6c215ba6b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site: the change is confined to three test modules and one evidence fragment; no reckon runtime module imports them.",
+    "diff": "read commit by commit (97fa44072 tests, 1b0fa5af3 evidence); each of the three test files gains an autouse fixture that holds runs.follower_code_stamp still and a child-process harness (_CHILD_ARMING / _armed_in_a_child / _follow_in_a_child) that runs the follower via subprocess and fails the case on a child that ends without returning a payload.",
+    "done_when": "the done-when is a 30-iteration -n 8 loop of the three files beside a CPU load generator with no crashed worker, against a control that crashes; the head arm ran 30 iterations with 0 crashed workers and 0 follower reload launchers (logs/gate_summary.txt, logs/head_iter_*.log), and the base arm 0f5941a18 reproduced 9 crashed workers with 9 reload launchers naming its tree in one iteration (logs/base_iter_1.log, logs/base_iter_1.exec.reload-launcher.txt) \u2014 the control fires.",
+    "goal": "\u00a712's goal is that a follower re-arm case cannot end its runner; 97fa44072 runs each arming in a child process the test owns and freezes the code stamp per case, so an ambient source edit can no longer re-execute the xdist worker hosting the case.",
+    "manifest": "read; it names commits 97fa44072 and 1b0fa5af3, base arm 10 failed/35 passed EXIT=1, head arm 30 iterations/0 crashed workers/4 green, and negative_control_log logs/base_iter_1.log; every log path it names exists and each header line names the revision quoted.",
+    "write_paths": "the diff 0f5941a18..1b0fa5af3 touches exactly four files, each a declared write path: the three test modules and docs/evidence/fragments/a-follower-outlives-its-monitor/a-rearm-test-never-ends-its-worker.html (the declared docs/figures directory was not used)."
+  },
+  "justifications": {
+    "durability": "reverting the fix re-opens the failure: the base arm's single loaded iteration crashed 9 xdist workers and left 9 follower reload launchers naming its tree (logs/base_iter_1.exec.reload-launcher.txt), while the head arm ran 30 loaded iterations with 0 crashes and 0 launchers; the guard is the child-process boundary, and the child raises a failing assertion rather than silently vanishing, so a re-execution reports as a case failure instead of a lost runner.",
+    "evidence": "the measure is a passing suite never shows a guard fires, so the run makes the guarded thing happen: the base arm crashes under the same loaded loop, 18 crashed-worker lines and 9 reload launchers at one per crash, and the no-mover controls at both revisions run 45 passed with 0 crashes, isolating the trigger to the source edit rather than to load. installed verification reads the launcher /proc lines by path, not just the pytest summary.",
+    "fit": "the change addresses the mechanism \u00a712 identifies \u2014 in-process os.execve of the follower re-executing the runner \u2014 by confining the arming to a child the test owns and freezing the stamp, rather than weakening the assertions; the producer under measure stays a separate process whose own reload the cases still assert.",
+    "goal_fidelity": "the done-when's measure (no crashed worker across a 30-iteration loaded loop, against a control that crashes) is met: 30 iterations, 0 crashes, base reproduces 9; the 26 non-green head iterations are the loop's own edit drawing the follower's stale-producer line, disclosed as a follow-on and not the defect under repair.",
+    "scope_discipline": "the change is confined to the three named test modules and one evidence fragment, with no production source touched and the declared docs/figures directory left unused; the two output-surface cases are rerouted through the child harness without altering what they assert."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a712's goal is that a follower re-arm case cannot end the runner hosting it. The follower replaces its own process image when the content stamp over its source moves while it is attached, and the three re-arm cases drive the real follower command, so a stamp moved mid-case re-executed the xdist worker and every case queued on it; commit 97fa44072 runs each arming in a child process the test owns and freezes the code stamp per case, so no case can reach os.execve, os._exit or a signal path that runs in the runner.\nVERDICT done_when: the done-when is a loaded loop of each test 30 times under -n 8 beside a CPU load generator that finishes with no crashed worker, with the current revision as the negative control crashing at least one. Measured: head arm 30 iterations, 0 crashed workers, 0 follower reload launchers naming the head tree; base arm reproduced 9 crashed workers and 9 reload launchers in its single loaded iteration (logs/base_iter_1.log, logs/base_iter_1.exec.reload-launcher.txt). Without the loop's source edit both revisions run 45 passed (base_nomover 1 iteration, head_nomover 3 iterations), so the crash is trigger-based rather than load-based.\nVERDICT diff: read commit by commit (97fa44072 tests, 1b0fa5af3 evidence). Each of the three test files gains an autouse fixture holding runs.follower_code_stamp still and a _CHILD_ARMING harness that runs the follower via subprocess in a child, applies the case's capture/patches inside the child, and raises on a child that ends without returning a payload; test_producer_takes_new_code.py routes the two output-surface cases through _follow_in_a_child with a producer-live hint, keeping the producer under measure a process of its own. No production source changes.\nVERDICT manifest: read; it states commits 97fa44072 (fix) and 1b0fa5af3 (fragment), base arm 10 failed/35 passed EXIT=1, head arm 30 iterations with 0 crashed workers and 4 green, negative control logs/base_iter_1.log; every log path it names exists and each header line names the revision quoted.\nVERDICT write_paths: the diff 0f5941a18..1b0fa5af3 touches exactly four files, all declared: tests/test_follower_rearm_shows_nothing_twice.py, tests/test_follow_rearm_continues.py, tests/test_producer_takes_new_code.py and docs/evidence/fragments/a-follower-outlives-its-monitor/a-rearm-test-never-ends-its-worker.html (the declared docs/figures directory was not used).",
+  "review_run_id": "r-20261004T062409552509-review-of-a-rearm-test-never-ends-its-worker",
+  "reviewed_base_sha": "0f5941a18ae161c9746a3296ce35f759d3c444ba",
+  "reviewed_head_sha": "1b0fa5af3b62bf30a8ac8d14a55bcba6c215ba6b",
+  "reviewed_run_id": "r-20261004T054811534741-a-rearm-test-never-ends-its-worker",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T06:26:01+00:00",
+  "total": 97
+}

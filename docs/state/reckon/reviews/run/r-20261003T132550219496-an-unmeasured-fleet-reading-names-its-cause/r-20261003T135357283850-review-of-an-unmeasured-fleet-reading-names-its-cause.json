@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: baseline_suite (6cb144965) and after_suite (ef009ee2) both record failure_count 0 (64 passed each), so zero failures were added",
+  "backend": "clive",
+  "base_log_revision": "6cb144965a9ef611ed638b099ee833ec025e619b",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:6621 _unavailable_fleet_reading(observed_at, cause=exc)",
+    "reckon/crew/promotion.py:6632 _unavailable_fleet_reading(observed_at)"
+  ],
+  "completed_at": "2026-10-03T14:11:34.777Z",
+  "dispatched_at": "2026-10-03T13:59:23Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/an-unmeasured-fleet-reading-names-its-cause/reckon/crew/promotion.py",
+      "line": "6632",
+      "severity": "follow-on",
+      "text": "follow-on: the pre-pointer (list_live) failure path still returns a causeless unmeasured reading, so the node's general goal is met only on the per-pointer path; the sibling fixture tests/test_promotion_beat_carries_fleet_state.py:257-260 pins the plain shape by exact dict equality and lies outside this node's fence, so naming that cause too needs a follow-on node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T132550219496-an-unmeasured-fleet-reading-names-its-cause/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node delivered an early manifest snapshot with status in-progress, after_suite.revision 7fc0c594 (head-arm.log by then read ef009ee2) and changed_paths naming the out-of-fence sibling test; the final record is self-consistent, but a reader of the earlier snapshot would have seen a scope deviation that no longer exists."
+    }
+  ],
+  "head_log_revision": "ef009ee2eb1549ede702ae414c3079b39cd9b72a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "_unavailable_fleet_reading (promotion.py:6635) has two production call sites, both inside _fleet_state_reading: promotion.py:6621 (per-pointer failure, cause carried) and promotion.py:6632 (pre-pointer failure, no cause).",
+    "diff": "Three commits. 7fc0c594 and bb929a441 introduced a single catch naming the cause on both unmeasured paths; ef009ee2 refactored to catch only the per-pointer step, so the pre-pointer list_live path keeps the plain reading the sibling fixture pins by exact dict equality (tests/test_promotion_beat_carries_fleet_state.py:257-260). The final promotion.py change hoists _unreconciled_live_runs into an inner try and factors the unmeasured-return into _unavailable_fleet_reading.",
+    "done_when": "The done-when requires the unmeasured reading to carry the exception type and message, bounded in length, under one named key, with the reading's other fields unchanged; a new test tests/test_an_unmeasured_fleet_reading_names_its_cause.py forces the per-pointer step to raise and asserts the cause is named, bounded, and still lets the promotion complete; the declared negative control executed and logged; and zero added failures on the four named files' head and base arms, each log naming its revision and ending in its pytest summary and EXIT=0 line. All are met: new file 3 passed EXIT=0; head arm at ef009ee2 64 passed EXIT=0; base arm at 6cb144965 64 passed EXIT=0; negative control 3 failed EXIT=1.",
+    "goal": "The node goal is to make an unmeasured fleet reading carry the exception that caused it. reckon/crew/promotion.py _fleet_state_reading now catches the per-pointer step (_unreconciled_live_runs) separately at promotion.py:6621 and returns the unmeasured reading with the exception type and message under one named key unmeasured.cause, bounded to _FLEET_UNMEASURED_CAUSE_LIMIT=200 characters (promotion.py:6582,6647). The reading's other fields are unchanged and the exception still never blocks a landing. A failure before the pointers are read (list_live) keeps the plain unmeasured reading at promotion.py:6632.",
+    "manifest": "Read at 2026-10-03T14:00Z and again after it was updated; final status: complete (a recognised value). It names three commits, three changed_paths, the exact gate commands with EXIT=0 results, test_logs head-arm.log/base-arm.log/new-test.log, negative_control_log as a bare path, and baseline_suite/after_suite as JSON with completed:true and failure_count:0. An earlier snapshot carried status in-progress, after_suite.revision 7fc0c594 while head-arm.log then read ef009ee2, and changed_paths listing the out-of-fence sibling test; none of that survives in the final record.",
+    "write_paths": "The declared fence is four paths: reckon/crew/promotion.py, tests/test_an_unmeasured_fleet_reading_names_its_cause.py, the evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/, and the figures dir. The net diff 6cb144965..ef009ee2 touches exactly three paths, all inside the fence (the figures dir is unused); the sibling test tests/test_promotion_beat_carries_fleet_state.py, edited in an earlier attempt, is NOT in the final diff."
+  },
+  "justifications": {
+    "durability": "The behaviour is committed in three conventional commits and the new test fails under the declared mutation (3 failed EXIT=1), so the guard is shown to fire rather than to merely pass; the deduction is that the change is not merged or pushed and carries no plan-state writeback, which is the coordinator's step.",
+    "evidence": "Every claim was reproduced independently: the new file 3 passed EXIT=0, the four-file head arm re-run at ef009ee2 64 passed EXIT=0, base-arm.log names revision 6cb144965 and ends in '64 passed' EXIT=0, and the negative-control log records 3 failing test ids the head arm does not fail with EXIT=1. The deduction is record churn: an earlier delivered manifest snapshot carried an after_suite revision and a changed_paths entry inconsistent with the final head, corrected only after the node's window.",
+    "fit": "The implement role is met: the shared root environment was used per repo rule, the new test synthesises a temporary repository and points RECKON_HOME at a temp path rather than reading or writing machine state, and the evidence fragment is authored as HTML under the plan's fragment dir.",
+    "goal_fidelity": "The done-when is met exactly and independently confirmed; the deduction is that the node's own general goal ('a fleet reading that falls to unmeasured records the exception that caused it') is satisfied only on the per-pointer path, since a list_live failure still returns a causeless unmeasured reading (promotion.py:6632) by deliberate design, disclosed in the run's follow_ons and pinned by an out-of-fence sibling fixture.",
+    "scope_discipline": "The final net diff touches exactly three paths, all inside the four-path fence; the out-of-fence sibling-test edit from the earlier attempt was removed by the ef009ee2 refactor, and the reviewed worktree is clean at ef009ee2."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make an unmeasured fleet reading carry the exception that caused it. reckon/crew/promotion.py _fleet_state_reading now catches the per-pointer step (_unreconciled_live_runs) separately at promotion.py:6621 and returns the unmeasured reading with the exception type and message under one named key unmeasured.cause, bounded to _FLEET_UNMEASURED_CAUSE_LIMIT=200 characters (promotion.py:6582,6647). The reading's other fields are unchanged and the exception still never blocks a landing. A failure before the pointers are read (list_live) keeps the plain unmeasured reading at promotion.py:6632.\nVERDICT done_when: The done-when requires the unmeasured reading to carry the exception type and message, bounded in length, under one named key, with the reading's other fields unchanged; a new test tests/test_an_unmeasured_fleet_reading_names_its_cause.py forces the per-pointer step to raise and asserts the cause is named, bounded, and still lets the promotion complete; the declared negative control executed and logged; and zero added failures on the four named files' head and base arms, each log naming its revision and ending in its pytest summary and EXIT=0 line. All are met: new file 3 passed EXIT=0; head arm at ef009ee2 64 passed EXIT=0; base arm at 6cb144965 64 passed EXIT=0; negative control 3 failed EXIT=1.\nVERDICT write_paths: The declared fence is four paths: reckon/crew/promotion.py, tests/test_an_unmeasured_fleet_reading_names_its_cause.py, the evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/, and the figures dir. The net diff 6cb144965..ef009ee2 touches exactly three paths, all inside the fence (the figures dir is unused); the sibling test tests/test_promotion_beat_carries_fleet_state.py, edited in an earlier attempt, is NOT in the final diff.\nVERDICT manifest: Read at 2026-10-03T14:00Z and again after it was updated; final status: complete (a recognised value). It names three commits, three changed_paths, the exact gate commands with EXIT=0 results, test_logs head-arm.log/base-arm.log/new-test.log, negative_control_log as a bare path, and baseline_suite/after_suite as JSON with completed:true and failure_count:0. An earlier snapshot carried status in-progress, after_suite.revision 7fc0c594 while head-arm.log then read ef009ee2, and changed_paths listing the out-of-fence sibling test; none of that survives in the final record.\nVERDICT diff: Three commits. 7fc0c594 and bb929a441 introduced a single catch naming the cause on both unmeasured paths; ef009ee2 refactored to catch only the per-pointer step, so the pre-pointer list_live path keeps the plain reading the sibling fixture pins by exact dict equality (tests/test_promotion_beat_carries_fleet_state.py:257-260). The final promotion.py change hoists _unreconciled_live_runs into an inner try and factors the unmeasured-return into _unavailable_fleet_reading.\nCALL_SITES: _unavailable_fleet_reading (promotion.py:6635) has two production call sites, both inside _fleet_state_reading: promotion.py:6621 (per-pointer failure, cause carried) and promotion.py:6632 (pre-pointer failure, no cause).\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The done-when is met exactly and independently confirmed; the deduction is that the node's own general goal ('a fleet reading that falls to unmeasured records the exception that caused it') is satisfied only on the per-pointer path, since a list_live failure still returns a causeless unmeasured reading (promotion.py:6632) by deliberate design, disclosed in the run's follow_ons and pinned by an out-of-fence sibling fixture.\nSCORE evidence: 19\nJUSTIFICATION evidence: Every claim was reproduced independently: the new file 3 passed EXIT=0, the four-file head arm re-run at ef009ee2 64 passed EXIT=0, base-arm.log names revision 6cb144965 and ends in '64 passed' EXIT=0, and the negative-control log records 3 failing test ids the head arm does not fail with EXIT=1. The deduction is record churn: an earlier delivered manifest snapshot carried an after_suite revision and a changed_paths entry inconsistent with the final head, corrected only after the node's window.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The final net diff touches exactly three paths, all inside the four-path fence; the out-of-fence sibling-test edit from the earlier attempt was removed by the ef009ee2 refactor, and the reviewed worktree is clean at ef009ee2.\nSCORE durability: 19\nJUSTIFICATION durability: The behaviour is committed in three conventional commits and the new test fails under the declared mutation (3 failed EXIT=1), so the guard is shown to fire rather than to merely pass; the deduction is that the change is not merged or pushed and carries no plan-state writeback, which is the coordinator's step.\nSCORE fit: 19\nJUSTIFICATION fit: The implement role is met: the shared root environment was used per repo rule, the new test synthesises a temporary repository and points RECKON_HOME at a temp path rather than reading or writing machine state, and the evidence fragment is authored as HTML under the plan's fragment dir.\nreviewed_base_sha: 6cb144965a9ef611ed638b099ee833ec025e619b\nreviewed_head_sha: ef009ee2eb1549ede702ae414c3079b39cd9b72a\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/an-unmeasured-fleet-reading-names-its-cause/reckon/crew/promotion.py:6632 follow-on: the pre-pointer (list_live) failure path still returns a causeless unmeasured reading, so the node's general goal is met only on the per-pointer path; the sibling fixture tests/test_promotion_beat_carries_fleet_state.py:257-260 pins the plain shape by exact dict equality and lies outside this node's fence, so naming that cause too needs a follow-on node.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T132550219496-an-unmeasured-fleet-reading-names-its-cause/manifest.md:1 follow-on: the node delivered an early manifest snapshot with status in-progress, after_suite.revision 7fc0c594 (head-arm.log by then read ef009ee2) and changed_paths naming the out-of-fence sibling test; the final record is self-consistent, but a reader of the earlier snapshot would have seen a scope deviation that no longer exists.\n",
+  "review_run_id": "r-20261003T135357283850-review-of-an-unmeasured-fleet-reading-names-its-cause",
+  "reviewed_base_sha": "6cb144965a9ef611ed638b099ee833ec025e619b",
+  "reviewed_commits": [
+    "7fc0c594ddbbb3c0d0081c99b173422912db9d17",
+    "bb929a4411c8904414ff8ec4c1a7f26534b99787",
+    "ef009ee2eb1549ede702ae414c3079b39cd9b72a"
+  ],
+  "reviewed_head_sha": "ef009ee2eb1549ede702ae414c3079b39cd9b72a",
+  "reviewed_run_id": "r-20261003T132550219496-an-unmeasured-fleet-reading-names-its-cause",
+  "reviewer_run_id": "r-20261003T135357283850-review-of-an-unmeasured-fleet-reading-names-its-cause",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T14:15:00Z",
+  "total": 96
+}

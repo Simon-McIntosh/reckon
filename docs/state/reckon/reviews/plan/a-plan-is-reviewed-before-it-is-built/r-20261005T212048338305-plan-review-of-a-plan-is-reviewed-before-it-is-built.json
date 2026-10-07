@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T21:24:56.312Z",
+  "dispatched_at": "2026-10-05T21:21:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "deep_module-1",
+      "reason": "the section must state that the extraction is definitional and pin it with a byte-equivalence test (or say entity decoding is deliberately dropped), because as written its promised test passes while the digest content silently differs.",
+      "text": "\u00a716 deletes `_AuthoredProseParser` (`reckon/crew/plan_review.py:168`), a ~100-line parser that decodes HTML entities through `handle_data`, drops `<script>`/`<style>` content via `_PROSE_SKIP_TAGS`, and excludes the `<head>`, and replaces its remaining job with `strip_tags`, a `_TAG_RE.sub(r\"<[^>]+>\", \"\")` over raw slices \u2014 but the plan's own verification for the swap only asserts that the *sliced section set* equals the deleted parser's set, which is a test of section coverage, not of prose-text equivalence, while an entity such as the `&mdash;`/`&sect;` that fill every section of this plan survives the regex and was decoded by the parser, so the two mechanisms do not produce the same prose bytes",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "87a0c823409afe40a738089d1a0a8e5d511e059de0c74cbdeb340e1cf5a4febb",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 132,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T212048338305-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "77c71add50ebca27fdfceb134be06fb0fba10741",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a716 replaces the one deep prose mechanism the package owns, `_AuthoredProseParser` (`reckon/crew/plan_review.py:168`), with a one-expression regex stripper and its own verification cannot show the substitution preserves the digest.",
+    "duplicate_owner": "pass \u2014 \u00a717 consolidates rather than forks: it hoists `section_record_id`/`section_id_candidates` into `reckon/_plan_html.py` (move, not copy), makes the store's collapse and the module's two inline identity reads (`_plan_html.py:379,861`) consume the hoisted derivation, and routes the three store validity grammars onto `reckon/_schema.is_section_identity`; the near-duplicates it leaves beside these \u2014 `evidence._section_key`, `ledger.normalize_section`, and `_schema.is_section_identity` (derivation vs validity) \u2014 are each distinguished in \u00a716/\u00a717 text with the reason they keep their own frame.",
+    "interface_budget": "pass \u2014 public_definitions 1478, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition (`strip_tags`) and states why nothing can be retired (\"the identity digest and the prose walk keep their names\"); \u00a717 adds two (`plan_headings` and the machinery predicate) and states why the family cannot shrink (\"the two public readers ... each keep callers outside this module\"); both are consistent with the counter as read here \u2014 `definitions()` (`reckon/interface_counts.py:74`) yields only function and class nodes, so the two exported constants the design adds are genuinely uncounted, and \u00a716 reuses the existing plan-review-missing refusal family rather than adding one.",
+    "reuse_search": "pass \u2014 \u00a716 and \u00a717 name the mechanisms they extend and each was opened and confirmed present: `_StructuredSectionSpanParser` and `structured_section_spans` (`reckon/_plan_html.py:44,94`), `_TAG_RE` (`reckon/_plan_html.py:1506`), `_SECTION_IDENTITY`/`section_record_id`/`section_id_candidates` (`reckon/crew/routing.py:219,224,243`), the AST census `read_trees`/`definitions` (`reckon/interface_counts.py:74,441`), `is_implementable_section` (`reckon/_schema.py`, consumed by `reckon/roadmap.py:107`), and `read_plan_review` (`reckon/crew/recovery.py:494`); the store helpers \u00a717 moves (`_section_heading`, `_wrapper_section_heading`, `_landed_card_span`, `_H2_OPEN_RE`, `_SECTION_OPEN_RE`) all exist in `reckon/_store.py:848-1064`.",
+    "thin_wrapper": "pass \u2014 the two thin layers the design adds each state why they cannot be an extension inline: `strip_tags` (\u00a716) exposes the module's existing `_TAG_RE` expression across the package boundary rather than adding a second tag expression, and the machinery-element predicate (\u00a717) is the single owner the fourteen `\"data-reckon\"` sites converge onto rather than a parallel spelling."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.765878+00:00"
+}

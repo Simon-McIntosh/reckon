@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:3489",
+    "reckon/crew/runs.py:3233"
+  ],
+  "completed_at": "2026-09-29T18:02:16.732Z",
+  "dispatched_at": "2026-09-29T16:39:31Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows/manifest.md",
+      "line": "21",
+      "text": "the measure asks that the cause be named with a probe log, and no probe log is named in the record: the artefacts line lists the suite, pair, crashcheck, focus and mutation logs but omits logs/repro, and run-51.log there is the only log showing the empty arming in situ (1 failed, 18 passed, the named flake) yet carries no revision header, so as filed it cannot be tied to an arm either."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows/manifest.md",
+      "line": "20",
+      "text": "the attributed crash ids are spelled here as bare function names while the counted added ids are full node ids, so the review read path retires none of the three and caps this record's total at 5 whatever a reviewer scores it; naming each added id in full, as the suite fields already do, leaves the scored total standing (I verified both directions through annotate_added_failures)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows/manifest.md",
+      "line": "22",
+      "text": "the cause the manifest names predates the range this line records: _follow_resume_plan and reloading = bool(resume_state) land at b7b16d5cf and ec7b35d9f on 2026-09-25 (both ancestors of 22b36271, which git merge-base confirms), so the measure's expectation that the cause sits among the changes in 22b36271..4f37ffe8 is neither confirmed nor corrected, and the report's leading candidate b1ebba90 is not addressed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base 467c0aab; the change is one guard at the only site that sets reloading True (if reloading and mode != \"continue\": reloading = False), so an in-place reload whose recorded place does not name the live stream is treated as a fresh arm and re-derives the fleet baseline on the arming's first pass; _write_json_atomically appears zero times in the diff, and the added test drives the real cli._follow_watch_lines through the real project watch claim.",
+    "done_when": "the arms, the pin and the suite delta hold as recorded - I re-ran the pinned case at both trees (red at 467c0aab, green at 8e84776d8), re-derived the added ids through reckon's own instrument (3, every one an xdist worker crash I confirmed line for line in the four suite logs), and checked all 100 pair logs for revision/measurement_module headers and a unique --basetemp with a terminating EXIT= line (0 logs missing it) - but two clauses are unmet: the probe log the measure asks for is named nowhere, and the named cause sits outside the revision range the measure names (both findings below).",
+    "goal": "the node's goal is that a resumed arming whose checkpoint names a replaced stream always delivers the rows it owes; I reproduced both ends myself - the pinned case is red at the base tree on the same assertion the flake fails on (assert 'r-policy-b' in {}, tests/test_follower_prints_only_policy_rows.py:541) and green at head - and the base body of the named flake test constructs exactly that replaced-stream resume (resume={\"stream_path\": f\"{stream_path}.replaced\", \"offset\": 0, ...}), so the mechanism the fix addresses is the flake's own rather than an adjacent one.",
+    "manifest": "read in full; every required key is present and shape-correct (negative_control_log is the bare path, baseline_suite and after_suite are one-line JSON carrying revision, tree, full command, exit_status, absolute log_path, completed, failure_count and failure_ids), and every claim I re-measured - the 50-pair outcomes, the crash counts 4/5/3/4, the same four non-crash ids on both arms, the header discipline - matches its text; its two defects are omissions (findings below), not false statements.",
+    "write_paths": "git show --stat on 8e84776d8 and 5bb28e768 lists exactly the three declared paths (reckon/cli.py +11, tests/test_follower_prints_only_policy_rows.py +37, the landing fragment +99), additions only, no path beyond the declaration, and the reviewed worktree is clean at head 5bb28e768."
+  },
+  "justifications": {
+    "durability": "the regression drives the real generator (cli._follow_watch_lines) with a spent lifetime so it cannot flake, its assertions never read the changed expression, the declared mutation reddens it at tests/test_follower_prints_only_policy_rows.py:541, and my own independent mutant (the guard block removed) reproduces that red, so the pin measures the cause rather than the commit.",
+    "evidence": "the 100-log pair arm is strong and independently checkable (every log headed with revision, tree, command, measurement_module and its own --basetemp, all ending EXIT=), and the crash attribution is exact rather than hand-waved; it is not 20 because the project's own instrument still derives 3 added ids from the recorded suite pair, the flake arm's contrast is thin (1 failure in 50 against 0 in 50) so the deterministic pin is what carries the claim, and three record-completeness clauses fail: no probe log is named, the attributed crash ids are spelled short so none is retired by name (findings below), and the named cause sits outside the range the measure names.",
+    "fit": "the guard is a two-line branch beside the assignment that is its only writer, its comment states the mechanism (a recorded place that does not name this stream) without plan or ticket identifiers, and the touched files add no lint findings (5 at head against 6 at base under the repository's own ruff config).",
+    "goal_fidelity": "the owed row no longer depends on the arming's remaining lifetime - the pinned case at tests/test_follower_prints_only_policy_rows.py:541 fails at 467c0aab and passes at 8e84776d8 across my own runs, and the mechanism is the one the flake test exercises; the two deducted points are the cause's provenance (no probe log, location outside the named range), not the delivered behaviour.",
+    "scope_discipline": "the diff of 8e84776d8 and 5bb28e768 against the base touches only the declared paths, is additions-only, leaves _write_json_atomically untouched, and the worktree is clean at the reviewed head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a resumed arming whose checkpoint names a replaced stream always delivers the rows it owes; I reproduced both ends myself - the pinned case is red at the base tree on the same assertion the flake fails on (assert 'r-policy-b' in {}, tests/test_follower_prints_only_policy_rows.py:541) and green at head - and the base body of the named flake test constructs exactly that replaced-stream resume (resume={\"stream_path\": f\"{stream_path}.replaced\", \"offset\": 0, ...}), so the mechanism the fix addresses is the flake's own rather than an adjacent one.\nVERDICT done_when: the arms, the pin and the suite delta hold as recorded - I re-ran the pinned case at both trees (red at 467c0aab, green at 8e84776d8), re-derived the added ids through reckon's own instrument (3, every one an xdist worker crash I confirmed line for line in the four suite logs), and checked all 100 pair logs for revision/measurement_module headers and a unique --basetemp with a terminating EXIT= line (0 logs missing it) - but two clauses are unmet: the probe log the measure asks for is named nowhere, and the named cause sits outside the revision range the measure names (both findings below).\nVERDICT write_paths: git show --stat on 8e84776d8 and 5bb28e768 lists exactly the three declared paths (reckon/cli.py +11, tests/test_follower_prints_only_policy_rows.py +37, the landing fragment +99), additions only, no path beyond the declaration, and the reviewed worktree is clean at head 5bb28e768.\nVERDICT manifest: read in full; every required key is present and shape-correct (negative_control_log is the bare path, baseline_suite and after_suite are one-line JSON carrying revision, tree, full command, exit_status, absolute log_path, completed, failure_count and failure_ids), and every claim I re-measured - the 50-pair outcomes, the crash counts 4/5/3/4, the same four non-crash ids on both arms, the header discipline - matches its text; its two defects are omissions (findings below), not false statements.\nVERDICT diff: read against base 467c0aab; the change is one guard at the only site that sets reloading True (if reloading and mode != \"continue\": reloading = False), so an in-place reload whose recorded place does not name the live stream is treated as a fresh arm and re-derives the fleet baseline on the arming's first pass; _write_json_atomically appears zero times in the diff, and the added test drives the real cli._follow_watch_lines through the real project watch claim.\nCALL_SITES: reckon/cli.py:3489, reckon/crew/runs.py:3233\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the owed row no longer depends on the arming's remaining lifetime - the pinned case at tests/test_follower_prints_only_policy_rows.py:541 fails at 467c0aab and passes at 8e84776d8 across my own runs, and the mechanism is the one the flake test exercises; the two deducted points are the cause's provenance (no probe log, location outside the named range), not the delivered behaviour.\nSCORE evidence: 17\nJUSTIFICATION evidence: the 100-log pair arm is strong and independently checkable (every log headed with revision, tree, command, measurement_module and its own --basetemp, all ending EXIT=), and the crash attribution is exact rather than hand-waved; it is not 20 because the project's own instrument still derives 3 added ids from the recorded suite pair, the flake arm's contrast is thin (1 failure in 50 against 0 in 50) so the deterministic pin is what carries the claim, and three record-completeness clauses fail: no probe log is named, the attributed crash ids are spelled short so none is retired by name (findings below), and the named cause sits outside the range the measure names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of 8e84776d8 and 5bb28e768 against the base touches only the declared paths, is additions-only, leaves _write_json_atomically untouched, and the worktree is clean at the reviewed head.\nSCORE durability: 19\nJUSTIFICATION durability: the regression drives the real generator (cli._follow_watch_lines) with a spent lifetime so it cannot flake, its assertions never read the changed expression, the declared mutation reddens it at tests/test_follower_prints_only_policy_rows.py:541, and my own independent mutant (the guard block removed) reproduces that red, so the pin measures the cause rather than the commit.\nSCORE fit: 19\nJUSTIFICATION fit: the guard is a two-line branch beside the assignment that is its only writer, its comment states the mechanism (a recorded place that does not name this stream) without plan or ticket identifiers, and the touched files add no lint findings (5 at head against 6 at base under the repository's own ruff config).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows/manifest.md:21 the measure asks that the cause be named with a probe log, and no probe log is named in the record: the artefacts line lists the suite, pair, crashcheck, focus and mutation logs but omits logs/repro, and run-51.log there is the only log showing the empty arming in situ (1 failed, 18 passed, the named flake) yet carries no revision header, so as filed it cannot be tied to an arm either.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows/manifest.md:20 the attributed crash ids are spelled here as bare function names while the counted added ids are full node ids, so the review read path retires none of the three and caps this record's total at 5 whatever a reviewer scores it; naming each added id in full, as the suite fields already do, leaves the scored total standing (I verified both directions through annotate_added_failures).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows/manifest.md:22 the cause the manifest names predates the range this line records: _follow_resume_plan and reloading = bool(resume_state) land at b7b16d5cf and ec7b35d9f on 2026-09-25 (both ancestors of 22b36271, which git merge-base confirms), so the measure's expectation that the cause sits among the changes in 22b36271..4f37ffe8 is neither confirmed nor corrected, and the report's leading candidate b1ebba90 is not addressed.",
+  "review_run_id": "legacy-f44643152f53",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "467c0aabed19f7e2adee6e3a5f74d41f4067a3f6",
+  "reviewed_commits": [
+    "8e84776d8 (fix(crew): a replaced-stream resume derives its baseline on the first pass)",
+    "5bb28e768 (docs(evidence): record the replaced-stream resume landing)"
+  ],
+  "reviewed_head_sha": "5bb28e768d838db8a0a97e408237088c62ac7c3a",
+  "reviewed_manifest": {
+    "bytes": 11029,
+    "last_modified": "2026-09-29T20:01:51.772858+02:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows/manifest.md",
+    "sha256": "4982bffd3d1ddf8258d87ce0a509f47dc8caa146337bc026453539efb480e510"
+  },
+  "reviewed_run_id": "r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/resume-on-a-replaced-stream-draws-its-rows",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash",
+    "node": "review-of-resume-on-a-replaced-stream-draws-its-rows",
+    "run_id": "r-20260929T180341823789-review-of-resume-on-a-replaced-stream-draws-its-rows"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T18:53:26.624540+00:00",
+  "total": 93
+}

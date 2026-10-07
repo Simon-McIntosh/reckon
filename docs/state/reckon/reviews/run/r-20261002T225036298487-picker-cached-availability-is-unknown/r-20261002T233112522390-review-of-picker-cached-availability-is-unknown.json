@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "Derived from the reviewed run's own gate logs as the node requires. baseline_suite log gate/base.log (revision 9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd): 92 passed, 0 failed. after_suite log gate/head.log (revision e587e3502a35c63b0443dc194be5e9e958530335): 96 passed, 0 failed. Head-minus-base failing-id set difference = 0 ids; a review re-run of the full declared gate including the omitted tests/test_picker_inputs_never_block_dispatch.py at the tree head b36877ee4 also passed 101/0 (gate-review-rerun.log), so this node adds no failing test id.",
+  "backend": "clive",
+  "base_log_revision": "9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd",
+  "call_site_count": 0,
+  "call_sites": [],
+  "carried_forward": {
+    "at": "2026-10-02T23:56:19Z",
+    "from": "b36877ee4ae678d475eed347ac5662635fe1646f",
+    "paths": [],
+    "to": "05a08f5a4d950e1228aecdd19539ae70690f81cb"
+  },
+  "completed_at": "2026-10-02T23:48:57.696Z",
+  "dispatched_at": "2026-10-02T23:31:43Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_inputs_never_block_dispatch.py",
+      "line": "188",
+      "severity": "follow-on",
+      "text": "the done-when's gate is every tests/test_picker*.py file plus every test file importing snapshot.py, but the executed gate command omits tests/test_picker_inputs_never_block_dispatch.py (a tests/test_picker*.py file that imports reckon.crew.picker at tests/test_picker_inputs_never_block_dispatch.py:188), while the evidence fragment (picker-cached-availability.html:26) and the manifest both claim 'every tests/test_picker*.py file' ran; the omitted file passes at head (5 passed in the review re-run of the full declared gate, 101 passed total), so the zero-added-failure conclusion is unaffected, but the stated gate is not the executed gate."
+    },
+    {
+      "file": "tests/test_picker_pressure.py",
+      "line": "186",
+      "severity": "blocking",
+      "text": "the diff edits tests/test_picker_latency.py and tests/test_picker_pressure.py, neither of which is in the node's granted write scope (FENCE SCOPE names snapshot.py, tests/test_picker_cached_availability.py, the two evidence fragments and the figures dir); the edits update existing tests to the new availability semantics (adding observed_at stamps so a fresh refusal is not aged out), which is necessary for the gate to pass, but the worker expanded its own scope instead of requesting an extension, so the change lands outside the paths the coordinator bounded."
+    }
+  ],
+  "head_log_revision": "b36877ee4ae678d475eed347ac5662635fe1646f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site added; the change is internal to snapshot.candidates.",
+    "diff": "read 9fe5d8204..b36877ee4 (5 files, +232/-19); snapshot.py +98/-19, tests/test_picker_cached_availability.py +87, tests/test_picker_latency.py +7, tests/test_picker_pressure.py +20/-9, picker-cached-availability.html +39.",
+    "done_when": "points 1-3 verified (absent/expired unknown and offered, fresh refused still excludes, endpoints-document backend read served, live pick offers clive), point 4 close but the executed gate omits tests/test_picker_inputs_never_block_dispatch.py.",
+    "goal": "treat a missing cached serving observation as unknown, not unavailable; achieved and verified at b36877ee4.",
+    "manifest": "read; status complete with both suite arms completed EXIT=0 and the derived added-failure set empty.",
+    "write_paths": "five files touched; two (tests/test_picker_latency.py, tests/test_picker_pressure.py) fall outside the granted write scope."
+  },
+  "justifications": {
+    "durability": "the two new absent/expired cases fail under the declared mutation that reverts snapshot.candidates' cached_only fallback from unknown back to unavailable (negative-control/absent-unavailable.log: test_absent_cached_observation_is_unknown_and_offered and test_expired_cached_observation_is_unknown_and_offered fail, '2 failed, 2 passed' EXIT=1), so the guarded behaviour is genuinely guarded and not merely green, and the tests sit in a committed test file whose head arm passes 4 passed in the head log.",
+    "evidence": "the receipts are concrete and reconcile with the logs: base.log (revision 9fe5d8204) ends '92 passed in 51.91s' EXIT=0, head.log (revision e587e3502) ends '96 passed in 51.35s' EXIT=0, and the negative control (negative-control/absent-unavailable.log) shows the two new absent/expired tests failing under the mutation with '2 failed, 2 passed' EXIT=1. I re-ran the full declared gate including the omitted file at the tree head b36877ee4 (gate-review-rerun.log: '101 passed in 92.84s' EXIT=0), so the zero-added-failure-id conclusion holds. Two weaknesses: the gate command omits tests/test_picker_inputs_never_block_dispatch.py while the fragment and manifest claim 'every tests/test_picker*.py file' was run, and the recorded head gate ran at e587e3502, one docs-only commit short of the reviewed head b36877ee4.",
+    "fit": "the change extends the existing picker idiom rather than inventing a parallel one: _serving_observation reuses reckon.flight._probe_serving instead of duplicating a document reader, and _cached_observation reuses resumption._read_lane_probe_cache and the declared evidence shelf life; both commits carry a conventional subject and a body, with no attribution and no plan, sprint or version identifier in code, symbols or comments.",
+    "goal_fidelity": "the goal is to treat a missing cached serving observation as unknown, not unavailable, and points 1-3 of the done-when hold at b36877ee4: an absent or expired probe-cache entry now offers the candidate as unknown with reasons [] (tests/test_picker_cached_availability.py:33-56), a fresh refused entry still excludes (lines 59-71), a backend declaring an endpoints_document reads its verdict through the same reckon.flight._probe_serving reader the serving column uses (snapshot.py _serving_observation; test lines 74-87), and the live in-process cached_only pick offers clive as served with an empty excluded list (live_pick.log). Point 4 is close but not exact: the executed gate omits tests/test_picker_inputs_*_dispatch.py, a tests/test_picker*.py file the done-when names.",
+    "scope_discipline": "the diff 9fe5d8204..b36877ee4 touches exactly five files, but two of them, tests/test_picker_latency.py and tests/test_picker_pressure.py, are outside the node's granted write scope (the dispatch lists snapshot.py, tests/test_picker_cached_availability.py, the two evidence fragments and the figures dir, and the manifest's own orientation_write_paths names those same five paths); the worker updated those existing tests to the new availability semantics (adding observed_at stamps so a fresh refusal is not aged out) rather than requesting a scope extension, so the change lands beyond the paths the coordinator bounded."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd\nreviewed_head_sha: b36877ee4ae678d475eed347ac5662635fe1646f\nVERDICT goal: the goal is to treat a missing cached serving observation as unknown, not unavailable; points 1-3 of the done-when hold at b36877ee4 (absent/expired cache -> unknown offered; fresh refused still excludes; endpoints-document backend read served through flight._probe_serving; live cached_only pick offers clive as served with empty excluded), point 4 close but the executed gate omits tests/test_picker_inputs_never_block_dispatch.py.\nVERDICT done_when: points 1-3 verified against snapshot.candidates and tests/test_picker_cached_availability.py and live_pick.log; point 4 close but not exact - the executed gate omits tests/test_picker_inputs_never_block_dispatch.py, a tests/test_picker*.py file the done-when names.\nVERDICT write_paths: the diff 9fe5d8204..b36877ee4 touches five files; snapshot.py and tests/test_picker_cached_availability.py are in scope, tests/test_picker_latency.py and tests/test_picker_pressure.py are not, and docs/evidence/fragments/one-typesafe-model-picker/picker-cached-availability.html is in scope.\nVERDICT manifest: read; status complete, commits [e587e3502, b36877ee4], baseline_suite revision 9fe5d8204 (6 files, 92 passed), after_suite revision e587e3502 (7 files, 96 passed), both completed EXIT=0; negative_control_log names the fallback mutation that must break the two new tests; the derived added-failure set is empty.\nVERDICT diff: read 9fe5d8204..b36877ee4 (5 files, +232/-19): snapshot.candidates now resolves availability from a declared endpoints_document first, then the aged probe cache, then defaults to unknown in cached_only mode.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the goal is to treat a missing cached serving observation as unknown, not unavailable, and points 1-3 of the done-when hold at b36877ee4: an absent or expired probe-cache entry now offers the candidate as unknown with reasons [] (tests/test_picker_cached_availability.py:33-56), a fresh refused entry still excludes (lines 59-71), a backend declaring an endpoints_document reads its verdict through the same reckon.flight._probe_serving reader the serving column uses (snapshot.py _serving_observation; test lines 74-87), and the live in-process cached_only pick offers clive as served with an empty excluded list (live_pick.log). Point 4 is close but not exact: the executed gate omits tests/test_picker_inputs_never_block_dispatch.py, a tests/test_picker*.py file the done-when names.\nSCORE evidence: 15\nJUSTIFICATION evidence: the receipts are concrete and reconcile with the logs: base.log (revision 9fe5d8204) ends '92 passed in 51.91s' EXIT=0, head.log (revision e587e3502) ends '96 passed in 51.35s' EXIT=0, and the negative control (negative-control/absent-unavailable.log) shows the two new absent/expired tests failing under the mutation with '2 failed, 2 passed' EXIT=1. I re-ran the full declared gate including the omitted file at the tree head b36877ee4 (gate-review-rerun.log: '101 passed in 92.84s' EXIT=0), so the zero-added-failure-id conclusion holds. Two weaknesses: the gate command omits tests/test_picker_inputs_never_block_dispatch.py while the fragment and manifest claim 'every tests/test_picker*.py file' was run, and the recorded head gate ran at e587e3502, one docs-only commit short of the reviewed head b36877ee4.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: the diff 9fe5d8204..b36877ee4 touches exactly five files, but two of them, tests/test_picker_latency.py and tests/test_picker_pressure.py, are outside the node's granted write scope (the dispatch lists snapshot.py, tests/test_picker_cached_availability.py, the two evidence fragments and the figures dir, and the manifest's own orientation_write_paths names those same five paths); the worker updated those existing tests to the new availability semantics (adding observed_at stamps so a fresh refusal is not aged out) rather than requesting a scope extension, so the change lands beyond the paths the coordinator bounded.\nSCORE durability: 18\nJUSTIFICATION durability: the two new absent/expired cases fail under the declared mutation that reverts snapshot.candidates' cached_only fallback from unknown back to unavailable (negative-control/absent-unavailable.log: test_absent_cached_observation_is_unknown_and_offered and test_expired_cached_observation_is_unknown_and_offered fail, '2 failed, 2 passed' EXIT=1), so the guarded behaviour is genuinely guarded and not merely green, and the tests sit in a committed test file whose head arm passes 4 passed in the head log.\nSCORE fit: 18\nJUSTIFICATION fit: the change extends the existing picker idiom rather than inventing a parallel one: _serving_observation reuses reckon.flight._probe_serving instead of duplicating a document reader, and _cached_observation reuses resumption._read_lane_probe_cache and the declared evidence shelf life; both commits carry a conventional subject and a body, with no attribution and no plan, sprint or version identifier in code, symbols or comments.\nFINDING tests/test_picker_pressure.py:186 blocking: the diff edits tests/test_picker_latency.py and tests/test_picker_pressure.py, neither of which is in the node's granted write scope (FENCE SCOPE names snapshot.py, tests/test_picker_cached_availability.py, the two evidence fragments and the figures dir); the edits update existing tests to the new availability semantics (adding observed_at stamps so a fresh refusal is not aged out), which is necessary for the gate to pass, but the worker expanded its own scope instead of requesting an extension, so the change lands outside the paths the coordinator bounded.\nFINDING tests/test_picker_inputs_never_block_dispatch.py:188 follow-on: the done-when's gate is every tests/test_picker*.py file plus every test file importing snapshot.py, but the executed gate command omits tests/test_picker_inputs_never_block_dispatch.py (a tests/test_picker*.py file that imports reckon.crew.picker at tests/test_picker_inputs_never_block_dispatch.py:188), while the evidence fragment (picker-cached-availability.html:26) and the manifest both claim 'every tests/test_picker*.py file' ran; the omitted file passes at head, so the zero-added-failure conclusion is unaffected, but the stated gate is not the executed gate.\n",
+  "review_run_id": "r-20261002T233112522390-review-of-picker-cached-availability-is-unknown",
+  "reviewed_base_sha": "b36877ee4ae678d475eed347ac5662635fe1646f",
+  "reviewed_head_sha": "05a08f5a4d950e1228aecdd19539ae70690f81cb",
+  "reviewed_run_id": "r-20261002T225036298487-picker-cached-availability-is-unknown",
+  "reviewed_sha": "b36877ee4ae678d475eed347ac5662635fe1646f",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T23:56:19Z",
+  "total": 81
+}

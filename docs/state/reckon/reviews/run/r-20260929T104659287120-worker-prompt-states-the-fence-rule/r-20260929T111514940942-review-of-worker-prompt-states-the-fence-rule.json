@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1495",
+    "reckon/crew/prompts.py:517",
+    "reckon/crew/prompts.py:338"
+  ],
+  "completed_at": "2026-09-29T11:47:54.042Z",
+  "dispatched_at": "2026-09-29T11:15:29Z",
+  "findings": [
+    {
+      "file": "tests/test_brief_prompt.py",
+      "line": "266",
+      "text": "the commit refreshes the plan-prompt byte-identity snapshot in a file outside the node's four declared write paths; the edit is required for the done-when's \"0 added failures among the importing test files\" arm \u2014 the snapshot exists to fail when the composed plan prompt changes \u2014 no concurrent node holds the file, and the manifest discloses it, but the dispatch contract fences writes to the declared paths and asks for a scope extension instead, so check-manifest refuses the record and the refresh needs a coordinator scope extension or an explicit acceptance before promotion."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 3a35ded0 against base 6d528821 (194 insertions, 1 deletion, four files): reckon/crew/prompts.py +15 lines adds the contract constant and its composition, the new test file is 144 lines, the evidence fragment 26, and the 5-line plan-prompt snapshot refresh in tests/test_brief_prompt.py is the only path outside the fence; the product change is purely additive and composes one constant into the existing shared prefix.",
+    "done_when": "the done-when names tests/test_worker_prompt_states_the_fence_rule.py under the root .venv python, both roles' assertions, the executed negative control, and 0 added failures among the files importing reckon.crew.prompts; gate-new-test.log records 9 passed/EXIT=0, negative-control-red.log repeats the declared string verbatim on its first line and records 6 failed/3 passed/EXIT=1 under the mutation, and I reproduced both arms at pinned revisions (base 6d528821: 6 failed/208 passed; head 3a35ded0: 6 failed/217 passed, the same six ids), which is exactly the delta the done-when asserts.",
+    "goal": "the goal is to state the write-fence rule and its reason in every composed worker prompt, and reckon/crew/prompts.py:338 now composes FENCE_WRITE_GRANT_CONTRACT into the invariant prefix built at :330-345; I composed prompts myself against the reviewed worktree's own module for the implement and the review role and found both the rule sentence and both reason clauses in each, and the section's other half (the user-global AGENTS.md passage) is declared out of this node's scope.",
+    "manifest": "read in full; it records status complete, commit 3a35ded0, the gate at 9 passed/EXIT=0, both arms with their log paths and ids, measurement_module and measurement_cwd for the base scratch tree, the declared negative control with its red result, and it now also discloses the out-of-scope snapshot refresh under blockers and follow_ons, where reckon crew check-manifest refuses the record with \"changed paths outside the write scope: tests/test_brief_prompt.py\".",
+    "write_paths": "the manifest's orientation_write_paths name four paths (reckon/crew/prompts.py, tests/test_worker_prompt_states_the_fence_rule.py, the evidence fragment and a figure directory under docs/); three of the commit's four changed paths are inside them, and tests/test_brief_prompt.py is not, which is carried below as a finding."
+  },
+  "justifications": {
+    "durability": "deleting the rule sentence reddens the rule assertions for both roles (logs/negative-control-red.log, 6 failed/3 passed/EXIT=1), so the guard fails exactly under the regression it exists to catch, and tests/test_worker_prompt_states_the_fence_rule.py:104 pins the rest of the composition byte-identical by masking the constant out and diffing.",
+    "evidence": "I reproduced both arms at pinned revisions (base 6d528821: 6 failed/208 passed; head 3a35ded0: 6 failed/217 passed with the same six ids) and the library reader over the run's own baseline_suite and after_suite logs returns 0 added failures while seeing the same six failures in each log, so the instrument is shown to see failures rather than nothing; the one imprecision is that logs/arm-head.log:1 and the after_suite field name rev 6d528821, the revision the worktree was checked out at while the change was uncommitted, so the header does not itself pin the moved content a reader would rebuild, and only my re-run at 3a35ded0 closes that gap.",
+    "fit": "the constant sits beside its siblings under reckon/crew/prompts.py:57-70 with the same standalone-constant rationale, the composed block matches the established \"FENCE \u2014\" header style, and commit 3a35ded0 carries a conventional subject, a body and no trailer or plan label.",
+    "goal_fidelity": "prompts.py:517 composes the prefix carrying the rule and the reason ahead of every node block and my own composition for the implement and review roles found both halves, while /home/ITER/mcintos/.agents/AGENTS.md:729 still reads \"no dispatch fence covers it\" and remains open as section 4's other half.",
+    "scope_discipline": "three of the four changed paths are inside the fence, but tests/test_brief_prompt.py:266 is refreshed outside the node's four declared write paths, and the run's own record is refused by check-manifest for exactly that path."
+  },
+  "node": "review-of-worker-prompt-states-the-fence-rule",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T104659287120-worker-prompt-states-the-fence-rule\n(plan a-worker-cannot-write-your-home section 4; node worker-prompt-states-the-fence-rule; role implement)\n\nreviewed_base_sha: 6d528821ab6b1866727e7f3e3ac4dfbdd394a7a4\nreviewed_head_sha: 3a35ded043b77bf7843c3b07fe1bf91572c03e1b\nVERDICT goal: the goal is to state the write-fence rule and its reason in every composed worker prompt, and reckon/crew/prompts.py:338 now composes FENCE_WRITE_GRANT_CONTRACT into the invariant prefix built at :330-345; I composed prompts myself against the reviewed worktree's own module for the implement and the review role and found both the rule sentence and both reason clauses in each, and the section's other half (the user-global AGENTS.md passage) is declared out of this node's scope.\nVERDICT done_when: the done-when names tests/test_worker_prompt_states_the_fence_rule.py under the root .venv python, both roles' assertions, the executed negative control, and 0 added failures among the files importing reckon.crew.prompts; gate-new-test.log records 9 passed/EXIT=0, negative-control-red.log repeats the declared string verbatim on its first line and records 6 failed/3 passed/EXIT=1 under the mutation, and I reproduced both arms at pinned revisions (base 6d528821: 6 failed/208 passed; head 3a35ded0: 6 failed/217 passed, the same six ids), which is exactly the delta the done-when asserts.\nVERDICT write_paths: the manifest's orientation_write_paths name four paths (reckon/crew/prompts.py, tests/test_worker_prompt_states_the_fence_rule.py, the evidence fragment and a figure directory under docs/); three of the commit's four changed paths are inside them, and tests/test_brief_prompt.py is not, which is carried below as a finding.\nVERDICT manifest: read in full; it records status complete, commit 3a35ded0, the gate at 9 passed/EXIT=0, both arms with their log paths and ids, measurement_module and measurement_cwd for the base scratch tree, the declared negative control with its red result, and it now also discloses the out-of-scope snapshot refresh under blockers and follow_ons, where reckon crew check-manifest refuses the record with \"changed paths outside the write scope: tests/test_brief_prompt.py\".\nVERDICT diff: read the single commit 3a35ded0 against base 6d528821 (194 insertions, 1 deletion, four files): reckon/crew/prompts.py +15 lines adds the contract constant and its composition, the new test file is 144 lines, the evidence fragment 26, and the 5-line plan-prompt snapshot refresh in tests/test_brief_prompt.py is the only path outside the fence; the product change is purely additive and composes one constant into the existing shared prefix.\nCALL_SITES: reckon/crew/dispatch.py:1495, reckon/crew/prompts.py:517, reckon/crew/prompts.py:338\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: prompts.py:517 composes the prefix carrying the rule and the reason ahead of every node block and my own composition for the implement and review roles found both halves, while /home/ITER/mcintos/.agents/AGENTS.md:729 still reads \"no dispatch fence covers it\" and remains open as section 4's other half.\nSCORE evidence: 18\nJUSTIFICATION evidence: I reproduced both arms at pinned revisions (base 6d528821: 6 failed/208 passed; head 3a35ded0: 6 failed/217 passed with the same six ids) and the library reader over the run's own baseline_suite and after_suite logs returns 0 added failures while seeing the same six failures in each log, so the instrument is shown to see failures rather than nothing; the one imprecision is that logs/arm-head.log:1 and the after_suite field name rev 6d528821, the revision the worktree was checked out at while the change was uncommitted, so the header does not itself pin the moved content a reader would rebuild, and only my re-run at 3a35ded0 closes that gap.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: three of the four changed paths are inside the fence, but tests/test_brief_prompt.py:266 is refreshed outside the node's four declared write paths, and the run's own record is refused by check-manifest for exactly that path.\nSCORE durability: 19\nJUSTIFICATION durability: deleting the rule sentence reddens the rule assertions for both roles (logs/negative-control-red.log, 6 failed/3 passed/EXIT=1), so the guard fails exactly under the regression it exists to catch, and tests/test_worker_prompt_states_the_fence_rule.py:104 pins the rest of the composition byte-identical by masking the constant out and diffing.\nSCORE fit: 19\nJUSTIFICATION fit: the constant sits beside its siblings under reckon/crew/prompts.py:57-70 with the same standalone-constant rationale, the composed block matches the established \"FENCE \u2014\" header style, and commit 3a35ded0 carries a conventional subject, a body and no trailer or plan label.\nFINDING tests/test_brief_prompt.py:266 the commit refreshes the plan-prompt byte-identity snapshot in a file outside the node's four declared write paths; the edit is required for the done-when's \"0 added failures among the importing test files\" arm \u2014 the snapshot exists to fail when the composed plan prompt changes \u2014 no concurrent node holds the file, and the manifest discloses it, but the dispatch contract fences writes to the declared paths and asks for a scope extension instead, so check-manifest refuses the record and the refresh needs a coordinator scope extension or an explicit acceptance before promotion.",
+  "review_run_id": "r-20260929T111514940942-review-of-worker-prompt-states-the-fence-rule",
+  "reviewed_base_sha": "6d528821ab6b1866727e7f3e3ac4dfbdd394a7a4",
+  "reviewed_head_sha": "3a35ded043b77bf7843c3b07fe1bf91572c03e1b",
+  "reviewed_run_id": "r-20260929T104659287120-worker-prompt-states-the-fence-rule",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T111514940942-review-of-worker-prompt-states-the-fence-rule",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T11:45:31.884598+00:00",
+  "total": 91
+}

@@ -1,0 +1,98 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:39:53.122Z",
+  "dispatched_at": "2026-10-06T10:33:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:106, reckon/crew/plan_review.py:489",
+      "id": "reuse_search-1",
+      "reason": "the section's own \"today\" clauses must be corrected to the landed state before the second node is cut, or the node spends its write on a move that already happened and a form that already exists; the v190 review (c-20261006T095909Z) already began this correction for the `structured_section_spans` call site and it was not carried through.",
+      "text": "\u00a716 describes two pieces of prior art as pending that its own first node has already landed, so a second-node implementer following the text would redo finished work: it states `section_anchor`, the empty-identity fallback `section_record_id(section) or \"_top\"`, \"lives in routing today beside the pair and moves with it into reckon/_plan_html.py\", whereas the symbol is already at `reckon/_plan_html.py:106` (\u00a717 re-homed the trio, and `evidence.py:60` already imports it from there), so the instructed move is a no-op; and it states `_fingerprint_forms` \"today carries two digests, the current and the legacy\" and \"gains the present whole-document digest as a third recognised form\", whereas the function already returns three (`tuple[str, str, str]`, `reckon/crew/plan_review.py:489`) \u2014 section-set plus both whole-document variants under `skip_landed_cards` \u2014 which is exactly the third form the section says it must add",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:535",
+      "id": "thin_wrapper-1",
+      "reason": "the two sections must reconcile to one entry (make the predicate the public reader the gate and the edit tool both call, or state why `review_owed` must sit beside it), or the gate and the edit tool can drift on what \"owed\" means, the exact divergence \u00a726 exists to prevent.",
+      "text": "\u00a726 introduces the public reader `review_owed` (returning the uncovered units and their \u00a722 measured change) over the same `_review_coverage` predicate \u00a716 and \u00a722 call \"the gate's one owner of the coverage question\", and then has the gate call `review_owed` \"in place of its private call\"; the section justifies `review_owed`'s publicness by the package boundary (`reckon/mcp.py` sits outside `reckon/crew`) but never says why `_review_coverage`, the existing engine it forwards to, cannot itself be the one public entry \u2014 so the plan names two owners for the gate's coverage answer across sections",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:2061",
+      "id": "interface_budget-1",
+      "reason": "the plan's own review of version 190 (c-20261006T095909Z-s16-review-v190) required the section to state that the mcp_views family is unchanged beside public_definitions, and the current text still omits it, so the section must add that line before the node is cut.",
+      "text": "\u00a716 adds one public definition (`section_prose`, with the interim `strip_tags` retired to private, which it states) but its interface accounting addresses only `public_definitions`; the section's second node rewrites `authored_plan_text` (`reckon/mcp_views.py:2061`), `_authored_section_headings` and `_section_response` (`reckon/mcp_views.py:2238`), and its text names no position for the `mcp_views` family (33) \u2014 the reader cannot tell from the section whether that family is unchanged",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "60133b5ee4251f29476ba33feb48971be70bbaa247538b4a1a92e0ff25b9c055",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 195,
+  "project": "reckon",
+  "responses": {
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "valid finding on section 16's second node, already recorded from the v190 review in comment c-20261006T095909Z-s16-review-v190 and repeated in c-20261006T105000Z-s16-review-v195; folded into section 16 before that node is cut",
+      "when": "2026-10-06T10:41:59.578633+00:00"
+    },
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "valid finding on section 16's second node, which is not dispatched in this wave and waits on a lane decision; recorded on section 16 as comment c-20261006T105000Z-s16-review-v195 and folded into its text before that node is cut",
+      "when": "2026-10-06T10:41:56.643981+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "valid finding on section 26, which is not dispatched in this wave; recorded on section 26 as comment c-20261006T105000Z-s26-review-v195 (make the coverage predicate itself the one public entry) and folded into its text before its node is cut",
+      "when": "2026-10-06T10:41:57.550771+00:00"
+    }
+  },
+  "review_run_id": "r-20261006T103311482347-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "787f3b7094954a9b88771593ee41ad8edf6c22f4",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `section_prose` on `reckon/_plan_html.py` hides the record parse, the protected-span subtraction, the landed-card rule and the tag strip behind one reader returning ordered slices, and the coverage predicate joins two existing public readers (`roadmap.implementable_sections`, `list_plan_reviews`) without adding a walk of its own.",
+    "duplicate_owner": "pass \u2014 the plan consolidates owners rather than forking them (`_store_delivered_plan_review` is hoisted to one public step and its private copy retired; `evidence._section_key` and `ledger.normalize_section` are kept with stated reasons), and the census over the open sections found no duplicate owner the plan misses.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition and accounts for public_definitions, but it rewrites `reckon/mcp_views.py` and its interface accounting names no position for the mcp_views family.",
+    "reuse_search": "a finding \u2014 the second-node design rests on two prior-art claims that its own first node already falsified: `section_anchor` is said to live in routing, and `_fingerprint_forms` is said to carry two digests; both are checked below and neither is true at the head.",
+    "thin_wrapper": "a finding \u2014 \u00a726 adds the public reader `review_owed` over the same `_review_coverage` predicate \u00a716/\u00a722 name as the gate's one owner, and repoints the gate to it, without saying why that predicate cannot itself be the single public entry."
+  },
+  "section_digests": {
+    "_document": "8bdbd14686108be37e8e1f4110438cdbb25dded36e46c1bc84d3aaf8a649a46c",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "73c5b6996d69f9aad532414624ddb66aeaa5348344ecce830e835004ebc84584",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "9392bdfa49fcf52b6856100b3a6d3824e000fd4e4a4af7900f7ec262acd82fa0",
+    "s22": "6b129450ff3e75a0e3a530fbbc2a0d3c8536f92623a4705b4bd9cc3457709064",
+    "s23": "2f89e8f7bbc5795ecad4f5113a6a991a364d10143c7ec6c80f5368e4ccaa6df1",
+    "s24": "b0870b19487b883350a25f7c90d57a62bc3bcd5f015e3c0e42caa08281ccfb11",
+    "s25": "735bbc53a51976d4cbb3ff0387d4747e54c5705133b34a6882e262881f35f1a3",
+    "s26": "7cc023ffdd766997a4867dc74b200b0f207248c12d8bdcff000ee0a062847216",
+    "s27": "dfd7b4cc90493438163a6aa92cc360fc905c83b9e08a11bc7c8457a36038dc95",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T10:41:48.548437+00:00"
+}

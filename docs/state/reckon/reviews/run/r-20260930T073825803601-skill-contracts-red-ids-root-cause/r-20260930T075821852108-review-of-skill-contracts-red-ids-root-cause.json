@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_worker_runtime_environment",
+    "reckon/crew/dispatch.py:_worker_runtime_plan",
+    "reckon/crew/dispatch.py:_worker_process_environment",
+    "reckon/cli.py:1596-1614"
+  ],
+  "completed_at": "2026-09-30T08:15:41.569Z",
+  "dispatched_at": "2026-09-30T07:58:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073825803601-skill-contracts-red-ids-root-cause/manifest.md",
+      "line": "12",
+      "text": "the baseline_suite command records -p no:randomly that the base-arm log's own header (logs-base-file.txt:2) does not, and the three per-id commands in the tests field carry the same flag their logs also omit, so the manifest's literal commands cannot be reconciled against the logs a reader derives the added-failure count from."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073825803601-skill-contracts-red-ids-root-cause/manifest.md",
+      "line": "15",
+      "text": "the artifacts line states the report is 12969 bytes while the delivered file is 13036 bytes, so a recorded metric does not match the artefact it names."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "none to read \u2014 the node committed nothing, its worktree is clean at be2a2b8b3 with no commits since, and the done-when's read-only clause requires exactly that.",
+    "done_when": "read clause by clause against the artefacts \u2014 the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-skill-contracts-red-ids.md is 13036 bytes against a 50 KB ceiling, each id has its own pytest process and its own --basetemp under /tmp/s21-sc3/, every log is headed with revision, tree and literal command and ends EXIT=, the three assertion quotes match their logs verbatim, and /tmp/s21-sc3 is absent with its deletion logged in logs-tmp-cleanup.txt; only the base-arm command the manifest records fails to reconcile with its own log.",
+    "goal": "the goal names the root cause of each of the three ids red in tests/test_skill_contracts.py, and the report gives all three a base-tree file:line plus an introducing commit; I reproduced the id1 offender count (0 at 5d67909a9^, 7 at 5d67909a9 and at base) and the id3 character gap (293, then 385) directly from git show at those revisions, and the six undocumented verbs from the test's own predicate over reckon/cli.py.",
+    "manifest": "read; status complete with baseline_suite and after_suite both reporting 3 failed, 53 passed at be2a2b8b3 and completed true, failure_attribution naming an introducing commit for each id, and the added-failure derivation over the reviewed run's own two gate logs yields a measured 0 (not an unmeasured None); its baseline_suite command disagrees with its own base-arm log header.",
+    "write_paths": "the sole declared write path is the report, which exists at 13036 bytes; the repository is untouched (git status clean and git log be2a2b8b3..HEAD empty in the reviewed worktree), and the manifest and gate logs sit in the run directory the dispatch names."
+  },
+  "justifications": {
+    "durability": "no guard was added and nothing fails when the diagnosis goes stale, since the cited coordinates in reckon/cli.py:1596-1609 and reckon/crew/dispatch.py:5640-5846 move under any later edit; the three red assertions still pin the behaviours but predate this node.",
+    "evidence": "every done-when clause is met and every gate log ends EXIT= with its arm's own summary line, but the manifest records a base-arm command carrying -p no:randomly that logs-base-file.txt:2 does not, so the literal command behind the base measurement is unreconcilable.",
+    "fit": "the report follows the measurement-first idiom of docs/research/suite-failures-at-head.html and introduces no symbol into the repository, and the one sprint label in its name is the path the dispatch assigned outside the repository.",
+    "goal_fidelity": "the report's sections 2-4 each name the cause with its base-tree line (reckon/crew/dispatch.py:5640,5648,5650,5805,5806,5812,5846; reckon/cli.py:1596-1609; reckon/cli.py:4603 and five more registrations) and its introducing commit, and both causal measurements I re-ran reproduce its figures exactly.",
+    "scope_discipline": "the reviewed worktree is clean at be2a2b8b3 with zero commits since, and the only artefact written outside the run directory is the report at its one declared path."
+  },
+  "node": "review-of-skill-contracts-red-ids-root-cause",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal names the root cause of each of the three ids red in tests/test_skill_contracts.py, and the report gives all three a base-tree file:line plus an introducing commit; I reproduced the id1 offender count (0 at 5d67909a9^, 7 at 5d67909a9 and at base) and the id3 character gap (293, then 385) directly from git show at those revisions, and the six undocumented verbs from the test's own predicate over reckon/cli.py.\nVERDICT done_when: read clause by clause against the artefacts \u2014 the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-skill-contracts-red-ids.md is 13036 bytes against a 50 KB ceiling, each id has its own pytest process and its own --basetemp under /tmp/s21-sc3/, every log is headed with revision, tree and literal command and ends EXIT=, the three assertion quotes match their logs verbatim, and /tmp/s21-sc3 is absent with its deletion logged in logs-tmp-cleanup.txt; only the base-arm command the manifest records fails to reconcile with its own log.\nVERDICT write_paths: the sole declared write path is the report, which exists at 13036 bytes; the repository is untouched (git status clean and git log be2a2b8b3..HEAD empty in the reviewed worktree), and the manifest and gate logs sit in the run directory the dispatch names.\nVERDICT manifest: read; status complete with baseline_suite and after_suite both reporting 3 failed, 53 passed at be2a2b8b3 and completed true, failure_attribution naming an introducing commit for each id, and the added-failure derivation over the reviewed run's own two gate logs yields a measured 0 (not an unmeasured None); its baseline_suite command disagrees with its own base-arm log header.\nVERDICT diff: none to read \u2014 the node committed nothing, its worktree is clean at be2a2b8b3 with no commits since, and the done-when's read-only clause requires exactly that.\nCALL_SITES: reckon/crew/dispatch.py:_worker_runtime_environment, reckon/crew/dispatch.py:_worker_runtime_plan, reckon/crew/dispatch.py:_worker_process_environment, reckon/cli.py:1596-1614\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the report's sections 2-4 each name the cause with its base-tree line (reckon/crew/dispatch.py:5640,5648,5650,5805,5806,5812,5846; reckon/cli.py:1596-1609; reckon/cli.py:4603 and five more registrations) and its introducing commit, and both causal measurements I re-ran reproduce its figures exactly.\nSCORE evidence: 16\nJUSTIFICATION evidence: every done-when clause is met and every gate log ends EXIT= with its arm's own summary line, but the manifest records a base-arm command carrying -p no:randomly that logs-base-file.txt:2 does not, so the literal command behind the base measurement is unreconcilable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at be2a2b8b3 with zero commits since, and the only artefact written outside the run directory is the report at its one declared path.\nSCORE durability: 13\nJUSTIFICATION durability: no guard was added and nothing fails when the diagnosis goes stale, since the cited coordinates in reckon/cli.py:1596-1609 and reckon/crew/dispatch.py:5640-5846 move under any later edit; the three red assertions still pin the behaviours but predate this node.\nSCORE fit: 18\nJUSTIFICATION fit: the report follows the measurement-first idiom of docs/research/suite-failures-at-head.html and introduces no symbol into the repository, and the one sprint label in its name is the path the dispatch assigned outside the repository.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073825803601-skill-contracts-red-ids-root-cause/manifest.md:12 the baseline_suite command records -p no:randomly that the base-arm log's own header (logs-base-file.txt:2) does not, and the three per-id commands in the tests field carry the same flag their logs also omit, so the manifest's literal commands cannot be reconciled against the logs a reader derives the added-failure count from.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073825803601-skill-contracts-red-ids-root-cause/manifest.md:15 the artifacts line states the report is 12969 bytes while the delivered file is 13036 bytes, so a recorded metric does not match the artefact it names.\n",
+  "review_run_id": "r-20260930T075821852108-review-of-skill-contracts-red-ids-root-cause",
+  "reviewed_base_sha": "be2a2b8b3f1578f81441120a2d8b6b56d23f72b8",
+  "reviewed_head_sha": "be2a2b8b3f1578f81441120a2d8b6b56d23f72b8",
+  "reviewed_run_id": "r-20260930T073825803601-skill-contracts-red-ids-root-cause",
+  "reviewer_run_id": "r-20260930T075821852108-review-of-skill-contracts-red-ids-root-cause",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:03.053644+00:00",
+  "total": 87
+}

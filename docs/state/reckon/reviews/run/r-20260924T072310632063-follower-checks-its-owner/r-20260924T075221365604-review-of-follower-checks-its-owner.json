@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:2028",
+    "reckon/cli.py:2375",
+    "reckon/cli.py:1788",
+    "reckon/crew/runs.py:1501"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T07:52:21.365604+00:00",
+  "findings": [
+    {
+      "file": "tests/test_follower_checks_its_owner.py",
+      "line": "72",
+      "text": "EXIT_WITHIN_SECONDS is 5.0 while the wait pass that runs the check polls every 0.1 s (reckon/cli.py:1912), so the done-when's \"one tick of scheduling slack and no more\" is 50 ticks here and a regression that consulted its owner once every fifty passes would still pass the gate; the recorded latency (owner-exit-latency.log 0.811/0.839/0.905 s) is what actually shows the tick behaviour, and the bound is presented in the plan note as if the clause were met."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "1788",
+      "text": "the reload's owner carry is asserted by nothing: with those three lines removed the reload case still passes (falsify-mutation3.log, 1 passed, 3 deselected), because an execve leaves the parent unchanged, so the case that the plan makes the carry's whole purpose - an image replacement after the arming session is gone and the follower re-parented to a live subreaper - is exactly the one the gate cannot redden."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits - 796583a4 is the production change with the test and the figure source, a33dfd8a is the plan note and the evidence anchor; the owner is resolved once and cached at reckon/crew/runs.py:1669, recorded at takeover, carried across a reload at reckon/cli.py:1788, and a pid of 1 or below replaces the old skip.",
+    "done_when": "read tests/test_follower_checks_its_owner.py and its gate logs; all three cases are present with section 7's landed test in the same invocation (green-gate.log 6 passed in 26.32 s, reproduced by me at 6 passed in 25.31 s), both declared mutations redden the named cases when I re-applied them myself (falsify-mutation1.log F..., falsify-mutation2.log ..F.), and the one disclosed deviation is the first case's two-stub form.",
+    "goal": "read reckon/cli.py:1968-1999 against the node goal; the check now runs on every wait pass whether or not the registration is held, reckon/crew/runs.py:1501 records the armed owner instead of the claimant's parent, and my own re-run at a33dfd8a shows a read-only follower whose owner was killed leaving while the holder keeps the registration.",
+    "manifest": "read the manifest and ran check-manifest on the run (ok: true, exit 0); its claims match the logs, both commits and the tree, it discloses the two-stub deviation and the unstamped production armer, and its status reads complete while a wait_condition line still describes coordinator adjudication.",
+    "write_paths": "read the numstat of a695d425..a33dfd8a; the diff touches exactly the six fenced paths and the two cumulative records take insertions only (126/0 and 39/0), so no peer's anchor is replaced."
+  },
+  "justifications": {
+    "durability": "both declared mutations redden the case they name when I re-applied them in an overlay with the clean overlay green as the positive control (falsify-mutation1.log \"was still running 5.0s after its owner was killed\", falsify-mutation2.log record names 415550 rather than the armed owner 416333), but removing the reload's owner carry at reckon/cli.py:1784-1789 leaves the reload case green (falsify-mutation3.log), so that line is unguarded.",
+    "evidence": "the gate asserts the done-when's three cases against the process table and is green in my re-run of the two named files (6 passed in 25.31 s at a33dfd8a), but its exit bound is 5.0 s against a wait pass that polls every 0.1 s (reckon/cli.py:1912), so the done-when's one-tick slack clause is not met and the plan note does not disclose it as a deviation, and neither gate log's first line names the revision it ran at.",
+    "fit": "the owner resolves through a private cache whose reason is documented at reckon/crew/runs.py:1613-1618, the check keeps the closure's existing idiom at reckon/cli.py:1968-1999, and no added name or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "both halves of the goal land - reckon/cli.py:1995-1998 checks the owner on every pass without reading the registration and reckon/crew/runs.py:1501 writes the armed owner - but no production armer stamps RECKON_FOLLOWER_OWNER, so the owner is the parent at the follower's first read (reckon/crew/runs.py:1636-1640) rather than the arming process itself, which is the same process for the arming lines this repo emits and is disclosed as a follow-on.",
+    "scope_discipline": "every path in `git diff --numstat a695d425..a33dfd8a` is one of the six declared write paths, and the plan note and the evidence anchor take 39 and 126 insertions with no deletion, so the cumulative records are appended rather than rewritten."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: a695d4255dd9ba18b988fda9707d424f03771767\nreviewed_head_sha: a33dfd8a5005a9e8dd19298d0de6a127a11d0a3e\nVERDICT goal: read reckon/cli.py:1968-1999 against the node goal; the check now runs on every wait pass whether or not the registration is held, reckon/crew/runs.py:1501 records the armed owner instead of the claimant's parent, and my own re-run at a33dfd8a shows a read-only follower whose owner was killed leaving while the holder keeps the registration.\nVERDICT done_when: read tests/test_follower_checks_its_owner.py and its gate logs; all three cases are present with section 7's landed test in the same invocation (green-gate.log 6 passed in 26.32 s, reproduced by me at 6 passed in 25.31 s), both declared mutations redden the named cases when I re-applied them myself (falsify-mutation1.log F..., falsify-mutation2.log ..F.), and the one disclosed deviation is the first case's two-stub form.\nVERDICT write_paths: read the numstat of a695d425..a33dfd8a; the diff touches exactly the six fenced paths and the two cumulative records take insertions only (126/0 and 39/0), so no peer's anchor is replaced.\nVERDICT manifest: read the manifest and ran check-manifest on the run (ok: true, exit 0); its claims match the logs, both commits and the tree, it discloses the two-stub deviation and the unstamped production armer, and its status reads complete while a wait_condition line still describes coordinator adjudication.\nVERDICT diff: read both commits - 796583a4 is the production change with the test and the figure source, a33dfd8a is the plan note and the evidence anchor; the owner is resolved once and cached at reckon/crew/runs.py:1669, recorded at takeover, carried across a reload at reckon/cli.py:1788, and a pid of 1 or below replaces the old skip.\nCALL_SITES: reckon/cli.py:2028, reckon/cli.py:2375, reckon/cli.py:1788, reckon/crew/runs.py:1501\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both halves of the goal land - reckon/cli.py:1995-1998 checks the owner on every pass without reading the registration and reckon/crew/runs.py:1501 writes the armed owner - but no production armer stamps RECKON_FOLLOWER_OWNER, so the owner is the parent at the follower's first read (reckon/crew/runs.py:1636-1640) rather than the arming process itself, which is the same process for the arming lines this repo emits and is disclosed as a follow-on.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate asserts the done-when's three cases against the process table and is green in my re-run of the two named files (6 passed in 25.31 s at a33dfd8a), but its exit bound is 5.0 s against a wait pass that polls every 0.1 s (reckon/cli.py:1912), so the done-when's one-tick slack clause is not met and the plan note does not disclose it as a deviation, and neither gate log's first line names the revision it ran at.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in `git diff --numstat a695d425..a33dfd8a` is one of the six declared write paths, and the plan note and the evidence anchor take 39 and 126 insertions with no deletion, so the cumulative records are appended rather than rewritten.\nSCORE durability: 17\nJUSTIFICATION durability: both declared mutations redden the case they name when I re-applied them in an overlay with the clean overlay green as the positive control (falsify-mutation1.log \"was still running 5.0s after its owner was killed\", falsify-mutation2.log record names 415550 rather than the armed owner 416333), but removing the reload's owner carry at reckon/cli.py:1784-1789 leaves the reload case green (falsify-mutation3.log), so that line is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the owner resolves through a private cache whose reason is documented at reckon/crew/runs.py:1613-1618, the check keeps the closure's existing idiom at reckon/cli.py:1968-1999, and no added name or comment carries a plan, sprint or ticket identifier.\nFINDING tests/test_follower_checks_its_owner.py:72 EXIT_WITHIN_SECONDS is 5.0 while the wait pass that runs the check polls every 0.1 s (reckon/cli.py:1912), so the done-when's \"one tick of scheduling slack and no more\" is 50 ticks here and a regression that consulted its owner once every fifty passes would still pass the gate; the recorded latency (owner-exit-latency.log 0.811/0.839/0.905 s) is what actually shows the tick behaviour, and the bound is presented in the plan note as if the clause were met.\nFINDING reckon/cli.py:1788 the reload's owner carry is asserted by nothing: with those three lines removed the reload case still passes (falsify-mutation3.log, 1 passed, 3 deselected), because an execve leaves the parent unchanged, so the case that the plan makes the carry's whole purpose - an image replacement after the arming session is gone and the follower re-parented to a live subreaper - is exactly the one the gate cannot redden.",
+  "review_run_id": "r-20260924T075221365604-review-of-follower-checks-its-owner",
+  "reviewed_base_sha": "a695d4255dd9ba18b988fda9707d424f03771767",
+  "reviewed_head_sha": "a33dfd8a5005a9e8dd19298d0de6a127a11d0a3e",
+  "reviewed_run_id": "r-20260924T072310632063-follower-checks-its-owner",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T08:03:48.774315+00:00",
+  "total": 89
+}

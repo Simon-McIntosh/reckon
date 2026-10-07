@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T14:01:51.455Z",
+  "dispatched_at": "2026-10-03T13:50:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-currency-index-contract-review.html",
+      "line": "37",
+      "severity": "follow-on",
+      "text": "follow-on: the dispatch caller is cited as reckon/crew/dispatch.py:5048-5068 (call at 5058) while the function definition sits at 388; the range brackets the call site but not the definition."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-currency-index-contract-review.html",
+      "line": "51",
+      "severity": "follow-on",
+      "text": "follow-on: section-contract-and-computed-impl section 11 is judged from code and history without a focused test run, disclosed in Notes and limits; a later test node could close it by running tests/test_section_contract_is_refused.py."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T132625170815-s22-currency-index-contract-review/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest leaves baseline_suite and after_suite empty (an investigate node that edits no code), so the added-failure derivation is unmeasured; the run's own gate arms (38 passed, 9 passed) are named under tests instead."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "No production, test or plan diff exists: the reviewed node is an investigate role that edits nothing, and its delivered artifact is the HTML report written outside the repository. The worktree HEAD equals the read revision 6cb144965, so the reviewed change is the report content alone.",
+    "done_when": "The done-when requires one row per section with plan, verdict and evidence at main (met cites git-resolved shas plus the pinning test file; partly met names what remains and its landing file; open names its landing file), the main revision read, the counts per verdict and the control result. The report states revision 6cb144965a9ef611ed638b099ee833ec025e619b, counts met 14 / partly 4 / open 1, and the control read met; the two gate arms ran green; no source, test or plan file was edited.",
+    "goal": "The node goal is to classify each listed S22 section - the-page-paints-from-an-index sections 3-8, section-contract-and-computed-impl 4/5/6/7/11, a-review-dies-where-nobody-is-looking 1/4/5/6/7/8/9 - as met, partly met or open at the current main HEAD; the report holds exactly those 18 rows plus 1 positive-control row, each naming the plan, section, verdict and evidence.",
+    "manifest": "Read; status complete, tests names the two gate commands with EXIT=0 results, test_logs names gate-tppfi.log (38 passed EXIT=0) and gate-control.log (9 passed EXIT=0), and its follow_ons explains that no commit is possible because the sole write path lies outside every git repository. Its baseline_suite and after_suite arm fields are empty, so the reviewed node's added-failure measurement is unmeasured.",
+    "write_paths": "The reviewed node's sole granted write path is the report under .config/reckon/crew/reports/reckon/; changed_paths names only that file. The reviewed worktree is clean at the read revision 6cb144965 with no commits after the read base and no tracked diff, so no path outside the grant was written."
+  },
+  "justifications": {
+    "durability": "The report persists as a 19-row HTML artifact and is reproducible in structure, but it is written outside git and is a point-in-time reading, and its gate logs end on pytest's summary rather than a bare EXIT= line; both are inherent to the assigned path rather than a defect, so the score is held below the ceiling.",
+    "evidence": "Every cited sha resolves with git cat-file -e and is an ancestor of the read revision, and each spot-checked anchor is exact; the deductions are that section-contract-and-computed-impl section 11 is judged without a focused test run (disclosed in Notes and limits), one line-range citation brackets the call at 5058 while the definition sits at 388, and the reviewed manifest's baseline_suite/after_suite arms are empty so its added-failure count is unmeasured rather than a measured zero.",
+    "fit": "The investigate role is met: readings used the shared root environment per repo rule (PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest), the report sits under the sibling reports layout and is authored as an HTML doc, and the method follows the section-citation discipline.",
+    "goal_fidelity": "All 18 listed sections plus the positive control carry a verdict; the report's counts 14/4/1 match the 19 rows exactly, and the control is reported before the verdicts as the done-when requires.",
+    "scope_discipline": "The reviewed worktree is clean at the read revision with zero commits and zero tracked diff; no source, test or plan file was edited, and the single write path is the report the node was granted."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to classify each listed S22 section - the-page-paints-from-an-index sections 3-8, section-contract-and-computed-impl 4/5/6/7/11, a-review-dies-where-nobody-is-looking 1/4/5/6/7/8/9 - as met, partly met or open at the current main HEAD; the report holds exactly those 18 rows plus 1 positive-control row, each naming the plan, section, verdict and evidence.\nVERDICT done_when: The done-when requires one row per section with plan, verdict and evidence at main (met cites git-resolved shas plus the pinning test file; partly met names what remains and its landing file; open names its landing file), the main revision read, the counts per verdict and the control result. The report states revision 6cb144965a9ef611ed638b099ee833ec025e619b, counts met 14 / partly 4 / open 1, and the control read met; the two gate arms ran green; no source, test or plan file was edited.\nVERDICT write_paths: The reviewed node's sole granted write path is the report under .config/reckon/crew/reports/reckon/; changed_paths names only that file. The reviewed worktree is clean at the read revision 6cb144965 with no commits after the read base and no tracked diff, so no path outside the grant was written.\nVERDICT manifest: Read; status complete, tests names the two gate commands with EXIT=0 results, test_logs names gate-tppfi.log (38 passed EXIT=0) and gate-control.log (9 passed EXIT=0), and its follow_ons explains that no commit is possible because the sole write path lies outside every git repository. Its baseline_suite and after_suite arm fields are empty, so the reviewed node's added-failure measurement is unmeasured.\nVERDICT diff: No production, test or plan diff exists: the reviewed node is an investigate role that edits nothing, and its delivered artifact is the HTML report written outside the repository. The worktree HEAD equals the read revision 6cb144965, so the reviewed change is the report content alone.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: All 18 listed sections plus the positive control carry a verdict; the report's counts 14/4/1 match the 19 rows exactly, and the control is reported before the verdicts as the done-when requires.\nSCORE evidence: 19\nJUSTIFICATION evidence: Every cited sha resolves with git cat-file -e and is an ancestor of the read revision, and each spot-checked anchor is exact; the deductions are that section-contract-and-computed-impl section 11 is judged without a focused test run (disclosed in Notes and limits), one line-range citation brackets the call at 5058 while the definition sits at 388, and the reviewed manifest's baseline_suite/after_suite arms are empty so its added-failure count is unmeasured rather than a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The reviewed worktree is clean at the read revision with zero commits and zero tracked diff; no source, test or plan file was edited, and the single write path is the report the node was granted.\nSCORE durability: 18\nJUSTIFICATION durability: The report persists as a 19-row HTML artifact and is reproducible in structure, but it is written outside git and is a point-in-time reading, and its gate logs end on pytest's summary rather than a bare EXIT= line; both are inherent to the assigned path rather than a defect, so the score is held below the ceiling.\nSCORE fit: 19\nJUSTIFICATION fit: The investigate role is met: readings used the shared root environment per repo rule (PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest), the report sits under the sibling reports layout and is authored as an HTML doc, and the method follows the section-citation discipline.\nreviewed_base_sha: 6cb144965a9ef611ed638b099ee833ec025e619b\nreviewed_head_sha: 6cb144965a9ef611ed638b099ee833ec025e619b\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-currency-index-contract-review.html:37 follow-on: the dispatch caller is cited as reckon/crew/dispatch.py:5048-5068 (call at 5058) while the function definition sits at 388; the range brackets the call site but not the definition.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-currency-index-contract-review.html:51 follow-on: section-contract-and-computed-impl section 11 is judged from code and history without a focused test run, disclosed in Notes and limits; a later test node could close it by running tests/test_section_contract_is_refused.py.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T132625170815-s22-currency-index-contract-review/manifest.md:1 follow-on: the reviewed manifest leaves baseline_suite and after_suite empty (an investigate node that edits no code), so the added-failure derivation is unmeasured; the run's own gate arms (38 passed, 9 passed) are named under tests instead.\n",
+  "review_run_id": "r-20261003T134925738734-review-of-s22-currency-index-contract-review",
+  "reviewed_base_sha": "6cb144965a9ef611ed638b099ee833ec025e619b",
+  "reviewed_commits": [],
+  "reviewed_head_sha": "6cb144965a9ef611ed638b099ee833ec025e619b",
+  "reviewed_run_id": "r-20261003T132625170815-s22-currency-index-contract-review",
+  "reviewer_run_id": "r-20261003T134925738734-review-of-s22-currency-index-contract-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T13:55:40Z",
+  "total": 96
+}

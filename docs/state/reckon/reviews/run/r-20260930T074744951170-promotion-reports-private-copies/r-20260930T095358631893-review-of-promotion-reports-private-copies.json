@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:5699 the only caller of clones.promotion_clone_matches",
+    "reckon/crew/promotion.py:17 the clones import",
+    "reckon/ledger.py:1566 build_record accepts clone_matches",
+    "reckon/ledger.py:1677 the row's only writer of the field",
+    "reckon/ledger.py:148 the RECORD_FIELDS declaration that requires the key on every row"
+  ],
+  "completed_at": "2026-09-30T10:19:55.821Z",
+  "dispatched_at": "2026-09-30T09:54:11Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1677",
+      "text": "an unmeasured clone report is stored as the empty list, so a run whose measurement could not be produced \u2014 a shadow, a run with no commit, an unreadable base or tip archive, or any exception out of clones.promotion_clone_matches \u2014 reads exactly like a run measured to copy nothing, while the comment at reckon/crew/promotion.py:5694-5695 still states that an unreadable revision leaves the key absent."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074744951170-promotion-reports-private-copies/manifest.md",
+      "line": "1",
+      "text": "the manifest names no baseline_suite or after_suite, so no reader can derive this run's added failures and its declared negative control has no readable comparison arm, which refuses its promotion until an arm is recorded or the control is waived; the only arm logs in the run directory are truncated mid-run, and the head one names 6d5c4655 rather than the promoted head 60b20938."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/promotion-reports-private-copies.html",
+      "line": "3",
+      "text": "the fragment repeats the claim that an unreadable revision leaves the key absent, which the repair commit's reckon/ledger.py:1677 made false, so the evidence a later reader opens describes behaviour the code no longer has."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against base 4e05e287; the port at reckon/clones.py:36-141 reproduces the census's skip set, literal collapsing, docstring spans and six-line window, and the changed-function filter with the reckon/ plus tests/ corpus at reckon/clones.py:170-235 is the new selection layer.",
+    "done_when": "the two named tests are tests/test_promotion_reports_clones.py:158 and :190, whose head-revision log records 2 passed with EXIT=0, but the same done_when's base and head arm condition has no completed evidence \u2014 clone_gate_base.log stops at 40% and clone_gate_head.log at 43%, neither with a summary line or an EXIT= line.",
+    "goal": "the goal is to report at promotion each function a run adds or modifies that duplicates an existing one, and reckon/crew/promotion.py:5699 does that, feeding clones.promotion_clone_matches into ledger.build_record under the declared field clone_matches with both functions' file:line.",
+    "manifest": "read; it records the three reconcile runs with their EXIT=0 results at the head revision and records no baseline_suite or after_suite, so the arm evidence is absent rather than recorded and the added-failure derivation reads unmeasured.",
+    "write_paths": "the six declared write paths were read from the run prompt; the two commits change five of them and nothing else, reckon/clones.py, reckon/crew/promotion.py, reckon/ledger.py, tests/test_promotion_reports_clones.py and the fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_reports_clones.py:182-186 compares the reported line against an independently ast-parsed one and reddened under the run's own declared mutation, but no test separates an unmeasured report from a measured empty list.",
+    "evidence": "the two tests the node names are recorded green at the head revision with EXIT=0, but the base and head arms the same done_when names are recorded nowhere and their only logs stop mid-run with no EXIT= line.",
+    "fit": "the module keeps the census's own function names and cites docs/research/data/crew-pattern-review/code-depth/census.py in its docstring, and that file exists.",
+    "goal_fidelity": "reckon/crew/promotion.py:5696-5704 measures the functions the run's own commits changed, against reckon/ and tests/ at the promoted revision, and records what the goal asks for.",
+    "scope_discipline": "every path in both commits is inside the declared write paths, and the repair commit changes only reckon/ledger.py:1673-1677."
+  },
+  "node": "review-of-promotion-reports-private-copies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to report at promotion each function a run adds or modifies that duplicates an existing one, and reckon/crew/promotion.py:5699 does that, feeding clones.promotion_clone_matches into ledger.build_record under the declared field clone_matches with both functions' file:line.\nVERDICT done_when: the two named tests are tests/test_promotion_reports_clones.py:158 and :190, whose head-revision log records 2 passed with EXIT=0, but the same done_when's base and head arm condition has no completed evidence \u2014 clone_gate_base.log stops at 40% and clone_gate_head.log at 43%, neither with a summary line or an EXIT= line.\nVERDICT write_paths: the six declared write paths were read from the run prompt; the two commits change five of them and nothing else, reckon/clones.py, reckon/crew/promotion.py, reckon/ledger.py, tests/test_promotion_reports_clones.py and the fragment.\nVERDICT manifest: read; it records the three reconcile runs with their EXIT=0 results at the head revision and records no baseline_suite or after_suite, so the arm evidence is absent rather than recorded and the added-failure derivation reads unmeasured.\nVERDICT diff: read both commits against base 4e05e287; the port at reckon/clones.py:36-141 reproduces the census's skip set, literal collapsing, docstring spans and six-line window, and the changed-function filter with the reckon/ plus tests/ corpus at reckon/clones.py:170-235 is the new selection layer.\nCALL_SITES: reckon/crew/promotion.py:5699 the only caller of clones.promotion_clone_matches, reckon/crew/promotion.py:17 the clones import, reckon/ledger.py:1566 build_record accepts clone_matches, reckon/ledger.py:1677 the row's only writer of the field, reckon/ledger.py:148 the RECORD_FIELDS declaration that requires the key on every row\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:5696-5704 measures the functions the run's own commits changed, against reckon/ and tests/ at the promoted revision, and records what the goal asks for.\nSCORE evidence: 14\nJUSTIFICATION evidence: the two tests the node names are recorded green at the head revision with EXIT=0, but the base and head arms the same done_when names are recorded nowhere and their only logs stop mid-run with no EXIT= line.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in both commits is inside the declared write paths, and the repair commit changes only reckon/ledger.py:1673-1677.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_promotion_reports_clones.py:182-186 compares the reported line against an independently ast-parsed one and reddened under the run's own declared mutation, but no test separates an unmeasured report from a measured empty list.\nSCORE fit: 18\nJUSTIFICATION fit: the module keeps the census's own function names and cites docs/research/data/crew-pattern-review/code-depth/census.py in its docstring, and that file exists.\nFINDING reckon/ledger.py:1677 an unmeasured clone report is stored as the empty list, so a run whose measurement could not be produced \u2014 a shadow, a run with no commit, an unreadable base or tip archive, or any exception out of clones.promotion_clone_matches \u2014 reads exactly like a run measured to copy nothing, while the comment at reckon/crew/promotion.py:5694-5695 still states that an unreadable revision leaves the key absent.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074744951170-promotion-reports-private-copies/manifest.md:1 the manifest names no baseline_suite or after_suite, so no reader can derive this run's added failures and its declared negative control has no readable comparison arm, which refuses its promotion until an arm is recorded or the control is waived; the only arm logs in the run directory are truncated mid-run, and the head one names 6d5c4655 rather than the promoted head 60b20938.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/promotion-reports-private-copies.html:3 the fragment repeats the claim that an unreadable revision leaves the key absent, which the repair commit's reckon/ledger.py:1677 made false, so the evidence a later reader opens describes behaviour the code no longer has.\n",
+  "review_run_id": "r-20260930T095358631893-review-of-promotion-reports-private-copies",
+  "reviewed_base_sha": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "reviewed_head_sha": "60b209380f5809d78e92c2ea747fac155886ce67",
+  "reviewed_run_id": "r-20260930T074744951170-promotion-reports-private-copies",
+  "reviewer_run_id": "r-20260930T095358631893-review-of-promotion-reports-private-copies",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T10:14:33.931349+00:00",
+  "total": 86
+}

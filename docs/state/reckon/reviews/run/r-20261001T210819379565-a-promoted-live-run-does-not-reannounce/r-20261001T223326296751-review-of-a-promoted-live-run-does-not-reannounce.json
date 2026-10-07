@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:8429",
+    "reckon/crew/recovery.py:7017",
+    "reckon/crew/recovery.py:7464"
+  ],
+  "completed_at": "2026-10-01T22:58:03.898Z",
+  "dispatched_at": "2026-10-01T22:33:48Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-promoted-live-run-does-not-reannounce.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node authored a 54-line evidence fragment although its dispatch, whose done-when names no artifact, instructed it to write no evidence prose; the write is within the granted scope and harmless, but it is a deviation from the small-node contract."
+    },
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "115",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when test's pass rests substantially on the _promote_record_holds repository requirement suppressing the promoted state for its repo-less fixture; the fleet_transitions hold the goal names is exercised only by the new test's repo-recording pointer, so the done-when alone does not exercise that hold."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read against base 60b808f5; the fleet_transitions loop moves the pop from the state word to absence from the observation, and _promote_record_holds now reads the promotion row from the run's recorded repository and returns False when the pointer records none.",
+    "done_when": "test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion passes and ends at head (2 passed, EXIT=0) and hangs at the reviewed base arm (EXIT=124); tests/test_a_promoted_live_run_does_not_reannounce.py::test_a_promoted_live_run_is_held_and_announced_once passes at head.",
+    "goal": "the node's goal is that fleet_transitions holds a promoted run whose live pointer remains; the fold now drops a run only when it is absent from the observation (if run_id not in current), and an independent replay showed base alternated promoted -> dispatched -> promoted every fold while head announced the landing once and then stayed silent.",
+    "manifest": "read; it records the crew_ticker base arm hung at 60b808f5 (EXIT=124, completed false) and head 27 passed (EXIT=0), the new test 1 passed, the a_live_run_never_reads_dead file 1 failed/11 passed identically at base and head (zero added), the negative control EXIT=1, and honestly lists the pre-existing failure as a follow-on.",
+    "write_paths": "the commit touches exactly the three declared paths - reckon/crew/recovery.py, tests/test_a_promoted_live_run_does_not_reannounce.py, docs/evidence/fragments/the-suite-is-green-at-head/a-promoted-live-run-does-not-reannounce.html - and no plan meta line; the declared docs/figures directory is unused."
+  },
+  "justifications": {
+    "durability": "the change is committed at cd7b0fe8 with a substantive body, the fold docstring and both call sites' comments state the mechanism without a plan label, and the new test drives three folds and asserts the held state, not only the one event.",
+    "evidence": "base arm hang (EXIT=124) and head pass (EXIT=0) both on disk with revision/tree/command headers, the re-announce reproduced standalone at base and shown silent at head, the declared mutation reddens the new test (EXIT=1, one failing id), and the production derivation reads the reviewed manifest's own suite logs as zero added.",
+    "fit": "the pop-on-absence condition reuses the existing current/known set algebra, the repo requirement reuses ledger_module.run_path, and comments carry mechanism; the interaction between the two changes - the repo requirement suppresses the promoted word for a repo-less fixture - is real and correct but only partly explained.",
+    "goal_fidelity": "salts independent replay of fleet_transitions over a promoted repo-recording pointer emits exactly one ('completed_unpromoted','promoted') and is then silent across two further folds, where the base emitted ('None','dispatched') on the second fold; the named re-announce is gone.",
+    "scope_discipline": "the three changed paths are all within the granted scope and no plan meta was touched, but the node authored a 54-line evidence fragment although its dispatch stated its done-when names no artifact and it therefore writes no evidence prose."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that fleet_transitions holds a promoted run whose live pointer remains; the fold now drops a run only when it is absent from the observation (if run_id not in current), and an independent replay showed base alternated promoted -> dispatched -> promoted every fold while head announced the landing once and then stayed silent.\nVERDICT done_when: test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion passes and ends at head (2 passed, EXIT=0) and hangs at the reviewed base arm (EXIT=124); tests/test_a_promoted_live_run_does_not_reannounce.py::test_a_promoted_live_run_is_held_and_announced_once passes at head.\nVERDICT write_paths: the commit touches exactly the three declared paths - reckon/crew/recovery.py, tests/test_a_promoted_live_run_does_not_reannounce.py, docs/evidence/fragments/the-suite-is-green-at-head/a-promoted-live-run-does-not-reannounce.html - and no plan meta line; the declared docs/figures directory is unused.\nVERDICT manifest: read; it records the crew_ticker base arm hung at 60b808f5 (EXIT=124, completed false) and head 27 passed (EXIT=0), the new test 1 passed, the a_live_run_never_reads_dead file 1 failed/11 passed identically at base and head (zero added), the negative control EXIT=1, and honestly lists the pre-existing failure as a follow-on.\nVERDICT diff: read against base 60b808f5; the fleet_transitions loop moves the pop from the state word to absence from the observation, and _promote_record_holds now reads the promotion row from the run's recorded repository and returns False when the pointer records none.\nCALL_SITES: reckon/crew/recovery.py:8429, reckon/crew/recovery.py:7017, reckon/crew/recovery.py:7464\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: salts independent replay of fleet_transitions over a promoted repo-recording pointer emits exactly one ('completed_unpromoted','promoted') and is then silent across two further folds, where the base emitted ('None','dispatched') on the second fold; the named re-announce is gone.\nSCORE evidence: 18\nJUSTIFICATION evidence: base arm hang (EXIT=124) and head pass (EXIT=0) both on disk with revision/tree/command headers, the re-announce reproduced standalone at base and shown silent at head, the declared mutation reddens the new test (EXIT=1, one failing id), and the production derivation reads the reviewed manifest's own suite logs as zero added.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the three changed paths are all within the granted scope and no plan meta was touched, but the node authored a 54-line evidence fragment although its dispatch stated its done-when names no artifact and it therefore writes no evidence prose.\nSCORE durability: 18\nJUSTIFICATION durability: the change is committed at cd7b0fe8 with a substantive body, the fold docstring and both call sites' comments state the mechanism without a plan label, and the new test drives three folds and asserts the held state, not only the one event.\nSCORE fit: 17\nJUSTIFICATION fit: the pop-on-absence condition reuses the existing current/known set algebra, the repo requirement reuses ledger_module.run_path, and comments carry mechanism; the interaction between the two changes - the repo requirement suppresses the promoted word for a repo-less fixture - is real and correct but only partly explained.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-promoted-live-run-does-not-reannounce.html:1 follow-on: the node authored a 54-line evidence fragment although its dispatch, whose done-when names no artifact, instructed it to write no evidence prose; the write is within the granted scope and harmless, but it is a deviation from the small-node contract.\nFINDING tests/test_crew_ticker.py:115 follow-on: the done-when test's pass rests substantially on the _promote_record_holds repository requirement suppressing the promoted state for its repo-less fixture; the fleet_transitions hold the goal names is exercised only by the new test's repo-recording pointer, so the done-when alone does not exercise that hold.\n",
+  "review_run_id": "r-20261001T223326296751-review-of-a-promoted-live-run-does-not-reannounce",
+  "reviewed_base_sha": "60b808f5f3b12faf446c1c356c3da8c5fb830e92",
+  "reviewed_head_sha": "cd7b0fe813bfaf9e8131fa4d0741363c356d2a16",
+  "reviewed_run_id": "r-20261001T210819379565-a-promoted-live-run-does-not-reannounce",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T22:53:30.537680+00:00",
+  "total": 86
+}

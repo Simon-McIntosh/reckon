@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/mcp.py:793",
+    "reckon/mcp.py:3971",
+    "reckon/serve.py:1745",
+    "reckon/serve.py:2705",
+    "reckon/serve.py:2774",
+    "reckon/evidence.py:416",
+    "reckon/tags.py:123",
+    "reckon/tags.py:130",
+    "reckon/archive.py:130"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T21:45:13.525420+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit, 2d5357fc adds tests/test_section_record_round_trips.py, 739dc8c6 adds the SectionRecord model and the parse and splice path with the regenerated docs/_shared/plan.schema.json, 8cba9903 narrows the record opt-in to declared metadata keys and routes capability through the shared CapabilityRequest, and 4334db5e appends the evidence record and the plan's landing prose.",
+    "done_when": "the measure names tests/test_section_record_round_trips.py and a delta against the base revision, and the manifest records a 71-target gate at 8cba9903 with 25 failed/2511 passed/3 skipped against 25/2475/3 at c590aaad and zero added failure ids in failure-delta.json; I re-ran the named file from the reviewed tree (35 passed, exit 0) and reconciled the aggregate +36 as those 35 cases plus one peer plan file that entered the live mounted plan population between the two collections.",
+    "goal": "the goal is a typed section record carried on or beside a plan's h2 that round-trips byte-stably, and reckon/_schema.py:535 SectionRecord (id, effort_hours, capability, attempts, status, links) with the reader at reckon/_plan_html.py:298 and the splicer at reckon/_plan_html.py:628 land exactly that.",
+    "manifest": "read, it names the four commits, the gate and its baseline summary, the negative-control log, and states that the delivery head 4334db5e is docs-only and the gated revision is 8cba9903, which git diff 8cba9903 4334db5e confirms as the three doc paths alone.",
+    "write_paths": "the fence declares seven entries and git diff --name-only c590aaaade26b590739c61e873ef7581746cf36c..4334db5e2cd093ee8a8ab510db9eadebbac69ec5 lists exactly those seven paths, including the figure inside the declared docs/figures/section-contract-and-computed-impl directory."
+  },
+  "justifications": {
+    "durability": "tests/test_section_record_round_trips.py:144 compares the reconstruction against the rendered text with the record markup stripped first, so a write path that left stale markup in place cannot pass, and every refusal case at tests/test_section_record_round_trips.py:174 names the field it expects.",
+    "evidence": "the gate recorded in the reviewed run's manifest.md names tests/test_section_record_round_trips.py and its result is receipted in that run's failure-delta.json with zero added failure ids against 25 retained, my own re-run at recheck-focused.log returned 35 passed, and the aggregate count moves by one only because a live mounted plan file entered the _PLAN_FILES population enumerated at tests/test_schema.py:688 between the two collections.",
+    "fit": "the new helpers are private and sit beside the existing span parser at reckon/_plan_html.py:278, the published-schema freshness guard at tests/test_schema.py:527 covers the regenerated docs/_shared/plan.schema.json, and all four commits carry conventional subjects with bodies and no attribution trailer.",
+    "goal_fidelity": "all six fields survive reckon/_plan_html.py:628 and the h2 carrier beside it, and the byte-stability the goal fixes is asserted at tests/test_section_record_round_trips.py:134.",
+    "scope_discipline": "git diff --name-only across c590aaad..4334db5e lists only the seven fenced paths and the three doc hunks are insertion-only (99/0, 39/0, 15/0) with the plan's meta scalars untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a typed section record carried on or beside a plan's h2 that round-trips byte-stably, and reckon/_schema.py:535 SectionRecord (id, effort_hours, capability, attempts, status, links) with the reader at reckon/_plan_html.py:298 and the splicer at reckon/_plan_html.py:628 land exactly that.\nVERDICT done_when: the measure names tests/test_section_record_round_trips.py and a delta against the base revision, and the manifest records a 71-target gate at 8cba9903 with 25 failed/2511 passed/3 skipped against 25/2475/3 at c590aaad and zero added failure ids in failure-delta.json; I re-ran the named file from the reviewed tree (35 passed, exit 0) and reconciled the aggregate +36 as those 35 cases plus one peer plan file that entered the live mounted plan population between the two collections.\nVERDICT write_paths: the fence declares seven entries and git diff --name-only c590aaaade26b590739c61e873ef7581746cf36c..4334db5e2cd093ee8a8ab510db9eadebbac69ec5 lists exactly those seven paths, including the figure inside the declared docs/figures/section-contract-and-computed-impl directory.\nVERDICT manifest: read, it names the four commits, the gate and its baseline summary, the negative-control log, and states that the delivery head 4334db5e is docs-only and the gated revision is 8cba9903, which git diff 8cba9903 4334db5e confirms as the three doc paths alone.\nVERDICT diff: read commit by commit, 2d5357fc adds tests/test_section_record_round_trips.py, 739dc8c6 adds the SectionRecord model and the parse and splice path with the regenerated docs/_shared/plan.schema.json, 8cba9903 narrows the record opt-in to declared metadata keys and routes capability through the shared CapabilityRequest, and 4334db5e appends the evidence record and the plan's landing prose.\nCALL_SITES: reckon/mcp.py:793, reckon/mcp.py:3971, reckon/serve.py:1745, reckon/serve.py:2705, reckon/serve.py:2774, reckon/evidence.py:416, reckon/tags.py:123, reckon/tags.py:130, reckon/archive.py:130\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all six fields survive reckon/_plan_html.py:628 and the h2 carrier beside it, and the byte-stability the goal fixes is asserted at tests/test_section_record_round_trips.py:134.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate recorded in the reviewed run's manifest.md names tests/test_section_record_round_trips.py and its result is receipted in that run's failure-delta.json with zero added failure ids against 25 retained, my own re-run at recheck-focused.log returned 35 passed, and the aggregate count moves by one only because a live mounted plan file entered the _PLAN_FILES population enumerated at tests/test_schema.py:688 between the two collections.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only across c590aaad..4334db5e lists only the seven fenced paths and the three doc hunks are insertion-only (99/0, 39/0, 15/0) with the plan's meta scalars untouched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_section_record_round_trips.py:144 compares the reconstruction against the rendered text with the record markup stripped first, so a write path that left stale markup in place cannot pass, and every refusal case at tests/test_section_record_round_trips.py:174 names the field it expects.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers are private and sit beside the existing span parser at reckon/_plan_html.py:278, the published-schema freshness guard at tests/test_schema.py:527 covers the regenerated docs/_shared/plan.schema.json, and all four commits carry conventional subjects with bodies and no attribution trailer.\n",
+  "review_run_id": "r-20260924T214513525420-review-of-section-is-a-typed-record",
+  "reviewed_base_sha": "c590aaaade26b590739c61e873ef7581746cf36c",
+  "reviewed_head_sha": "4334db5e2cd093ee8a8ab510db9eadebbac69ec5",
+  "reviewed_run_id": "r-20260924T211306627533-section-is-a-typed-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T23:00:18.625963+00:00",
+  "total": 97
+}

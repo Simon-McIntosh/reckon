@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "deepseek",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/ledger.py:961 (load calls _indexed_data when use_index)",
+    "reckon/capabilities.py:1468 (project_cache_status calls ledger.indexed_headers)",
+    "reckon/budget.py:631 (_readings calls ledger.indexed_headers for members)",
+    "reckon/crew/routing.py:3208 (_verdict_input_stamp calls ledger.input_stamp)",
+    "reckon/crew/picker/lane_context.py:257 (_ledger_stamp calls ledger.input_stamp)"
+  ],
+  "completed_at": "2026-10-03T12:54:29.671Z",
+  "dispatched_at": "2026-10-03T12:45:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3152",
+      "severity": "follow-on",
+      "text": "follow-on: the estimate-cache stamp is filtered by LOCATION (kind from resources._path_context in {None,'plan'}) while resources.resolve_resource matches by content type from metadata, so a plan resolved out of a non-plan typed root is not in the stamp; editing such a file would keep serving the cached estimate."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "738",
+      "severity": "follow-on",
+      "text": "follow-on: _file_identity catches only FileNotFoundError, so a stat permission error propagates out of input_stamp; that stamp is now evaluated eagerly by routing._verdict_input_stamp, where the replaced capabilities.file_stamp returned None on OSError and forfeited the cache rather than raising out of shared_verdict_inputs."
+    },
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "257",
+      "severity": "follow-on",
+      "text": "follow-on: _ledger_stamp now returns [ledger.input_stamp(project)], which stats every run file, replacing the two stat calls its own prior docstring measured at ~0.04 ms against 123-2948 ms for a full decode; the profile-cache key is no longer O(1) in the number of runs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 consumers of the new reads: ledger.py:961 load-> _indexed_data, capabilities.py:1468 project_cache_status -> indexed_headers, budget.py:631 _readings -> indexed_headers, routing.py:3208 _verdict_input_stamp -> input_stamp, lane_context.py:257 _ledger_stamp -> input_stamp.",
+    "diff": "read commit by commit: a8ca2a36c adds the sqlite incremental index and its consumers, 97192e83c adds the plan-estimate cache and the single-census node_estimate, 49397b6fb is docs/evidence only.",
+    "done_when": "goal met for the pick path and the incremental index; the 1.0 s input-build target is not met (median 1.642 s) and the real worktree-to-launch phase was refused by the worker fence, so that phase is unmeasured and left to the coordinator.",
+    "goal": "the node cuts fresh-process dispatch latency by incrementally indexing ledger history and reusing cross-process picker inputs: reckon/ledger.py:790 _indexed_data reads only run files whose (mtime_ns,ctime_ns,size,ino) stamp changed, and reckon/crew/routing.py:3118 _estimated_hours caches the plan-effort estimate once per candidate census. Measured p90 pick 0.974 s over 21 fresh CLI processes, 0/21 timeouts; append reads exactly 1 new file in 20/20 samples against 1673 on cold build.",
+    "manifest": "read; status complete; baseline_suite at a0f72d439 (468 passed, completed true, 0 failures) and after_suite at 97192e83c (482 passed, completed true, 0 failures) carry literal commands and log paths; added_failure_ids is empty. after_suite and the negative control ran at 97192e83c, one commit below the reviewed head 49397b6fb.",
+    "write_paths": "git diff --stat a0f72d439..49397b6fb spans 11 paths, every one inside the manifest's 14 declared write paths (ledger, budget, capabilities, agent_context, routing, lane_context, snapshot, the two test files, the evidence fragment and its figure)."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_speed.py binds the index to its equivalent inputs: a positive control for the read instrument, append/rebuild/delete and aggregate-rewrite equivalence against use_index=False, conflict refusal after warmup, three corrupt-index damages rebuilding, an injected OSError falling back to the uncached read, and a preserved-mtime in-place edit caught by ctime; the node_estimate-once census is asserted. Docked two: the estimate stamp is built from another module's private helpers (resources._path_context / _is_evidence_fragment / ResourceCollision) so the key can drift from what resolve_resource reads, and ledger._file_identity (ledger.py:738) catches only FileNotFoundError, so a stat EACCES now propagates out of input_stamp -- which is the eager stamp for the verdict-inputs cache, where the replaced capabilities.file_stamp returned None and forfeited the cache.",
+    "evidence": "both arms are recorded at their own revisions with completed true and literal absolute commands; base 468 passed / head 482 passed with zero FAILED lines and added_failure_ids empty; the negative control ends EXIT=1 with test_append_reads_only_the_new_run failing, an id the head arm does not fail, and the read-count test carries a positive control (40 reads observed) so a quiet instrument cannot pass. metrics.json reconciles with the fragment. Docked two because the head arm and the negative control ran at 97192e83c, one commit below the reviewed head 49397b6fb, and the 21-sample p90 measures warm-cache picks on a copied ledger while the 3.98 s cold census sits outside it.",
+    "fit": "constants and helpers are named by mechanism (input_stamp, _indexed_data, _run_snapshot); the corrupt-index path rebuilds into a temp file and os.replace's it, and OperationalError is re-raised rather than triggering a rebuild storm under lock contention. Docked two: input_stamp now stats every run file on every call, so the two-stat freshness key it replaced in lane_context._ledger_stamp became an O(N) walk on the pick path, and routing.py:3118-3152 re-implements the resource-scan filters inline instead of sharing them.",
+    "goal_fidelity": "reckon/ledger.py:790-952 replaces a full decode of every run JSON with a stamped sqlite index that reads only changed files, and routing.py:3118 caches the plan estimate; the fragment's phase table shows Reckon input build 9.369 s base -> 1.966 s head. Docked two because the 1.0 s input-build target remains unmet and the real worktree-creation phase was refused by the fence, so the node's own end-to-end 'dispatch speed' claim rests on the dry-run path only.",
+    "scope_discipline": "git diff --stat a0f72d439..49397b6fb touches only the 11 declared paths; no plan, sprint or shared index is mutated, the third commit is docs/evidence alone, and the worktree is clean at the reviewed head."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node cuts fresh-process dispatch latency by incrementally indexing ledger history and reusing cross-process picker inputs: reckon/ledger.py:790 _indexed_data reads only run files whose (mtime_ns,ctime_ns,size,ino) stamp changed, and reckon/crew/routing.py:3118 _estimated_hours caches the plan-effort estimate once per candidate census. Measured p90 pick 0.974 s over 21 fresh CLI processes, 0/21 timeouts; append reads exactly 1 new file in 20/20 samples against 1673 on cold build.\nVERDICT done_when: goal met for the pick path and the incremental index; the 1.0 s input-build target is not met (median 1.642 s) and the real worktree-to-launch phase was refused by the worker fence, so that phase is unmeasured and left to the coordinator.\nVERDICT write_paths: git diff --stat a0f72d439..49397b6fb spans 11 paths, every one inside the manifest's 14 declared write paths (ledger, budget, capabilities, agent_context, routing, lane_context, snapshot, the two test files, the evidence fragment and its figure).\nVERDICT manifest: read; status complete; baseline_suite at a0f72d439 (468 passed, completed true, 0 failures) and after_suite at 97192e83c (482 passed, completed true, 0 failures) carry literal commands and log paths; added_failure_ids is empty. after_suite and the negative control ran at 97192e83c, one commit below the reviewed head 49397b6fb.\nVERDICT diff: read commit by commit: a8ca2a36c adds the sqlite incremental index and its consumers, 97192e83c adds the plan-estimate cache and the single-census node_estimate, 49397b6fb is docs/evidence only.\nCALL_SITE: reckon/ledger.py:961 (load calls _indexed_data when use_index)\nCALL_SITE: reckon/capabilities.py:1468 (project_cache_status calls ledger.indexed_headers)\nCALL_SITE: reckon/budget.py:631 (_readings calls ledger.indexed_headers for members)\nCALL_SITE: reckon/crew/routing.py:3208 (_verdict_input_stamp calls ledger.input_stamp)\nCALL_SITE: reckon/crew/picker/lane_context.py:257 (_ledger_stamp calls ledger.input_stamp)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:790-952 replaces a full decode of every run JSON with a stamped sqlite index that reads only changed files, and routing.py:3118 caches the plan estimate; the fragment's phase table shows Reckon input build 9.369 s base -> 1.966 s head. Docked two because the 1.0 s input-build target remains unmet and the real worktree-creation phase was refused by the fence, so the node's own end-to-end 'dispatch speed' claim rests on the dry-run path only.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms are recorded at their own revisions with completed true and literal absolute commands; base 468 passed / head 482 passed with zero FAILED lines and added_failure_ids empty; the negative control ends EXIT=1 with test_append_reads_only_the_new_run failing, an id the head arm does not fail, and the read-count test carries a positive control (40 reads observed) so a quiet instrument cannot pass. metrics.json reconciles with the fragment. Docked two because the head arm and the negative control ran at 97192e83c, one commit below the reviewed head 49397b6fb, and the 21-sample p90 measures warm-cache picks on a copied ledger while the 3.98 s cold census sits outside it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a0f72d439..49397b6fb touches only the 11 declared paths; no plan, sprint or shared index is mutated, the third commit is docs/evidence alone, and the worktree is clean at the reviewed head.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_speed.py binds the index to its equivalent inputs: a positive control for the read instrument, append/rebuild/delete and aggregate-rewrite equivalence against use_index=False, conflict refusal after warmup, three corrupt-index damages rebuilding, an injected OSError falling back to the uncached read, and a preserved-mtime in-place edit caught by ctime; the node_estimate-once census is asserted. Docked two: the estimate stamp is built from another module's private helpers (resources._path_context / _is_evidence_fragment / ResourceCollision) so the key can drift from what resolve_resource reads, and ledger._file_identity (ledger.py:738) catches only FileNotFoundError, so a stat EACCES now propagates out of input_stamp -- which is the eager stamp for the verdict-inputs cache, where the replaced capabilities.file_stamp returned None and forfeited the cache.\nSCORE fit: 18\nJUSTIFICATION fit: constants and helpers are named by mechanism (input_stamp, _indexed_data, _run_snapshot); the corrupt-index path rebuilds into a temp file and os.replace's it, and OperationalError is re-raised rather than triggering a rebuild storm under lock contention. Docked two: input_stamp now stats every run file on every call, so the two-stat freshness key it replaced in lane_context._ledger_stamp became an O(N) walk on the pick path, and routing.py:3118-3152 re-implements the resource-scan filters inline instead of sharing them.\nFINDING reckon/crew/routing.py:3152 follow-on: the estimate-cache stamp is filtered by LOCATION (kind from resources._path_context in {None,'plan'}) while resources.resolve_resource matches by content type from metadata, so a plan resolved out of a non-plan typed root is not in the stamp; editing such a file would keep serving the cached estimate.\nFINDING reckon/ledger.py:738 follow-on: _file_identity catches only FileNotFoundError, so a stat permission error propagates out of input_stamp; that stamp is now evaluated eagerly by routing._verdict_input_stamp, where the replaced capabilities.file_stamp returned None on OSError and forfeited the cache rather than raising out of shared_verdict_inputs.\nFINDING reckon/crew/picker/lane_context.py:257 follow-on: _ledger_stamp now returns [ledger.input_stamp(project)], which stats every run file, replacing the two stat calls its own prior docstring measured at ~0.04 ms against 123-2948 ms for a full decode; the profile-cache key is no longer O(1) in the number of runs.",
+  "review_run_id": "r-20261003T124446531314-review-of-dispatch-speed",
+  "reviewed_base_sha": "a0f72d439aa15a57b2e2379279a612ca2b764060",
+  "reviewed_head_sha": "49397b6fb70a181ab3513248a630ba28e3bb89b2",
+  "reviewed_run_id": "r-20261003T114532582934-dispatch-speed",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T12:53:40.473507+00:00",
+  "total": 92
+}

@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1273",
+    "reckon/crew/recovery.py:1055"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T00:30:24.796527+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+      "line": "1067",
+      "text": "\"One id is repaired (the target) and one id is added\" does not reconcile 14 to 13: the two recorded id lists differ by two base-only ids, the second being tests/test_ledger.py::test_a_promoted_row_carries_the_budget_fallback_its_pointer_held, whose base failure is an mtime change on a live peer run's pointer under the same real ~/.config live directory the test compares (environmental, not a repair); the same sentence stands at docs/plans/the-suite-is-green-at-head.html:535 and in the manifest's evidence_inputs, and a reader cannot reconcile the arithmetic without diffing the id lists themselves."
+    },
+    {
+      "file": "/home/ITER/mcintos/.cache/a-launcher-oserror/base-target.log",
+      "line": "1",
+      "text": "names revision=bdfff7f4 for a base arm whose imported dispatch.py is the pre-fix content and head-set.log:1 names revision=6f1c8e4b on a head arm, so no header names the revision that arm ran at, the scratch tree tree-base has been removed, and the manifest carries no measurement_module or measurement_cwd, leaving each arm's provenance to be reconstructed from a traceback line number; the arms remain checkable from their bodies, but the header line the node's own manifest contract requires is absent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read bdfff7f4 then eafdb655 against base 6f1c8e4b commit by commit: the code commit moves the spawn inside an OSError-to-refusal wrap and keeps the caller-seam bookkeeping (the launcher branch's tree snapshot at reckon/crew/dispatch.py:4122-4127), and the raise sits inside the unwind at reckon/crew/dispatch.py:4139-4157 intact (pointer unlink 4154, run directory 4155, worktree 4156).",
+    "done_when": "Each clause is measured and logged - the target id fails at base with the escaping OSError (base-target.log, whose traceback names reckon/crew/dispatch.py:4105, the base file's launcher call where head's is 4112) and passes at head (head-target.log, 12 passed together with tests/test_dispatch_spawns_through_the_fleet.py) - except the zero-added-failures clause: the delta carries one added id in a peer's fenced file and two base-only ids where the record accounts for one (see FINDING).",
+    "goal": "The node's goal is that a launcher OSError during dispatch surfaces as a CrewError refusal; reckon/crew/dispatch.py:4094-4121 now wraps both the supervisor start (this tree's line 4110) and the caller-supplied launcher (line 4112) and raises CrewError(format_refusal(\"D22\", f\"the worker launch could not start: {exc}\")), with the resolving action appended by the registry at reckon/crew/refusals.py:85-89.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234026209328-a-launcher-oserror-is-a-refusal/manifest.md; status complete, with the target's base and head logs, the negative control and both full failure-id lists carried, but no measurement_module or measurement_cwd for the scratch-tree base arm (see FINDING).",
+    "write_paths": "Read the four declared paths against the diff 6f1c8e4b..eafdb655: the five changed files (reckon/crew/dispatch.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head/launcher-oserror-refusal.py and its .png) all lie inside them, no test file is edited, and the worktree is clean at eafdb655."
+  },
+  "justifications": {
+    "durability": "tests/test_refused_dispatch_leaves_no_pointer.py:350-358 fails if the wrap is removed - the base arm and the declared mutation both redden it with the raw OSError escaping the dispatch call - but the assertion pins the exception type only, so a refusal raised without the D22 remedy text would pass it.",
+    "evidence": "The gate's central receipts hold - the base arm demonstrably imported the base file (its traceback's dispatch.py:4105 exists only there, while head's launcher call is 4112) and both failure-id lists are recorded - but the committed delta prose names one repaired id where the two lists differ by two, and the log headers name no revision any arm ran at (see FINDING).",
+    "fit": "The wrap mirrors the adjacent D22 idiom at reckon/crew/dispatch.py:4001 with a mechanism-flavoured comment, carries no plan or ticket identifiers, and the docs reuse the landed-note grammar with a project-absolute figure src under docs/figures/the-suite-is-green-at-head/launcher-oserror-refusal.png.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4116-4121 converts an OSError from either spawn branch into the same D22 refusal family the neighbouring wrap already uses at dispatch.py:4001, and the raise sits inside the unwind at dispatch.py:4139 so the teardown still runs.",
+    "scope_discipline": "Every changed path across 6f1c8e4b..eafdb655 lies inside the four declared paths, no test file is edited, and the plan edit is one inserted landed note with the plan-version and plan-modified meta lines untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a launcher OSError during dispatch surfaces as a CrewError refusal; reckon/crew/dispatch.py:4094-4121 now wraps both the supervisor start (this tree's line 4110) and the caller-supplied launcher (line 4112) and raises CrewError(format_refusal(\"D22\", f\"the worker launch could not start: {exc}\")), with the resolving action appended by the registry at reckon/crew/refusals.py:85-89.\nVERDICT done_when: Each clause is measured and logged - the target id fails at base with the escaping OSError (base-target.log, whose traceback names reckon/crew/dispatch.py:4105, the base file's launcher call where head's is 4112) and passes at head (head-target.log, 12 passed together with tests/test_dispatch_spawns_through_the_fleet.py) - except the zero-added-failures clause: the delta carries one added id in a peer's fenced file and two base-only ids where the record accounts for one (see FINDING).\nVERDICT write_paths: Read the four declared paths against the diff 6f1c8e4b..eafdb655: the five changed files (reckon/crew/dispatch.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head/launcher-oserror-refusal.py and its .png) all lie inside them, no test file is edited, and the worktree is clean at eafdb655.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234026209328-a-launcher-oserror-is-a-refusal/manifest.md; status complete, with the target's base and head logs, the negative control and both full failure-id lists carried, but no measurement_module or measurement_cwd for the scratch-tree base arm (see FINDING).\nVERDICT diff: Read bdfff7f4 then eafdb655 against base 6f1c8e4b commit by commit: the code commit moves the spawn inside an OSError-to-refusal wrap and keeps the caller-seam bookkeeping (the launcher branch's tree snapshot at reckon/crew/dispatch.py:4122-4127), and the raise sits inside the unwind at reckon/crew/dispatch.py:4139-4157 intact (pointer unlink 4154, run directory 4155, worktree 4156).\nCALL_SITES: reckon/cli.py:1273, reckon/crew/recovery.py:1055\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4116-4121 converts an OSError from either spawn branch into the same D22 refusal family the neighbouring wrap already uses at dispatch.py:4001, and the raise sits inside the unwind at dispatch.py:4139 so the teardown still runs.\nSCORE evidence: 15\nJUSTIFICATION evidence: The gate's central receipts hold - the base arm demonstrably imported the base file (its traceback's dispatch.py:4105 exists only there, while head's launcher call is 4112) and both failure-id lists are recorded - but the committed delta prose names one repaired id where the two lists differ by two, and the log headers name no revision any arm ran at (see FINDING).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every changed path across 6f1c8e4b..eafdb655 lies inside the four declared paths, no test file is edited, and the plan edit is one inserted landed note with the plan-version and plan-modified meta lines untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_refused_dispatch_leaves_no_pointer.py:350-358 fails if the wrap is removed - the base arm and the declared mutation both redden it with the raw OSError escaping the dispatch call - but the assertion pins the exception type only, so a refusal raised without the D22 remedy text would pass it.\nSCORE fit: 18\nJUSTIFICATION fit: The wrap mirrors the adjacent D22 idiom at reckon/crew/dispatch.py:4001 with a mechanism-flavoured comment, carries no plan or ticket identifiers, and the docs reuse the landed-note grammar with a project-absolute figure src under docs/figures/the-suite-is-green-at-head/launcher-oserror-refusal.png.\nFINDING docs/evidence/archive/the-suite-is-green-at-head-landed.html:1067 \"One id is repaired (the target) and one id is added\" does not reconcile 14 to 13: the two recorded id lists differ by two base-only ids, the second being tests/test_ledger.py::test_a_promoted_row_carries_the_budget_fallback_its_pointer_held, whose base failure is an mtime change on a live peer run's pointer under the same real ~/.config live directory the test compares (environmental, not a repair); the same sentence stands at docs/plans/the-suite-is-green-at-head.html:535 and in the manifest's evidence_inputs, and a reader cannot reconcile the arithmetic without diffing the id lists themselves.\nFINDING /home/ITER/mcintos/.cache/a-launcher-oserror/base-target.log:1 names revision=bdfff7f4 for a base arm whose imported dispatch.py is the pre-fix content and head-set.log:1 names revision=6f1c8e4b on a head arm, so no header names the revision that arm ran at, the scratch tree tree-base has been removed, and the manifest carries no measurement_module or measurement_cwd, leaving each arm's provenance to be reconstructed from a traceback line number; the arms remain checkable from their bodies, but the header line the node's own manifest contract requires is absent.",
+  "review_run_id": "r-20260925T003024796527-review-of-a-launcher-oserror-is-a-refusal",
+  "reviewed_base_sha": "6f1c8e4beb9fe4c63385c695d1450b937b13fb08",
+  "reviewed_head_sha": "eafdb655e50828738ec99568bf537a1dc1976c7c",
+  "reviewed_run_id": "r-20260924T234026209328-a-launcher-oserror-is-a-refusal",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T01:14:18.066455+00:00",
+  "total": 89
+}

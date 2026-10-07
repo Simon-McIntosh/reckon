@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T19:48:02.276Z",
+  "dispatched_at": "2026-10-04T19:43:16Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:9280",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name death_census.stream_facts (or a shared low-level helper it owns) as the mechanism to extend, so the supervisor and the census cannot disagree about how many records a stream held.",
+      "text": "\u00a73's `_stream_record_facts` (added at c8f0b545, the plan's \u00a73 node) counts a run's stream records and names the newest record's type by iterating `stream_paths_newest_first`, which is exactly what `reckon/crew/death_census.py::stream_facts` (death_census.py:84, pre-existing since 4ed8ff18c) already computes as `record_count` and `last_record_type` over the same stream files; two scanners of one shape will drift, and the exit record's stream_records_seen / last_record_type fields are the second copy the death census and recovery.py:7009 now read",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:9615",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a710 should extend the owner by calling fleet_supervisor.state_directory / fleet_node.recorded_job_id rather than fork the path resolution and its env override, or the batch step and the dispatcher can resolve different record files.",
+      "text": "\u00a710's `_fleet_record_path` / `_read_fleet_record` re-derive the fleet record's location (`$XDG_STATE_HOME/\u2026/fleet/record.json` or ~/.local/state/fleet) and read it, while reckon/crew/fleet_supervisor.py::state_directory (fleet_supervisor.py:253) plus RECORD_NAME (fleet_supervisor.py:83) already own that path and its canonical override FLEET_STATE_DIR, and reckon/crew/fleet_node.py::recorded_job_id (fleet_node.py:299) already performs this exact read; the plan adds a third override RECKON_FLEET_RECORD (dispatch.py:9607) beside FLEET_STATE_DIR/FLEET_RUNTIME_DIR, so the fleet's location now resolves through two independent readers",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/supervisor_main.py:1",
+      "id": "thin_wrapper-1",
+      "reason": "the justification is recorded in the plan's runpy-warning followup and the module is a single 32-line shim with no duplicated behaviour, so the design already made the call; noting it does not change what the plan does.",
+      "text": "a whole module exists to forward to `_supervisor_command` and avoids the runpy duplicate-import warning that `-m reckon.crew.dispatch` produced; the plan supplies the reason the existing vector cannot be reused, so this is a justified thin layer rather than a parallel mechanism over the same machinery",
+      "type": "thin_wrapper",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "3d7b2682b20c0194bf5e56759f97cc102a35d303acc9a0c86f946d986701b96f",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 153,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T194301388669-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "54dd563998bb4d944ad3bfd46292c1d25973a5b6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the substantial new behaviour is hidden behind small interfaces. \u00a73's per-run supervisor takes one spec path and is read through three run-directory artifacts; \u00a710's reckon/crew/fleet_supervisor.py hides the FIFO protocol, the variable-stripping, the mode-0700 runtime directory, the service manager and the zellij tab-sizing behind one request line and serve(). The dilute-launch stages are private helpers inside dispatch.py, but the interface each exposes is small relative to what it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a73 forked the stream-record reader and \u00a710 forked the fleet-record path reader instead of extending their owners, reckon/crew/death_census.py and reckon/crew/fleet_supervisor.py.",
+    "reuse_search": "a finding \u2014 the design searched the transfer layers it names (\u00a710's dotfiles reference, a reuse-map run with 73 resolved citations, and the existing owners it extends: routing._remove_worktree, promotion, summary.roster_bound, resumption, claims._worker_liveness), but it did not search the run's stream/exit readers: \u00a73's exit-record fields stream_records_seen and last_record_type re-derive a scan that reckon/crew/death_census.py::stream_facts already owns, and the plan cites no census reader anywhere.",
+    "thin_wrapper": "a finding \u2014 reckon/crew/supervisor_main.py is a 32-line module whose whole body forwards to dispatch._supervisor_command, added only so the supervisor is launched as -m reckon.crew.supervisor_main instead of -m reckon.crew.dispatch; the plan does state why the existing launch cannot be reused (runpy re-executes the already-imported dispatch module and opens the supervisor's stderr with a warning), so the wrapper is justified rather than unjustified."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T20:48:40.324283+00:00"
+}

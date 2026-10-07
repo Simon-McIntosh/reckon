@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T17:21:42.951Z",
+  "dispatched_at": "2026-10-04T17:05:50Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:703",
+      "id": "reuse_search-1",
+      "reason": "without naming the classification owner/memo, an implementer may add a parallel cache or reader in `serve.py` rather than extend the shared one.",
+      "text": "\u00a73's speed half imposes a \"GET /crew under one second on 40 live pointers\" gate but names no mechanism, while the per-pointer cost it must reduce is owned by `classify_pointer` (`reckon/crew/recovery.py:7789`) and its already-persisted memo (`_read_classification_memo`, `reckon/crew/recovery.py:7306`); the plan cites `_crew_rows` but not that owner.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-restarted-server-meets-its-shipped-measures.html#s4",
+      "id": "duplicate_owner-1",
+      "reason": "implementing \u00a74 literally would either duplicate the SPA's rendering in Python or add a headless-browser test, whereas the fact belongs at the `/_discover` owner the pin reaches.",
+      "text": "\u00a74's done-when asks that a test \"requests its sprint route and asserts the sprint renders\", but sprint existence is owned by the Python discovery layer (`reckon/serve.py` `/_discover` / `discover_plans`) and rendered by `docs/ui/sprint.jsx`; the landed pin correctly asserts the owner's output instead.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "11480941a3daa43a7a478c39fb9a63c0484890e7e1d6866534bd326afc20ecde",
+  "plan_slug": "the-restarted-server-meets-its-shipped-measures",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T170536622318-plan-review-of-the-restarted-server-meets-its-shipped-measures",
+  "reviewed_blob_sha": "346faea8f06f4008e0dfea3a2db27261bde5c783",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed. \u00a73's phase change substitutes the live view's single `crew.classify_pointer` classification for the stream-age heuristic inside `_crew_rows`, so every crew surface reads one judgement, not a spread of wrappers.",
+    "duplicate_owner": "pass \u2014 no shared infrastructure is forked: \u00a72 extends the project-state north-star owner and the one scan at `reckon/roadmap.py:2331`, \u00a73 extends `_crew_rows`/`classify_pointer`, \u00a74 extends the discovery owner. Two caveats are carried as findings.",
+    "reuse_search": "pass \u2014 the plan searched and extends existing owners: \u00a72 reuses the landed `north_stars` project-state write path (`reckon/project_state.py`, e8efbc7), the `plan-north-star` field (`reckon/_plan_html.py:158`) and the roadmap's existing `undeclared-north-star` / `unoriented-plan` scan (`reckon/roadmap.py:2331`); \u00a73 extends `_crew_rows` (`reckon/serve.py:703`) and `classify_pointer` (`reckon/crew/recovery.py:7789`); \u00a74 reuses the `_discover` sprint scan.",
+    "thin_wrapper": "pass \u2014 the plan adds no thin layer over existing machinery. \u00a73 keeps one residual stream-age branch inside the existing owner; it is a mechanical fallback, not a parallel path."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T19:12:12.840913+00:00"
+}

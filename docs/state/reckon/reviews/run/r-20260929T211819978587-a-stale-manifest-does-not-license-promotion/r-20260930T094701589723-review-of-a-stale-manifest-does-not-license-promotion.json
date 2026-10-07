@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:3915",
+    "reckon/crew/promotion.py:3655"
+  ],
+  "completed_at": "2026-09-30T10:04:55.273Z",
+  "dispatched_at": "2026-09-30T09:47:21Z",
+  "findings": [
+    {
+      "file": "tests/test_complete_refuses_a_live_run.py",
+      "line": "233",
+      "text": "the change reverses a contract this file pins -- a live worker with no manifest is left to recovery and promotes without a waiver -- and the file reaches the guard through the public reckon.crew API rather than importing reckon.crew.promotion, so the 38-file arm excluded it from both ends of the comparison: this review measured 5 passed 1 failed at head (e60a943d9, logs/guard-coverage-head.log) against 6 passed at base (cf729cc7d, logs/guard-coverage-base.log), so the promoted tree carries an added failure the run's evidence cannot see and its follow_ons do not name."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against cf729cc7d; the two fix commits change only the guard and the wording in reckon/crew/promotion.py, the waiver commit touches three test files, and the other three commits are the evidence fragment and its figure.",
+    "done_when": "the named shape (resumed run, stale complete manifest, live worker, crew complete refused) is measured by tests/test_a_stale_manifest_does_not_license_promotion.py:190 and recorded 4 passed EXIT=0 in logs/new-test-at-head.log, but the 38-file arm excludes that file so the base comparison cannot see the node's own cases.",
+    "goal": "the plan's follow-up asks that promotion be refused when a resumed run's stale terminal manifest would otherwise license it; reckon/crew/promotion.py:3426-3434 reads an attempt with no fresh verdict of its own as unfinished and the resumed shape built through record_resumption is refused.",
+    "manifest": "read; it records both arms and their logs, the four-case arm, both control logs, the waiver repairs and the /tmp cleanup; its fixture count of 21 omits the file this review measured red.",
+    "write_paths": "every path in the diff is inside the manifest's declared write paths; the fallout (tests/test_complete_refuses_a_live_run.py) lies outside the fence and is named in neither report."
+  },
+  "justifications": {
+    "durability": "the declared control reddens three of the four cases and the wording control reddens the fourth (logs/negative-control.log, logs/negative-control-wording.log), so the new admission is pinned, but the contract it reverses is left pinned too, by a test now red.",
+    "evidence": "the done-when's case is measured and its log recorded (4 passed, EXIT=0), but the arm carrying the base comparison excludes the module that covers the guard, so the run's zero-added-failure claim is true only of the population it chose and misses the added failure this review measured.",
+    "fit": "the guard reuses recovery's own reading rather than composing a second (reckon/crew/promotion.py:3419) and the new test file passes ruff check and format with no findings, while the waiver constant in tests/test_ledger.py:222 states why each literal reason exists.",
+    "goal_fidelity": "reckon/crew/promotion.py:3431 refuses the resumed shape the plan names and tests/test_a_stale_manifest_does_not_license_promotion.py:207 shows the precondition recovery.classify_pointer reads it running, though the same predicate also reverses an existing contract at tests/test_complete_refuses_a_live_run.py:233 that the goal did not ask to reverse.",
+    "scope_discipline": "every changed path is inside the manifest's declared write paths and the five commits carry nothing outside them, the wording fix at reckon/crew/promotion.py:3770 being a finding the review of this node's own earlier head raised."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan's follow-up (f-crpc-a-stale-manifest-does-not-license-promotion) asks that promotion be refused when a resumed run's stale terminal manifest would otherwise license it, and reckon/crew/promotion.py:3426-3434 now reads an attempt that has delivered no fresh verdict of its own as unfinished, so crew complete is refused for the resumed shape built through the real writer record_resumption (tests/test_a_stale_manifest_does_not_license_promotion.py:190).\nVERDICT done_when: the done-when's shape -- a resumed run, a stale complete manifest, a live worker, crew complete refused -- is measured by the node's own four cases (tests/test_a_stale_manifest_does_not_license_promotion.py:190, :222, :236, :257), recorded 4 passed EXIT=0 in logs/new-test-at-head.log; the 38-file arm that compares against base cannot see them because the new file imports nothing from reckon.crew.promotion, so the delta over base is a delta over pre-existing files only.\nVERDICT write_paths: every path in the diff against cf729cc7d -- reckon/crew/promotion.py, tests/test_a_stale_manifest_does_not_license_promotion.py, tests/test_ledger.py, tests/test_promotion_release.py, tests/test_promotion_releases_its_worktree.py, the evidence fragment and its figure -- is inside the paths the manifest declares; the fallout is outside the fence, in tests/test_complete_refuses_a_live_run.py, which the fence did not cover and which the run's own reports do not name.\nVERDICT manifest: read; it records the base and head arms with their logs, the four-case arm, two red control logs with their mutations, the waiver repairs and the /tmp cleanup, and its claim that the stricter admission reddened 21 promotion-plumbing fixtures is incomplete because the file it never names (tests/test_complete_refuses_a_live_run.py) pins the contract the change reverses and is red at head.\nVERDICT diff: read commit by commit against cf729cc7d; 94ed8d38d and 09ccc76f6 change reckon/crew/promotion.py (the guard at :3419-3458 and the wording at :3770), 6b38a62c1 adds the live-run waiver to 21 fixtures (one module constant for 20 call sites in tests/test_ledger.py, two release cases stating their own reason), and 4d6dd38f2, e7c708e02 and e60a943d9 add the evidence fragment and its figure only.\nCALL_SITES: reckon/crew/promotion.py:3915, reckon/crew/promotion.py:3655\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3431 refuses the resumed shape the plan names and tests/test_a_stale_manifest_does_not_license_promotion.py:207 shows the precondition recovery.classify_pointer reads it running, though the same predicate also reverses an existing contract at tests/test_complete_refuses_a_live_run.py:233 that the goal did not ask to reverse.\nSCORE evidence: 13\nJUSTIFICATION evidence: the done-when's case is measured and its log recorded (4 passed, EXIT=0), but the arm carrying the base comparison excludes the module that covers the guard, so the run's zero-added-failure claim is true only of the population it chose and misses the added failure this review measured.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the manifest's declared write paths and the five commits carry nothing outside them, the wording fix at reckon/crew/promotion.py:3770 being a finding the review of this node's own earlier head raised.\nSCORE durability: 16\nJUSTIFICATION durability: the declared control reddens three of the four cases and the wording control reddens the fourth (logs/negative-control.log, logs/negative-control-wording.log), so the new admission is pinned, but the contract it reverses is left pinned too, by a test now red.\nSCORE fit: 17\nJUSTIFICATION fit: the guard reuses recovery's own reading rather than composing a second (reckon/crew/promotion.py:3419) and the new test file passes ruff check and format with no findings, while the waiver constant in tests/test_ledger.py:222 states why each literal reason exists.\nFINDING tests/test_complete_refuses_a_live_run.py:233 the change reverses a contract this file pins -- a live worker with no manifest is left to recovery and promotes without a waiver -- and the file reaches the guard through the public reckon.crew API rather than importing reckon.crew.promotion, so the 38-file arm excluded it from both ends of the comparison: this review measured 5 passed 1 failed at head (e60a943d9, logs/guard-coverage-head.log) against 6 passed at base (cf729cc7d, logs/guard-coverage-base.log), so the promoted tree carries an added failure the run's evidence cannot see and its follow_ons do not name.\nREVIEWED_BASE: cf729cc7d376ec2ec4a8ed4d52fc4c32b33ac880\nREVIEWED_HEAD: e60a943d9f6870547c9f1b1bd9edd0682d40f7c7\n",
+  "review_run_id": "r-20260930T094701589723-review-of-a-stale-manifest-does-not-license-promotion",
+  "reviewed_base_sha": "cf729cc7d376ec2ec4a8ed4d52fc4c32b33ac880",
+  "reviewed_head_sha": "e60a943d9f6870547c9f1b1bd9edd0682d40f7c7",
+  "reviewed_run_id": "r-20260929T211819978587-a-stale-manifest-does-not-license-promotion",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T10:00:37.119340+00:00",
+  "total": 80
+}

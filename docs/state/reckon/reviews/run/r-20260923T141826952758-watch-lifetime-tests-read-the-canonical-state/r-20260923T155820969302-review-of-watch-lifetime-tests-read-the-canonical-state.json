@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T15:58:20.969302+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T141826952758-watch-lifetime-tests-read-the-canonical-state/manifest.md",
+      "line": "9",
+      "text": "the tests: line attributes the green run to head 484192a8 while the log it names, logs/after-head.log, carries \"# revision=19016a5441c1b5f314c4cf7fd8f434da6d8b4504\" as its own header, and the 3-failed base comparison has no surviving log because negative-control-base.log was overwritten by the mutation run at the same path, so neither half of the stated comparison can be reconstructed from the recorded receipts; re-running the command in the reviewed tree at a17ef6a2 gives 3 passed, so the substance holds and the defect is in the receipt."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base 19016a54; 484192a8 changes only tests/test_crew_watch_lifetime.py \u2014 four expectation sites, three docstrings and spec_level=\"exact\" on the dispatch fixture \u2014 and a17ef6a2 adds the \u00a77 landing note, the cumulative archive section and the figure, touching no plan-version or plan-modified meta.",
+    "done_when": "the done_when names the three test ids, the word each must read, the 3-passed-against-3-failed counts, no source change and the declared negative control; the manifest states the counts, both commits change no source file, and logs/negative-control-base.log repeats the declared mutation verbatim on its first line with all three tests redding at the same three assertion sites.",
+    "goal": "the node goal is that tests/test_crew_watch_lifetime.py asserts the watch state the classifier emits for an unreviewed complete run; the four expectation sites at tests/test_crew_watch_lifetime.py:184, tests/test_crew_watch_lifetime.py:197, tests/test_crew_watch_lifetime.py:219 and tests/test_crew_watch_lifetime.py:262 now read \"completed_unpromoted\", the word reckon/crew/recovery.py:3770 emits for a delivered complete run that carries no attached review, and re-running the gate in the reviewed tree at a17ef6a2 reports 3 passed.",
+    "manifest": "read at the reviewed run directory; it records status complete with the 3-passed and 3-failed counts and names its logs, but its head gate log's own header names the base revision 19016a54 rather than the head 484192a8 the tests: line attributes the green run to.",
+    "write_paths": "the declared fence is tests/test_crew_watch_lifetime.py, the cumulative landed record, docs/figures/a-follower-outlives-its-monitor and the plan page; the five paths in the two commits (git diff --name-status 19016a54..a17ef6a2) all lie inside it."
+  },
+  "justifications": {
+    "durability": "the four sites compare the classifier's emitted word against literals rather than against the phase the fixture writes at tests/test_crew_watch_lifetime.py:113, and logs/negative-control-base.log shows the old word put back reds all three tests \u2014 the signature a classifier regression to \"complete\" would produce.",
+    "evidence": "the green gate is recorded in logs/after-head.log, but that log's header at line 2 names revision=19016a54 while the manifest's tests: line attributes the run to head 484192a8, and the 3-failed base comparison survives in no log because negative-control-base.log was reused for the mutation run at the same path.",
+    "fit": "the three docstrings follow the module's one-line style and the spec_level=\"exact\" keyword at tests/test_crew_watch_lifetime.py:129 mirrors the requirement at reckon/crew/node.py:1027, with no plan, sprint or ticket identifier in any name.",
+    "goal_fidelity": "tests/test_crew_watch_lifetime.py:184 and tests/test_crew_watch_lifetime.py:262 read \"completed_unpromoted\", the word reckon/crew/recovery.py:3770 emits for an unreviewed delivered complete run, and the gate re-run in the reviewed tree at a17ef6a2 reports 3 passed.",
+    "scope_discipline": "every path in git diff --name-status 19016a54..a17ef6a2 lies inside the four declared write paths, and the fixture repair at tests/test_crew_watch_lifetime.py:129 is the level the dispatch boundary requires rather than an addition the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_crew_watch_lifetime.py asserts the watch state the classifier emits for an unreviewed complete run; the four expectation sites at tests/test_crew_watch_lifetime.py:184, tests/test_crew_watch_lifetime.py:197, tests/test_crew_watch_lifetime.py:219 and tests/test_crew_watch_lifetime.py:262 now read \"completed_unpromoted\", the word reckon/crew/recovery.py:3770 emits for a delivered complete run that carries no attached review, and re-running the gate in the reviewed tree at a17ef6a2 reports 3 passed.\n\nVERDICT done_when: the done_when names the three test ids, the word each must read, the 3-passed-against-3-failed counts, no source change and the declared negative control; the manifest states the counts, both commits change no source file, and logs/negative-control-base.log repeats the declared mutation verbatim on its first line with all three tests redding at the same three assertion sites.\n\nVERDICT write_paths: the declared fence is tests/test_crew_watch_lifetime.py, the cumulative landed record, docs/figures/a-follower-outlives-its-monitor and the plan page; the five paths in the two commits (git diff --name-status 19016a54..a17ef6a2) all lie inside it.\n\nVERDICT manifest: read at the reviewed run directory; it records status complete with the 3-passed and 3-failed counts and names its logs, but its head gate log's own header names the base revision 19016a54 rather than the head 484192a8 the tests: line attributes the green run to.\n\nVERDICT diff: read both commits against base 19016a54; 484192a8 changes only tests/test_crew_watch_lifetime.py \u2014 four expectation sites, three docstrings and spec_level=\"exact\" on the dispatch fixture \u2014 and a17ef6a2 adds the \u00a77 landing note, the cumulative archive section and the figure, touching no plan-version or plan-modified meta.\n\nCALL_SITES: none\n\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_crew_watch_lifetime.py:184 and tests/test_crew_watch_lifetime.py:262 read \"completed_unpromoted\", the word reckon/crew/recovery.py:3770 emits for an unreviewed delivered complete run, and the gate re-run in the reviewed tree at a17ef6a2 reports 3 passed.\n\nSCORE evidence: 15\nJUSTIFICATION evidence: the green gate is recorded in logs/after-head.log, but that log's header at line 2 names revision=19016a54 while the manifest's tests: line attributes the run to head 484192a8, and the 3-failed base comparison survives in no log because negative-control-base.log was reused for the mutation run at the same path.\n\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --name-status 19016a54..a17ef6a2 lies inside the four declared write paths, and the fixture repair at tests/test_crew_watch_lifetime.py:129 is the level the dispatch boundary requires rather than an addition the goal does not imply.\n\nSCORE durability: 18\nJUSTIFICATION durability: the four sites compare the classifier's emitted word against literals rather than against the phase the fixture writes at tests/test_crew_watch_lifetime.py:113, and logs/negative-control-base.log shows the old word put back reds all three tests \u2014 the signature a classifier regression to \"complete\" would produce.\n\nSCORE fit: 18\nJUSTIFICATION fit: the three docstrings follow the module's one-line style and the spec_level=\"exact\" keyword at tests/test_crew_watch_lifetime.py:129 mirrors the requirement at reckon/crew/node.py:1027, with no plan, sprint or ticket identifier in any name.\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T141826952758-watch-lifetime-tests-read-the-canonical-state/manifest.md:9 the tests: line attributes the green run to head 484192a8 while the log it names, logs/after-head.log, carries \"# revision=19016a5441c1b5f314c4cf7fd8f434da6d8b4504\" as its own header, and the 3-failed base comparison has no surviving log because negative-control-base.log was overwritten by the mutation run at the same path, so neither half of the stated comparison can be reconstructed from the recorded receipts; re-running the command in the reviewed tree at a17ef6a2 gives 3 passed, so the substance holds and the defect is in the receipt.",
+  "review_run_id": "r-20260923T155820969302-review-of-watch-lifetime-tests-read-the-canonical-state",
+  "reviewed_base_sha": "19016a5441c1b5f314c4cf7fd8f434da6d8b4504",
+  "reviewed_head_sha": "a17ef6a2bf481bb50adeda9f49bb6996573cf871",
+  "reviewed_run_id": "r-20260923T141826952758-watch-lifetime-tests-read-the-canonical-state",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T16:48:20.341895+00:00",
+  "total": 88
+}

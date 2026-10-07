@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:3736"
+  ],
+  "completed_at": "2026-09-26T15:39:50.376Z",
+  "dispatched_at": "2026-09-26T14:34:45Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "317",
+      "text": "the re-query's probe adapter refuses the very probe the lane's command was read from: under the resolved host configuration command 'codex' is declared by two pools ({'codex-sub', 'spark-sub'}), so _probe_is_lane_owned fails the groups == {lane_group} clause for every codex-family lane (measured: all five report probe_is_lane_owned=False), probe_reading returns None, and no stale lane can reach the adoption at reckon/mcp_views.py:953 -- the goal's fresh-figure half is dead on this workstation while only its honest-unknown half fires."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "901",
+      "text": "a lane whose stale receipt has been replaced by the probe's own rows still emits probe_status 'unmatched' with probe_detail 'probe answered, but its quota windows do not match this lane's receipt' beside quota_source 'probe' and requeried true, so the row contradicts itself and a caller reading probe_status to decide whether the probe describes this lane is told no while the lane's rows came from it; the added test pins the contradiction at tests/test_lanes_view_is_live.py:231."
+    },
+    {
+      "file": "tests/test_lanes_view_is_live.py",
+      "line": "117",
+      "text": "the autouse real-home guard inventories the depth-two directory nodes under the configuration home, including crew/runs and crew/live, whose mtimes move on every peer dispatch (measured 2026-09-26: crew/runs mtime 17:14:54.9 and crew/live 17:14:56.3 against now 17:14:57, with five run directories created in the preceding twenty seconds), so a busy fleet reddens every case in the file and the failure message accuses the lanes-view composition of writing the real home."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "283",
+      "text": "_lane_position computes the binding-horizon figure and a serving state into a Reading whose only consumed field is observed_at, because the view reads just reported.requeried (reckon/mcp_views.py:948) and reported.serving_state (reckon/mcp_views.py:951), and on the success path both the figure and the state come from the probe adapter at reckon/mcp_views.py:321-329, so the rule documented at reckon/mcp_views.py:245 reads as load-bearing here while nothing observes it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit (6d95a559 source, 81c175be test sharpening, 82a19cb5 plan record); the source commit adds the resolver call and its two adapters, and nothing in the diff reaches outside the goal.",
+    "done_when": "the done_when's three behaviours are driven through the production crew_lanes_view by tests/test_lanes_view_is_live.py:195 (stale lane adopts the probe figure, probe called once), :261 (failed re-query keeps the old figure with its age and unknown) and :292 (a reading inside the shelf life is never re-queried); the manifest records the four-file cohort at 43 passed, which I reproduced at the reviewed head.",
+    "goal": "the goal is that a lane whose window reading is older than its shelf life is re-queried rather than reported as current; reckon/mcp_views.py:927-961 wires exactly that at the one composition point, though on the declared host configuration the fresh figure it can report is unreachable for every codex-family lane (see the finding at reckon/mcp_views.py:317).",
+    "manifest": "read; status complete; it names the three commits, the five changed paths, the base and head arms with their log paths, the negative control, and the ruff delta at base and head.",
+    "write_paths": "read the source dispatch prompt; the diff from 6b8decd9ea4bb9a68eade43bdc15a15de03fdcee to 82a19cb53ac303418d49ea254c60baf21ad040b7 touches five files, every one inside the declared fence."
+  },
+  "justifications": {
+    "durability": "the negative control reddens three added assertions and the pair at tests/test_lanes_view_is_live.py:236 fails both when a re-query never happens and when the probe is asked twice, but the branch those assertions pin cannot fire on this host (reckon/mcp_views.py:317) and the autouse guard at tests/test_lanes_view_is_live.py:117 is fleet-coupled.",
+    "evidence": "the four-file gate is recorded (logs/head-arm.log at 81c175be, 43 passed) and I reproduced it at 82a19cb5 in one invocation, and logs/negative-control.log shows the added assertions red under the dispatch-base behaviour, though logs/base-arm.log ran the pre-change test file, so the base comparison is against a different test set.",
+    "fit": "the added helpers at reckon/mcp_views.py:245-332 follow the module's private-helper, docstring and comment idiom, and no added name, comment or commit line carries a plan, sprint or ticket identifier or an authorship line.",
+    "goal_fidelity": "reckon/mcp_views.py:317 gates the re-query's probe on _probe_is_lane_owned, which under the resolved host configuration returns False for all five codex-family lanes, so those lanes keep reporting the stale receipt figure the goal set out to replace.",
+    "scope_discipline": "git diff --name-only 6b8decd9 82a19cb5 lists exactly the five paths the manifest declares as changed_paths, all inside the fence, and no plan-version or plan-modified meta line appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a lane whose window reading is older than its shelf life is re-queried rather than reported as current; reckon/mcp_views.py:927-961 wires exactly that at the one composition point, though on the declared host configuration the fresh figure it can report is unreachable for every codex-family lane (see the finding at reckon/mcp_views.py:317).\nVERDICT done_when: the done_when's three behaviours are driven through the production crew_lanes_view by tests/test_lanes_view_is_live.py:195 (stale lane adopts the probe figure, probe called once), :261 (failed re-query keeps the old figure with its age and unknown) and :292 (a reading inside the shelf life is never re-queried); the manifest records the four-file cohort at 43 passed, which I reproduced at the reviewed head.\nVERDICT write_paths: read the source dispatch prompt; the diff from 6b8decd9ea4bb9a68eade43bdc15a15de03fdcee to 82a19cb53ac303418d49ea254c60baf21ad040b7 touches five files, every one inside the declared fence.\nVERDICT manifest: read; status complete; it names the three commits, the five changed paths, the base and head arms with their log paths, the negative control, and the ruff delta at base and head.\nVERDICT diff: read commit by commit (6d95a559 source, 81c175be test sharpening, 82a19cb5 plan record); the source commit adds the resolver call and its two adapters, and nothing in the diff reaches outside the goal.\nCALL_SITES: reckon/mcp.py:3736\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:317 gates the re-query's probe on _probe_is_lane_owned, which under the resolved host configuration returns False for all five codex-family lanes, so those lanes keep reporting the stale receipt figure the goal set out to replace.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four-file gate is recorded (logs/head-arm.log at 81c175be, 43 passed) and I reproduced it at 82a19cb5 in one invocation, and logs/negative-control.log shows the added assertions red under the dispatch-base behaviour, though logs/base-arm.log ran the pre-change test file, so the base comparison is against a different test set.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff --name-only 6b8decd9 82a19cb5 lists exactly the five paths the manifest declares as changed_paths, all inside the fence, and no plan-version or plan-modified meta line appears in the diff.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control reddens three added assertions and the pair at tests/test_lanes_view_is_live.py:236 fails both when a re-query never happens and when the probe is asked twice, but the branch those assertions pin cannot fire on this host (reckon/mcp_views.py:317) and the autouse guard at tests/test_lanes_view_is_live.py:117 is fleet-coupled.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers at reckon/mcp_views.py:245-332 follow the module's private-helper, docstring and comment idiom, and no added name, comment or commit line carries a plan, sprint or ticket identifier or an authorship line.\nFINDING reckon/mcp_views.py:317 the re-query's probe adapter refuses the very probe the lane's command was read from: under the resolved host configuration command 'codex' is declared by two pools ({'codex-sub', 'spark-sub'}), so _probe_is_lane_owned fails the groups == {lane_group} clause for every codex-family lane (measured: all five report probe_is_lane_owned=False), probe_reading returns None, and no stale lane can reach the adoption at reckon/mcp_views.py:953 -- the goal's fresh-figure half is dead on this workstation while only its honest-unknown half fires.\nFINDING reckon/mcp_views.py:901 a lane whose stale receipt has been replaced by the probe's own rows still emits probe_status 'unmatched' with probe_detail 'probe answered, but its quota windows do not match this lane's receipt' beside quota_source 'probe' and requeried true, so the row contradicts itself and a caller reading probe_status to decide whether the probe describes this lane is told no while the lane's rows came from it; the added test pins the contradiction at tests/test_lanes_view_is_live.py:231.\nFINDING tests/test_lanes_view_is_live.py:117 the autouse real-home guard inventories the depth-two directory nodes under the configuration home, including crew/runs and crew/live, whose mtimes move on every peer dispatch (measured 2026-09-26: crew/runs mtime 17:14:54.9 and crew/live 17:14:56.3 against now 17:14:57, with five run directories created in the preceding twenty seconds), so a busy fleet reddens every case in the file and the failure message accuses the lanes-view composition of writing the real home.\nFINDING reckon/mcp_views.py:283 _lane_position computes the binding-horizon figure and a serving state into a Reading whose only consumed field is observed_at, because the view reads just reported.requeried (reckon/mcp_views.py:948) and reported.serving_state (reckon/mcp_views.py:951), and on the success path both the figure and the state come from the probe adapter at reckon/mcp_views.py:321-329, so the rule documented at reckon/mcp_views.py:245 reads as load-bearing here while nothing observes it.",
+  "review_run_id": "r-20260926T143427093254-review-of-stale-reading-requery-reaches-lanes-view",
+  "reviewed_base_sha": "6b8decd9ea4bb9a68eade43bdc15a15de03fdcee",
+  "reviewed_head_sha": "82a19cb53ac303418d49ea254c60baf21ad040b7",
+  "reviewed_run_id": "r-20260926T095432219836-stale-reading-requery-reaches-lanes-view",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 13,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T15:31:58.067945+00:00",
+  "total": 79
+}

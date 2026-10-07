@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:1409 the `crew dispatch` click command reaching crew_dispatch at :1595 (the only production caller; _emit_dry_run_request_error and _with_resolved_overrides and _dispatch_override_resolution are cli-local helpers with no callers outside reckon/cli.py)"
+  ],
+  "completed_at": "2026-10-03T02:52:29.409Z",
+  "dispatched_at": "2026-10-03T02:40:29Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "1782",
+      "severity": "blocking",
+      "text": "blocking: the budget-hold dry-run refusal is emitted with dry_run: True but without _with_resolved_overrides, so on a --set-carrying dry run that hits a budget hold a caller still cannot tell an override that resolved from one that never applied -- the exact defect section 7 exists to remove; the node's done-when (\"every dry-run refusal document ... carries ... the override echo\") is therefore not met."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "1796",
+      "severity": "follow-on",
+      "text": "follow-on: the plan-unavailable dry-run refusal carries the echo but omits dry_run: true; the same holds for plan-review-missing (reckon/cli.py:1809) and the competence-limit refusal (reckon/cli.py:1817). The comment at :1803 says these deliberately reuse the launching path's document shape, so this may be by design, but the done-when's literal text requires dry_run: true on every dry-run refusal document and these are emitted on the dry-run path."
+    }
+  ],
+  "head_log_revision": "b6a1e2b40e0d1a1a28440d014c23021766f57573",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit from 41e6fc48f: b6a1e2b40 reorders the availability refusal to after the dry-run override resolution so it can carry the echo, routes the --local FlightConfigError dry-run branch through _emit_dry_run_request_error with the resolution, widens _emit_dry_run_request_error with an optional resolution, and fixes a base-failing sibling test's clock mask for _ms durations; baddc6cef records the evidence fragment. Only reckon/cli.py changes behaviour.",
+    "done_when": "the done-when is universal -- \"every dry-run refusal document, those two included, carries dry_run: true and the override echo\" -- and a test must drive each of the two; the two named refusals are driven and asserted by tests/test_every_dry_run_refusal_carries_the_echo.py, but the universal clause is not met: the budget-hold dry-run refusal at reckon/cli.py:1781 is emitted with dry_run: True and no _with_resolved_overrides call, so it still omits the echo, and the plan-unavailable (:1793), plan-review-missing (:1802) and competence-limit (:1815) dry-run refusals carry the echo but omit dry_run: true.",
+    "goal": "the node's goal is that every dry-run refusal document carries dry_run: true and the --set override echo, the availability competence refusal and the --local selection failure included; the diff fixes both named refusals in reckon/cli.py (the availability refusal at :1743 now attaches the dry_run marker and the echo, and the --local FlightConfigError branch at :1686 routes through _emit_dry_run_request_error with the resolution), and I confirmed both with the node's own test file re-run at head (2 passed).",
+    "manifest": "read; status complete, both gate arms recorded with revisions and literal absolute commands and readable logs, the negative control names its log and its designed failing case (KeyError 'dry_run' when the availability refusal is emitted before the resolution), commits b6a1e2b40/baddc6cef match the tree, and the one head-only failure id is held for adjudication rather than promoted through the gap.",
+    "write_paths": "git diff --stat 41e6fc48f..baddc6cef names exactly reckon/cli.py, tests/test_every_dry_run_refusal_carries_the_echo.py, tests/test_a_brief_points_rather_than_quotes.py and docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/every-dry-run-refusal-carries-the-echo.html, all inside the node's declared write paths, and git status is clean at head."
+  },
+  "justifications": {
+    "durability": "the availability and --local guards are real -- reinstating the pre-fix order reds the availability case (recorded in logs/negative-control.log) and removing the --local resolution would KeyError on payload[\"dry_run\"] -- but no test or negative control covers the budget-hold, plan-unavailable, plan-review-missing or competence-limit dry-run refusals, so the \"every\" clause is unguarded.",
+    "evidence": "both gate arms are recorded with revisions and literal absolute commands and readable logs, the added-failure count and ids derive from the reviewed run's own logs (1 added id), and the negative control is a real red I reproduced by reading logs/negative-control.log (KeyError 'dry_run'); four points withheld because the gate measures only the two named refusals and nothing asserts the \"every dry-run refusal\" clause.",
+    "fit": "the new and edited comments describe mechanism (reckon/cli.py:1694, :1758) with no version, plan label or ticket reference, and the new test file's names state what they assert; one point withheld only for the helper's widened signature defaulting to an empty echo.",
+    "goal_fidelity": "the two named refusals carry dry_run and the echo (reckon/cli.py:1757-1763, :1693-1704) and the tests drive them, but the done-when's universal clause is unmet -- the budget-hold refusal (reckon/cli.py:1781) still omits the echo and three further dry-run refusals omit the dry_run marker, so five points are withheld.",
+    "scope_discipline": "every path in the diff 41e6fc48f..baddc6cef is inside the node's declared write paths and git status is clean at head; two points withheld because the change also edits tests/test_a_brief_points_rather_than_quotes.py, a sibling test not named in the goal, even though the mask fix it carries is in scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every dry-run refusal document carries dry_run: true and the --set override echo, the availability competence refusal and the --local selection failure included; the diff fixes both named refusals in reckon/cli.py (the availability refusal at :1743 now attaches the dry_run marker and the echo, and the --local FlightConfigError branch at :1686 routes through _emit_dry_run_request_error with the resolution), and I confirmed both with the node's own test file re-run at head (2 passed).\nVERDICT done_when: the done-when is universal -- \"every dry-run refusal document, those two included, carries dry_run: true and the override echo\" -- and a test must drive each of the two; the two named refusals are driven and asserted by tests/test_every_dry_run_refusal_carries_the_echo.py, but the universal clause is not met: the budget-hold dry-run refusal at reckon/cli.py:1781 is emitted with dry_run: True and no _with_resolved_overrides call, so it still omits the echo, and the plan-unavailable (:1793), plan-review-missing (:1802) and competence-limit (:1815) dry-run refusals carry the echo but omit dry_run: true.\nVERDICT write_paths: git diff --stat 41e6fc48f..baddc6cef names exactly reckon/cli.py, tests/test_every_dry_run_refusal_carries_the_echo.py, tests/test_a_brief_points_rather_than_quotes.py and docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/every-dry-run-refusal-carries-the-echo.html, all inside the node's declared write paths, and git status is clean at head.\nVERDICT manifest: read; status complete, both gate arms recorded with revisions and literal absolute commands and readable logs, the negative control names its log and its designed failing case (KeyError 'dry_run' when the availability refusal is emitted before the resolution), commits b6a1e2b40/baddc6cef match the tree, and the one head-only failure id is held for adjudication rather than promoted through the gap.\nVERDICT diff: read commit by commit from 41e6fc48f: b6a1e2b40 reorders the availability refusal to after the dry-run override resolution so it can carry the echo, routes the --local FlightConfigError dry-run branch through _emit_dry_run_request_error with the resolution, widens _emit_dry_run_request_error with an optional resolution, and fixes a base-failing sibling test's clock mask for _ms durations; baddc6cef records the evidence fragment. Only reckon/cli.py changes behaviour.\nCALL_SITES: reckon/cli.py:1409 the `crew dispatch` click command reaching crew_dispatch at :1595 (the only production caller; _emit_dry_run_request_error and _with_resolved_overrides and _dispatch_override_resolution are cli-local helpers with no callers outside reckon/cli.py)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the two named refusals carry dry_run and the echo (reckon/cli.py:1757-1763, :1693-1704) and the tests drive them, but the done-when's universal clause is unmet -- the budget-hold refusal (reckon/cli.py:1781) still omits the echo and three further dry-run refusals omit the dry_run marker, so five points are withheld.\nSCORE evidence: 16\nJUSTIFICATION evidence: both gate arms are recorded with revisions and literal absolute commands and readable logs, the added-failure count and ids derive from the reviewed run's own logs (1 added id), and the negative control is a real red I reproduced by reading logs/negative-control.log (KeyError 'dry_run'); four points withheld because the gate measures only the two named refusals and nothing asserts the \"every dry-run refusal\" clause.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff 41e6fc48f..baddc6cef is inside the node's declared write paths and git status is clean at head; two points withheld because the change also edits tests/test_a_brief_points_rather_than_quotes.py, a sibling test not named in the goal, even though the mask fix it carries is in scope.\nSCORE durability: 15\nJUSTIFICATION durability: the availability and --local guards are real -- reinstating the pre-fix order reds the availability case (recorded in logs/negative-control.log) and removing the --local resolution would KeyError on payload[\"dry_run\"] -- but no test or negative control covers the budget-hold, plan-unavailable, plan-review-missing or competence-limit dry-run refusals, so the \"every\" clause is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the new and edited comments describe mechanism (reckon/cli.py:1694, :1758) with no version, plan label or ticket reference, and the new test file's names state what they assert; one point withheld only for the helper's widened signature defaulting to an empty echo.\nFINDING reckon/cli.py:1782 blocking: the budget-hold dry-run refusal is emitted with dry_run: True but without _with_resolved_overrides, so on a --set-carrying dry run that hits a budget hold a caller still cannot tell an override that resolved from one that never applied -- the exact defect section 7 exists to remove; the node's done-when (\"every dry-run refusal document ... carries ... the override echo\") is therefore not met.\nFINDING reckon/cli.py:1796 follow-on: the plan-unavailable dry-run refusal carries the echo but omits dry_run: true; the same holds for plan-review-missing (reckon/cli.py:1809) and the competence-limit refusal (reckon/cli.py:1817). The comment at :1803 says these deliberately reuse the launching path's document shape, so this may be by design, but the done-when's literal text requires dry_run: true on every dry-run refusal document and these are emitted on the dry-run path.\nREVIEWED_BASE_SHA: 41e6fc48f5b7f9293694519d4c13c4e8c146bb82\nREVIEWED_HEAD_SHA: baddc6cef37d5fee913ca844a825c3bcc844daaa\n",
+  "review_run_id": "r-20261003T023940873974-review-of-every-dry-run-refusal-carries-the-echo",
+  "reviewed_base_sha": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "reviewed_head_sha": "baddc6cef37d5fee913ca844a825c3bcc844daaa",
+  "reviewed_run_id": "r-20261003T014604919126-every-dry-run-refusal-carries-the-echo",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T02:50:53.644894+00:00",
+  "total": 83
+}

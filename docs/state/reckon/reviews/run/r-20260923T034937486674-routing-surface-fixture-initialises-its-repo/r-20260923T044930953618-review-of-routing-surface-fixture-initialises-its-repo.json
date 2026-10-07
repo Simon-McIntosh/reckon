@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 4,
+  "call_sites": [
+    "tests/test_routing_surface.py:98 ledger.append_run(repository.name",
+    "record",
+    "root=repository)",
+    "reached through the _project fixture helper at tests/test_routing_surface.py:21 and every fixture driven through _run; this is append_run's production entry point into the initialisation guard"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T04:49:30.953618+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034937486674-routing-surface-fixture-initialises-its-repo/after.log",
+      "line": "1",
+      "text": "the gate log's first line reads revision 4940e86edb78f9eb18c38b17e5ec1a16343f4397, the diff base, while the run it records measured a worktree carrying the fixture change \u2014 so the single field the convention uses to pin a revision names a tree in which the repair does not exist, and a later reader comparing gates across repairs attributes this pass to the wrong revision; before.log and negative-control.log carry the same revision and the same gap."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 4940e86e, e79a73e4 adds only the git init and its import to _project and 7d759ca8 lands the plan paragraph and the cumulative evidence anchor, with no change outside the declared paths and no test disabled, skipped or relaxed.",
+    "done_when": "the done-when requires 0 failed and 0 errors where the file reported 2 failed, 6 errors and 6 passed, with before and after logs, and a negative control removing the git init; before.log and after.log are recorded, and I re-ran the gate at the reviewed head 7d759ca8 and reproduced 14 passed in 5.07s.",
+    "goal": "the goal is that tests/test_routing_surface.py's _project fixture initialise a git repository so ledger.append_run accepts it, turning the file's 2 failures and 6 errors green, and the landed change adds exactly that: a subprocess git init -q in _project at tests/test_routing_surface.py:27, with no production file touched.",
+    "manifest": "the manifest is complete and self-locating, naming base 4940e86e, head commits e79a73e4 and 7d759ca8, the gate command and its 14 passed result, the before/after/negative-control log paths, and the declared mutation string verbatim on its own negative_control_log line.",
+    "write_paths": "the declared paths are tests/test_routing_surface.py, docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html, docs/figures/a-review-dies-where-nobody-is-looking and docs/plans/a-review-dies-where-nobody-is-looking.html, and git diff --numstat 4940e86e..7d759ca8 shows exactly those four with 114 insertions and zero deletions."
+  },
+  "justifications": {
+    "durability": "the negative control at the declared string removes the git init and the same eight failures return with the guard's own refusal, and I confirmed at source that the guard's branch is load-bearing \u2014 _ledger_ever_tracked returns None when git cannot answer so the test at reckon/ledger.py:1855 refuses, and git init moves the fixture to the False branch that creates the absent ledger as a genuinely new project.",
+    "evidence": "before.log records 2 failed, 6 passed, 6 errors, after.log records 14 passed in 34.21s, negative-control.log repeats the declared mutation verbatim and returns the identical eight ids, and the traceback in both is the guard's own reckon.ledger.LedgerError at reckon/ledger.py:1860 rather than an unrelated error, but all three logs name revision 4940e86e in their first line while the after and negative-control runs measured a tree carrying the change, so the field that pins a gate to a revision points at a revision without it.",
+    "fit": "the fixture reuses the file's own _project helper, the git init is a plain subprocess with check and capture_output, the added comment explains the guard's discrimination rather than naming a ticket or a plan stage, and the evidence anchor carries a project-absolute figure src /reckon/figures/a-review-dies-where-nobody-is-looking/ledger-init-guard.svg whose id=\"effective-window\" target the plan link resolves.",
+    "goal_fidelity": "the change lands the stated goal directly \u2014 _project at tests/test_routing_surface.py:21 now runs git init -q in the project directory it creates, and the file passes at the reviewed head \u2014 but the dispatch's done-when named base 90f0ea7f while the node measured and recorded 4940e86e, a stale revision literal in the measure rather than in the work.",
+    "scope_discipline": "git diff --numstat 4940e86e..7d759ca8 is four files, 114 insertions, zero deletions, exactly the four declared paths, and the plan-version and plan-modified meta lines are untouched while the plan paragraph is appended rather than rewritten."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_routing_surface.py's _project fixture initialise a git repository so ledger.append_run accepts it, turning the file's 2 failures and 6 errors green, and the landed change adds exactly that: a subprocess git init -q in _project at tests/test_routing_surface.py:27, with no production file touched.\nVERDICT done_when: the done-when requires 0 failed and 0 errors where the file reported 2 failed, 6 errors and 6 passed, with before and after logs, and a negative control removing the git init; before.log and after.log are recorded, and I re-ran the gate at the reviewed head 7d759ca8 and reproduced 14 passed in 5.07s.\nVERDICT write_paths: the declared paths are tests/test_routing_surface.py, docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html, docs/figures/a-review-dies-where-nobody-is-looking and docs/plans/a-review-dies-where-nobody-is-looking.html, and git diff --numstat 4940e86e..7d759ca8 shows exactly those four with 114 insertions and zero deletions.\nVERDICT manifest: the manifest is complete and self-locating, naming base 4940e86e, head commits e79a73e4 and 7d759ca8, the gate command and its 14 passed result, the before/after/negative-control log paths, and the declared mutation string verbatim on its own negative_control_log line.\nVERDICT diff: read commit by commit against 4940e86e, e79a73e4 adds only the git init and its import to _project and 7d759ca8 lands the plan paragraph and the cumulative evidence anchor, with no change outside the declared paths and no test disabled, skipped or relaxed.\nCALL_SITES: tests/test_routing_surface.py:98 ledger.append_run(repository.name, record, root=repository), reached through the _project fixture helper at tests/test_routing_surface.py:21 and every fixture driven through _run; this is append_run's production entry point into the initialisation guard\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the change lands the stated goal directly \u2014 _project at tests/test_routing_surface.py:21 now runs git init -q in the project directory it creates, and the file passes at the reviewed head \u2014 but the dispatch's done-when named base 90f0ea7f while the node measured and recorded 4940e86e, a stale revision literal in the measure rather than in the work.\nSCORE evidence: 17\nJUSTIFICATION evidence: before.log records 2 failed, 6 passed, 6 errors, after.log records 14 passed in 34.21s, negative-control.log repeats the declared mutation verbatim and returns the identical eight ids, and the traceback in both is the guard's own reckon.ledger.LedgerError at reckon/ledger.py:1860 rather than an unrelated error, but all three logs name revision 4940e86e in their first line while the after and negative-control runs measured a tree carrying the change, so the field that pins a gate to a revision points at a revision without it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 4940e86e..7d759ca8 is four files, 114 insertions, zero deletions, exactly the four declared paths, and the plan-version and plan-modified meta lines are untouched while the plan paragraph is appended rather than rewritten.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control at the declared string removes the git init and the same eight failures return with the guard's own refusal, and I confirmed at source that the guard's branch is load-bearing \u2014 _ledger_ever_tracked returns None when git cannot answer so the test at reckon/ledger.py:1855 refuses, and git init moves the fixture to the False branch that creates the absent ledger as a genuinely new project.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture reuses the file's own _project helper, the git init is a plain subprocess with check and capture_output, the added comment explains the guard's discrimination rather than naming a ticket or a plan stage, and the evidence anchor carries a project-absolute figure src /reckon/figures/a-review-dies-where-nobody-is-looking/ledger-init-guard.svg whose id=\"effective-window\" target the plan link resolves.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034937486674-routing-surface-fixture-initialises-its-repo/after.log:1 the gate log's first line reads revision 4940e86edb78f9eb18c38b17e5ec1a16343f4397, the diff base, while the run it records measured a worktree carrying the fixture change \u2014 so the single field the convention uses to pin a revision names a tree in which the repair does not exist, and a later reader comparing gates across repairs attributes this pass to the wrong revision; before.log and negative-control.log carry the same revision and the same gap.\nREVISION: 7d759ca8f819429d2c84c384c7c025f28736419e",
+  "review_run_id": "r-20260923T044930953618-review-of-routing-surface-fixture-initialises-its-repo",
+  "reviewed_head_sha": "7d759ca8f819429d2c84c384c7c025f28736419e",
+  "reviewed_run_id": "r-20260923T034937486674-routing-surface-fixture-initialises-its-repo",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T04:59:39.843792+00:00",
+  "total": 94
+}

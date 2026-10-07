@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "Derived from the reviewed run's own gate logs as the node requires. baseline_suite base-arm.log: revision 50b92333897d973bf2193d66231f896620e30b2f, 18 passed EXIT=0, completed=true, failure_ids []. after_suite head-arm.log: revision 4640cde0c, 24 passed EXIT=0, completed=true, failure_ids []. Zero added failures. My independent re-run of the same gate at the reviewed head 2f123fbc7 read 24 passed EXIT=0, so the guard still holds after the delta.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:10266",
+    "reckon/crew/resumption.py:609"
+  ],
+  "carried_forward": {
+    "at": "2026-10-02T22:10:34Z",
+    "from": "8935a408b81a91f2dfb2e3737786404f7fecaddd",
+    "paths": [
+      "docs/plans/a-finished-worktree-releases-without-a-force.html",
+      "docs/state/reckon/runs/r-20261002T215733991612-review-of-resume-refuses-a-session-over-the-window.json"
+    ],
+    "to": "2877bbb423d923225583a108f835d6e1bf1e1813"
+  },
+  "completed_at": "2026-10-02T22:07:18.259Z",
+  "dispatched_at": "2026-10-02T21:58:09Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203452309560-resume-refuses-a-session-over-the-window/manifest.md",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the suite-scale verification of the merged head is still owed - the run's full-suite arm was abandoned on a node at load ~45, so only the three-to-four file gate that reaches the resume doors was recorded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203452309560-resume-refuses-a-session-over-the-window/manifest.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the two call sites in dispatch.py and resumption.py remain outside the declared scope; dispatch.py is concurrently claimed by peer nodes, so the merge owner must reconcile it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "re-read the delta cefab8613..2f123fbc7 (115 commits, 81 paths); the guard functions, their two call sites and their dependencies are untouched by every commit the run gained since its review, so the delta introduces no regression to this node.",
+    "done_when": "tests/test_resume_refuses_a_session_over_the_window.py covers a within-window resume through both doors and an over-window refusal with no new attempt; the run's own test-logs/head-arm.log records 24 passed EXIT=0 and my independent re-run at the new head read the same 24 passed EXIT=0.",
+    "goal": "the section-5 deliverable is unchanged at head 2f123fbc7 - reckon/crew/recovery.py:5113 resume_window_refusal still refuses a session whose last recorded input exceeds the lane's published window before any attempt opens, reached from both resume doors.",
+    "manifest": "read; status complete, commits 4640cde0c and cefab8613, baseline_suite 18 passed completed EXIT=0, after_suite 24 passed completed EXIT=0, negative control 3 failed / 3 passed EXIT=1.",
+    "write_paths": "the run's two commits touch reckon/crew/recovery.py, reckon/crew/dispatch.py, reckon/crew/resumption.py, its new test and its evidence fragment; dispatch.py and resumption.py lie outside the six declared write paths and are declared in the manifest."
+  },
+  "justifications": {
+    "durability": "the declared negative control removes the window check from both call sites and the over-window sessions then open their attempts, 3 failed / 3 passed EXIT=1, so the guard is not green by disabling itself.",
+    "evidence": "the run's own test-logs/head-arm.log records 24 passed EXIT=0 and my independent re-run of the same gate at 2f123fbc7 read 24 passed EXIT=0, with zero added failure ids against its base arm.",
+    "fit": "the guard at reckon/crew/recovery.py:5113 reuses _charged_input_from_usage and stream_paths_newest_first rather than re-deriving them, and no forbidden name appears in the changed code.",
+    "goal_fidelity": "reckon/crew/recovery.py:5113 still takes the smaller of the lane's published windows and returns the refusal before any write, so the section-5 goal holds at the new head.",
+    "scope_discipline": "reckon/crew/dispatch.py:68 and reckon/crew/resumption.py:74 remain outside the six declared write paths, declared in the manifest as the two shared resume doors the guard must be called from."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: cefab8613386cf578bdbc20c49362ca69b0d9cdb\nreviewed_head_sha: 2f123fbc71542c09462f226d2a33ff52c62181cf\nVERDICT goal: the section-5 deliverable is unchanged at head 2f123fbc7 - reckon/crew/recovery.py:5113 resume_window_refusal still refuses a session whose last recorded input exceeds the lane's published window before any attempt opens, reached from both resume doors.\nVERDICT done_when: tests/test_resume_refuses_a_session_over_the_window.py covers a within-window resume through both doors and an over-window refusal with no new attempt; the run's own test-logs/head-arm.log records 24 passed EXIT=0 and my independent re-run at the new head read the same 24 passed EXIT=0.\nVERDICT write_paths: the run's two commits touch reckon/crew/recovery.py, reckon/crew/dispatch.py, reckon/crew/resumption.py, its new test and its evidence fragment; dispatch.py and resumption.py lie outside the six declared write paths and are declared in the manifest.\nVERDICT manifest: read; status complete, commits 4640cde0c and cefab8613, baseline_suite 18 passed completed EXIT=0, after_suite 24 passed completed EXIT=0, negative control 3 failed / 3 passed EXIT=1.\nVERDICT diff: re-read the delta cefab8613..2f123fbc7 (115 commits, 81 paths); the guard functions, their two call sites and their dependencies are untouched by every commit the run gained since its review, so the delta introduces no regression to this node.\nCALL_SITES: reckon/crew/dispatch.py:10266, reckon/crew/resumption.py:609\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:5113 still takes the smaller of the lane's published windows and returns the refusal before any write, so the section-5 goal holds at the new head.\nSCORE evidence: 16\nJUSTIFICATION evidence: the run's own test-logs/head-arm.log records 24 passed EXIT=0 and my independent re-run of the same gate at 2f123fbc7 read 24 passed EXIT=0, with zero added failure ids against its base arm.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/crew/dispatch.py:68 and reckon/crew/resumption.py:74 remain outside the six declared write paths, declared in the manifest as the two shared resume doors the guard must be called from.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control removes the window check from both call sites and the over-window sessions then open their attempts, 3 failed / 3 passed EXIT=1, so the guard is not green by disabling itself.\nSCORE fit: 16\nJUSTIFICATION fit: the guard at reckon/crew/recovery.py:5113 reuses _charged_input_from_usage and stream_paths_newest_first rather than re-deriving them, and no forbidden name appears in the changed code.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203452309560-resume-refuses-a-session-over-the-window/manifest.md:7 follow-on: the suite-scale verification of the merged head is still owed - the run's full-suite arm was abandoned on a node at load ~45, so only the three-to-four file gate that reaches the resume doors was recorded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203452309560-resume-refuses-a-session-over-the-window/manifest.md:8 follow-on: the two call sites in dispatch.py and resumption.py remain outside the declared scope; dispatch.py is concurrently claimed by peer nodes, so the merge owner must reconcile it.",
+  "review_run_id": "r-20261002T215733991612-review-of-resume-refuses-a-session-over-the-window",
+  "reviewed_base_sha": "8935a408b81a91f2dfb2e3737786404f7fecaddd",
+  "reviewed_head_sha": "2877bbb423d923225583a108f835d6e1bf1e1813",
+  "reviewed_run_id": "r-20261002T203452309560-resume-refuses-a-session-over-the-window",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T22:10:34Z",
+  "total": 81
+}

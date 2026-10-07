@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:8433",
+    "reckon/crew/recovery.py:7257",
+    "reckon/crew/runs.py:2043"
+  ],
+  "completed_at": "2026-10-01T22:37:57.430Z",
+  "dispatched_at": "2026-10-01T22:15:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/registration-survives-an-unlink.html",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states base as 1 failed/26 passed in 86.76 s and \"both arms fail the same single id\", but the base-arm log the manifest's baseline_suite names (logs/base-arm.txt) records 2 failed/25 passed in 83.97 s, the second failure being tests/test_producer_takes_new_code.py::test_a_producer_reexecutes_onto_changed_code; the manifest's own follow_ons acknowledges that second base run as a load-dependent flake, so the fragment and the manifest report different base readings for the same node, and the fragment's lint count of 11 findings is 9 when re-run with the repository's own ruff."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8318",
+      "severity": "follow-on",
+      "text": "follow-on: the new _recreate_unlinked_registration signature is wrapped across three lines where ruff format joins it to one; ruff format --check reckon/crew/recovery.py reports 5 deviation hunks at head against 4 at base, the new hunk being this signature, which adds one finding against the repository rule that a commit adds none."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8350",
+      "severity": "follow-on",
+      "text": "follow-on: the branch that ends a producer superseded by a replacement that has taken the path returns False and is never driven by a test, so the behaviour the function's docstring and the evidence fragment assert (a superseded producer ends rather than overwrite a seat that is no longer its own) is unverified by the reviewed node's own gate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the range commit by commit; 2116ddeff adds _recreate_unlinked_registration and its call in watch_ticker and routes the arm-time write through runs._WATCH_SEAT_HANDLES; 6ed195be4 is the evidence fragment, 74 lines, no code change.",
+    "done_when": "the plan done-when item this split node owns is that crew unwatch stops a producer whose registration file was deleted under it, the producer having recreated the file by its next wake-up; tests/test_producer_registration_survives_unlink.py spawns a real child producer in its own session, deletes the seat file and asserts the record is back naming the producer's pid, then calls unwatch and asserts stopped=True and the child exits; the manifest records the gate reproduced 2 passed and I reproduced 2 passed at head 6ed195be4b31c594ea7beebcaed914fa6683e3f4.",
+    "goal": "the node goal is that a crew watch producer whose seat record is unlinked under it recreates the record at the same path on its next wake-up so crew unwatch can find and stop it; the landed change adds reckon.crew.recovery._recreate_unlinked_registration (reckon/crew/recovery.py:8318), called at the top of watch_ticker's loop (reckon/crew/recovery.py:8433), plus the arm-time parent-pid write now going through the held seat handle (reckon/crew/recovery.py:7257).",
+    "manifest": "read; it records commits 2116ddeff and 6ed195be4, the gate (2 passed, EXIT=0), base and head arms, the negative control, and added-failure data; its baseline_suite names logs/base-arm.txt (2 failed, 25 passed) and after_suite names logs/head-arm.txt (1 failed, 28 passed); both arms' completed fields are true and their failure lists are readable.",
+    "write_paths": "the diff 60b808f5f3b12faf446c1c356c3da8c5fb830e92..6ed195be4b31c594ea7beebcaed914fa6683e3f4 touches only reckon/crew/recovery.py, tests/test_producer_registration_survives_unlink.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/registration-survives-an-unlink.html, no path outside the reviewed node's grant and no plan HTML edit."
+  },
+  "justifications": {
+    "durability": "the guard demonstrably fires, the negative control removing the recreation call reddens both cases (logs/negative-control.txt, 2 failed EXIT=1), and the cases drive a real child session rather than a thread; but the docstring's superseded-producer branch (return False at reckon/crew/recovery.py:8350) has no test, and no case covers an unwatch racing the unlink before the producer's next wake-up.",
+    "evidence": "the gate reproduces (2 passed at head) and both arms and the negative control are logged with readable failure lists, but the evidence fragment's base reading (1 failed/26 passed) does not match the stored logs/base-arm.txt (2 failed, 25 passed) and its lint count of 11 is 9 when re-run with the repository's own ruff.",
+    "fit": "the new function reuses watch_lock_path, _write_watch_record and the runs._WATCH_SEAT_HANDLES registry, and its comments state the mechanism rather than the incident; the sole deviation is the unformatted signature.",
+    "goal_fidelity": "_recreate_unlinked_registration (reckon/crew/recovery.py:8318) compares the held inode against os.stat(path), recreates and re-locks the path when it is gone, and watch_ticker calls it before the lease check (reckon/crew/recovery.py:8433) so unwatch finds the producer again; the added arm-time-handle write removes the FileNotFoundError window that could end a producer before it polled once.",
+    "scope_discipline": "the diff stays inside the three granted paths and names no plan, sprint or ticket label, but the new function signature adds one ruff-format deviation (base 4 hunks to head 5 in reckon/crew/recovery.py)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a crew watch producer whose seat record is unlinked under it recreates the record at the same path on its next wake-up so crew unwatch can find and stop it; the landed change adds reckon.crew.recovery._recreate_unlinked_registration (reckon/crew/recovery.py:8318), called at the top of watch_ticker's loop (reckon/crew/recovery.py:8433), plus the arm-time parent-pid write now going through the held seat handle (reckon/crew/recovery.py:7257).\nVERDICT done_when: the plan done-when item this split node owns is that crew unwatch stops a producer whose registration file was deleted under it, the producer having recreated the file by its next wake-up; tests/test_producer_registration_survives_unlink.py spawns a real child producer in its own session, deletes the seat file and asserts the record is back naming the producer's pid, then calls unwatch and asserts stopped=True and the child exits; the manifest records the gate reproduced 2 passed and I reproduced 2 passed at head 6ed195be4b31c594ea7beebcaed914fa6683e3f4.\nVERDICT write_paths: the diff 60b808f5f3b12faf446c1c356c3da8c5fb830e92..6ed195be4b31c594ea7beebcaed914fa6683e3f4 touches only reckon/crew/recovery.py, tests/test_producer_registration_survives_unlink.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/registration-survives-an-unlink.html, no path outside the reviewed node's grant and no plan HTML edit.\nVERDICT manifest: read; it records commits 2116ddeff and 6ed195be4, the gate (2 passed, EXIT=0), base and head arms, the negative control, and added-failure data; its baseline_suite names logs/base-arm.txt (2 failed, 25 passed) and after_suite names logs/head-arm.txt (1 failed, 28 passed); both arms' completed fields are true and their failure lists are readable.\nVERDICT diff: read the range commit by commit; 2116ddeff adds _recreate_unlinked_registration and its call in watch_ticker and routes the arm-time write through runs._WATCH_SEAT_HANDLES; 6ed195be4 is the evidence fragment, 74 lines, no code change.\nCALL_SITES: reckon/crew/recovery.py:8433, reckon/crew/recovery.py:7257, reckon/crew/runs.py:2043\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: _recreate_unlinked_registration (reckon/crew/recovery.py:8318) compares the held inode against os.stat(path), recreates and re-locks the path when it is gone, and watch_ticker calls it before the lease check (reckon/crew/recovery.py:8433) so unwatch finds the producer again; the added arm-time-handle write removes the FileNotFoundError window that could end a producer before it polled once.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate reproduces (2 passed at head) and both arms and the negative control are logged with readable failure lists, but the evidence fragment's base reading (1 failed/26 passed) does not match the stored logs/base-arm.txt (2 failed, 25 passed) and its lint count of 11 is 9 when re-run with the repository's own ruff.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff stays inside the three granted paths and names no plan, sprint or ticket label, but the new function signature adds one ruff-format deviation (base 4 hunks to head 5 in reckon/crew/recovery.py).\nSCORE durability: 15\nJUSTIFICATION durability: the guard demonstrably fires, the negative control removing the recreation call reddens both cases (logs/negative-control.txt, 2 failed EXIT=1), and the cases drive a real child session rather than a thread; but the docstring's superseded-producer branch (return False at reckon/crew/recovery.py:8350) has no test, and no case covers an unwatch racing the unlink before the producer's next wake-up.\nSCORE fit: 17\nJUSTIFICATION fit: the new function reuses watch_lock_path, _write_watch_record and the runs._WATCH_SEAT_HANDLES registry, and its comments state the mechanism rather than the incident; the sole deviation is the unformatted signature.\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/registration-survives-an-unlink.html:60 follow-on: the fragment states base as 1 failed/26 passed in 86.76 s and \"both arms fail the same single id\", but the base-arm log the manifest's baseline_suite names (logs/base-arm.txt) records 2 failed/25 passed in 83.97 s, the second failure being tests/test_producer_takes_new_code.py::test_a_producer_reexecutes_onto_changed_code; the manifest's own follow_ons acknowledges that second base run as a load-dependent flake, so the fragment and the manifest report different base readings for the same node, and the fragment's lint count of 11 findings is 9 when re-run with the repository's own ruff.\nFINDING reckon/crew/recovery.py:8318 follow-on: the new _recreate_unlinked_registration signature is wrapped across three lines where ruff format joins it to one; ruff format --check reckon/crew/recovery.py reports 5 deviation hunks at head against 4 at base, the new hunk being this signature, which adds one finding against the repository rule that a commit adds none.\nFINDING reckon/crew/recovery.py:8350 follow-on: the branch that ends a producer superseded by a replacement that has taken the path returns False and is never driven by a test, so the behaviour the function's docstring and the evidence fragment assert (a superseded producer ends rather than overwrite a seat that is no longer its own) is unverified by the reviewed node's own gate.",
+  "review_run_id": "r-20261001T221437532957-review-of-registration-survives-an-unlink",
+  "reviewed_base_sha": "60b808f5f3b12faf446c1c356c3da8c5fb830e92",
+  "reviewed_head_sha": "6ed195be4b31c594ea7beebcaed914fa6683e3f4",
+  "reviewed_run_id": "r-20261001T211026575764-registration-survives-an-unlink",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T221437532957-review-of-registration-survives-an-unlink",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T22:35:26.644999+00:00",
+  "total": 80
+}

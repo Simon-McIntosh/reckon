@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "39fff0435239ded5d285a4d87e38a1ad007e8451",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/doccheck.py:audit_file",
+    "reckon/cli.py:audit_doc",
+    "reckon/mcp.py:_audit_document"
+  ],
+  "completed_at": "2026-10-01T01:33:38.556Z",
+  "dispatched_at": "2026-10-01T01:28:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/section-contract-and-computed-impl/doccheck-section-ref-warning.html",
+      "line": "68",
+      "severity": "follow-on",
+      "text": "follow-on: the Measure paragraph cites the head arm at b7a67a3c4, but gate-head.log's own header names c8075f0fa and the manifest's after_suite revision is c8075f0fa526c9b36644bd2e9316bc59486e3bc3, so the evidence record names two revisions for one arm and a reader cannot tell which commit the 326-passed measure is evidence about; the gate driver takes the revision as a label argument rather than resolving the tree, so the header does not settle it either."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "947",
+      "severity": "follow-on",
+      "text": "follow-on: the check keys only on the consumer's own section declarations (the typed section record links and the plan-section-depends-on mapping), so a plan-level depends_on whose target gates only a later section is not reported unless the consumer independently duplicated the wait as a section ref; the alternative readings are documented in the fragment and both are silent on the mounted corpus (corpus-check.log: 0 findings over 335 plans)."
+    }
+  ],
+  "head_log_revision": "c8075f0fa",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 39fff0435; four commits, the code change confined to reckon/doccheck.py plus a new test file and the evidence fragment.",
+    "done_when": "the done_when asks that the audit warning be exercised by a test; tests/test_doccheck_section_ref_warning.py carries six positive and five silent arms and the manifest records both gate arms.",
+    "goal": "read the plan's section s6 audit clause (reckon:section-contract-and-computed-impl) and the node manifest; reckon/doccheck.py:1211 wires the plan-ref-could-be-section-ref finding the clause asks for, under the reading documented in the evidence fragment.",
+    "manifest": "read; it records base 6 failed/320 passed EXIT=1 and head 326 passed EXIT=0 with both gate logs named.",
+    "write_paths": "read the manifest's declared paths; the diff's three paths (reckon/doccheck.py, tests/test_doccheck_section_ref_warning.py, docs/evidence/fragments/section-contract-and-computed-impl/doccheck-section-ref-warning.html) are all inside them."
+  },
+  "justifications": {
+    "durability": "the negative control removing the audit call to _section_ref_findings reddens five positive cases (negative-control.log, EXIT=1) and tests/test_doccheck_section_ref_warning.py asserts on real audit_html output rather than on a value it supplied.",
+    "evidence": "gate-base.log (6 failed, EXIT=1) and gate-head.log (326 passed, EXIT=0) record the measure and negative-control.log reddens the five behavioural positive cases; docked four because the evidence fragment cites the head arm at b7a67a3c4 while gate-head.log and the manifest name c8075f0fa.",
+    "fit": "the finding follows the surrounding _section_contract_findings and unwired_plan_findings idiom in reckon/doccheck.py with mechanism names and no plan or version label.",
+    "goal_fidelity": "reckon/doccheck.py:947 _section_ref_findings fires plan-ref-could-be-section-ref at warn for an implementable plan whose plan-level depends_on a section already declares, matching the clause; docked three because the target's gated_sections and the #-anchored plan-level shape are not consulted, so a section-shaped wait the consumer never duplicated as a section ref stays silent.",
+    "scope_discipline": "the diff touches only the three declared write paths, and the FOLLOWUP_WORK_ITEMS_THRESHOLD comment replacement closes followup f-scci-doccheck-comment-figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the plan's section s6 audit clause (reckon:section-contract-and-computed-impl) and the node manifest; reckon/doccheck.py:1211 wires the plan-ref-could-be-section-ref finding the clause asks for, under the reading documented in the evidence fragment.\nVERDICT done_when: the done_when asks that the audit warning be exercised by a test; tests/test_doccheck_section_ref_warning.py carries six positive and five silent arms and the manifest records both gate arms.\nVERDICT write_paths: read the manifest's declared paths; the diff's three paths (reckon/doccheck.py, tests/test_doccheck_section_ref_warning.py, docs/evidence/fragments/section-contract-and-computed-impl/doccheck-section-ref-warning.html) are all inside them.\nVERDICT manifest: read; it records base 6 failed/320 passed EXIT=1 and head 326 passed EXIT=0 with both gate logs named.\nVERDICT diff: read commit by commit against base 39fff0435; four commits, the code change confined to reckon/doccheck.py plus a new test file and the evidence fragment.\nCALL_SITES: reckon/doccheck.py:audit_file, reckon/cli.py:audit_doc, reckon/mcp.py:_audit_document\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:947 _section_ref_findings fires plan-ref-could-be-section-ref at warn for an implementable plan whose plan-level depends_on a section already declares, matching the clause; docked three because the target's gated_sections and the #-anchored plan-level shape are not consulted, so a section-shaped wait the consumer never duplicated as a section ref stays silent.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-base.log (6 failed, EXIT=1) and gate-head.log (326 passed, EXIT=0) record the measure and negative-control.log reddens the five behavioural positive cases; docked four because the evidence fragment cites the head arm at b7a67a3c4 while gate-head.log and the manifest name c8075f0fa.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only the three declared write paths, and the FOLLOWUP_WORK_ITEMS_THRESHOLD comment replacement closes followup f-scci-doccheck-comment-figure.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control removing the audit call to _section_ref_findings reddens five positive cases (negative-control.log, EXIT=1) and tests/test_doccheck_section_ref_warning.py asserts on real audit_html output rather than on a value it supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the finding follows the surrounding _section_contract_findings and unwired_plan_findings idiom in reckon/doccheck.py with mechanism names and no plan or version label.\nFINDING docs/evidence/fragments/section-contract-and-computed-impl/doccheck-section-ref-warning.html:68 follow-on: the Measure paragraph cites the head arm at b7a67a3c4, but gate-head.log's own header names c8075f0fa and the manifest's after_suite revision is c8075f0fa526c9b36644bd2e9316bc59486e3bc3, so the evidence record names two revisions for one arm and a reader cannot tell which commit the 326-passed measure is evidence about; the gate driver takes the revision as a label argument rather than resolving the tree, so the header does not settle it either.\nFINDING reckon/doccheck.py:947 follow-on: the check keys only on the consumer's own section declarations (the typed section record links and the plan-section-depends-on mapping), so a plan-level depends_on whose target gates only a later section is not reported unless the consumer independently duplicated the wait as a section ref; the alternative readings are documented in the fragment and both are silent on the mounted corpus (corpus-check.log: 0 findings over 335 plans).\n",
+  "review_run_id": "r-20261001T012746674434-review-of-doccheck-section-ref-warning",
+  "reviewed_base_sha": "39fff0435239ded5d285a4d87e38a1ad007e8451",
+  "reviewed_head_sha": "c8075f0fa526c9b36644bd2e9316bc59486e3bc3",
+  "reviewed_run_id": "r-20261001T004632831263-doccheck-section-ref-warning",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T01:32:17.146109+00:00",
+  "total": 89
+}

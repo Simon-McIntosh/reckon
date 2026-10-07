@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T20:19:13.184Z",
+  "dispatched_at": "2026-10-05T20:14:12Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:925",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must either state that the moved helpers take the heading end from the parser's replaced-span offsets (dropping `str.find(\"</h2>\")`) or name these sites among the exemptions, or its own package-wide gate is unsatisfiable at the head it declares.",
+      "text": "\u00a717 moves `_section_heading`/`_wrapper_section_heading` into `reckon/_plan_html.py`; both locate the heading's closing tag with `html_text.find(\"</h2>\", \u2026)` (reckon/_store.py:925 and :955), and the census rule \u00a717 specifies reports \"every string literal spelling a heading tag \u2026 searched with `str.find`\", so those two sites arrive in the destination module and the done-when's \"exactly the span parser \u2026, the four named exemptions \u2026, and nothing else\" cannot hold",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:1265",
+      "id": "reuse_search-1",
+      "reason": "the substance is right (three grammars in `_apply_set`, `_require_authored_section_fields` and `_apply_collapse_section`) and the head target of four holds, so only the stated figure is corrected, not the design.",
+      "text": "\u00a716 states `grep -c 'A-Za-z0-9._-' reckon/_store.py` \"reads nine at the base\"; the grep reads 10 (four slug/anchor lines at 1265/1269/1273/1277, plus six lines for the three section grammars at 2534/2537, 3135/3138, 3191/3195), so the quoted base figure is off by one",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a0ab10d6f7c12cbe0eb67e447604009a76758fbcc93d0d14eccacc02d6a303ee",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 126,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T201353205139-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "111e00d18c62702f73a939f5657758c464ff7e02",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the private `_StructuredSectionSpanParser` (reckon/_plan_html.py:44) is read once behind the public `plan_headings` records, and `_section_digests` and the coverage predicate stay module-private, so substantial behaviour sits behind small interfaces rather than a spread of wrappers.",
+    "duplicate_owner": "pass \u2014 every duplicate the plan touches names the owner to extend: three store section-id grammars onto `_schema.is_section_identity`, heading walks onto the parser, the landing-comment prefix onto `plan_review.RUN_COMMENT_PREFIX`, the classification word onto `_schema`, and `landed_section_ids` is re-homed not doubled.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds +1 (`strip_tags`), \u00a717 adds +2 (`plan_headings`, the machinery-element predicate), \u00a718 adds +1 (the classification predicate), each naming what it retires or why nothing can be, and the counter counts only function/class defs (`DEFINITIONS` at reckon/interface_counts.py:38 excludes assignments) so the three new constants are correctly uncounted.",
+    "reuse_search": "pass \u2014 the plan searched the named repo and cites mechanisms I opened and confirmed: `_TAG_RE`/`count_open_decisions` (reckon/_plan_html.py:1506,1514), `roadmap._SECTION_WORD_RE` (reckon/roadmap.py:170), the five `== \"implementable\"` readers plus the `_plan_html.py:353` progress figure, and the lone `landed_section_ids` importer (reckon/crew/plan_review.py:60).",
+    "thin_wrapper": "a finding \u2014 \u00a717 moves thirteen heading helpers into `reckon/_plan_html.py` but its done-when declares that module clean of heading-tag literals beyond the span parser and four exemptions, and the moved `_section_heading`/`_wrapper_section_heading` carry `str.find(\"</h2>\")`."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.768858+00:00"
+}

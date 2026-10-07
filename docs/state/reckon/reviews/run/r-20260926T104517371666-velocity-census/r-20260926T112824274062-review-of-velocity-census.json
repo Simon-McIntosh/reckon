@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T12:36:00.461Z",
+  "dispatched_at": "2026-09-26T11:28:40Z",
+  "findings": [
+    {
+      "file": "docs/research/data/crew-pattern-review/velocity/velocity.json",
+      "line": "1",
+      "text": "the 16,512,136-byte census output and its 1,572,983-byte inputs.json.gz were committed into the repository's history at this revision; the coordinator later directed a storage correction that moved both files to the run directory and replaced them with a compact summary."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 457bbec7; 3c6a9062 lands the census, verifier, reporter, plot and the 16.5 MB velocity.json, and 53fa7fd2 adds the plan section and the cumulative evidence anchor, with both commits inside the declared paths but the JSON and the gzipped input snapshot committed at sizes the repository's history cannot carry.",
+    "done_when": "the measure is a byte-identical re-run beside findings.md and one lane figure; verify.py:26-34 re-runs census.py to a temporary file and asserts byte equality against the 511,600-line velocity.json, verify.py:37-59 conserves promoted-node, commit and line counts across by_project, by_lane, by_day and by_project_day_lane and asserts len(PROJECTS)*15*len(LANES) cells, and verification.log records exit 0 with JSON_SHA256=c65afa24ce0da336b9bac4903dabd3fab950d982bc1f46033650adfff9fdea7b and INPUT_SHA256=5172e82376f8d20158bb65c413dfa1b2f762f7bee1883926d2db0d99fdbab479.",
+    "goal": "the goal is a velocity census of crew-landed work across the five mounted projects in the study window against the August baseline; census.py:26-27 pins the window to 2026-09-12 through 2026-09-26, census.py:28-46 fixes the five projects, six lanes and the implement/review role split, and census.py:1238 drives every figure plan \u00a72 names.",
+    "manifest": "read at the run directory; it reports complete with commits 3c6a9062cd284322e13b81f10702106b579c3338 and 53fa7fd299b64e4b89549be780e89d670ca82937, the three gate logs, and the declared negative control \"none: measurement node, verified by re-running the recorded census script and diffing its JSON\".",
+    "write_paths": "all thirteen changed paths sit inside the five declared paths \u2014 twelve files under docs/research/data/crew-pattern-review/velocity, docs/figures/crew-pattern-review-velocity/durable-product-lines.png, docs/plans/orchestrator-crew-pattern-studies.html and docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html; the fifth declared path, docs/figures/orchestrator-crew-pattern-studies, is untouched."
+  },
+  "justifications": {
+    "durability": "the census's own deletion, censoring, rename and binary controls at census.py:619 are re-run by verify.py:105 and the byte-equality assertion at verify.py:34 would redden on any drift, but a wrong-yet-stable census whose cells conserve keeps the check green.",
+    "evidence": "verify.py:105 runs census.positive_controls and verify.py:77-99 pins the instrument against a real commit at 28/21 normal, 30/23 zero-context and 28/21 parsed, while findings.md:81 records the rejected capture that failed that same control, so the recorded result is a receipt rather than a claim.",
+    "fit": "the four scripts and the PNG follow the research-directory idiom with no plan identifiers, but docs/research/data/crew-pattern-review/velocity/velocity.json:1 is a 511,600-line data file inside a repository whose artifact discipline cannot carry it.",
+    "goal_fidelity": "census.py:724 computes the per-project, per-day and per-lane promoted-node split, the five line classes, the commit classes, the completion and promotion quantiles and the durable rate, and findings.md:3-11 states them with their denominators.",
+    "scope_discipline": "every path in the diff is inside the declared write paths and the plan edit adds one section without touching plan state, but the pair also commits a 16,512,136-byte velocity.json and a 1,572,983-byte inputs.json.gz."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a velocity census of crew-landed work across the five mounted projects in the study window against the August baseline; census.py:26-27 pins the window to 2026-09-12 through 2026-09-26, census.py:28-46 fixes the five projects, six lanes and the implement/review role split, and census.py:1238 drives every figure plan \u00a72 names.\nVERDICT done_when: the measure is a byte-identical re-run beside findings.md and one lane figure; verify.py:26-34 re-runs census.py to a temporary file and asserts byte equality against the 511,600-line velocity.json, verify.py:37-59 conserves promoted-node, commit and line counts across by_project, by_lane, by_day and by_project_day_lane and asserts len(PROJECTS)*15*len(LANES) cells, and verification.log records exit 0 with JSON_SHA256=c65afa24ce0da336b9bac4903dabd3fab950d982bc1f46033650adfff9fdea7b and INPUT_SHA256=5172e82376f8d20158bb65c413dfa1b2f762f7bee1883926d2db0d99fdbab479.\nVERDICT write_paths: all thirteen changed paths sit inside the five declared paths \u2014 twelve files under docs/research/data/crew-pattern-review/velocity, docs/figures/crew-pattern-review-velocity/durable-product-lines.png, docs/plans/orchestrator-crew-pattern-studies.html and docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html; the fifth declared path, docs/figures/orchestrator-crew-pattern-studies, is untouched.\nVERDICT manifest: read at the run directory; it reports complete with commits 3c6a9062cd284322e13b81f10702106b579c3338 and 53fa7fd299b64e4b89549be780e89d670ca82937, the three gate logs, and the declared negative control \"none: measurement node, verified by re-running the recorded census script and diffing its JSON\".\nVERDICT diff: read commit by commit against base 457bbec7; 3c6a9062 lands the census, verifier, reporter, plot and the 16.5 MB velocity.json, and 53fa7fd2 adds the plan section and the cumulative evidence anchor, with both commits inside the declared paths but the JSON and the gzipped input snapshot committed at sizes the repository's history cannot carry.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: census.py:724 computes the per-project, per-day and per-lane promoted-node split, the five line classes, the commit classes, the completion and promotion quantiles and the durable rate, and findings.md:3-11 states them with their denominators.\nSCORE evidence: 17\nJUSTIFICATION evidence: verify.py:105 runs census.positive_controls and verify.py:77-99 pins the instrument against a real commit at 28/21 normal, 30/23 zero-context and 28/21 parsed, while findings.md:81 records the rejected capture that failed that same control, so the recorded result is a receipt rather than a claim.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths and the plan edit adds one section without touching plan state, but the pair also commits a 16,512,136-byte velocity.json and a 1,572,983-byte inputs.json.gz.\nSCORE durability: 16\nJUSTIFICATION durability: the census's own deletion, censoring, rename and binary controls at census.py:619 are re-run by verify.py:105 and the byte-equality assertion at verify.py:34 would redden on any drift, but a wrong-yet-stable census whose cells conserve keeps the check green.\nSCORE fit: 14\nJUSTIFICATION fit: the four scripts and the PNG follow the research-directory idiom with no plan identifiers, but docs/research/data/crew-pattern-review/velocity/velocity.json:1 is a 511,600-line data file inside a repository whose artifact discipline cannot carry it.\nFINDING docs/research/data/crew-pattern-review/velocity/velocity.json:1 the 16,512,136-byte census output and its 1,572,983-byte inputs.json.gz were committed into the repository's history at this revision; the coordinator later directed a storage correction that moved both files to the run directory and replaced them with a compact summary.\n",
+  "review_run_id": "r-20260926T112824274062-review-of-velocity-census",
+  "reviewed_base_sha": "457bbec7e691465101ea7c56716fe23eb8477dfe",
+  "reviewed_head_sha": "53fa7fd299b64e4b89549be780e89d670ca82937",
+  "reviewed_run_id": "r-20260926T104517371666-velocity-census",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T12:25:42.590747+00:00",
+  "total": 83
+}

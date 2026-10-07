@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T20:38:05.678Z",
+  "dispatched_at": "2026-10-02T20:19:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html",
+      "line": "327",
+      "severity": "follow-on",
+      "text": "follow-on: row 327 restates a candidate row 197 already carries (both say 'Never feed same-plan work blindly into crew.followup_ops_from_manifest: author it as a section and add its nodes to the live DAG', both merging into row 187), so the table now holds two rows for one rule; it exists because the checker's tokeniser splits the backticked source spelling on underscores (followup/ops/from/manifest) while the counter prints it stripped as one token, so the head pass is achieved by adding a duplicate rather than by normalising the comparison."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html",
+      "line": "43",
+      "severity": "follow-on",
+      "text": "follow-on: the header retains the earlier reconcile paragraph ('Reconciled at the current head d5d923e072 ... 72 carry the rows appended below (248-319) ... 176 + 72 + 13 = 261', 247 rows) directly beside the new 329-row account, so a reader meets two mutually inconsistent partitions of the same 261 candidates; the new paragraph supersedes it but the old one is not marked as historical."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "one commit 0ba69fa82 'docs(evidence): classify the ten residual rule candidates'; it adds rows 320-329 plus a header paragraph and regenerates the disposition figure; the four declared paths only.",
+    "done_when": "the check reconcile_coverage.py was run at head 0ba69fa82 and reports candidates 261 rows 329 rejects 13 uncovered 0 (EXIT=0); I independently reproduced that at head and reproduced uncovered 10 (EXIT=1) over the fragment extracted from base 5670458ab, so the checker's own falsifier fires at the base and clears at the head.",
+    "goal": "classify the ten residual scanner candidates the coverage check could not match to a row or a reject in docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html, so every one of the 261 candidates is accounted for; at head 0ba69fa82 all ten are rows 320-329 - nine recorded as merges naming the surviving row each restates and row 324 (the ready_now prerequisite check at SKILL.md:308) kept as prose - and the check reads uncovered 0.",
+    "manifest": "read; status complete, commits 0ba69fa82 only; it claims the ten candidates. It is a docs/scripts node, so its manifest declares no baseline_suite/after_suite arms and no negative_control.",
+    "write_paths": "git diff --name-only 5670458ab..0ba69fa82 lists exactly the four declared paths - the fragment, docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/dispositions.svg, .../reconcile_coverage.py and .../render_dispositions.py - and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the checker is a real falsifier - it reddens at base 5670458ab with uncovered 10 (EXIT=1) and clears at head - but its head pass depends on row 327 duplicating row 197 to work around the tokeniser, and nothing asserts the header counts or the figure totals, which are transcribed and generated rather than tested; no pytest test guards the classification table.",
+    "evidence": "the done-when's measure is docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/reconcile_coverage.py, run at head with exit 0 and logged; I reproduced candidates 261 rows 329 rejects 13 uncovered 0 at head and uncovered 10 (exit 1) at base, and the committed checker is byte-identical to the saved checker - points withheld because the head pass leans on a duplicate row rather than a corrected tokeniser.",
+    "fit": "rows are named by mechanism and carry no plan or ticket identifier, but row 327 quotes the counter's stripped spelling with an inline parenthetical to satisfy the tokeniser and the header keeps the superseded 247-row partition beside the new account.",
+    "goal_fidelity": "all ten residual candidates in docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html are rows 320-329 with a disposition and a reason, and the check reads uncovered 0 at head 0ba69fa82 - independently reproduced, together with uncovered 10 at base.",
+    "scope_discipline": "git diff --name-only 5670458ab..0ba69fa82 lists exactly the four declared paths and mutates no shared plan, index or sprint state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: classify the ten residual scanner candidates the coverage check could not match to a row or a reject in docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html, so every one of the 261 candidates is accounted for; at head 0ba69fa82 all ten are rows 320-329 - nine recorded as merges naming the surviving row each restates and row 324 (the ready_now prerequisite check at SKILL.md:308) kept as prose - and the check reads uncovered 0.\nVERDICT done_when: the check reconcile_coverage.py was run at head 0ba69fa82 and reports candidates 261 rows 329 rejects 13 uncovered 0 (EXIT=0); I independently reproduced that at head and reproduced uncovered 10 (EXIT=1) over the fragment extracted from base 5670458ab, so the checker's own falsifier fires at the base and clears at the head.\nVERDICT write_paths: git diff --name-only 5670458ab..0ba69fa82 lists exactly the four declared paths - the fragment, docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/dispositions.svg, .../reconcile_coverage.py and .../render_dispositions.py - and nothing outside them.\nVERDICT manifest: read; status complete, commits 0ba69fa82 only; it claims the ten candidates. It is a docs/scripts node, so its manifest declares no baseline_suite/after_suite arms and no negative_control.\nVERDICT diff: one commit 0ba69fa82 'docs(evidence): classify the ten residual rule candidates'; it adds rows 320-329 plus a header paragraph and regenerates the disposition figure; the four declared paths only.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all ten residual candidates in docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html are rows 320-329 with a disposition and a reason, and the check reads uncovered 0 at head 0ba69fa82 - independently reproduced, together with uncovered 10 at base.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done-when's measure is docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/reconcile_coverage.py, run at head with exit 0 and logged; I reproduced candidates 261 rows 329 rejects 13 uncovered 0 at head and uncovered 10 (exit 1) at base, and the committed checker is byte-identical to the saved checker - points withheld because the head pass leans on a duplicate row rather than a corrected tokeniser.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 5670458ab..0ba69fa82 lists exactly the four declared paths and mutates no shared plan, index or sprint state.\nSCORE durability: 16\nJUSTIFICATION durability: the checker is a real falsifier - it reddens at base 5670458ab with uncovered 10 (EXIT=1) and clears at head - but its head pass depends on row 327 duplicating row 197 to work around the tokeniser, and nothing asserts the header counts or the figure totals, which are transcribed and generated rather than tested; no pytest test guards the classification table.\nSCORE fit: 17\nJUSTIFICATION fit: rows are named by mechanism and carry no plan or ticket identifier, but row 327 quotes the counter's stripped spelling with an inline parenthetical to satisfy the tokeniser and the header keeps the superseded 247-row partition beside the new account.\nreviewed_base_sha: 5670458ab6e853b485c3932f6f79cc020ecc3053\nreviewed_head_sha: 0ba69fa820d8912dc170d64d3d711dd86eceb8ab\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html:327 follow-on: row 327 restates a candidate row 197 already carries (both say 'Never feed same-plan work blindly into crew.followup_ops_from_manifest: author it as a section and add its nodes to the live DAG', both merging into row 187), so the table now holds two rows for one rule; it exists because the checker's tokeniser splits the backticked source spelling on underscores (followup/ops/from/manifest) while the counter prints it stripped as one token, so the head pass is achieved by adding a duplicate rather than by normalising the comparison.\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html:43 follow-on: the header retains the earlier reconcile paragraph ('Reconciled at the current head d5d923e072 ... 72 carry the rows appended below (248-319) ... 176 + 72 + 13 = 261', 247 rows) directly beside the new 329-row account, so a reader meets two mutually inconsistent partitions of the same 261 candidates; the new paragraph supersedes it but the old one is not marked as historical.",
+  "review_run_id": "r-20261002T201909533739-review-of-classify-rules-residuals",
+  "reviewed_base_sha": "5670458ab6e853b485c3932f6f79cc020ecc3053",
+  "reviewed_head_sha": "0ba69fa820d8912dc170d64d3d711dd86eceb8ab",
+  "reviewed_run_id": "r-20261002T191804314390-classify-rules-residuals",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T201909533739-review-of-classify-rules-residuals",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.349606+00:00",
+  "total": 91
+}

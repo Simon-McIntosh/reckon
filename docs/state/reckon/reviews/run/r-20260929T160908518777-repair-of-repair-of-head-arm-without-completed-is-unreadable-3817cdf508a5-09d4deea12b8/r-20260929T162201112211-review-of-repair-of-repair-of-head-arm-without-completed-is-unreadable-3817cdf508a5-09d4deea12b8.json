@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absent_arm_control": "no base text returns (None, []) - unmeasured, not zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160908518777-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8/logs/head_arm.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160908518777-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8/logs/negative_control.log",
+    "count_derivation": "set difference of pytest FAILED/ERROR node ids between the reviewed run's own two arm logs, computed with review.added_failures_from_gate_logs; derivation output: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T162201112211-review-of-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8/logs/review_added_failures.out",
+    "manifest_field_note": "the reviewed manifest names its two arms under test_logs (head_arm.log, negative_control.log) rather than baseline_suite/after_suite, so the read-time annotation reports the pair unmeasured; this count is the reviewer's own derivation from those same two logs",
+    "positive_control": {
+      "count": 1,
+      "ids": [
+        "tests/test_reviewer_positive_control.py::test_the_instrument_sees_a_failure"
+      ],
+      "mutation": "append one FAILED line to a copy of the head log text in memory",
+      "negative_half": "the same FAILED line in both arms yields count 0"
+    },
+    "revision_pair": {
+      "after_revision": "60b35ebb908689928ca4ec53d98b341292c3d6c4",
+      "baseline_revision": "5d8fca064cb5301cab466e024e85524e6ec328ca's parent (answering in promotion.py reverted by the run's own repro scripts)"
+    }
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_require_declared_negative_control",
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-09-29T16:59:26.809Z",
+  "dispatched_at": "2026-09-29T16:22:16Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 06149d98 - 5d8fca06 makes the baseline reader strict on the failure_ids shape and adds cases (k) and (l) to tests/test_control_is_compared_with_the_head_arm.py; 8f9628ce restores the fixture's baseline branch at tests/test_control_gate_checks_facts.py:77-98; 60b35ebb adds the 37-line evidence fragment; no other file in the tree changed.",
+    "done_when": "the done-when requires every finding named by id as `acted <id>: <commit>`; the manifest carries \"acted f41b92f9022: 5d8fca064cb5301cab466e024e85524e6ec328ca\" and \"acted fda7083456c: 8f9628cecc1e84cbaedb7dd7a49e8daa449619c5\", and my rerun of both gate files at the reviewed head 60b35ebb is 26 passed EXIT=0 (logs/head_arm_rerun.log).",
+    "goal": "the review answers the two findings the prior review left on r-20260929T145500577980 - f41b92f9022 and fda7083456c - and both are answered: the baseline arm's failure_ids is now validated at promotion.py:5083 with the same isinstance(list) shape check its head-arm twin applies at promotion.py:5117, and tests/test_control_gate_checks_facts.py:91 passes `completed: True` so the case again enters the baseline-comparison branch its name describes.",
+    "manifest": "read at the reviewed head; it reports complete at 60b35ebb with the three answering commits, both acted lines and its two arm logs, and every figure I could re-derive reproduces - 26 passed EXIT=0 on my rerun, and the fragment's format figure, nine ruff format hunks over promotion.py whose single-run diff is 27 added lines, none touching the changed region at promotion.py:5065-5087.",
+    "write_paths": "the dispatch declared nine paths - promotion.py, both control-gate test files and six artifact paths - and the four files that changed in 06149d98..60b35ebb (reckon/crew/promotion.py, tests/test_control_is_compared_with_the_head_arm.py, tests/test_control_gate_checks_facts.py and the node's own evidence fragment) are each inside them, with nothing else in the tree changed."
+  },
+  "justifications": {
+    "durability": "the four shape cases and the restored fixture case each redden without their answering commit (logs/negative_control.log sections A and B, EXIT_A=1 and EXIT_B=1), but no case passes an empty-string element, so the `not test_id.strip()` half of the check at promotion.py:5084 is unexercised by anything in the suite.",
+    "evidence": "the receipts reproduce - 26 passed EXIT=0 on my rerun at 60b35ebb, and a zero added-failure count over the run's own two arm logs with the instrument's positive control shown to fire (logs/review_added_failures.out) - the one softness being that the base-revision reproduction is durable as a rerunnable script (logs/repro.py) whose output I had to re-take rather than read from the run's own evidence.",
+    "fit": "the baseline reader's validation at promotion.py:5083-5085 is the head reader's at promotion.py:5117-5119 verbatim, both docstrings state the same rationale, and the three commits carry mechanism-only bodies with no plan or ticket identifiers.",
+    "goal_fidelity": "my base-versus-head probe (logs/review_probe.out) shows the base blob's reader iterating a JSON-string failure_ids as its characters and raising TypeError on a non-iterable where the head reader returns None for every unreadable shape, so the defect f41b92f9022 names is gone and fda7083456c's fixture branch is restored.",
+    "scope_discipline": "all four files changed in 06149d98..60b35ebb are inside the dispatch's declared write paths, and no plan state, peer manifest or out-of-scope file was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the review answers the two findings the prior review left on r-20260929T145500577980 - f41b92f9022 and fda7083456c - and both are answered: the baseline arm's failure_ids is now validated at promotion.py:5083 with the same isinstance(list) shape check its head-arm twin applies at promotion.py:5117, and tests/test_control_gate_checks_facts.py:91 passes `completed: True` so the case again enters the baseline-comparison branch its name describes.\n\nVERDICT done_when: the done-when requires every finding named by id as `acted <id>: <commit>`; the manifest carries \"acted f41b92f9022: 5d8fca064cb5301cab466e024e85524e6ec328ca\" and \"acted fda7083456c: 8f9628cecc1e84cbaedb7dd7a49e8daa449619c5\", and my rerun of both gate files at the reviewed head 60b35ebb is 26 passed EXIT=0 (logs/head_arm_rerun.log).\n\nVERDICT write_paths: the dispatch declared nine paths - promotion.py, both control-gate test files and six artifact paths - and the four files that changed in 06149d98..60b35ebb (reckon/crew/promotion.py, tests/test_control_is_compared_with_the_head_arm.py, tests/test_control_gate_checks_facts.py and the node's own evidence fragment) are each inside them, with nothing else in the tree changed.\n\nVERDICT manifest: read at the reviewed head; it reports complete at 60b35ebb with the three answering commits, both acted lines and its two arm logs, and every figure I could re-derive reproduces - 26 passed EXIT=0 on my rerun, and the fragment's format figure, nine ruff format hunks over promotion.py whose single-run diff is 27 added lines, none touching the changed region at promotion.py:5065-5087.\n\nVERDICT diff: read commit by commit against 06149d98 - 5d8fca06 makes the baseline reader strict on the failure_ids shape and adds cases (k) and (l) to tests/test_control_is_compared_with_the_head_arm.py; 8f9628ce restores the fixture's baseline branch at tests/test_control_gate_checks_facts.py:77-98; 60b35ebb adds the 37-line evidence fragment; no other file in the tree changed.\n\nCALL_SITES: reckon/crew/promotion.py:_require_declared_negative_control, reckon/crew/promotion.py:_complete_locked\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: my base-versus-head probe (logs/review_probe.out) shows the base blob's reader iterating a JSON-string failure_ids as its characters and raising TypeError on a non-iterable where the head reader returns None for every unreadable shape, so the defect f41b92f9022 names is gone and fda7083456c's fixture branch is restored.\n\nSCORE evidence: 19\nJUSTIFICATION evidence: the receipts reproduce - 26 passed EXIT=0 on my rerun at 60b35ebb, and a zero added-failure count over the run's own two arm logs with the instrument's positive control shown to fire (logs/review_added_failures.out) - the one softness being that the base-revision reproduction is durable as a rerunnable script (logs/repro.py) whose output I had to re-take rather than read from the run's own evidence.\n\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four files changed in 06149d98..60b35ebb are inside the dispatch's declared write paths, and no plan state, peer manifest or out-of-scope file was touched.\n\nSCORE durability: 19\nJUSTIFICATION durability: the four shape cases and the restored fixture case each redden without their answering commit (logs/negative_control.log sections A and B, EXIT_A=1 and EXIT_B=1), but no case passes an empty-string element, so the `not test_id.strip()` half of the check at promotion.py:5084 is unexercised by anything in the suite.\n\nSCORE fit: 20\nJUSTIFICATION fit: the baseline reader's validation at promotion.py:5083-5085 is the head reader's at promotion.py:5117-5119 verbatim, both docstrings state the same rationale, and the three commits carry mechanism-only bodies with no plan or ticket identifiers.\n",
+  "review_run_id": "r-20260929T162201112211-review-of-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8",
+  "reviewed_base_sha": "06149d982550928383d75dfcbe21b367b24f2e43",
+  "reviewed_head_sha": "60b35ebb908689928ca4ec53d98b341292c3d6c4",
+  "reviewed_run_id": "r-20260929T160908518777-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T162201112211-review-of-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8",
+  "reviewer_verification_logs": {
+    "added_failures_derivation": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T162201112211-review-of-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8/logs/review_added_failures.out",
+    "gate_file_rerun": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T162201112211-review-of-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8/logs/head_arm_rerun.log",
+    "lint_compare": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T162201112211-review-of-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8/logs/lint_compare_head.out",
+    "probe": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T162201112211-review-of-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8/logs/review_probe.out"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T16:52:17.181294+00:00",
+  "total": 98
+}

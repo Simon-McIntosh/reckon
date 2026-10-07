@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_a_reexec_keeps_its_children.py::test_the_reloader_exports_launched_pids_beside_the_checkpoint",
+    "tests/test_crew_session_delivery.py::test_a_scoped_follower_receives_only_the_runs_its_session_dispatched",
+    "tests/test_fleet_lane_carries_the_dispatch_environment.py::test_a_dispatch_confirms_its_supervisor_reached_the_run"
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/resumption.py:_launcher_refusal",
+    "reckon/crew/dispatch.py:_dispatch_lane_advisory",
+    "reckon/crew/dispatch.py:_dispatch_lane_reading",
+    "reckon/crew/dispatch.py:plan_dispatch",
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/dispatch.py:resume_plan",
+    "reckon/crew/dispatch.py:change_lane"
+  ],
+  "completed_at": "2026-09-29T16:28:50.874Z",
+  "dispatched_at": "2026-09-29T15:21:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/dispatch-timestamps-reuse-the-parser.html",
+      "line": "20",
+      "text": "the fragment says each of the three migrated readers \"reproduces its base-revision output on all six inputs\", which the node's own table contradicts - tests/test_dispatch_timestamps_reuse_the_parser.py:201 records four changed cells of the repository-clock reader (empty, malformed, naive and non-string) and the module docstring at :11 says three of the four readers reproduce every cell - so a reader of the fragment alone concludes no behaviour moved."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "401",
+      "text": "parse_utc is applied to str(stamp) where the base revision called datetime.fromisoformat, so the budget-hold evidence stamp now accepts whitespace-padded (\"  2026-09-29T01:02:03Z \") and lowercase-z stamps that the base read as \"the evidence age is unknown\" (probe of both scratch trees: base unknown, head -0.0/62.0 minutes old) and _lane_advisory_instant at :2592 widens the same way for lowercase z, while the manifest's evidence_inputs says only four cells of the repository-clock reader move and the table's input list carries neither shape."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "text": "baseline_suite and after_suite both carry unsubstituted placeholders in their command fields (\"<92 files>\", \"PYTHONPATH=<worktree> ... <92 files + tests/test_dispatch_timestamps_reuse_the_parser.py>\"), so neither arm can be re-run from the record, and the file list is recorded nowhere else either: my AST scan finds 40 tests/ files importing reckon.crew.dispatch at base, which the 92-file selection plausibly covers but the record cannot show."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141227143352-dispatch-timestamps-reuse-the-parser/head-arm.log",
+      "line": "1",
+      "text": "the head arm's revision line names the base sha fdb116e2 and describes its tree as \"working tree with node C and one commit\", the manifest's after_suite names 46d18cc5, and the only revision the log itself names is bc811c64 in a correction appended after 2,072 lines of output, so tying the 34-failure measurement to the committed head rests on a trailing note plus an out-of-band check that bc811c64 and 46d18cc5 share tree 85e4033e."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit - 46d18cc5 routes three of the four readers through reckon._timestamps and adds the 29-test table, f21c48fb adds the fragment; nothing outside the three readers changed in the module, and the retained fromisoformat carries a comment at :2749 stating why in mechanism terms.",
+    "done_when": "one fromisoformat hit remains in reckon/crew/dispatch.py (:2754, pinned by the AST guard at tests/test_dispatch_timestamps_reuse_the_parser.py:177) and it is named as the retained exception with its differing input at :193, the six-row per-reader table exists and passes 29/29 in my own run at the committed head, both arms end with an EXIT= line and both basetemps are deleted, but the head arm adds three failing ids the base arm does not, all three of which pass serially at both trees (I re-ran each side myself).",
+    "goal": "the node's goal is the four timestamp readers in reckon/crew/dispatch.py reading through reckon._timestamps keeping their current results; :401 and :413 now call parse_utc, :2592 calls parse_iso, and the fourth reader is the retained exception the fence names; my 19-input probe of both scratch trees reproduces every recorded cell of all four readers, though :401 and :2592 widen two shapes the base revision refused (FINDING).",
+    "manifest": "read; the logs it names exist and carry what it states (base-arm.log 31 failed/1011 passed EXIT=1, head-arm.log 34 failed/1037 passed EXIT=1, negative-control.log 1 failed/28 passed), its rewrite note checks out because bc811c64's tree hash equals 46d18cc5's, but both suite commands carry unsubstituted placeholders and the head log's revision line names the base sha (FINDING).",
+    "write_paths": "the diff fdb116e2..f21c48fb touches exactly the three declared paths (reckon/crew/dispatch.py, tests/test_dispatch_timestamps_reuse_the_parser.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/dispatch-timestamps-reuse-the-parser.html), the declared figures directory is unused, and the worktree is clean at f21c48fb."
+  },
+  "justifications": {
+    "durability": "the table at tests/test_dispatch_timestamps_reuse_the_parser.py:144 asserts literals recorded from the base revision and the AST guards at :177 and :181 redden if a reader is reverted or a new fromisoformat appears, and I reinstated the declared mutation on my own scratch copy of head to redden exactly the lane offset row (1 failed/28 passed); the table's input list omits the padded and lowercase-z shapes whose behaviour moved.",
+    "evidence": "the gate measures the fence's clauses - the table passes 29/29 at head in my re-run, both arm logs carry their EXIT= line with the results the manifest states, and both basetemps are gone - but neither suite command records the file list it ran, so the arm cannot be rebuilt, and the head log names the base sha on its revision line.",
+    "fit": "the change reuses the landed shared parser, keeps the module's private-helper idiom and policy docstrings, and states the retention reason at reckon/crew/dispatch.py:2749 with no plan, ticket or author identifiers.",
+    "goal_fidelity": "three of the four readers at reckon/crew/dispatch.py:401, :413 and :2592 resolve through reckon._timestamps and my 19-input probe of base fdb116e2 and head f21c48fb reproduces every recorded cell, but :401 and :2592 newly accept whitespace-padded and lowercase-z stamps the base revision read as unreadable, which neither the manifest nor the fragment records.",
+    "scope_discipline": "the diff fdb116e2..f21c48fb is exactly the three declared paths with the declared figures directory unused, and no unrelated edit in reckon/crew/dispatch.py beyond the three readers and the retained-exception comment."
+  },
+  "node": "review-of-dispatch-timestamps-reuse-the-parser",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the four timestamp readers in reckon/crew/dispatch.py reading through reckon._timestamps keeping their current results; :401 and :413 now call parse_utc, :2592 calls parse_iso, and the fourth reader is the retained exception the fence names; my 19-input probe of both scratch trees reproduces every recorded cell of all four readers, though :401 and :2592 widen two shapes the base revision refused (FINDING).\nVERDICT done_when: one fromisoformat hit remains in reckon/crew/dispatch.py (:2754, pinned by the AST guard at tests/test_dispatch_timestamps_reuse_the_parser.py:177) and it is named as the retained exception with its differing input at :193, the six-row per-reader table exists and passes 29/29 in my own run at the committed head, both arms end with an EXIT= line and both basetemps are deleted, but the head arm adds three failing ids the base arm does not, all three of which pass serially at both trees (I re-ran each side myself).\nVERDICT write_paths: the diff fdb116e2..f21c48fb touches exactly the three declared paths (reckon/crew/dispatch.py, tests/test_dispatch_timestamps_reuse_the_parser.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/dispatch-timestamps-reuse-the-parser.html), the declared figures directory is unused, and the worktree is clean at f21c48fb.\nVERDICT manifest: read; the logs it names exist and carry what it states (base-arm.log 31 failed/1011 passed EXIT=1, head-arm.log 34 failed/1037 passed EXIT=1, negative-control.log 1 failed/28 passed), its rewrite note checks out because bc811c64's tree hash equals 46d18cc5's, but both suite commands carry unsubstituted placeholders and the head log's revision line names the base sha (FINDING).\nVERDICT diff: read commit by commit - 46d18cc5 routes three of the four readers through reckon._timestamps and adds the 29-test table, f21c48fb adds the fragment; nothing outside the three readers changed in the module, and the retained fromisoformat carries a comment at :2749 stating why in mechanism terms.\nCALL_SITES: reckon/crew/resumption.py:_launcher_refusal, reckon/crew/dispatch.py:_dispatch_lane_advisory, reckon/crew/dispatch.py:_dispatch_lane_reading, reckon/crew/dispatch.py:plan_dispatch, reckon/crew/dispatch.py:dispatch, reckon/crew/dispatch.py:resume_plan, reckon/crew/dispatch.py:change_lane\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: three of the four readers at reckon/crew/dispatch.py:401, :413 and :2592 resolve through reckon._timestamps and my 19-input probe of base fdb116e2 and head f21c48fb reproduces every recorded cell, but :401 and :2592 newly accept whitespace-padded and lowercase-z stamps the base revision read as unreadable, which neither the manifest nor the fragment records.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate measures the fence's clauses - the table passes 29/29 at head in my re-run, both arm logs carry their EXIT= line with the results the manifest states, and both basetemps are gone - but neither suite command records the file list it ran, so the arm cannot be rebuilt, and the head log names the base sha on its revision line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff fdb116e2..f21c48fb is exactly the three declared paths with the declared figures directory unused, and no unrelated edit in reckon/crew/dispatch.py beyond the three readers and the retained-exception comment.\nSCORE durability: 18\nJUSTIFICATION durability: the table at tests/test_dispatch_timestamps_reuse_the_parser.py:144 asserts literals recorded from the base revision and the AST guards at :177 and :181 redden if a reader is reverted or a new fromisoformat appears, and I reinstated the declared mutation on my own scratch copy of head to redden exactly the lane offset row (1 failed/28 passed); the table's input list omits the padded and lowercase-z shapes whose behaviour moved.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the landed shared parser, keeps the module's private-helper idiom and policy docstrings, and states the retention reason at reckon/crew/dispatch.py:2749 with no plan, ticket or author identifiers.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/dispatch-timestamps-reuse-the-parser.html:20 the fragment says each of the three migrated readers \"reproduces its base-revision output on all six inputs\", which the node's own table contradicts - tests/test_dispatch_timestamps_reuse_the_parser.py:201 records four changed cells of the repository-clock reader (empty, malformed, naive and non-string) and the module docstring at :11 says three of the four readers reproduce every cell - so a reader of the fragment alone concludes no behaviour moved.\nFINDING reckon/crew/dispatch.py:401 parse_utc is applied to str(stamp) where the base revision called datetime.fromisoformat, so the budget-hold evidence stamp now accepts whitespace-padded (\"  2026-09-29T01:02:03Z \") and lowercase-z stamps that the base read as \"the evidence age is unknown\" (probe of both scratch trees: base unknown, head -0.0/62.0 minutes old) and _lane_advisory_instant at :2592 widens the same way for lowercase z, while the manifest's evidence_inputs says only four cells of the repository-clock reader move and the table's input list carries neither shape.\nFINDING manifest.md:17 baseline_suite and after_suite both carry unsubstituted placeholders in their command fields (\"<92 files>\", \"PYTHONPATH=<worktree> ... <92 files + tests/test_dispatch_timestamps_reuse_the_parser.py>\"), so neither arm can be re-run from the record, and the file list is recorded nowhere else either: my AST scan finds 40 tests/ files importing reckon.crew.dispatch at base, which the 92-file selection plausibly covers but the record cannot show.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141227143352-dispatch-timestamps-reuse-the-parser/head-arm.log:1 the head arm's revision line names the base sha fdb116e2 and describes its tree as \"working tree with node C and one commit\", the manifest's after_suite names 46d18cc5, and the only revision the log itself names is bc811c64 in a correction appended after 2,072 lines of output, so tying the 34-failure measurement to the committed head rests on a trailing note plus an out-of-band check that bc811c64 and 46d18cc5 share tree 85e4033e.",
+  "review_run_id": "r-20260929T152112213957-review-of-dispatch-timestamps-reuse-the-parser",
+  "reviewed_base_sha": "fdb116e212e915cd96cb02835abc98a80f103c26",
+  "reviewed_head_sha": "f21c48fb70342bddd675d5368d42b50b0c637a26",
+  "reviewed_run_id": "r-20260929T141227143352-dispatch-timestamps-reuse-the-parser",
+  "reviewer_run_id": "r-20260929T152112213957-review-of-dispatch-timestamps-reuse-the-parser",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T16:07:55.324202+00:00",
+  "total": 91
+}

@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2919",
+    "reckon/crew/dispatch.py:2925",
+    "reckon/crew/routing.py:1152",
+    "reckon/crew/routing.py:1202",
+    "reckon/flight.py:370",
+    "reckon/cli.py:1276",
+    "reckon/cli.py:1348"
+  ],
+  "completed_at": "2026-09-26T09:28:05.110Z",
+  "dispatched_at": "2026-09-26T07:58:48Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "1348",
+      "text": "the launch path's plan-review-missing mapping is asserted by no test while the dry-run mapping at reckon/cli.py:1276 is (tests/test_plan_review_gate.py:397 is the only assertion of that key in the tree), so the divergence between these two paths that the prior review caught can be reintroduced on one side and ship green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit from fb9c67be to e6556e6a; the repair commits answer the prior review's three findings (the unanswered-findings branch refuses by name at reckon/crew/routing.py:1202, both CLI paths emit plan-review-missing, and the log headers were added) and add the mode key with the validation and schema exclusion at reckon/flight.py:350 and reckon/flight.py:455.",
+    "done_when": "the done_when names tests/test_plan_review_gate.py; I re-ran that file myself in the reviewed worktree at e6556e6a with the module resolution pinned to the reviewed tree and recorded 17 passed (log recheck-spec-head.log), and the run's manifest records the same target and result against the same revision.",
+    "goal": "the node's goal is to hold a build dispatch until the plan it implements carries a stored review; I read the gate at reckon/crew/routing.py:1156 (require_plan_reviewed), its production call at reckon/crew/dispatch.py:2919, the mode resolver at reckon/flight.py:370 and the two CLI refusals at reckon/cli.py:1276 and reckon/cli.py:1348, and found the refusal, the named remedy and the report-only default (reckon/schema/flight-defaults.yaml:76) all landed at head.",
+    "manifest": "read; status complete with commits 557fb583 through e6556e6a, the receipts it names (repair/spec-head.log 17 passed, compat-head 50 against compat-base 49, flight-arm 122 passed 2 skipped) all exist and carry revision, tree and command headers, and its declared negative control reddens the case it names.",
+    "write_paths": "the pointer's node.write_paths (read live) carries twelve paths and every changed path is inside them except reckon/flight.py and reckon/schema/flight-defaults.yaml, which the resume-3 directive names as in-fence and the manifest's follow_ons disclose with the promotion command that carries the grant."
+  },
+  "justifications": {
+    "durability": "the declared negative control turns the named case red with DID NOT RAISE PlanReviewMissingError, but the launch-path mapping at reckon/cli.py:1348 has no case of its own while the dry-run path is guarded, so a drift between the pair the prior review already caught once ships green.",
+    "evidence": "the spec gate was independently reproduced at e6556e6a with module resolution pinned to the reviewed tree (recheck-spec-head.log), and the flight arm receipt at repair/flight-arm.log names the prior revision with uncommitted edits present, which transfers to 4cf5d6f3 only by the resumed stream's write times rather than by its own header.",
+    "fit": "the report-only sentence is composed once at reckon/crew/routing.py:1153 and shared by both modes, the mode key is validated beside the layer check and held out of the generated schema at reckon/flight.py:455, and the added names carry no plan, ticket or version label.",
+    "goal_fidelity": "the gate refuses an unreviewed build through reckon/crew/routing.py:1152 and names the unanswered finding at reckon/crew/routing.py:1202, while the shipped layer at reckon/schema/flight-defaults.yaml:76 records rather than refuses until an operator opts in, which is the mode the directive chose.",
+    "scope_discipline": "thirteen of fifteen changed paths are inside the pointer's node.write_paths and the remaining two are granted in the resume-3 directive, with the pointer-record lag disclosed in the manifest's follow_ons rather than hidden."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hold a build dispatch until the plan it implements carries a stored review; I read the gate at reckon/crew/routing.py:1156 (require_plan_reviewed), its production call at reckon/crew/dispatch.py:2919, the mode resolver at reckon/flight.py:370 and the two CLI refusals at reckon/cli.py:1276 and reckon/cli.py:1348, and found the refusal, the named remedy and the report-only default (reckon/schema/flight-defaults.yaml:76) all landed at head.\nVERDICT done_when: the done_when names tests/test_plan_review_gate.py; I re-ran that file myself in the reviewed worktree at e6556e6a with the module resolution pinned to the reviewed tree and recorded 17 passed (log recheck-spec-head.log), and the run's manifest records the same target and result against the same revision.\nVERDICT write_paths: the pointer's node.write_paths (read live) carries twelve paths and every changed path is inside them except reckon/flight.py and reckon/schema/flight-defaults.yaml, which the resume-3 directive names as in-fence and the manifest's follow_ons disclose with the promotion command that carries the grant.\nVERDICT manifest: read; status complete with commits 557fb583 through e6556e6a, the receipts it names (repair/spec-head.log 17 passed, compat-head 50 against compat-base 49, flight-arm 122 passed 2 skipped) all exist and carry revision, tree and command headers, and its declared negative control reddens the case it names.\nVERDICT diff: read commit by commit from fb9c67be to e6556e6a; the repair commits answer the prior review's three findings (the unanswered-findings branch refuses by name at reckon/crew/routing.py:1202, both CLI paths emit plan-review-missing, and the log headers were added) and add the mode key with the validation and schema exclusion at reckon/flight.py:350 and reckon/flight.py:455.\nCALL_SITES: reckon/crew/dispatch.py:2919, reckon/crew/dispatch.py:2925, reckon/crew/routing.py:1152, reckon/crew/routing.py:1202, reckon/flight.py:370, reckon/cli.py:1276, reckon/cli.py:1348\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gate refuses an unreviewed build through reckon/crew/routing.py:1152 and names the unanswered finding at reckon/crew/routing.py:1202, while the shipped layer at reckon/schema/flight-defaults.yaml:76 records rather than refuses until an operator opts in, which is the mode the directive chose.\nSCORE evidence: 18\nJUSTIFICATION evidence: the spec gate was independently reproduced at e6556e6a with module resolution pinned to the reviewed tree (recheck-spec-head.log), and the flight arm receipt at repair/flight-arm.log names the prior revision with uncommitted edits present, which transfers to 4cf5d6f3 only by the resumed stream's write times rather than by its own header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: thirteen of fifteen changed paths are inside the pointer's node.write_paths and the remaining two are granted in the resume-3 directive, with the pointer-record lag disclosed in the manifest's follow_ons rather than hidden.\nSCORE durability: 17\nJUSTIFICATION durability: the declared negative control turns the named case red with DID NOT RAISE PlanReviewMissingError, but the launch-path mapping at reckon/cli.py:1348 has no case of its own while the dry-run path is guarded, so a drift between the pair the prior review already caught once ships green.\nSCORE fit: 19\nJUSTIFICATION fit: the report-only sentence is composed once at reckon/crew/routing.py:1153 and shared by both modes, the mode key is validated beside the layer check and held out of the generated schema at reckon/flight.py:455, and the added names carry no plan, ticket or version label.\nFINDING reckon/cli.py:1348 the launch path's plan-review-missing mapping is asserted by no test while the dry-run mapping at reckon/cli.py:1276 is (tests/test_plan_review_gate.py:397 is the only assertion of that key in the tree), so the divergence between these two paths that the prior review caught can be reintroduced on one side and ship green.",
+  "review_run_id": "r-20260926T075839396843-re-review-of-plan-review-dispatch-gate",
+  "reviewed_base_sha": "fb9c67bea298ca41460894b17cd70c7e904a4785",
+  "reviewed_head_sha": "e6556e6ac8154ca3a7eb194a7b6dc014ff254568",
+  "reviewed_run_id": "r-20260925T131953539635-plan-review-dispatch-gate",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T09:07:31.537888+00:00",
+  "total": 92
+}

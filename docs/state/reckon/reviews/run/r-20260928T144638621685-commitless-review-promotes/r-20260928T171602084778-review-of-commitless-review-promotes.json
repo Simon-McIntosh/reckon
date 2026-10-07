@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/after-suite.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/baseline-suite.log",
+    "note": "count and ids are the set difference over the two gate logs the reviewed manifest names under baseline_suite and after_suite, computed with reckon.crew.review.added_failures_from_gate_logs; both logs report zero FAILED or ERROR lines, so the difference is empty"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3146 crew.complete",
+    "reckon/crew/promotion.py:3209 _require_commit_for_changed_manifest",
+    "reckon/crew/promotion.py:583 the commitless-promotion guard"
+  ],
+  "completed_at": "2026-09-28T17:50:22.806Z",
+  "dispatched_at": "2026-09-28T17:16:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "479",
+      "text": "the whole-field declaration is read from the first surviving parsed entry, so a value that opens with the bare declaration word followed by a comma and prose without a parenthetical \u2014 `commits: none, no repository change` \u2014 loses that word to the parser's none-values emptying and arrives as `['no repository change']`, which is refused with \"cites 'no repository change' as a commit\"; the hand edit the node set out to remove therefore survives for that shape, and the docstring's claim to read the field across the whole value is stronger than the code."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against the base; abd56a80 adds _commits_field_declares_absence and routes both commitless call sites through it plus 313 lines of test, 71ffc727 removes the docs fragment and redraws the decision figure, and 88dcbd4c rewrites the figure with real text elements (1819 lines to 106).",
+    "done_when": "the source node's done-when asks for the base reproduction with its refusal text, the review promotion, the implement refusal, a red declared mutation and zero added failures by id; found repro-base.log recording 3 failed / 2 passed on the delivered test file at base source, baseline-suite.log and after-suite.log each reporting zero FAILED or ERROR lines; and negative-control.log showing the declared mutation reddening exactly the comma case while the semicolon case stays green.",
+    "goal": "the node's goal is that a review run whose manifest reads `commits: none` followed by prose promotes through crew complete with no commits and no hand edit while the same prose on an implement run is still refused; found that reckon/crew/promotion.py:1403 gives the whole-field reading to _COMMITLESS_ROLES (reckon/crew/promotion.py:444) and the delivered file's five cases pass in my own arm at the delivered head, but a value opening with the bare word followed by a comma and prose without a parenthetical is still refused (FINDING reckon/crew/promotion.py:479).",
+    "manifest": "read; it records commits abd56a80, 71ffc727, 88dcbd4c, the separate base arm at 40d23d9b and the declared mutation, and it now names after_suite at 88dcbd4c, which answers the earlier review's finding that the log header named a non-ancestor revision.",
+    "write_paths": "the manifest declares five paths and `git diff --stat 40d23d9b 88dcbd4c` lists three files \u2014 reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and docs/figures/the-audit-agrees-with-the-skill/commitless-review-promotes/commitless-review-decision.svg \u2014 every one of them inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_commitless_review_promotes.py::test_review_declaring_no_commits_with_a_comma_still_promotes fails at base source in my own arm (review2-base-arm.log) and under the declared mutation (negative-control.log), but no assertion pins the bare `none, prose` shape or the docstring's whole-value claim, where my probe measured a refusal.",
+    "evidence": "the reviewed manifest's after_suite names 88dcbd4c and its log's first line carries that revision with tree 12c17b6f, which git rev-parse confirms is 88dcbd4c's tree, while baseline-suite.log names 40d23d9b with promotion.py restored in place for that arm.",
+    "fit": "reckon/crew/promotion.py:447 keeps the module's private-helper and long-docstring idiom, imports the absence vocabulary from reckon/crew/reports.py at reckon/crew/promotion.py:38, and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/promotion.py:1403 honours the declaration for review and investigate and eleven prose and role probes hold, but `commits: none, no repository change` is still refused (measured at the delivered head), so the plan's \"a commits: value beginning none is read as an empty list\" holds only for some beginnings.",
+    "scope_discipline": "`git diff --stat 40d23d9b 88dcbd4c` lists only reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and the declared figure path, all inside the manifest's five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a review run whose manifest reads `commits: none` followed by prose promotes through crew complete with no commits and no hand edit while the same prose on an implement run is still refused; found that reckon/crew/promotion.py:1403 gives the whole-field reading to _COMMITLESS_ROLES (reckon/crew/promotion.py:444) and the delivered file's five cases pass in my own arm at the delivered head, but a value opening with the bare word followed by a comma and prose without a parenthetical is still refused (FINDING reckon/crew/promotion.py:479).\nVERDICT done_when: the source node's done-when asks for the base reproduction with its refusal text, the review promotion, the implement refusal, a red declared mutation and zero added failures by id; found repro-base.log recording 3 failed / 2 passed on the delivered test file at base source, baseline-suite.log and after-suite.log each reporting zero FAILED or ERROR lines; and negative-control.log showing the declared mutation reddening exactly the comma case while the semicolon case stays green.\nVERDICT write_paths: the manifest declares five paths and `git diff --stat 40d23d9b 88dcbd4c` lists three files \u2014 reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and docs/figures/the-audit-agrees-with-the-skill/commitless-review-promotes/commitless-review-decision.svg \u2014 every one of them inside that set.\nVERDICT manifest: read; it records commits abd56a80, 71ffc727, 88dcbd4c, the separate base arm at 40d23d9b and the declared mutation, and it now names after_suite at 88dcbd4c, which answers the earlier review's finding that the log header named a non-ancestor revision.\nVERDICT diff: read commit by commit against the base; abd56a80 adds _commits_field_declares_absence and routes both commitless call sites through it plus 313 lines of test, 71ffc727 removes the docs fragment and redraws the decision figure, and 88dcbd4c rewrites the figure with real text elements (1819 lines to 106).\nCALL_SITES: reckon/crew/promotion.py:3146 crew.complete, reckon/crew/promotion.py:3209 _require_commit_for_changed_manifest, reckon/crew/promotion.py:583 the commitless-promotion guard\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1403 honours the declaration for review and investigate and eleven prose and role probes hold, but `commits: none, no repository change` is still refused (measured at the delivered head), so the plan's \"a commits: value beginning none is read as an empty list\" holds only for some beginnings.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed manifest's after_suite names 88dcbd4c and its log's first line carries that revision with tree 12c17b6f, which git rev-parse confirms is 88dcbd4c's tree, while baseline-suite.log names 40d23d9b with promotion.py restored in place for that arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 40d23d9b 88dcbd4c` lists only reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and the declared figure path, all inside the manifest's five declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_commitless_review_promotes.py::test_review_declaring_no_commits_with_a_comma_still_promotes fails at base source in my own arm (review2-base-arm.log) and under the declared mutation (negative-control.log), but no assertion pins the bare `none, prose` shape or the docstring's whole-value claim, where my probe measured a refusal.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion.py:447 keeps the module's private-helper and long-docstring idiom, imports the absence vocabulary from reckon/crew/reports.py at reckon/crew/promotion.py:38, and introduces no name the repository naming rules forbid.\nFINDING reckon/crew/promotion.py:479 the whole-field declaration is read from the first surviving parsed entry, so a value that opens with the bare declaration word followed by a comma and prose without a parenthetical \u2014 `commits: none, no repository change` \u2014 loses that word to the parser's none-values emptying and arrives as `['no repository change']`, which is refused with \"cites 'no repository change' as a commit\"; the hand edit the node set out to remove therefore survives for that shape, and the docstring's claim to read the field across the whole value is stronger than the code.",
+  "review_run_id": "r-20260928T171602084778-review-of-commitless-review-promotes",
+  "reviewed_base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "reviewed_head_sha": "88dcbd4c2ed106a12ca0d9d9e73258acbebea256",
+  "reviewed_run_id": "r-20260928T144638621685-commitless-review-promotes",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T17:39:47.876246+00:00",
+  "total": 91
+}

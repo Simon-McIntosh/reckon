@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "Derived from the reviewed run's own gate logs baseline_suite (logs/base-arm-8c592336-abs.log, revision 8c592336, 111 passed EXIT=0) and after_suite (logs/head-arm-8f47851d-abs.log, revision 8f47851d, 114 passed EXIT=0): neither log reports a FAILED or ERROR id, so the head-minus-base set difference is 0 ids; recomputed with reckon.crew.review.added_failures_from_gate_logs.",
+  "backend": "clive",
+  "base_log_revision": "8c5923360ff7c4ca401047ec8e61df813101741a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:5580",
+    "reckon/crew/promotion.py:5791",
+    "reckon/crew/routing.py:1216"
+  ],
+  "completed_at": "2026-10-02T23:40:35.719Z",
+  "dispatched_at": "2026-10-02T23:28:43Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T223224404015-unmeasured-commit-list/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm ran the 10 pre-existing gc/residue files (111 passed) while the head arm ran those plus the new test file (114 passed), so the two arms share no single command; the base set is a strict subset of the head set and the added-failure count derives to 0 either way."
+    }
+  ],
+  "head_log_revision": "8f47851d482f582d6ca33c292b771d00bb6efee1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 8c592336..b7373405 (3 files, +233/-16); _commits_beyond_merge_base returns None on a git-cherry failure, _inspect_workspace nulls both commit lists when commits is None and fills commits_unmeasured_reason with one of four conditions, and the unavailable-tree row carries the same nulls with its own reason.",
+    "done_when": "the done-when names a test inspecting one divergent dirty worktree both ways; tests/test_unmeasured_commit_list.py:49-71 asserts null in both fields and the release_residue reason for the unmeasured call and the sha list for the measured call, base arm 111 passed EXIT=0 and head arm 114 passed EXIT=0 with no added failure ids.",
+    "goal": "the node's goal is to make an unmeasured commit list read as unmeasured rather than as a measured zero; reckon/crew/routing.py:798-808 (head) now ships null in non_equivalent_commits and patch_equivalent_commits with commits_unmeasured_reason when the commits beyond the integration head were not measured, and a measured row keeps its lists.",
+    "manifest": "read; status complete, commits 8f47851d and b7373405, baseline_suite revision 8c592336 and after_suite revision 8f47851d both completed EXIT=0 with failure_count 0, and negative_control_log ending EXIT=1 on the null assertion.",
+    "write_paths": "the manifest declares reckon/crew/routing.py, tests/test_unmeasured_commit_list.py, tests/test_crew_gc.py, the evidence fragment and a figures path, and git diff 8c592336..b7373405 --stat lists only routing.py, the new test file and the evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_unmeasured_commit_list.py:64-65 and 84-85 fail if an unmeasured row reports [] instead of None (the reviewed run's negative control records 2 failed, EXIT=1), and the measured assertion at :69 compares against the worktree's own git-rev-parse head rather than a value it passed in.",
+    "evidence": "the recorded logs logs/base-arm-8c592336-abs.log (111 passed, EXIT=0) and logs/head-arm-8f47851d-abs.log (114 passed, EXIT=0) reconcile with the manifest, and I re-ran tests/test_unmeasured_commit_list.py at head (3 passed, EXIT=0); docked one because the base arm runs the 10 pre-existing files while the head arm adds the new file, so the two arms are not one command.",
+    "fit": "the change extends the existing _inspect_workspace row shape with a sibling reason field and reuses the module's type hints, and neither commit carries a plan, sprint or version label or AI attribution.",
+    "goal_fidelity": "reckon/crew/routing.py:798-808 returns None for both commit-list fields whenever commits were not measured and keeps the lists when they were, which is exactly the plan's null-vs-list contract.",
+    "scope_discipline": "git diff 8c592336..b7373405 --stat names only reckon/crew/routing.py, tests/test_unmeasured_commit_list.py and the evidence fragment, all inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make an unmeasured commit list read as unmeasured rather than as a measured zero; reckon/crew/routing.py:798-808 (head) now ships null in non_equivalent_commits and patch_equivalent_commits with commits_unmeasured_reason when the commits beyond the integration head were not measured, and a measured row keeps its lists.\nVERDICT done_when: the done-when names a test inspecting one divergent dirty worktree both ways; tests/test_unmeasured_commit_list.py:49-71 asserts null in both fields and the release_residue reason for the unmeasured call and the sha list for the measured call, base arm 111 passed EXIT=0 and head arm 114 passed EXIT=0 with no added failure ids.\nVERDICT write_paths: the manifest declares reckon/crew/routing.py, tests/test_unmeasured_commit_list.py, tests/test_crew_gc.py, the evidence fragment and a figures path, and git diff 8c592336..b7373405 --stat lists only routing.py, the new test file and the evidence fragment.\nVERDICT manifest: read; status complete, commits 8f47851d and b7373405, baseline_suite revision 8c592336 and after_suite revision 8f47851d both completed EXIT=0 with failure_count 0, and negative_control_log ending EXIT=1 on the null assertion.\nVERDICT diff: read 8c592336..b7373405 (3 files, +233/-16); _commits_beyond_merge_base returns None on a git-cherry failure, _inspect_workspace nulls both commit lists when commits is None and fills commits_unmeasured_reason with one of four conditions, and the unavailable-tree row carries the same nulls with its own reason.\nCALL_SITES: reckon/crew/promotion.py:5580, reckon/crew/promotion.py:5791, reckon/crew/routing.py:1216\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:798-808 returns None for both commit-list fields whenever commits were not measured and keeps the lists when they were, which is exactly the plan's null-vs-list contract.\nSCORE evidence: 19\nJUSTIFICATION evidence: the recorded logs logs/base-arm-8c592336-abs.log (111 passed, EXIT=0) and logs/head-arm-8f47851d-abs.log (114 passed, EXIT=0) reconcile with the manifest, and I re-ran tests/test_unmeasured_commit_list.py at head (3 passed, EXIT=0); docked one because the base arm runs the 10 pre-existing files while the head arm adds the new file, so the two arms are not one command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 8c592336..b7373405 --stat names only reckon/crew/routing.py, tests/test_unmeasured_commit_list.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_unmeasured_commit_list.py:64-65 and 84-85 fail if an unmeasured row reports [] instead of None (the reviewed run's negative control records 2 failed, EXIT=1), and the measured assertion at :69 compares against the worktree's own git-rev-parse head rather than a value it passed in.\nSCORE fit: 20\nJUSTIFICATION fit: the change extends the existing _inspect_workspace row shape with a sibling reason field and reuses the module's type hints, and neither commit carries a plan, sprint or version label or AI attribution.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T223224404015-unmeasured-commit-list/manifest.md:14 follow-on: the base arm ran the 10 pre-existing gc/residue files (111 passed) while the head arm ran those plus the new test file (114 passed), so the two arms share no single command; the base set is a strict subset of the head set and the added-failure count derives to 0 either way.\n",
+  "review_run_id": "r-20261002T232757136001-review-of-unmeasured-commit-list",
+  "reviewed_base_sha": "8c5923360ff7c4ca401047ec8e61df813101741a",
+  "reviewed_head_sha": "b7373405700abdbb74e6b92ffd3a670394d08d25",
+  "reviewed_run_id": "r-20261002T223224404015-unmeasured-commit-list",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T23:39:40.440984+00:00",
+  "total": 98
+}

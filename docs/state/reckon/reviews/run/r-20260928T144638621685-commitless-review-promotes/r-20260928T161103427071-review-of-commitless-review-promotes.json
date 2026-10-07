@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/after-suite.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/baseline-suite.log",
+    "note": "count and ids are the set difference over the two gate logs the reviewed manifest names under baseline_suite and after_suite, computed with reckon.crew.review.added_failures_from_gate_logs; both logs report zero FAILED or ERROR lines, so the difference is empty"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3156 crew.complete calls _require_commit_for_changed_manifest",
+    "reckon/crew/promotion.py:1452 the guard reads the declaration",
+    "reckon/crew/reports.py:70 _NONE_VALUES is the vocabulary the declaration is read against"
+  ],
+  "completed_at": "2026-09-28T16:50:32.894Z",
+  "dispatched_at": "2026-09-28T16:11:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1352",
+      "text": "a declared absence is honoured only when its parenthetical prose carries no comma: `commits: none (review node, no repository change)` splits into three entries and is refused by the citation check, so the hand edit the plan set out to remove survives for the comma form while the semicolon form the test pins promotes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/after-suite.log",
+      "line": "1",
+      "text": "this header names 88d4a6f0 while the manifest's after_suite names 75991c77, and the two revisions carry different implementations of the same guard, so the promotion suite delta cannot be reconciled with the delivered revision without inspecting both."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/repro-base.log",
+      "line": "1",
+      "text": "the recorded base arm ran an earlier revision of the test file whose third case is a documentation role, while the committed test file's third case is a review role, so the log's failing scenarios match neither the committed test file nor the manifest's account of the base arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against the dispatch base; 75991c77 adds _manifest_cites_a_commit and one changed line in _require_commit_for_changed_manifest plus 253 lines of test, and 830a50c6 adds the evidence fragment and its figure.",
+    "done_when": "the node's done-when asks for the base reproduction with its refusal text, the review promotion, the implement refusal, a red negative control and zero added failures by id; the manifest states all five and the two gate logs it names back the last one.",
+    "goal": "the node goal is that a review run whose manifest declares commits: none with prose promotes with no commits and no hand edit while the same prose on an implement run is refused; tests/test_commitless_review_promotes.py at the delivered head shows both.",
+    "manifest": "read; it records commits 75991c77 and 830a50c6 and states that the review side did not reproduce at the dispatch base rather than claiming a reproduction it did not get.",
+    "write_paths": "the manifest declares five paths and git diff 40d23d9b..830a50c6 changes four files, every one of them inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_commitless_review_promotes.py:249 fails at the dispatch base with \"Failed: DID NOT RAISE CrewError\" (measured in /tmp/rev-cl-base), so the assertion reddens on the regressed guard.",
+    "evidence": "the manifest's baseline_suite and after_suite name logs carrying revision, tree and command headers, but after-suite.log line 1 names 88d4a6f0, a revision that is not an ancestor of the delivered head and whose guard still read `or manifest.get(\"commits\")`.",
+    "fit": "reckon/crew/promotion.py:1339 keeps the module's private-helper idiom and imports the absence vocabulary from reckon/crew/reports.py:70 rather than restating it.",
+    "goal_fidelity": "reckon/crew/promotion.py:1452 honours the declaration by where the run's paths lie, so a review run promotes (measured: 3 passed in /tmp/rev-cl-head) while an in-repository path is refused whatever the role.",
+    "scope_discipline": "git diff --stat 40d23d9b 830a50c6 lists only reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and the two declared evidence paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a review run whose manifest declares commits: none with prose promotes with no commits and no hand edit while the same prose on an implement run is refused; tests/test_commitless_review_promotes.py at the delivered head shows both.\nVERDICT done_when: the node's done-when asks for the base reproduction with its refusal text, the review promotion, the implement refusal, a red negative control and zero added failures by id; the manifest states all five and the two gate logs it names back the last one.\nVERDICT write_paths: the manifest declares five paths and git diff 40d23d9b..830a50c6 changes four files, every one of them inside that set.\nVERDICT manifest: read; it records commits 75991c77 and 830a50c6 and states that the review side did not reproduce at the dispatch base rather than claiming a reproduction it did not get.\nVERDICT diff: read commit by commit against the dispatch base; 75991c77 adds _manifest_cites_a_commit and one changed line in _require_commit_for_changed_manifest plus 253 lines of test, and 830a50c6 adds the evidence fragment and its figure.\nCALL_SITES: reckon/crew/promotion.py:3156 crew.complete calls _require_commit_for_changed_manifest, reckon/crew/promotion.py:1452 the guard reads the declaration, reckon/crew/reports.py:70 _NONE_VALUES is the vocabulary the declaration is read against\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1452 honours the declaration by where the run's paths lie, so a review run promotes (measured: 3 passed in /tmp/rev-cl-head) while an in-repository path is refused whatever the role.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite name logs carrying revision, tree and command headers, but after-suite.log line 1 names 88d4a6f0, a revision that is not an ancestor of the delivered head and whose guard still read `or manifest.get(\"commits\")`.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 40d23d9b 830a50c6 lists only reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and the two declared evidence paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_commitless_review_promotes.py:249 fails at the dispatch base with \"Failed: DID NOT RAISE CrewError\" (measured in /tmp/rev-cl-base), so the assertion reddens on the regressed guard.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion.py:1339 keeps the module's private-helper idiom and imports the absence vocabulary from reckon/crew/reports.py:70 rather than restating it.\nFINDING reckon/crew/promotion.py:1352 a declared absence is honoured only when its parenthetical prose carries no comma: `commits: none (review node, no repository change)` splits into three entries and is refused by the citation check, so the hand edit the plan set out to remove survives for the comma form while the semicolon form the test pins promotes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/after-suite.log:1 this header names 88d4a6f0 while the manifest's after_suite names 75991c77, and the two revisions carry different implementations of the same guard, so the promotion suite delta cannot be reconciled with the delivered revision without inspecting both.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/repro-base.log:1 the recorded base arm ran an earlier revision of the test file whose third case is a documentation role, while the committed test file's third case is a review role, so the log's failing scenarios match neither the committed test file nor the manifest's account of the base arm.\n",
+  "review_run_id": "r-20260928T161103427071-review-of-commitless-review-promotes",
+  "reviewed_base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "reviewed_head_sha": "830a50c68e8119eba0a825565e3b449f9e488eac",
+  "reviewed_run_id": "r-20260928T144638621685-commitless-review-promotes",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T16:42:37.192318+00:00",
+  "total": 93
+}

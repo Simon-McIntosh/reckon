@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_crew_negative_control_header.py::test_the_refusal_states_the_first_line_requirement",
+    "tests/test_negative_control_waiver.py::test_mismatch_without_waiver_still_refuses",
+    "tests/test_negative_control_waiver.py::test_python_entry_point_persists_the_same_waiver",
+    "tests/test_negative_control_waiver.py::test_reasoned_waiver_promotes_and_persists_control_evidence"
+  ],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T060540883209-the-control-gate-checks-facts-not-words/logs/head-population.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T060540883209-the-control-gate-checks-facts-not-words/logs/base-population.log"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:4554"
+  ],
+  "completed_at": "2026-09-28T08:43:23.886Z",
+  "dispatched_at": "2026-09-28T07:33:14Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T060540883209-the-control-gate-checks-facts-not-words/manifest.md",
+      "line": "64",
+      "text": "the manifest names the added failure tests/test_negative_control_waiver.py::test_python_entry_point_persists_the_same_waiver only by its tail after \"and\", so review.py's _retires_id does not retire it and annotate_added_failures caps any stored total at 5 for every reader, measured: a record scoring 93 reads back as 5 with \"not retired by name\" naming that id (logs/reviewer-cap-measurement.log)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit at 63bb1b3c against base 1983f228; two commits, 397 insertions over five files, the code change confined to promotion.py:4076-4260 plus the new test file, and the docs commit purely additive (86 insertions, no deletions, plan version and modified meta lines untouched).",
+    "done_when": "the done-when names four cases, a base arm, a head arm, a declared mutation and a population free of added failures; the four cases sit at tests/test_control_gate_checks_facts.py:63-133 and are 4 passed at head (logs/head-gate.log) against 4 failed at base (logs/base-arm-new-file.log), the mutation log's first line is byte-equal to the declared string and reds all four (logs/negative-control-mutation.log), and the fifth clause does not hold \u2014 the seven-file population is 49 passed and 4 failed (added_failure_count 4 from after_suite), which the node proves unsatisfiable rather than meets.",
+    "goal": "the node's goal is to replace the verbatim substring admission in `_require_declared_negative_control` with the two facts a run leaves behind \u2014 a non-zero exit and at least one test the baseline does not fail \u2014 keeping the `none: <reason>` escape, the gate-passing exemption and `--waive-negative-control`; reckon/crew/promotion.py:4220-4229 computes exactly those two facts, and the three escapes return before them at :4163-4184.",
+    "manifest": "read in full; it reports status complete, carries the base and head population arms as JSON with their log paths (0 and 4 failure ids), names the gate log and the mutation arm, and its negative_control_log line is a bare path whose log opens with the declared mutation verbatim.",
+    "write_paths": "read the five declared paths from the manifest; `git diff --stat 1983f22812f3a68dc3a09eb414ead7e9eb245fa3..63bb1b3c` changes exactly those five \u2014 reckon/crew/promotion.py, tests/test_control_gate_checks_facts.py, the plan, the cumulative evidence record and one figure \u2014 with no path outside them."
+  },
+  "justifications": {
+    "durability": "reverting the substring admission reds all four cases (logs/negative-control-mutation.log), each pins a named regression \u2014 the exit fact at tests/test_control_gate_checks_facts.py:63 and :116, added-failure containment at :73, wording independence at :94 \u2014 and the no-facts branch at reckon/crew/promotion.py:4235 is unasserted but redundant, measured rather than argued: flipping it fail-open leaves all four green while the same wording-only log is still refused by the added-failure fact (logs/reviewer-uncovered-branch-probe.log, logs/reviewer-branch-positive-control.log).",
+    "evidence": "the four cases, the base arm, the mutation arm and both population arms are on disk with header lines naming revision, tree, command, module and cwd (logs/head-gate.log, logs/base-arm-new-file.log, logs/negative-control-mutation.log, logs/head-population.log), and the one clause not met is measured and reported rather than omitted.",
+    "fit": "the new helpers at reckon/crew/promotion.py:4076-4115 reuse review.py's canonical id reader rather than reparsing, follow the neighbouring helper's docstring idiom, and the naming checks over the added lines report no plan, ticket or attribution token.",
+    "goal_fidelity": "reckon/crew/promotion.py:4220-4229 reads only the log's exit record and failing set, and the reviewed run's own delivered control is admitted by this tree's gate with verdict matched and the declaration beside the log (logs/reviewer-delivery-check.log).",
+    "scope_discipline": "`git diff --stat 1983f22812f3a68dc3a09eb414ead7e9eb245fa3..HEAD` touches only the five declared paths, the cumulative evidence record gained its section with zero deletions, and the plan's version and modified meta lines are untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to replace the verbatim substring admission in `_require_declared_negative_control` with the two facts a run leaves behind \u2014 a non-zero exit and at least one test the baseline does not fail \u2014 keeping the `none: <reason>` escape, the gate-passing exemption and `--waive-negative-control`; reckon/crew/promotion.py:4220-4229 computes exactly those two facts, and the three escapes return before them at :4163-4184.\nVERDICT done_when: the done-when names four cases, a base arm, a head arm, a declared mutation and a population free of added failures; the four cases sit at tests/test_control_gate_checks_facts.py:63-133 and are 4 passed at head (logs/head-gate.log) against 4 failed at base (logs/base-arm-new-file.log), the mutation log's first line is byte-equal to the declared string and reds all four (logs/negative-control-mutation.log), and the fifth clause does not hold \u2014 the seven-file population is 49 passed and 4 failed (added_failure_count 4 from after_suite), which the node proves unsatisfiable rather than meets.\nVERDICT write_paths: read the five declared paths from the manifest; `git diff --stat 1983f22812f3a68dc3a09eb414ead7e9eb245fa3..63bb1b3c` changes exactly those five \u2014 reckon/crew/promotion.py, tests/test_control_gate_checks_facts.py, the plan, the cumulative evidence record and one figure \u2014 with no path outside them.\nVERDICT manifest: read in full; it reports status complete, carries the base and head population arms as JSON with their log paths (0 and 4 failure ids), names the gate log and the mutation arm, and its negative_control_log line is a bare path whose log opens with the declared mutation verbatim.\nVERDICT diff: read commit by commit at 63bb1b3c against base 1983f228; two commits, 397 insertions over five files, the code change confined to promotion.py:4076-4260 plus the new test file, and the docs commit purely additive (86 insertions, no deletions, plan version and modified meta lines untouched).\nCALL_SITES: reckon/crew/promotion.py:4554\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:4220-4229 reads only the log's exit record and failing set, and the reviewed run's own delivered control is admitted by this tree's gate with verdict matched and the declaration beside the log (logs/reviewer-delivery-check.log).\nSCORE evidence: 18\nJUSTIFICATION evidence: the four cases, the base arm, the mutation arm and both population arms are on disk with header lines naming revision, tree, command, module and cwd (logs/head-gate.log, logs/base-arm-new-file.log, logs/negative-control-mutation.log, logs/head-population.log), and the one clause not met is measured and reported rather than omitted.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --stat 1983f22812f3a68dc3a09eb414ead7e9eb245fa3..HEAD` touches only the five declared paths, the cumulative evidence record gained its section with zero deletions, and the plan's version and modified meta lines are untouched.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the substring admission reds all four cases (logs/negative-control-mutation.log), each pins a named regression \u2014 the exit fact at tests/test_control_gate_checks_facts.py:63 and :116, added-failure containment at :73, wording independence at :94 \u2014 and the no-facts branch at reckon/crew/promotion.py:4235 is unasserted but redundant, measured rather than argued: flipping it fail-open leaves all four green while the same wording-only log is still refused by the added-failure fact (logs/reviewer-uncovered-branch-probe.log, logs/reviewer-branch-positive-control.log).\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers at reckon/crew/promotion.py:4076-4115 reuse review.py's canonical id reader rather than reparsing, follow the neighbouring helper's docstring idiom, and the naming checks over the added lines report no plan, ticket or attribution token.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T060540883209-the-control-gate-checks-facts-not-words/manifest.md:64 the manifest names the added failure tests/test_negative_control_waiver.py::test_python_entry_point_persists_the_same_waiver only by its tail after \"and\", so review.py's _retires_id does not retire it and annotate_added_failures caps any stored total at 5 for every reader, measured: a record scoring 93 reads back as 5 with \"not retired by name\" naming that id (logs/reviewer-cap-measurement.log).",
+  "review_run_id": "r-20260928T073255728045-review-of-the-control-gate-checks-facts-not-words",
+  "reviewed_base_sha": "1983f22812f3a68dc3a09eb414ead7e9eb245fa3",
+  "reviewed_head_sha": "63bb1b3ccc0faf54eaedc03593fc7a74815b7d41",
+  "reviewed_run_id": "r-20260928T060540883209-the-control-gate-checks-facts-not-words",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T08:33:00.080349+00:00",
+  "total": 93
+}

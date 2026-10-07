@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_derivation": {
+    "base_logs": [],
+    "excluded_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054600104139-read-plan-reads-the-composed-record/negative-control.log",
+    "head_logs": [
+      "/home/ITER/mcintos/.cache/reckon-read-plan-composed/gate.log",
+      "/home/ITER/mcintos/.cache/reckon-read-plan-composed/adjacent.log"
+    ],
+    "head_only_zero": {
+      "count": 0,
+      "ids": []
+    },
+    "measured_by": "reckon.crew.review.added_failures_from_gate_logs",
+    "note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+    "positive_control": {
+      "count": 1,
+      "ids": [
+        "tests/test_read_plan_composes_the_record.py::test_a_document_named_like_a_record_whose_metas_name_no_plan_is_ordinary"
+      ],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054600104139-read-plan-reads-the-composed-record/negative-control.log"
+    }
+  },
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:_send_evidence_record",
+    "reckon/doccheck.py:audit_file",
+    "reckon/mcp.py:_typed_resource_text"
+  ],
+  "completed_at": "2026-09-28T08:32:45.764Z",
+  "dispatched_at": "2026-09-28T06:33:22Z",
+  "findings": [
+    {
+      "file": "tests/test_read_plan_composes_the_record.py",
+      "line": "44",
+      "text": "the reviewed cases pin that the metas decide whether a given document is a record, but no case has the metas naming a plan the filename does not, so the rule this module's docstring states and the landing paragraph repeats has no failing case: with the resolver's plan source moved to the filename (the metas still required for identity) all three reviewed cases pass, and a disagreement case of that shape fails under the mutation and passes on the reviewed revision (two-arm probe, this review's logs/durability-probe.log), so a regression that took the plan from the path would be invisible to the guard."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "1104",
+      "text": "the read path swallows a composition failure with pass and a comment, where the same fallback logs a warning at serve.py:2103 and reports a record-not-composed finding at doccheck.py:1249, so a read_plan caller receiving a record's own bytes cannot tell an unreadable ledger from a record with no fragments \u2014 the hiding the re-review required the other two readers to end, left on the third."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054600104139-read-plan-reads-the-composed-record/manifest.md",
+      "line": "21",
+      "text": "baseline_suite and after_suite hold prose rather than the armed JSON the keys reserve and no baseline arm was run, so the suite-delta reader sees no arms and the added-failure count is left unmeasured (the store's read-time annotation reports the same); the gate logs named under test_logs carry no header, so the revision and command behind the 16-passed claim are unverifiable from the logs alone and had to be re-established by this review's independent re-run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 3476364e; 8602efcf lands the resolver, rewires serve.py and doccheck.py onto it, adds the three-case test file whose negative shape (a fragment parked under the pseudo-slug the filename suggests) makes the misnamed case observable rather than tautological, rewrites the readers fixture to name each record's plan in its metas, and passes ignore_invalid=True at three resource_map sites so a parked fragment no longer collides the map for every read; 16ca61e7 is documentation only \u2014 a six-line splice to the cumulative record, a new figure, and a landing paragraph \u2014 and touches no plan-status, plan-impl or plan-version meta.",
+    "done_when": "the clauses hold except one: the resolver reads metas (:400, :428), the misnamed document is served, audited and read as its own bytes, a no-fragment record is byte-identical, the reuse-map citation is present (the reviewed manifest's evidence_inputs line cites reuse-map.md line 30 naming mcp.py _typed_resource_text as the read path to route through composition), the declared mutation's log is red with its first line verbatim and one failure, and the gate's 16 passed was re-run green at 16ca61e7 in this review's logs/gate-at-16ca61e7.log; the exception is the clause that tests/test_readers_compose_the_record.py pass unchanged, which the diff makes false \u2014 its fixture is rewritten so each record names its plan in its own metas, without which those tests cannot pass under the new identity rule at all \u2014 and the manifest discloses that divergence and the ignore_invalid change under follow_ons.",
+    "goal": "the goal is that read_plan return the composed evidence record through one record resolver in reckon/evidence.py; evidence_record_plan at reckon/evidence.py:400 reads the document's own reckon-type and plan-evidence-for metas rather than its name, record_plan_in_text at :428 decides from text alone, reckon/mcp.py:1098 composes the typed text path's resource through it, reckon/serve.py:2720 and reckon/doccheck.py:1244 call the same function, and both local name-based copies of the resolver are deleted \u2014 no _evidence_record_plan remains anywhere in the tree \u2014 so all three readers share one identity rule.",
+    "manifest": "read at head 16ca61e7; it carries status complete, the two commits, the nine changed paths, the gate and adjacent results, its log paths with the negative-control log, and a checkpoint; its baseline_suite and after_suite lines hold prose rather than the armed JSON those keys reserve, so a suite-delta reader finds no arms and the added-failure count is left unmeasured, and the gate logs it names are headerless, so this review re-ran the gate at the reviewed revision to supply revision, command, module and cwd provenance.",
+    "write_paths": "the manifest declares nine paths at orientation_write_paths; git diff --name-only 3476364e..16ca61e7 is exactly those nine files with nothing outside them, the cumulative record at docs/evidence/archive/a-landing-record-never-conflicts-landed.html gains six lines and loses none (spliced rather than rewritten), and the reviewed worktree is clean at 16ca61e7."
+  },
+  "justifications": {
+    "durability": "the identity half of the resolver is guarded by an observable negative shape \u2014 the parked fragment makes ordinary a claim about what was not composed in \u2014 and the declared mutation reddens it; the plan-source half has no case, measured with a two-arm probe (logs/durability-probe.log): a resolver that keeps the metas for identity and takes the plan from the filename passes all three reviewed cases, while a disagreement case of that shape fails under that mutation (composing the filename's fragment) and passes on the reviewed revision, so the metas-win rule is carried by construction only.",
+    "evidence": "the 16-passed gate was reproduced independently at 16ca61e7 with module-under-test and resolved cwd (logs/gate-at-16ca61e7.log), the negative control's first line repeats the declared mutation verbatim and its log is red with one failure, and the added-failure derivation was falsified with a positive control before its empty result was reported; deductions for the headerless gate logs the manifest names, for baseline_suite and after_suite being prose with no baseline arm run so the no-new-failures delta is asserted rather than logged, and for the pass-unchanged clause, which the landing's own identity rule made unsatisfiable for that file and which the manifest discloses under follow_ons instead.",
+    "fit": "the resolver sits in evidence.py beside compose_landed_record with a why-docstring, its normalisation at evidence.py:442 matches the SPA's _refSlug (docs/ui/graph.jsx:12) exactly, no plan, sprint or version identifier appears in code or comments, and the three-reader shape follows the surrounding reader idiom; the deduction is the silent fallback at reckon/mcp.py:1104, which departs from the observability the same fallback carries in serve.py:2103 and doccheck.py:1249.",
+    "goal_fidelity": "the three readers share one resolver and read_plan composes, verified in the diff and by the re-run gate; the deduction is that the read path swallows a composition failure silently at reckon/mcp.py:1104 where the two repaired readers say so, leaving the third able to hide fragments exactly as the re-review required the other two not to.",
+    "scope_discipline": "every path in both commits lies inside the manifest's nine declared paths with nothing outside them, the cumulative evidence record is spliced (six gains, zero losses) rather than rewritten, the reviewed worktree is clean at 16ca61e7, and no plan-state meta line is touched by the documentation commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that read_plan return the composed evidence record through one record resolver in reckon/evidence.py; evidence_record_plan at reckon/evidence.py:400 reads the document's own reckon-type and plan-evidence-for metas rather than its name, record_plan_in_text at :428 decides from text alone, reckon/mcp.py:1098 composes the typed text path's resource through it, reckon/serve.py:2720 and reckon/doccheck.py:1244 call the same function, and both local name-based copies of the resolver are deleted \u2014 no _evidence_record_plan remains anywhere in the tree \u2014 so all three readers share one identity rule.\nVERDICT done_when: the clauses hold except one: the resolver reads metas (:400, :428), the misnamed document is served, audited and read as its own bytes, a no-fragment record is byte-identical, the reuse-map citation is present (the reviewed manifest's evidence_inputs line cites reuse-map.md line 30 naming mcp.py _typed_resource_text as the read path to route through composition), the declared mutation's log is red with its first line verbatim and one failure, and the gate's 16 passed was re-run green at 16ca61e7 in this review's logs/gate-at-16ca61e7.log; the exception is the clause that tests/test_readers_compose_the_record.py pass unchanged, which the diff makes false \u2014 its fixture is rewritten so each record names its plan in its own metas, without which those tests cannot pass under the new identity rule at all \u2014 and the manifest discloses that divergence and the ignore_invalid change under follow_ons.\nVERDICT write_paths: the manifest declares nine paths at orientation_write_paths; git diff --name-only 3476364e..16ca61e7 is exactly those nine files with nothing outside them, the cumulative record at docs/evidence/archive/a-landing-record-never-conflicts-landed.html gains six lines and loses none (spliced rather than rewritten), and the reviewed worktree is clean at 16ca61e7.\nVERDICT manifest: read at head 16ca61e7; it carries status complete, the two commits, the nine changed paths, the gate and adjacent results, its log paths with the negative-control log, and a checkpoint; its baseline_suite and after_suite lines hold prose rather than the armed JSON those keys reserve, so a suite-delta reader finds no arms and the added-failure count is left unmeasured, and the gate logs it names are headerless, so this review re-ran the gate at the reviewed revision to supply revision, command, module and cwd provenance.\nVERDICT diff: read commit by commit against base 3476364e; 8602efcf lands the resolver, rewires serve.py and doccheck.py onto it, adds the three-case test file whose negative shape (a fragment parked under the pseudo-slug the filename suggests) makes the misnamed case observable rather than tautological, rewrites the readers fixture to name each record's plan in its metas, and passes ignore_invalid=True at three resource_map sites so a parked fragment no longer collides the map for every read; 16ca61e7 is documentation only \u2014 a six-line splice to the cumulative record, a new figure, and a landing paragraph \u2014 and touches no plan-status, plan-impl or plan-version meta.\nCALL_SITES: reckon/serve.py:_send_evidence_record, reckon/doccheck.py:audit_file, reckon/mcp.py:_typed_resource_text\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the three readers share one resolver and read_plan composes, verified in the diff and by the re-run gate; the deduction is that the read path swallows a composition failure silently at reckon/mcp.py:1104 where the two repaired readers say so, leaving the third able to hide fragments exactly as the re-review required the other two not to.\nSCORE evidence: 17\nJUSTIFICATION evidence: the 16-passed gate was reproduced independently at 16ca61e7 with module-under-test and resolved cwd (logs/gate-at-16ca61e7.log), the negative control's first line repeats the declared mutation verbatim and its log is red with one failure, and the added-failure derivation was falsified with a positive control before its empty result was reported; deductions for the headerless gate logs the manifest names, for baseline_suite and after_suite being prose with no baseline arm run so the no-new-failures delta is asserted rather than logged, and for the pass-unchanged clause, which the landing's own identity rule made unsatisfiable for that file and which the manifest discloses under follow_ons instead.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in both commits lies inside the manifest's nine declared paths with nothing outside them, the cumulative evidence record is spliced (six gains, zero losses) rather than rewritten, the reviewed worktree is clean at 16ca61e7, and no plan-state meta line is touched by the documentation commit.\nSCORE durability: 16\nJUSTIFICATION durability: the identity half of the resolver is guarded by an observable negative shape \u2014 the parked fragment makes ordinary a claim about what was not composed in \u2014 and the declared mutation reddens it; the plan-source half has no case, measured with a two-arm probe (logs/durability-probe.log): a resolver that keeps the metas for identity and takes the plan from the filename passes all three reviewed cases, while a disagreement case of that shape fails under that mutation (composing the filename's fragment) and passes on the reviewed revision, so the metas-win rule is carried by construction only.\nSCORE fit: 18\nJUSTIFICATION fit: the resolver sits in evidence.py beside compose_landed_record with a why-docstring, its normalisation at evidence.py:442 matches the SPA's _refSlug (docs/ui/graph.jsx:12) exactly, no plan, sprint or version identifier appears in code or comments, and the three-reader shape follows the surrounding reader idiom; the deduction is the silent fallback at reckon/mcp.py:1104, which departs from the observability the same fallback carries in serve.py:2103 and doccheck.py:1249.\nFINDING tests/test_read_plan_composes_the_record.py:44 the reviewed cases pin that the metas decide whether a given document is a record, but no case has the metas naming a plan the filename does not, so the rule this module's docstring states and the landing paragraph repeats has no failing case: with the resolver's plan source moved to the filename (the metas still required for identity) all three reviewed cases pass, and a disagreement case of that shape fails under the mutation and passes on the reviewed revision (two-arm probe, this review's logs/durability-probe.log), so a regression that took the plan from the path would be invisible to the guard.\nFINDING reckon/mcp.py:1104 the read path swallows a composition failure with pass and a comment, where the same fallback logs a warning at serve.py:2103 and reports a record-not-composed finding at doccheck.py:1249, so a read_plan caller receiving a record's own bytes cannot tell an unreadable ledger from a record with no fragments \u2014 the hiding the re-review required the other two readers to end, left on the third.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054600104139-read-plan-reads-the-composed-record/manifest.md:21 baseline_suite and after_suite hold prose rather than the armed JSON the keys reserve and no baseline arm was run, so the suite-delta reader sees no arms and the added-failure count is left unmeasured (the store's read-time annotation reports the same); the gate logs named under test_logs carry no header, so the revision and command behind the 16-passed claim are unverifiable from the logs alone and had to be re-established by this review's independent re-run.\n",
+  "review_run_id": "r-20260928T063305266502-review-of-read-plan-reads-the-composed-record",
+  "reviewed_base_sha": "3476364ed445b40d5806e25435045f587061d8e3",
+  "reviewed_head_sha": "16ca61e7eb75e071b7f33f0b85d167109772f658",
+  "reviewed_run_id": "r-20260928T054600104139-read-plan-reads-the-composed-record",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T08:14:32.611103+00:00",
+  "total": 90
+}

@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:_observed_stream",
+    "reckon/crew/recovery.py:3217",
+    "reckon/crew/recovery.py:3547",
+    "reckon/crew/recovery.py:_commits_beyond_base",
+    "reckon/crew/promotion.py:4855"
+  ],
+  "completed_at": "2026-10-02T00:27:58.703Z",
+  "dispatched_at": "2026-10-02T00:00:41Z",
+  "findings": [
+    {
+      "file": "tests/test_producer_reads_only_what_changed.py",
+      "line": "328",
+      "severity": "follow-on",
+      "text": "follow-on: the replacement case's docstring asserts \"only the inode comparison can\" force the whole read, but the opening fingerprint added by this same node also catches a replacement at a new inode because the replacement opens with different bytes, so no added test isolates the inode comparison and a regression that removed it alone would leave every case green."
+    },
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-rewritten-stream-is-read-from-zero.html",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the measure table repeats that claim (\"passes only with the inode comparison\"), so the landed evidence asserts a discrimination the two added cases do not provide."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3375",
+      "severity": "follow-on",
+      "text": "follow-on: the rewrite check samples at most 8 KiB of the opening, so an in-place rewrite that preserves those bytes while changing later consumed content is undetected and the cursor resumes into bytes it no longer holds; the bounded sample is a deliberate tradeoff, and the residual gap is worth recording rather than silently relying on the fingerprint."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 2a2848b5; 8b2eb4b23 adds the opening fingerprint and the resume gate in reckon/_backends.py:3383-3420 and the bounded cache in reckon/crew/recovery.py:7068-7100, 35e69097b adds the section 11 evidence fragment; 279 insertions and 18 deletions, all inside the declared scope.",
+    "done_when": "the done-when adds two cases to tests/test_producer_reads_only_what_changed.py, bounds the commits-beyond-base cache, and requires zero added failures across base/head arms; the manifest records the arms 25 passing (base) and 28 passing (head, three files), zero added.",
+    "goal": "the node goal is that a stream replaced or rewritten in place is re-read from its first record by the producer's cursor; reckon/crew/recovery.py:3193 records an opening fingerprint beside the offset and reckon/_backends.py:3540 resumes only while that opening still holds.",
+    "manifest": "read; status complete, commits 8b2eb4b23 and 35e69097b, gate tests/test_producer_reads_only_what_changed.py 6 passed, base/head arms and the negative control each recorded with a log path.",
+    "write_paths": "the manifest declares five paths; the diff against 2a2848b5 touches exactly four of them (reckon/_backends.py, reckon/crew/recovery.py, tests/test_producer_reads_only_what_changed.py, the section 11 evidence fragment) and no others."
+  },
+  "justifications": {
+    "durability": "both added cases redden under the declared mutation (negative-control.log EXIT=1, the two case ids absent from the head arm), and tests/test_producer_reads_only_what_changed.py:309 pins the cache bound, but tests/test_producer_reads_only_what_changed.py:328 claims only the inode comparison can save the replacement case, which the new opening fingerprint also does, so no test pins the inode comparison against a same-opening replacement.",
+    "evidence": "the gate tests/test_producer_reads_only_what_changed.py reproduces at head 35e69097b with 6 passed, and the reviewed manifest's own arms give 25 passed (base) and 28 passed (head) with zero added failures, but the head-arm log header names the base revision 2a2848b5 (reckon/_backends.py gate-head-all.log), so the log cannot be tied to the landed head without re-running, and the fragment overstates the inode comparison's discrimination.",
+    "fit": "the helpers stream_head_fingerprint and _stream_head_intact in reckon/_backends.py:3383 and :3402 follow the module's idiom, carry mechanism comments with no plan or ticket labels, and ruff reports 11 findings at both base and head on the three changed files (zero added).",
+    "goal_fidelity": "reckon/crew/recovery.py:3193 records a bounded fingerprint of the stream's opening and reckon/_backends.py:3540 resumes only while it holds, so a replaced or in-place-rewritten stream re-reads from its first record, which both added cases exercise.",
+    "scope_discipline": "the diff against 2a2848b5 touches only reckon/_backends.py, reckon/crew/recovery.py, tests/test_producer_reads_only_what_changed.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-rewritten-stream-is-read-from-zero.html, all declared paths, with no plan-meta edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a stream replaced or rewritten in place is re-read from its first record by the producer's cursor; reckon/crew/recovery.py:3193 records an opening fingerprint beside the offset and reckon/_backends.py:3540 resumes only while that opening still holds.\nVERDICT done_when: the done-when adds two cases to tests/test_producer_reads_only_what_changed.py, bounds the commits-beyond-base cache, and requires zero added failures across base/head arms; the manifest records the arms 25 passing (base) and 28 passing (head, three files), zero added.\nVERDICT write_paths: the manifest declares five paths; the diff against 2a2848b5 touches exactly four of them (reckon/_backends.py, reckon/crew/recovery.py, tests/test_producer_reads_only_what_changed.py, the section 11 evidence fragment) and no others.\nVERDICT manifest: read; status complete, commits 8b2eb4b23 and 35e69097b, gate tests/test_producer_reads_only_what_changed.py 6 passed, base/head arms and the negative control each recorded with a log path.\nVERDICT diff: read commit by commit against 2a2848b5; 8b2eb4b23 adds the opening fingerprint and the resume gate in reckon/_backends.py:3383-3420 and the bounded cache in reckon/crew/recovery.py:7068-7100, 35e69097b adds the section 11 evidence fragment; 279 insertions and 18 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery.py:_observed_stream, reckon/crew/recovery.py:3217, reckon/crew/recovery.py:3547, reckon/crew/recovery.py:_commits_beyond_base, reckon/crew/promotion.py:4855\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:3193 records a bounded fingerprint of the stream's opening and reckon/_backends.py:3540 resumes only while it holds, so a replaced or in-place-rewritten stream re-reads from its first record, which both added cases exercise.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate tests/test_producer_reads_only_what_changed.py reproduces at head 35e69097b with 6 passed, and the reviewed manifest's own arms give 25 passed (base) and 28 passed (head) with zero added failures, but the head-arm log header names the base revision 2a2848b5 (reckon/_backends.py gate-head-all.log), so the log cannot be tied to the landed head without re-running, and the fragment overstates the inode comparison's discrimination.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff against 2a2848b5 touches only reckon/_backends.py, reckon/crew/recovery.py, tests/test_producer_reads_only_what_changed.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-rewritten-stream-is-read-from-zero.html, all declared paths, with no plan-meta edit.\nSCORE durability: 16\nJUSTIFICATION durability: both added cases redden under the declared mutation (negative-control.log EXIT=1, the two case ids absent from the head arm), and tests/test_producer_reads_only_what_changed.py:309 pins the cache bound, but tests/test_producer_reads_only_what_changed.py:328 claims only the inode comparison can save the replacement case, which the new opening fingerprint also does, so no test pins the inode comparison against a same-opening replacement.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers stream_head_fingerprint and _stream_head_intact in reckon/_backends.py:3383 and :3402 follow the module's idiom, carry mechanism comments with no plan or ticket labels, and ruff reports 11 findings at both base and head on the three changed files (zero added).\nFINDING tests/test_producer_reads_only_what_changed.py:328 follow-on: the replacement case's docstring asserts \"only the inode comparison can\" force the whole read, but the opening fingerprint added by this same node also catches a replacement at a new inode because the replacement opens with different bytes, so no added test isolates the inode comparison and a regression that removed it alone would leave every case green.\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-rewritten-stream-is-read-from-zero.html:26 follow-on: the measure table repeats that claim (\"passes only with the inode comparison\"), so the landed evidence asserts a discrimination the two added cases do not provide.\nFINDING reckon/_backends.py:3375 follow-on: the rewrite check samples at most 8 KiB of the opening, so an in-place rewrite that preserves those bytes while changing later consumed content is undetected and the cursor resumes into bytes it no longer holds; the bounded sample is a deliberate tradeoff, and the residual gap is worth recording rather than silently relying on the fingerprint.\n",
+  "review_run_id": "r-20261002T000020525600-review-of-a-rewritten-stream-is-read-from-zero",
+  "reviewed_base_sha": "2a2848b51741c2cd995ac1eaf224a1fc9aa0b480",
+  "reviewed_head_sha": "35e69097b32631a1b09b0038c741347c7d6a7a10",
+  "reviewed_run_id": "r-20261001T232140088383-a-rewritten-stream-is-read-from-zero",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T00:17:56.227788+00:00",
+  "total": 87
+}

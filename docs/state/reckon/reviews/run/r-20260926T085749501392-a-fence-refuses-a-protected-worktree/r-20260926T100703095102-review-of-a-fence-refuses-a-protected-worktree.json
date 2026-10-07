@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_backends.py:fence_argv",
+    "reckon/_backends.py:launch_plan",
+    "reckon/crew/dispatch.py:4022",
+    "reckon/crew/dispatch.py:6539",
+    "reckon/crew/dispatch.py:6891",
+    "reckon/crew/resumption.py:242"
+  ],
+  "completed_at": "2026-09-26T12:29:20.157Z",
+  "dispatched_at": "2026-09-26T10:07:18Z",
+  "findings": [
+    {
+      "file": "tests/test_a_fenced_worker_can_commit.py",
+      "line": "369",
+      "text": "The done-when's second case \u2014 a worktree nested inside a protected checkout refuses \u2014 is asserted only for a nested git working tree; a plain directory inside a checkout still composes, so the measure is narrower than the brief as written even though the narrowing is disclosed and the two out-of-scope fixtures depend on the compose."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commit by commit against 7f68e6cc; the product diff adds protected_checkouts and _fenced_worktree_refusal to reckon/_backends.py, rewrites the test file's main-checkout scaffolding into the equal-path, nested-git-worktree and refusal-removed cases, and records the outcome at docs/plans/a-worker-cannot-write-your-home.html:690 and in docs/evidence/archive/a-worker-cannot-write-your-home-landed.html with anchor s2-protected-checkout-refusal.",
+    "done_when": "The done-when gate names tests/test_a_fenced_worker_can_commit.py plus the two harness-home files; the manifest records base 18 / head 19 and the executed negative control, and re-running the three-file gate here reproduced 19 passed at d85cf824 and 18 passed at 7f68e6cc in a scratch archive tree, with the equal-path, nested-git-worktree and refusal-removed cases at tests/test_a_fenced_worker_can_commit.py:340,369,390 \u2014 but the brief's nested clause is measured only in its nested-git-working-tree form: a plain directory inside a checkout still composes, disclosed in the manifest as an interpretation deviation.",
+    "goal": "The goal is that fence_argv refuse to compose a fence for a worktree that is itself a protected checkout; reckon/_backends.py:2244 calls _fenced_worktree_refusal before any bind is composed and raises BackendError at 2246 naming the resolved worktree and the checkout, so the guarantee the earlier record left latent holds where it matters.",
+    "manifest": "Read at the reviewed run's own path; it reports complete with both commits, the base and head gate results, the negative-control log path, and an interpretation deviation naming the two out-of-scope fixture files that depend on the compose \u2014 the claim I verified by reading those fixtures.",
+    "write_paths": "Both commits stay inside the five declared paths; 932992823b7d6c7d7db260022751344f25c847bb touches only reckon/_backends.py and tests/test_a_fenced_worker_can_commit.py, and d85cf824459645061454abcdabe92330e27bcd82 touches the plan, the landed evidence record and four figure files, checked file by file against the declared list."
+  },
+  "justifications": {
+    "durability": "The equal-path case asserts the refusal message at tests/test_a_fenced_worker_can_commit.py:385 and the earlier guard's own pin survives at line 366 (worktree_git_write_roots(repo) == []), so removing the refusal fails both, and the docs carry the executed control rather than an argument.",
+    "evidence": "The three-file gate reproduces 19 passed at d85cf824 and 18 at base 7f68e6cc, the refusal-removed mutation at tests/test_a_fenced_worker_can_commit.py:390 leaves the checkout among the writable binds with index WROTE and objects WROTE, and the plan's landing record carries the outcome; the nested-clause gap is disclosed rather than measured.",
+    "fit": "protected_checkouts and _fenced_worktree_refusal follow the module's private-helper idiom beside protected_paths and raise BackendError in the naming style already used at reckon/_backends.py:1751, and no plan, sprint or ticket identifier appears in the changed source.",
+    "goal_fidelity": "reckon/_backends.py:2244 refuses the goal's shape before any bind is composed, and the nested git-working-tree clause widens it to the nested shape that would re-open git metadata; the plain-directory case the brief's literal reading also covers is not refused.",
+    "scope_discipline": "Both commits stay inside the five declared paths, the plan edit at docs/plans/a-worker-cannot-write-your-home.html:690 records the outcome without touching plan state, and resolving the driving followup is left to the coordinator as the dispatch requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that fence_argv refuse to compose a fence for a worktree that is itself a protected checkout; reckon/_backends.py:2244 calls _fenced_worktree_refusal before any bind is composed and raises BackendError at 2246 naming the resolved worktree and the checkout, so the guarantee the earlier record left latent holds where it matters.\nVERDICT done_when: The done-when gate names tests/test_a_fenced_worker_can_commit.py plus the two harness-home files; the manifest records base 18 / head 19 and the executed negative control, and re-running the three-file gate here reproduced 19 passed at d85cf824 and 18 passed at 7f68e6cc in a scratch archive tree, with the equal-path, nested-git-worktree and refusal-removed cases at tests/test_a_fenced_worker_can_commit.py:340,369,390 \u2014 but the brief's nested clause is measured only in its nested-git-working-tree form: a plain directory inside a checkout still composes, disclosed in the manifest as an interpretation deviation.\nVERDICT write_paths: Both commits stay inside the five declared paths; 932992823b7d6c7d7db260022751344f25c847bb touches only reckon/_backends.py and tests/test_a_fenced_worker_can_commit.py, and d85cf824459645061454abcdabe92330e27bcd82 touches the plan, the landed evidence record and four figure files, checked file by file against the declared list.\nVERDICT manifest: Read at the reviewed run's own path; it reports complete with both commits, the base and head gate results, the negative-control log path, and an interpretation deviation naming the two out-of-scope fixture files that depend on the compose \u2014 the claim I verified by reading those fixtures.\nVERDICT diff: Read commit by commit against 7f68e6cc; the product diff adds protected_checkouts and _fenced_worktree_refusal to reckon/_backends.py, rewrites the test file's main-checkout scaffolding into the equal-path, nested-git-worktree and refusal-removed cases, and records the outcome at docs/plans/a-worker-cannot-write-your-home.html:690 and in docs/evidence/archive/a-worker-cannot-write-your-home-landed.html with anchor s2-protected-checkout-refusal.\nCALL_SITES: reckon/_backends.py:fence_argv, reckon/_backends.py:launch_plan, reckon/crew/dispatch.py:4022, reckon/crew/dispatch.py:6539, reckon/crew/dispatch.py:6891, reckon/crew/resumption.py:242\nFINDING tests/test_a_fenced_worker_can_commit.py:369 The done-when's second case \u2014 a worktree nested inside a protected checkout refuses \u2014 is asserted only for a nested git working tree; a plain directory inside a checkout still composes, so the measure is narrower than the brief as written even though the narrowing is disclosed and the two out-of-scope fixtures depend on the compose.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2244 refuses the goal's shape before any bind is composed, and the nested git-working-tree clause widens it to the nested shape that would re-open git metadata; the plain-directory case the brief's literal reading also covers is not refused.\nSCORE evidence: 17\nJUSTIFICATION evidence: The three-file gate reproduces 19 passed at d85cf824 and 18 at base 7f68e6cc, the refusal-removed mutation at tests/test_a_fenced_worker_can_commit.py:390 leaves the checkout among the writable binds with index WROTE and objects WROTE, and the plan's landing record carries the outcome; the nested-clause gap is disclosed rather than measured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Both commits stay inside the five declared paths, the plan edit at docs/plans/a-worker-cannot-write-your-home.html:690 records the outcome without touching plan state, and resolving the driving followup is left to the coordinator as the dispatch requires.\nSCORE durability: 18\nJUSTIFICATION durability: The equal-path case asserts the refusal message at tests/test_a_fenced_worker_can_commit.py:385 and the earlier guard's own pin survives at line 366 (worktree_git_write_roots(repo) == []), so removing the refusal fails both, and the docs carry the executed control rather than an argument.\nSCORE fit: 18\nJUSTIFICATION fit: protected_checkouts and _fenced_worktree_refusal follow the module's private-helper idiom beside protected_paths and raise BackendError in the naming style already used at reckon/_backends.py:1751, and no plan, sprint or ticket identifier appears in the changed source.\n",
+  "review_run_id": "r-20260926T100703095102-review-of-a-fence-refuses-a-protected-worktree",
+  "reviewed_base_sha": "7f68e6cc0a2786aab6cd526ab7fa81aa9b323dd6",
+  "reviewed_head_sha": "d85cf824459645061454abcdabe92330e27bcd82",
+  "reviewed_run_id": "r-20260926T085749501392-a-fence-refuses-a-protected-worktree",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T12:01:32.854680+00:00",
+  "total": 90
+}

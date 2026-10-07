@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:43:12.889Z",
+  "dispatched_at": "2026-10-05T16:39:00Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:210",
+      "id": "deep_module-1",
+      "reason": "the plan must either reconcile the two grammars explicitly (and pin the preserved behaviour of `ledger`/`evidence` with a test) or drop the \"one regular expression\" claim, because the merge is only sound if the three readers really share one grammar and they do not.",
+      "text": "`routing._SECTION_IDENTITY` (`^(?:\u00a7|#)?\\s*(?:s(?:ection)?[\\s.-]*)?(\\d+(?:[.-]\\d+)*)$`) accepts hyphenated numeric continuations, while `ledger.normalize_section` (`reckon/ledger.py:206`) and `evidence._section_key` (`reckon/evidence.py:52`) match only the dotted form `\\d+(?:\\.\\d+)*`; \u00a716 asserts the three \"share ... the one regular expression that recognises a section spelling\", but they do not, so hoisting one shared regex silently changes a reader on input like `5-1` (routing \u2192 `s5-1`, ledger/evidence \u2192 unchanged), and the plan states no rule for which grammar wins or a test that the losing reader's output is preserved",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:162",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a716 and \u00a717 have mutually inconsistent done-whens and the census that is supposed to prove consolidation cannot see the parser \u00a716 grows; the design must either route the prose parser's heading handling through `_StructuredSectionSpanParser`/`plan_headings`, or widen the census definition to catch `HTMLParser` heading handlers and state the shared heading set.",
+      "text": "`_AuthoredProseParser` (which \u00a716 extends to record the enclosing section element's attributes and call `section_record_id` \"at every heading\") already tracks headings itself via `elif tag == \"h2\"` in `handle_starttag`, a second heading handler over the same document beside `_StructuredSectionSpanParser` (`reckon/_plan_html.py:44`) that \u00a717 makes the one owner of section enumeration and boundary; \u00a717's heading-walk census rule is specified to report only `find_all`/`find`/`select` on heading tags, `<h2` regex literals and `_H2_OPEN_RE`, none of which match an `HTMLParser.handle_starttag` heading check, so \u00a717's done-when (\"the heading-walk rule, run at the head, reports only the parser in `reckon/_plan_html.py`\") passes while a second heading walk survives \u2014 and the two disagree on the heading set, since \u00a717 generalises the span parser to h1\u2013h6 while the prose parser stays h2",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7100ddb528bac073f878ee71c8725d75f46d4614d82fee2d0274fb4443451e3b",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 91,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T163841730888-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "54d4ab9e5c354423e1f5c5629b1806ad2d28eea8",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a716 hoists one section-identity derivation to `reckon/_plan_html.py` and asserts the three spelling readers \"share ... the one regular expression\", but two of them encode different grammars today.",
+    "duplicate_owner": "a finding \u2014 two parsers re-implement heading/section-boundary recognition over the same document, and the census \u00a717 relies on to prove \"every heading walk ... is rewritten\" is defined so that it cannot see the second one.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 declares net zero and names the retired public `legacy` flag on `plan_fingerprint`, \u00a717 declares net +1 naming the added `plan_headings` and the moved `landed_section_ids`, \u00a718 declares net zero naming the retired private `_plan_remaining_sections` and the reused `plan-review-missing` refusal family.",
+    "reuse_search": "pass \u2014 the implementable sections (\u00a716\u2013\u00a718) cite and extend machinery that exists: `_AuthoredProseParser` and `read_plan_review`/`list_plan_reviews` in `reckon/crew/plan_review.py`, `_StructuredSectionSpanParser` plus the AST census (`read_trees`, `definitions`, `_staged_writes`) in `reckon/_plan_html.py` and `reckon/interface_counts.py`, and `roadmap.implementable_sections` (`reckon/roadmap.py:106`); each is present as claimed.",
+    "thin_wrapper": "pass \u2014 the coverage predicate is explicitly shown not to be a wrapper over `read_plan_review` (it joins the outstanding-section set to the union of stored section digests), and \u00a718 extends `roadmap.implementable_sections` rather than forking `promotion._plan_remaining_sections`."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.850584+00:00"
+}

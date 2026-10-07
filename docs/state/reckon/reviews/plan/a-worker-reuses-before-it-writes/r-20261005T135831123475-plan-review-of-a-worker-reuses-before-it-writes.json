@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:03:22.623Z",
+  "dispatched_at": "2026-10-05T13:58:47Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:685",
+      "id": "reuse_search-1",
+      "reason": "`_read_run_rows` keys its cache by blob sha and skips the fetch for an already-cached sha, so routing it through a batch reader that fetches every blob unconditionally would defeat that cache; it is a deliberately different mechanism, not a copy of the batch loop, and \u00a710's 0.5h node need not absorb it \u2014 the plan is only missing a one-line note that the sibling exists and is out of scope.",
+      "text": "\u00a710 states that \"what is duplicated is the batched `git cat-file` blob reader\" and confines the duplication to the two batch loops, but `reckon/velocity.py` itself carries a third committed-blob reader, `_read_run_rows`, which fetches run records one `git show` at a time (line 695) on top of `_run_blobs`/`_blob_sha` (lines 652, 642); the reuse map does not name it, so a reader cannot tell whether the new public reader is meant to subsume it",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "805bf11cbae9db5ef4bdd24a211b63ad7b853471c8a25f5629a7b93c2c705b56",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 115,
+  "project": "reckon",
+  "responses": {
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the run-row reader keys its cache by blob sha and skips fetches for cached shas, so routing it through an unconditional batch reader would defeat that cache; it is a different mechanism and stays, as the reviewer's own reason states",
+      "when": "2026-10-05T14:04:28.403519+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T135831123475-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "ddada368302406e77c2d7c6a3cb8391df5933dff",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass and the direction is net-positive \u2014 \u00a710 removes two wrappers (`_read_blobs`, the counter's `git`) and promotes one shared reader that hides subprocess spawning, `cat-file --batch` payload construction and header/position parsing behind a single entry point taking an ordered `(revision, path)` spec list. That is the shape the rubric asks for; nothing is spread thinner.",
+    "duplicate_owner": "pass \u2014 the section moves the duplication onto its owner rather than forking it: `reckon/velocity.py` already owns `git()` and the batch loop, so promoting the reader and the cache root there extends the owner. No second placement path, state reader or scheduler query is introduced.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23. \u00a710 is the only section adding surface and it names the accounting in its own text: `public_definitions` +2 (the promoted reader and the promoted cache root on `reckon/velocity.py`), \u22121 (the counter's public `git` wrapper), net +1, with a stated reason (\"the price of a shared mechanism having a public home\"). No cli_options, mcp_views or refusal_families are added.",
+    "reuse_search": "pass \u2014 \u00a710 names the mechanisms it would extend and the duplication it measured, and the code confirms them: the batch loop in `interface_counts._read_blobs` (reckon/interface_counts.py:443) is byte-for-byte the loop in `velocity._plan_metas` (reckon/velocity.py:358), `interface_counts._cache_root` reaches into the underscore-private `velocity._velocity_cache_root` (reckon/interface_counts.py:498), and the counter's `git()` (line 54) is identical to velocity's (line 145). The plan also states why the one other copy \u2014 the frozen census under docs/research \u2014 keeps its own.",
+    "thin_wrapper": "pass \u2014 \u00a710 does not add a thin layer over the existing loop; it makes the existing loop the owner and deletes the parallel one. It states why `_plan_metas` cannot simply be extended for the counter (it parses `plan-status`/`plan-archived` and returns metas, not bytes), which is exactly the \"why not extend it\" justification the item requires."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T14:04:27.306636+00:00"
+}

@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:02:20.627Z",
+  "dispatched_at": "2026-10-05T01:46:14Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:2324",
+      "id": "reuse_search-1",
+      "reason": "the fix should extend the existing stranded-launch release to the plan branch (or name why it cannot), rather than design a second release; the plan's own done-when only asks for the step to be named, which would produce a parallel mechanism.",
+      "text": "\u00a716 proposes a plan-review pointer fix without citing the stranded-launch release that already exists and already runs for the non-plan review branch: `_standing_plan_review` + the plan branch at `dispatch_review_for_run` (`reckon/crew/recovery.py:2324`) never call `_stranded_launch`/`_discard_stranded_review`, while the non-plan branch does so at `reckon/crew/recovery.py:2402`, and `_stranded_launch` (`reckon/crew/recovery.py:6613`) already classifies exactly the observed pidless `starting` pointer, its own action text asserting \"a review it claimed is released by the reflex\" \u2014 a claim false for the plan path",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:9640",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must state whether `RECKON_FLEET_RECORD` is retired into `FLEET_STATE_DIR` (migrating those callers) or retained, otherwise the named owner is not a superset of the resolver it replaces and dispatch stops reading records those tests publish.",
+      "text": "\u00a718 resolves the fleet record through `fleet_supervisor.state_directory` but leaves the second resolver's other override unaccounted: `_fleet_record_path` today also honours `RECKON_FLEET_RECORD` (`reckon/crew/dispatch.py:9640`) and `XDG_STATE_HOME`, neither of which `state_directory` reads, and four test files set `RECKON_FLEET_RECORD`",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fd8b6ace9194ed04356d5450b122c36740e6348eac0a2d8df351b2f183156d2f",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 159,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T02:18:03.417603+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T02:18:00.732215+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T014557153862-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "302e3f7a6bba5a151d082d53ae184d8fca0d09c7",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan already carries \u00a717, which folds the per-run supervisor's spread of private helpers in `reckon/crew/dispatch.py` (12,672 lines: `_supervisor...`/`_supervisor_spec`/`_start_supervisor`/`_supervisor_command`) behind a module boundary; \u00a710's `reckon/crew/fleet_supervisor.py` is itself a deep module hiding the FIFO protocol, runtime directory and verbs behind its `main`.",
+    "duplicate_owner": "a finding \u2014 \u00a718 names `fleet_supervisor.state_directory` (`reckon/crew/fleet_supervisor.py:253`) as the owner to extend, but that owner does not cover the second resolver's other override, `RECKON_FLEET_RECORD` (`reckon/crew/dispatch.py:9640`), which four test files set.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; none of the implementable sections (\u00a715, \u00a716, \u00a717, \u00a718) adds a CLI option or an MCP view, and \u00a78 already names the one refusal it retires (the `max_concurrent_runs` roster bound), so no section adds to a family without accounting for it.",
+    "reuse_search": "a finding \u2014 \u00a716 designs a release for a plan-review pointer stranded before launch without citing the release machinery the sibling non-plan branch already uses (`_stranded_launch` at `reckon/crew/recovery.py:6613` and `_discard_stranded_review` at `reckon/crew/recovery.py:1342`, applied at `reckon/crew/recovery.py:2402`).",
+    "thin_wrapper": "pass \u2014 each added layer (the FIFO `spawn` verb, `reckon/crew/supervisor_main.py`, `supervised_launch`) sits over machinery \u00a710 and \u00a717 name, and \u00a717 folds the thin `supervisor_main` wrapper into the supervisor's own module; no wrapper is added over an extendable owner without a stated reason."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T02:17:09.233099+00:00"
+}

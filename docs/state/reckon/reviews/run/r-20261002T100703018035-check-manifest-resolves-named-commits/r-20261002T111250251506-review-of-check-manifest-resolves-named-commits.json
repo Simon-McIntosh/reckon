@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:4620"
+  ],
+  "completed_at": "2026-10-02T11:21:02.323Z",
+  "dispatched_at": "2026-10-02T11:13:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/check-manifest-resolves-named-commits.html",
+      "line": "55",
+      "severity": "follow-on",
+      "text": "follow-on: the landing record's base arm cites the superseded invalid measurement, reporting '615 passed, EXIT=0' from logs/gate-base-853fa75c.log, a log whose own header names module.__file__ under the worktree (the head module) because that arm ran without -P so the shell cwd shadowed PYTHONPATH, while the manifest's baseline_suite records the corrected arm gate-base-853fa75c-pythonpath.log as 614 passed + 1 pre-existing failure EXIT=1 and evidence_inputs states the first arm is superseded; a reader of the landing record therefore sees a clean base arm with no note that it measured the wrong module."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 853fa75c; 1653900b7 adds _commit_citation_findings to reckon/crew/reports.py and the new test file, a85dc1509 adds the evidence fragment, 367+99 insertions and nothing outside the declared paths.",
+    "done_when": "the done_when asks one manifest with a resolvable sha and a 40-character sha that names nothing and asserts exactly the second is reported, plus a negative control that removes the check; tests/test_check_manifest_resolves_named_commits.py:95 does exactly this and the manifest records the gate and its control.",
+    "goal": "the node's goal is to make check-manifest report each commits entry whose cited commit-id resolves to no object, naming the value; reckon/crew/reports.py:1500 adds _commit_citation_findings and reckon/crew/reports.py:1585 wires it into audit_manifest, so the audit now asks the run's own stores about each cited token.",
+    "manifest": "read; it records the gate arms and the negative control with logs, and its baseline_suite and after_suite are the two logs I derived the added-failure count from.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/reports.py, tests/test_check_manifest_resolves_named_commits.py, the evidence fragment under docs/evidence/fragments/crew-runtime-positive-controls/); git show --stat of 1653900b7 and a85dc1509 lists only those, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_check_manifest_resolves_named_commits.py:166 asserts the same hex value is reported when no absence word opens the field and suppressed when one does, and logs/negative-control.log shows that assertion and two others redden when the resolution check is removed, so the guard fails if the change regresses.",
+    "evidence": "the gate is recorded and independently reproduced (I re-ran tests/test_check_manifest_resolves_named_commits.py at the reviewed head: 6 passed), and logs/negative-control.log shows the three reporting cases red with EXIT=1 when the hook is removed; the deduction is the landing record's base row, which contradicts the manifest's own baseline_suite (see FINDING).",
+    "fit": "the helpers reuse the module's existing _NONE_VALUES (reckon/crew/reports.py:78) and _RECORDED_REVISION (reckon/crew/reports.py:1064) rather than inventing new vocabularies, and no plan, sprint or ticket identifier appears in the added symbols or comments.",
+    "goal_fidelity": "reckon/crew/reports.py:1500 reports each commits token the run's stores cannot resolve, naming the value, and the production call site reckon/cli.py:4620 passes the pointer's worktree and repository, so the check fires on the surface a worker runs before it ends.",
+    "scope_discipline": "the reviewed range 853fa75c..a85dc150 touches only the three declared write paths with nothing else, and ruff on reckon/crew/reports.py reports 2 findings at base and 2 at head (delta 0) with 0 on the new test file."
+  },
+  "project": "reckon",
+  "raw_text": "REVIEW r-20261002T100703018035-check-manifest-resolves-named-commits at a85dc1509429a257c2539a605acee6b29bde8569 (base 853fa75c4501ef40e57c8770d88c9ea413ee52e6)\nVERDICT goal: the node's goal is to make check-manifest report each commits entry whose cited commit-id resolves to no object, naming the value; reckon/crew/reports.py:1500 adds _commit_citation_findings and reckon/crew/reports.py:1585 wires it into audit_manifest, so the audit now asks the run's own stores about each cited token.\nVERDICT done_when: the done_when asks one manifest with a resolvable sha and a 40-character sha that names nothing and asserts exactly the second is reported, plus a negative control that removes the check; tests/test_check_manifest_resolves_named_commits.py:95 does exactly this and the manifest records the gate and its control.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/reports.py, tests/test_check_manifest_resolves_named_commits.py, the evidence fragment under docs/evidence/fragments/crew-runtime-positive-controls/); git show --stat of 1653900b7 and a85dc1509 lists only those, all inside the fence.\nVERDICT manifest: read; it records the gate arms and the negative control with logs, and its baseline_suite and after_suite are the two logs I derived the added-failure count from.\nVERDICT diff: read commit by commit against base 853fa75c; 1653900b7 adds _commit_citation_findings to reckon/crew/reports.py and the new test file, a85dc1509 adds the evidence fragment, 367+99 insertions and nothing outside the declared paths.\nCALL_SITES: reckon/cli.py:4620\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1500 reports each commits token the run's stores cannot resolve, naming the value, and the production call site reckon/cli.py:4620 passes the pointer's worktree and repository, so the check fires on the surface a worker runs before it ends.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is recorded and independently reproduced (I re-ran tests/test_check_manifest_resolves_named_commits.py at the reviewed head: 6 passed), and logs/negative-control.log shows the three reporting cases red with EXIT=1 when the hook is removed; the deduction is the landing record's base row, which contradicts the manifest's own baseline_suite (see FINDING).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed range 853fa75c..a85dc150 touches only the three declared write paths with nothing else, and ruff on reckon/crew/reports.py reports 2 findings at base and 2 at head (delta 0) with 0 on the new test file.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_check_manifest_resolves_named_commits.py:166 asserts the same hex value is reported when no absence word opens the field and suppressed when one does, and logs/negative-control.log shows that assertion and two others redden when the resolution check is removed, so the guard fails if the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers reuse the module's existing _NONE_VALUES (reckon/crew/reports.py:78) and _RECORDED_REVISION (reckon/crew/reports.py:1064) rather than inventing new vocabularies, and no plan, sprint or ticket identifier appears in the added symbols or comments.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/check-manifest-resolves-named-commits.html:55 follow-on: the landing record's base arm cites the superseded invalid measurement, reporting '615 passed, EXIT=0' from logs/gate-base-853fa75c.log, a log whose own header names module.__file__ under the worktree (the head module) because that arm ran without -P so the shell cwd shadowed PYTHONPATH, while the manifest's baseline_suite records the corrected arm gate-base-853fa75c-pythonpath.log as 614 passed + 1 pre-existing failure EXIT=1 and evidence_inputs states the first arm is superseded; a reader of the landing record therefore sees a clean base arm with no note that it measured the wrong module.\nREVIEWED_BASE_SHA: 853fa75c4501ef40e57c8770d88c9ea413ee52e6\nREVIEWED_HEAD_SHA: a85dc1509429a257c2539a605acee6b29bde8569",
+  "review_run_id": "r-20261002T111250251506-review-of-check-manifest-resolves-named-commits",
+  "reviewed_base_sha": "853fa75c4501ef40e57c8770d88c9ea413ee52e6",
+  "reviewed_head_sha": "a85dc1509429a257c2539a605acee6b29bde8569",
+  "reviewed_run_id": "r-20261002T100703018035-check-manifest-resolves-named-commits",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.719588+00:00",
+  "total": 94
+}

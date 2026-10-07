@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:3710 (the crew directory verb)",
+    "reckon/mcp.py:3849 (the MCP crew directory view)"
+  ],
+  "completed_at": "2026-09-28T21:26:24.949Z",
+  "dispatched_at": "2026-09-28T20:59:45Z",
+  "emission_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T205935086744-review-of-directory-row-reads-the-derived-phase/logs/review-emission.txt",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/directory-row-reads-the-derived-phase.html",
+      "line": "39",
+      "text": "the paragraph attributes all five changed paths to commit b36b019b, but that commit carries only the three code and test paths - this fragment and the figure beside it are in 07bdc42c - so a reader resolving the fragment's own commit finds neither, in the artifact promotion lands as the durable record of what shipped."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read both commits against base 5d895105; b36b019b is the three code and test paths and 07bdc42c the fragment and the figure, and the head tree carries the marker this change introduced at reckon/crew/directory.py:84 rather than one it removed.",
+    "done_when": "The evidence fence names two directory cases, an executed negative control, a replaced assertion and both arms as JSON; every one is present, and I re-ran the new module at the reviewed head myself - 2 passed, EXIT=0, logged under my own run's logs/review-gate-rerun.log, whose header names the reviewed worktree and whose printed module path is that worktree's reckon/crew/directory.py.",
+    "goal": "The goal is that the crew directory row reports the phase the classifier and the live view derive; reckon/crew/directory.py:84 now reads the row's phase off classify_pointer, the same call the row already made at line 70 for its classification and liveness, so the CLI verb and the MCP directory view render one run with one word.",
+    "manifest": "Read; both suite fields carry the armed-only JSON the predecessor's review found as prose, and the two logs they name resolve and end in an EXIT= line, so the store's own derivation takes a measured count rather than reporting this run unmeasured.",
+    "write_paths": "The diff's five paths are exactly the five declared - reckon/crew/directory.py, tests/test_directory_row_reads_the_derived_phase.py, tests/test_working_reads_working_at_once.py, the fragment and the figure - and the fleet listing's own phase surface in reckon/cli.py is correctly left outside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_directory_row_reads_the_derived_phase.py:175 fails on the reverted implementation - the negative control reddens exactly there - and line 204 fails on a derivation that advances without an assistant record, though that control never exercises line 176's CLI assertion independently.",
+    "evidence": "13 passed EXIT=0 at head and 1 failed 12 passed EXIT=1 at base, both as armed JSON with readable logs; the added-failure count is a measured 0 with a positive control (the base log yields exactly the new case, the head log none) and the scratch tree's reckon/ is byte-identical to 5d895105 across all 110 blobs; but the fragment credits its own file and the figure to a commit that does not carry them (FINDING 1).",
+    "fit": "the change sits in the module's existing single row builder and its comment states the mechanism without a plan or ticket identifier, while the fallback at reckon/crew/directory.py:84 restates a fallback _observed_phase at reckon/crew/recovery.py:2933 already performs and so can never fire.",
+    "goal_fidelity": "reckon/crew/directory.py:84 takes the derived phase from the classify_pointer call the row already makes, and keeps the launcher's label as the fallback, which is both halves of the goal.",
+    "scope_discipline": "every changed path is inside the declared fence, the change is one expression plus a mechanism comment, and the directory view's own dispatching state and live_node_count read process_alive and classification rather than phase, so no downstream predicate moves."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that the crew directory row reports the phase the classifier and the live view derive; reckon/crew/directory.py:84 now reads the row's phase off classify_pointer, the same call the row already made at line 70 for its classification and liveness, so the CLI verb and the MCP directory view render one run with one word.\nVERDICT done_when: The evidence fence names two directory cases, an executed negative control, a replaced assertion and both arms as JSON; every one is present, and I re-ran the new module at the reviewed head myself - 2 passed, EXIT=0, logged under my own run's logs/review-gate-rerun.log, whose header names the reviewed worktree and whose printed module path is that worktree's reckon/crew/directory.py.\nVERDICT write_paths: The diff's five paths are exactly the five declared - reckon/crew/directory.py, tests/test_directory_row_reads_the_derived_phase.py, tests/test_working_reads_working_at_once.py, the fragment and the figure - and the fleet listing's own phase surface in reckon/cli.py is correctly left outside the fence.\nVERDICT manifest: Read; both suite fields carry the armed-only JSON the predecessor's review found as prose, and the two logs they name resolve and end in an EXIT= line, so the store's own derivation takes a measured count rather than reporting this run unmeasured.\nVERDICT diff: Read both commits against base 5d895105; b36b019b is the three code and test paths and 07bdc42c the fragment and the figure, and the head tree carries the marker this change introduced at reckon/crew/directory.py:84 rather than one it removed.\nCALL_SITES: reckon/cli.py:3710 (the crew directory verb), reckon/mcp.py:3849 (the MCP crew directory view)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:84 takes the derived phase from the classify_pointer call the row already makes, and keeps the launcher's label as the fallback, which is both halves of the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: 13 passed EXIT=0 at head and 1 failed 12 passed EXIT=1 at base, both as armed JSON with readable logs; the added-failure count is a measured 0 with a positive control (the base log yields exactly the new case, the head log none) and the scratch tree's reckon/ is byte-identical to 5d895105 across all 110 blobs; but the fragment credits its own file and the figure to a commit that does not carry them (FINDING 1).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is inside the declared fence, the change is one expression plus a mechanism comment, and the directory view's own dispatching state and live_node_count read process_alive and classification rather than phase, so no downstream predicate moves.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_directory_row_reads_the_derived_phase.py:175 fails on the reverted implementation - the negative control reddens exactly there - and line 204 fails on a derivation that advances without an assistant record, though that control never exercises line 176's CLI assertion independently.\nSCORE fit: 19\nJUSTIFICATION fit: the change sits in the module's existing single row builder and its comment states the mechanism without a plan or ticket identifier, while the fallback at reckon/crew/directory.py:84 restates a fallback _observed_phase at reckon/crew/recovery.py:2933 already performs and so can never fire.\nFINDING docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/directory-row-reads-the-derived-phase.html:39 the paragraph attributes all five changed paths to commit b36b019b, but that commit carries only the three code and test paths - this fragment and the figure beside it are in 07bdc42c - so a reader resolving the fragment's own commit finds neither, in the artifact promotion lands as the durable record of what shipped.\n",
+  "review_run_id": "r-20260928T205935086744-review-of-directory-row-reads-the-derived-phase",
+  "reviewed_base_sha": "5d8951051743a037e169173cb9efb953da95d527",
+  "reviewed_head_sha": "07bdc42c3755293d3ca516b271ac2e969d32aaf3",
+  "reviewed_run_id": "r-20260928T204215455574-directory-row-reads-the-derived-phase",
+  "reviewer_run_id": "r-20260928T205935086744-review-of-directory-row-reads-the-derived-phase",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T21:12:13.318312+00:00",
+  "total": 97
+}

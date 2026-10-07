@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "added_failures_source": "derived from the reviewed run's own suite fields: its manifest records baseline_suite: not-armed and after_suite: not-armed, so review.py added_failures_from_gate_logs reads no gate log on either arm and returns (None, []) \u2014 the count is unmeasured, never a measured zero, because a difference needs both arms. The node's own focused instrument (readback-check.py, EXIT=0) and its declared negative control at d1bd70d4 (9/9 earlier forks) are present and I reproduced the instrument. The reviewed run's write paths reach no test path, so no suite arm is armed.",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T19:42:45.263Z",
+  "dispatched_at": "2026-10-04T19:36:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T191349891282-read-back-of-the-ledger-plan-text/readback-check.py",
+      "line": "122",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control in section 4 re-finds needles the earlier read-back authored rather than independently demonstrating those sentences were load-bearing, so it shows the search discriminates but not that the current \u00a71-\u00a74 is fork-free."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no commit diff \u2014 the node's whole deliverable is report.md plus its run-directory instrument; reviewed against \u00a71-\u00a74, its two quoted terminological near-misses (report table A in \u00a72, B in \u00a74) are correctly classified as not load-bearing and its former-fork controls match the text.",
+    "done_when": "the done_when's measure is met by construction \u2014 report.md states that no sentence in sections 1 to 4 carries two readings that would lead a worker to build different things and names each section read, and records the full sha f31a38d8; its instrument readback-check.py reproduces EXIT=0 (ALL CHECKS PASS), which I re-ran.",
+    "goal": "the node's goal is a read-back of docs/plans/the-ledger-is-one-file-per-run.html sections 1-4 at main for load-bearing two-reading sentences; report.md states none were found and names \u00a71-\u00a74, reading the plan at f31a38d86c60218d71c838c63ceb956d35ccd00b (blob sha256 9f00bf52ce5cc54463e42dab55d27a171c4c845332f25ff0c5944b8e6eb7a6ea), which I confirmed is the plan blob at that revision, at main's tip and in the worktree copy.",
+    "manifest": "read; it records status complete, tests \"python3 readback-check.py -> EXIT=0, ALL CHECKS PASS\", the declared negative control finding 9/9 earlier forks at d1bd70d4, and three follow-ons; its suite arms are not-armed, so no added-failure count is derivable.",
+    "write_paths": "the node's only declared write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/read-back-of-the-ledger-plan-text/report.md; it made no commits, and that report exists and is the deliverable, with its run-directory manifest, script and log as its own instrumentation."
+  },
+  "justifications": {
+    "durability": "readback-check.py is the only guard and it pins the settlement sentences present and the earlier forks absent at d1bd70d4; it cannot fail on a future load-bearing sentence the current text lacks, so the \"none found\" verdict rests on judgement with no automated regression test.",
+    "evidence": "the node's readback-check.py reproduces EXIT=0 with the declared negative control finding 9/9 of the earlier read-back's forks at d1bd70d4, though that control re-finds needles the earlier report authored rather than independently re-deriving them as load-bearing.",
+    "fit": "report.md follows the structure of the prior read-backs under ship-s19-20260922 and the instrument uses the run-directory header-lined-log idiom; no banned name or plan label appears in the report or the script.",
+    "goal_fidelity": "report.md answers the goal directly, names \u00a71-\u00a74 and records the full revision f31a38d8, which matches the plan blob 9f00bf52 at that revision, main's tip and the worktree copy.",
+    "scope_discipline": "the node wrote only its declared report.md and its own run directory, made no commits and touched no plan, index or shared state, and its worktree/plan file is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a read-back of docs/plans/the-ledger-is-one-file-per-run.html sections 1-4 at main for load-bearing two-reading sentences; report.md states none were found and names \u00a71-\u00a74, reading the plan at f31a38d86c60218d71c838c63ceb956d35ccd00b (blob sha256 9f00bf52ce5cc54463e42dab55d27a171c4c845332f25ff0c5944b8e6eb7a6ea), which I confirmed is the plan blob at that revision, at main's tip and in the worktree copy.\nVERDICT done_when: the done_when's measure is met by construction \u2014 report.md states that no sentence in sections 1 to 4 carries two readings that would lead a worker to build different things and names each section read, and records the full sha f31a38d8; its instrument readback-check.py reproduces EXIT=0 (ALL CHECKS PASS), which I re-ran.\nVERDICT write_paths: the node's only declared write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/read-back-of-the-ledger-plan-text/report.md; it made no commits, and that report exists and is the deliverable, with its run-directory manifest, script and log as its own instrumentation.\nVERDICT manifest: read; it records status complete, tests \"python3 readback-check.py -> EXIT=0, ALL CHECKS PASS\", the declared negative control finding 9/9 earlier forks at d1bd70d4, and three follow-ons; its suite arms are not-armed, so no added-failure count is derivable.\nVERDICT diff: there is no commit diff \u2014 the node's whole deliverable is report.md plus its run-directory instrument; reviewed against \u00a71-\u00a74, its two quoted terminological near-misses (report table A in \u00a72, B in \u00a74) are correctly classified as not load-bearing and its former-fork controls match the text.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: report.md answers the goal directly, names \u00a71-\u00a74 and records the full revision f31a38d8, which matches the plan blob 9f00bf52 at that revision, main's tip and the worktree copy.\nSCORE evidence: 19\nJUSTIFICATION evidence: the node's readback-check.py reproduces EXIT=0 with the declared negative control finding 9/9 of the earlier read-back's forks at d1bd70d4, though that control re-finds needles the earlier report authored rather than independently re-deriving them as load-bearing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node wrote only its declared report.md and its own run directory, made no commits and touched no plan, index or shared state, and its worktree/plan file is clean.\nSCORE durability: 16\nJUSTIFICATION durability: readback-check.py is the only guard and it pins the settlement sentences present and the earlier forks absent at d1bd70d4; it cannot fail on a future load-bearing sentence the current text lacks, so the \"none found\" verdict rests on judgement with no automated regression test.\nSCORE fit: 18\nJUSTIFICATION fit: report.md follows the structure of the prior read-backs under ship-s19-20260922 and the instrument uses the run-directory header-lined-log idiom; no banned name or plan label appears in the report or the script.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T191349891282-read-back-of-the-ledger-plan-text/readback-check.py:122 follow-on: the negative control in section 4 re-finds needles the earlier read-back authored rather than independently demonstrating those sentences were load-bearing, so it shows the search discriminates but not that the current \u00a71-\u00a74 is fork-free.",
+  "review_run_id": "r-20261004T193639464475-review-of-read-back-of-the-ledger-plan-text",
+  "reviewed_base_sha": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "reviewed_head_sha": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "reviewed_run_id": "r-20261004T191349891282-read-back-of-the-ledger-plan-text",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T19:41:43.929142+00:00",
+  "total": 93
+}

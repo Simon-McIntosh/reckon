@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:write_plan",
+    "reckon/_store.py:_collapse_authored_section"
+  ],
+  "completed_at": "2026-09-29T21:44:38.256Z",
+  "dispatched_at": "2026-09-29T21:29:40Z",
+  "findings": [
+    {
+      "file": "tests/test_edit_plan_collapse_section.py",
+      "line": "288",
+      "text": "the spliced card carries both a second heading and a nested section-landed element, so it trips both raise sites in _landed_card_span (reckon/_store.py:935 and :943) which share one message; a regression deleting either check alone still refuses on the other and leaves the gate green, which is the gap this node exists to close."
+    },
+    {
+      "file": "/tmp/nc-ambig/reckon/_store.py",
+      "line": "934",
+      "text": "the scratch tree the manifest cites for the 29-test base arm is left holding the deleted guard and the head revision's test file, so it no longer matches the revision its own log header names and a reader who re-runs there measures the mutant rather than the base."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against cf729cc7d; one commit, two files, 28 insertions and no deletions, adding test_an_ambiguous_card_span_is_refused_and_leaves_the_file_unchanged at tests/test_edit_plan_collapse_section.py:281 and touching no production file.",
+    "done_when": "the done_when names a case in tests/test_edit_plan_collapse_section.py building an ambiguous span and a mutation deleting the guard; logs/after.txt records 30 passed at e851a33d over logs/baseline.txt's 29 at cf729cc7, and logs/negative_control.txt records 1 failed and 9 deselected with EXIT=1 where the op succeeded instead of refusing.",
+    "goal": "the node's goal is to pin collapse_section's refusal of a card span it cannot delimit, with a case that names the refusal reason and leaves the file byte-identical; tests/test_edit_plan_collapse_section.py:281 provides it and asserts both.",
+    "manifest": "read; every key is filled and the three logs it names under logs/ exist, and negative_control_log is written as a bare path whose first line repeats the declared mutation verbatim as the reader requires.",
+    "write_paths": "the declared paths are the collapse test file plus a fragment path and a figure path; the single commit changes only tests/test_edit_plan_collapse_section.py and docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-ambiguous-span-refusal-is-tested.html, so the figure is correctly unwritten."
+  },
+  "justifications": {
+    "durability": "logs/negative_control.txt reddens the new case when the guard goes, but the fixture trips both raise sites at reckon/_store.py:935 and :943 which share one message, so deleting either alone leaves the case green and neither rule is individually pinned.",
+    "evidence": "both arms carry revision, tree, command and EXIT and reckon/crew/review.py:1044 returns added failures (0, []) from them, but the base arm's cited tree /tmp/nc-ambig is left carrying the deleted guard so it no longer holds the revision its own header names.",
+    "fit": "the case reuses the plan fixture and the _edit and _collapse_op helpers already in tests/test_edit_plan_collapse_section.py:58 and :156, sits beside the sibling refusal case at :305, and introduces no import and no new name.",
+    "goal_fidelity": "tests/test_edit_plan_collapse_section.py:288 splices a complete section-landed card inside the first card's span so two closing tags could bound it, and :299-302 assert op_error, the cannot-determine-extent detail and a byte-identical file.",
+    "scope_discipline": "the diff touches no production file, and the guard the case exercises is present and unmodified in the reviewed worktree at reckon/_store.py:909-948."
+  },
+  "node": "review-of-collapse-ambiguous-span-refusal-is-tested",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to pin collapse_section's refusal of a card span it cannot delimit, with a case that names the refusal reason and leaves the file byte-identical; tests/test_edit_plan_collapse_section.py:281 provides it and asserts both.\nVERDICT done_when: the done_when names a case in tests/test_edit_plan_collapse_section.py building an ambiguous span and a mutation deleting the guard; logs/after.txt records 30 passed at e851a33d over logs/baseline.txt's 29 at cf729cc7, and logs/negative_control.txt records 1 failed and 9 deselected with EXIT=1 where the op succeeded instead of refusing.\nVERDICT write_paths: the declared paths are the collapse test file plus a fragment path and a figure path; the single commit changes only tests/test_edit_plan_collapse_section.py and docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-ambiguous-span-refusal-is-tested.html, so the figure is correctly unwritten.\nVERDICT manifest: read; every key is filled and the three logs it names under logs/ exist, and negative_control_log is written as a bare path whose first line repeats the declared mutation verbatim as the reader requires.\nVERDICT diff: read against cf729cc7d; one commit, two files, 28 insertions and no deletions, adding test_an_ambiguous_card_span_is_refused_and_leaves_the_file_unchanged at tests/test_edit_plan_collapse_section.py:281 and touching no production file.\nCALL_SITES: reckon/_store.py:write_plan, reckon/_store.py:_collapse_authored_section\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_edit_plan_collapse_section.py:288 splices a complete section-landed card inside the first card's span so two closing tags could bound it, and :299-302 assert op_error, the cannot-determine-extent detail and a byte-identical file.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms carry revision, tree, command and EXIT and reckon/crew/review.py:1044 returns added failures (0, []) from them, but the base arm's cited tree /tmp/nc-ambig is left carrying the deleted guard so it no longer holds the revision its own header names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches no production file, and the guard the case exercises is present and unmodified in the reviewed worktree at reckon/_store.py:909-948.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative_control.txt reddens the new case when the guard goes, but the fixture trips both raise sites at reckon/_store.py:935 and :943 which share one message, so deleting either alone leaves the case green and neither rule is individually pinned.\nSCORE fit: 19\nJUSTIFICATION fit: the case reuses the plan fixture and the _edit and _collapse_op helpers already in tests/test_edit_plan_collapse_section.py:58 and :156, sits beside the sibling refusal case at :305, and introduces no import and no new name.\nFINDING tests/test_edit_plan_collapse_section.py:288 the spliced card carries both a second heading and a nested section-landed element, so it trips both raise sites in _landed_card_span (reckon/_store.py:935 and :943) which share one message; a regression deleting either check alone still refuses on the other and leaves the gate green, which is the gap this node exists to close.\nFINDING /tmp/nc-ambig/reckon/_store.py:934 the scratch tree the manifest cites for the 29-test base arm is left holding the deleted guard and the head revision's test file, so it no longer matches the revision its own log header names and a reader who re-runs there measures the mutant rather than the base.\n",
+  "review_run_id": "r-20260929T212919167409-review-of-collapse-ambiguous-span-refusal-is-tested",
+  "reviewed_base_sha": "cf729cc7d376ec2ec4a8ed4d52fc4c32b33ac880",
+  "reviewed_head_sha": "e851a33dd051333479abc59b4458d60d4543e732",
+  "reviewed_run_id": "r-20260929T211610193831-collapse-ambiguous-span-refusal-is-tested",
+  "reviewer_run_id": "r-20260929T212919167409-review-of-collapse-ambiguous-span-refusal-is-tested",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T21:40:52+00:00",
+  "total": 92
+}

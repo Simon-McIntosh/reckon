@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2be39bd4ed86488151147931833843063eb6864c",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:4109 (the crew MCP tool returning the runs view)",
+    "reckon/mcp.py:5133 (the crew tool registration)",
+    "reckon/crew/query.py:472 (runs_view's live-arm _compact_row call)",
+    "reckon/crew/query.py:503 (the ledger-arm call)"
+  ],
+  "completed_at": "2026-09-30T13:45:49.222Z",
+  "dispatched_at": "2026-09-30T13:33:20Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_runs_scope.py",
+      "line": "125",
+      "text": "the file calls mcp._crew with view=\"runs\" at :125 and :136, so the done-when's \"any test that already calls runs_view\" set names it, yet it appears in neither gate arm; I ran it at head myself (1 passed), so no regression is hidden, but the recorded evidence does not cover it."
+    }
+  ],
+  "head_log_revision": "778938012bacbbf457916c87a179241e5ebb377e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 2be39bd4; five commits, five files, 300 insertions and 18 deletions, each with a conventional subject and a body; the added assertions are the two digest round-trips the mutation logs demonstrate red, two plan-null comparisons that red if the projection returns an empty string, a plan row's plan-and-digest-absence pair, and the skill-text checks, and none of them compares a value against a variable the test passed in without an intervening chain through promotion and the projection.",
+    "done_when": "the done-when names the skill text, the gate's file set, the hermetic runs-view test, the mutation log, and two arm logs showing zero added failures by id; the skill text and both runs-view cases verify at head, each mutation log reds exactly its case with EXIT=1, and my own re-derivation through reckon/crew/review.py:1201 over the run's own gate-base.log and gate-head.log returns added_failure_count 0 with no added ids, but tests/test_crew_runs_scope.py:125 calls the runs view and is in neither arm.",
+    "goal": "the goal is that the build skill names when a brief is the right carrier and that the runs view shows a brief run's missing plan beside its digest; skills/reckon-build/SKILL.md:441 names `reckon crew dispatch --brief <file>` for a probe, a measurement, a review or an investigation while work changing a plan's product keeps its plan, and reckon/crew/query.py:234-236,268,270 carries the digest beside a null plan on both the live and the ledger arm.",
+    "manifest": "read; it declares five commits, all present at a clean head, the new test file at 3 passed against base 3 failed/115 passed and head 3 failed/118 passed, and the skill at 11,594 words / 15,459 estimated tokens, a figure I recomputed exactly through tests/test_skill_contracts.py:679 against the 15,500 budget at :666.",
+    "write_paths": "the fence grants skills/reckon-build/SKILL.md, reckon/crew/query.py, tests/test_runs_view_shows_brief_runs.py, an evidence fragment and a figures directory; the diff touches the first three and the fragment, all inside the fence, plus tests/test_skill_contracts.py, which the coordinator's resume-1-advice.txt lifts the fence for in writing and the manifest names with that reason."
+  },
+  "justifications": {
+    "durability": "the digest assertions at tests/test_runs_view_shows_brief_runs.py:146 and :174 each have a demonstrated failing condition in the two mutation logs and the plan-null assertions at :143 and :173 red if the projection returns \"\" instead, though the digest is round-tripped as a constant so a wrong digest rather than a dropped one would pass and no mutation demonstrates the plan-null pair.",
+    "evidence": "both arms carry full-sha headers and my re-derivation through reckon/crew/review.py:1201 returns added_failure_count 0 with both mutations demonstrated red, but tests/test_crew_runs_scope.py:125 belongs to the done-when's named \"already calls runs_view\" set and is in neither arm, and the clause that every test grepping skills/ passes is unmet by the pre-existing red test_no_routing_identifier_leaks_into_skills_or_source.",
+    "fit": "the naming checks over the added lines return no hit, ruff check adds no finding over the added files and tests/test_runs_view_shows_brief_runs.py is the one changed file ruff format accepts, but the subject of commit a8efb2ba names the plan slug against the repo's commit rule and the nested conditional at reckon/crew/query.py:233-236 is denser than its neighbours.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:441 states the carrier rule that replaces the retired sentence and reckon/crew/query.py:268,270 carries the null plan and the digest a reader needs, so both halves land; the one step short of full is that the dispatch path filling node.brief_sha256 (reckon/crew/node.py:652) is verified by reading, no live pointer or ledger row on this workstation carrying a non-empty brief.",
+    "scope_discipline": "four of the five changed paths are the granted ones and the fifth, tests/test_skill_contracts.py:1248, is the coordinator's written fence lift, so nothing in the diff is unauthorised and its only extra behaviour, a null plan on a plan-less row, is named by the plan at \u00a75."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260930T125913711305-the-skill-names-when-a-brief-fits\nbase 2be39bd4ed86488151147931833843063eb6864c, head 778938012bacbbf457916c87a179241e5ebb377e\n\nVERDICT goal: the goal is that the build skill names when a brief is the right carrier and that the runs view shows a brief run's missing plan beside its digest; skills/reckon-build/SKILL.md:441 names `reckon crew dispatch --brief <file>` for a probe, a measurement, a review or an investigation while work changing a plan's product keeps its plan, and reckon/crew/query.py:234-236,268,270 carries the digest beside a null plan on both the live and the ledger arm.\nVERDICT done_when: the done-when names the skill text, the gate's file set, the hermetic runs-view test, the mutation log, and two arm logs showing zero added failures by id; the skill text and both runs-view cases verify at head, each mutation log reds exactly its case with EXIT=1, and my own re-derivation through reckon/crew/review.py:1201 over the run's own gate-base.log and gate-head.log returns added_failure_count 0 with no added ids, but tests/test_crew_runs_scope.py:125 calls the runs view and is in neither arm.\nVERDICT write_paths: the fence grants skills/reckon-build/SKILL.md, reckon/crew/query.py, tests/test_runs_view_shows_brief_runs.py, an evidence fragment and a figures directory; the diff touches the first three and the fragment, all inside the fence, plus tests/test_skill_contracts.py, which the coordinator's resume-1-advice.txt lifts the fence for in writing and the manifest names with that reason.\nVERDICT manifest: read; it declares five commits, all present at a clean head, the new test file at 3 passed against base 3 failed/115 passed and head 3 failed/118 passed, and the skill at 11,594 words / 15,459 estimated tokens, a figure I recomputed exactly through tests/test_skill_contracts.py:679 against the 15,500 budget at :666.\nVERDICT diff: read commit by commit against 2be39bd4; five commits, five files, 300 insertions and 18 deletions, each with a conventional subject and a body; the added assertions are the two digest round-trips the mutation logs demonstrate red, two plan-null comparisons that red if the projection returns an empty string, a plan row's plan-and-digest-absence pair, and the skill-text checks, and none of them compares a value against a variable the test passed in without an intervening chain through promotion and the projection.\nCALL_SITES: reckon/mcp.py:4109 (the crew MCP tool returning the runs view), reckon/mcp.py:5133 (the crew tool registration), reckon/crew/query.py:472 (runs_view's live-arm _compact_row call), reckon/crew/query.py:503 (the ledger-arm call)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:441 states the carrier rule that replaces the retired sentence and reckon/crew/query.py:268,270 carries the null plan and the digest a reader needs, so both halves land; the one step short of full is that the dispatch path filling node.brief_sha256 (reckon/crew/node.py:652) is verified by reading, no live pointer or ledger row on this workstation carrying a non-empty brief.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arms carry full-sha headers and my re-derivation through reckon/crew/review.py:1201 returns added_failure_count 0 with both mutations demonstrated red, but tests/test_crew_runs_scope.py:125 belongs to the done-when's named \"already calls runs_view\" set and is in neither arm, and the clause that every test grepping skills/ passes is unmet by the pre-existing red test_no_routing_identifier_leaks_into_skills_or_source.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: four of the five changed paths are the granted ones and the fifth, tests/test_skill_contracts.py:1248, is the coordinator's written fence lift, so nothing in the diff is unauthorised and its only extra behaviour, a null plan on a plan-less row, is named by the plan at \u00a75.\nSCORE durability: 18\nJUSTIFICATION durability: the digest assertions at tests/test_runs_view_shows_brief_runs.py:146 and :174 each have a demonstrated failing condition in the two mutation logs and the plan-null assertions at :143 and :173 red if the projection returns \"\" instead, though the digest is round-tripped as a constant so a wrong digest rather than a dropped one would pass and no mutation demonstrates the plan-null pair.\nSCORE fit: 17\nJUSTIFICATION fit: the naming checks over the added lines return no hit, ruff check adds no finding over the added files and tests/test_runs_view_shows_brief_runs.py is the one changed file ruff format accepts, but the subject of commit a8efb2ba names the plan slug against the repo's commit rule and the nested conditional at reckon/crew/query.py:233-236 is denser than its neighbours.\nFINDING tests/test_crew_runs_scope.py:125 the file calls mcp._crew with view=\"runs\" at :125 and :136, so the done-when's \"any test that already calls runs_view\" set names it, yet it appears in neither gate arm; I ran it at head myself (1 passed), so no regression is hidden, but the recorded evidence does not cover it.",
+  "review_run_id": "r-20260930T133305959978-review-of-the-skill-names-when-a-brief-fits",
+  "reviewed_base_sha": "2be39bd4ed86488151147931833843063eb6864c",
+  "reviewed_head_sha": "778938012bacbbf457916c87a179241e5ebb377e",
+  "reviewed_run_id": "r-20260930T125913711305-the-skill-names-when-a-brief-fits",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T13:43:46.556317+00:00",
+  "total": 89
+}

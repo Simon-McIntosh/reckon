@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (5d35145df, completed, 1 failure: tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet) and after_suite (4fbe874cd, completed, 0 failures); added ids = after_ids - base_ids = empty. The base entry is a non-git-scratch-tree environment artifact, not a revision defect, but it does not affect the subtraction.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:248",
+    "reckon/serve.py:2276",
+    "reckon/evidence.py:593"
+  ],
+  "completed_at": "2026-10-02T12:55:32.379Z",
+  "dispatched_at": "2026-10-02T12:36:16Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-promotion-walks-the-docs-tree-once.html",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence fragment still states 'Reuse is gated by a directory-level signature - every resource-holding directory's mtime and HTML entry count - ... a document rewritten in place is re-parsed by the file memo', which is the design the repair replaced; 4fbe874cd changed only resources.py and the test, so the fragment's mechanism prose, its gate table (which names 4ae1a9613 for the head arm and control), and its case list (no in-place case) are all stale against the code at reviewed_head_sha."
+    },
+    {
+      "file": "logs/base-arm.log",
+      "line": "135",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's single failure, tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet, is a subprocess.CalledProcessError from a non-git scratch tree (git rev-parse HEAD exit 128), the same environment artifact the prior review identified; the manifest's note still says it 'reproduces at the base revision and not at head', which reads a scratch-tree artifact as a revision defect, though added_failure_count is unaffected because the head arm has no failures."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 5d35145df: 4ae1a9613 introduces the reuse, 73e10feac adds the fragment, and 4fbe874cdaccd3d992f24f62c6a0b8943c665220 replaces the directory-level signature (relative dir, mtime_ns, html count) with per-file stat identity (relative path, size, mtime_ns, ctime_ns) and adds the in-place case plus a second armed mutation.",
+    "done_when": "the plan's done-when asks that the metadata index reuse a cache for files whose bytes are unchanged and that 'the bounded read gives the same answer as the full read'; tests/test_a_promotion_walks_the_docs_tree_once.py now holds five cases including test_in_place_identity_rewrite_is_seen, which I re-ran at head (5 passed EXIT=0) and against the pre-repair tree (1 failed EXIT=1).",
+    "goal": "the node's goal is to bound promotion's plan-metadata read; reckon/resources.py:_tree_entries reuses one docs-tree classification per unchanged tree, and reckon/resources.py:iter_resources applies the archived/legacy filters to the reused set.",
+    "manifest": "read; it records the node gate 5 passed EXIT=0, base and head arms of the ten pre-existing resource-touching files at -n 8 (base 2144 passed/1 failed EXIT=1, head 2149 passed/0 failed EXIT=0), a signature negative control 1 failed EXIT=1, a reuse-drop control 2 failed EXIT=1, and both baseline_suite/after_suite completed; both arms still run non-git scratch/base trees as before.",
+    "write_paths": "the manifest declares reckon/resources.py, reckon/_store.py, tests/test_a_promotion_walks_the_docs_tree_once.py and the evidence fragment; git diff --name-status 5d35145df 4fbe874cd changes exactly resources.py (M), the test (A) , the fragment (A) and nothing else, all inside the fence, with _store.py untouched."
+  },
+  "justifications": {
+    "durability": "the in-place identity-change regression class is now guarded by test_in_place_identity_rewrite_is_seen, and the declared RECKON_TEST_DIR_LEVEL_SIGNATURE mutation restores the directory-level signature and reddens exactly that case (1 failed, EXIT=1), so the guard fires on the defect it names; the reuse-drop control still reddens the walk-count cases.",
+    "evidence": "the node gate and both armed controls reproduce under my re-run (5 passed EXIT=0; signature mutation 1 failed EXIT=1; reuse-drop mutation 2 failed EXIT=1), added_failure_count derives to 0, and head-arm.log now names the repair revision, but the shipped evidence fragment still describes the replaced directory-level signature and cites pre-repair revisions in its gate table, so it does not match the code it records.",
+    "fit": "the change is minimal and well-scoped: _docs_tree_signature now stats each resource-bearing HTML file and still prunes the infrastructure roots and the evidence-fragment subtree, and its docstring is updated to the new mechanism; the adjacent evidence artifact was left describing the old design, which is why fit is not higher.",
+    "goal_fidelity": "the blocked equivalence defect is repaired and verified: the reuse is now gated on each resource-bearing file's own stat identity (size, mtime_ns, ctime_ns), so an in-place rewrite of a document's slug or type is re-identified and the bounded read equals the full read for the regression class the prior review found; the gate is a stat identity rather than a content digest, a sound proxy since ctime moves on any write, and the plan's other two reads are separate nodes.",
+    "scope_discipline": "git diff --name-status 5d35145df 4fbe874cd lists only reckon/resources.py, tests/test_a_promotion_walks_the_docs_tree_once.py and the fragment, all inside the declared paths, with reckon/_store.py and the figures directory untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bound promotion's plan-metadata read; reckon/resources.py:_tree_entries reuses one docs-tree classification per unchanged tree, and reckon/resources.py:iter_resources applies the archived/legacy filters to the reused set.\nVERDICT done_when: the plan's done-when asks that the metadata index reuse a cache for files whose bytes are unchanged and that 'the bounded read gives the same answer as the full read'; tests/test_a_promotion_walks_the_docs_tree_once.py now holds five cases including test_in_place_identity_rewrite_is_seen, which I re-ran at head (5 passed EXIT=0) and against the pre-repair tree (1 failed EXIT=1).\nVERDICT write_paths: the manifest declares reckon/resources.py, reckon/_store.py, tests/test_a_promotion_walks_the_docs_tree_once.py and the evidence fragment; git diff --name-status 5d35145df 4fbe874cd changes exactly resources.py (M), the test (A) and the fragment (A), all inside the fence, with _store.py untouched.\nVERDICT manifest: read; it records the node gate 5 passed EXIT=0, base and head arms of the ten pre-existing resource-touching files at -n 8 (base 2144 passed/1 failed EXIT=1, head 2149 passed/0 failed EXIT=0), a signature negative control 1 failed EXIT=1, a reuse-drop control 2 failed EXIT=1, and both baseline_suite/after_suite completed; both arms still run non-git scratch/base trees as before.\nVERDICT diff: read commit by commit against 5d35145df: 4ae1a9613 introduces the reuse, 73e10feac adds the fragment, and 4fbe874cd replaces the directory-level signature (relative dir, mtime_ns, html count) with per-file stat identity (relative path, size, mtime_ns, ctime_ns) and adds the in-place case plus a second armed mutation.\nCALL_SITES: reckon/_store.py:248, reckon/serve.py:2276, reckon/evidence.py:593\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the blocked equivalence defect is repaired and verified: the reuse is now gated on each resource-bearing file's own stat identity (size, mtime_ns, ctime_ns), so an in-place rewrite of a document's slug or type is re-identified and the bounded read equals the full read for the regression class the prior review found; the gate is a stat identity rather than a content digest, a sound proxy since ctime moves on any write, and the plan's other two reads are separate nodes.\nSCORE evidence: 16\nJUSTIFICATION evidence: the node gate and both armed controls reproduce under my re-run (5 passed EXIT=0; signature mutation 1 failed EXIT=1; reuse-drop mutation 2 failed EXIT=1), added_failure_count derives to 0, and head-arm.log now names the repair revision, but the shipped evidence fragment still describes the replaced directory-level signature and cites pre-repair revisions in its gate table, so it does not match the code it records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 5d35145df 4fbe874cd lists only reckon/resources.py, tests/test_a_promotion_walks_the_docs_tree_once.py and the fragment, all inside the declared paths, with reckon/_store.py and the figures directory untouched.\nSCORE durability: 19\nJUSTIFICATION durability: the in-place identity-change regression class is now guarded by test_in_place_identity_rewrite_is_seen, and the declared RECKON_TEST_DIR_LEVEL_SIGNATURE mutation restores the directory-level signature and reddens exactly that case (1 failed, EXIT=1), so the guard fires on the defect it names; the reuse-drop control still reddens the walk-count cases.\nSCORE fit: 18\nJUSTIFICATION fit: the change is minimal and well-scoped: _docs_tree_signature now stats each resource-bearing HTML file and still prunes the infrastructure roots and the evidence-fragment subtree, and its docstring is updated to the new mechanism; the adjacent evidence artifact was left describing the old design, which is why fit is not higher.\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-promotion-walks-the-docs-tree-once.html:22 follow-on: the evidence fragment still states 'Reuse is gated by a directory-level signature - every resource-holding directory's mtime and HTML entry count - ... a document rewritten in place is re-parsed by the file memo', which is the design the repair replaced; 4fbe874cd changed only resources.py and the test, so the fragment's mechanism prose, its gate table (which names 4ae1a9613 for the head arm and control), and its case list (no in-place case) are all stale against the code at reviewed_head_sha.\nFINDING logs/base-arm.log:135 follow-on: the base arm's single failure, tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet, is a subprocess.CalledProcessError from a non-git scratch tree (git rev-parse HEAD exit 128), the same environment artifact the prior review identified; the manifest's note still says it 'reproduces at the base revision and not at head', which reads a scratch-tree artifact as a revision defect, though added_failure_count is unaffected because the head arm has no failures.\n",
+  "review_run_id": "r-20261002T123548897091-review-of-a-promotion-walks-the-docs-tree-once",
+  "reviewed_base_sha": "5d35145dfb2bc3f85c598b8730df0131b86a9dd1",
+  "reviewed_head_sha": "4fbe874cdaccd3d992f24f62c6a0b8943c665220",
+  "reviewed_run_id": "r-20261002T111120682093-a-promotion-walks-the-docs-tree-once",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T123548897091-review-of-a-promotion-walks-the-docs-tree-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:49:42.098175+00:00",
+  "total": 92
+}

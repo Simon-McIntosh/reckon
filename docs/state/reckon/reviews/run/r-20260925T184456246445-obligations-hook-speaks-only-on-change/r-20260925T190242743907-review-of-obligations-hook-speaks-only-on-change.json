@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/hooks/install.py:102"
+  ],
+  "completed_at": "2026-09-25T19:12:30.010Z",
+  "dispatched_at": "2026-09-25T19:02:56Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "528",
+      "text": "the stored digest is not cleared when the duty view is empty, so a duty set that empties and later returns unchanged compares equal to the stale digest and the hook stays silent - measured in reviewer-probe-reappearance.log: present injects (508 bytes), removed silent, identical re-appearance silent, which is the forgetting the injection exists to prevent."
+    },
+    {
+      "file": "docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html",
+      "line": "438",
+      "text": "the record's \"Stop mode is unchanged and never consults the digest\" holds for the digest but not for the emitted text: the lane rewrite sits in resolve(), which both modes call, so with a local_backend configured the stop block's reason prints --local where the composed command named --backend codex (reviewer-probe-stop-lane.log); the claim should be narrowed to the digest, since the rewritten command is equally typeable from the stop reason."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "one commit against base 8223a80c, touching the hook, four new hook cases, the evidence section prompt-hook-speaks-on-change, the plan's s5 landing comment and the new figure; applying the run's own change.patch (sha256 700f479965ec5a13...) to a clean export of the base reproduces the four tracked paths byte for byte, the figure being the only commit content the worker could not stage under the read-only index.",
+    "done_when": "the fence names the three-drive prompt case, the age case, the lane case and the declared mutation; tests/test_coordinator_obligations_hook.py:676 drives prompt three times and asserts inject/silent/inject-over-both-ids, my arms reproduce the gate at 44 passed base and 48 passed head with zero added failures, and removing the digest comparison reds exactly the two silence cases (2 failed, 12 passed) in my own mutant tree.",
+    "goal": "the node goal is that the coordinator obligations prompt hook injects its checklist only when the obligation set changed since its last injection; reckon/hooks/coordinator_obligations.py:313 digests the sorted (kind, run_id) pair set and main() at line 536 returns silently when it equals the digest stored beside the session's follower registration, and my own subprocess drive of the head injects, stays silent on an identical repeat, injects again when one duty is added, and stays silent again.",
+    "manifest": "read; it records both cohort arms with counts and log paths, the read-only shared-.git blocker and the untracked figure with the change.patch digest, and one overstatement I measured against, \"the stop mode is unchanged\", whose emitted text does move (see the second finding).",
+    "write_paths": "the declared fence is reckon/hooks/coordinator_obligations.py, tests/test_coordinator_obligations_hook.py, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html, docs/figures/an-orchestrator-cannot-forget-its-obligations and docs/plans/an-orchestrator-cannot-forget-its-obligations.html; git show --stat d6e5fcef lists exactly five files, each inside that set, and ruff check and format --check are clean on the two changed python paths."
+  },
+  "justifications": {
+    "durability": "the digest guard is genuinely red-provable, tests/test_coordinator_obligations_hook.py:676 and :712 both red under the digest-comparison deletion I reproduced, but no assertion covers the digest surviving an emptied duty list, which is where my probe shows a duty returning unreported.",
+    "evidence": "the gate named by the done-when reran in my own scratch exports at 44 passed base (8223a80c) and 48 passed head (d6e5fcef) with zero added failures, and both declared mutations reproduce (reviewer-mutation-no-digest.log 2 failed/12 passed; reviewer-mutation-lane.log 1 failed/13 passed), but the record's stop-mode clause measures false as written.",
+    "fit": "the helpers sit beside _format_age with the module's underscore-private style and inert failure direction (reckon/hooks/coordinator_obligations.py:283-360), the atomic write mirrors the store idiom, and stop stays digest-free at line 478, but the module docstring's \"appeared or gone\" contract is wider than the implementation.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:531-537 gates the prompt injection on the digest and excludes age by digesting only (kind, run_id), which my three-drive probe confirms, but the digest survives a duty list that empties (line 528 returns before any clear), so a duty that leaves and returns identically is never spoken again.",
+    "scope_discipline": "git show --stat d6e5fcef lists the five declared fence paths and nothing else, the two changed python paths carry no ruff finding or format delta, and no shared index or plan state is mutated by this node."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 8223a80caa0256ee8406e602c78ba088fff0101a\nreviewed_head_sha: d6e5fcef6017807e1d3081b9ec9835a7d8c4b903\nVERDICT goal: the node goal is that the coordinator obligations prompt hook injects its checklist only when the obligation set changed since its last injection; reckon/hooks/coordinator_obligations.py:313 digests the sorted (kind, run_id) pair set and main() at line 536 returns silently when it equals the digest stored beside the session's follower registration, and my own subprocess drive of the head injects, stays silent on an identical repeat, injects again when one duty is added, and stays silent again.\nVERDICT done_when: the fence names the three-drive prompt case, the age case, the lane case and the declared mutation; tests/test_coordinator_obligations_hook.py:676 drives prompt three times and asserts inject/silent/inject-over-both-ids, my arms reproduce the gate at 44 passed base and 48 passed head with zero added failures, and removing the digest comparison reds exactly the two silence cases (2 failed, 12 passed) in my own mutant tree.\nVERDICT write_paths: the declared fence is reckon/hooks/coordinator_obligations.py, tests/test_coordinator_obligations_hook.py, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html, docs/figures/an-orchestrator-cannot-forget-its-obligations and docs/plans/an-orchestrator-cannot-forget-its-obligations.html; git show --stat d6e5fcef lists exactly five files, each inside that set, and ruff check and format --check are clean on the two changed python paths.\nVERDICT manifest: read; it records both cohort arms with counts and log paths, the read-only shared-.git blocker and the untracked figure with the change.patch digest, and one overstatement I measured against, \"the stop mode is unchanged\", whose emitted text does move (see the second finding).\nVERDICT diff: one commit against base 8223a80c, touching the hook, four new hook cases, the evidence section prompt-hook-speaks-on-change, the plan's s5 landing comment and the new figure; applying the run's own change.patch (sha256 700f479965ec5a13...) to a clean export of the base reproduces the four tracked paths byte for byte, the figure being the only commit content the worker could not stage under the read-only index.\nCALL_SITES: reckon/hooks/install.py:102\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:531-537 gates the prompt injection on the digest and excludes age by digesting only (kind, run_id), which my three-drive probe confirms, but the digest survives a duty list that empties (line 528 returns before any clear), so a duty that leaves and returns identically is never spoken again.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate named by the done-when reran in my own scratch exports at 44 passed base (8223a80c) and 48 passed head (d6e5fcef) with zero added failures, and both declared mutations reproduce (reviewer-mutation-no-digest.log 2 failed/12 passed; reviewer-mutation-lane.log 1 failed/13 passed), but the record's stop-mode clause measures false as written.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat d6e5fcef lists the five declared fence paths and nothing else, the two changed python paths carry no ruff finding or format delta, and no shared index or plan state is mutated by this node.\nSCORE durability: 16\nJUSTIFICATION durability: the digest guard is genuinely red-provable, tests/test_coordinator_obligations_hook.py:676 and :712 both red under the digest-comparison deletion I reproduced, but no assertion covers the digest surviving an emptied duty list, which is where my probe shows a duty returning unreported.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers sit beside _format_age with the module's underscore-private style and inert failure direction (reckon/hooks/coordinator_obligations.py:283-360), the atomic write mirrors the store idiom, and stop stays digest-free at line 478, but the module docstring's \"appeared or gone\" contract is wider than the implementation.\nFINDING reckon/hooks/coordinator_obligations.py:528 the stored digest is not cleared when the duty view is empty, so a duty set that empties and later returns unchanged compares equal to the stale digest and the hook stays silent - measured in reviewer-probe-reappearance.log: present injects (508 bytes), removed silent, identical re-appearance silent, which is the forgetting the injection exists to prevent.\nFINDING docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:438 the record's \"Stop mode is unchanged and never consults the digest\" holds for the digest but not for the emitted text: the lane rewrite sits in resolve(), which both modes call, so with a local_backend configured the stop block's reason prints --local where the composed command named --backend codex (reviewer-probe-stop-lane.log); the claim should be narrowed to the digest, since the rewritten command is equally typeable from the stop reason.\n",
+  "review_run_id": "r-20260925T190242743907-review-of-obligations-hook-speaks-only-on-change",
+  "reviewed_base_sha": "8223a80caa0256ee8406e602c78ba088fff0101a",
+  "reviewed_head_note": "The coordinator committed the worker's exact work as d6e5fcef on the worker's behalf after the worker's host mounted the shared .git read-only; I verified the four tracked paths at head are byte-identical to the run's tested change.patch (sha256 700f479965ec5a13...) applied to a clean export of the base, the new figure being the only commit content that patch could not stage.",
+  "reviewed_head_sha": "d6e5fcef6017807e1d3081b9ec9835a7d8c4b903",
+  "reviewed_run_id": "r-20260925T184456246445-obligations-hook-speaks-only-on-change",
+  "reviewed_tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/obligations-hook-speaks-only-on-change",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T19:11:18.679833+00:00",
+  "total": 89
+}

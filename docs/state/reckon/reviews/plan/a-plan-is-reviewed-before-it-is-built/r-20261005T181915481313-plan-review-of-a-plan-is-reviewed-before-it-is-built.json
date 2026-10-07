@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T18:24:33.688Z",
+  "dispatched_at": "2026-10-05T18:19:38Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:21",
+      "id": "duplicate_owner-1",
+      "reason": "the owner must move to a lower layer both `_schema` and `doccheck` can import (the declarations and `SECTION_DECLARATION_ENUM` already live in `reckon/_schema.py`, the natural home), or the plan ships two cycles.",
+      "text": "\u00a718 locates the shared \"still work\" predicate on `reckon/roadmap.py`, whose callers it names as `implementable_sections` (same module), `_schema.plan_executable_remainder` and `doccheck._implementable_section_ids`; but `roadmap.py:21` already does `from reckon._schema import (...)` and `roadmap.py:38` does `from reckon.doccheck import (...)`, so `_schema` importing the predicate from `roadmap` (or `doccheck` doing so) closes an import cycle \u2014 the predicate cannot be owned by a module that sits above both of its consumers.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s18",
+      "id": "interface_budget-1",
+      "reason": "the per-\u00a716/\u00a717/\u00a718 net of \"+2\" is understated and \u00a718's stated reason for privacy is contradicted by its own caller list; the accounting must be corrected or a same-package owner chosen.",
+      "text": "\u00a718's interface accounting states \"no public definition is added or retired; the predicate is private, because its two callers share the crew package\", but the callers it names in the same section are `_schema.plan_executable_remainder` and `doccheck._implementable_section_ids`, neither in `reckon/crew/`; \u00a716's own house rule counts a definition consumed across a package boundary, so \u00a718 adds one to `public_definitions` while claiming it adds none.",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:2069",
+      "id": "reuse_search-1",
+      "reason": "the plan must reconcile the two semantics (keep two named predicates, or state the MCP view's rows now filter differently) rather than assert one test.",
+      "text": "\u00a717 asserts the machinery-region test is \"spelled three times\" as the span parser's section stack, the prose parser's protected flag, and `mcp_views._inside_structured_region`, all becoming one predicate; the span parser (`reckon/_plan_html.py:60`) and the prose parser (`reckon/crew/plan_review.py:209`) test presence of any `data-reckon` attribute, while `mcp_views._inside_structured_region` (`reckon/mcp_views.py:2075`) tests `parent.get(\"data-reckon\") not in (None, \"section\")` and treats a `data-reckon=\"section\"` element as authored, not machinery \u2014 so unifying them as written changes what the MCP view's `_authored_section_headings` walk treats as machinery, a behaviour the plan does not account for.",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0ed7b9fd3cab40ac6cf0777bf61782722fbca0389d5b539e4fd977f0122bb4a6",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 108,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T181915481313-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "f8e7948141887020ad44290e8200900d29909289",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717's `plan_headings` hides the span parser, the heading-level generalisation, wrapper-id resolution, identity derivation and card recognition behind one named record, a small interface over substantial behaviour.",
+    "duplicate_owner": "a finding \u2014 the shared implementability predicate \u00a718 places on `reckon/roadmap.py` has two of its three named consumers in modules that `roadmap` already imports, so neither can import it back.",
+    "interface_budget": "a finding \u2014 \u00a718 accounts no new public definition, but its own named callers are `reckon/_schema.py` and `reckon/doccheck.py`, outside the crew package, so under \u00a716's stated house rule the predicate crosses a package boundary, earns a public name and is counted; supplied counts public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23.",
+    "reuse_search": "a finding \u2014 the plan's prior-art map for the machinery-region test is inaccurate: `mcp_views._inside_structured_region` excludes `data-reckon=\"section\"` while the span and prose parsers protect on mere presence of a `data-reckon` attribute, so \u00a717's \"three spellings of one test\" is two spellings of one test plus a third that answers a different question.",
+    "thin_wrapper": "pass \u2014 \u00a718 makes `plan_executable_remainder` express one rule over the existing `implementable_sections` rather than a parallel reader, and states why nothing is retired."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.814966+00:00"
+}

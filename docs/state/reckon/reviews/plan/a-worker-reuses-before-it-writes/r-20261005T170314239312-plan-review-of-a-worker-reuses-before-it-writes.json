@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:08:51.696Z",
+  "dispatched_at": "2026-10-05T17:03:34Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:147",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a713 already states this placement tradeoff, scopes the runner to \u00a712/\u00a713's two consumers rather than the eventual twenty-one, and names the dedicated git-access module as the lead's followup `git-access-has-one-owner`, so the residual is recorded rather than repaired here.",
+      "text": "the new shared git process runner is homed on `reckon/velocity.py`, a measurement/report module, while its consumers are `reckon/clones.py` and `reckon/crew/routing.py`; the section's own argument that \"five unrelated consumers should not import a velocity report to find a cache directory\" applies to a generic subprocess primitive at least as strongly",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "84fdd0318e19bed06d827a04aa62b571ade83acbcbd5de2e82cf59c9aeaf66b3",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 142,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the runner's consumers today are the detector and routing's wrapper, two modules, not the five unrelated ones that justify the cascade's own home; the section states that tradeoff and the dedicated git-access module is the lead's followup git-access-has-one-owner, as the reviewer's own reason records",
+      "when": "2026-10-05T17:10:15.180979+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T170314239312-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "589f7a6354833a4dbccf8dbe2b35d570ec83a46b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `cache_root(kind, override=None)` in `reckon/_store.py` hides a five-resolver precedence table (per-kind env var, leaf, and where `RECKON_HOME` enters) behind one argument, with the kind table added to rather than the ordering exported; the \u00a713 process runner hides `-C`, the 180 s timeout, the optional stdin payload and the no-raise return shape behind one function that becomes velocity's only subprocess site.",
+    "duplicate_owner": "a finding \u2014 the generic never-raising git process runner is placed on `reckon/velocity.py`, a report module, although its \u00a712/\u00a713 consumers (`reckon/clones.py` and `reckon/crew/routing.py`) are not velocity-report consumers \u2014 the same objection \u00a713 raises against placing the cache cascade on velocity.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 states its net is zero (adds one public sources reader on velocity, retires the public `revised_python`, the deleted runner and resolver were private) and \u00a713 states its net is one (adds the runner and `cache_root`, retires the public `pick_input_cache_root`), with neither section adding a CLI option, MCP view or refusal family.",
+    "reuse_search": "pass \u2014 the plan cites the mechanism it extends for every proposal and each was found in the code: velocity's `git`/`read_blobs`/`_plan_documents`, `routing._git`, `service._run`, `capabilities.pick_input_cache_root`, `lane_context._profile_cache_root` and `serve._client_cache_root` for \u00a713, and clones' `_git`/`revised_python`/`_cache_root` for \u00a712; a census followup names the sixty-three direct git invocations it deliberately leaves.",
+    "thin_wrapper": "pass \u2014 the two retained wrappers carry measured justifications: `velocity.git` is a one-line checked convenience whose fourteen callers consume bare bytes (widening its return would rewrite fourteen callers for no gain) and `routing._git` is error-domain translation into `CrewError` for its checked callers, not a second runner, and is rewritten to call the core runner."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T17:10:02.321131+00:00"
+}

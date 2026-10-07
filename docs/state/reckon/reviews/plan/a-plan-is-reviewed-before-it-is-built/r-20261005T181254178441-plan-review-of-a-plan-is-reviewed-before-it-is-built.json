@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T18:17:45.695Z",
+  "dispatched_at": "2026-10-05T18:13:14Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:170",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a716's own done-when requires the census to report one expression, and as written no reviewer can satisfy it for this site; the plan must exempt the word-binder or specify a shared number core rather than the whole anchored expression.",
+      "text": "\u00a716 requires every section-spelling grammar site to converge on one shared expression and names `roadmap._SECTION_WORD_RE` among them, but `_SECTION_WORD_RE` (`\\b(?:section|sections)\\s+(\\d+(?:...)*)`) binds a *list* of numbers anywhere in gate prose (\"sections 5 and 6\") while the shared expression `_SECTION_IDENTITY` (`reckon/crew/routing.py:219`) is an anchored single-identity full-match; the two are not the same grammar, so the mandated convergence is unachievable without moving the anchors, which \u00a716 does not authorize",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:1026",
+      "id": "duplicate_owner-2",
+      "reason": "the reader can call one shared classification predicate and still preserve document order, so either extract that predicate for doccheck to call or drop the \"one place\" claim; leaving it makes the \u00a718 done-when's one-place assertion false.",
+      "text": "\u00a718 states the landing rule \"changes in one place\" and expresses `_schema.plan_executable_remainder` over `roadmap.implementable_sections`, yet leaves `doccheck._implementable_section_ids` comparing each declaration against the literal `\"implementable\"` inline, the same classification predicate as `implementable_sections` (`reckon/roadmap.py:106`); document order and the heading-id fallback are a different output, not a different rule, so the rule is spelled in two places after \u00a718",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f326510e642b7eb56ebf82566f421bf849fd8b0a3e1e43623bef83b670797749",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 107,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T181254178441-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "edbd37f1480b153f2b32f6969c77dca081dd9c07",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 consolidates section enumeration, identity and extent behind one private parser and one public `plan_headings` reader with named fields, replacing several ad-hoc walks; \u00a716's `_section_digests` and coverage predicate are module-private and the public `plan_fingerprint` signature does not widen (the `legacy` flag is retired).",
+    "duplicate_owner": "a finding \u2014 \u00a716 mandates that roadmap's `_SECTION_WORD_RE` converge on the shared section-identity expression, and \u00a718 leaves `doccheck._implementable_section_ids` re-implementing the \"still implementation work\" classification rule instead of extending `roadmap.implementable_sections`.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 names in its own text its two added public definitions (`plan_headings`, the machinery-element predicate) and the private walks it retires (net +2), and \u00a716 and \u00a718 each state no public definition is added or retired and reuse the existing plan-review-missing refusal family, so no family grows without account.",
+    "reuse_search": "pass \u2014 the plan searched and extends existing machinery rather than adding a parallel subsystem: `_StructuredSectionSpanParser`/`structured_section_spans` (`reckon/_plan_html.py:44,94`), `plan_fingerprint`/`_fingerprint_forms`/`_authored_prose`/`_AuthoredProseParser` (`reckon/crew/plan_review.py:162,257,368,598`), `roadmap.implementable_sections` (`reckon/roadmap.py:106`), `_schema.plan_executable_remainder` (`reckon/_schema.py:788`) and `promotion._landed_sections` (`reckon/roadmap` symbols all confirmed present at the named revisions); no existing per-section digest or public section reader was found, so \u00a716's and \u00a717's additions are new rather than duplicative.",
+    "thin_wrapper": "pass \u2014 \u00a718's `plan_executable_remainder` is not a bare forward: it retains the missing/malformed-declaration unknown sentinel (`reckon/_schema.py:798-806`) and delegates only the classification comparison, and \u00a716/\u00a717 move recognisers and helpers to their owners rather than layering wrappers over them."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.816542+00:00"
+}

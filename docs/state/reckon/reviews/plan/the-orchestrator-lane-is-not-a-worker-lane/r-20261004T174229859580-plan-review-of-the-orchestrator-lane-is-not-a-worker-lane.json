@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T17:47:10.560Z",
+  "dispatched_at": "2026-10-04T17:42:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-orchestrator-lane-is-not-a-worker-lane.html#s1",
+      "id": "reuse_search-1",
+      "reason": "the plan should name `reckon/schema/flight.yaml` `fallback` and `reckon/crew/routing.py:resolve_budget_fallback` and state whether it extends or forks them, which changes \u00a71's design.",
+      "text": "the plan adds a lane-routing decision without citing the existing declared-fallback mechanism; a reader cannot tell the new discharge search apart from the routing that already owns held-lane substitution",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:379",
+      "id": "duplicate_owner-1",
+      "reason": "two backend-selection paths drift, and the declared-fallback owner is the mechanism a reader already expects to name the lane to use instead.",
+      "text": "\u00a71's `_orchestrator_lane_discharge_candidates` (reckon/crew/dispatch.py:4372) walks every configured backend and re-resolves it through `resolve_role_override` to find a usable alternative lane, duplicating `resolve_budget_fallback`, which already resolves a held backend's declared `fallback` for the same role; a backend already declares a substitution, so the honest change is to make the orchestrator lane discharge through that declaration (or extend it) rather than a second config scan beside it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-orchestrator-lane-is-not-a-worker-lane.html#s2",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should extend the fence-waiver reason field to carry a second waiver class, or justify a parallel field; as written it adds a second reason-recording surface the discharge sibling plan (`an-orchestrator-can-discharge-a-refusal`) intends to own centrally.",
+      "text": "\u00a72 proposes \"a flag whose reason is recorded on the run and reaches the ledger row\", which is exactly what `--no-fence REASON` already does (reckon/cli.py:1815 help: \"record REASON on the run and its ledger row\"; recorded at reckon/crew/dispatch.py:7475, carried to the ledger at reckon/crew/promotion.py:8517), yet the plan neither cites nor extends it",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-orchestrator-lane-is-not-a-worker-lane.html#s2",
+      "id": "reuse_search-2",
+      "reason": "\u00a72's override should be expressed in the sibling's discharge vocabulary or the two mechanisms will diverge on the shape of a recorded waiver.",
+      "text": "the override is designed without citing the waiver taxonomy its own sibling already fixes: `an-orchestrator-can-discharge-a-refusal` \u00a74 defines a discharge as a waiver / alternative verdict / named owner, each \"carrying the refusal's identity, the caller's stated reason, and a timestamp, onto a committed row\", and `a-refusal-is-about-the-work` `plan-standalone` explicitly says the discharge work \"stays with\" that sibling",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "187155ccea5b3756c585d529889f876c28044604b3a666139a3a944dc9485b5a",
+  "plan_slug": "the-orchestrator-lane-is-not-a-worker-lane",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T174229859580-plan-review-of-the-orchestrator-lane-is-not-a-worker-lane",
+  "reviewed_blob_sha": "5caf34a95f1b53bcf83717b2e47d612c05e52a2f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the \u00a71 stop is one cohesive concept composed in place (`_dispatch_orchestrator_lane_stop` plus its line renderer) inside the existing dispatch module; no new module and no spread of shallow wrappers over the same machinery.",
+    "duplicate_owner": "a finding \u2014 the \u00a71 discharge-candidate search re-implemented backend selection (`_orchestrator_lane_discharge_candidates` re-resolving every configured backend) rather than extending the declared-fallback routing its owner already provides.",
+    "reuse_search": "a finding \u2014 the plan cites its sibling plans and the local-lane scanner, but never cites the two existing mechanisms its \u00a71 discharge search and its \u00a72 override each re-implement (`fallback` routing and `--no-fence REASON`).",
+    "thin_wrapper": "a finding \u2014 \u00a72's override flag is a thin layer over the existing `--no-fence REASON` waiver-recording mechanism, with no statement of why that mechanism cannot be extended."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T19:38:14.015232+00:00"
+}

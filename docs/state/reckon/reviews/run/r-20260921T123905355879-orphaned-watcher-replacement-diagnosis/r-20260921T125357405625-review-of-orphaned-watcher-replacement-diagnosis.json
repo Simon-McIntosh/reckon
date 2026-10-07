@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T12:53:57.405625+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis/declared-spec-probe.log",
+      "line": "1",
+      "text": "the driver that supplies spec_level in memory survives only as a one-line marker and pytest summary in this log, while its code reaches disk only as a transient stream.jsonl item, so the report's central claim (that only _node was wrapped and the replacement assertions ran unchanged) cannot be checked from the log the report names as that control's durable receipt."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read 9980886e (a 91-line report, its only file) and ad84b2e3 (evidence anchor s14 and 16 lines of plan prose) against 26d6df25; no meta line, lifecycle field, decision or followup is touched, and the two commit bodies state what landed and why.",
+    "done_when": "read the done-when's measure against the report's boundary section at reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md:10-25 and :29-50; the introducing revision d5811b20 and the method that established it (four git archive snapshots executed on all_debug) are stated, the assertion-pair clause is declared unmet with the reason that no assertion pair exists, and observed is kept distinct from inferred in every section.",
+    "goal": "read the goal line of the reviewed node's dispatch prompt and reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md:6; the report states why the case is red (its _node() factory omits spec_level, so validation refuses the run before watcher arming) and gives the verdict that the case is wrong and the replacement path is not, which is what the goal asks for.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis/manifest.md:1-22; its commits 9980886e and ad84b2e3 are the reviewed worktree's two commits, its three changed_paths equal the diff's, and every test entry names its command, revision and recorded result.",
+    "write_paths": "read the three declared write paths against the reviewed worktree's diff of 26d6df25680ac385446f9db0c86f339ddb57fece..ad84b2e30f7ad3f30903c357d1d870c4177654c8; exactly reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md, docs/evidence/archive/crew-runtime-positive-controls-landed.html and docs/plans/crew-runtime-positive-controls.html are changed and nothing else."
+  },
+  "justifications": {
+    "durability": "this node changed no code and no test asserts the report's content, so the only standing guard on the defect it diagnoses is the untouched red case at tests/test_crew_orphan.py:216 plus the rerunnable driver at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis/history_probe.py:1-24.",
+    "evidence": "the report's load-bearing receipts reproduce independently \u2014 tests/test_crew_orphan.py is blob 8b0857dabc494cd5aa5583fadfc0ad736e4a62d3 and the dispatch module 218f10e4f455fa29619cb2d54d86fcd8a573c35b at all four cited revisions, the historical traceback's reckon/crew/dispatch.py:1615 is the CrewError raise inside the d5811b20 snapshot's own module rather than the main checkout's, and the in-memory control wraps only item.module._node.",
+    "fit": "the report follows the idiom of the code around it, labelling observed against inferred and naming files by mechanism, and no stage, plan or version identifier appears in the report's path, the two commit subjects, or any tracked source path.",
+    "goal_fidelity": "reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md:54-68 gives the goal's verdict at :6 with the mechanism, and I confirmed at the reviewed revision that validate_node refuses at reckon/crew/dispatch.py:3058 while the replacement decision is made later at reckon/crew/dispatch.py:3341.",
+    "scope_discipline": "the reviewed worktree's git diff --name-only 26d6df25..ad84b2e3 returns exactly the three declared paths, and the plan edit appends prose under the existing s14 anchor without touching plan-version, plan-modified, status or the followups section."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal line of the reviewed node's dispatch prompt and reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md:6; the report states why the case is red (its _node() factory omits spec_level, so validation refuses the run before watcher arming) and gives the verdict that the case is wrong and the replacement path is not, which is what the goal asks for.\nVERDICT done_when: read the done-when's measure against the report's boundary section at reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md:10-25 and :29-50; the introducing revision d5811b20 and the method that established it (four git archive snapshots executed on all_debug) are stated, the assertion-pair clause is declared unmet with the reason that no assertion pair exists, and observed is kept distinct from inferred in every section.\nVERDICT write_paths: read the three declared write paths against the reviewed worktree's diff of 26d6df25680ac385446f9db0c86f339ddb57fece..ad84b2e30f7ad3f30903c357d1d870c4177654c8; exactly reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md, docs/evidence/archive/crew-runtime-positive-controls-landed.html and docs/plans/crew-runtime-positive-controls.html are changed and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis/manifest.md:1-22; its commits 9980886e and ad84b2e3 are the reviewed worktree's two commits, its three changed_paths equal the diff's, and every test entry names its command, revision and recorded result.\nVERDICT diff: read 9980886e (a 91-line report, its only file) and ad84b2e3 (evidence anchor s14 and 16 lines of plan prose) against 26d6df25; no meta line, lifecycle field, decision or followup is touched, and the two commit bodies state what landed and why.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md:54-68 gives the goal's verdict at :6 with the mechanism, and I confirmed at the reviewed revision that validate_node refuses at reckon/crew/dispatch.py:3058 while the replacement decision is made later at reckon/crew/dispatch.py:3341.\nSCORE evidence: 19\nJUSTIFICATION evidence: the report's load-bearing receipts reproduce independently \u2014 tests/test_crew_orphan.py is blob 8b0857dabc494cd5aa5583fadfc0ad736e4a62d3 and the dispatch module 218f10e4f455fa29619cb2d54d86fcd8a573c35b at all four cited revisions, the historical traceback's reckon/crew/dispatch.py:1615 is the CrewError raise inside the d5811b20 snapshot's own module rather than the main checkout's, and the in-memory control wraps only item.module._node.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree's git diff --name-only 26d6df25..ad84b2e3 returns exactly the three declared paths, and the plan edit appends prose under the existing s14 anchor without touching plan-version, plan-modified, status or the followups section.\nSCORE durability: 6\nJUSTIFICATION durability: this node changed no code and no test asserts the report's content, so the only standing guard on the defect it diagnoses is the untouched red case at tests/test_crew_orphan.py:216 plus the rerunnable driver at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis/history_probe.py:1-24.\nSCORE fit: 19\nJUSTIFICATION fit: the report follows the idiom of the code around it, labelling observed against inferred and naming files by mechanism, and no stage, plan or version identifier appears in the report's path, the two commit subjects, or any tracked source path.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis/declared-spec-probe.log:1 the driver that supplies spec_level in memory survives only as a one-line marker and pytest summary in this log, while its code reaches disk only as a transient stream.jsonl item, so the report's central claim (that only _node was wrapped and the replacement assertions ran unchanged) cannot be checked from the log the report names as that control's durable receipt.",
+  "review_run_id": "r-20260921T125357405625-review-of-orphaned-watcher-replacement-diagnosis",
+  "reviewed_base_sha": "26d6df25680ac385446f9db0c86f339ddb57fece",
+  "reviewed_head_sha": "ad84b2e30f7ad3f30903c357d1d870c4177654c8",
+  "reviewed_run_id": "r-20260921T123905355879-orphaned-watcher-replacement-diagnosis",
+  "reviewer_head_sha": "48bf51b29d92932824b4a906bb46749d2e321a41",
+  "reviewer_run_id": "r-20260921T125357405625-review-of-orphaned-watcher-replacement-diagnosis",
+  "scores": {
+    "durability": 6,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T13:54:39.055873+00:00",
+  "total": 83
+}

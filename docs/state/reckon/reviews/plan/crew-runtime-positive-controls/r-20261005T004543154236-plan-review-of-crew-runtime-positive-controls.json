@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T00:48:17.289Z",
+  "dispatched_at": "2026-10-05T00:45:58Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:1478",
+      "id": "duplicate_owner-1",
+      "reason": "landing \u00a763 as written (\"the other two sites import it with no local copy left\") leaves a weaker copy beside its own hardened function, so the divergence \u00a760 closed on the presented-commit path reappears; the done-when should enumerate every site (ideally by a test that finds `rev-parse --verify \u2026^{commit}` calls rather than a hand list, the shape \u00a745 and \u00a750 already use).",
+      "text": "`_resolve_abbreviated_commit` answers the same question as \u00a763's three sites (does this revision name a commit) with weaker checks \u2014 no `--end-of-options`, no timeout \u2014 and lives in the very file \u00a763 hardens; `routing._base_commit` (reckon/crew/routing.py:2432) is a third site the plan does not list",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py:415",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a762's done-when should name `fleet_supervisor.config_directory` as a second importer of the moved resolver (crew may import from service.py), otherwise it trades a layering inversion for a second copy of the same resolution and \u00a761's \"one resolver\" claim stays half true.",
+      "text": "`config_directory` already resolves `XDG_CONFIG_HOME` exactly as `paid_lanes.systemd_user_dir` does, so \u00a762's \"neutral module\" home for the resolver is not neutral: moving it into `reckon/service.py` leaves two XDG-base resolvers unless `fleet_supervisor` is repointed too",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "409fc61477a1572492d068c7c4174714c51577ffb6356a29f1031262969111a0",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 349,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T00:57:41.274038+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T00:57:41.774195+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T004543154236-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "52faeac171387ff068a28943c2293b1785f0567a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no open section adds a new module; \u00a763 consolidates a spread of resolvers into one, which adds depth rather than surface.",
+    "duplicate_owner": "a finding \u2014 \u00a763 undercounts the commit resolvers it plans to leave one of, and \u00a762 adds a third XDG config-home resolver beside an existing one.",
+    "reuse_search": "pass \u2014 the open sections name the files they extend (\u00a762 cites reckon/service.py and reckon/crew/paid_lanes.py; \u00a763 cites the three resolver sites), and \u00a763 exists because a prior review already searched for the duplicate.",
+    "thin_wrapper": "pass \u2014 \u00a762 relocates existing machinery and \u00a763 extends one owner; neither adds a layer over machinery it declines to extend."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T00:57:03.395428+00:00"
+}

@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "cd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/one-review-head-resolver-on-main && PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/one-review-head-resolver-on-main /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 --timeout=300 -q --basetemp=/tmp/reckon-crew-scratch/r-20261003T041834353714-one-review-head-resolver-on-main/head-basetemp-3 tests/test_a_resumed_run_counts_as_working.py tests/test_a_running_review_finishes_across_a_resume.py tests/test_coordinator_obligations_hook.py tests/test_crew_ack.py tests/test_crew_obligations.py tests/test_held_worktrees_read_run_files.py tests/test_in_flight_review_has_one_predicate.py tests/test_mcp_crew_obligations.py tests/test_obligations_do_not_mislead.py tests/test_obligations_hook_reads_the_snapshot.py tests/test_obligations_snapshot_is_published.py tests/test_one_review_head_resolver.py tests/test_reclaimed_run_review_head.py tests/test_review_carries_forward.py tests/test_review_in_flight_by_record_path.py tests/test_review_obligation_reads_the_head.py tests/test_stop_hook_honours_late_state.py tests/test_stop_hook_reads_the_snapshot.py tests/test_sub_floor_dimension_is_an_obligation.py tests/test_sub_floor_disposition_has_a_writer.py tests/test_crew_scoring_state.py tests/test_live_process_outranks_classification.py tests/test_pointer_classification_is_memoised.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T041834353714-one-review-head-resolver-on-main/logs/head-arm-3.log",
+    "revision": "7aa01b6559b9eecdd03f1a2e224f7b98e073f741"
+  },
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": "d6017d33e2ca3e2489de9d2305667495cb5d6cc6",
+  "baseline_suite": {
+    "command": "cd /tmp/reckon-crew-scratch/r-20261003T041834353714-one-review-head-resolver-on-main/base-tree && /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 --timeout=300 -q --basetemp=/tmp/reckon-crew-scratch/r-20261003T041834353714-one-review-head-resolver-on-main/base-basetemp-2 tests/test_a_resumed_run_counts_as_working.py tests/test_a_running_review_finishes_across_a_resume.py tests/test_coordinator_obligations_hook.py tests/test_crew_ack.py tests/test_crew_obligations.py tests/test_held_worktrees_read_run_files.py tests/test_in_flight_review_has_one_predicate.py tests/test_mcp_crew_obligations.py tests/test_obligations_do_not_mislead.py tests/test_obligations_hook_reads_the_snapshot.py tests/test_obligations_snapshot_is_published.py tests/test_reclaimed_run_review_head.py tests/test_review_carries_forward.py tests/test_review_in_flight_by_record_path.py tests/test_review_obligation_reads_the_head.py tests/test_stop_hook_honours_late_state.py tests/test_stop_hook_reads_the_snapshot.py tests/test_sub_floor_dimension_is_an_obligation.py tests/test_sub_floor_disposition_has_a_writer.py tests/test_crew_scoring_state.py tests/test_live_process_outranks_classification.py tests/test_pointer_classification_is_memoised.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T041834353714-one-review-head-resolver-on-main/logs/base-arm-2.log",
+    "revision": "d6017d33e2ca3e2489de9d2305667495cb5d6cc6"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "stored_review_for_run is called from obligations._sub_floor_items_by_session and cli.crew_dispose; recovery._review_head_and_tree is its head resolver."
+  ],
+  "completed_at": "2026-10-03T05:35:19.704Z",
+  "dispatched_at": "2026-10-03T05:26:53Z",
+  "findings": [
+    {
+      "file": "logs/head-arm-3.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's gate log records its revision and tree on its first two lines but names no command, where logs/base-arm-2.log records revision, module __file__, cwd and command. The command is recoverable from the reviewed manifest's tests and after_suite fields, so the run's evidence is intact, but the gate log on its own does not name what ran; emit the command line in the header for every arm."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "5006",
+      "severity": "follow-on",
+      "text": "follow-on: the promoted-run branch of crew_dispose (pointer is None) still selects through recovery.select_review_for_head with a tree of None and a head from _reviewed_head_from_run_records, and no case of tests/test_one_review_head_resolver.py exercises it. A promoted run raises no duty row, so no disagreement is reachable through it, but the branch's refusal-message head and its selection are untested."
+    }
+  ],
+  "head_log_revision": "7aa01b6559b9eecdd03f1a2e224f7b98e073f741",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "git diff d6017d33..82b8405b: reckon/cli.py +20/-13 (crew_dispose selects through the shared reading for a live pointer and binds the head for its refusal message); reckon/crew/obligations.py +39/-42 (adds stored_review_for_run, removes _reviewed_tree, routes _sub_floor_items_by_session through it); tests/test_one_review_head_resolver.py +375 (three cases and a shared-selection audit); the evidence fragment +48 and reader-convergence.svg +1122.",
+    "done_when": "the new tests/test_one_review_head_resolver.py drives both readers over a reclaimed run whose record cites its head by a nine-character id and asserts the run's own full id, over a headless reclaimed run, and over a run with no readable tree; I reproduced the head arm (3 passed, EXIT=0) and the declared control (disposition resolving its own record) which reddens all three cases (3 failed, EXIT=1), ids the head arm does not fail.",
+    "goal": "plan section 38's done-when is met: both readers of a reclaimed run's review head now go through one resolver, recovery._review_head_and_tree, reached by the disposition command (reckon/cli.py crew_dispose) and the sub-floor duty reader (reckon/crew/obligations.py _sub_floor_items_by_session) via the one shared reading obligations.stored_review_for_run; a repository-wide grep shows the only remaining caller of recovery._reviewed_run_head is _review_head_and_tree itself.",
+    "manifest": "read; status complete, five commits each conventional with a body and no AI trailer (f2307d42, cfbc23bad, f3db9769, 7aa01b655, 82b8405b); baseline_suite 157 passed EXIT=0 completion true and after_suite 160 passed EXIT=0 completion true; negative_control_log present with EXIT=1; changed_paths match the diff.",
+    "write_paths": "range d6017d33e2ca3e2489de9d2305667495cb5d6cc6..82b8405b07a807b07997864ccd23988888fb6099 touches only reckon/cli.py, reckon/crew/obligations.py, tests/test_one_review_head_resolver.py, the evidence fragment and its figure, all inside the node's grants; no plan, sprint or index state mutated."
+  },
+  "justifications": {
+    "durability": "the convergence is pinned by three cases and reproduced in both directions (head green, control red on ids the head arm does not fail), and the keep-passing file tests/test_reclaimed_run_review_head.py is untouched and green. Cut: the promoted-run branch of crew_dispose is not exercised by the new file.",
+    "evidence": "both arms are complete with EXIT=0 and zero added failure ids (independently derived from the reviewed run's own baseline_suite and after_suite logs: base and head both 0 failures), and the declared control is red on the three new ids, which I reproduced (3 failed, EXIT=1). Cut: the head arm's gate log logs/head-arm-3.log records its revision and tree but no command line, where logs/base-arm-2.log records revision, module __file__, cwd and command; the command is recoverable from the manifest, but the log alone does not name what ran.",
+    "fit": "mechanism-named helpers and comments carry no plan, sprint or ticket id and no author attribution; ruff check over the three changed paths reports four findings all in reckon/cli.py far from the change (delta zero against base) and none in obligations.py or the new test file; ruff format --check reports all three formatted; no AI trailer on any commit.",
+    "goal_fidelity": "plan section 38's one-resolver requirement is met and independently confirmed: both readers take the head through recovery._review_head_and_tree via obligations.stored_review_for_run, and a grep shows no reader else reaches recovery._reviewed_run_head directly. The promoted-run branch of crew_dispose keeps select_review_for_head, but a run with no live pointer raises no duty row, so it cannot reopen the disagreement the section is about; the node disclosed this.",
+    "scope_discipline": "the reviewed range touches only the five granted paths; reckon/cli.py is shared with a concurrent node and only the dispose command was touched; no plan, sprint or index state was mutated; all five commits are local and conventional."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 38's done-when is met: both readers of a reclaimed run's review head now go through one resolver, recovery._review_head_and_tree, reached by the disposition command (reckon/cli.py crew_dispose) and the sub-floor duty reader (reckon/crew/obligations.py _sub_floor_items_by_session) via the one shared reading obligations.stored_review_for_run; a repository-wide grep shows the only remaining caller of recovery._reviewed_run_head is _review_head_and_tree itself.\nVERDICT done_when: the new tests/test_one_review_head_resolver.py drives both readers over a reclaimed run whose record cites its head by a nine-character id and asserts the run's own full id, over a headless reclaimed run, and over a run with no readable tree; I reproduced the head arm (3 passed, EXIT=0) and the declared control (disposition resolving its own record) which reddens all three cases (3 failed, EXIT=1), ids the head arm does not fail.\nVERDICT write_paths: range d6017d33e2ca3e2489de9d2305667495cb5d6cc6..82b8405b07a807b07997864ccd23988888fb6099 touches only reckon/cli.py, reckon/crew/obligations.py, tests/test_one_review_head_resolver.py, the evidence fragment and its figure, all inside the node's grants; no plan, sprint or index state mutated.\nVERDICT manifest: read; status complete, five commits each conventional with a body and no AI trailer (f2307d42, cfbc23bad, f3db9769, 7aa01b655, 82b8405b); baseline_suite 157 passed EXIT=0 completion true and after_suite 160 passed EXIT=0 completion true; negative_control_log present with EXIT=1; changed_paths match the diff.\nVERDICT diff: git diff d6017d33..82b8405b: reckon/cli.py +20/-13 (crew_dispose selects through the shared reading for a live pointer and binds the head for its refusal message); reckon/crew/obligations.py +39/-42 (adds stored_review_for_run, removes _reviewed_tree, routes _sub_floor_items_by_session through it); tests/test_one_review_head_resolver.py +375 (three cases and a shared-selection audit); the evidence fragment +48 and reader-convergence.svg +1122.\nCALL_SITES: stored_review_for_run is called from obligations._sub_floor_items_by_session and cli.crew_dispose; recovery._review_head_and_tree is its head resolver.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: plan section 38's one-resolver requirement is met and independently confirmed: both readers take the head through recovery._review_head_and_tree via obligations.stored_review_for_run, and a grep shows no reader else reaches recovery._reviewed_run_head directly. The promoted-run branch of crew_dispose keeps select_review_for_head, but a run with no live pointer raises no duty row, so it cannot reopen the disagreement the section is about; the node disclosed this.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms are complete with EXIT=0 and zero added failure ids (independently derived from the reviewed run's own baseline_suite and after_suite logs: base and head both 0 failures), and the declared control is red on the three new ids, which I reproduced (3 failed, EXIT=1). Cut: the head arm's gate log logs/head-arm-3.log records its revision and tree but no command line, where logs/base-arm-2.log records revision, module __file__, cwd and command; the command is recoverable from the manifest, but the log alone does not name what ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed range touches only the five granted paths; reckon/cli.py is shared with a concurrent node and only the dispose command was touched; no plan, sprint or index state was mutated; all five commits are local and conventional.\nSCORE durability: 19\nJUSTIFICATION durability: the convergence is pinned by three cases and reproduced in both directions (head green, control red on ids the head arm does not fail), and the keep-passing file tests/test_reclaimed_run_review_head.py is untouched and green. Cut: the promoted-run branch of crew_dispose is not exercised by the new file.\nSCORE fit: 20\nJUSTIFICATION fit: mechanism-named helpers and comments carry no plan, sprint or ticket id and no author attribution; ruff check over the three changed paths reports four findings all in reckon/cli.py far from the change (delta zero against base) and none in obligations.py or the new test file; ruff format --check reports all three formatted; no AI trailer on any commit.\nFINDING logs/head-arm-3.log:1 follow-on: the head arm's gate log records its revision and tree on its first two lines but names no command, where logs/base-arm-2.log records revision, module __file__, cwd and command. The command is recoverable from the reviewed manifest's tests and after_suite fields, so the run's evidence is intact, but the gate log on its own does not name what ran; emit the command line in the header for every arm.\nFINDING reckon/cli.py:5006 follow-on: the promoted-run branch of crew_dispose (pointer is None) still selects through recovery.select_review_for_head with a tree of None and a head from _reviewed_head_from_run_records, and no case of tests/test_one_review_head_resolver.py exercises it. A promoted run raises no duty row, so no disagreement is reachable through it, but the branch's refusal-message head and its selection are untested.\nreviewed_base_sha: d6017d33e2ca3e2489de9d2305667495cb5d6cc6\nreviewed_head_sha: 82b8405b07a807b07997864ccd23988888fb6099\n",
+  "review_run_id": "r-20261003T052624749223-review-of-one-review-head-resolver-on-main",
+  "reviewed_base_sha": "d6017d33e2ca3e2489de9d2305667495cb5d6cc6",
+  "reviewed_head_sha": "82b8405b07a807b07997864ccd23988888fb6099",
+  "reviewed_run_id": "r-20261003T041834353714-one-review-head-resolver-on-main",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T05:45:00+00:00",
+  "total": 96
+}

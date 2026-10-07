@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "344c3af994ef6a1b72f4f68e2db0b2850e84dddd",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/routing.py:garbage_collect",
+    "reckon/crew/routing.py:_save_and_release_worktree",
+    "reckon/crew/promotion.py:_worktree_audit",
+    "reckon/crew/promotion.py:_release_run_workspace"
+  ],
+  "completed_at": "2026-10-02T22:23:26.043Z",
+  "dispatched_at": "2026-10-02T22:15:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "766",
+      "severity": "follow-on",
+      "text": "follow-on: non_equivalent_commits and patch_equivalent_commits are populated only when release_residue is true, so the promotion audit's row (promotion.py:5580, default release_residue=False) reports an empty non_equivalent_commits for a divergent dirty tree, an unmeasured absence read as a measured zero."
+    }
+  ],
+  "head_log_revision": "d495180760e3749d1804ccf2c945b7c856cdec30",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read d4951807 and 1eddff9f against base 344c3af9; routing.py +64/-4 (the equivalence helper, the classification branch, the release guard and a divergence-base residue computation), test_gc_releases_squash_landed_worktrees.py +146, test_crew_gc.py +13/-1, the fragment +79.",
+    "done_when": "the done_when names tests/test_gc_releases_squash_landed_worktrees.py with an equivalent commit that releases with its residue saved, a non-equivalent commit that is kept and named, and a live-claimed tree left untouched; the manifest records the head arm running that file, 52 passed, EXIT=0.",
+    "goal": "the node's goal is to release a dirty worktree every one of whose commits has a patch-equivalent on the integration head; reckon/crew/routing.py:658 _commits_beyond_merge_base supplies the comparison and routing.py:747-752 makes it a dirty-integrated classification.",
+    "manifest": "read; status complete, naming both gate arms, the negative control and their logs in the run directory, with machine-readable baseline_suite and after_suite.",
+    "write_paths": "the manifest declares routing.py, tests/test_gc_releases_squash_landed_worktrees.py, tests/test_crew_gc.py and the evidence fragment; the diff d4951807 plus the docs commit 1eddff9f touches exactly those."
+  },
+  "justifications": {
+    "durability": "dropping the equivalence branch reddens test_a_squash_landed_dirty_tree_releases_with_its_residue_saved at tests/test_gc_releases_squash_landed_worktrees.py:79, and its assertions (line 81) compare the row against a head the test read from git, not one it passed in.",
+    "evidence": "the manifest's baseline_suite (344c3af9, 49 passed) and after_suite (d4951807, 52 passed) each name a readable log and add no failure id, and the head arm ran the done_when's test file.",
+    "fit": "the helper follows the module's subprocess idiom and introduces no plan- or ticket-shaped name, though the two new report fields are emitted by callers that never measure them.",
+    "goal_fidelity": "reckon/crew/routing.py:747-752 classifies a divergent dirty tree whose every commit is patch-equivalent as dirty-integrated, which garbage_collect at routing.py:1244 then releases through _save_and_release_worktree's residue path \u2014 the goal's release.",
+    "scope_discipline": "the diff d4951807..1eddff9f touches only routing.py, the two declared test files and the declared evidence fragment; the divergence-base residue computation at routing.py:1036 is required by the same landed-elsewhere case."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 344c3af994ef6a1b72f4f68e2db0b2850e84dddd\nreviewed_head_sha: 1eddff9f35aeba0cb35727bf8525dd2f49374095\nVERDICT goal: the node's goal is to release a dirty worktree every one of whose commits has a patch-equivalent on the integration head; reckon/crew/routing.py:658 _commits_beyond_merge_base supplies the comparison and routing.py:747-752 makes it a dirty-integrated classification.\nVERDICT done_when: the done_when names tests/test_gc_releases_squash_landed_worktrees.py with an equivalent commit that releases with its residue saved, a non-equivalent commit that is kept and named, and a live-claimed tree left untouched; the manifest records the head arm running that file, 52 passed, EXIT=0.\nVERDICT write_paths: the manifest declares routing.py, tests/test_gc_releases_squash_landed_worktrees.py, tests/test_crew_gc.py and the evidence fragment; the diff d4951807 plus the docs commit 1eddff9f touches exactly those.\nVERDICT manifest: read; status complete, naming both gate arms, the negative control and their logs in the run directory, with machine-readable baseline_suite and after_suite.\nVERDICT diff: read d4951807 and 1eddff9f against base 344c3af9; routing.py +64/-4 (the equivalence helper, the classification branch, the release guard and a divergence-base residue computation), test_gc_releases_squash_landed_worktrees.py +146, test_crew_gc.py +13/-1, the fragment +79.\nCALL_SITES: reckon/crew/routing.py:garbage_collect, reckon/crew/routing.py:_save_and_release_worktree, reckon/crew/promotion.py:_worktree_audit, reckon/crew/promotion.py:_release_run_workspace\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:747-752 classifies a divergent dirty tree whose every commit is patch-equivalent as dirty-integrated, which garbage_collect at routing.py:1244 then releases through _save_and_release_worktree's residue path \u2014 the goal's release.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's baseline_suite (344c3af9, 49 passed) and after_suite (d4951807, 52 passed) each name a readable log and add no failure id, and the head arm ran the done_when's test file.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff d4951807..1eddff9f touches only routing.py, the two declared test files and the declared evidence fragment; the divergence-base residue computation at routing.py:1036 is required by the same landed-elsewhere case.\nSCORE durability: 18\nJUSTIFICATION durability: dropping the equivalence branch reddens test_a_squash_landed_dirty_tree_releases_with_its_residue_saved at tests/test_gc_releases_squash_landed_worktrees.py:79, and its assertions (line 81) compare the row against a head the test read from git, not one it passed in.\nSCORE fit: 17\nJUSTIFICATION fit: the helper follows the module's subprocess idiom and introduces no plan- or ticket-shaped name, though the two new report fields are emitted by callers that never measure them.\nFINDING reckon/crew/routing.py:766 follow-on: non_equivalent_commits and patch_equivalent_commits are populated only when release_residue is true, so the promotion audit's row (promotion.py:5580, default release_residue=False) reports an empty non_equivalent_commits for a divergent dirty tree, an unmeasured absence read as a measured zero.\n",
+  "review_run_id": "r-20261002T221453926504-review-of-gc-releases-squash-landed-worktrees",
+  "reviewed_base_sha": "344c3af994ef6a1b72f4f68e2db0b2850e84dddd",
+  "reviewed_head_sha": "1eddff9f35aeba0cb35727bf8525dd2f49374095",
+  "reviewed_run_id": "r-20261002T214116756941-gc-releases-squash-landed-worktrees",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T22:22:02.351485+00:00",
+  "total": 89
+}

@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:460 compose_landed_record invoked against the reviewed head",
+    "reckon/doccheck.py:1230 record composition exercised by reckon audit-doc",
+    "reckon/serve.py:2098",
+    "reckon/mcp.py:1139"
+  ],
+  "completed_at": "2026-09-28T16:39:15.905Z",
+  "dispatched_at": "2026-09-28T15:34:39Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-landing-record-never-conflicts/six-study-commits-merge-without-conflict/before-after.svg",
+      "line": "35",
+      "text": "the after arm's measured 0 is labelled \"expected count: 0\", so the figure alone reads as the requirement rather than the observed result, where the fragment's own table states it as the measured value."
+    },
+    {
+      "file": "reckon/evidence.py",
+      "line": "530",
+      "text": "composing docs/evidence/archive/a-landing-record-never-conflicts-landed.html at 8612ab48 yields two doctype roots, two html elements and two of each plan meta (plan-summary, plan-evidence-for, plan-verdict, docs-project where the record file carries one each), so the composed surface resolves those scalars last-wins to the fragment's values and reckon audit-doc on that record reports three duplicate-plan-scalar findings; the composer appends each fragment's whole bytes while its fixtures are headless article snippets, and reckon/crew/prompts.py:69 names the fragment path without stating a shape, so this first real fragment exposes an unstated contract."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 687c8cbf; one commit adds 484 lines of measure script, a 104-line evidence fragment and a 36-line figure, all inside the declared scope, with no plan, index or record file touched.",
+    "done_when": "the done_when asks for a recorded before/after conflicted-path count with all six anchors present in the composed record; the reviewed log records EXIT=0 with those values and my re-run reproduced them (BEFORE conflicted_paths=1 docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html, AFTER 0, COMPOSED_BYTES 45307, six anchors each found 1 time).",
+    "goal": "the node's goal is the measurement that the six study commits fold without conflict once each evidence anchor is its own fragment, and commit 8612ab48 lands docs/research/data/landing-record-merge-measure/measure.py, which builds both arms from base 457bbec7 and reports before 1 / after 0.",
+    "manifest": "read at runs/r-20260928T142644698476-six-study-commits-merge-without-conflict/manifest.md; it states complete, names its gate command and EXIT=0 result, carries the landing line naming the anchor, and its empty baseline_suite and after_suite match a diff that adds no test file.",
+    "write_paths": "the reviewed manifest declares three paths under docs/research/data/landing-record-merge-measure and docs/evidence/fragments/a-landing-record-never-conflicts and docs/figures/a-landing-record-never-conflicts, and git show --stat 8612ab48 lists exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "no test under tests/ reads the real docs/evidence/fragments tree because each synthesises its own record, as at tests/test_evidence_record_composition.py:86, so deleting this fragment or breaking measure.py reddens nothing and only the run's own CONTROL_NO_FRAGMENTS shows the anchor assertion can fail.",
+    "evidence": "the reviewed log records before 1 / after 0, six anchors once each, CONTROL_NO_FRAGMENTS 0 and SCRATCH_OBJECTS_ISOLATED True, and my re-run reproduced every value byte for byte; the figure alone mislabels the measured value, see the finding at docs/figures/a-landing-record-never-conflicts/six-study-commits-merge-without-conflict/before-after.svg:35.",
+    "fit": "the fragment is a well-formed standalone document on which reckon audit-doc passes and docs/research/data/landing-record-merge-measure follows the per-topic directory precedent of docs/research/data/crew-pattern-review, but composed at the reviewed head it duplicates the record's plan scalars where reckon/evidence.py:530 appends whole fragment files while the composer's own fixtures at tests/test_evidence_record_composition.py:33 are headless snippets, so its shape does not fit the composition it is consumed by \u2014 see the second finding.",
+    "goal_fidelity": "composing the plan record at the reviewed head through reckon/evidence.py:460 emits docs/evidence/fragments/a-landing-record-never-conflicts/six-study-commits-merge-without-conflict.html once and my own merge-tree fold of the real commits 9afcdbe0 and 11fb09a4 over merge base 457bbec7 conflicts on the same shared record path, so the before arm holds on real history as well as on the reconstruction the script states in its own fragment.",
+    "scope_discipline": "git show --stat 8612ab48 lists only the three declared write paths with 624 insertions and no deletions, and no shared record, plan or index file appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the measurement that the six study commits fold without conflict once each evidence anchor is its own fragment, and commit 8612ab48 lands docs/research/data/landing-record-merge-measure/measure.py, which builds both arms from base 457bbec7 and reports before 1 / after 0.\nVERDICT done_when: the done_when asks for a recorded before/after conflicted-path count with all six anchors present in the composed record; the reviewed log records EXIT=0 with those values and my re-run reproduced them (BEFORE conflicted_paths=1 docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html, AFTER 0, COMPOSED_BYTES 45307, six anchors each found 1 time).\nVERDICT write_paths: the reviewed manifest declares three paths under docs/research/data/landing-record-merge-measure and docs/evidence/fragments/a-landing-record-never-conflicts and docs/figures/a-landing-record-never-conflicts, and git show --stat 8612ab48 lists exactly those three files and nothing else.\nVERDICT manifest: read at runs/r-20260928T142644698476-six-study-commits-merge-without-conflict/manifest.md; it states complete, names its gate command and EXIT=0 result, carries the landing line naming the anchor, and its empty baseline_suite and after_suite match a diff that adds no test file.\nVERDICT diff: read commit by commit against 687c8cbf; one commit adds 484 lines of measure script, a 104-line evidence fragment and a 36-line figure, all inside the declared scope, with no plan, index or record file touched.\nCALL_SITES: reckon/evidence.py:460 compose_landed_record invoked against the reviewed head, reckon/doccheck.py:1230 record composition exercised by reckon audit-doc, reckon/serve.py:2098, reckon/mcp.py:1139\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: composing the plan record at the reviewed head through reckon/evidence.py:460 emits docs/evidence/fragments/a-landing-record-never-conflicts/six-study-commits-merge-without-conflict.html once and my own merge-tree fold of the real commits 9afcdbe0 and 11fb09a4 over merge base 457bbec7 conflicts on the same shared record path, so the before arm holds on real history as well as on the reconstruction the script states in its own fragment.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed log records before 1 / after 0, six anchors once each, CONTROL_NO_FRAGMENTS 0 and SCRATCH_OBJECTS_ISOLATED True, and my re-run reproduced every value byte for byte; the figure alone mislabels the measured value, see the finding at docs/figures/a-landing-record-never-conflicts/six-study-commits-merge-without-conflict/before-after.svg:35.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 8612ab48 lists only the three declared write paths with 624 insertions and no deletions, and no shared record, plan or index file appears in the diff.\nSCORE durability: 10\nJUSTIFICATION durability: no test under tests/ reads the real docs/evidence/fragments tree because each synthesises its own record, as at tests/test_evidence_record_composition.py:86, so deleting this fragment or breaking measure.py reddens nothing and only the run's own CONTROL_NO_FRAGMENTS shows the anchor assertion can fail.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment is a well-formed standalone document on which reckon audit-doc passes and docs/research/data/landing-record-merge-measure follows the per-topic directory precedent of docs/research/data/crew-pattern-review, but composed at the reviewed head it duplicates the record's plan scalars where reckon/evidence.py:530 appends whole fragment files while the composer's own fixtures at tests/test_evidence_record_composition.py:33 are headless snippets, so its shape does not fit the composition it is consumed by \u2014 see the second finding.\nFINDING docs/figures/a-landing-record-never-conflicts/six-study-commits-merge-without-conflict/before-after.svg:35 the after arm's measured 0 is labelled \"expected count: 0\", so the figure alone reads as the requirement rather than the observed result, where the fragment's own table states it as the measured value.\nFINDING reckon/evidence.py:530 composing docs/evidence/archive/a-landing-record-never-conflicts-landed.html at 8612ab48 yields two doctype roots, two html elements and two of each plan meta (plan-summary, plan-evidence-for, plan-verdict, docs-project where the record file carries one each), so the composed surface resolves those scalars last-wins to the fragment's values and reckon audit-doc on that record reports three duplicate-plan-scalar findings; the composer appends each fragment's whole bytes while its fixtures are headless article snippets, and reckon/crew/prompts.py:69 names the fragment path without stating a shape, so this first real fragment exposes an unstated contract.\n",
+  "review_run_id": "r-20260928T153427492445-review-of-six-study-commits-merge-without-conflict",
+  "reviewed_base_sha": "687c8cbf124cef66f0a1e0d1ef210c5d65b1fd31",
+  "reviewed_head_sha": "8612ab48372fc71836453901e04bdf374d03288d",
+  "reviewed_run_id": "r-20260928T142644698476-six-study-commits-merge-without-conflict",
+  "scores": {
+    "durability": 10,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T16:33:27.482347+00:00",
+  "total": 87
+}

@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/project_state.py:compose_project_state",
+    "reckon/roadmap.py:_sprint_status_buckets",
+    "reckon/mcp_views.py:1892",
+    "reckon/flight.py:1484"
+  ],
+  "completed_at": "2026-09-25T15:11:03.752Z",
+  "dispatched_at": "2026-09-25T14:30:41Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1273",
+      "text": "the docstring cross-reference named :func:reckon.sprint_liveness.focus_sprint_id points at nothing - focus_sprint_id is defined at reckon/project_state.py:1246 and reckon/sprint_liveness.py defines no such symbol - so the one rule the docstring defers to cannot be reached from it."
+    },
+    {
+      "file": "docs/plans/a-sprint-is-live-while-a-crew-works-it.html",
+      "line": "152",
+      "text": "the section 4 heading still reads that the focus cost is the blocker while the evidence record it links was updated at d4b764ea to a complete verdict, so the plan page and its record disagree about the node's state; the manifest's follow_ons discloses the disagreement rather than leaving it hidden."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against be8f1330 - bec9f24a is the implementation, efbefca7 records the blocked measurement in the evidence record, the figure and the plan note, d4b764ea closes the blocker in the evidence record only; every hunk belongs to one of the three and none reaches outside the declared scope.",
+    "done_when": "each clause is measured - the two-pointer S2 focus, the [S2, S1] order and the stored-active S1 fallback are asserted in tests/test_active_sprint_follows_live_crew.py, the gate records 153 passed exit 0 in logs/gate.txt, the declared mutation reddens exactly the live-focus test in logs/negative-control.txt, and the re-measured cost (head faster in both rounds, logs/latency-after-speedup.txt) plus the 13-before/13-after ruff row (evidence record lines 263-264) are recorded.",
+    "goal": "the goal - active_sprint_id follows the live sprint and live_sprint_ids is reported - is met by focus_sprint_id and live_sprint_ids in reckon/project_state.py:1211-1288, wired into both surfaces (reckon/project_state.py:1411-1412, reckon/roadmap.py:1480 and 2377-2378) and asserted end to end on both by tests/test_active_sprint_follows_live_crew.py:149-166.",
+    "manifest": "read; it records the 153-passed gate at base be8f1330 plus this node's edits, the declared mutation, the closing re-measurement at the merge's two revisions, and discloses in follow_ons that the plan's section 4 note still reads blocked.",
+    "write_paths": "the declared set has seven entries (reckon/project_state.py, reckon/roadmap.py, tests/test_active_sprint_follows_live_crew.py, tests/test_sprint_push_status.py, the plan page, the archive evidence record, the figures directory); every path the three commits touch is inside it and no other path appears in their diffs."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.txt shows the declared mutation failing tests/test_active_sprint_follows_live_crew.py::test_focus_follows_the_live_crew_on_every_surface with assert 'S1' == 'S2' while the same file is 2 passed unmutated, so the focus guard reddens on regression; the multi-active tie-break at reckon/project_state.py:1268-1277 has no dedicated test of its own.",
+    "evidence": "the gate and the mutation are on disk (logs/gate.txt, logs/negative-control.txt) and the latency re-measurement is logged with its module path pinned (logs/latency-after-speedup.txt), but that measurement logs n_live=0 in both arms so the live-path cost rests on the sibling reader node's 0.14-0.16 s reading, and the ruff row (evidence record lines 263-264) has no raw log.",
+    "fit": "the helpers follow the module's docstring idiom (reckon/project_state.py:1211-1288, established by the docstring at 1246) but reckon/roadmap.py:1273 cross-references focus_sprint_id into a module that does not define it.",
+    "goal_fidelity": "reckon/project_state.py:1411-1412 and reckon/roadmap.py:2377-2378 carry both fields on both surfaces, the live loop at reckon/project_state.py:1263-1266 selects on newest last_activity_at, and the fallback rule is documented at reckon/project_state.py:1246-1262.",
+    "scope_discipline": "the three commits touch only the seven declared write paths and nothing else, and the figure under docs/figures/a-sprint-is-live-while-a-crew-works-it/ is the one the plan page embeds."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal - active_sprint_id follows the live sprint and live_sprint_ids is reported - is met by focus_sprint_id and live_sprint_ids in reckon/project_state.py:1211-1288, wired into both surfaces (reckon/project_state.py:1411-1412, reckon/roadmap.py:1480 and 2377-2378) and asserted end to end on both by tests/test_active_sprint_follows_live_crew.py:149-166.\nVERDICT done_when: each clause is measured - the two-pointer S2 focus, the [S2, S1] order and the stored-active S1 fallback are asserted in tests/test_active_sprint_follows_live_crew.py, the gate records 153 passed exit 0 in logs/gate.txt, the declared mutation reddens exactly the live-focus test in logs/negative-control.txt, and the re-measured cost (head faster in both rounds, logs/latency-after-speedup.txt) plus the 13-before/13-after ruff row (evidence record lines 263-264) are recorded.\nVERDICT write_paths: the declared set has seven entries (reckon/project_state.py, reckon/roadmap.py, tests/test_active_sprint_follows_live_crew.py, tests/test_sprint_push_status.py, the plan page, the archive evidence record, the figures directory); every path the three commits touch is inside it and no other path appears in their diffs.\nVERDICT manifest: read; it records the 153-passed gate at base be8f1330 plus this node's edits, the declared mutation, the closing re-measurement at the merge's two revisions, and discloses in follow_ons that the plan's section 4 note still reads blocked.\nVERDICT diff: read commit by commit against be8f1330 - bec9f24a is the implementation, efbefca7 records the blocked measurement in the evidence record, the figure and the plan note, d4b764ea closes the blocker in the evidence record only; every hunk belongs to one of the three and none reaches outside the declared scope.\nCALL_SITES: reckon/project_state.py:compose_project_state, reckon/roadmap.py:_sprint_status_buckets, reckon/mcp_views.py:1892, reckon/flight.py:1484\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_state.py:1411-1412 and reckon/roadmap.py:2377-2378 carry both fields on both surfaces, the live loop at reckon/project_state.py:1263-1266 selects on newest last_activity_at, and the fallback rule is documented at reckon/project_state.py:1246-1262.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate and the mutation are on disk (logs/gate.txt, logs/negative-control.txt) and the latency re-measurement is logged with its module path pinned (logs/latency-after-speedup.txt), but that measurement logs n_live=0 in both arms so the live-path cost rests on the sibling reader node's 0.14-0.16 s reading, and the ruff row (evidence record lines 263-264) has no raw log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three commits touch only the seven declared write paths and nothing else, and the figure under docs/figures/a-sprint-is-live-while-a-crew-works-it/ is the one the plan page embeds.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.txt shows the declared mutation failing tests/test_active_sprint_follows_live_crew.py::test_focus_follows_the_live_crew_on_every_surface with assert 'S1' == 'S2' while the same file is 2 passed unmutated, so the focus guard reddens on regression; the multi-active tie-break at reckon/project_state.py:1268-1277 has no dedicated test of its own.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers follow the module's docstring idiom (reckon/project_state.py:1211-1288, established by the docstring at 1246) but reckon/roadmap.py:1273 cross-references focus_sprint_id into a module that does not define it.\nFINDING reckon/roadmap.py:1273 the docstring cross-reference named :func:reckon.sprint_liveness.focus_sprint_id points at nothing - focus_sprint_id is defined at reckon/project_state.py:1246 and reckon/sprint_liveness.py defines no such symbol - so the one rule the docstring defers to cannot be reached from it.\nFINDING docs/plans/a-sprint-is-live-while-a-crew-works-it.html:152 the section 4 heading still reads that the focus cost is the blocker while the evidence record it links was updated at d4b764ea to a complete verdict, so the plan page and its record disagree about the node's state; the manifest's follow_ons discloses the disagreement rather than leaving it hidden.\n",
+  "review_run_id": "r-20260925T143025627422-review-of-active-sprint-follows-the-live-crew",
+  "reviewed_base_sha": "be8f1330e9371392432958c611f08f54ba457ac5",
+  "reviewed_head_sha": "d4b764eab0941fff1f175cd8aea951c52a7831a4",
+  "reviewed_run_id": "r-20260925T092209664940-active-sprint-follows-the-live-crew",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T15:00:44.551487+00:00",
+  "total": 89
+}

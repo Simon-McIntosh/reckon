@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-25T11:46:51.325Z",
+  "dispatched_at": "2026-09-25T10:57:46Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html",
+      "line": "70",
+      "text": "the cumulative record still presents the pre-repair gate as the verification result - the row states 5 tests passed for pytest tests/test_crew_obligations.py with no revision stamp while the section above states 8 tests and the reviewed head's own gate is 9 - and neither the page nor the plan comment records this head's change: the recovery-vocabulary binding, its contract test and its red receipt are absent, so a reader of the durable record cannot learn the census was repaired; the plan comment's data-when 2026-09-25T12:00:00Z at docs/plans/an-orchestrator-cannot-forget-its-obligations.html:125 still matches no commit instant of this node (07:59Z, 08:03Z, 09:20Z, 10:38Z)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit past the prior review's head - e3945576 centralizes the mapping, adds the vocabulary contract test and splices the pure-read evidence into the landing record without deleting a peer line.",
+    "done_when": "the plan's done-when names tests/test_crew_obligations.py; it reproduces at the reviewed head (9 passed in 1.31 s from the reviewed worktree), and both prior findings' subjects are answered in code: the mapping's keys are asserted against recovery.RECOVERY_CLASSIFICATIONS at tests/test_crew_obligations.py:260-264, and the durable record now carries the pure-read repair, though this head's own change is still absent from it.",
+    "goal": "plan section 2 asks for a derived obligations view naming every duty a coordinator session owes with kind, identity, age and exact next command; at e3945576 reckon/crew/obligations.py:182-242 returns exactly that, and the repair moved the recovery-to-duty mapping onto one module-level source at lines 22-28.",
+    "manifest": "read; status complete and its commits list carries the reviewed head, and the classification red receipt is on disk with its declared mutation on line 1, though the receipt header's revision field names 9f7ea716 while the test it runs was introduced by e3945576, so that arm is reproducible from the named worktree rather than from the named revision.",
+    "write_paths": "read the node's five declared paths; the repair commit touches four of them (reckon/crew/obligations.py, tests/test_crew_obligations.py, and both the evidence and plan pages) with 34 insertions and 10 replaced lines, and the base-to-head range is five created files with 926 insertions and no pre-existing content deleted."
+  },
+  "justifications": {
+    "durability": "two independent vocabulary mutations in a scratch tree at the reviewed head redden the contract assertion that binds the mapping to recovery.RECOVERY_CLASSIFICATIONS; the census assertions still rest on fixture rows the test supplies, and a verb added to recovery without a mapping is still dropped silently, a direction a subset assertion cannot cover by design.",
+    "evidence": "the reviewed head reproduces 8-and-9-test gates with their receipts, but the durable record still prints the pre-repair five-test row as the verification result and records nothing about this head's mapping repair.",
+    "fit": "the repaired code keeps the crew idiom - a plain module-level mapping, identifiers and comments free of plan labels, and a contract test bound to recovery's exported constant rather than restating it.",
+    "goal_fidelity": "the six section-2 kinds are projected from classify_pointer rows plus ledger evidence, and the repair makes each live kind a lookup in a named mapping rather than an inline literal.",
+    "scope_discipline": "every path in the repair lies inside the node's declared write paths, and no path outside the declaration appears anywhere in the base-to-head range."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 2 asks for a derived obligations view naming every duty a coordinator session owes with kind, identity, age and exact next command; at e3945576 reckon/crew/obligations.py:182-242 returns exactly that, and the repair moved the recovery-to-duty mapping onto one module-level source at lines 22-28.\nVERDICT done_when: the plan's done-when names tests/test_crew_obligations.py; it reproduces at the reviewed head (9 passed in 1.31 s from the reviewed worktree), and both prior findings' subjects are answered in code: the mapping's keys are asserted against recovery.RECOVERY_CLASSIFICATIONS at tests/test_crew_obligations.py:260-264, and the durable record now carries the pure-read repair, though this head's own change is still absent from it.\nVERDICT write_paths: read the node's five declared paths; the repair commit touches four of them (reckon/crew/obligations.py, tests/test_crew_obligations.py, and both the evidence and plan pages) with 34 insertions and 10 replaced lines, and the base-to-head range is five created files with 926 insertions and no pre-existing content deleted.\nVERDICT manifest: read; status complete and its commits list carries the reviewed head, and the classification red receipt is on disk with its declared mutation on line 1, though the receipt header's revision field names 9f7ea716 while the test it runs was introduced by e3945576, so that arm is reproducible from the named worktree rather than from the named revision.\nVERDICT diff: read commit by commit past the prior review's head - e3945576 centralizes the mapping, adds the vocabulary contract test and splices the pure-read evidence into the landing record without deleting a peer line.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the six section-2 kinds are projected from classify_pointer rows plus ledger evidence, and the repair makes each live kind a lookup in a named mapping rather than an inline literal.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed head reproduces 8-and-9-test gates with their receipts, but the durable record still prints the pre-repair five-test row as the verification result and records nothing about this head's mapping repair.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the repair lies inside the node's declared write paths, and no path outside the declaration appears anywhere in the base-to-head range.\nSCORE durability: 17\nJUSTIFICATION durability: two independent vocabulary mutations in a scratch tree at the reviewed head redden the contract assertion that binds the mapping to recovery.RECOVERY_CLASSIFICATIONS; the census assertions still rest on fixture rows the test supplies, and a verb added to recovery without a mapping is still dropped silently, a direction a subset assertion cannot cover by design.\nSCORE fit: 18\nJUSTIFICATION fit: the repaired code keeps the crew idiom - a plain module-level mapping, identifiers and comments free of plan labels, and a contract test bound to recovery's exported constant rather than restating it.\nFINDING docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:70 the cumulative record still presents the pre-repair gate as the verification result - the row states 5 tests passed for pytest tests/test_crew_obligations.py with no revision stamp while the section above states 8 tests and the reviewed head's own gate is 9 - and neither the page nor the plan comment records this head's change: the recovery-vocabulary binding, its contract test and its red receipt are absent, so a reader of the durable record cannot learn the census was repaired; the plan comment's data-when 2026-09-25T12:00:00Z at docs/plans/an-orchestrator-cannot-forget-its-obligations.html:125 still matches no commit instant of this node (07:59Z, 08:03Z, 09:20Z, 10:38Z).\n",
+  "review_run_id": "r-20260925T105730714020-re-review-of-obligations-are-a-derived-view",
+  "reviewed_base_sha": "e160b02da36e795399de72503f197180c1fd993c",
+  "reviewed_head_sha": "e39455767f75fd99bac799f49b399488feeff6af",
+  "reviewed_run_id": "r-20260925T074613380785-obligations-are-a-derived-view",
+  "reviewer": "re-review-of-obligations-are-a-derived-view",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T11:41:17.854241+00:00",
+  "total": 89
+}

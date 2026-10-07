@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4077",
+    "reckon/crew/dispatch.py:6597",
+    "reckon/crew/dispatch.py:6965"
+  ],
+  "completed_at": "2026-09-26T17:36:38.358Z",
+  "dispatched_at": "2026-09-26T17:14:04Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "1905",
+      "text": "destination.write_text(...) at :1905 followed by _copy_writable_mode at :1906 leaves the seeded .claude.json readable beyond mode 0600 for the interval: measured against the head tree, a source at 0o600 yields mode 0o644 (umask-derived, 74 bytes readable) at the _copy_writable_mode call boundary and 0o600 only after the chmod, so an operator file the node's own spec calls private is group- and other-readable while it is written, under the 2755 ancestor chain that carries this run's home; the interval is closed by creating the file with its mode (os.open(..., 0o600)) or chmodding before write_text."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "1984",
+      "text": "_copy_writable_mode takes the mode from the source and applies it to the destination at :1984, so an existing run copy \u2014 the file the docstring at :1878 calls authoritative for its own keys \u2014 is re-chmodded to the operator file's mode; measured with source 0o644 and a harness-written destination at 0o600, the destination is 0o644 after seeding, a persistent widening rather than the window above, latent only because this host's /home/ITER/mcintos/.claude.json is 0600."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit at head \u2014 14006c1e adds the home-root carry table and the prune-then-merge seeder in reckon/_backends.py:1872 and reckon/flight.py:182, and 89dada12 records the landing in the plan, the evidence archive and one figure, with the code in 14006c1e consuming the declaration two commits' worth of context earlier at reckon/_backends.py:2412.",
+    "done_when": "the declared measure is the key filter, the exclusion of every other operator key, and mode 0600 with a preserved run copy, and tests/test_harness_home_carries_mcp_servers.py asserts all three \u2014 I re-ran that file in the reviewed tree at head (6 passed in 0.53s) and re-measured its file-level claims by import (destination keys ['mcpServers'], mode 0o600 at rest).",
+    "goal": "the node's goal is to carry the operator's user-scope MCP declarations from ~/.claude.json into a fenced claude harness home filtered to mcpServers, and the shipped table at reckon/schema/flight-defaults.yaml:52 plus the seeding call at reckon/_backends.py:2412 do exactly that, with the clive backend reaching the same path through launch_plan.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T162912435982-harness-home-carries-mcp-servers/manifest.md; it reports status complete at head 89dada12 with the four-file gate (27 passed), a base arm (4 failed, 23 passed) and a declared negative-control log whose first line repeats the declared string verbatim, and the run's own exit record is clean (exit_code 0, last_record_type result).",
+    "write_paths": "the diff 4b6042ae..89dada12 is exactly seven paths \u2014 reckon/_backends.py, reckon/flight.py, reckon/schema/flight-defaults.yaml, tests/test_harness_home_carries_mcp_servers.py, the plan, the evidence archive and one figure \u2014 all inside the manifest's declared set, with no adjacent cleanup and no plan meta or state line in the plan diff."
+  },
+  "justifications": {
+    "durability": "each added assertion names a change that reddens it \u2014 deleting the key filter fails the set(seeded) check at tests/test_harness_home_carries_mcp_servers.py:146, deleting the chmod fails the mode check at :147, and replacing the merge with a skip fails :188 \u2014 but no assertion can fail on the interval or on a widened existing destination.",
+    "evidence": "the gate at tests/test_harness_home_carries_mcp_servers.py:146 asserts the key filter and mode 0600 and its base-red and control arms are on disk, but the mode clause is asserted only after seeding returns, so the gate stays green while the interval measured at reckon/_backends.py:1905 holds 0o644.",
+    "fit": "reckon/_backends.py:1872 mirrors the existing harness_home_files carry and its validator in reckon/flight.py:186 rather than adding a second copy mechanism, and every new name is mechanism vocabulary with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/schema/flight-defaults.yaml:52 declares .claude.json filtered to mcpServers and reckon/_backends.py:2412 seeds it.",
+    "scope_discipline": "every path in the diff (reckon/_backends.py, reckon/flight.py, reckon/schema/flight-defaults.yaml, the new test file, the plan, the evidence archive, one figure) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry the operator's user-scope MCP declarations from ~/.claude.json into a fenced claude harness home filtered to mcpServers, and the shipped table at reckon/schema/flight-defaults.yaml:52 plus the seeding call at reckon/_backends.py:2412 do exactly that, with the clive backend reaching the same path through launch_plan.\nVERDICT done_when: the declared measure is the key filter, the exclusion of every other operator key, and mode 0600 with a preserved run copy, and tests/test_harness_home_carries_mcp_servers.py asserts all three \u2014 I re-ran that file in the reviewed tree at head (6 passed in 0.53s) and re-measured its file-level claims by import (destination keys ['mcpServers'], mode 0o600 at rest).\nVERDICT write_paths: the diff 4b6042ae..89dada12 is exactly seven paths \u2014 reckon/_backends.py, reckon/flight.py, reckon/schema/flight-defaults.yaml, tests/test_harness_home_carries_mcp_servers.py, the plan, the evidence archive and one figure \u2014 all inside the manifest's declared set, with no adjacent cleanup and no plan meta or state line in the plan diff.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T162912435982-harness-home-carries-mcp-servers/manifest.md; it reports status complete at head 89dada12 with the four-file gate (27 passed), a base arm (4 failed, 23 passed) and a declared negative-control log whose first line repeats the declared string verbatim, and the run's own exit record is clean (exit_code 0, last_record_type result).\nVERDICT diff: read commit by commit at head \u2014 14006c1e adds the home-root carry table and the prune-then-merge seeder in reckon/_backends.py:1872 and reckon/flight.py:182, and 89dada12 records the landing in the plan, the evidence archive and one figure, with the code in 14006c1e consuming the declaration two commits' worth of context earlier at reckon/_backends.py:2412.\nCALL_SITES: reckon/crew/dispatch.py:4077, reckon/crew/dispatch.py:6597, reckon/crew/dispatch.py:6965\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/schema/flight-defaults.yaml:52 declares .claude.json filtered to mcpServers and reckon/_backends.py:2412 seeds it.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate at tests/test_harness_home_carries_mcp_servers.py:146 asserts the key filter and mode 0600 and its base-red and control arms are on disk, but the mode clause is asserted only after seeding returns, so the gate stays green while the interval measured at reckon/_backends.py:1905 holds 0o644.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/_backends.py, reckon/flight.py, reckon/schema/flight-defaults.yaml, the new test file, the plan, the evidence archive, one figure) is inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: each added assertion names a change that reddens it \u2014 deleting the key filter fails the set(seeded) check at tests/test_harness_home_carries_mcp_servers.py:146, deleting the chmod fails the mode check at :147, and replacing the merge with a skip fails :188 \u2014 but no assertion can fail on the interval or on a widened existing destination.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_backends.py:1872 mirrors the existing harness_home_files carry and its validator in reckon/flight.py:186 rather than adding a second copy mechanism, and every new name is mechanism vocabulary with no plan or ticket identifier.\nFINDING reckon/_backends.py:1905 destination.write_text(...) at :1905 followed by _copy_writable_mode at :1906 leaves the seeded .claude.json readable beyond mode 0600 for the interval: measured against the head tree, a source at 0o600 yields mode 0o644 (umask-derived, 74 bytes readable) at the _copy_writable_mode call boundary and 0o600 only after the chmod, so an operator file the node's own spec calls private is group- and other-readable while it is written, under the 2755 ancestor chain that carries this run's home; the interval is closed by creating the file with its mode (os.open(..., 0o600)) or chmodding before write_text.\nFINDING reckon/_backends.py:1984 _copy_writable_mode takes the mode from the source and applies it to the destination at :1984, so an existing run copy \u2014 the file the docstring at :1878 calls authoritative for its own keys \u2014 is re-chmodded to the operator file's mode; measured with source 0o644 and a harness-written destination at 0o600, the destination is 0o644 after seeding, a persistent widening rather than the window above, latent only because this host's /home/ITER/mcintos/.claude.json is 0600.",
+  "review_run_id": "r-20260926T171349394642-review-of-harness-home-carries-mcp-servers",
+  "reviewed_base_sha": "4b6042ae8758f2fb521f010cd25d1aa2e2e93830",
+  "reviewed_head_sha": "89dada120321eda7fa12c37524e9283546bc46cd",
+  "reviewed_run_id": "r-20260926T162912435982-harness-home-carries-mcp-servers",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T17:30:33.455387+00:00",
+  "total": 89
+}

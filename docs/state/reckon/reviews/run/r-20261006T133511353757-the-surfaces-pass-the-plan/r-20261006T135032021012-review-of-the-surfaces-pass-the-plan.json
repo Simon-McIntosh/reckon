@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:2621",
+    "reckon/mcp.py:4326",
+    "reckon/crew/routing.py:2676"
+  ],
+  "completed_at": "2026-10-06T14:02:38.487Z",
+  "dispatched_at": "2026-10-06T13:50:52Z",
+  "findings": [
+    {
+      "file": "tests/test_the_surfaces_pass_the_plan.py",
+      "line": "165",
+      "severity": "follow-on",
+      "text": "follow-on: test_answer_surface_reads_a_section_covering_review and the MCP case at :198 do not fail if plan= is dropped from the callers, so they do not guard the surface change they are named for; with a single stored review, read_plan_review's no-plan branch at reckon/crew/plan_review.py:811 returns that same newest record regardless of coverage \u2014 measured at the reviewed head, read_plan_review(\"sample\",\"fixture\", plan=document) and read_plan_review(\"sample\",\"fixture\") both return the record with plan_fingerprint \"0\"*64. A fixture carrying a newer non-covering record, or an assertion that the whole-document match is absent, is what would make the case discriminate."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "2621",
+      "severity": "follow-on",
+      "text": "follow-on: passing the plan's content narrows the answer verb from the store's newest-review selection to a coverage-requiring selection, so crew review-plan --answer now reports \"no stored review\" on a plan whose stored review no longer covers it (the plan edited or re-versioned since its review) where it previously returned the newest stored review; the fragment discloses only the \"plan path does not resolve\" sub-case, not this one."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit against base d934afc8c \u2014 0012244e3 adds the store-before-read call and the plan-content argument to the answer verb and the MCP view plus a three-case test module, e2c29d448 lands the evidence fragment; nothing is removed and nothing lies outside the four declared paths.",
+    "done_when": "The node's \u00a723 measure names the seven-module gate; I re-ran the new module at the reviewed head and read 3 passed, EXIT=0 (own-gate.log), reproducing the recorded 116-passed run, and the section's shape greps hold at head.",
+    "goal": "The node's goal \u2014 the answer verb stores a plan's unstored delivered review before reading and both it and the MCP plan-review view resolve the plan file and pass its content to read_plan_review \u2014 is met: reckon/cli.py:2619 calls plan_review.store_delivered_reviews(project, plan_slug) before the read at reckon/cli.py:2621, and reckon/mcp.py:4326 passes the resolved plan to the same reader.",
+    "manifest": "Read at the run's manifest.md; it declares status complete, commits 0012244e3 and e2c29d448, the gate command with 116 passed in 87.18s EXIT=0, the negative-control log and the store step it hoists, but its tests line names no baseline_suite or after_suite arm.",
+    "write_paths": "The diff d934afc8c..e2c29d448 is exactly the four declared write paths \u2014 reckon/cli.py, reckon/mcp.py, tests/test_the_surfaces_pass_the_plan.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-surfaces-pass-the-plan.html \u2014 265 insertions and two deletions."
+  },
+  "justifications": {
+    "durability": "the store-before-read half is guarded \u2014 the declared mutation reddens test_answer_stores_an_unstored_delivery_before_answering \u2014 but the plan-content half is not: read_plan_review's no-plan branch at reckon/crew/plan_review.py:811 returns the newest stored record for the slug with no coverage filter, so tests at tests/test_the_surfaces_pass_the_plan.py:165 and :198 stay green with plan= removed.",
+    "evidence": "the gate is recorded (logs/gate.log, 116 passed, EXIT=0) and I reproduced the new module (3 passed), public_definitions is 1481 at both d934afc8c and 0012244e3, but no base arm underpins the change and the two section-coverage cases pass unchanged without the change.",
+    "fit": "the callers reuse the existing _resolve_html_file resolver (reckon/mcp.py:92 module import, reckon/cli.py:2614 local import) that the editor and promotion already use, and the test module and its cases are named by behaviour with no plan, ticket or version label.",
+    "goal_fidelity": "reckon/cli.py:2619 stores the delivery before the read at reckon/cli.py:2621 and reckon/mcp.py:4326 reads through the resolved plan, which is the node goal stated exactly.",
+    "reuse": "the change extends the existing store step (store_delivered_reviews), reader (read_plan_review) and resolver (_resolve_html_file) rather than forking any, and grep -rn 'read_plan_review(' reckon/ finds only the definition and three call sites, each passing the plan's content.",
+    "scope_discipline": "git diff --stat d934afc8c e2c29d448 is four files and 265 insertions against two deletions, every one inside the declared write paths, with no plan meta line or shared index touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal \u2014 the answer verb stores a plan's unstored delivered review before reading and both it and the MCP plan-review view resolve the plan file and pass its content to read_plan_review \u2014 is met: reckon/cli.py:2619 calls plan_review.store_delivered_reviews(project, plan_slug) before the read at reckon/cli.py:2621, and reckon/mcp.py:4326 passes the resolved plan to the same reader.\nVERDICT done_when: The node's \u00a723 measure names the seven-module gate; I re-ran the new module at the reviewed head and read 3 passed, EXIT=0 (own-gate.log), reproducing the recorded 116-passed run, and the section's shape greps hold at head.\nVERDICT write_paths: The diff d934afc8c..e2c29d448 is exactly the four declared write paths \u2014 reckon/cli.py, reckon/mcp.py, tests/test_the_surfaces_pass_the_plan.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-surfaces-pass-the-plan.html \u2014 265 insertions and two deletions.\nVERDICT manifest: Read at the run's manifest.md; it declares status complete, commits 0012244e3 and e2c29d448, the gate command with 116 passed in 87.18s EXIT=0, the negative-control log and the store step it hoists, but its tests line names no baseline_suite or after_suite arm.\nVERDICT diff: Read commit by commit against base d934afc8c \u2014 0012244e3 adds the store-before-read call and the plan-content argument to the answer verb and the MCP view plus a three-case test module, e2c29d448 lands the evidence fragment; nothing is removed and nothing lies outside the four declared paths.\nCALL_SITES: reckon/cli.py:2621, reckon/mcp.py:4326, reckon/crew/routing.py:2676\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/cli.py:2619 stores the delivery before the read at reckon/cli.py:2621 and reckon/mcp.py:4326 reads through the resolved plan, which is the node goal stated exactly.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is recorded (logs/gate.log, 116 passed, EXIT=0) and I reproduced the new module (3 passed), public_definitions is 1481 at both d934afc8c and 0012244e3, but no base arm underpins the change and the two section-coverage cases pass unchanged without the change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d934afc8c e2c29d448 is four files and 265 insertions against two deletions, every one inside the declared write paths, with no plan meta line or shared index touched.\nSCORE durability: 13\nJUSTIFICATION durability: the store-before-read half is guarded \u2014 the declared mutation reddens test_answer_stores_an_unstored_delivery_before_answering \u2014 but the plan-content half is not: read_plan_review's no-plan branch at reckon/crew/plan_review.py:811 returns the newest stored record for the slug with no coverage filter, so tests at tests/test_the_surfaces_pass_the_plan.py:165 and :198 stay green with plan= removed.\nSCORE fit: 20\nJUSTIFICATION fit: the callers reuse the existing _resolve_html_file resolver (reckon/mcp.py:92 module import, reckon/cli.py:2614 local import) that the editor and promotion already use, and the test module and its cases are named by behaviour with no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing store step (store_delivered_reviews), reader (read_plan_review) and resolver (_resolve_html_file) rather than forking any, and grep -rn 'read_plan_review(' reckon/ finds only the definition and three call sites, each passing the plan's content.\nFINDING tests/test_the_surfaces_pass_the_plan.py:165 follow-on: test_answer_surface_reads_a_section_covering_review and the MCP case at :198 do not fail if plan= is dropped from the callers, so they do not guard the surface change they are named for; with a single stored review, read_plan_review's no-plan branch at reckon/crew/plan_review.py:811 returns that same newest record regardless of coverage \u2014 measured at the reviewed head, read_plan_review(\"sample\",\"fixture\", plan=document) and read_plan_review(\"sample\",\"fixture\") both return the record with plan_fingerprint \"0\"*64. A fixture carrying a newer non-covering record, or an assertion that the whole-document match is absent, is what would make the case discriminate.\nFINDING reckon/cli.py:2621 follow-on: passing the plan's content narrows the answer verb from the store's newest-review selection to a coverage-requiring selection, so crew review-plan --answer now reports \"no stored review\" on a plan whose stored review no longer covers it (the plan edited or re-versioned since its review) where it previously returned the newest stored review; the fragment discloses only the \"plan path does not resolve\" sub-case, not this one.",
+  "review_run_id": "r-20261006T135032021012-review-of-the-surfaces-pass-the-plan",
+  "reviewed_base_sha": "d934afc8caffcc2b1b56f0f4185a988ac470bd92",
+  "reviewed_head_sha": "e2c29d448a1fb67415bd8f71b4f0878985589632",
+  "reviewed_run_id": "r-20261006T133511353757-the-surfaces-pass-the-plan",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:00:56.193322+00:00",
+  "total": 109
+}

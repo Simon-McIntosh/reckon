@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:_crew"
+  ],
+  "completed_at": "2026-09-29T00:33:31.372Z",
+  "dispatched_at": "2026-09-28T23:38:07Z",
+  "findings": [
+    {
+      "file": "reckon/velocity.py",
+      "line": "2244",
+      "text": "the appended by_project_day_lane cells push the crew(view=\"velocity\") payload past the crew tool's 80,000-character ceiling, so the caller receives a response_over_budget receipt instead of the view at any window past about one project-day \u2014 measured at the reviewed head over reckon: 2026-09-27T00:00:00Z to 2026-09-28T00:00:00Z is 79,527 characters and served with 473 characters of headroom, 2026-09-26T00:00:00Z to 2026-09-28T00:00:00Z is 102,727 and refused (cells 50,846, summary without them 51,858), and the receipt's narrow_with hint proposes limit and fields, neither of which the velocity branch accepts."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against 348688e8; a5de014c adds report() and the MCP branch carrying every quantity section 2 lists, with the composition at reckon/velocity.py:2233-2244 reusing capture_project, recover_ledger_clocks, measure and compact_summary and copying no measurement logic, and daa20e08 adds the landing fragment and the call-path figure.",
+    "done_when": "the done_when at prompt.txt:83-97 names tests/test_crew_velocity_view.py's four assertions over three files with base and head arms and a fired until negative control, and the reviewed manifest.md records the arms (base 25 passed EXIT=0, head 29 passed EXIT=0) with their log paths; the reviewer re-ran the new file at the reviewed head and read 4 passed EXIT=0, but nothing in the gate measures the served payload size that prompt.txt:86 asserts.",
+    "goal": "the node goal at prompt.txt:84-86 asks for a new report function in reckon/velocity.py carrying every quantity section 2 lists by project, by lane, by day and in project-by-lane-by-day cells, and for crew(view=\"velocity\") in reckon/mcp.py; reckon/velocity.py:2188 declares report() composed of the existing capture_project, recover_ledger_clocks, measure and compact_summary, reckon/mcp.py:3919 serves the view with since required, until defaulting to now, and one project or \"*\" through the server's mount resolution, and the one clause that does not hold is the transport bound at prompt.txt:86.",
+    "manifest": "read at runs/r-20260928T223349986362-velocity-view-is-served-over-mcp/manifest.md; it carries status complete, both commit shas, baseline_suite and after_suite with their revisions and log paths, three test logs, a negative_control_log whose note describes the until mutation and records that it was reverted, and the landing fragment, and every claim of it that I checked is on disk.",
+    "write_paths": "the reviewed manifest.md declares five write paths, and git diff --name-status 348688e8..daa20e08 lists exactly those five, a5de014c on reckon/velocity.py, reckon/mcp.py and tests/test_crew_velocity_view.py (405 insertions, 13 deletions) and daa20e08 on the evidence fragment and the call-path figure (234 insertions), with nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_velocity_view.py:229-230 fails when the until exclusion is reinstated (assert 16 == 9, the recorded negative control), but no assertion covers the served payload, so the transport clause can fail unobserved.",
+    "evidence": "the reviewed run's two arms and its fired negative control are recorded with log paths (runs/r-20260928T223349986362-velocity-view-is-served-over-mcp/head-arm.log) and the reviewer reproduced the new file's result, but the gate records no measurement of the served payload, which is the one done-when clause the transport claim at prompt.txt:86 rests on.",
+    "fit": "reckon/velocity.py:2188 follows the module's composition idiom with a docstring naming its parts and reckon/mcp.py:3919 mirrors the neighbouring view branches' refusal shape, and no name the repository rules forbid appears in the diff.",
+    "goal_fidelity": "reckon/velocity.py:2244 appends the project-by-lane-by-day cells after compact_summary, and the reviewed head's own report() over reckon is 79,527 characters for one day against the crew tool's 80,000-character ceiling (reckon/mcp_budget.py:11) and 102,727 for two, so the view is served only up to about one project-day and refused beyond it.",
+    "scope_discipline": "git diff --name-status 348688e8..daa20e08 lists exactly the five paths the reviewed manifest declares, and reckon/cli.py is left to the peer node the manifest names under follow_ons."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal at prompt.txt:84-86 asks for a new report function in reckon/velocity.py carrying every quantity section 2 lists by project, by lane, by day and in project-by-lane-by-day cells, and for crew(view=\"velocity\") in reckon/mcp.py; reckon/velocity.py:2188 declares report() composed of the existing capture_project, recover_ledger_clocks, measure and compact_summary, reckon/mcp.py:3919 serves the view with since required, until defaulting to now, and one project or \"*\" through the server's mount resolution, and the one clause that does not hold is the transport bound at prompt.txt:86.\nVERDICT done_when: the done_when at prompt.txt:83-97 names tests/test_crew_velocity_view.py's four assertions over three files with base and head arms and a fired until negative control, and the reviewed manifest.md records the arms (base 25 passed EXIT=0, head 29 passed EXIT=0) with their log paths; the reviewer re-ran the new file at the reviewed head and read 4 passed EXIT=0, but nothing in the gate measures the served payload size that prompt.txt:86 asserts.\nVERDICT write_paths: the reviewed manifest.md declares five write paths, and git diff --name-status 348688e8..daa20e08 lists exactly those five, a5de014c on reckon/velocity.py, reckon/mcp.py and tests/test_crew_velocity_view.py (405 insertions, 13 deletions) and daa20e08 on the evidence fragment and the call-path figure (234 insertions), with nothing outside them.\nVERDICT manifest: read at runs/r-20260928T223349986362-velocity-view-is-served-over-mcp/manifest.md; it carries status complete, both commit shas, baseline_suite and after_suite with their revisions and log paths, three test logs, a negative_control_log whose note describes the until mutation and records that it was reverted, and the landing fragment, and every claim of it that I checked is on disk.\nVERDICT diff: read both commits against 348688e8; a5de014c adds report() and the MCP branch carrying every quantity section 2 lists, with the composition at reckon/velocity.py:2233-2244 reusing capture_project, recover_ledger_clocks, measure and compact_summary and copying no measurement logic, and daa20e08 adds the landing fragment and the call-path figure.\nCALL_SITES: reckon/mcp.py:_crew\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/velocity.py:2244 appends the project-by-lane-by-day cells after compact_summary, and the reviewed head's own report() over reckon is 79,527 characters for one day against the crew tool's 80,000-character ceiling (reckon/mcp_budget.py:11) and 102,727 for two, so the view is served only up to about one project-day and refused beyond it.\nSCORE evidence: 14\nJUSTIFICATION evidence: the reviewed run's two arms and its fired negative control are recorded with log paths (runs/r-20260928T223349986362-velocity-view-is-served-over-mcp/head-arm.log) and the reviewer reproduced the new file's result, but the gate records no measurement of the served payload, which is the one done-when clause the transport claim at prompt.txt:86 rests on.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 348688e8..daa20e08 lists exactly the five paths the reviewed manifest declares, and reckon/cli.py is left to the peer node the manifest names under follow_ons.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_velocity_view.py:229-230 fails when the until exclusion is reinstated (assert 16 == 9, the recorded negative control), but no assertion covers the served payload, so the transport clause can fail unobserved.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/velocity.py:2188 follows the module's composition idiom with a docstring naming its parts and reckon/mcp.py:3919 mirrors the neighbouring view branches' refusal shape, and no name the repository rules forbid appears in the diff.\nFINDING reckon/velocity.py:2244 the appended by_project_day_lane cells push the crew(view=\"velocity\") payload past the crew tool's 80,000-character ceiling, so the caller receives a response_over_budget receipt instead of the view at any window past about one project-day \u2014 measured at the reviewed head over reckon: 2026-09-27T00:00:00Z to 2026-09-28T00:00:00Z is 79,527 characters and served with 473 characters of headroom, 2026-09-26T00:00:00Z to 2026-09-28T00:00:00Z is 102,727 and refused (cells 50,846, summary without them 51,858), and the receipt's narrow_with hint proposes limit and fields, neither of which the velocity branch accepts.\n",
+  "review_run_id": "r-20260928T233751179446-review-of-velocity-view-is-served-over-mcp",
+  "reviewed_base_sha": "348688e8cfe984d3afbf2e556247c3ac9f1a8d84",
+  "reviewed_head_sha": "daa20e08d44c9162a7a3760be92d728e021ac3a6",
+  "reviewed_run_id": "r-20260928T223349986362-velocity-view-is-served-over-mcp",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T00:28:10.272031+00:00",
+  "total": 85
+}

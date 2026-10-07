@@ -1,0 +1,124 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absent_arm_control": {
+      "count": null,
+      "ids": []
+    },
+    "after_log": {
+      "note": "head arm output captured by the reviewed run's own harness task",
+      "path": "/tmp/reckon-crew-scratch/r-20260929T141906421295-a-resumed-run-counts-as-working/claude-39486/-home-ITER-mcintos-Code--reckon-worktrees-reckon-c8f839407e49-s23-coord-a-resumed-run-counts-as-working/a007cc48-38a0-460d-a847-a6504108403a/tasks/brqyte2of.output",
+      "sha256": "ed84083b8a92a61a977b2aad6b4ec67832cc21e588f95992afeacb790fb2c411"
+    },
+    "baseline_log": {
+      "path": "/tmp/base_arm.log",
+      "sha256": "ceb118fa06e33114de0cd3a890657978f9e24549c8f7f7252e5febf5cd9d314a"
+    },
+    "caveat": "the reviewed manifest carries no baseline_suite/after_suite fields, so read_review's annotation re-derives this as unmeasured (None); the 0 above is this reviewer's derivation from the run's own two arm logs, which are still present at the paths above",
+    "derivation_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T150247289441-review-of-a-resumed-run-counts-as-working/logs/added-failures.out",
+    "derived_by": "reckon/crew/review.py added_failures_from_gate_logs at 9bf9d9eb",
+    "positive_control": {
+      "added_failure_count": 1,
+      "added_failure_ids": [
+        "tests/test_reviewer_positive_control.py::test_the_instrument_sees_failure"
+      ]
+    }
+  },
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/obligations.py:142",
+    "reckon/crew/runs.py:1051",
+    "reckon/crew/runs.py:3215",
+    "reckon/cli.py:3883",
+    "reckon/mcp_views.py:1378",
+    "reckon/crew/promotion.py:3859",
+    "reckon/crew/resumption.py:1169"
+  ],
+  "completed_at": "2026-09-29T16:03:04.698Z",
+  "control_log": "/tmp/negative_control.log",
+  "control_log_facts": {
+    "declared_string_present_verbatim": false,
+    "path": "/tmp/negative_control.log",
+    "recorded_exit_status": null
+  },
+  "dispatched_at": "2026-09-29T15:03:09Z",
+  "findings": [
+    {
+      "file": "tests/test_a_resumed_run_counts_as_working.py",
+      "line": "89",
+      "text": "The helper's worker_launched_after_manifest=False branch is never taken \u2014 all four tests pass True (lines 149, 171, 190, 211) \u2014 so a predicate that always answers True still passes the file and the goal's third clause, a run whose live worker started before its manifest keeps today's classification, is unguarded."
+    },
+    {
+      "file": "manifest.md",
+      "line": "38",
+      "text": "The control log is named only as a nested `log:` key inside the `negative_control:` block; parse_manifest does not promote it to `negative_control_log`, so promotion raises for a missing declared control log (reproduced by calling the check against the delivered manifest)."
+    },
+    {
+      "file": "/tmp/negative_control.log",
+      "line": "1",
+      "text": "The log's first line does not repeat the declared mutation string verbatim and the log records no `EXIT=` line, so even with a path supplied the control is inadmissible and the mutation's red result cannot be read by the promotion gate."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "text": "The two gate arms are recorded as prose and the armed-only `baseline_suite`/`after_suite` fields the done-when names are absent, so the review read path and the promotion suite-delta read this run's gate as unmeasured rather than as the measured zero it is."
+    }
+  ],
+  "findings_count": 4,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "The single landed change 9bf9d9eb adds 50 lines to a conservative predicate in reckon/crew/recovery.py (unreadable evidence answers False at 3090-3096) plus a 219-line test file, and the new arm fires only when the pointer's own liveness is unproven (4137) and only the launch time is compared (3102).",
+    "done_when": "The four cases exist and pass at the head (tests/test_a_resumed_run_counts_as_working.py:126-219) and the declared mutation reddens three of them, but the manifest records the two arms as prose under `gate:` (manifest.md:17-30) and names no `baseline_suite`/`after_suite` armed-only JSON, and its control log carries no `EXIT=` record, so the evidence form the done-when names is not the one delivered.",
+    "goal": "The landed change does what the goal states \u2014 reckon/crew/recovery.py:4137 folds a live worker launched after its manifest into `superseded_manifest` and 4142 defers the terminal status through `deferred_outcome`, so the pointer classifies as working and owes no promotion; the third clause (\"a worker started before the manifest keeps today's classification\") survives only in the comparison at reckon/crew/recovery.py:3102, with no test driving it.",
+    "manifest": "The manifest (manifest.md:1-53) states the landing, gate, control, lint and scope honestly, but names its control log only as a nested `log:` inside the `negative_control:` block (manifest.md:38) that promotion does not read as `negative_control_log`, and its gate block is prose rather than the armed-only fields the done-when names.",
+    "write_paths": "Only reckon/crew/recovery.py and tests/test_a_resumed_run_counts_as_working.py were written, both inside the five paths the fence declared; reckon/crew/obligations.py was read and exercised through the obligation hook but not edited, and no fragment, figure or plan was touched."
+  },
+  "justifications": {
+    "durability": "Three assertions redden under the declared mutation (the control log's 3 failed, 1 passed), but the launch-before-manifest direction is never exercised because every test passes worker_launched_after_manifest=True, so a predicate that ignores the launch time would still pass the file.",
+    "evidence": "The gate is real and independently reproducible (the arms at /tmp/base_arm.log and the run's head capture carry the same five pre-existing pytest-timeout failures; the new file re-runs 4 passed at head), but the recorded form fails its consumers twice \u2014 no armed-only suite fields (manifest.md:17) and a control log promotion refuses (/tmp/negative_control.log:1).",
+    "fit": "reckon/crew/recovery.py:3075 follows the module's existing helpers and reading discipline, the docstring states the mechanism rather than a ticket, and no name or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/recovery.py:4137-4144 implements the goal's first two clauses directly and the third only implicitly, so the classification is right for every case the goal names but one clause rests on an untested comparison.",
+    "scope_discipline": "The diff touches exactly the two declared paths that carried the change and nothing else, and the three declared-but-unused paths (fragment, figure, obligations) are explained rather than quietly dropped."
+  },
+  "project": "reckon",
+  "promotion_checks": {
+    "delivered_manifest": "run 'r-20260929T141906421295-a-resumed-run-counts-as-working' writes a check (tests/test_a_resumed_run_counts_as_working.py) and declares the mutation 'classify from the manifest status alone, ignoring the live worker launch time' in its negative_control field, but its manifest carries no negative_control_log path. Promotion refuses a passing gate whose negative control was never run: keep the log that mutation produced beside the passing one and name its path in the manifest as `negative_control_log: <path>`",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T150247289441-review-of-a-resumed-run-counts-as-working/logs/promotion-refusals.out",
+    "with_log_path_supplied": "run 'r-20260929T141906421295-a-resumed-run-counts-as-working' declares the mutation 'classify from the manifest status alone, ignoring the live worker launch time' but the log at '/tmp/negative_control.log' shows no failed control run: it records no EXIT status, so whether its run failed is unknown. A control is admitted on its facts alone \u2014 a non-zero exit record and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm \u2014 and neither fact is inferred from the log's wording or from a bare failing count. Re-run the declared mutation and keep the log it produced, with the capture's EXIT=<n> record and the runner's own list of which tests failed, or use --waive-negative-control REASON to record why the control may be accepted without it"
+  },
+  "raw_text": "\nVERDICT goal: The landed change does what the goal states \u2014 reckon/crew/recovery.py:4137 folds a live worker launched after its manifest into `superseded_manifest` and 4142 defers the terminal status through `deferred_outcome`, so the pointer classifies as working and owes no promotion; the third clause (\"a worker started before the manifest keeps today's classification\") survives only in the comparison at reckon/crew/recovery.py:3102, with no test driving it.\nVERDICT done_when: The four cases exist and pass at the head (tests/test_a_resumed_run_counts_as_working.py:126-219) and the declared mutation reddens three of them, but the manifest records the two arms as prose under `gate:` (manifest.md:17-30) and names no `baseline_suite`/`after_suite` armed-only JSON, and its control log carries no `EXIT=` record, so the evidence form the done-when names is not the one delivered.\nVERDICT write_paths: Only reckon/crew/recovery.py and tests/test_a_resumed_run_counts_as_working.py were written, both inside the five paths the fence declared; reckon/crew/obligations.py was read and exercised through the obligation hook but not edited, and no fragment, figure or plan was touched.\nVERDICT manifest: The manifest (manifest.md:1-53) states the landing, gate, control, lint and scope honestly, but names its control log only as a nested `log:` inside the `negative_control:` block (manifest.md:38) that promotion does not read as `negative_control_log`, and its gate block is prose rather than the armed-only fields the done-when names.\nVERDICT diff: The single landed change 9bf9d9eb adds 50 lines to a conservative predicate in reckon/crew/recovery.py (unreadable evidence answers False at 3090-3096) plus a 219-line test file, and the new arm fires only when the pointer's own liveness is unproven (4137) and only the launch time is compared (3102).\nCALL_SITES: reckon/crew/obligations.py:142, reckon/crew/runs.py:1051, reckon/crew/runs.py:3215, reckon/cli.py:3883, reckon/mcp_views.py:1378, reckon/crew/promotion.py:3859, reckon/crew/resumption.py:1169\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:4137-4144 implements the goal's first two clauses directly and the third only implicitly, so the classification is right for every case the goal names but one clause rests on an untested comparison.\nSCORE evidence: 12\nJUSTIFICATION evidence: The gate is real and independently reproducible (the arms at /tmp/base_arm.log and the run's head capture carry the same five pre-existing pytest-timeout failures; the new file re-runs 4 passed at head), but the recorded form fails its consumers twice \u2014 no armed-only suite fields (manifest.md:17) and a control log promotion refuses (/tmp/negative_control.log:1).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff touches exactly the two declared paths that carried the change and nothing else, and the three declared-but-unused paths (fragment, figure, obligations) are explained rather than quietly dropped.\nSCORE durability: 14\nJUSTIFICATION durability: Three assertions redden under the declared mutation (the control log's 3 failed, 1 passed), but the launch-before-manifest direction is never exercised because every test passes worker_launched_after_manifest=True, so a predicate that ignores the launch time would still pass the file.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery.py:3075 follows the module's existing helpers and reading discipline, the docstring states the mechanism rather than a ticket, and no name or comment carries a plan, sprint or ticket identifier.\nFINDING tests/test_a_resumed_run_counts_as_working.py:89 The helper's worker_launched_after_manifest=False branch is never taken \u2014 all four tests pass True (lines 149, 171, 190, 211) \u2014 so a predicate that always answers True still passes the file and the goal's third clause, a run whose live worker started before its manifest keeps today's classification, is unguarded.\nFINDING manifest.md:38 The control log is named only as a nested `log:` key inside the `negative_control:` block; parse_manifest does not promote it to `negative_control_log`, so promotion raises for a missing declared control log (reproduced by calling the check against the delivered manifest).\nFINDING /tmp/negative_control.log:1 The log's first line does not repeat the declared mutation string verbatim and the log records no `EXIT=` line, so even with a path supplied the control is inadmissible and the mutation's red result cannot be read by the promotion gate.\nFINDING manifest.md:17 The two gate arms are recorded as prose and the armed-only `baseline_suite`/`after_suite` fields the done-when names are absent, so the review read path and the promotion suite-delta read this run's gate as unmeasured rather than as the measured zero it is.\n",
+  "review_run_id": "r-20260929T150247289441-review-of-a-resumed-run-counts-as-working",
+  "reviewed_base_sha": "89af9522d0d836837abfce62b7e35265c9427393",
+  "reviewed_head_sha": "9bf9d9eb9e8e055d5674b33f3efb42c4188fbffd",
+  "reviewed_manifest": {
+    "bytes": 5935,
+    "last_modified": "2026-09-29T17:01:39+02:00",
+    "missing_fields": [
+      "negative_control_log",
+      "baseline_suite",
+      "after_suite"
+    ],
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/manifest.md",
+    "sha256": "5e48b6cc4f4537eb0a018cfdafdcb02b4d06cf4aebac57e28c1bec94d3835c01",
+    "unchanged_since_review": true
+  },
+  "reviewed_run_id": "r-20260929T141906421295-a-resumed-run-counts-as-working",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/a-resumed-run-counts-as-working",
+  "reviewer_node": "review-of-a-resumed-run-counts-as-working",
+  "reviewer_run_id": "r-20260929T150247289441-review-of-a-resumed-run-counts-as-working",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T15:22:33.815024+00:00",
+  "total": 84
+}

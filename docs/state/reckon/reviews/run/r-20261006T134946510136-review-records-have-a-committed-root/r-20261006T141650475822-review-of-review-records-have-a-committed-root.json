@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T14:30:16.801Z",
+  "dispatched_at": "2026-10-06T14:17:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1728",
+      "severity": "follow-on",
+      "text": "follow-on: run_record_times' docstring says the live pointer \"contributes its single created_at dispatch stamp\", but the code returns both created_at and completed_at (reckon/crew/review.py:1745), and the delta's own test test_run_record_times_falls_back_to_a_live_pointer_that_carries_stamps asserts completed_at is read from the pointer; a reader trusting the docstring would not see the completion stamp is sourced there."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1784",
+      "severity": "follow-on",
+      "text": "follow-on: store_committed_review still defaults a missing review_run_id to reviewed_run_id before it calls review_path, so a record that omits the review run id is still named after the reviewed run and two such review runs of one reviewed run would resolve the same committed file \u2014 the exact collision review_path's new refusal (reckon/crew/review.py:1318) closes at the path owner; the commit's claim that two review runs can never name one file holds only because production callers happen to supply the id."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commit by commit against base 2e05df719 \u2014 775001135 alone changes review_path's committed branch from defaulting a missing review_run_id to reviewed_run_id to refusing it, makes store_committed_review refuse when no source resolves both stamps (replacing the silent omission), and adds four test cases (the run-path refusal, the live-pointer fallback with and without stamps, and the store refusal); run_record_times itself is unchanged.",
+    "done_when": "The reviewed node's done_when names the four-module gate; I ran it at the reviewed head 775001135 \u2014 39 passed, EXIT=0 (reviewer-head-gate.log) \u2014 matching the reviewed run's own gate.log (39 passed), and the delta's new tests discriminate: run against the base source 2e05df719 the two new refusal cases fail (test_a_committed_run_path_without_a_review_run_is_refused, test_a_committed_record_carries_the_run_records_times), so the guards are exercised, not merely present.",
+    "goal": "The delta commit 775001135 closes both gaps the prior review flagged \u2014 review_path's committed branch now refuses an empty review run id (reckon/crew/review.py:1318) as plan_review_path already did (reckon/crew/plan_review.py:383), and store_committed_review refuses a record whose dispatch or completion time neither the review run nor the reviewed run resolves (reckon/crew/review.py:1794) rather than storing a defaulted or omitted stamp; the two owners of a committed path now agree, which is the commit's stated goal.",
+    "manifest": "Read at the reviewed run's manifest.md; it declares status complete, commits [2e05df719, 775001135], the gate \"-> 39 passed, EXIT=0\", the record_response negative control, and discloses the remaining \u00a73 scope owned by other nodes; it carries no baseline_suite or after_suite arm, so the added-failure count is not derivable from the reviewed run's own gate logs and is recorded unmeasured.",
+    "write_paths": "git diff --stat 2e05df719 775001135 is three files \u2014 reckon/crew/review.py, tests/test_review_records_have_a_committed_root.py and the evidence fragment html \u2014 105 insertions against 36 deletions, every one inside the reviewed node's declared write paths; no plan meta line, figure, or shared index is touched."
+  },
+  "justifications": {
+    "durability": "both new refusals are held by tests that fail on the base source, so the guards fire rather than merely pass; the one gap is that store_committed_review still defaults a missing review_run_id to the reviewed run id (reckon/crew/review.py:1784), leaving the collision review_path now refuses reachable through the production writer.",
+    "evidence": "the head gate reproduces (39 passed, EXIT=0) and the new guards are shown to discriminate against the base source (2 failed there, 39 passed at head), but the reviewed run's manifest carries no baseline_suite/after_suite arm, so added_failure_count is unmeasured and rests on no after-arm the reviewed run recorded.",
+    "fit": "the change repairs the existing owners in place \u2014 review_path mirrors plan_review_path's refusal (reckon/crew/plan_review.py:383) and store_committed_review tightens an existing write \u2014 with no new mechanism and no plan or ticket label.",
+    "goal_fidelity": "the delta does exactly what its subject claims \u2014 review_path now refuses a committed path with no review run id (reckon/crew/review.py:1318) and store_committed_review refuses a record with no resolvable time (reckon/crew/review.py:1794) \u2014 closing both prior follow-ons.",
+    "reuse": "no duplicated path rule or second writer is introduced; the run-path refusal on review_path (reckon/crew/review.py:1318) reuses the message-and-shape its sibling plan_review_path already carries.",
+    "scope_discipline": "git diff --stat 2e05df719 775001135 is three files and 105 insertions against 36 deletions, all inside the reviewed node's declared write paths, with no plan meta line or shared index touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The delta commit 775001135 closes both gaps the prior review flagged \u2014 review_path's committed branch now refuses an empty review run id (reckon/crew/review.py:1318) as plan_review_path already did (reckon/crew/plan_review.py:383), and store_committed_review refuses a record whose dispatch or completion time neither the review run nor the reviewed run resolves (reckon/crew/review.py:1794) rather than storing a defaulted or omitted stamp; the two owners of a committed path now agree, which is the commit's stated goal.\nVERDICT done_when: The reviewed node's done_when names the four-module gate; I ran it at the reviewed head 775001135 \u2014 39 passed, EXIT=0 (reviewer-head-gate.log) \u2014 matching the reviewed run's own gate.log (39 passed), and the delta's new tests discriminate: run against the base source 2e05df719 the two new refusal cases fail (test_a_committed_run_path_without_a_review_run_is_refused, test_a_committed_record_carries_the_run_records_times), so the guards are exercised, not merely present.\nVERDICT write_paths: git diff --stat 2e05df719 775001135 is three files \u2014 reckon/crew/review.py, tests/test_review_records_have_a_committed_root.py and the evidence fragment html \u2014 105 insertions against 36 deletions, every one inside the reviewed node's declared write paths; no plan meta line, figure, or shared index is touched.\nVERDICT manifest: Read at the reviewed run's manifest.md; it declares status complete, commits [2e05df719, 775001135], the gate \"-> 39 passed, EXIT=0\", the record_response negative control, and discloses the remaining \u00a73 scope owned by other nodes; it carries no baseline_suite or after_suite arm, so the added-failure count is not derivable from the reviewed run's own gate logs and is recorded unmeasured.\nVERDICT diff: Read commit by commit against base 2e05df719 \u2014 775001135 alone changes review_path's committed branch from defaulting a missing review_run_id to reviewed_run_id to refusing it, makes store_committed_review refuse when no source resolves both stamps (replacing the silent omission), and adds four test cases (the run-path refusal, the live-pointer fallback with and without stamps, and the store refusal); run_record_times itself is unchanged.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the delta does exactly what its subject claims \u2014 review_path now refuses a committed path with no review run id (reckon/crew/review.py:1318) and store_committed_review refuses a record with no resolvable time (reckon/crew/review.py:1794) \u2014 closing both prior follow-ons.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate reproduces (39 passed, EXIT=0) and the new guards are shown to discriminate against the base source (2 failed there, 39 passed at head), but the reviewed run's manifest carries no baseline_suite/after_suite arm, so added_failure_count is unmeasured and rests on no after-arm the reviewed run recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2e05df719 775001135 is three files and 105 insertions against 36 deletions, all inside the reviewed node's declared write paths, with no plan meta line or shared index touched.\nSCORE durability: 18\nJUSTIFICATION durability: both new refusals are held by tests that fail on the base source, so the guards fire rather than merely pass; the one gap is that store_committed_review still defaults a missing review_run_id to the reviewed run id (reckon/crew/review.py:1784), leaving the collision review_path now refuses reachable through the production writer.\nSCORE fit: 20\nJUSTIFICATION fit: the change repairs the existing owners in place \u2014 review_path mirrors plan_review_path's refusal (reckon/crew/plan_review.py:383) and store_committed_review tightens an existing write \u2014 with no new mechanism and no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no duplicated path rule or second writer is introduced; the run-path refusal on review_path (reckon/crew/review.py:1318) reuses the message-and-shape its sibling plan_review_path already carries.\nFINDING reckon/crew/review.py:1728 follow-on: run_record_times' docstring says the live pointer \"contributes its single created_at dispatch stamp\", but the code returns both created_at and completed_at (reckon/crew/review.py:1745), and the delta's own test test_run_record_times_falls_back_to_a_live_pointer_that_carries_stamps asserts completed_at is read from the pointer; a reader trusting the docstring would not see the completion stamp is sourced there.\nFINDING reckon/crew/review.py:1784 follow-on: store_committed_review still defaults a missing review_run_id to reviewed_run_id before it calls review_path, so a record that omits the review run id is still named after the reviewed run and two such review runs of one reviewed run would resolve the same committed file \u2014 the exact collision review_path's new refusal (reckon/crew/review.py:1318) closes at the path owner; the commit's claim that two review runs can never name one file holds only because production callers happen to supply the id.\nREVIEWED_BASE_SHA: 2e05df7191c5413efcfb9f3cc40b5f18b1f7a0bc\nREVIEWED_HEAD_SHA: 775001135fd133d170a379fcf690336ce649cd11",
+  "review_run_id": "r-20261006T141650475822-review-of-review-records-have-a-committed-root",
+  "reviewed_base_sha": "2e05df7191c5413efcfb9f3cc40b5f18b1f7a0bc",
+  "reviewed_head_sha": "775001135fd133d170a379fcf690336ce649cd11",
+  "reviewed_run_id": "r-20261006T134946510136-review-records-have-a-committed-root",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:27:38.157862+00:00",
+  "total": 116
+}

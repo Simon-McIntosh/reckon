@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4686",
+    "reckon/crew/dispatch.py:4723",
+    "reckon/crew/dispatch.py:4811",
+    "reckon/crew/dispatch.py:4852",
+    "reckon/crew/dispatch.py:4958",
+    "reckon/worker_shims/git:38",
+    "reckon/worker_git_shim.py:415"
+  ],
+  "completed_at": "2026-09-26T09:52:35.456Z",
+  "dispatched_at": "2026-09-26T09:16:30Z",
+  "findings": [
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "237",
+      "text": "the read-form helper returns True for an empty tail, so bare `git stash` -- which is `git stash push` -- is treated as read-only and forwarded with no resolved-repo comparison at all; measured at the head with RECKON_RUN_ID set and the run's worktree elsewhere, `git -C <other> stash` exited 0, reverted the other checkout's modified a.txt to its committed content and added stash@{0} to it, so the one mutating spelling the repository guidelines ban outright is the one the allowlist forwards, because every multi-purpose verb with an empty tail skips the check."
+    },
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "380",
+      "text": "the refusal compares the git dir alone, so an invocation whose --git-dir is the run's own and whose --work-tree names any other directory is forwarded; measured at the head, `git --git-dir=<run>/.git --work-tree=<a directory outside any repository> checkout -f HEAD -- a.txt` exited 0 and overwrote that directory's a.txt, and the same through GIT_DIR and GIT_WORK_TREE in the environment, so a worker can write any other checkout's working tree -- or the operator's home -- through the shim even though the plan's landing record claims this class is guarded."
+    },
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "72",
+      "text": "fsck sits on the read-only allowlist, but `git fsck --lost-found` writes into the target repository; measured with a dangling blob as the positive control (fsck reporting it as `dangling blob 4ba8ea60`), `git -C <other> fsck --lost-found` was forwarded at exit 0 and created <other>/.git/lost-found/other/4ba8ea6005dd588634e40a8bee8a71243af8625e, a write into a foreign checkout's git dir by a verb the allowlist calls read-only."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against base 7f97afda; fd521f3c adds the decision module, the shim script and the PATH wiring, 6e3c5f67, 51fe7654 and 883a1bb7 add the plan record, the cumulative anchor and the measurement logs, 9ab5e097 inverts the verb test to a read-only allowlist and adds the run-id component check, and e2cc7472 records the review fixes, with no plan-version or plan-modified meta line touched and both docs files pure insertions.",
+    "done_when": "the done_when names an env-prefixed GIT_DIR, a cd, a pushd and a plain -C each refused with the other checkout's HEAD unchanged, the same verbs succeeding inside the worktree, read-only verbs passing, transparency without RECKON_RUN_ID, and a launch plan showing the shim first; tests/test_git_shim_checks_the_resolved_repo.py:162, :179, :193, :207, :223, :240 and :254 cover every clause, tests/test_worker_path_carries_shims.py:261 asserts the git shim directory first outside an allocation, and my re-run of the named file at the reviewed head was 10 passed in 4.41s.",
+    "goal": "the goal asks for a git shim first on every crew worker's PATH, inside an allocation or out of one, that refuses a mutating git verb decided from the repository the real git resolves for the invocation; reckon/worker_shims/git:38 calls reckon/worker_git_shim.py:415 for that decision and reckon/crew/dispatch.py:4686 prepends its directory in both placements, and my probe at head e2cc7472 refused the four named spellings with the foreign HEADs unchanged, forwarded a mutating verb inside the run's own worktree, passed read-only verbs, was transparent without RECKON_RUN_ID, and found three spellings that still reach another checkout (the FINDINGs below).",
+    "manifest": "read; it records six commits including the two review-fix commits, both gate arms, the declared control with its reverted arm, the lint delta and a follow_on naming the merged-result check as a separately dispatched test node, and every figure I opened matched its log (25 passed at fd521f3c, 27 at 9ab5e097, 5 failed of 8 in the declared control at negative-control-git-shim.txt, the alias control red 1 failed of 10 and reverted 10 passed).",
+    "write_paths": "the manifest declares eight paths and all nineteen files of git diff 7f97afda..e2cc7472 fall inside them (the two docs trees, the two test files, the decision module, the shim script and dispatch.py), and the reviewed worktree is clean at the head."
+  },
+  "justifications": {
+    "durability": "each refusal assertion re-reads the foreign HEAD with a separate real git (tests/test_git_shim_checks_the_resolved_repo.py:175-176) and the alias and run-id tests were measured red before their fixes, but no assertion covers the empty-tail read form or a foreign --work-tree, so the defect at FINDING reckon/worker_git_shim.py:237 passes the suite unchanged.",
+    "evidence": "the recorded arms are genuine and reproducible, since my re-run of tests/test_git_shim_checks_the_resolved_repo.py at e2cc7472 passed 10 of 10 and every logged figure I opened matched, but the gate measures only the spellings the tests enumerate, so the three measured bypasses sit outside what it records.",
+    "fit": "the module reuses the worker_shims idiom with the shim directory imported lazily from its owning module (reckon/crew/dispatch.py:4644) and carries no plan, sprint or ticket identifier in a symbol or comment, and the two defects the earlier review recorded (the run-id reduction claim and the dead _ATTACHED_PREFIXES constant) are fixed at the head.",
+    "goal_fidelity": "the decision module refuses a mutating verb whose resolved git dir is not the run's own (reckon/worker_git_shim.py:373-382) and my probe confirmed that for the four named spellings, but bare `git stash` and a matching --git-dir with a foreign --work-tree are forwarded by the same code (FINDINGs at :237 and :380).",
+    "scope_discipline": "every file of the diff is inside the eight write paths the manifest declares, the plan and archive changes are pure insertions at docs/plans/a-worker-cannot-write-your-home.html and docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1084, and the recorded lint delta on complete trees is 0 -> 0 for the changed files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks for a git shim first on every crew worker's PATH, inside an allocation or out of one, that refuses a mutating git verb decided from the repository the real git resolves for the invocation; reckon/worker_shims/git:38 calls reckon/worker_git_shim.py:415 for that decision and reckon/crew/dispatch.py:4686 prepends its directory in both placements, and my probe at head e2cc7472 refused the four named spellings with the foreign HEADs unchanged, forwarded a mutating verb inside the run's own worktree, passed read-only verbs, was transparent without RECKON_RUN_ID, and found three spellings that still reach another checkout (the FINDINGs below).\nVERDICT done_when: the done_when names an env-prefixed GIT_DIR, a cd, a pushd and a plain -C each refused with the other checkout's HEAD unchanged, the same verbs succeeding inside the worktree, read-only verbs passing, transparency without RECKON_RUN_ID, and a launch plan showing the shim first; tests/test_git_shim_checks_the_resolved_repo.py:162, :179, :193, :207, :223, :240 and :254 cover every clause, tests/test_worker_path_carries_shims.py:261 asserts the git shim directory first outside an allocation, and my re-run of the named file at the reviewed head was 10 passed in 4.41s.\nVERDICT write_paths: the manifest declares eight paths and all nineteen files of git diff 7f97afda..e2cc7472 fall inside them (the two docs trees, the two test files, the decision module, the shim script and dispatch.py), and the reviewed worktree is clean at the head.\nVERDICT manifest: read; it records six commits including the two review-fix commits, both gate arms, the declared control with its reverted arm, the lint delta and a follow_on naming the merged-result check as a separately dispatched test node, and every figure I opened matched its log (25 passed at fd521f3c, 27 at 9ab5e097, 5 failed of 8 in the declared control at negative-control-git-shim.txt, the alias control red 1 failed of 10 and reverted 10 passed).\nVERDICT diff: read commit by commit against base 7f97afda; fd521f3c adds the decision module, the shim script and the PATH wiring, 6e3c5f67, 51fe7654 and 883a1bb7 add the plan record, the cumulative anchor and the measurement logs, 9ab5e097 inverts the verb test to a read-only allowlist and adds the run-id component check, and e2cc7472 records the review fixes, with no plan-version or plan-modified meta line touched and both docs files pure insertions.\nCALL_SITES: reckon/crew/dispatch.py:4686, reckon/crew/dispatch.py:4723, reckon/crew/dispatch.py:4811, reckon/crew/dispatch.py:4852, reckon/crew/dispatch.py:4958, reckon/worker_shims/git:38, reckon/worker_git_shim.py:415\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the decision module refuses a mutating verb whose resolved git dir is not the run's own (reckon/worker_git_shim.py:373-382) and my probe confirmed that for the four named spellings, but bare `git stash` and a matching --git-dir with a foreign --work-tree are forwarded by the same code (FINDINGs at :237 and :380).\nSCORE evidence: 16\nJUSTIFICATION evidence: the recorded arms are genuine and reproducible, since my re-run of tests/test_git_shim_checks_the_resolved_repo.py at e2cc7472 passed 10 of 10 and every logged figure I opened matched, but the gate measures only the spellings the tests enumerate, so the three measured bypasses sit outside what it records.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every file of the diff is inside the eight write paths the manifest declares, the plan and archive changes are pure insertions at docs/plans/a-worker-cannot-write-your-home.html and docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1084, and the recorded lint delta on complete trees is 0 -> 0 for the changed files.\nSCORE durability: 15\nJUSTIFICATION durability: each refusal assertion re-reads the foreign HEAD with a separate real git (tests/test_git_shim_checks_the_resolved_repo.py:175-176) and the alias and run-id tests were measured red before their fixes, but no assertion covers the empty-tail read form or a foreign --work-tree, so the defect at FINDING reckon/worker_git_shim.py:237 passes the suite unchanged.\nSCORE fit: 17\nJUSTIFICATION fit: the module reuses the worker_shims idiom with the shim directory imported lazily from its owning module (reckon/crew/dispatch.py:4644) and carries no plan, sprint or ticket identifier in a symbol or comment, and the two defects the earlier review recorded (the run-id reduction claim and the dead _ATTACHED_PREFIXES constant) are fixed at the head.\nFINDING reckon/worker_git_shim.py:237 the read-form helper returns True for an empty tail, so bare `git stash` -- which is `git stash push` -- is treated as read-only and forwarded with no resolved-repo comparison at all; measured at the head with RECKON_RUN_ID set and the run's worktree elsewhere, `git -C <other> stash` exited 0, reverted the other checkout's modified a.txt to its committed content and added stash@{0} to it, so the one mutating spelling the repository guidelines ban outright is the one the allowlist forwards, because every multi-purpose verb with an empty tail skips the check.\nFINDING reckon/worker_git_shim.py:380 the refusal compares the git dir alone, so an invocation whose --git-dir is the run's own and whose --work-tree names any other directory is forwarded; measured at the head, `git --git-dir=<run>/.git --work-tree=<a directory outside any repository> checkout -f HEAD -- a.txt` exited 0 and overwrote that directory's a.txt, and the same through GIT_DIR and GIT_WORK_TREE in the environment, so a worker can write any other checkout's working tree -- or the operator's home -- through the shim even though the plan's landing record claims this class is guarded.\nFINDING reckon/worker_git_shim.py:72 fsck sits on the read-only allowlist, but `git fsck --lost-found` writes into the target repository; measured with a dangling blob as the positive control (fsck reporting it as `dangling blob 4ba8ea60`), `git -C <other> fsck --lost-found` was forwarded at exit 0 and created <other>/.git/lost-found/other/4ba8ea6005dd588634e40a8bee8a71243af8625e, a write into a foreign checkout's git dir by a verb the allowlist calls read-only.\n",
+  "review_run_id": "r-20260926T091620797858-review-of-git-shim-checks-the-resolved-repo",
+  "reviewed_base_sha": "7f97afdaf6dfe2a3da3445bc8b8b229b552d36f3",
+  "reviewed_head_sha": "e2cc7472fd8692ec086be32a07b9d2f446fede26",
+  "reviewed_run_id": "r-20260926T062814328352-git-shim-checks-the-resolved-repo",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T09:47:26.775761+00:00",
+  "total": 81
+}

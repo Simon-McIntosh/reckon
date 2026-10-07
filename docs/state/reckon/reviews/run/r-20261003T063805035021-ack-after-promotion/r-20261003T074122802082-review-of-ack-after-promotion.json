@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:5509",
+    "reckon/crew/obligations.py:855",
+    "reckon/hooks/coordinator_obligations.py:801",
+    "reckon/crew/obligation_snapshot.py:744"
+  ],
+  "completed_at": "2026-10-03T07:48:20.960Z",
+  "dispatched_at": "2026-10-03T07:41:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1043",
+      "severity": "follow-on",
+      "text": "follow-on: plan section 25's goal says a promoted run's remainder is 'acknowledged from the run's ledger record', but this commit stores the deferral in a per-run file under the crew home (acknowledgements/) and uses the ledger record only as an existence check, so a reader matching the goal wording to the storage looks in the wrong place; the move is the fix for the real ledger-rewrite defect and the done-when is met, but the plan and the fragment still say 'ledger record' while the deferral no longer lives there."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1140",
+      "severity": "follow-on",
+      "text": "follow-on (endorsed from the worker's own note): recorded_promoted_acknowledgements reads every file in the acknowledgements directory on each obligations read and nothing removes a file once its until has passed, so the directory grows without bound and every expired deferral is re-parsed on every read; no sweeper exists and none is in this node's write scope."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/ack-after-promotion.html",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment quotes the defective porcelain line as 'M docs/state/<project>/crew.json, the tracked aggregate rewritten', but the cited repro-ledger-rewrite.log shows 'M docs/state/<project>/runs/<run>.json' and '?? docs/state/<project>/crew.json' - the per-run file carries the M and the aggregate is untracked; the substantive defect (committed project state moved and left uncommitted) is real and reproduced, but the quoted path and status letter do not match the log they cite."
+    }
+  ],
+  "head_log_revision": "732c29a45a3ef8d603174cee05082077df8588d6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against f941d4a2; 732c29a45 replaces the ledger-record write with a per-run file under the crew home, adds the acknowledgements reader path, and adds the case asserting the repository is left untouched, while dc4eaf3cd updates the fragment to the new mechanism and the four-case arms.",
+    "done_when": "tests/test_ack_after_promotion.py promotes a held tree, acknowledges it, asserts the duty leaves the stop path (line 139), returns past its until (lines 153-170), and is refused with no reason (line 180); at base 9e5081bb all four cases fail on 'no live run' (gate-base2.log, 4 failed) and at head all pass (gate-head-arm7.log, 79 passed); my independent negative control, replacing the promoted branch with the live-pointer refusal in a scratch copy, reproduces 3 failed/1 passed, EXIT=1.",
+    "goal": "plan section 25 asks that a promoted run's deliberate remainder be acknowledged with a reason and expire when the condition clears; record_run_acknowledgement (reckon/crew/runs.py:1043) writes a per-run deferral file when no live pointer exists and _acknowledgements_in_force (reckon/crew/obligations.py:200) withholds the duty until its until, so the capability is met, though the deferral is stored off the ledger rather than on it.",
+    "manifest": "read; the base arm at 9e5081bb is 4 failed/75 passed EXIT=1 naming the four new ids, the head arm at 732c29a45 is 79 passed EXIT=0, the negative control reads 3 failed/1 passed, and the load-sensitive snapshot ids are shown failing at base too, so neither is added by this change.",
+    "write_paths": "the two delta commits touch exactly reckon/crew/runs.py, reckon/crew/obligations.py, tests/test_ack_after_promotion.py and the evidence fragment; the _mounted_ledger_roots -> _mounted_project_roots rename leaves no stale reference in code or tests."
+  },
+  "justifications": {
+    "durability": "the new case (tests/test_ack_after_promotion.py:216) asserts the state bytes are identical and git status --porcelain is empty after acknowledging a promoted run, and it reddens when the promoted branch is removed; the expiry and refusal cases read the obligations reader's output rather than a value the test handed in, and the negative control reproduces 3 failed/1 passed.",
+    "evidence": "gate-base2.log carries the 9e5081bb revision header and 4 failures, gate-head-arm7.log carries the 732c29a45 header and 79 passed, and my independent negative control matches the recorded 3 failed/1 passed; the deduction is the fragment's porcelain quote, which names M docs/state/<project>/crew.json while the cited log shows the aggregate untracked and the per-run file modified.",
+    "fit": "the new file store follows the module's reader/writer idiom, uses the shared atomic _write_json, and ruff check and ruff format --check report no finding over the three changed Python paths; the crew ack help text at reckon/cli.py:5490 and :5504 still says a live run only.",
+    "goal_fidelity": "reckon/crew/runs.py:1043 records a promoted run's deferral with a reason and an expiry, and reckon/crew/obligations.py:200 withholds the duty while it is in force and returns it past the until, which is what section 25 asks a promoted remainder to be able to do; the storage moved off the ledger record the goal names, deliberately, because writing through the ledger's writer rewrote committed state.",
+    "scope_discipline": "git show --stat over 732c29a45 and dc4eaf3cd touches only the four paths named for this review, the rename is internal with no dead reference left behind, and nothing the goal does not imply was changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 25 asks that a promoted run's deliberate remainder be acknowledged with a reason and expire when the condition clears; record_run_acknowledgement (reckon/crew/runs.py:1043) writes a per-run deferral file when no live pointer exists and _acknowledgements_in_force (reckon/crew/obligations.py:200) withholds the duty until its until, so the capability is met, though the deferral is stored off the ledger rather than on it.\nVERDICT done_when: tests/test_ack_after_promotion.py promotes a held tree, acknowledges it, asserts the duty leaves the stop path (line 139), returns past its until (lines 153-170), and is refused with no reason (line 180); at base 9e5081bb all four cases fail on 'no live run' (gate-base2.log, 4 failed) and at head all pass (gate-head-arm7.log, 79 passed); my independent negative control, replacing the promoted branch with the live-pointer refusal in a scratch copy, reproduces 3 failed/1 passed, EXIT=1.\nVERDICT write_paths: the two delta commits touch exactly reckon/crew/runs.py, reckon/crew/obligations.py, tests/test_ack_after_promotion.py and the evidence fragment; the _mounted_ledger_roots -> _mounted_project_roots rename leaves no stale reference in code or tests.\nVERDICT manifest: read; the base arm at 9e5081bb is 4 failed/75 passed EXIT=1 naming the four new ids, the head arm at 732c29a45 is 79 passed EXIT=0, the negative control reads 3 failed/1 passed, and the load-sensitive snapshot ids are shown failing at base too, so neither is added by this change.\nVERDICT diff: read commit by commit against f941d4a2; 732c29a45 replaces the ledger-record write with a per-run file under the crew home, adds the acknowledgements reader path, and adds the case asserting the repository is left untouched, while dc4eaf3cd updates the fragment to the new mechanism and the four-case arms.\nCALL_SITES: reckon/cli.py:5509, reckon/crew/obligations.py:855, reckon/hooks/coordinator_obligations.py:801, reckon/crew/obligation_snapshot.py:744\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1043 records a promoted run's deferral with a reason and an expiry, and reckon/crew/obligations.py:200 withholds the duty while it is in force and returns it past the until, which is what section 25 asks a promoted remainder to be able to do; the storage moved off the ledger record the goal names, deliberately, because writing through the ledger's writer rewrote committed state.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base2.log carries the 9e5081bb revision header and 4 failures, gate-head-arm7.log carries the 732c29a45 header and 79 passed, and my independent negative control matches the recorded 3 failed/1 passed; the deduction is the fragment's porcelain quote, which names M docs/state/<project>/crew.json while the cited log shows the aggregate untracked and the per-run file modified.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over 732c29a45 and dc4eaf3cd touches only the four paths named for this review, the rename is internal with no dead reference left behind, and nothing the goal does not imply was changed.\nSCORE durability: 18\nJUSTIFICATION durability: the new case (tests/test_ack_after_promotion.py:216) asserts the state bytes are identical and git status --porcelain is empty after acknowledging a promoted run, and it reddens when the promoted branch is removed; the expiry and refusal cases read the obligations reader's output rather than a value the test handed in, and the negative control reproduces 3 failed/1 passed.\nSCORE fit: 18\nJUSTIFICATION fit: the new file store follows the module's reader/writer idiom, uses the shared atomic _write_json, and ruff check and ruff format --check report no finding over the three changed Python paths; the crew ack help text at reckon/cli.py:5490 and :5504 still says a live run only.\nFINDING reckon/crew/runs.py:1043 follow-on: plan section 25's goal says a promoted run's remainder is 'acknowledged from the run's ledger record', but this commit stores the deferral in a per-run file under the crew home (acknowledgements/) and uses the ledger record only as an existence check, so a reader matching the goal wording to the storage looks in the wrong place; the move is the fix for the real ledger-rewrite defect and the done-when is met, but the plan and the fragment still say 'ledger record' while the deferral no longer lives there.\nFINDING reckon/crew/runs.py:1140 follow-on: recorded_promoted_acknowledgements reads every file in the acknowledgements directory on each obligations read and nothing removes a file once its until has passed, so the directory grows without bound and every expired deferral is re-parsed on every read; no sweeper exists and none is in this node's write scope.\nFINDING docs/evidence/fragments/crew-observability-truth/ack-after-promotion.html:22 follow-on: the fragment quotes the defective porcelain line as 'M docs/state/<project>/crew.json, the tracked aggregate rewritten', but the cited repro-ledger-rewrite.log shows 'M docs/state/<project>/runs/<run>.json' and '?? docs/state/<project>/crew.json' - the per-run file carries the M and the aggregate is untracked; the substantive defect is real and reproduced, but the quoted path and status letter do not match the log they cite.\nreviewed_base_sha: f941d4a26047a28d2d426892ffa260cb0dd88404\nreviewed_head_sha: dc4eaf3cd155407829358205e95391a8d740ecb5",
+  "review_run_id": "r-20261003T074122802082-review-of-ack-after-promotion",
+  "reviewed_base_sha": "f941d4a26047a28d2d426892ffa260cb0dd88404",
+  "reviewed_head_sha": "dc4eaf3cd155407829358205e95391a8d740ecb5",
+  "reviewed_run_id": "r-20261003T063805035021-ack-after-promotion",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T07:46:19.209847+00:00",
+  "total": 91
+}

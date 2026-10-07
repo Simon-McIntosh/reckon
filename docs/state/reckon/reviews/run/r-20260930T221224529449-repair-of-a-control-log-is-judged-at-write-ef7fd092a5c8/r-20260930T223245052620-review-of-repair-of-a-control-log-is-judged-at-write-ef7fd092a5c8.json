@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T22:43:58.786Z",
+  "dispatched_at": "2026-09-30T22:32:59Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff to read \u2014 the node made no commit, so its head equals its base ef7fd092a5c8f04fb3b53eb8b04c32e7b01ac944 and the landed artefact is the recorded decline alone.",
+    "done_when": "the repair done-when requires a change answering each finding or a `declined <id>: <reason>` naming it, and the manifest's landing line and evidence_inputs name f1002b13f91 and decline it with a reason, with `reckon crew check-manifest --run r-20260930T221224529449-repair-of-a-control-log-is-judged-at-write-ef7fd092a5c8` recorded at exit 0.",
+    "goal": "the node's goal is to answer finding f1002b13f91 raised against run r-20260930T213552839178-a-control-log-is-judged-at-write, and its manifest names that finding declined by id with a reason, which the repair done-when accepts as an answer; the coordinator's own resume advice (resume-1-advice.txt) directs exactly this decline, so the disposition is delivered rather than a code change.",
+    "manifest": "read at the run directory; status is complete, commits reads \"none \u2014 no commit was made\", changed_paths is empty, the finding is declined with a reason, and the negative control is waived with a reason because no answering commit exists to revert; the reviewed worktree is clean.",
+    "write_paths": "the node declares tests/test_a_control_log_is_judged_at_write.py and the two evidence paths under docs/evidence/fragments/scoring-should-stop-a-promotion and docs/figures/scoring-should-stop-a-promotion; the diff against base ef7fd092a is empty, so no path inside or outside the grant is written."
+  },
+  "justifications": {
+    "durability": "no change lands, so there is no regression surface this node could guard; the deliberate non-comparison of the control log's wording at reckon/crew/reports.py:1053 remains pinned by no test, which is the base state rather than damage this node caused.",
+    "evidence": "the manifest quotes the reproduction \u2014 audit_manifest returning [] for both a wrong-but-red log and a right one \u2014 and re-deriving it from reckon/crew/reports.py:1077-1126 confirms the reader returns [] once the log resolves and exits non-zero while comparing no wording; no gate log was captured because no change ran.",
+    "fit": "no code or symbol lands, so no naming rule is at issue, and the manifest's evidence prose states the mechanism (a log can state a mutation it never applied) rather than any plan or ticket identifier.",
+    "goal_fidelity": "the reader the finding concerns, reckon/crew/reports.py:1043-1126, is unchanged, but the node's dispatched goal was to answer the finding and its manifest names f1002b13f91 declined with the reason the coordinator's advice supplied, so the directed disposition is delivered in full.",
+    "scope_discipline": "the diff against ef7fd092a is empty and tests/test_a_control_log_is_judged_at_write.py, which the node was fenced to but shared with a concurrent node, is untouched, so nothing inside or outside the declared grant is written."
+  },
+  "node": "review-of-repair-of-a-control-log-is-judged-at-write-ef7fd092a5c8",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to answer finding f1002b13f91 raised against run r-20260930T213552839178-a-control-log-is-judged-at-write, and its manifest names that finding declined by id with a reason, which the repair done-when accepts as an answer; the coordinator's own resume advice (resume-1-advice.txt) directs exactly this decline, so the disposition is delivered rather than a code change.\nVERDICT done_when: the repair done-when requires a change answering each finding or a `declined <id>: <reason>` naming it, and the manifest's landing line and evidence_inputs name f1002b13f91 and decline it with a reason, with `reckon crew check-manifest --run r-20260930T221224529449-repair-of-a-control-log-is-judged-at-write-ef7fd092a5c8` recorded at exit 0.\nVERDICT write_paths: the node declares tests/test_a_control_log_is_judged_at_write.py and the two evidence paths under docs/evidence/fragments/scoring-should-stop-a-promotion and docs/figures/scoring-should-stop-a-promotion; the diff against base ef7fd092a is empty, so no path inside or outside the grant is written.\nVERDICT manifest: read at the run directory; status is complete, commits reads \"none \u2014 no commit was made\", changed_paths is empty, the finding is declined with a reason, and the negative control is waived with a reason because no answering commit exists to revert; the reviewed worktree is clean.\nVERDICT diff: there is no diff to read \u2014 the node made no commit, so its head equals its base ef7fd092a5c8f04fb3b53eb8b04c32e7b01ac944 and the landed artefact is the recorded decline alone.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the reader the finding concerns, reckon/crew/reports.py:1043-1126, is unchanged, but the node's dispatched goal was to answer the finding and its manifest names f1002b13f91 declined with the reason the coordinator's advice supplied, so the directed disposition is delivered in full.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest quotes the reproduction \u2014 audit_manifest returning [] for both a wrong-but-red log and a right one \u2014 and re-deriving it from reckon/crew/reports.py:1077-1126 confirms the reader returns [] once the log resolves and exits non-zero while comparing no wording; no gate log was captured because no change ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff against ef7fd092a is empty and tests/test_a_control_log_is_judged_at_write.py, which the node was fenced to but shared with a concurrent node, is untouched, so nothing inside or outside the declared grant is written.\nSCORE durability: 15\nJUSTIFICATION durability: no change lands, so there is no regression surface this node could guard; the deliberate non-comparison of the control log's wording at reckon/crew/reports.py:1053 remains pinned by no test, which is the base state rather than damage this node caused.\nSCORE fit: 17\nJUSTIFICATION fit: no code or symbol lands, so no naming rule is at issue, and the manifest's evidence prose states the mechanism (a log can state a mutation it never applied) rather than any plan or ticket identifier.\n",
+  "review_logs": [],
+  "review_run_id": "r-20260930T223245052620-review-of-repair-of-a-control-log-is-judged-at-write-ef7fd092a5c8",
+  "reviewed_base_sha": "ef7fd092a5c8f04fb3b53eb8b04c32e7b01ac944",
+  "reviewed_head_sha": "ef7fd092a5c8f04fb3b53eb8b04c32e7b01ac944",
+  "reviewed_run_id": "r-20260930T221224529449-repair-of-a-control-log-is-judged-at-write-ef7fd092a5c8",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T22:42:18.981429+00:00",
+  "total": 87
+}

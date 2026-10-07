@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:2693",
+    "reckon/mcp_views.py:1131",
+    "reckon/crew/directory.py:70",
+    "reckon/crew/recovery.py:1180",
+    "reckon/crew/recovery.py:4156",
+    "reckon/flight.py:1428"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T05:14:38.247648+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3727",
+      "text": "the launch-failed arm reads ended_exit in its fallback detail but is reachable with ended_exit None, so a pointer whose phase is launch-failed with an empty launch_failures and no exit record raises AttributeError: 'NoneType' object has no attribute 'get' instead of classifying, where the sibling reader at reckon/crew/resumption.py:635 guards the same shape with latest = failures[-1] if failures else {}."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base 2bf6587b; 2e2704be adds the exit-record reader, the classifier wiring and the eight tests, and ffc3775d adds only the 61-file population list beside the delta logs.",
+    "done_when": "the done_when names tests/test_recovery_reads_the_exit_record.py driving observe over three run directories in a temporary config home; the manifest records that run, and I re-ran the file at the reviewed head (8 passed) with the declared control independently reproduced in memory (all three cases revert to interrupted[dead-pid-no-exit]).",
+    "goal": "the node's goal is to classify a finished worker from its recorded exit rather than from a missing pid; recovery.py:2874 reads exit.json and recovery.py:3095 consults it, and my probe shows the record deciding the signalled case where no local process table can answer (probe A/D).",
+    "manifest": "read at the reviewed head; it carries two commits, the three-case gate, both delta arms with their failure-id sets (base 2 failed of 922, head 922 passed) and the declared control with its log path.",
+    "write_paths": "the node declared reckon/crew/recovery.py, the new test file, the plan page, the evidence archive and the figures directory; all nine paths in the base-to-head diff lie inside them."
+  },
+  "justifications": {
+    "durability": "the three parametrised cases redden when the reader is neutralised (probe_control_and_reach.log), but the launch-failed fallback arm at recovery.py:3727 has no case for the empty-launch_failures shape, which is why its AttributeError went unseen.",
+    "evidence": "the file the done_when names passes at the reviewed head (8 passed, review-rerun-head.log) and the declared mutation applied in memory at recovery.py:2874 reverted all three cases to interrupted[dead-pid-no-exit] (probe_control_and_reach.log).",
+    "fit": "the helpers follow the module's mapping-in and None-out style (recovery.py:2874 beside recovery.py:2561), the new row key sits with the existing liveness keys at recovery.py:3887, and neither changed path carries a plan label, a ticket reference or a version suffix.",
+    "goal_fidelity": "recovery.py:3096 consults the record only where the stored claim is not true, so the recorded end decides on the launcher's host (probe A/D) while a pointer carrying a stale true claim and read on another node still reads running (probe C).",
+    "scope_discipline": "every path in the base-to-head diff lies inside the node's declared write paths, and the additions beyond the classifier and its tests are the plan record, the evidence anchor and the gate logs the dispatch asks for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to classify a finished worker from its recorded exit rather than from a missing pid; recovery.py:2874 reads exit.json and recovery.py:3095 consults it, and my probe shows the record deciding the signalled case where no local process table can answer (probe A/D).\nVERDICT done_when: the done_when names tests/test_recovery_reads_the_exit_record.py driving observe over three run directories in a temporary config home; the manifest records that run, and I re-ran the file at the reviewed head (8 passed) with the declared control independently reproduced in memory (all three cases revert to interrupted[dead-pid-no-exit]).\nVERDICT write_paths: the node declared reckon/crew/recovery.py, the new test file, the plan page, the evidence archive and the figures directory; all nine paths in the base-to-head diff lie inside them.\nVERDICT manifest: read at the reviewed head; it carries two commits, the three-case gate, both delta arms with their failure-id sets (base 2 failed of 922, head 922 passed) and the declared control with its log path.\nVERDICT diff: read commit by commit against base 2bf6587b; 2e2704be adds the exit-record reader, the classifier wiring and the eight tests, and ffc3775d adds only the 61-file population list beside the delta logs.\nCALL_SITES: reckon/cli.py:2693, reckon/mcp_views.py:1131, reckon/crew/directory.py:70, reckon/crew/recovery.py:1180, reckon/crew/recovery.py:4156, reckon/flight.py:1428\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: recovery.py:3096 consults the record only where the stored claim is not true, so the recorded end decides on the launcher's host (probe A/D) while a pointer carrying a stale true claim and read on another node still reads running (probe C).\nSCORE evidence: 18\nJUSTIFICATION evidence: the file the done_when names passes at the reviewed head (8 passed, review-rerun-head.log) and the declared mutation applied in memory at recovery.py:2874 reverted all three cases to interrupted[dead-pid-no-exit] (probe_control_and_reach.log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the base-to-head diff lies inside the node's declared write paths, and the additions beyond the classifier and its tests are the plan record, the evidence anchor and the gate logs the dispatch asks for.\nSCORE durability: 17\nJUSTIFICATION durability: the three parametrised cases redden when the reader is neutralised (probe_control_and_reach.log), but the launch-failed fallback arm at recovery.py:3727 has no case for the empty-launch_failures shape, which is why its AttributeError went unseen.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow the module's mapping-in and None-out style (recovery.py:2874 beside recovery.py:2561), the new row key sits with the existing liveness keys at recovery.py:3887, and neither changed path carries a plan label, a ticket reference or a version suffix.\nFINDING reckon/crew/recovery.py:3727 the launch-failed arm reads ended_exit in its fallback detail but is reachable with ended_exit None, so a pointer whose phase is launch-failed with an empty launch_failures and no exit record raises AttributeError: 'NoneType' object has no attribute 'get' instead of classifying, where the sibling reader at reckon/crew/resumption.py:635 guards the same shape with latest = failures[-1] if failures else {}.",
+  "review_run_id": "r-20260925T051438247648-review-of-recovery-reads-the-exit-record",
+  "reviewed_base_sha": "2bf6587bebc9b23363b3ef7e4a1be3c025c584d3",
+  "reviewed_head_sha": "ffc3775d4dc58521b65e3c8d8b32dbf8ee89994a",
+  "reviewed_run_id": "r-20260925T043805585389-recovery-reads-the-exit-record",
+  "reviewer": "review-of-recovery-reads-the-exit-record",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T05:45:00.000000+00:00",
+  "total": 88
+}

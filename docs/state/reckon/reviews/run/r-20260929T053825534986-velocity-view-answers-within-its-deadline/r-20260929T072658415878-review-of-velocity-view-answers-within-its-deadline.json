@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:3929",
+    "reckon/cli.py:5103"
+  ],
+  "completed_at": "2026-09-29T08:38:01.061Z",
+  "dispatched_at": "2026-09-29T07:27:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-reports-its-velocity/velocity-view-answers-within-its-deadline.html",
+      "line": "76",
+      "text": "the landing record says \"The capture stage was already cached when this node started\", and manifest.md:21 repeats it as \"already present at the node base\", but the node's own first commit c65e09f3 \u2014 listed in its own commits and parented on its declared base fc7a5807 \u2014 added that cache, the base tree's reckon/velocity.py carries no _capture_project_cached or CACHE_VERSION, and the run's own base-arm log shows a warm read there matching the cold one (573.8 s against 568.9 s), so a reader credits this node with one cache layer where it landed two and looks elsewhere for the captured-history cache section 2 requires."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T053825534986-velocity-view-answers-within-its-deadline/manifest.md",
+      "line": "26",
+      "text": "measurement_log_note says the arms log \"ends EXIT=0\", but that file (velocity-timing-arms.log) ends EXIT=1 \u2014 the SyntaxError and its exit sit at the file's last two lines rather than beside the cold arm \u2014 so the reader who checks that claim against the file it points at finds the opposite."
+    },
+    {
+      "file": "tests/test_velocity_cache.py",
+      "line": "182",
+      "text": "the declared mutation, \"make the cache always rebuild from scratch when the head moves\", is recorded as failing at :182, the same-head capture count at an unchanged head \u2014 the failing call re-captures the whole window from the base (0ec2b3b0..700efd53) \u2014 so the extension assertions at :192-194, which are the ones written for a moved head, have not been shown to redline under the mutation they guard and the control exercises a broader change than the one declared."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit \u2014 c65e09f3 adds the cache root, the blob-keyed ledger and run-record reads and the extension path; 94176e32 adds the ledger-clock recovery cache keyed by repository, base and reached head; 744ce375 lets a cached capture extend when the branch name differs; 79927c3a adds the landing fragment and its figure \u2014 all inside the declared scope.",
+    "done_when": "the done-when asks for a recorded timing measurement, a head-keyed cache extended incrementally, unchanged values, the four named test files green, and a declared mutation observed to fail; the run carries the arms and equality logs (\"cold keys 18 warm keys 18\", equal: True), armed suites (5 failed on the fc7a5807 scratch tree, 20 passed at head), and a negative-control log whose first line repeats the declared string \u2014 but the arms call report where the MCP branch calls view (reckon/mcp.py:3929), and the recorded control reddened a neighbouring assertion, so those clauses rest on artefacts narrower than the wording (see FINDINGs).",
+    "goal": "the goal is that a project's captured history is cached by its checkout and first-parent head so the view answers a real repository inside the crew tool's 30 s read deadline with values unchanged; at head reckon/velocity.py:959 returns the cached capture outright when the head has not moved (:1003), extends a moved head with only the commits after the head the cache reached (reckon/velocity.py:799-801), and the run's arms measure 576.9 s cold against 5.2 s and 16.9 s warm (velocity-timing-arms.log, velocity-timing-warm.log) under the 30.0 s deadline declared at reckon/mcp.py:194.",
+    "manifest": "read; status complete, both suites carried as armed JSON keyed to their revisions with their logs, the negative-control log named as a bare path whose first line repeats the declared mutation, and the timing, profile and equality logs beside it \u2014 marred by two claims its own artefacts contradict (see FINDINGs at manifest.md:26 and the fragment's line 76).",
+    "write_paths": "the manifest declares reckon/velocity.py, tests/test_velocity_cache.py, the landing fragment and its figure directory, and git diff --stat fc7a5807..79927c3a lists exactly those four paths at 951 insertions and 123 deletions."
+  },
+  "justifications": {
+    "durability": "the assertions at tests/test_velocity_cache.py:157 and :196 compare the cached path against _uncached(repo), the raw capture, rather than against the test's own output, but the declared mutation reddened the same-head call count at :182 and the extension assertions at :192-194 were never reached.",
+    "evidence": "the base and head suites are keyed to their revisions and the timing, equality and control logs are on disk, but the manifest's log note contradicts its own log (manifest.md:26), the fragment dates a cache this node added to before the node started (fragment:76), the arms measure report where the done-when named the function the MCP view calls, and the recorded control reddened a neighbouring assertion.",
+    "fit": "the helpers at reckon/velocity.py:517-608 follow the module's own shape \u2014 a version constant, write_json_atomically, a version-mismatch entry rebuilt \u2014 and carry no plan, stage or ticket name.",
+    "goal_fidelity": "the two cache layers land in reckon/velocity.py with the same-head short circuit at :1003 and the incremental extension at :801, and the measured warm reads sit two orders inside the deadline declared at reckon/mcp.py:194.",
+    "scope_discipline": "git diff --stat fc7a5807455e3ab79184dd525cce6a4ce9bca109..79927c3a5fc1d28d90d86470550342f5004f0105 lists exactly the four declared paths and no others."
+  },
+  "node": "review-of-velocity-view-answers-within-its-deadline",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T053825534986-velocity-view-answers-within-its-deadline\n(plan the-fleet-reports-its-velocity section 2; node velocity-view-answers-within-its-deadline; role implement)\nreviewed_base_sha: fc7a5807455e3ab79184dd525cce6a4ce9bca109\nreviewed_head_sha: 79927c3a5fc1d28d90d86470550342f5004f0105\nVERDICT goal: the goal is that a project's captured history is cached by its checkout and first-parent head so the view answers a real repository inside the crew tool's 30 s read deadline with values unchanged; at head reckon/velocity.py:959 returns the cached capture outright when the head has not moved (:1003), extends a moved head with only the commits after the head the cache reached (reckon/velocity.py:799-801), and the run's arms measure 576.9 s cold against 5.2 s and 16.9 s warm (velocity-timing-arms.log, velocity-timing-warm.log) under the 30.0 s deadline declared at reckon/mcp.py:194.\nVERDICT done_when: the done-when asks for a recorded timing measurement, a head-keyed cache extended incrementally, unchanged values, the four named test files green, and a declared mutation observed to fail; the run carries the arms and equality logs (\"cold keys 18 warm keys 18\", equal: True), armed suites (5 failed on the fc7a5807 scratch tree, 20 passed at head), and a negative-control log whose first line repeats the declared string \u2014 but the arms call report where the MCP branch calls view (reckon/mcp.py:3929), and the recorded control reddened a neighbouring assertion, so those clauses rest on artefacts narrower than the wording (see FINDINGs).\nVERDICT write_paths: the manifest declares reckon/velocity.py, tests/test_velocity_cache.py, the landing fragment and its figure directory, and git diff --stat fc7a5807..79927c3a lists exactly those four paths at 951 insertions and 123 deletions.\nVERDICT manifest: read; status complete, both suites carried as armed JSON keyed to their revisions with their logs, the negative-control log named as a bare path whose first line repeats the declared mutation, and the timing, profile and equality logs beside it \u2014 marred by two claims its own artefacts contradict (see FINDINGs at manifest.md:26 and the fragment's line 76).\nVERDICT diff: read commit by commit \u2014 c65e09f3 adds the cache root, the blob-keyed ledger and run-record reads and the extension path; 94176e32 adds the ledger-clock recovery cache keyed by repository, base and reached head; 744ce375 lets a cached capture extend when the branch name differs; 79927c3a adds the landing fragment and its figure \u2014 all inside the declared scope.\nCALL_SITES: reckon/mcp.py:3929, reckon/cli.py:5103\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the two cache layers land in reckon/velocity.py with the same-head short circuit at :1003 and the incremental extension at :801, and the measured warm reads sit two orders inside the deadline declared at reckon/mcp.py:194.\nSCORE evidence: 16\nJUSTIFICATION evidence: the base and head suites are keyed to their revisions and the timing, equality and control logs are on disk, but the manifest's log note contradicts its own log (manifest.md:26), the fragment dates a cache this node added to before the node started (fragment:76), the arms measure report where the done-when named the function the MCP view calls, and the recorded control reddened a neighbouring assertion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat fc7a5807455e3ab79184dd525cce6a4ce9bca109..79927c3a5fc1d28d90d86470550342f5004f0105 lists exactly the four declared paths and no others.\nSCORE durability: 18\nJUSTIFICATION durability: the assertions at tests/test_velocity_cache.py:157 and :196 compare the cached path against _uncached(repo), the raw capture, rather than against the test's own output, but the declared mutation reddened the same-head call count at :182 and the extension assertions at :192-194 were never reached.\nSCORE fit: 20\nJUSTIFICATION fit: the helpers at reckon/velocity.py:517-608 follow the module's own shape \u2014 a version constant, write_json_atomically, a version-mismatch entry rebuilt \u2014 and carry no plan, stage or ticket name.\nFINDING docs/evidence/fragments/the-fleet-reports-its-velocity/velocity-view-answers-within-its-deadline.html:76 the landing record says \"The capture stage was already cached when this node started\", and manifest.md:21 repeats it as \"already present at the node base\", but the node's own first commit c65e09f3 \u2014 listed in its own commits and parented on its declared base fc7a5807 \u2014 added that cache, the base tree's reckon/velocity.py carries no _capture_project_cached or CACHE_VERSION, and the run's own base-arm log shows a warm read there matching the cold one (573.8 s against 568.9 s), so a reader credits this node with one cache layer where it landed two and looks elsewhere for the captured-history cache section 2 requires.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T053825534986-velocity-view-answers-within-its-deadline/manifest.md:26 measurement_log_note says the arms log \"ends EXIT=0\", but that file (velocity-timing-arms.log) ends EXIT=1 \u2014 the SyntaxError and its exit sit at the file's last two lines rather than beside the cold arm \u2014 so the reader who checks that claim against the file it points at finds the opposite.\nFINDING tests/test_velocity_cache.py:182 the declared mutation, \"make the cache always rebuild from scratch when the head moves\", is recorded as failing at :182, the same-head capture count at an unchanged head \u2014 the failing call re-captures the whole window from the base (0ec2b3b0..700efd53) \u2014 so the extension assertions at :192-194, which are the ones written for a moved head, have not been shown to redline under the mutation they guard and the control exercises a broader change than the one declared.",
+  "review_run_id": "r-20260929T072658415878-review-of-velocity-view-answers-within-its-deadline",
+  "reviewed_base_sha": "fc7a5807455e3ab79184dd525cce6a4ce9bca109",
+  "reviewed_head_sha": "79927c3a5fc1d28d90d86470550342f5004f0105",
+  "reviewed_run_id": "r-20260929T053825534986-velocity-view-answers-within-its-deadline",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T072658415878-review-of-velocity-view-answers-within-its-deadline",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T08:29:07.933345+00:00",
+  "total": 94
+}

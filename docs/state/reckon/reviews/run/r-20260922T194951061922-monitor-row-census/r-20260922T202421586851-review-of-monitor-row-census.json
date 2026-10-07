@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:4039 format_watch_transition (the renderer whose row the census measures)",
+    "reckon/crew/ticker.py:626 _model_and_effort (the model text the overflow counts are taken from)",
+    "reckon/crew/ticker.py:892 padded to MODEL=10 and reproduced against at width 160; no runtime consumer reads the artefact itself so these are the production path the counts were verified against"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T20:24:21.586851+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194951061922-monitor-row-census/manifest.md",
+      "line": "15",
+      "text": "the census guard is kept only in the run directory and in /tmp, so nothing in the repository re-runs it: a later edit to docs/research/data/monitor-row-census.json that zeroed an overflow count or broke the clip window would not fail any tracked check, and the claim in commit a727e296 that such a change would fail rather than pass quietly holds only while that run directory survives cleanup; the repair needs a tests/ path this node was not fenced to write, so it belongs to the coordinator."
+    },
+    {
+      "file": "docs/evidence/archive/the-monitor-under-measurement-landed.html",
+      "line": "16",
+      "text": "the plan-commits meta lists 91a4e14e,73cbb5c0 and omits a727e296, the commit that rewrote this anchor's clip paragraph and figure, so a reader taking the anchor's commit list as the provenance of its current text attributes the window revision to the wrong commit; the manifest names all three commits, so the repair is the one-line addition of a727e296."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 9d8ccbd5: 91a4e14e emits the data file and figure, 73cbb5c0 adds the cumulative evidence anchor, and a727e296 revises all four touched files to state the reason clip as a contiguous window 145..198 with the operating width 160 inside it rather than a single first-clip threshold at 145, which the third commit's body explains as the reason for the revision.",
+    "done_when": "satisfied on the artefact, re-derived independently rather than taken on report: re-rendering the first 1017 JSON records of the imas-efit stream through format_watch_transition at width 160 reproduced all ten compared figures exactly (denominator 1017, model-length distribution 47/101/74/795, overflow 795, alias dsv4.1-flash 795, wall 266, rate 1008, age 744, baseline 269, both-state 748, reason cut 208 differences 0), and re-rendering the named blocked row n-resolve-cross-module-refs at every width 100..220 reproduced the committed scan at all 121 widths (first clip 145, last 198, fits whole at 199, contiguous), recorded at logs/recheck_census.log and logs/recheck_width_scan.log.",
+    "goal": "the node's goal is a row census data file counting what every rendered follower cell carries across four projects, and docs/research/data/monitor-row-census.json states each required figure per project as a count over that project's record count (denominators 4025/4939/1017/1131), with the positive control and the 100..220 width sweep present in the same file.",
+    "manifest": "complete and self-locating: the orientation base sha 9d8ccbd5677dfdd1ec7a172c4f57597a010059ee resolves, the three commits 91a4e14e, 73cbb5c0, a727e296 are conventional with bodies and state why, the gate log's first line names revision a727e296 and the worktree, and the live-stream drift caveat is stated with the snapshot time, so the record outlives its writer.",
+    "write_paths": "the four declared paths are exactly the four changed paths in this worktree at the reviewed head, insert-only (1177 insertions, 0 deletions), and the plan's plan-version and plan-modified meta lines are untouched by the diff."
+  },
+  "justifications": {
+    "durability": "no tracked path re-runs the census gate, so the only thing that fails if the counts regress is the copy at runs/r-20260922T194951061922-monitor-row-census/logs/monitor_row_census_gate.py outside the repository under test, and the fence excluded tests/ so no tracked assertion could be added here.",
+    "evidence": "the gate at logs/monitor_row_census_gate.py:1 asserts presence and internal arithmetic and its result is recorded in logs/gate.log:1 with revision a727e296 and the tree named, and two independent re-derivations reproduce the counts; the deduction is that the gate checks the file's internal consistency rather than the file against the streams, so a wrong-but-consistent census would pass it.",
+    "fit": "the artefact sits at the path the plan names under docs/research/data/, the anchor follows the docs/evidence/archive/ convention, the figure is a plotted two-panel grid embedded in the anchor (the-monitor-under-measurement-landed.html:47) rather than an image of a table, commit subjects are conventional, and no name carries a plan, version or stage label.",
+    "goal_fidelity": "docs/research/data/monitor-row-census.json carries every figure the plan \u00a73 done-when names for each of the four projects, each as a count under that project's stated denominator, with the positive control and the width sweep in the same file.",
+    "scope_discipline": "git diff --stat 9d8ccbd5..a727e296 shows exactly the four declared write paths with zero deletions, and the plan diff leaves the plan-version and plan-modified meta lines untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a row census data file counting what every rendered follower cell carries across four projects, and docs/research/data/monitor-row-census.json states each required figure per project as a count over that project's record count (denominators 4025/4939/1017/1131), with the positive control and the 100..220 width sweep present in the same file.\nVERDICT done_when: satisfied on the artefact, re-derived independently rather than taken on report: re-rendering the first 1017 JSON records of the imas-efit stream through format_watch_transition at width 160 reproduced all ten compared figures exactly (denominator 1017, model-length distribution 47/101/74/795, overflow 795, alias dsv4.1-flash 795, wall 266, rate 1008, age 744, baseline 269, both-state 748, reason cut 208 differences 0), and re-rendering the named blocked row n-resolve-cross-module-refs at every width 100..220 reproduced the committed scan at all 121 widths (first clip 145, last 198, fits whole at 199, contiguous), recorded at logs/recheck_census.log and logs/recheck_width_scan.log.\nVERDICT write_paths: the four declared paths are exactly the four changed paths in this worktree at the reviewed head, insert-only (1177 insertions, 0 deletions), and the plan's plan-version and plan-modified meta lines are untouched by the diff.\nVERDICT manifest: complete and self-locating: the orientation base sha 9d8ccbd5677dfdd1ec7a172c4f57597a010059ee resolves, the three commits 91a4e14e, 73cbb5c0, a727e296 are conventional with bodies and state why, the gate log's first line names revision a727e296 and the worktree, and the live-stream drift caveat is stated with the snapshot time, so the record outlives its writer.\nVERDICT diff: read commit by commit against 9d8ccbd5: 91a4e14e emits the data file and figure, 73cbb5c0 adds the cumulative evidence anchor, and a727e296 revises all four touched files to state the reason clip as a contiguous window 145..198 with the operating width 160 inside it rather than a single first-clip threshold at 145, which the third commit's body explains as the reason for the revision.\nCALL_SITES: reckon/crew/recovery.py:4039 format_watch_transition (the renderer whose row the census measures), reckon/crew/ticker.py:626 _model_and_effort (the model text the overflow counts are taken from), reckon/crew/ticker.py:892 padded to MODEL=10 and reproduced against at width 160; no runtime consumer reads the artefact itself so these are the production path the counts were verified against\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/research/data/monitor-row-census.json carries every figure the plan \u00a73 done-when names for each of the four projects, each as a count under that project's stated denominator, with the positive control and the width sweep in the same file.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate at logs/monitor_row_census_gate.py:1 asserts presence and internal arithmetic and its result is recorded in logs/gate.log:1 with revision a727e296 and the tree named, and two independent re-derivations reproduce the counts; the deduction is that the gate checks the file's internal consistency rather than the file against the streams, so a wrong-but-consistent census would pass it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 9d8ccbd5..a727e296 shows exactly the four declared write paths with zero deletions, and the plan diff leaves the plan-version and plan-modified meta lines untouched.\nSCORE durability: 12\nJUSTIFICATION durability: no tracked path re-runs the census gate, so the only thing that fails if the counts regress is the copy at runs/r-20260922T194951061922-monitor-row-census/logs/monitor_row_census_gate.py outside the repository under test, and the fence excluded tests/ so no tracked assertion could be added here.\nSCORE fit: 19\nJUSTIFICATION fit: the artefact sits at the path the plan names under docs/research/data/, the anchor follows the docs/evidence/archive/ convention, the figure is a plotted two-panel grid embedded in the anchor (the-monitor-under-measurement-landed.html:47) rather than an image of a table, commit subjects are conventional, and no name carries a plan, version or stage label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194951061922-monitor-row-census/manifest.md:15 the census guard is kept only in the run directory and in /tmp, so nothing in the repository re-runs it: a later edit to docs/research/data/monitor-row-census.json that zeroed an overflow count or broke the clip window would not fail any tracked check, and the claim in commit a727e296 that such a change would fail rather than pass quietly holds only while that run directory survives cleanup; the repair needs a tests/ path this node was not fenced to write, so it belongs to the coordinator.\nFINDING docs/evidence/archive/the-monitor-under-measurement-landed.html:16 the plan-commits meta lists 91a4e14e,73cbb5c0 and omits a727e296, the commit that rewrote this anchor's clip paragraph and figure, so a reader taking the anchor's commit list as the provenance of its current text attributes the window revision to the wrong commit; the manifest names all three commits, so the repair is the one-line addition of a727e296.\nREVISION: a727e2965ecfdc1e24685ece3347bb92a8089bac",
+  "review_run_id": "r-20260922T202421586851-review-of-monitor-row-census",
+  "reviewed_base_sha": "9d8ccbd5677dfdd1ec7a172c4f57597a010059ee",
+  "reviewed_head_sha": "a727e2965ecfdc1e24685ece3347bb92a8089bac",
+  "reviewed_revision": "a727e2965ecfdc1e24685ece3347bb92a8089bac",
+  "reviewed_run_id": "r-20260922T194951061922-monitor-row-census",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T21:15:16.158054+00:00",
+  "total": 88
+}

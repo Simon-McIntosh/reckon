@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest left baseline_suite and after_suite empty, so the pair was measured here in scratch trees from git archive at base 0da2431e and head c367e5afa over tests/test_lane_document.py tests/test_paid_lanes_document.py (the changed module's dependency readers) plus the new tests/test_run_time_profile.py at head: base 28 passed (EXIT=0), after 33 passed (EXIT=0), zero added failures.",
+  "backend": "sonnet",
+  "base_log_revision": "0da2431ed1689887695b96739d05adb905aaafa0",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T12:32:49.134Z",
+  "dispatched_at": "2026-10-02T12:10:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/run_time_profile.py",
+      "line": "313",
+      "severity": "follow-on",
+      "text": "follow-on: run_time_profile reports its window end as `until` but calls ledger.runs with only `since`, so rows completing after `until` are still counted; the docstring at line 302 claims the rows are 'filtered to those whose completion stamp falls inside the window'. Reproduced at the reviewed head with a fixed now=2026-10-02T12:06:27.793867+00:00: rows r-20261002T114703880019-review-of-model-currency (completed 12:09:21.979Z) and r-20261002T120120598648-review-of-a-promotion-walks-the-docs-tree-once (12:23:37.103Z) both appear in the 2080-row result although both completed after the reported until (logs/window-upper-bound.log)."
+    },
+    {
+      "file": "tests/test_run_time_profile.py",
+      "line": "208",
+      "severity": "follow-on",
+      "text": "follow-on: test_the_module_is_the_one_under_test asserts only `profile_module.__file__ is not None`, which cannot detect the stale installed copy its docstring names, because a stale copy imported from site-packages also has a non-None __file__; the assertion passes whether or not the module under test is the one just written, so it guards nothing."
+    },
+    {
+      "file": "reckon/crew/run_time_profile.py",
+      "line": "281",
+      "severity": "follow-on",
+      "text": "follow-on: a size bucket's `runs` is len of the per-bucket wall list, so it counts only rows that carry a wall_seconds, while the parallel group table's `runs` at line 235 counts every member; the two tables' `runs` therefore mean different things, and a backend whose rows all lack a wall_seconds never reaches per_backend at line 267 and is dropped from size_buckets entirely even though it appears in groups."
+    }
+  ],
+  "head_log_revision": "c367e5afa108c2d29cac3443fca698660a0f2186",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site found; run_time_profile and local_lane_load have no importer at the reviewed head other than tests/test_run_time_profile.py, so the rendering picker is a later node and not this node's scope.",
+    "diff": "read the single commit c367e5afa against its parent 0da2431e; 699 insertions and zero deletions across exactly reckon/crew/run_time_profile.py (380 lines), tests/test_run_time_profile.py (211 lines) and docs/evidence/fragments/one-typesafe-model-picker/run-time-profile.html (108 lines).",
+    "done_when": "the module derives the two figures the node names - a per-group run-time distribution (median and nearest-rank p90 of wall_seconds, median output tokens, pass fraction over closed verdicts) and a per-backend size bucket table keyed on time_budget with output-token fallback named - plus local_lane_load (running, waiting, headroom, worker_slots, mean_tokens_per_second); the fragment publishes the live 14-day window (2075 rows, 44 groups) and a lane reading taken at 12:06:32Z.",
+    "goal": "the node's goal is to derive per-lane return-time figures and local-lane load in a module of their own for the router's state; reckon/crew/run_time_profile.py:292 run_time_profile and run_time_profile.py:334 local_lane_load are that module, matching the lead's \u00a75 direction ('returns the distribution of recorded run times by effort and node size ... and the local lane's current load').",
+    "manifest": "read; status complete with commits c367e5afa, landing, tests and test_logs populated; baseline_suite and after_suite are left empty, so added failures were measured independently here.",
+    "write_paths": "the reviewed manifest declares reckon/crew/run_time_profile.py, tests/test_run_time_profile.py, the run-time-profile fragment and a figures dir; the single commit touches the module, the test file and the fragment only, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_run_time_profile.py runs five synthetic-row tests against a patched ledger.runs so the live ledger is never read, and the recorded negative control (p90 computed as the median) reddens the percentile test at EXIT=1; the guard is weakened only by test_the_module_is_the_one_under_test:208, which asserts a condition no stale import can violate.",
+    "evidence": "the gate reproduces at head - tests/test_run_time_profile.py 5 passed at c367e5afa (gate-head.log, and the reviewed run's own gate.log) - and the fragment's structural figures reproduce: run_time_profile at the fragment's fixed now returns 44 groups with the clive/high/implement/exact row at 366 runs, median 2031.5, p90 9939. The row count moves (2075 to 2080) because rows completing after the reported until are included, which the window finding records.",
+    "fit": "reckon/crew/run_time_profile.py follows the repo's stdlib-and-dataclass style, ruff check reports no findings and ruff format --check reports both files already formatted, and neither file carries a plan label or plan referent; the size-bucket `runs` meaning at run_time_profile.py:281 is the only fit note.",
+    "goal_fidelity": "run_time_profile.py:292 reports per-shape groups with nearest-rank p90 and pass fraction and per-backend size buckets keyed on the row's declared time_budget with output-token fallback named, and local_lane_load.py:334 reports running, waiting, headroom, worker slots and mean tokens per second with every unpublished field None - exactly the two figures \u00a75's node description asks for; the deduction is the reported `until` not bounding the returned rows.",
+    "scope_discipline": "the commit c367e5afa is a pure addition of 699 lines across the three declared write paths - reckon/crew/run_time_profile.py, tests/test_run_time_profile.py and the run-time-profile fragment - with no edit to any existing file and no out-of-scope path."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to derive per-lane return-time figures and local-lane load in a module of their own for the router's state; reckon/crew/run_time_profile.py:292 run_time_profile and run_time_profile.py:334 local_lane_load are that module, matching the lead's \u00a75 direction ('returns the distribution of recorded run times by effort and node size ... and the local lane's current load').\nVERDICT done_when: the module derives the two figures the node names - a per-group run-time distribution (median and nearest-rank p90 of wall_seconds, median output tokens, pass fraction over closed verdicts) and a per-backend size bucket table keyed on time_budget with output-token fallback named - plus local_lane_load (running, waiting, headroom, worker_slots, mean_tokens_per_second); the fragment publishes the live 14-day window (2075 rows, 44 groups) and a fresh lane reading.\nVERDICT write_paths: the reviewed manifest declares reckon/crew/run_time_profile.py, tests/test_run_time_profile.py, the run-time-profile fragment and a figures dir; the single commit touches the module, the test file and the fragment only, all inside the declared scope.\nVERDICT manifest: read; status complete with commits c367e5afa, landing, tests and test_logs; baseline_suite and after_suite are empty, so added failures were measured independently here (base 28 passed, after 33 passed, zero added).\nVERDICT diff: read the single commit c367e5afa against its parent 0da2431e; 699 insertions, zero deletions, across reckon/crew/run_time_profile.py, tests/test_run_time_profile.py and the fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: run_time_profile.py:292 reports per-shape groups with nearest-rank p90 and pass fraction and per-backend size buckets keyed on the row's declared time_budget with output-token fallback named, and local_lane_load.py:334 reports running, waiting, headroom, worker slots and mean tokens per second with every unpublished field None - exactly the two figures \u00a75's node description asks for; the deduction is the reported `until` not bounding the returned rows.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate reproduces at head - tests/test_run_time_profile.py 5 passed at c367e5afa - and the fragment's structural figures reproduce (44 groups, clive/high/implement/exact at 366 runs, median 2031.5, p90 9939); the row count moves (2075 to 2080) because rows completing after the reported until are counted, which the window finding records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit c367e5afa is a pure addition of 699 lines across the three declared write paths with no edit to any existing file and no out-of-scope path.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_run_time_profile.py runs five synthetic-row tests against a patched ledger.runs so the live ledger is never read, and the recorded negative control (p90 computed as the median) reddens the percentile test at EXIT=1; the guard is weakened only by test_the_module_is_the_one_under_test:208, which asserts a condition no stale import can violate.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/run_time_profile.py follows the repo's stdlib style, ruff check reports no findings and ruff format --check reports both files formatted, and neither file carries a plan label; the size-bucket `runs` meaning at run_time_profile.py:281 is the only fit note.\nFINDING reckon/crew/run_time_profile.py:313 follow-on: run_time_profile reports its window end as `until` but calls ledger.runs with only `since`, so rows completing after `until` are still counted; the docstring claims rows are filtered to those inside the window. Reproduced at the reviewed head with now=2026-10-02T12:06:27.793867+00:00: two rows completed after until (12:09:21.979Z, 12:23:37.103Z) appear in the 2080-row result.\nFINDING tests/test_run_time_profile.py:208 follow-on: test_the_module_is_the_one_under_test asserts only `profile_module.__file__ is not None`, which cannot detect the stale installed copy its docstring names, because a stale copy also has a non-None __file__; it guards nothing.\nFINDING reckon/crew/run_time_profile.py:281 follow-on: a size bucket's `runs` counts only rows carrying a wall_seconds, while the group table's `runs` counts every member, so the two tables' `runs` differ in meaning; a backend whose rows all lack a wall_seconds is dropped from size_buckets entirely.",
+  "review_run_id": "r-20261002T121007442055-review-of-run-time-profile",
+  "reviewed_base_sha": "0da2431ed1689887695b96739d05adb905aaafa0",
+  "reviewed_head_sha": "c367e5afa108c2d29cac3443fca698660a0f2186",
+  "reviewed_run_id": "r-20261002T114913948587-run-time-profile",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:30:00Z",
+  "total": 90
+}

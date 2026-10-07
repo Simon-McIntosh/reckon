@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absence_control": "a missing log returns (None, []) - unmeasured, never a measured zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T113249250875-default-scope-is-the-nodes-own-fragment/gate-head.log",
+    "arms_green": "both arm logs end green with exit 0 over the same three gate files (31 passed at base, 33 at head), and I reproduced both arms independently (my gates/rev-base-gate.log, gates/rev-head-gate.log)",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T113249250875-default-scope-is-the-nodes-own-fragment/gate-base.log",
+    "count_derivation": "set difference of FAILED/ERROR node ids over the reviewed run's own gate-base.log and gate-head.log, computed with review.added_failures_from_gate_logs (my run's logs-added-failures-derivation.log); the reviewed manifest's baseline_suite/after_suite hold prose, so annotate_review_of_run resolves no log and renders this count unmeasured in the read-time view while the stored record keeps the derivation",
+    "read_time_view": "annotate_review_of_run over the reviewed run's manifest returns added_failure_count None with the 'unmeasured: the reviewed manifest names no base gate log' note (verified against the stored record)"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3321 (plan_dispatch grants the default fragment)",
+    "reckon/crew/dispatch.py:4273 (peer scope filtering via _peer_scopes_without_shared_landing_paths)",
+    "reckon/crew/prompts.py:357 (compose_prompt embeds PLAN_LANDING_CONTRACT)",
+    "reckon/crew/routing.py:1831 (context estimator's granted-path set)"
+  ],
+  "completed_at": "2026-09-28T12:56:57.004Z",
+  "dispatched_at": "2026-09-28T12:17:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1831",
+      "text": "the context estimator still derives its granted-path set from _shared_landing_paths, the set this commit retired as the default grant, so a read of the plan HTML, the cumulative evidence record or the granted figure topic is still stamped provenance \"granted\" (routing.py:1849) and exempted from the estimate while the node's actual grant is now its own fragment."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1415",
+      "text": "the new warning loop at :1413-1420 introduces a PERF401 finding into a module that carried seven before the commit, so the change adds a lint finding where the repository rule requires none."
+    },
+    {
+      "file": "tests/test_shared_landing_paths.py",
+      "line": "155",
+      "text": "the rewritten test file adds three ruff findings (:155 PERF401, :274 W292 no newline at end of file, :205 PIE810) and is the only file the commit flips from formatted to unformatted (ruff format --diff hunks at :125, :247, :270), taking the five touched Python files from 10 findings at base to 14 at head."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T113249250875-default-scope-is-the-nodes-own-fragment/manifest.md",
+      "line": "19",
+      "text": "the suite fields carry prose rather than a resolvable log reference, so review.py:_gate_log_path returns the sentence, _read_gate_log returns None and annotate_review_of_run reports this run's added-failure count unmeasured even though the two named arm logs exist in the same run directory and show no added failures."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 4b05b1d7 -- one commit, f6e41cc7, +391/-121 over eight files, of which dispatch.py (+75/-13) and prompts.py (+25/-9) carry the production delta, the three docs files are pure additions (13/0, 61/0, 43/0) touching no plan-version or plan-modified meta line, and the rewritten test file (+146/-79) replaces the two legacy cases with six that drive the real dispatcher.",
+    "done_when": "the done-when asks for a six-dry-run-node disjointness test and a prompt fixture, and tests/test_shared_landing_paths.py:151 builds six nodes through the real dispatch.plan_dispatch asserting pairwise disjointness in both directions (:137) while :236 composes a plan prompt and asserts the fragment is present and the three shared paths absent; the manifest's tests: line records 33 passed at head and 31 at base, and I reproduced both arms independently (my gates/rev-head-gate.log 33 passed exit 0 at f6e41cc7 in the reviewed worktree, gates/rev-base-gate.log 31 passed exit 0 in a scratch export of 4b05b1d7).",
+    "goal": "the node goal is to replace a node's three shared landing paths (the plan HTML, the plan's cumulative evidence record, the plan-wide figure topic) with its own fragment, and commit f6e41cc7 lands exactly that: reckon/crew/dispatch.py:1349 derives docs/evidence/fragments/<plan>/<node-id>.html and docs/figures/<plan>/<node-id>/, :1389 grants them by default and warns when a declared path resolves into the retired shared set (:1411-1420), and reckon/crew/prompts.py:69 rewrites PLAN_LANDING_CONTRACT to name the fragment and one landing: manifest line.",
+    "manifest": "manifest.md reads complete with both arm logs, the gate command and its result, an additive plan landing record, and a negative_control_log whose first line repeats the declared mutation verbatim, but its baseline_suite/after_suite fields carry a prose sentence naming gate-base.log and gate-head.log instead of a resolvable log reference (manifest.md:19-20), so the production read path resolves no log and renders the added-failure count unmeasured for this run.",
+    "write_paths": "the declared fence holds six paths (reckon/crew/dispatch.py, reckon/crew/prompts.py, tests/test_shared_landing_paths.py, docs/plans/a-landing-record-never-conflicts.html, docs/evidence/archive/a-landing-record-never-conflicts-landed.html, docs/figures/a-landing-record-never-conflicts/) and the commit touches eight, the two extra being tests/test_brief_prompt.py and tests/test_crew_dispatch_guard.py, which lie outside the fence but are required green at exit 0 by the node's own FENCE-EVIDENCE text and are disclosed at manifest.md:25."
+  },
+  "justifications": {
+    "durability": "the disjointness assertion is proven sensitive -- the declared mutation restoring the shared record reddens it in all fifteen node pairs (negative-control.log, exit 1) -- and tests/test_shared_landing_paths.py:117 pins the fragment path as a literal against production output.",
+    "evidence": "the gate asserts the done-when's own measure (tests/test_shared_landing_paths.py:151 six-node disjointness, :236 prompt fixture) and both arms are recorded and independently reproducible, but the manifest's prose suite fields (manifest.md:19-20) leave the run's suite evidence unreadable to the review read path.",
+    "fit": "the change follows the surrounding module-private-helper idiom with docstrings in the house voice, but the commit adds four ruff findings (reckon/crew/dispatch.py:1415, tests/test_shared_landing_paths.py:155, :205, :274) and leaves tests/test_shared_landing_paths.py newly unformatted, against the repository rule that a commit adds no findings.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1349 and :1389 give every plan node its own fragment by default and warn on an explicitly declared shared record, which is the goal's replacement in full.",
+    "scope_discipline": "two of the eight changed paths, tests/test_brief_prompt.py and tests/test_crew_dispatch_guard.py, fall outside the declared fence at manifest.md:25, disclosed and forced by the node's own gate text, and every other path is inside it with the docs edits additive-only."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to replace a node's three shared landing paths (the plan HTML, the plan's cumulative evidence record, the plan-wide figure topic) with its own fragment, and commit f6e41cc7 lands exactly that: reckon/crew/dispatch.py:1349 derives docs/evidence/fragments/<plan>/<node-id>.html and docs/figures/<plan>/<node-id>/, :1389 grants them by default and warns when a declared path resolves into the retired shared set (:1411-1420), and reckon/crew/prompts.py:69 rewrites PLAN_LANDING_CONTRACT to name the fragment and one landing: manifest line.\nVERDICT done_when: the done-when asks for a six-dry-run-node disjointness test and a prompt fixture, and tests/test_shared_landing_paths.py:151 builds six nodes through the real dispatch.plan_dispatch asserting pairwise disjointness in both directions (:137) while :236 composes a plan prompt and asserts the fragment is present and the three shared paths absent; the manifest's tests: line records 33 passed at head and 31 at base, and I reproduced both arms independently (my gates/rev-head-gate.log 33 passed exit 0 at f6e41cc7 in the reviewed worktree, gates/rev-base-gate.log 31 passed exit 0 in a scratch export of 4b05b1d7).\nVERDICT write_paths: the declared fence holds six paths (reckon/crew/dispatch.py, reckon/crew/prompts.py, tests/test_shared_landing_paths.py, docs/plans/a-landing-record-never-conflicts.html, docs/evidence/archive/a-landing-record-never-conflicts-landed.html, docs/figures/a-landing-record-never-conflicts/) and the commit touches eight, the two extra being tests/test_brief_prompt.py and tests/test_crew_dispatch_guard.py, which lie outside the fence but are required green at exit 0 by the node's own FENCE-EVIDENCE text and are disclosed at manifest.md:25.\nVERDICT manifest: manifest.md reads complete with both arm logs, the gate command and its result, an additive plan landing record, and a negative_control_log whose first line repeats the declared mutation verbatim, but its baseline_suite/after_suite fields carry a prose sentence naming gate-base.log and gate-head.log instead of a resolvable log reference (manifest.md:19-20), so the production read path resolves no log and renders the added-failure count unmeasured for this run.\nVERDICT diff: read commit by commit against base 4b05b1d7 -- one commit, f6e41cc7, +391/-121 over eight files, of which dispatch.py (+75/-13) and prompts.py (+25/-9) carry the production delta, the three docs files are pure additions (13/0, 61/0, 43/0) touching no plan-version or plan-modified meta line, and the rewritten test file (+146/-79) replaces the two legacy cases with six that drive the real dispatcher.\nCALL_SITES: reckon/crew/dispatch.py:3321 (plan_dispatch grants the default fragment), reckon/crew/dispatch.py:4273 (peer scope filtering via _peer_scopes_without_shared_landing_paths), reckon/crew/prompts.py:357 (compose_prompt embeds PLAN_LANDING_CONTRACT), reckon/crew/routing.py:1831 (context estimator's granted-path set)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1349 and :1389 give every plan node its own fragment by default and warn on an explicitly declared shared record, which is the goal's replacement in full.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate asserts the done-when's own measure (tests/test_shared_landing_paths.py:151 six-node disjointness, :236 prompt fixture) and both arms are recorded and independently reproducible, but the manifest's prose suite fields (manifest.md:19-20) leave the run's suite evidence unreadable to the review read path.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: two of the eight changed paths, tests/test_brief_prompt.py and tests/test_crew_dispatch_guard.py, fall outside the declared fence at manifest.md:25, disclosed and forced by the node's own gate text, and every other path is inside it with the docs edits additive-only.\nSCORE durability: 18\nJUSTIFICATION durability: the disjointness assertion is proven sensitive -- the declared mutation restoring the shared record reddens it in all fifteen node pairs (negative-control.log, exit 1) -- and tests/test_shared_landing_paths.py:117 pins the fragment path as a literal against production output.\nSCORE fit: 15\nJUSTIFICATION fit: the change follows the surrounding module-private-helper idiom with docstrings in the house voice, but the commit adds four ruff findings (reckon/crew/dispatch.py:1415, tests/test_shared_landing_paths.py:155, :205, :274) and leaves tests/test_shared_landing_paths.py newly unformatted, against the repository rule that a commit adds no findings.\nFINDING reckon/crew/routing.py:1831 the context estimator still derives its granted-path set from _shared_landing_paths, the set this commit retired as the default grant, so a read of the plan HTML, the cumulative evidence record or the granted figure topic is still stamped provenance \"granted\" (routing.py:1849) and exempted from the estimate while the node's actual grant is now its own fragment.\nFINDING reckon/crew/dispatch.py:1415 the new warning loop at :1413-1420 introduces a PERF401 finding into a module that carried seven before the commit, so the change adds a lint finding where the repository rule requires none.\nFINDING tests/test_shared_landing_paths.py:155 the rewritten test file adds three ruff findings (:155 PERF401, :274 W292 no newline at end of file, :205 PIE810) and is the only file the commit flips from formatted to unformatted (ruff format --diff hunks at :125, :247, :270), taking the five touched Python files from 10 findings at base to 14 at head.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T113249250875-default-scope-is-the-nodes-own-fragment/manifest.md:19 the suite fields carry prose rather than a resolvable log reference, so review.py:_gate_log_path returns the sentence, _read_gate_log returns None and annotate_review_of_run reports this run's added-failure count unmeasured even though the two named arm logs exist in the same run directory and show no added failures.",
+  "review_run_id": "r-20260928T121726739411-review-of-default-scope-is-the-nodes-own-fragment",
+  "reviewed_base_sha": "4b05b1d77052b4e07879277ca69d05088497859a",
+  "reviewed_head_sha": "f6e41cc7d4890ad0c20729ba4a5395bb62422c21",
+  "reviewed_run_id": "r-20260928T113249250875-default-scope-is-the-nodes-own-fragment",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T12:49:47.547479+00:00",
+  "total": 84
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured, and repository-derived rather than claimed: reckon.crew.review.annotate_review_of_run against this run's own manifest.md returns count=None with the note that the manifest names no base gate log. The reviewed run took no baseline_suite/after_suite pair, and a base arm over its three-file gate command would not be meaningful because its test file does not exist at the base revision. The run's own gate logs are logs/gate-repair.log and logs/gate-green.log; both are head arms and both are green, and the reviewer re-ran the same three files at head 65f5a378 with 38 passed EXIT=0, logged at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T051840709345-review-of-served-and-audited-records-are-composed/logs/verify-gate-at-65f5a378.log.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:Handler.do_GET",
+    "reckon/doccheck.py:1812",
+    "reckon/mcp.py:4180"
+  ],
+  "completed_at": "2026-09-28T06:04:45.475Z",
+  "dispatched_at": "2026-09-28T05:18:55Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "2036",
+      "text": "_evidence_record_plan is duplicated verbatim in reckon/doccheck.py:1211, so the two record spellings the plan fixes in one place live in two modules and a third spelling must be added twice, while reckon/evidence.py:396 _record_evidence_dir already owns that spelling knowledge."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "2045",
+      "text": "the record route is decided by filename and directory name rather than by the document's own record meta, so an archival rollup such as docs/evidence/archive/codex-agent-context-compatibility-s2-s3-landed.html, which is present in this corpus and has no plan of that slug, is routed through the composer and audited as a record; it composes to its own bytes today only because no fragments directory shares its pseudo-slug, so the guard is a name rather than the record's identity."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read one change at a time; 32d932b2 carries the two readers and the test file, cc44c453 carries the observable fallback and the widened coverage, 53ceb356 and 65f5a378 carry only the plan section and the evidence anchor, and nothing outside the two readers the goal names is changed.",
+    "done_when": "the done_when names tests/test_readers_compose_the_record.py, its three assertions, exit 0, the reuse-map citation and the negative control; the manifest records 38 passed EXIT=0 in logs/gate-repair.log, cites the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-record-and-promotion/reuse-map.md whose rows serve.py:2052 _send_file and doccheck.py:1211 audit_file I confirmed present, and names logs/negative-control-repair.log, whose first line repeats the mutation and whose run is red on both served-bytes cases plus the route fallback; an independent re-run of the three gate files at head 65f5a378 passed 38/38 EXIT=0, and my own mutation run reddened the same three cases.",
+    "goal": "the node goal is to route the served evidence record and audit-doc through compose_landed_record; reckon/serve.py:2113 calls the composer from the record branch of Handler.do_GET and reckon/doccheck.py:1248 calls it from _composed_record_text, so both readers the goal names read composed bytes.",
+    "manifest": "read; it states the gate command and result, names both gate logs and the negative-control log, its negative_control_note matches that log, and its evidence_inputs records the reuse-map rows and the four repair answers; its baseline_suite and after_suite fields are empty, so the annotated added-failure count derives as unmeasured rather than zero.",
+    "write_paths": "read the manifest's six declared paths; the diff from base 8ab4d4b8 to head 65f5a378 lists exactly those six with 474 insertions and 2 deletions, and no plan-"
+  },
+  "justifications": {
+    "durability": "reinstating the regression (reckon/serve.py:2735 falling through to _send_file) reddens both served-bytes parametrisations and the route-fallback case, and each added assertion names the condition that fails it, including the fragment-only img-relative-src that the raw record's own audit does not report.",
+    "evidence": "the reviewed run's three gate logs record the gate at exit 0 and the mutation red, and my independent re-run at head 65f5a378 (38 passed, EXIT=0) plus my own mutation run reproduce both, but the reviewed manifest names no baseline_suite or after_suite gate log so the added-failure count is unmeasured.",
+    "fit": "the composer is reused rather than reimplemented and the ETag, no-cache and 304 handling at reckon/serve.py:2118 mirrors _send_file at :2072, but _evidence_record_plan at reckon/serve.py:2036 is duplicated verbatim at reckon/doccheck.py:1211.",
+    "goal_fidelity": "reckon/serve.py:2735 routes every served record through the composer called at reckon/serve.py:2113, and reckon/doccheck.py:1260 routes every audited record through the call at :1248, which is exactly what the goal states.",
+    "scope_discipline": "the diff from base 8ab4d4b8 to head 65f5a378 lists only the six declared paths, and the docs changes touch the plan and record without the plan-version or plan-modified meta lines."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to route the served evidence record and audit-doc through compose_landed_record; reckon/serve.py:2113 calls the composer from the record branch of Handler.do_GET and reckon/doccheck.py:1248 calls it from _composed_record_text, so both readers the goal names read composed bytes.\nVERDICT done_when: the done_when names tests/test_readers_compose_the_record.py, its three assertions, exit 0, the reuse-map citation and the negative control; the manifest records 38 passed EXIT=0 in logs/gate-repair.log, cites the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-record-and-promotion/reuse-map.md whose rows serve.py:2052 _send_file and doccheck.py:1211 audit_file I confirmed present, and names logs/negative-control-repair.log, whose first line repeats the mutation and whose run is red on both served-bytes cases plus the route fallback; an independent re-run of the three gate files at head 65f5a378 passed 38/38 EXIT=0, and my own mutation run reddened the same three cases.\nVERDICT write_paths: read the manifest's six declared paths; the diff from base 8ab4d4b8 to head 65f5a378 lists exactly those six with 474 insertions and 2 deletions, and no plan-\nversion or plan-modified meta line is touched.\nVERDICT manifest: read; it states the gate command and result, names both gate logs and the negative-control log, its negative_control_note matches that log, and its evidence_inputs records the reuse-map rows and the four repair answers; its baseline_suite and after_suite fields are empty, so the annotated added-failure count derives as unmeasured rather than zero.\nVERDICT diff: read one change at a time; 32d932b2 carries the two readers and the test file, cc44c453 carries the observable fallback and the widened coverage, 53ceb356 and 65f5a378 carry only the plan section and the evidence anchor, and nothing outside the two readers the goal names is changed.\nCALL_SITES: reckon/serve.py:Handler.do_GET, reckon/doccheck.py:1812, reckon/mcp.py:4180\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/serve.py:2735 routes every served record through the composer called at reckon/serve.py:2113, and reckon/doccheck.py:1260 routes every audited record through the call at :1248, which is exactly what the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's three gate logs record the gate at exit 0 and the mutation red, and my independent re-run at head 65f5a378 (38 passed, EXIT=0) plus my own mutation run reproduce both, but the reviewed manifest names no baseline_suite or after_suite gate log so the added-failure count is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from base 8ab4d4b8 to head 65f5a378 lists only the six declared paths, and the docs changes touch the plan and record without the plan-version or plan-modified meta lines.\nSCORE durability: 20\nJUSTIFICATION durability: reinstating the regression (reckon/serve.py:2735 falling through to _send_file) reddens both served-bytes parametrisations and the route-fallback case, and each added assertion names the condition that fails it, including the fragment-only img-relative-src that the raw record's own audit does not report.\nSCORE fit: 18\nJUSTIFICATION fit: the composer is reused rather than reimplemented and the ETag, no-cache and 304 handling at reckon/serve.py:2118 mirrors _send_file at :2072, but _evidence_record_plan at reckon/serve.py:2036 is duplicated verbatim at reckon/doccheck.py:1211.\nFINDING reckon/serve.py:2036 _evidence_record_plan is duplicated verbatim in reckon/doccheck.py:1211, so the two record spellings the plan fixes in one place live in two modules and a third spelling must be added twice, while reckon/evidence.py:396 _record_evidence_dir already owns that spelling knowledge.\nFINDING reckon/serve.py:2045 the record route is decided by filename and directory name rather than by the document's own record meta, so an archival rollup such as docs/evidence/archive/codex-agent-context-compatibility-s2-s3-landed.html, which is present in this corpus and has no plan of that slug, is routed through the composer and audited as a record; it composes to its own bytes today only because no fragments directory shares its pseudo-slug, so the guard is a name rather than the record's identity.\nreviewed_base_sha: 8ab4d4b873b2ef3976428938ff3e736ba68b5dd5\nreviewed_head_sha: 65f5a37821b9a6e815891eda15e8d49995deaad6",
+  "review_run_id": "r-20260928T051840709345-review-of-served-and-audited-records-are-composed",
+  "reviewed_base_sha": "8ab4d4b873b2ef3976428938ff3e736ba68b5dd5",
+  "reviewed_head_sha": "65f5a37821b9a6e815891eda15e8d49995deaad6",
+  "reviewed_run_id": "r-20260927T191508209015-served-and-audited-records-are-composed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T05:35:58.503372+00:00",
+  "total": 97
+}

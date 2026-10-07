@@ -1,0 +1,107 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:33:27.991Z",
+  "dispatched_at": "2026-10-06T06:29:57Z",
+  "findings": [
+    {
+      "anchor": "scripts/import_runs_into_store.py:1",
+      "id": "reuse_search-1",
+      "reason": "the plan should name scripts/import_runs_into_store.py as the prior art its import script follows (idempotency, dry-run, exit contract), which changes \u00a75's text and its done-when.",
+      "text": "\u00a75 adds a one-shot importer scripts/import_review_store.py and states only that it \"runs once per host\"; the tree already carries scripts/import_runs_into_store.py, a re-runnable `--project`/`--root` importer for the same committed-store family that explicitly documents its idempotency contract (\"a second immediate pass reports zero rows imported\"). \u00a75 should follow that shape and cite it, not present a fresh script as if the pattern did not exist",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html#s3",
+      "id": "reuse_search-2",
+      "reason": "the section must name the symbol that actually owns the write (`plan_review.store_delivered_report`) or state that a-plan-is-reviewed-before-it-is-built \u00a723 renames it, so the implementer changes the owner rather than inventing a new one.",
+      "text": "\u00a73 names `plan_review.store_delivered_reviews` as \"the function that stores a delivered plan review\", but no such symbol exists (`grep -rn store_delivered_reviews reckon/ --include=*.py` \u2192 0 matches); the real function is `store_delivered_report` in reckon/crew/plan_review.py:905, and reckon/crew/recovery.py:534 already cites that singular name. The plan asserts it will change where that function writes; a plan that names a symbol the tree does not carry cannot be implemented against it as written",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:618",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name the owner to repoint (plan_review.py for the store listing/read, recovery.py for head selection) or state explicitly that those functions are re-homed into review.py, so the change extends one reader instead of standing a second beside it.",
+      "text": "\u00a73's Reads row says \"One reader, extending reckon/crew/review.py, serves select_review_for_head, list_plan_reviews, the gate and acceptance\", but review.py does not own those functions: `list_plan_reviews` and `read_plan_review` live in reckon/crew/plan_review.py (line 618, 568) and `select_review_for_head` lives in reckon/crew/recovery.py (line 315); review.py owns only the host store primitives (`review_store_root`, `review_path`, `store_review`, `read_review`, `stored_record`). Extending review.py with a committed-then-staging reader therefore forks the read logic that plan_review.py and recovery.py already own, which is exactly the second-owner drift the reviewed plan warns of in \u00a71",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:1657",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must either name the extension to `_commit_state_write` (accept a set of paths, an edit to its owner in ledger.py) or drop the no-extra-commit claim, which changes \u00a73's write-path row and its done-when.",
+      "text": "\u00a73 claims the record \"is written into the committed store in that same state write, so it travels in the ledger commit the promotion already makes and no commit is added\", but `_commit_state_write(project, subject, body, path, what)` stages and commits exactly one path (`git add -- <relative_path>`, `git commit --only ... -- <relative_path>`), and the review record's path (`docs/state/<project>/reviews/\u2026json`) is not the run ledger row's path (`docs/state/<project>/crew.json`). One call cannot carry both, so the stated \"no commit is added\" is not achievable through the current signature",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html#s7",
+      "id": "interface_budget-1",
+      "reason": "the rubric requires the section to name what it retires or to state why nothing can be; \u00a77 must add that sentence (or fold the hold onto an existing settable scalar) for the added path to be accounted.",
+      "text": "\u00a77 adds a new settable path `review_hold` through the `set` op \u2014 whose targets are enumerated in reckon/mcp.py:1703 (artifact scalars, decisions, followups, sprint/milestone/blocker/project fields, review scalars, the priority list), so a new path is new surface \u2014 and a new `plan-review-hold` meta scalar on top of the supplied counts (public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23); the section states it reuses `PLAN_METADATA_SCALARS` and adds no op, but names nothing it retires or merges and does not account for the new settable path",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "edd7fffe0fbd3212da7e16f4a821c28bfff9d63b1016fb0d74c54445fafbdacf",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "e4e34290",
+      "reason": "deferred to the section 3 revision made before it dispatches: it will repoint list_plan_reviews and read_plan_review in plan_review.py and select_review_for_head in recovery.py rather than add a reader in review.py",
+      "when": "2026-10-06T06:36:46.460381+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "declined",
+      "by": "e4e34290",
+      "reason": "deferred to the section 3 revision made before it dispatches: _commit_state_write in reckon/ledger.py will take a set of paths so the ledger row and the review record share one commit, or the no-extra-commit claim is dropped",
+      "when": "2026-10-06T06:36:46.461959+00:00"
+    },
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "e4e34290",
+      "reason": "deferred to the section 7 revision made before it dispatches (gated on section 23): the hold will fold onto an existing settable scalar or state what it retires",
+      "when": "2026-10-06T06:36:46.463381+00:00"
+    },
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "e4e34290",
+      "reason": "deferred to the section 5 revision made before it dispatches (gated on a-plan-is-reviewed-before-it-is-built section 23): the import script will follow scripts/import_runs_into_store.py, its idempotency, dry-run and exit contract",
+      "when": "2026-10-06T06:36:46.456549+00:00"
+    },
+    "reuse_search-2": {
+      "action": "declined",
+      "by": "e4e34290",
+      "reason": "plan_review.store_delivered_reviews is the public name that section 23 of a-plan-is-reviewed-before-it-is-built gives the delivered-review store (its owner confirmed this on 2026-10-06); section 3 is gated on that section",
+      "when": "2026-10-06T06:36:46.458930+00:00"
+    }
+  },
+  "review_run_id": "r-20261006T062939293621-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "7400595244394764f09a4852ecbfbe15c3e5fcf1",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the record schema hides the store layout, identity, verbatim body, append-only answers, reviewed-bytes hashing and the read join behind the store function and one reader; that is substantial behaviour behind a small interface.",
+    "duplicate_owner": "a finding \u2014 \u00a73 introduces a second review reader in reckon/crew/review.py while `list_plan_reviews`/`read_plan_review` are owned by reckon/crew/plan_review.py and `select_review_for_head` by reckon/crew/recovery.py; and \u00a73 claims the record rides the existing promotion commit through `_commit_state_write`, which stages exactly one path.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a77 adds a new settable path (`review_hold`) and a new `plan-review-hold` meta scalar without naming what it retires or merging.",
+    "reuse_search": "a finding \u2014 \u00a75 proposes scripts/import_review_store.py without citing the existing scripts/import_runs_into_store.py, which is the same one-shot, re-runnable, `--project`/`--root` importer for this store family; and \u00a73 cites a function name (plan_review.store_delivered_reviews) that does not exist in the tree.",
+    "thin_wrapper": "pass \u2014 \u00a73, \u00a76 and \u00a77 each extend an existing mechanism (the store function's write target, `_review_dispatch_fields`, the `set` op plus `PLAN_METADATA_SCALARS`) rather than layering a parallel wrapper over it."
+  },
+  "section_digests": {
+    "_document": "c3562c738cab087b866e9bc15ed3793db9d12893830765436e9014bccbcb5c93",
+    "s1": "d333aa7f2c925cc28d10652f937427775e80946ff9334b6bcd9145aff3e04b91",
+    "s2": "1d32d23ade9a2f67c761b6ae7aba7d7657c84da80a58e50c003d120e94679abd",
+    "s3": "1deaae93170da54c61978307dbab3da40c3c48a84f99317725e133633ac2ef5f",
+    "s4": "dea334f0d090c1767f8a7fc0d2447619076d332ae2ad1eedfd7bcdbbd3e633df",
+    "s5": "049b059cf1b7f88d13015349cd5ec13979bc801dbe26d0bdee08b0bee6abe02a",
+    "s6": "575c9d89e9e8fc362d3192fcff31c77d7a1b6353f3a2971d2410d183570e3358",
+    "s7": "25a9982c5350cf821a2704cd37f14481c3f75e262726ee9efa7d8e7fdeff5c6e",
+    "s8": "b9ad6cbd95673381cecbab7e03b74058aaae945bd4185b4c1f6d51658433b081"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T06:34:35.382102+00:00"
+}

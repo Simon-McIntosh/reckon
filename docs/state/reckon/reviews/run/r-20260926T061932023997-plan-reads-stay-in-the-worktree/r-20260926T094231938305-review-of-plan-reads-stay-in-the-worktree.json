@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 15,
+  "call_sites": [
+    "reckon/mcp.py:741 _read_plan",
+    "reckon/mcp.py:1167 _read_plan_view",
+    "reckon/mcp.py:3587 _roadmap_tool",
+    "reckon/mcp.py:4620 _audit_tool",
+    "reckon/mcp.py:2137 _patch_plan",
+    "reckon/mcp.py:2166 _append_comment",
+    "reckon/mcp.py:2222 _lock_decision",
+    "reckon/mcp.py:2257 _append_followup",
+    "reckon/mcp.py:2293 _resolve_followup",
+    "reckon/mcp.py:2330 _set_status",
+    "reckon/mcp.py:2354 _set_impl",
+    "reckon/mcp.py:2400 _update_sprint",
+    "reckon/mcp.py:2478 _add_sprint_item",
+    "reckon/mcp.py:2541 _create_sprint",
+    "reckon/mcp.py:2613 _move_sprint_item"
+  ],
+  "completed_at": "2026-09-26T11:27:25.953Z",
+  "dispatched_at": "2026-09-26T09:42:44Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "470",
+      "text": "The refusal hint 'Pass checkout_path explicitly to target a checkout, or write only the plan this run's own project owns' was actionable where _run_scoped_refusal was authored, but neither clause works at the eleven guard sites that now emit it: the guarded writers accept no checkout_path (signatures at :2124-:2613), and the run's own project is itself refused, so the message tells a caller to do the two things the guard has just refused and never names the remedy, the registered edit_* entry point."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "2137",
+      "text": "The guard is called at eleven sites across ten functions (:2137, :2166, :2222, :2257, :2293, :2330, :2354, :2400, :2478, :2541, :2613) but the write-side tests drive only _set_status (:2330), so deleting a guard call anywhere else - including all four sprint writers - reddens no test; the read half was brought to one test per entry point after the prior review and the write half has the same shape at larger scale."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 15 production call site(s)",
+    "diff": "Read commit by commit against 80d55621: 0871ec7b adds _run_scoped_read_root (:508) and _run_scoped_write_guard (:529) with the four read wirings and eleven guard sites plus seven tests; 4ffa371f records the landing; 99d31ad1 adds the three read-entry-point tests, the identical-copy write test, and the strengthened refusal test; 8e33c0b5 corrects the records and regenerates the gate and lint logs; every guard returns before any write.",
+    "done_when": "The gate asserts the done_when's measure and is recorded: the base arm (gate-plan-reads-base.txt, rev 80d55621) is red by id on this node's contract - test_a_run_scoped_read_returns_the_worktree_version_not_main, test_a_run_scoped_roadmap_reads_the_worktree_not_main, test_a_run_scoped_audit_reads_the_worktree_not_main and test_a_run_scoped_resource_read_resolves_to_the_worktree on the read side, and test_a_run_scoped_granular_write_to_the_runs_own_project_is_refused - which at base returns ok True with the write landing - on the write side - the head arm is green, and the ambient arm (RECKON_RUN_ID and RECKON_MANIFEST exported) is green, proving the autouse fixture at tests/conftest.py:79 still clears the dispatch identity with the read scoping in place; my independent recheck at the reviewed head reproduces 130 passed over the four-file selection (recheck-plan-reads.txt:10).",
+    "goal": "Judged at head 8e33c0b5: refusing a run-scoped granular write to its own project is the right fail-closed choice and does not strand a worker, because the eleven guarded writers (reckon/mcp.py:2137 _patch_plan, :2166 _append_comment, :2222 _lock_decision, :2257 _append_followup, :2293 _resolve_followup, :2330 _set_status, :2354 _set_impl, :2400 _update_sprint, :2478 _add_sprint_item, :2541 _create_sprint, :2613 _move_sprint_item) accept no checkout_path and the store mutators they call (reckon/_store.py:1391 patch_plan, :1409 append_to_list, :1439 set_nested, :1475 resolve_in_list) take no root, so a redirect was not implementable inside this node's fence; they are also not among the five tools mcp.py:4731-4753 registers (read_plan, edit_plan, roadmap, audit, crew), and a worker's recording path is the registered edit_plan, whose _edit_plan (:2879) redirects an own-project run-scoped write into the worktree via _run_scoped_checkout (:2940) and whose ops fold the granular capabilities.",
+    "manifest": "Read as delivered; all four prior review findings are closed with evidence - the base prose now matches the regenerated gate-plan-reads-base.txt and the strengthened own-project test (finding 1), the ambient log now names the revision it measured (finding 2), every read wiring has a discriminating test (finding 3), and the own-project refusal passes expected_version = main's version, the value an unguarded write accepts and the reason the refusal is the guard rather than a version conflict.",
+    "write_paths": "git diff --stat 80d55621 8e33c0b5 is 10 files and 1014 insertions with zero deletions, every path inside the five declared write paths (reckon/mcp.py, tests/test_plan_reads_stay_in_the_worktree.py, docs/plans/a-worker-cannot-write-your-home.html, docs/evidence/archive/a-worker-cannot-write-your-home-landed.html, docs/figures/a-worker-cannot-write-your-home/), and both record diffs are append-only, touching neither plan-version nor plan-modified."
+  },
+  "justifications": {
+    "durability": "Each read wiring and the guard's representative site have tests that redden on the regression they claim (gate-plan-reads-base.txt, by id), but the guard is driven at only one of its eleven sites, so deleting the guard call at any of the other ten (reckon/mcp.py:2137-:2613) reddens no test (finding 2).",
+    "evidence": "Base, head and ambient arms with their logs sit under docs/figures/a-worker-cannot-write-your-home/, the corrected prose matches the logs, and my recheck (recheck-plan-reads.txt:10) reproduces 130 passed at the reviewed head, with the head logs naming 99d31ad1 (one docs-only commit before 8e33c0b5) as disclosed in the manifest.",
+    "fit": "Names are by mechanism (_run_scoped_read_root, _run_scoped_write_guard) with docstrings stating why a read falls back and a write refuses, reusing the sibling's refusal shape at reckon/mcp.py:443, and no plan or tracker label appears in code; the emitted hint at :470 misdirects at its new call sites (finding 1).",
+    "goal_fidelity": "Both halves hold at head - the four readers resolve a run's own project to its worktree (reckon/mcp.py:741, :1167, :3587, :4620) and the eleven unredirectable writers refuse loudly (:529 guard, :2137-:2613), with the registered edit_plan redirect (:2940) keeping a worker's own recording path open.",
+    "scope_discipline": "git diff --stat 80d55621 8e33c0b5 is 10 files / 1014 insertions / 0 deletions, all inside the declared write paths, with the two record diffs append-only and no plan-version or plan-modified churn."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Judged at head 8e33c0b5: refusing a run-scoped granular write to its own project is the right fail-closed choice and does not strand a worker, because the eleven guarded writers (reckon/mcp.py:2137 _patch_plan, :2166 _append_comment, :2222 _lock_decision, :2257 _append_followup, :2293 _resolve_followup, :2330 _set_status, :2354 _set_impl, :2400 _update_sprint, :2478 _add_sprint_item, :2541 _create_sprint, :2613 _move_sprint_item) accept no checkout_path and the store mutators they call (reckon/_store.py:1391 patch_plan, :1409 append_to_list, :1439 set_nested, :1475 resolve_in_list) take no root, so a redirect was not implementable inside this node's fence; they are also not among the five tools mcp.py:4731-4753 registers (read_plan, edit_plan, roadmap, audit, crew), and a worker's recording path is the registered edit_plan, whose _edit_plan (:2879) redirects an own-project run-scoped write into the worktree via _run_scoped_checkout (:2940) and whose ops fold the granular capabilities.\nVERDICT done_when: The gate asserts the done_when's measure and is recorded: the base arm (gate-plan-reads-base.txt, rev 80d55621) is red by id on this node's contract - test_a_run_scoped_read_returns_the_worktree_version_not_main, test_a_run_scoped_roadmap_reads_the_worktree_not_main, test_a_run_scoped_audit_reads_the_worktree_not_main and test_a_run_scoped_resource_read_resolves_to_the_worktree on the read side, and test_a_run_scoped_granular_write_to_the_runs_own_project_is_refused - which at base returns ok True with the write landing - on the write side - the head arm is green, and the ambient arm (RECKON_RUN_ID and RECKON_MANIFEST exported) is green, proving the autouse fixture at tests/conftest.py:79 still clears the dispatch identity with the read scoping in place; my independent recheck at the reviewed head reproduces 130 passed over the four-file selection (recheck-plan-reads.txt:10).\nVERDICT write_paths: git diff --stat 80d55621 8e33c0b5 is 10 files and 1014 insertions with zero deletions, every path inside the five declared write paths (reckon/mcp.py, tests/test_plan_reads_stay_in_the_worktree.py, docs/plans/a-worker-cannot-write-your-home.html, docs/evidence/archive/a-worker-cannot-write-your-home-landed.html, docs/figures/a-worker-cannot-write-your-home/), and both record diffs are append-only, touching neither plan-version nor plan-modified.\nVERDICT manifest: Read as delivered; all four prior review findings are closed with evidence - the base prose now matches the regenerated gate-plan-reads-base.txt and the strengthened own-project test (finding 1), the ambient log now names the revision it measured (finding 2), every read wiring has a discriminating test (finding 3), and the own-project refusal passes expected_version = main's version, the value an unguarded write accepts and the reason the refusal is the guard rather than a version conflict.\nVERDICT diff: Read commit by commit against 80d55621: 0871ec7b adds _run_scoped_read_root (:508) and _run_scoped_write_guard (:529) with the four read wirings and eleven guard sites plus seven tests; 4ffa371f records the landing; 99d31ad1 adds the three read-entry-point tests, the identical-copy write test, and the strengthened refusal test; 8e33c0b5 corrects the records and regenerates the gate and lint logs; every guard returns before any write.\nCALL_SITES: reckon/mcp.py:741 _read_plan, reckon/mcp.py:1167 _read_plan_view, reckon/mcp.py:3587 _roadmap_tool, reckon/mcp.py:4620 _audit_tool, reckon/mcp.py:2137 _patch_plan, reckon/mcp.py:2166 _append_comment, reckon/mcp.py:2222 _lock_decision, reckon/mcp.py:2257 _append_followup, reckon/mcp.py:2293 _resolve_followup, reckon/mcp.py:2330 _set_status, reckon/mcp.py:2354 _set_impl, reckon/mcp.py:2400 _update_sprint, reckon/mcp.py:2478 _add_sprint_item, reckon/mcp.py:2541 _create_sprint, reckon/mcp.py:2613 _move_sprint_item\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: Both halves hold at head - the four readers resolve a run's own project to its worktree (reckon/mcp.py:741, :1167, :3587, :4620) and the eleven unredirectable writers refuse loudly (:529 guard, :2137-:2613), with the registered edit_plan redirect (:2940) keeping a worker's own recording path open.\nSCORE evidence: 18\nJUSTIFICATION evidence: Base, head and ambient arms with their logs sit under docs/figures/a-worker-cannot-write-your-home/, the corrected prose matches the logs, and my recheck (recheck-plan-reads.txt:10) reproduces 130 passed at the reviewed head, with the head logs naming 99d31ad1 (one docs-only commit before 8e33c0b5) as disclosed in the manifest.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 80d55621 8e33c0b5 is 10 files / 1014 insertions / 0 deletions, all inside the declared write paths, with the two record diffs append-only and no plan-version or plan-modified churn.\nSCORE durability: 17\nJUSTIFICATION durability: Each read wiring and the guard's representative site have tests that redden on the regression they claim (gate-plan-reads-base.txt, by id), but the guard is driven at only one of its eleven sites, so deleting the guard call at any of the other ten (reckon/mcp.py:2137-:2613) reddens no test (finding 2).\nSCORE fit: 18\nJUSTIFICATION fit: Names are by mechanism (_run_scoped_read_root, _run_scoped_write_guard) with docstrings stating why a read falls back and a write refuses, reusing the sibling's refusal shape at reckon/mcp.py:443, and no plan or tracker label appears in code; the emitted hint at :470 misdirects at its new call sites (finding 1).\nFINDING reckon/mcp.py:470 The refusal hint 'Pass checkout_path explicitly to target a checkout, or write only the plan this run's own project owns' was actionable where _run_scoped_refusal was authored, but neither clause works at the eleven guard sites that now emit it: the guarded writers accept no checkout_path (signatures at :2124-:2613), and the run's own project is itself refused, so the message tells a caller to do the two things the guard has just refused and never names the remedy, the registered edit_* entry point.\nFINDING reckon/mcp.py:2137 The guard is called at eleven sites across ten functions (:2137, :2166, :2222, :2257, :2293, :2330, :2354, :2400, :2478, :2541, :2613) but the write-side tests drive only _set_status (:2330), so deleting a guard call anywhere else - including all four sprint writers - reddens no test; the read half was brought to one test per entry point after the prior review and the write half has the same shape at larger scale.\n",
+  "review_run_id": "r-20260926T094231938305-review-of-plan-reads-stay-in-the-worktree",
+  "reviewed_base_sha": "80d5562139fee5153ccafe0a66054896af43b956",
+  "reviewed_head_sha": "8e33c0b5c86302ac0485f41efc9d82a45062e4ac",
+  "reviewed_run_id": "r-20260926T061932023997-plan-reads-stay-in-the-worktree",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T11:11:13.444643+00:00",
+  "total": 90
+}

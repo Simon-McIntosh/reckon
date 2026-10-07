@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "8a04f102f27a2244996d932d62d8dbd08339a763",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:444",
+    "reckon/crew/review.py:306"
+  ],
+  "completed_at": "2026-10-04T22:13:38.524Z",
+  "dispatched_at": "2026-10-04T22:05:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "378",
+      "severity": "follow-on",
+      "text": "follow-on: the population's head arm was measured at 3ba5eb79a while the promoted head is the docs-only e10586707, so the added-failure comparison rests on an arm one commit behind the head it is evidence for; the gap is benign because e10586707 changes only the fragment, and the fragment itself names 3ba5eb79a, so no repair is needed but a reader should not read the arm's revision as the promoted head."
+    }
+  ],
+  "head_log_revision": "3ba5eb79ad2116653109039dd38b688fbf9b66f1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 7c2bb9638; 3ba5eb79a moves the resolver to recovery._resolve_commit with --verify, --quiet, --end-of-options and a 10s timeout, has review.py import it in place of the duplicate _resolved_commit, and replaces the three fixtures' BASE = \"1\" * 40 stand-in with the run's dispatched-from revision; e10586707 rewrites the fragment's gate paragraph to the repaired arms and the single shared resolver.",
+    "done_when": "all four clauses of section 60 now hold: a 38-character head is refused at check-manifest and at store_review, a correct 40-character head passes both (the seven cases in tests/test_a_review_records_shas_resolve.py), and the importing-test population adds no failure -- both arms read 1184 passed / 0 failed, re-derived here from the reviewed run's own logs.",
+    "goal": "the gain 7c2bb9638..e10586707 closes the two follow-ons the prior review raised without disturbing section 60's refusal: the resolution check f0f47e6d4 added now runs through one resolver shared with recovery (review.unresolved_reviewed_revision calls recovery._resolve_commit at reckon/crew/review.py:306) and the three review fixtures that stored a stand-in base revision now store the revision their run was dispatched from, so the section's zero-delta clause holds in full.",
+    "manifest": "read; status complete, commits through e10586707, the four-file gate 20 passed, the two population arms 1184 passed / 0 failed each, and the negative control 4 failed / 3 passed at EXIT=1 with the 38-character case admitted.",
+    "write_paths": "the gain touches reckon/crew/recovery.py, reckon/crew/review.py, tests/test_review_store_reads_and_fences_by_head.py, tests/test_promotion_reads_the_matching_review.py, tests/test_one_refusal_on_main.py and the declared evidence fragment, every one inside the node's write paths; no figure is written."
+  },
+  "justifications": {
+    "durability": "the shared resolver is exercised by the seven refusal cases (the 38- and 40-character head and base, at store_review and at check-manifest), so a regression in the resolution path reddens the gate, and the removal mutation reddens exactly the four refusal cases.",
+    "evidence": "the four-clause done-when is measured -- seven gate cases plus twenty over the four files at the head, re-run independently here (20 passed, EXIT=0) -- and the two population arms read 1184 passed / 0 failed; the negative-control red log is read rather than reproduced, so the removal evidence is inherited rather than re-derived.",
+    "fit": "the prior review's fit finding is closed -- review.py imports recovery._resolve_commit instead of carrying _resolved_commit, and recovery's copy is the single owner carrying the hardening the duplicate had.",
+    "goal_fidelity": "the gain preserves section 60's refusal exactly -- store_review refuses at reckon/crew/review.py:1456 and reports.py:1344 still reports at check-manifest -- while removing the duplicate resolver and repairing the fixtures, so the goal and the zero-delta clause both hold at head.",
+    "scope_discipline": "the diff touches only the five declared paths plus the fragment, all inside the node's write paths, and adds no figure."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gain 7c2bb9638..e10586707 closes the two follow-ons the prior review raised without disturbing section 60's refusal: the resolution check f0f47e6d4 added now runs through one resolver shared with recovery (review.unresolved_reviewed_revision calls recovery._resolve_commit at reckon/crew/review.py:306) and the three review fixtures that stored a stand-in base revision now store the revision their run was dispatched from, so the section's zero-delta clause holds in full.\nVERDICT done_when: all four clauses of section 60 now hold: a 38-character head is refused at check-manifest and at store_review, a correct 40-character head passes both (the seven cases in tests/test_a_review_records_shas_resolve.py), and the importing-test population adds no failure -- both arms read 1184 passed / 0 failed, re-derived here from the reviewed run's own logs.\nVERDICT write_paths: the gain touches reckon/crew/recovery.py, reckon/crew/review.py, tests/test_review_store_reads_and_fences_by_head.py, tests/test_promotion_reads_the_matching_review.py, tests/test_one_refusal_on_main.py and the declared evidence fragment, every one inside the node's write paths; no figure is written.\nVERDICT manifest: read; status complete, commits through e10586707, the four-file gate 20 passed, the two population arms 1184 passed / 0 failed each, and the negative control 4 failed / 3 passed at EXIT=1 with the 38-character case admitted.\nVERDICT diff: read commit by commit against 7c2bb9638; 3ba5eb79a moves the resolver to recovery._resolve_commit with --verify, --quiet, --end-of-options and a 10s timeout, has review.py import it in place of the duplicate _resolved_commit, and replaces the three fixtures' BASE = \"1\" * 40 stand-in with the run's dispatched-from revision; e10586707 rewrites the fragment's gate paragraph to the repaired arms and the single shared resolver.\nCALL_SITES: reckon/crew/recovery.py:444, reckon/crew/review.py:306\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the gain preserves section 60's refusal exactly -- store_review refuses at reckon/crew/review.py:1456 and reports.py:1344 still reports at check-manifest -- while removing the duplicate resolver and repairing the fixtures, so the goal and the zero-delta clause both hold at head.\nSCORE evidence: 18\nJUSTIFICATION evidence: the four-clause done-when is measured -- seven gate cases plus twenty over the four files at the head, re-run independently here (20 passed, EXIT=0) -- and the two population arms read 1184 passed / 0 failed; the negative-control red log is read rather than reproduced, so the removal evidence is inherited rather than re-derived.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only the five declared paths plus the fragment, all inside the node's write paths, and adds no figure.\nSCORE durability: 19\nJUSTIFICATION durability: the shared resolver is exercised by the seven refusal cases (the 38- and 40-character head and base, at store_review and at check-manifest), so a regression in the resolution path reddens the gate, and the removal mutation reddens exactly the four refusal cases.\nSCORE fit: 20\nJUSTIFICATION fit: the prior review's fit finding is closed -- review.py imports recovery._resolve_commit instead of carrying _resolved_commit, and recovery's copy is the single owner carrying the hardening the duplicate had.\nFINDING reckon/crew/recovery.py:378 follow-on: the population's head arm was measured at 3ba5eb79a while the promoted head is the docs-only e10586707, so the added-failure comparison rests on an arm one commit behind the head it is evidence for; the gap is benign because e10586707 changes only the fragment, and the fragment itself names 3ba5eb79a, so no repair is needed but a reader should not read the arm's revision as the promoted head.\nreviewed_base_sha: 7c2bb9638a425d03291fb785901fd0618496a8d9\nreviewed_head_sha: e1058670712f3cf7e63e61b4869cc6d3cde6c022\n",
+  "review_run_id": "r-20261004T220453097580-review-of-a-review-records-shas-resolve",
+  "reviewed_base_sha": "7c2bb9638a425d03291fb785901fd0618496a8d9",
+  "reviewed_head_sha": "e1058670712f3cf7e63e61b4869cc6d3cde6c022",
+  "reviewed_run_id": "r-20261004T204721152768-a-review-records-shas-resolve",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T22:12:17.497655+00:00",
+  "total": 97
+}

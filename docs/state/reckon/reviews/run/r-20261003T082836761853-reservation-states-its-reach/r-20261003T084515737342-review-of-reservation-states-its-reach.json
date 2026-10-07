@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9cd9746611ee5d4e485d21957bf446c3638059b1",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:8296",
+    "reckon/crew/runs.py:3617"
+  ],
+  "completed_at": "2026-10-03T08:53:54.164Z",
+  "dispatched_at": "2026-10-03T08:45:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/reservation-states-its-reach.html",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states _roster_reach() reads 'the same population ... the dispatch guard counts with', but the guard passes a backend-filtered set (_live_runs_on_backend(backend_name), reckon/crew/dispatch.py:685/644) to occupying_the_reservation while _roster_reach passes list_live() over every backend (reckon/crew/placement.py:759); the two coincide only while a single backend declares a placement, so with two placing backends the named projects exceed what the calling backend's guard counts."
+    },
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "366",
+      "severity": "follow-on",
+      "text": "follow-on: _held_result, the already-held read-back path a session reaches when a reservation is found rather than armed, sets its detail to 'the reservation {job_id} is held; started nothing' \u2014 naming neither the roster cap nor the host-wide reach \u2014 so that arming-time surface is the one the change did not cover; the record it returns does carry roster_reach, but the detail a session reads states nothing."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "8296",
+      "severity": "follow-on",
+      "text": "follow-on: this dispatch arming route calls ensure_reservation(project=project) and discards the result, so the reach statement the hold detail now carries is never shown on the route most sessions take to arm the reservation \u2014 it reaches an operator only by opening the published record file; the CLI route (reckon/crew/runs.py:3617) does return the result."
+    }
+  ],
+  "head_log_revision": "f9271cc11a741eb8b04756d953301c99425379d4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against 9cd9746611ee; f9271cc11 adds _roster_reach() and threads its statement through the hold detail, the adoption detail and both published records (37 lines), plus 194 lines of new cases; 17fa2a04e adds the 49-line evidence fragment. No other path changed.",
+    "done_when": "the plan's done-when is the second branch \u2014 'its fleet-wide reach is declared where it is armed'; the hold detail now reads 'held reservation 1274099 on all with 32 cores and 128 GB; the roster cap 25 counts every project's placed live runs on this host, not only the holding project's; placed live runs counted now from: alpha, beta' and the record carries scope/projects/statement, matching the done-when.",
+    "goal": "the node goal is that a placement reservation states the roster cap's host-wide reach where it is armed; the diff adds _roster_reach() (reckon/crew/placement.py:744), quotes its statement in the hold detail (placement.py:626) and the adoption detail (placement.py:395-400), and writes it into the published record as a roster_reach field on both arming routes (placement.py:536, 609).",
+    "manifest": "read; base arm 3 failed/98 passed EXIT=1, head arm 1 failed/100 passed EXIT=1 with the single head failure also in the base arm (0 added by id), negative control 1 failed/1 passed EXIT=1; commits f9271cc11 (code) and 17fa2a04e (evidence), a linear chain on base 9cd9746611ee.",
+    "write_paths": "read the manifest's declared paths; the diff touches reckon/crew/placement.py, tests/test_reservation_states_its_reach.py and docs/evidence/fragments/crew-runtime-positive-controls/reservation-states-its-reach.html, all inside them, and the worktree is clean."
+  },
+  "justifications": {
+    "durability": "the guarded thing is made to happen and the red is shown: with the reach statement removed from the hold detail the hold case fails with EXIT=1 while the adoption case still passes, so the red is the hold detail's and not a suite-wide effect, and I reproduced that mutation myself; docked one because the reach's 'counted now' liveness is never exercised \u2014 the cases stub process_alive True, so a placed run whose worker has exited is asserted through the shared occupying_the_reservation function rather than shown not to be named.",
+    "evidence": "every headline figure reproduces on disk: base-arm.log 3 failed/98 passed, head-arm.log 1 failed/100 passed, negative-control.log 1 failed/1 passed, and I independently rebuilt both arms (base reverted placement.py: 2 failed; head: 2 passed) and the declared mutation (hold reach removed: 1 failed/1 passed); docked one because the fragment claims the reach reads 'the same population ... the dispatch guard counts with' while the guard passes a backend-filtered population (_live_runs_on_backend) to occupying_the_reservation and _roster_reach reads list_live() across all backends.",
+    "fit": "the change follows the module's idiom (lazy runs import, one statement built once and carried by both the human detail and the record) and the new comments state the mechanism; docked because the reach reaches a session's output on only one of the routes it takes \u2014 _held_result:366, the already-held read-back, names neither reach nor cap in its detail, and dispatch.py:8296 discards ensure_reservation's result so the dispatch arming route shows the reach only by a later reader opening the record file.",
+    "goal_fidelity": "the done-when is met and reproduced independently: at base 9cd974661 the two new cases fail (hold detail read 'roster cap 25' with no reach), at head 17fa2a04e both pass, and the reached statement names the two placed projects and excludes the unplaced third, which is exactly the declared-blast-radius remedy the section offers.",
+    "scope_discipline": "every changed path (reckon/crew/placement.py, tests/test_reservation_states_its_reach.py, docs/evidence/fragments/crew-runtime-positive-controls/reservation-states-its-reach.html) is inside the manifest's declared write paths; no plan, index or sprint state touched; the reviewed worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a placement reservation states the roster cap's host-wide reach where it is armed; the diff adds _roster_reach() (reckon/crew/placement.py:744), quotes its statement in the hold detail (placement.py:626) and the adoption detail (placement.py:395-400), and writes it into the published record as a roster_reach field on both arming routes (placement.py:536, 609).\nVERDICT done_when: the plan's done-when is the second branch \u2014 'its fleet-wide reach is declared where it is armed'; the hold detail now reads 'held reservation 1274099 on all with 32 cores and 128 GB; the roster cap 25 counts every project's placed live runs on this host, not only the holding project's; placed live runs counted now from: alpha, beta' and the record carries scope/projects/statement, matching the done-when.\nVERDICT write_paths: read the manifest's declared paths; the diff touches reckon/crew/placement.py, tests/test_reservation_states_its_reach.py and docs/evidence/fragments/crew-runtime-positive-controls/reservation-states-its-reach.html, all inside them, and the worktree is clean.\nVERDICT manifest: read; base arm 3 failed/98 passed EXIT=1, head arm 1 failed/100 passed EXIT=1 with the single head failure also in the base arm (0 added by id), negative control 1 failed/1 passed EXIT=1; commits f9271cc11 (code) and 17fa2a04e (evidence), a linear chain on base 9cd9746611ee.\nVERDICT diff: read both commits against 9cd9746611ee; f9271cc11 adds _roster_reach() and threads its statement through the hold detail, the adoption detail and both published records (37 lines), plus 194 lines of new cases; 17fa2a04e adds the 49-line evidence fragment. No other path changed.\nCALL_SITES: reckon/crew/dispatch.py:8296, reckon/crew/runs.py:3617\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the done-when is met and reproduced independently: at base 9cd974661 the two new cases fail (hold detail read 'roster cap 25' with no reach), at head 17fa2a04e both pass, and the reached statement names the two placed projects and excludes the unplaced third, which is exactly the declared-blast-radius remedy the section offers.\nSCORE evidence: 19\nJUSTIFICATION evidence: every headline figure reproduces on disk: base-arm.log 3 failed/98 passed, head-arm.log 1 failed/100 passed, negative-control.log 1 failed/1 passed, and I independently rebuilt both arms (base reverted placement.py: 2 failed; head: 2 passed) and the declared mutation (hold reach removed: 1 failed/1 passed); docked one because the fragment claims the reach reads 'the same population ... the dispatch guard counts with' while the guard passes a backend-filtered population (_live_runs_on_backend) to occupying_the_reservation and _roster_reach reads list_live() across all backends.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path (reckon/crew/placement.py, tests/test_reservation_states_its_reach.py, docs/evidence/fragments/crew-runtime-positive-controls/reservation-states-its-reach.html) is inside the manifest's declared write paths; no plan, index or sprint state touched; the reviewed worktree is clean.\nSCORE durability: 19\nJUSTIFICATION durability: the guarded thing is made to happen and the red is shown: with the reach statement removed from the hold detail the hold case fails with EXIT=1 while the adoption case still passes, so the red is the hold detail's and not a suite-wide effect, and I reproduced that mutation myself; docked one because the reach's 'counted now' liveness is never exercised \u2014 the cases stub process_alive True, so a placed run whose worker has exited is asserted through the shared occupying_the_reservation function rather than shown not to be named.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's idiom (lazy runs import, one statement built once and carried by both the human detail and the record) and the new comments state the mechanism; docked because the reach reaches a session's output on only one of the routes it takes \u2014 _held_result:366, the already-held read-back, names neither reach nor cap in its detail, and dispatch.py:8296 discards ensure_reservation's result so the dispatch arming route shows the reach only by a later reader opening the record file.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/reservation-states-its-reach.html:14 follow-on: the fragment states _roster_reach() reads 'the same population ... the dispatch guard counts with', but the guard passes a backend-filtered set (_live_runs_on_backend(backend_name), reckon/crew/dispatch.py:685/644) to occupying_the_reservation while _roster_reach passes list_live() over every backend (reckon/crew/placement.py:759); the two coincide only while a single backend declares a placement, so with two placing backends the named projects exceed what the calling backend's guard counts.\nFINDING reckon/crew/placement.py:366 follow-on: _held_result, the already-held read-back path a session reaches when a reservation is found rather than armed, sets its detail to 'the reservation {job_id} is held; started nothing' \u2014 naming neither the roster cap nor the host-wide reach \u2014 so that arming-time surface is the one the change did not cover; the record it returns does carry roster_reach, but the detail a session reads states nothing.\nFINDING reckon/crew/dispatch.py:8296 follow-on: this dispatch arming route calls ensure_reservation(project=project) and discards the result, so the reach statement the hold detail now carries is never shown on the route most sessions take to arm the reservation \u2014 it reaches an operator only by opening the published record file; the CLI route (reckon/crew/runs.py:3617) does return the result.\n",
+  "review_run_id": "r-20261003T084515737342-review-of-reservation-states-its-reach",
+  "reviewed_base_sha": "9cd9746611ee5d4e485d21957bf446c3638059b1",
+  "reviewed_head_sha": "17fa2a04e99b8cda2a3763a6ca40ba72dbb86a5a",
+  "reviewed_run_id": "r-20261003T082836761853-reservation-states-its-reach",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T08:51:42+00:00",
+  "total": 96
+}

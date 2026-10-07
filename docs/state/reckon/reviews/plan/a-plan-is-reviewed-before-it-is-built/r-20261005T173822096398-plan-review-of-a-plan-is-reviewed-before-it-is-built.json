@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:41:54.461Z",
+  "dispatched_at": "2026-10-05T17:38:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "thin_wrapper-1",
+      "reason": "the plan must either state why the prose bucketing cannot consume \u00a717's heading/region spans as one walk, or fold the prose accumulation onto that single walk; its current justification claims only identity must agree, which understates the duplicated heading- and card-recognition.",
+      "text": "\u00a716 extends reckon/crew/plan_review.py:162 _AuthoredProseParser to recognise h2 headings, bucket chunks by section identity and drop landed-card interiors, while \u00a717 (same change set) makes reckon/_plan_html.py:_StructuredSectionSpanParser yield per-heading identity, level, span and landed-card flag and makes structured_section_spans yield the protected-region spans \u2014 so the two walks now independently recognise the same heading set, the same data-reckon machinery regions and the same landed cards, and \u00a717's own text calls the prose parser \"a second walk\" held to the span parser by an asserted identity equality; the prose pass adds character accumulation over boundaries the span parser already computes, and the plan does not show why the authored text cannot be sliced from the span parser's heading and region spans instead of re-recognised",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/_plan_html.py:309",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should either name these two raw-text presence tests as the predicate's consumer (extending the predicate to the \"does this document carry a section record\" question) or scope the done-when grep to exclude them; as written the gate cannot go green and the section's central claim is not held by its own instrument.",
+      "text": "\u00a717's done-when requires the package to hold the data-reckon literal \"in an attribute test in exactly one function\" and none elsewhere, and it names exactly three readers (the span parser, the prose parser, the MCP view) as converged onto the new one public predicate over a tag's attributes; but the module the predicate lands in keeps two further spellings of the same attribute pattern outside it: _RECORD_MARKER_RE at line 309 (a compiled data-reckon=\"section\" regex, live at line 371) and the inline re.search(r\"\"\"data-reckon\\s*=\\s*[\"']section[\"']\"\"\") inside _splice_section_records at line 849, so the head grep cannot read the one-site result the done-when asserts and \"one definition of a machinery element\" is false",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/doccheck.py:135",
+      "id": "duplicate_owner-2",
+      "reason": "the done-when grep will report doccheck's expression (or miss it only by a silently narrowed pattern), so the plan must either converge _NUMBERED_SECTION_ID onto the hoisted shared expression or state in \u00a716/\u00a717 why doccheck's recogniser answers a question the shared expression does not, extending the owner to the file the plan omits.",
+      "text": "\u00a716 inventories the package's section-spelling grammars as exactly three \u2014 routing._SECTION_IDENTITY, ledger.normalize_section and evidence._section_key \u2014 and rules that the shared expression is routing's, the superset; \u00a717's done-when then greps the package for section-spelling regular expressions and requires that one; but reckon/doccheck.py:135 _NUMBERED_SECTION_ID = re.compile(r\"s[1-9][0-9]*\") is a fourth recogniser of the same numbered identities, fullmatched against heading ids at line 1033, and the plan never names it, so the hand inventory is again an undercount of exactly the kind \u00a717 itself warns about",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "08cf761c1ca6a44072fe38ccd4882d20206529254b65fa38bd6160ea57173a68",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 102,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T173822096398-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "4d6601e0b1c7bd79f1cefa8a402624992c85abd1",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 consolidates thirteen store helpers behind one parser in reckon/_plan_html.py exposed through the small public reader plan_headings plus one machinery-element predicate, and \u00a716's new units (_section_digests, the coverage predicate) are module-private, so substantial behaviour is hidden behind three small interfaces rather than a spread of wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a716 states the package's section-spelling grammars are exactly three (routing, ledger, evidence) and \u00a717's done-when requires the package to carry one such expression, but reckon/doccheck.py:135 owns a fourth, _NUMBERED_SECTION_ID, that recognises the same numbered identities and is not named.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716, \u00a717 and \u00a718 each carry an interface-accounting sentence that names what each adds (net +2 in \u00a717, +1 in \u00a718, none in \u00a716) and what it retires or merges (landed_section_ids re-homed, c-run- constant and section_record_id moved, the public legacy flag retired from plan_fingerprint), so every section that touches a family says what it retires or why nothing can be.",
+    "reuse_search": "pass \u2014 the plan searches the codebase it extends and cites the mechanisms it reuses by name (_StructuredSectionSpanParser and structured_section_spans in reckon/_plan_html.py, plan_fingerprint and _fingerprint_forms in reckon/crew/plan_review.py, promotion._LANDING_COMMENT_PREFIX and plan_review.RUN_COMMENT_PREFIX, roadmap.implementable_sections, _store._section_heading/_wrapper_section_heading/_section_body_end); I opened each and all exist at the cited paths.",
+    "thin_wrapper": "a finding \u2014 \u00a716 extends _AuthoredProseParser into a second section/heading/card recogniser over the same document that \u00a717 is simultaneously consolidating onto one span parser, and the plan's justification (two passes that \"must agree on identity\") understates the recognition the two walks now share."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.830282+00:00"
+}

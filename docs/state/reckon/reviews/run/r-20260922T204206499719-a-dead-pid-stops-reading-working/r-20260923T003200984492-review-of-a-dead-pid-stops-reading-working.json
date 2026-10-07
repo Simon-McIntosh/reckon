@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 13,
+  "call_sites": [
+    "reckon/crew/runs.py:list_live",
+    "reckon/crew/runs.py:producer_live",
+    "reckon/crew/runs.py:_record_producer_running",
+    "reckon/crew/runs.py:_follower_liveness",
+    "reckon/crew/runs.py:project_watch_visibility",
+    "reckon/crew/routing.py:707",
+    "reckon/crew/claims.py:256",
+    "reckon/crew/recovery.py:2317",
+    "reckon/crew/directory.py:69",
+    "reckon/crew/node.py:1248",
+    "reckon/crew/promotion.py:2096",
+    "reckon/crew/resumption.py:524",
+    "reckon/crew/dispatch.py:4658"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T00:32:00.984492+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 13 production call site(s)",
+    "diff": "read commit by commit against base 91e4095a; one commit, a liveness refactor that hoists the reuse check into the accessor, adds the match_start_time opt-out the seat guard needs, deletes the four hand-written copies, and carries six tests, a sandboxed fixture and the landing record, evidence anchor and figure.",
+    "done_when": "the fence evidence names tests/test_crew_record_liveness.py asserting the dead-pid, mismatched-tick and matching-tick cases plus the declared mutation observed red and the four sibling liveness files still green, and all of it is present: :187 (a reaped pid read through list_live), :207 (a live pid with a stale tick), :214 (a matching tick), negative-control.log:1 repeating the declared string verbatim with :5 showing the reuse condition rewritten on the fixed tree and the reused-pid case red (1 failed, 8 passed, EXIT=1), and gate.log:4-5 recording 54 passed EXIT=0 across the five named files.",
+    "goal": "the goal is that a pointer whose recorded pid has no process, or whose recorded start tick no longer matches, reads as not running on every read, and the diff reaches it by moving the comparison into reckon/crew/runs.py:2883, so every production path that reads a pointer through record_process_alive re-derives it, including runs.py:451, runs.py:1311, runs.py:1639, runs.py:1882, routing.py:707, claims.py:256, recovery.py:2317, directory.py:69, node.py:1248, promotion.py:2096 and resumption.py:524.",
+    "manifest": "read in full and its JSON blocks re-parsed; status complete, commits names 76a3ee0f, and the gate, test_logs, negative_control_log and negative_control_note fields each match the artefact they name, with the focus-set pair stating the same 7 pre-existing promotion-waiver failures at base and at head.",
+    "write_paths": "git diff --stat 91e4095a 76a3ee0f changes exactly the five declared paths (reckon/crew/runs.py, tests/test_crew_record_liveness.py, docs/evidence/archive/worker-death-is-recorded-landed.html, docs/figures/worker-death-is-recorded, docs/plans/worker-death-is-recorded.html), 338 insertions and 24 deletions, and all 24 deletions are the four hand-written comparison blocks inside runs.py that the goal replaces."
+  },
+  "justifications": {
+    "durability": "the added assertions are independent and falsifiable (the stale tick at tests/test_crew_record_liveness.py:207 is built from the system's own reading and the case reddens on the reinstated regression, which negative-control.log:5 records), while the branch deciding whether the check runs at reckon/crew/runs.py:2883 has no added test that reddens if its identity guard is loosened to accept a substituted probe.",
+    "evidence": "gate.log:4-5 records 54 passed EXIT=0 over the five files the fence evidence names and negative-control.log:1 repeats the declared mutation verbatim, and my own re-run of that gate at the delivered revision reproduced 54 passed EXIT=0 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T003200984492-review-of-a-dead-pid-stops-reading-working/logs/review-gate-rerun.log), the only imprecision being gate.log:1 naming the base revision the command ran at rather than the worktree content it tested, which the tree line and the manifest's 76a3ee0f together supply.",
+    "fit": "the change keeps the module's idiom (one documented accessor, each subsystem named by mechanism), the new fixture points RECKON_HOME at a temp tree and asserts the real live directory is unchanged at tests/test_crew_record_liveness.py:174, and the landing record at docs/plans/worker-death-is-recorded.html:159 cites only symbols that exist, including follower_state and watch_state which do resolve through _follower_liveness and project_watch_visibility.",
+    "goal_fidelity": "the three behaviours hold against the real process table at tests/test_crew_record_liveness.py:187, :207 and :214, and the one read that answers the process rather than the identity is the seat guard at reckon/crew/runs.py:1329, which opts out explicitly and carries its own test at tests/test_crew_record_liveness.py:225.",
+    "scope_discipline": "every path in the diff is one of the five the node declared and every deletion inside it is a comparison block the goal replaces, so the change carries nothing outside the measure."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260922T204206499719-a-dead-pid-stops-reading-working\n(node a-dead-pid-stops-reading-working), read at its landed commit 76a3ee0f against\ndocs/plans/worker-death-is-recorded.html section 5.2 as the semantic authority. The\nreviewer changed no repository path; the record below is the deliverable.\n\nREVISION: 76a3ee0f3e94e9c7e1f107ebcbcaa8c42e65c989\n\nVERDICT goal: the goal is that a pointer whose recorded pid has no process, or whose recorded start tick no longer matches, reads as not running on every read, and the diff reaches it by moving the comparison into reckon/crew/runs.py:2883, so every production path that reads a pointer through record_process_alive re-derives it, including runs.py:451, runs.py:1311, runs.py:1639, runs.py:1882, routing.py:707, claims.py:256, recovery.py:2317, directory.py:69, node.py:1248, promotion.py:2096 and resumption.py:524.\nVERDICT done_when: the fence evidence names tests/test_crew_record_liveness.py asserting the dead-pid, mismatched-tick and matching-tick cases plus the declared mutation observed red and the four sibling liveness files still green, and all of it is present: :187 (a reaped pid read through list_live), :207 (a live pid with a stale tick), :214 (a matching tick), negative-control.log:1 repeating the declared string verbatim with :5 showing the reuse condition rewritten on the fixed tree and the reused-pid case red (1 failed, 8 passed, EXIT=1), and gate.log:4-5 recording 54 passed EXIT=0 across the five named files.\nVERDICT write_paths: git diff --stat 91e4095a 76a3ee0f changes exactly the five declared paths (reckon/crew/runs.py, tests/test_crew_record_liveness.py, docs/evidence/archive/worker-death-is-recorded-landed.html, docs/figures/worker-death-is-recorded, docs/plans/worker-death-is-recorded.html), 338 insertions and 24 deletions, and all 24 deletions are the four hand-written comparison blocks inside runs.py that the goal replaces.\nVERDICT manifest: read in full and its JSON blocks re-parsed; status complete, commits names 76a3ee0f, and the gate, test_logs, negative_control_log and negative_control_note fields each match the artefact they name, with the focus-set pair stating the same 7 pre-existing promotion-waiver failures at base and at head.\nVERDICT diff: read commit by commit against base 91e4095a; one commit, a liveness refactor that hoists the reuse check into the accessor, adds the match_start_time opt-out the seat guard needs, deletes the four hand-written copies, and carries six tests, a sandboxed fixture and the landing record, evidence anchor and figure.\nCALL_SITES: reckon/crew/runs.py:list_live, reckon/crew/runs.py:producer_live, reckon/crew/runs.py:_record_producer_running, reckon/crew/runs.py:_follower_liveness, reckon/crew/runs.py:project_watch_visibility, reckon/crew/routing.py:707, reckon/crew/claims.py:256, reckon/crew/recovery.py:2317, reckon/crew/directory.py:69, reckon/crew/node.py:1248, reckon/crew/promotion.py:2096, reckon/crew/resumption.py:524, reckon/crew/dispatch.py:4658\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the three behaviours hold against the real process table at tests/test_crew_record_liveness.py:187, :207 and :214, and the one read that answers the process rather than the identity is the seat guard at reckon/crew/runs.py:1329, which opts out explicitly and carries its own test at tests/test_crew_record_liveness.py:225.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log:4-5 records 54 passed EXIT=0 over the five files the fence evidence names and negative-control.log:1 repeats the declared mutation verbatim, and my own re-run of that gate at the delivered revision reproduced 54 passed EXIT=0 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T003200984492-review-of-a-dead-pid-stops-reading-working/logs/review-gate-rerun.log), the only imprecision being gate.log:1 naming the base revision the command ran at rather than the worktree content it tested, which the tree line and the manifest's 76a3ee0f together supply.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is one of the five the node declared and every deletion inside it is a comparison block the goal replaces, so the change carries nothing outside the measure.\nSCORE durability: 18\nJUSTIFICATION durability: the added assertions are independent and falsifiable (the stale tick at tests/test_crew_record_liveness.py:207 is built from the system's own reading and the case reddens on the reinstated regression, which negative-control.log:5 records), while the branch deciding whether the check runs at reckon/crew/runs.py:2883 has no added test that reddens if its identity guard is loosened to accept a substituted probe.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the module's idiom (one documented accessor, each subsystem named by mechanism), the new fixture points RECKON_HOME at a temp tree and asserts the real live directory is unchanged at tests/test_crew_record_liveness.py:174, and the landing record at docs/plans/worker-death-is-recorded.html:159 cites only symbols that exist, including follower_state and watch_state which do resolve through _follower_liveness and project_watch_visibility.\n",
+  "review_run_id": "r-20260923T003200984492-review-of-a-dead-pid-stops-reading-working",
+  "reviewed_base_sha": "91e4095a79a34541fea2cb30113a7c90d13f0dac",
+  "reviewed_head_sha": "76a3ee0f3e94e9c7e1f107ebcbcaa8c42e65c989",
+  "reviewed_revision": "76a3ee0f3e94e9c7e1f107ebcbcaa8c42e65c989",
+  "reviewed_run_id": "r-20260922T204206499719-a-dead-pid-stops-reading-working",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T00:57:15.493226+00:00",
+  "total": 94
+}

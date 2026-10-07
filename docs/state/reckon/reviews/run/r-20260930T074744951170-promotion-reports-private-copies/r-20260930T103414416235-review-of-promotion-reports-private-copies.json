@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite, and the run's own arm logs clone_gate_base.log and clone_gate_head.log stop mid-run at 40% and 43% with no summary and no EXIT= line, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:5705 the only caller of clones.promotion_clone_matches",
+    "reckon/crew/promotion.py:5769 the build_record argument that lands the report",
+    "reckon/ledger.py:1698 the row's only writer of the field",
+    "reckon/ledger.py:148 the RECORD_FIELDS declaration that requires the key on every row"
+  ],
+  "completed_at": "2026-09-30T10:47:49.076Z",
+  "dispatched_at": "2026-09-30T10:34:29Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074744951170-promotion-reports-private-copies/clone_gate_head.log",
+      "line": "1",
+      "text": "the done-when's head arm stops at 43 percent with no summary and no EXIT= line, its header names revision 6d5c4655 which is the first of the run's three commits, its command runs -n 10 where the done-when names -n 4, and the base arm at clone_gate_base.log:1 stops at 40 percent the same way, so the two commits after 6d5c4655 including the promoted head have no completed gate observation and the run's added failures are underivable."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074744951170-promotion-reports-private-copies/reconcile_test_promotion_reports_clones.log",
+      "line": "1",
+      "text": "the log's own header names revision 60b209380 while the run it reports is the three-test file whose third test exists only in a869cc1e, committed thirty seconds after the log was written, so the manifest's cited evidence identifies a revision that does not contain the code it exercised and the promoted head carries no log stamped at it."
+    },
+    {
+      "file": "tests/test_promotion_reports_clones.py",
+      "line": "158",
+      "text": "both clone-report tests promote a run that adds a new file, so the goal's other half \u2014 a function the run modifies inside a file the base already carries \u2014 is exercised by no test, and a regression narrowing the detector to added files would leave the suite green."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all three commits against base 4e05e287; 6d5c4655 ports the detector and wires promotion, 60b209380 declares the ledger field, and a869cc1e replaces the empty-list default with the ledger.unmeasured_clone_report marker and adds the test that separates an unmeasured run from one measured to copy nothing, repairing the previous review's first finding.",
+    "done_when": "its detector-port and no-docs-import conditions hold (reckon/clones.py:40-77 reproduces docs/research/data/crew-pattern-review/code-depth/census.py:38-71 line for line and no module under reckon/ imports from docs/), the file holding its two named tests passes 3 of 3 at the promoted head in this reviewer's own replay (reviewer_replay_head_tests.log, 3 passed, EXIT=0), and its /tmp cleanup condition holds (no clone-* directory remains); its base-and-head arm condition does not hold.",
+    "goal": "the goal is to report at promotion each function a run adds or modifies that copies an existing function under the six-line normalised detector ported into reckon/clones.py, and reckon/crew/promotion.py:5705 calls clones.promotion_clone_matches over the run's changed functions into ledger.build_record at reckon/crew/promotion.py:5769 under the declared field clone_matches (reckon/ledger.py:148) with both functions' file:line and no effect on the gate; the plan section's other two clauses name reckon/crew/review.py and reckon/velocity.py, neither of which is in this node's write paths.",
+    "manifest": "read; it states complete with the three tests at EXIT=0 and a negative control whose red log's first line repeats the declared string verbatim, but it records neither baseline_suite nor after_suite, so its cited results name revision 60b209380 rather than the promoted head a869cc1e and no reader can derive its added failures.",
+    "write_paths": "the six declared paths were read from the run prompt; the three commits change five of them and nothing outside them \u2014 reckon/clones.py, reckon/crew/promotion.py, reckon/ledger.py, tests/test_promotion_reports_clones.py and the evidence fragment \u2014 and the sixth, the figures directory, is unused, as the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_reports_clones.py:186 compares the reported line against an ast parse of the fixture rather than against the value under test and reddens under the declared mutation, but tests/test_promotion_reports_clones.py:158 covers only a function the run adds, leaving the goal's modified-in-place half unguarded.",
+    "evidence": "the named tests are green at the promoted head in this reviewer's replay but the done_when's own arm condition is unmet at clone_gate_head.log:1, which stops at 43% with no summary and no EXIT= line, so the run's added failures cannot be derived by anyone.",
+    "fit": "reckon/clones.py:55-77 keeps the census's own function names and normalisation, its docstring cites docs/research/data/crew-pattern-review/code-depth/census.py which exists at 38095 bytes, and the changed files carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:5696-5713 measures the run's changed functions against reckon/ and tests/ at the promoted revision and records each match under clone_matches without touching the gate verdict, which is what the goal states.",
+    "scope_discipline": "every path in the three commits is inside the six declared write paths, and the only wide-reaching edit is the single RECORD_FIELDS entry at reckon/ledger.py:148 that the goal's \"under a declared field\" requires."
+  },
+  "node": "review-of-promotion-reports-private-copies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to report at promotion each function a run adds or modifies that copies an existing function under the six-line normalised detector ported into reckon/clones.py, and reckon/crew/promotion.py:5705 calls clones.promotion_clone_matches over the run's changed functions into ledger.build_record at reckon/crew/promotion.py:5769 under the declared field clone_matches (reckon/ledger.py:148) with both functions' file:line and no effect on the gate; the plan section's other two clauses name reckon/crew/review.py and reckon/velocity.py, neither of which is in this node's write paths.\nVERDICT done_when: its detector-port and no-docs-import conditions hold (reckon/clones.py:40-77 reproduces docs/research/data/crew-pattern-review/code-depth/census.py:38-71 line for line and no module under reckon/ imports from docs/), the file holding its two named tests passes 3 of 3 at the promoted head in this reviewer's own replay (reviewer_replay_head_tests.log, 3 passed, EXIT=0), and its /tmp cleanup condition holds (no clone-* directory remains); its base-and-head arm condition does not hold.\nVERDICT write_paths: the six declared paths were read from the run prompt; the three commits change five of them and nothing outside them \u2014 reckon/clones.py, reckon/crew/promotion.py, reckon/ledger.py, tests/test_promotion_reports_clones.py and the evidence fragment \u2014 and the sixth, the figures directory, is unused, as the done-when names no artifact.\nVERDICT manifest: read; it states complete with the three tests at EXIT=0 and a negative control whose red log's first line repeats the declared string verbatim, but it records neither baseline_suite nor after_suite, so its cited results name revision 60b209380 rather than the promoted head a869cc1e and no reader can derive its added failures.\nVERDICT diff: read all three commits against base 4e05e287; 6d5c4655 ports the detector and wires promotion, 60b209380 declares the ledger field, and a869cc1e replaces the empty-list default with the ledger.unmeasured_clone_report marker and adds the test that separates an unmeasured run from one measured to copy nothing, repairing the previous review's first finding.\nCALL_SITES: reckon/crew/promotion.py:5705 the only caller of clones.promotion_clone_matches, reckon/crew/promotion.py:5769 the build_record argument that lands the report, reckon/ledger.py:1698 the row's only writer of the field, reckon/ledger.py:148 the RECORD_FIELDS declaration that requires the key on every row\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:5696-5713 measures the run's changed functions against reckon/ and tests/ at the promoted revision and records each match under clone_matches without touching the gate verdict, which is what the goal states.\nSCORE evidence: 13\nJUSTIFICATION evidence: the named tests are green at the promoted head in this reviewer's replay but the done_when's own arm condition is unmet at clone_gate_head.log:1, which stops at 43% with no summary and no EXIT= line, so the run's added failures cannot be derived by anyone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the three commits is inside the six declared write paths, and the only wide-reaching edit is the single RECORD_FIELDS entry at reckon/ledger.py:148 that the goal's \"under a declared field\" requires.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_promotion_reports_clones.py:186 compares the reported line against an ast parse of the fixture rather than against the value under test and reddens under the declared mutation, but tests/test_promotion_reports_clones.py:158 covers only a function the run adds, leaving the goal's modified-in-place half unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/clones.py:55-77 keeps the census's own function names and normalisation, its docstring cites docs/research/data/crew-pattern-review/code-depth/census.py which exists at 38095 bytes, and the changed files carry no plan, sprint or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074744951170-promotion-reports-private-copies/clone_gate_head.log:1 the done-when's head arm stops at 43 percent with no summary and no EXIT= line, its header names revision 6d5c4655 which is the first of the run's three commits, its command runs -n 10 where the done-when names -n 4, and the base arm at clone_gate_base.log:1 stops at 40 percent the same way, so the two commits after 6d5c4655 including the promoted head have no completed gate observation and the run's added failures are underivable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074744951170-promotion-reports-private-copies/reconcile_test_promotion_reports_clones.log:1 the log's own header names revision 60b209380 while the run it reports is the three-test file whose third test exists only in a869cc1e, committed thirty seconds after the log was written, so the manifest's cited evidence identifies a revision that does not contain the code it exercised and the promoted head carries no log stamped at it.\nFINDING tests/test_promotion_reports_clones.py:158 both clone-report tests promote a run that adds a new file, so the goal's other half \u2014 a function the run modifies inside a file the base already carries \u2014 is exercised by no test, and a regression narrowing the detector to added files would leave the suite green.",
+  "review_run_id": "r-20260930T103414416235-review-of-promotion-reports-private-copies",
+  "reviewed_base_sha": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "reviewed_head_sha": "a869cc1edb977ce9271d0d40c84532499722dbdb",
+  "reviewed_run_id": "r-20260930T074744951170-promotion-reports-private-copies",
+  "reviewer_run_id": "r-20260930T103414416235-review-of-promotion-reports-private-copies",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T10:44:59.998253+00:00",
+  "total": 88
+}

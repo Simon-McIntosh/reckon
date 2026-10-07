@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:1563"
+  ],
+  "completed_at": "2026-10-03T15:21:01.128Z",
+  "dispatched_at": "2026-10-03T15:06:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T144100990788-a-review-with-no-base-is-not-carried/base-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's module-under-test header line was corrected by hand after the run (a comment states the first probe printed the worktree path), so the log's own header is not a pristine capture and a reader cannot independently tie the 2-failure body to the scratch module from the file alone; the manifest measurement_module and measurement_cwd corroborate it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "One commit 17873c12 changes only the branch in _review_delivered_paths (recovery.py:1501) to return None when no base is named instead of falling through with the cited paths alone, and adds the new test file; it reuses the module's existing None contract for an unreadable history, so no other reader changes.",
+    "done_when": "All three required cases are present in tests/test_a_review_with_no_base_is_not_carried.py and drive carry_review_forward end to end against a real git history: a no-base record is not carried over the delivered test file (:157), a no-base record is not carried over an unrelated record path (:181), and a record with a resolvable base still carries over an unrelated record with scope [\"data/record.txt\"] (:205, :219); the base arm fails exactly the two no-base cases and the negative control reddens the declared first case.",
+    "goal": "The landed change makes _review_delivered_paths return None when the stored record names no base (reckon/crew/recovery.py:1501), so review_head_move sets touches_delivered_work True with no touched path (recovery.py:1563) and carry_review_forward declines and records \"the reviewed diff could not be read\" on the pointer (recovery.py:1620, :1627) \u2014 exactly the node goal, with the runtime-source rule still firing first (recovery.py:1610).",
+    "manifest": "Read; status complete, tests names the four-file focused gate at 17 passed EXIT=0, test_logs name the head, base and negative-control logs, and its baseline_suite/after_suite arms are recorded as their own JSON blocks with completed true, each naming its own revision and log.",
+    "write_paths": "git diff 0626dfb43..17873c12 changes only reckon/crew/recovery.py and the new tests/test_a_review_with_no_base_is_not_carried.py, both inside the node's declared write scope, with no unrelated edit and nothing outside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_with_no_base_is_not_carried.py (:157, :181, :205) each name a condition under which they fail and drive the reflex end to end against a real history, the two no-base cases are red at the base revision while the resolvable-base case stays green, and the negative control reddens the declared first case.",
+    "evidence": "The run records its own arms as manifest baseline_suite (0626dfb43, 2 failed, the two no-base cases) and after_suite (17873c12, 0 failed, 1 pending call), the negative control is red on the declared case, and I independently reproduced the head gate at 17873c12 as 17 passed EXIT=0; the base-gate.log header was hand-corrected after the run to state the scratch module path, so that line is disclosed rather than a pristine capture.",
+    "fit": "The single-branch change reuses the module's existing None reading of an unreadable history rather than a second sentinel, keeps the mechanism-first docstring with no plan labels or ticket references, and the new test follows the existing fixture idiom (a real repo, a private RECKON_HOME, a monkeypatched store root).",
+    "goal_fidelity": "recovery.py:1501 returns None on a missing base, recovery.py:1565 turns that into touches_delivered_work True, and recovery.py:1620 refuses and writes the carried-False refusal with reason \"the reviewed diff could not be read\" onto the pointer, which is precisely the goal.",
+    "scope_discipline": "git diff --name-only 0626dfb43..17873c12 is exactly reckon/crew/recovery.py and tests/test_a_review_with_no_base_is_not_carried.py, both declared, and the tree at 17873c12 is clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The landed change makes _review_delivered_paths return None when the stored record names no base (reckon/crew/recovery.py:1501), so review_head_move sets touches_delivered_work True with no touched path (recovery.py:1563) and carry_review_forward declines and records \"the reviewed diff could not be read\" on the pointer (recovery.py:1620, :1627) \u2014 exactly the node goal, with the runtime-source rule still firing first (recovery.py:1610).\nVERDICT done_when: All three required cases are present in tests/test_a_review_with_no_base_is_not_carried.py and drive carry_review_forward end to end against a real git history: a no-base record is not carried over the delivered test file (:157), a no-base record is not carried over an unrelated record path (:181), and a record with a resolvable base still carries over an unrelated record with scope [\"data/record.txt\"] (:205, :219); the base arm fails exactly the two no-base cases and the negative control reddens the declared first case.\nVERDICT write_paths: git diff 0626dfb43..17873c12 changes only reckon/crew/recovery.py and the new tests/test_a_review_with_no_base_is_not_carried.py, both inside the node's declared write scope, with no unrelated edit and nothing outside the grant.\nVERDICT manifest: Read; status complete, tests names the four-file focused gate at 17 passed EXIT=0, test_logs name the head, base and negative-control logs, and its baseline_suite/after_suite arms are recorded as their own JSON blocks with completed true, each naming its own revision and log.\nVERDICT diff: One commit 17873c12 changes only the branch in _review_delivered_paths (recovery.py:1501) to return None when no base is named instead of falling through with the cited paths alone, and adds the new test file; it reuses the module's existing None contract for an unreadable history, so no other reader changes.\nCALL_SITES: reckon/crew/recovery.py:1563\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: recovery.py:1501 returns None on a missing base, recovery.py:1565 turns that into touches_delivered_work True, and recovery.py:1620 refuses and writes the carried-False refusal with reason \"the reviewed diff could not be read\" onto the pointer, which is precisely the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: The run records its own arms as manifest baseline_suite (0626dfb43, 2 failed, the two no-base cases) and after_suite (17873c12, 0 failed, 1 pending call), the negative control is red on the declared case, and I independently reproduced the head gate at 17873c12 as 17 passed EXIT=0; the base-gate.log header was hand-corrected after the run to state the scratch module path, so that line is disclosed rather than a pristine capture.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 0626dfb43..17873c12 is exactly reckon/crew/recovery.py and tests/test_a_review_with_no_base_is_not_carried.py, both declared, and the tree at 17873c12 is clean.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_review_with_no_base_is_not_carried.py (:157, :181, :205) each name a condition under which they fail and drive the reflex end to end against a real history, the two no-base cases are red at the base revision while the resolvable-base case stays green, and the negative control reddens the declared first case.\nSCORE fit: 20\nJUSTIFICATION fit: The single-branch change reuses the module's existing None reading of an unreadable history rather than a second sentinel, keeps the mechanism-first docstring with no plan labels or ticket references, and the new test follows the existing fixture idiom (a real repo, a private RECKON_HOME, a monkeypatched store root).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T144100990788-a-review-with-no-base-is-not-carried/base-gate.log:1 follow-on: the base arm's module-under-test header line was corrected by hand after the run (a comment states the first probe printed the worktree path), so the log's own header is not a pristine capture and a reader cannot independently tie the 2-failure body to the scratch module from the file alone; the manifest measurement_module and measurement_cwd corroborate it.\nreviewed_base_sha: 0626dfb43cab4b7d196277b9ec7aee5b3efdf860\nreviewed_head_sha: 17873c12de1f0b00f7be6622e65bb718828c11ac",
+  "review_run_id": "r-20261003T150635149709-review-of-a-review-with-no-base-is-not-carried",
+  "reviewed_base_sha": "0626dfb43cab4b7d196277b9ec7aee5b3efdf860",
+  "reviewed_commits": [
+    "17873c12"
+  ],
+  "reviewed_head_sha": "17873c12de1f0b00f7be6622e65bb718828c11ac",
+  "reviewed_run_id": "r-20261003T144100990788-a-review-with-no-base-is-not-carried",
+  "reviewer_run_id": "r-20261003T150635149709-review-of-a-review-with-no-base-is-not-carried",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T15:18:45.726859+00:00",
+  "total": 99
+}

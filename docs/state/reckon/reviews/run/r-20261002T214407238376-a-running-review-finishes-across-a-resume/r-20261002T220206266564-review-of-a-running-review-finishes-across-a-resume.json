@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a65c35de903b8e547771cbc90bf69f3c8e1c2b41",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:3304 dispatch_awaiting_reviews calls withdraw_superseded_review",
+    "reckon/crew/recovery.py:1859 dispatch_review_for_run calls carry_review_forward"
+  ],
+  "completed_at": "2026-10-02T22:14:01.396Z",
+  "dispatched_at": "2026-10-02T22:02:55Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T214407238376-a-running-review-finishes-across-a-resume/manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest records its gate under tests and test_logs rather than the canonical baseline_suite and after_suite fields that review.annotate_review_of_run reads (review.py:550-551), so a reader applying the module's own derivation gets an unmeasured count; the base and head arm logs are present and the count derives to 0 added failures when read directly."
+    }
+  ],
+  "head_log_revision": "135f7b3f6e78d339b024a511051fdf4ddb51b812",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base a65c35de; cda91f6a0 adds the launch gate and _review_worker_launched plus the three-case test file, and 135f7b3f6 formats that fixture, introducing no behaviour.",
+    "done_when": "the three named cases live in tests/test_a_running_review_finishes_across_a_resume.py and pass end to end against a real git history (13 passed at 135f7b3f6, EXIT=0); the negative control reds exactly the two launched cases (2 failed, 1 passed, EXIT=1) which the head arm passes.",
+    "goal": "read withdraw_superseded_review (reckon/crew/recovery.py:1421) and its new helper _review_worker_launched (recovery.py:1474); the gate returns before the head-covers check when the review run's own worker.json exists, so a launched review is no longer withdrawn when a resume moves the head and its verdict reaches the new head through carry_review_forward (recovery.py:1340).",
+    "manifest": "manifest.md reads status: complete and names the base and head arms and the negative-control log, but records the gate under the legacy keys tests and test_logs rather than the canonical baseline_suite and after_suite JSON that review.annotate_review_of_run reads, so the run's own added-failure count derives as unmeasured from the manifest alone.",
+    "write_paths": "the diff between a65c35de and 135f7b3f6 touches only reckon/crew/recovery.py and tests/test_a_running_review_finishes_across_a_resume.py, both named in the node's granted write paths."
+  },
+  "justifications": {
+    "durability": "forcing _review_worker_launched to False at 135f7b3f6 turns tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_is_not_withdrawn_and_its_verdict_carries_forward and ::test_a_launched_review_over_a_source_move_earns_a_light_re_review red, so the guard is load-bearing and regression-visible.",
+    "evidence": "tests/test_a_running_review_finishes_across_a_resume.py drives cda91f6a0's gate through withdraw_superseded_review and dispatch_review_for_run, and the negative control at logs/negative-control.log reds exactly the two launched cases (EXIT=1); docked because the manifest records its arms outside baseline_suite/after_suite, so the recorded count is unmeasured until read from gate-base.log and gate-head.log directly (0 added failures).",
+    "fit": "_review_worker_launched (recovery.py:1474) reads the run's worker record through the existing _worker_record (recovery.py:5443) and follows the module's _review_* naming and fail-safe docstring style; only a two-line worker-record test is duplicated with _review_attempt_withdrawn_before_launch (recovery.py:1489).",
+    "goal_fidelity": "the running half of the plan's review rule is implemented at recovery.py:1450 and joined to the carry-forward rule at recovery.py:1859, and the three done_when cases pass.",
+    "scope_discipline": "git diff a65c35de..135f7b3f6 --stat names only reckon/crew/recovery.py (+26) and tests/test_a_running_review_finishes_across_a_resume.py (+338), both granted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read withdraw_superseded_review (reckon/crew/recovery.py:1421) and its new helper _review_worker_launched (recovery.py:1474); the gate returns before the head-covers check when the review run's own worker.json exists, so a launched review is no longer withdrawn when a resume moves the head and its verdict reaches the new head through carry_review_forward (recovery.py:1340).\nVERDICT done_when: the three named cases live in tests/test_a_running_review_finishes_across_a_resume.py and pass end to end against a real git history (13 passed at 135f7b3f6, EXIT=0); the negative control reds exactly the two launched cases (2 failed, 1 passed, EXIT=1) which the head arm passes.\nVERDICT write_paths: the diff between a65c35de and 135f7b3f6 touches only reckon/crew/recovery.py and tests/test_a_running_review_finishes_across_a_resume.py, both named in the node's granted write paths.\nVERDICT manifest: manifest.md reads status: complete and names the base and head arms and the negative-control log, but records the gate under the legacy keys tests and test_logs rather than the canonical baseline_suite and after_suite JSON that review.annotate_review_of_run reads, so the run's own added-failure count derives as unmeasured from the manifest alone.\nVERDICT diff: read commit by commit against base a65c35de; cda91f6a0 adds the launch gate and _review_worker_launched plus the three-case test file, and 135f7b3f6 formats that fixture, introducing no behaviour.\nCALL_SITES: reckon/crew/recovery.py:3304 dispatch_awaiting_reviews calls withdraw_superseded_review, reckon/crew/recovery.py:1859 dispatch_review_for_run calls carry_review_forward\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the running half of the plan's review rule is implemented at recovery.py:1450 and joined to the carry-forward rule at recovery.py:1859, and the three done_when cases pass.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_running_review_finishes_across_a_resume.py drives cda91f6a0's gate through withdraw_superseded_review and dispatch_review_for_run, and the negative control at logs/negative-control.log reds exactly the two launched cases (EXIT=1); docked because the manifest records its arms outside baseline_suite/after_suite, so the recorded count is unmeasured until read from gate-base.log and gate-head.log directly (0 added failures).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a65c35de..135f7b3f6 --stat names only reckon/crew/recovery.py (+26) and tests/test_a_running_review_finishes_across_a_resume.py (+338), both granted.\nSCORE durability: 20\nJUSTIFICATION durability: forcing _review_worker_launched to False at 135f7b3f6 turns tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_is_not_withdrawn_and_its_verdict_carries_forward and ::test_a_launched_review_over_a_source_move_earns_a_light_re_review red, so the guard is load-bearing and regression-visible.\nSCORE fit: 19\nJUSTIFICATION fit: _review_worker_launched (recovery.py:1474) reads the run's worker record through the existing _worker_record (recovery.py:5443) and follows the module's _review_* naming and fail-safe docstring style; only a two-line worker-record test is duplicated with _review_attempt_withdrawn_before_launch (recovery.py:1489).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T214407238376-a-running-review-finishes-across-a-resume/manifest.md:10 follow-on: the reviewed manifest records its gate under tests and test_logs rather than the canonical baseline_suite and after_suite fields that review.annotate_review_of_run reads (review.py:550-551), so a reader applying the module's own derivation gets an unmeasured count; the base and head arm logs are present and the count derives to 0 added failures when read directly.",
+  "review_run_id": "r-20261002T220206266564-review-of-a-running-review-finishes-across-a-resume",
+  "reviewed_base_sha": "a65c35de903b8e547771cbc90bf69f3c8e1c2b41",
+  "reviewed_head_sha": "135f7b3f6e78d339b024a511051fdf4ddb51b812",
+  "reviewed_run_id": "r-20261002T214407238376-a-running-review-finishes-across-a-resume",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.562691+00:00",
+  "total": 95
+}

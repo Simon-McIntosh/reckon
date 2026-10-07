@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 11,
+  "added_failure_ids": [
+    "tests/test_crew_lane_agnostic_placement.py::test_a_placed_dispatch_is_never_rerouted_to_another_lane",
+    "tests/test_crew_lane_agnostic_placement.py::test_a_reachable_provider_leaves_the_placement_admitted",
+    "tests/test_crew_lane_agnostic_placement.py::test_an_unreachable_provider_endpoint_is_refused_before_launch",
+    "tests/test_crew_workspace_requirements.py::test_a_backend_declaring_no_placement_is_untouched",
+    "tests/test_crew_workspace_requirements.py::test_a_half_declared_query_set_is_refused",
+    "tests/test_crew_workspace_requirements.py::test_a_node_local_path_is_refused_by_name_with_its_own_sentence",
+    "tests/test_crew_workspace_requirements.py::test_a_placement_naming_a_wrapper_with_no_query_is_refused",
+    "tests/test_crew_workspace_requirements.py::test_a_requirement_declaring_no_target_is_refused",
+    "tests/test_crew_workspace_requirements.py::test_a_satisfied_placement_is_admitted",
+    "tests/test_crew_workspace_requirements.py::test_an_unreachable_endpoint_is_refused_naming_the_endpoint",
+    "tests/test_crew_workspace_requirements.py::test_an_unreachable_requirement_path_is_refused_before_launch"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "backend": "clive",
+  "base_log_revision": "b7134f5fdfeba023bbd6cc74ad5c8350802e5920",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T00:37:39.077Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "exempted",
+      "reason": "a currency report is a point-in-time reading that feeds dispatch, not a lasting artifact; every unmet item it names (f-awcj-006, f-awcj-admitted-shell-forms-are-untested and the stall and replay-bound residuals) is dispatched as its own repair node whose test reproduces the item at base before repairing it, so the durable guard lives in those nodes' tests rather than in the report",
+      "recorded_at": "2026-10-01T00:36:05.465239+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-01T00:29:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md",
+      "line": "71",
+      "severity": "follow-on",
+      "text": "follow-on: the stall followup's \"state = \\\"stalled\\\"\" is cited at recovery.py:6677, but the assignment is at recovery.py:6668 (6677 is a comment on liveness provenance), so a repair node opening the cited line does not see the claim it is meant to settle; the code bytes are identical at b7134f5f and 9a6fcf46c."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md",
+      "line": "94",
+      "severity": "follow-on",
+      "text": "follow-on: the --timeout-seconds option is cited at cli.py:5306-5312, but it is declared at cli.py:5295-5296 (5306-5312 is the command/pretty option group and the callback), so the cited range does not settle the option's existence or default, though the substance (option exists; signatures default 300.0 at promotion.py:1500 and :1720) is correct."
+    }
+  ],
+  "head_log_revision": "9a6fcf46c17fc3dbacf9e983d11c2afa548d9415",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no repository diff for a read-only currency-report node; the deliverable is report.md plus the gate and reproduction logs under the report directory and the node's own run directory, all outside any checkout, and the reviewed worktree is clean at b7134f5f.",
+    "done_when": "the done_when asks for a met/partly-met/unmet verdict per item with the settling file:line read from the committed blob at the main revision named on the first line, a run-and-logged reproduction plus repair write paths per unmet item, one executed check per met item, and a dispatch order noting shared files and lead decisions; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md names main 9a6fcf46c on its first line (report.md:3), states a verdict per item (report.md:41,59,78,93,107,125,133,139), and carries the executed checks and dispatch order (report.md:14-22,158-177), but two of its settling anchors are misplaced (see findings).",
+    "goal": "the reviewed node's goal is to establish at main which open followups and implementable sections of a-worker-is-charged-to-a-job still describe unmet work so the next nodes repair only what is still broken; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md audits exactly the plan's four data-status=\"open\" followups (f-awcj-006-first-rung-under-the-held-reservation, f-awcj-stall-word, f-awcj-admitted-shell-forms-are-untested, f-awcj-replay-bound-follows-the-gate) and its four implementable sections s1/s2/s6/s7 (report.md:9-12), matching the plan's own plan-section-declarations meta, and closes with a dispatch order (report.md:158-177).",
+    "manifest": "read; it names status complete, commits none (the repository is read-only for this role), the gate command with both arms (base 3 failed/69 passed, main 14 failed/58 passed), the five logs, and failure_attribution attributing all 11 added failures to a partial-archive instrument rather than to any commit.",
+    "write_paths": "the reviewed node is fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job; report.md and the five logs sit there and git -C <reviewed worktree> status --short is empty at b7134f5fdfeba023bbd6cc74ad5c8350802e5920, so no repository path changed."
+  },
+  "justifications": {
+    "durability": "nothing guards report.md \u2014 no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md and crew/reports is not a git repository, so a later edit to a verdict or an anchor fails nothing; the durable guard belongs to the repair nodes each item names.",
+    "evidence": "both arms ran and are logged (gate-base.log 3 failed/69 passed EXIT=1, gate-main.log 14 failed/58 passed EXIT=1), the reproductions run (repro-shell-forms.log, repro-replay-bound.log, repro-reservation.log), and the reviewed run's own gate logs derive 11 added failures, but the head arm ran in a git-archive tree missing its generated reckon/_skills so its 14-failure count measures that instrument rather than main's code.",
+    "fit": "report.md:39-177 follows the repository's triage idiom (a verdict heading, then the anchor and the reproduction), cites plan section and followup ids as content, and introduces no name the naming rules forbid.",
+    "goal_fidelity": "report.md:9-12 audits every open followup and the four implementable sections the plan's own plan-section-declarations meta lists, and report.md:158-177 orders them with the shared-file and lead-decision notes the goal implies.",
+    "scope_discipline": "the reviewed worktree is clean at b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and every artifact sits under the fenced report directory, so no repository path changed."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to establish at main which open followups and implementable sections of a-worker-is-charged-to-a-job still describe unmet work so the next nodes repair only what is still broken; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md audits exactly the plan's four data-status=\"open\" followups (f-awcj-006-first-rung-under-the-held-reservation, f-awcj-stall-word, f-awcj-admitted-shell-forms-are-untested, f-awcj-replay-bound-follows-the-gate) and its four implementable sections s1/s2/s6/s7 (report.md:9-12), matching the plan's own plan-section-declarations meta, and closes with a dispatch order (report.md:158-177).\nVERDICT done_when: the done_when asks for a met/partly-met/unmet verdict per item with the settling file:line read from the committed blob at the main revision named on the first line, a run-and-logged reproduction plus repair write paths per unmet item, one executed check per met item, and a dispatch order noting shared files and lead decisions; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md names main 9a6fcf46c on its first line (report.md:3), states a verdict per item (report.md:41,59,78,93,107,125,133,139), and carries the executed checks and dispatch order (report.md:14-22,158-177), but two of its settling anchors are misplaced (see findings).\nVERDICT write_paths: the reviewed node is fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job; report.md and the five logs sit there and git -C <reviewed worktree> status --short is empty at b7134f5fdfeba023bbd6cc74ad5c8350802e5920, so no repository path changed.\nVERDICT manifest: read; it names status complete, commits none (the repository is read-only for this role), the gate command with both arms (base 3 failed/69 passed, main 14 failed/58 passed), the five logs, and failure_attribution attributing all 11 added failures to a partial-archive instrument rather than to any commit.\nVERDICT diff: there is no repository diff for a read-only currency-report node; the deliverable is report.md plus the gate and reproduction logs under the report directory and the node's own run directory, all outside any checkout, and the reviewed worktree is clean at b7134f5f.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:9-12 audits every open followup and the four implementable sections the plan's own plan-section-declarations meta lists, and report.md:158-177 orders them with the shared-file and lead-decision notes the goal implies.\nSCORE evidence: 15\nJUSTIFICATION evidence: both arms ran and are logged (gate-base.log 3 failed/69 passed EXIT=1, gate-main.log 14 failed/58 passed EXIT=1), the reproductions run (repro-shell-forms.log, repro-replay-bound.log, repro-reservation.log), and the reviewed run's own gate logs derive 11 added failures, but the head arm ran in a git-archive tree missing its generated reckon/_skills so its 14-failure count measures that instrument rather than main's code.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and every artifact sits under the fenced report directory, so no repository path changed.\nSCORE durability: 5\nJUSTIFICATION durability: nothing guards report.md \u2014 no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md and crew/reports is not a git repository, so a later edit to a verdict or an anchor fails nothing; the durable guard belongs to the repair nodes each item names.\nSCORE fit: 17\nJUSTIFICATION fit: report.md:39-177 follows the repository's triage idiom (a verdict heading, then the anchor and the reproduction), cites plan section and followup ids as content, and introduces no name the naming rules forbid.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md:71 follow-on: the stall followup's \"state = \\\"stalled\\\"\" is cited at recovery.py:6677, but the assignment is at recovery.py:6668 (6677 is a comment on liveness provenance), so a repair node opening the cited line does not see the claim it is meant to settle; the code bytes are identical at b7134f5f and 9a6fcf46c.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-worker-is-charged-to-a-job/report.md:94 follow-on: the --timeout-seconds option is cited at cli.py:5306-5312, but it is declared at cli.py:5295-5296 (5306-5312 is the command/pretty option group and the callback), so the cited range does not settle the option's existence or default, though the substance (option exists; signatures default 300.0 at promotion.py:1500 and :1720) is correct.\n",
+  "review_run_id": "r-20261001T002931425896-review-of-currency-a-worker-is-charged-to-a-job",
+  "reviewed_base_sha": "b7134f5fdfeba023bbd6cc74ad5c8350802e5920",
+  "reviewed_head_sha": "b7134f5fdfeba023bbd6cc74ad5c8350802e5920",
+  "reviewed_run_id": "r-20261001T000514409396-currency-a-worker-is-charged-to-a-job",
+  "scores": {
+    "durability": 5,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T00:36:05.475237+00:00",
+  "total": 74
+}

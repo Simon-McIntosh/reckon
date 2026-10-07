@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:913 (sweep writes each session's payload_for)",
+    "reckon/hooks/coordinator_obligations.py:749 (the prompt hook renders live_payload",
+    "the reader the finding must reach)",
+    "reckon/hooks/coordinator_obligations.py:809 (the stop hook renders the same payload)"
+  ],
+  "completed_at": "2026-10-03T02:36:26.325Z",
+  "dispatched_at": "2026-10-03T02:23:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "560",
+      "severity": "follow-on",
+      "text": "follow-on: live_payload rebuilds the unreadable rows from the stored findings and appends them after the list the writer already sorted, while payload_for sorts the same rows into place, so the writer/reader parity holds only while every finding's row happens to sort last; the new case at tests/test_skipped_record_reaches_the_checklist.py:263 compares the two with a single finding and does not pin the multi-finding or zero-age-duty ordering."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "560",
+      "severity": "follow-on",
+      "text": "follow-on: the unreadable rows are added by live_payload and payload_for but not by the derivation obligations.obligations(), so the existing parity cases tests/test_obligations_snapshot_is_published.py:229 and :423 hold only while their fixture carries no finding; the plan's named live_payload parity check is thus met between payload_for and live_payload rather than against the derivation, and a fixture that plants a truncated record would red those tests."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "105",
+      "severity": "follow-on",
+      "text": "follow-on: _UNREADABLE_RECORD_KIND is not among the hook's _NON_BLOCKING_KINDS (reckon/hooks/coordinator_obligations.py:193), so an unreadable record now holds a stop open as well as prompting; that hook file is outside this node's fence, so whether a skip should block a turn end is for the plan owner to decide."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "508",
+      "severity": "follow-on",
+      "text": "follow-on: a finding row carries age_seconds 0 because a finding records no observation time, so the row reports no real age and sorts to the bottom of the checklist; if an age is wanted it needs a stamp written on the finding when the sweep records it."
+    }
+  ],
+  "head_log_revision": "4d3cc8367c5662643beb1ec3d49bb9c0754d1ee9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from 41e6fc48f; the single commit replaces the process-global _SKIPPED_RECORDS list with a ContextVar collection region (reckon/crew/review.py:1397-1440), threads a per-call skipped list through stored_record and _record_filed_elsewhere, derives fleet_state inside collect_read_failures and sets state.findings (reckon/crew/obligation_snapshot.py:735-748), and renders one row per finding in both payload_for and live_payload.",
+    "done_when": "all clauses are met. The checklist names the skipped record through payload_for and live_payload (test_a_skipped_record_is_named_in_the_prompt_checklist, re-run green at 4d3cc8367); the skips are held per call rather than in module state (_READ_FAILURES is a ContextVar started and reset by collect_read_failures at reckon/crew/review.py:1403-1421, with test_a_read_outside_a_sweep_leaves_the_next_sweep_free); and the negative control strips the findings in live_payload and reds exactly the rendering case (logs/negative-control-live-payload-strips-findings-2.log, 1 failed, EXIT=1).",
+    "goal": "the node's goal is that a review record caught mid-write is named in the checklist a coordinator reads rather than vanishing into the snapshot store -- the diff has live_payload rebuild a duty row per stored finding (reckon/crew/obligation_snapshot.py:535-562) and payload_for extend each session's items (reckon/crew/obligation_snapshot.py:806), so the prompt hook emits a line of kind unreadable-review-record naming the path, which I confirmed both from the node's own captured checklist and by re-running the new case at head.",
+    "manifest": "read; it reads status complete, records both arms with their revisions, literal absolute commands, completed true, failure_count 0 and no ids, and a negative control naming its log and its designed failing case -- consistent with the two gate logs I opened.",
+    "write_paths": "the diff 41e6fc48f..4d3cc8367 touches exactly reckon/crew/obligation_snapshot.py, reckon/crew/review.py, tests/test_skipped_record_reaches_the_checklist.py and the node's evidence fragment, all inside the node's FENCE -- SCOPE list; git diff --stat names no other path."
+  },
+  "justifications": {
+    "durability": "the guard is shown to fire -- logs/negative-control-live-payload-strips-findings-2.log prints the injected checklist (\"2 outstanding, oldest 2s\") with the review-ready line and no line naming the truncated path, failing the case at assert named -- and the mutation was reverted with a restored-green run (logs/negative-control-restored-green.log, 3 passed, EXIT=0) before delivery.",
+    "evidence": "the head arm at logs/gate-head-arm-committed.log runs thirty-four cases including the three new ones at 4d3cc8367 (34 passed, EXIT=0) and the base arm at logs/gate-base-arm-preexisting-only.log runs the thirty-one pre-existing cases at 41e6fc48f (31 passed, EXIT=0), neither with a failure id, so added_failure_count is 0; the negative control is a real red (1 failed, EXIT=1) and I independently re-ran the new file at head (3 passed, EXIT=0).",
+    "fit": "the new names state their mechanism (collect_read_failures, _note_skipped_record, _with_unreadable_records, _unreadable_record_items, _UNREADABLE_RECORD_KIND) with no plan label, version, section or ticket reference, and the docstrings say why a skip is a reading a publisher must name; the deferred import of parse_utc is explained rather than incidental.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:560 carries one duty row per stored finding into live_payload and :806 into payload_for, and the hook at reckon/hooks/coordinator_obligations.py:749 renders it, which is what the goal states; counted one below full because the row reaches every session's slice fleet-wide rather than the session that owns the unreadable run, a scope the plan does not settle.",
+    "scope_discipline": "every path the diff touches is inside the node's declared write paths, and the removed drain_read_failures / _SKIPPED_RECORDS names have no surviving reference anywhere in the tree (git grep at head returns none), so the fence and the record agree."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a review record caught mid-write is named in the checklist a coordinator reads rather than vanishing into the snapshot store -- the diff has live_payload rebuild a duty row per stored finding (reckon/crew/obligation_snapshot.py:535-562) and payload_for extend each session's items (reckon/crew/obligation_snapshot.py:806), so the prompt hook emits a line of kind unreadable-review-record naming the path, which I confirmed both from the node's own captured checklist and by re-running the new case at head.\nVERDICT done_when: all clauses are met. The checklist names the skipped record through payload_for and live_payload (test_a_skipped_record_is_named_in_the_prompt_checklist, re-run green at 4d3cc8367); the skips are held per call rather than in module state (_READ_FAILURES is a ContextVar started and reset by collect_read_failures at reckon/crew/review.py:1403-1421, with test_a_read_outside_a_sweep_leaves_the_next_sweep_free); and the negative control strips the findings in live_payload and reds exactly the rendering case (logs/negative-control-live-payload-strips-findings-2.log, 1 failed, EXIT=1).\nVERDICT write_paths: the diff 41e6fc48f..4d3cc8367 touches exactly reckon/crew/obligation_snapshot.py, reckon/crew/review.py, tests/test_skipped_record_reaches_the_checklist.py and the node's evidence fragment, all inside the node's FENCE -- SCOPE list; git diff --stat names no other path.\nVERDICT manifest: read; it reads status complete, records both arms with their revisions, literal absolute commands, completed true, failure_count 0 and no ids, and a negative control naming its log and its designed failing case -- consistent with the two gate logs I opened.\nVERDICT diff: read commit by commit from 41e6fc48f; the single commit replaces the process-global _SKIPPED_RECORDS list with a ContextVar collection region (reckon/crew/review.py:1397-1440), threads a per-call skipped list through stored_record and _record_filed_elsewhere, derives fleet_state inside collect_read_failures and sets state.findings (reckon/crew/obligation_snapshot.py:735-748), and renders one row per finding in both payload_for and live_payload.\nCALL_SITES: reckon/crew/obligation_snapshot.py:913 (sweep writes each session's payload_for), reckon/hooks/coordinator_obligations.py:749 (the prompt hook renders live_payload, the reader the finding must reach), reckon/hooks/coordinator_obligations.py:809 (the stop hook renders the same payload)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:560 carries one duty row per stored finding into live_payload and :806 into payload_for, and the hook at reckon/hooks/coordinator_obligations.py:749 renders it, which is what the goal states; counted one below full because the row reaches every session's slice fleet-wide rather than the session that owns the unreadable run, a scope the plan does not settle.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head arm at logs/gate-head-arm-committed.log runs thirty-four cases including the three new ones at 4d3cc8367 (34 passed, EXIT=0) and the base arm at logs/gate-base-arm-preexisting-only.log runs the thirty-one pre-existing cases at 41e6fc48f (31 passed, EXIT=0), neither with a failure id, so added_failure_count is 0; the negative control is a real red (1 failed, EXIT=1) and I independently re-ran the new file at head (3 passed, EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the diff touches is inside the node's declared write paths, and the removed drain_read_failures / _SKIPPED_RECORDS names have no surviving reference anywhere in the tree (git grep at head returns none), so the fence and the record agree.\nSCORE durability: 19\nJUSTIFICATION durability: the guard is shown to fire -- logs/negative-control-live-payload-strips-findings-2.log prints the injected checklist (\"2 outstanding, oldest 2s\") with the review-ready line and no line naming the truncated path, failing the case at assert named -- and the mutation was reverted with a restored-green run (logs/negative-control-restored-green.log, 3 passed, EXIT=0) before delivery.\nSCORE fit: 19\nJUSTIFICATION fit: the new names state their mechanism (collect_read_failures, _note_skipped_record, _with_unreadable_records, _unreadable_record_items, _UNREADABLE_RECORD_KIND) with no plan label, version, section or ticket reference, and the docstrings say why a skip is a reading a publisher must name; the deferred import of parse_utc is explained rather than incidental.\nFINDING reckon/crew/obligation_snapshot.py:560 follow-on: live_payload rebuilds the unreadable rows from the stored findings and appends them after the list the writer already sorted, while payload_for sorts the same rows into place, so the writer/reader parity holds only while every finding's row happens to sort last; the new case at tests/test_skipped_record_reaches_the_checklist.py:263 compares the two with a single finding and does not pin the multi-finding or zero-age-duty ordering.\nFINDING reckon/crew/obligation_snapshot.py:560 follow-on: the unreadable rows are added by live_payload and payload_for but not by the derivation obligations.obligations(), so the existing parity cases tests/test_obligations_snapshot_is_published.py:229 and :423 hold only while their fixture carries no finding; the plan's named live_payload parity check is thus met between payload_for and live_payload rather than against the derivation, and a fixture that plants a truncated record would red those tests.\nFINDING reckon/crew/obligation_snapshot.py:105 follow-on: _UNREADABLE_RECORD_KIND is not among the hook's _NON_BLOCKING_KINDS (reckon/hooks/coordinator_obligations.py:193), so an unreadable record now holds a stop open as well as prompting; that hook file is outside this node's fence, so whether a skip should block a turn end is for the plan owner to decide.\nFINDING reckon/crew/obligation_snapshot.py:508 follow-on: a finding row carries age_seconds 0 because a finding records no observation time, so the row reports no real age and sorts to the bottom of the checklist; if an age is wanted it needs a stamp written on the finding when the sweep records it.\nreviewed_base_sha: 41e6fc48f5b7f9293694519d4c13c4e8c146bb82\nreviewed_head_sha: 4d3cc8367c5662643beb1ec3d49bb9c0754d1ee9\n",
+  "review_run_id": "r-20261003T022233976733-review-of-skipped-record-reaches-the-checklist",
+  "reviewed_base_sha": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "reviewed_head_sha": "4d3cc8367c5662643beb1ec3d49bb9c0754d1ee9",
+  "reviewed_run_id": "r-20261003T014336335022-skipped-record-reaches-the-checklist",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T02:33:01.338941+00:00",
+  "total": 96
+}

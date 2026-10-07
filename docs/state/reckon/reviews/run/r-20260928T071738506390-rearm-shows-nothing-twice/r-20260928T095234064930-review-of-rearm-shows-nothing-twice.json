@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/after-suite.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/baseline-suite.log",
+    "note": "the reviewed manifest records baseline_suite and after_suite as the JSON objects this read path scans; the count and ids are the set difference over the two gate logs it names, computed with the module's own added_failures_from_gate_logs"
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:3235 crew_follow's resume branch gates the burst on _follow_replay_visible",
+    "reckon/cli.py:2876 _follow_replay_visible reads the reader's own stream",
+    "reckon/cli.py:2895 _follow_history_burst composes the framed burst",
+    "reckon/cli.py:2536 the live follow loop calls _follow_selects",
+    "reckon/cli.py:1804 _follow_selects refuses a legacy line to a scoped follower"
+  ],
+  "completed_at": "2026-09-28T10:19:36.137Z",
+  "dispatched_at": "2026-09-28T09:52:50Z",
+  "findings": [
+    {
+      "file": "tests/test_follow_rearm_continues.py",
+      "line": "441",
+      "text": "the section comment above the pane-history constants still says the replay is framed by nothing and that a header and a separator would each cost a line on every re-arm, which contradicts the head where a TTY replay opens under one dim frame line (reckon/cli.py:2895) and a pipe is handed nothing at all (:3235); the node records it in its follow-ons needing a comment-only edit, and until then a reader of that file learns the opposite of what the code does."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from b75b1a05: the fix in reckon/cli.py plus the new test file (213a9393), the plan and evidence landing (8447b93b), the three superseded tests rewritten to the decision (5b5fad19), the revert of the out-of-scope docs writes and the figure deletion (5f3b9b03), and the owner isolation with its control (394ee488), netting three files with no stray edit.",
+    "done_when": "the done_when is the evidence fence naming five cases in tests/test_follower_rearm_shows_nothing_twice.py, a base negative control whose first case must fail, and zero added failures against the neighbours; the file carries all five cases and 9 passed in my own run at head with RECKON_FOLLOWER_OWNER naming a dead pid (check-dead-owner-head.log), the first case fails at base in my own scratch reproduction (check-base-pipe-nothing-new.log), the recorded negative control reddens 6 of 9 at base with that case among them, and both arms added zero failure ids (baseline-suite.log 34 passed, after-suite.log 43 passed, dead-owner arm 5 then 2 failed with the head's two already in the base set).",
+    "goal": "the goal is a re-armed follower showing no transition it already showed while still showing every transition written after it stopped, and the delivered pair is the reader-gated history burst in crew_follow's resume branch (reckon/cli.py:3235, composed by _follow_history_burst at :2895) and the unattributable-line refusal in _follow_selects (:1804), read in the net diff of 213a9393..394ee488.",
+    "manifest": "read; it states complete with the four commit ids, both arms' logs, the dead-owner control and the follow-ons, its baseline_suite and after_suite JSON objects resolve to the two logs the added-failure derivation reads, and the two claims the prior review faulted (the archive landing row and the unnamed figure) are gone from the head because the out-of-scope docs writes were reverted.",
+    "write_paths": "the fence is reckon/cli.py and tests/test_follower_rearm_shows_nothing_twice.py, extended by the recorded widen to tests/test_follow_rearm_continues.py (resume-1-advice.txt); git diff --stat b75b1a05..394ee488 names exactly those three files, the docs files are back at base content byte for byte, and git status --short in the reviewed worktree is empty."
+  },
+  "justifications": {
+    "durability": "the isolation at tests/test_follower_rearm_shows_nothing_twice.py:69 is load-bearing, since removing it from a scratch copy reddens the withdrawal case under a dead-pid owner (check-isolation-load-bearing.log, 1 failed in 0.66s) and leaving it in reddens nothing.",
+    "evidence": "the gate file passes 9 of 9 at head under the dead-pid stamp (check-dead-owner-head.log) and fails its first case at base in the same instrument (check-base-pipe-nothing-new.log), and the added-failure derivation from the manifest's own baseline_suite and after_suite logs is 0 with no ids.",
+    "fit": "the new symbols are mechanism-named and documented (reckon/cli.py:2876, :2895, _HISTORY_FRAME) with no plan or tracker label, but the section comment at tests/test_follow_rearm_continues.py:441 still describes the superseded unframed replay.",
+    "goal_fidelity": "at head a pipe re-arm draws zero rows and a terminal replay opens under one frame line (reckon/cli.py:3235, :2895), and a legacy line reaches no scoped follower (:1804), which is the two leak mechanisms the fence names.",
+    "scope_discipline": "git diff --stat b75b1a05..394ee488 names only reckon/cli.py and the two test files, the widened file is covered in resume-1-advice.txt, and every docs write the node had made is reverted to base content."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a re-armed follower showing no transition it already showed while still showing every transition written after it stopped, and the delivered pair is the reader-gated history burst in crew_follow's resume branch (reckon/cli.py:3235, composed by _follow_history_burst at :2895) and the unattributable-line refusal in _follow_selects (:1804), read in the net diff of 213a9393..394ee488.\nVERDICT done_when: the done_when is the evidence fence naming five cases in tests/test_follower_rearm_shows_nothing_twice.py, a base negative control whose first case must fail, and zero added failures against the neighbours; the file carries all five cases and 9 passed in my own run at head with RECKON_FOLLOWER_OWNER naming a dead pid (check-dead-owner-head.log), the first case fails at base in my own scratch reproduction (check-base-pipe-nothing-new.log), the recorded negative control reddens 6 of 9 at base with that case among them, and both arms added zero failure ids (baseline-suite.log 34 passed, after-suite.log 43 passed, dead-owner arm 5 then 2 failed with the head's two already in the base set).\nVERDICT write_paths: the fence is reckon/cli.py and tests/test_follower_rearm_shows_nothing_twice.py, extended by the recorded widen to tests/test_follow_rearm_continues.py (resume-1-advice.txt); git diff --stat b75b1a05..394ee488 names exactly those three files, the docs files are back at base content byte for byte, and git status --short in the reviewed worktree is empty.\nVERDICT manifest: read; it states complete with the four commit ids, both arms' logs, the dead-owner control and the follow-ons, its baseline_suite and after_suite JSON objects resolve to the two logs the added-failure derivation reads, and the two claims the prior review faulted (the archive landing row and the unnamed figure) are gone from the head because the out-of-scope docs writes were reverted.\nVERDICT diff: read commit by commit from b75b1a05: the fix in reckon/cli.py plus the new test file (213a9393), the plan and evidence landing (8447b93b), the three superseded tests rewritten to the decision (5b5fad19), the revert of the out-of-scope docs writes and the figure deletion (5f3b9b03), and the owner isolation with its control (394ee488), netting three files with no stray edit.\nCALL_SITES: reckon/cli.py:3235 crew_follow's resume branch gates the burst on _follow_replay_visible, reckon/cli.py:2876 _follow_replay_visible reads the reader's own stream, reckon/cli.py:2895 _follow_history_burst composes the framed burst, reckon/cli.py:2536 the live follow loop calls _follow_selects, reckon/cli.py:1804 _follow_selects refuses a legacy line to a scoped follower\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: at head a pipe re-arm draws zero rows and a terminal replay opens under one frame line (reckon/cli.py:3235, :2895), and a legacy line reaches no scoped follower (:1804), which is the two leak mechanisms the fence names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate file passes 9 of 9 at head under the dead-pid stamp (check-dead-owner-head.log) and fails its first case at base in the same instrument (check-base-pipe-nothing-new.log), and the added-failure derivation from the manifest's own baseline_suite and after_suite logs is 0 with no ids.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat b75b1a05..394ee488 names only reckon/cli.py and the two test files, the widened file is covered in resume-1-advice.txt, and every docs write the node had made is reverted to base content.\nSCORE durability: 18\nJUSTIFICATION durability: the isolation at tests/test_follower_rearm_shows_nothing_twice.py:69 is load-bearing, since removing it from a scratch copy reddens the withdrawal case under a dead-pid owner (check-isolation-load-bearing.log, 1 failed in 0.66s) and leaving it in reddens nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the new symbols are mechanism-named and documented (reckon/cli.py:2876, :2895, _HISTORY_FRAME) with no plan or tracker label, but the section comment at tests/test_follow_rearm_continues.py:441 still describes the superseded unframed replay.\nFINDING tests/test_follow_rearm_continues.py:441 the section comment above the pane-history constants still says the replay is framed by nothing and that a header and a separator would each cost a line on every re-arm, which contradicts the head where a TTY replay opens under one dim frame line (reckon/cli.py:2895) and a pipe is handed nothing at all (:3235); the node records it in its follow-ons needing a comment-only edit, and until then a reader of that file learns the opposite of what the code does.",
+  "review_run_id": "r-20260928T095234064930-review-of-rearm-shows-nothing-twice",
+  "reviewed_base_sha": "b75b1a05f8a0d98bf9ac29913889771cfd0a5240",
+  "reviewed_head_sha": "394ee48824ba34650964eca8c09c82049f6f47ef",
+  "reviewed_run_id": "r-20260928T071738506390-rearm-shows-nothing-twice",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T10:02:59.185127+00:00",
+  "total": 90
+}

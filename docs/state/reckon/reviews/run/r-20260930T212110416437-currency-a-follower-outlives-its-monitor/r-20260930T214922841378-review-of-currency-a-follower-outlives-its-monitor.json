@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:_row_is_stale_inventory",
+    "reckon/crew/ticker.py:settled_at_attach",
+    "reckon/_backends.py:observe_log",
+    "reckon/crew/recovery.py:classify_pointer"
+  ],
+  "completed_at": "2026-09-30T21:57:41.600Z",
+  "dispatched_at": "2026-09-30T21:49:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-follower-outlives-its-monitor/report.md",
+      "line": "63",
+      "text": "the s9 verdict rests on a reproduction of the wrong layer: repro_s9.log records 'classify_pointer path not measurable: AttributeError' and 'full parses across 10 unchanged classify_pointer calls: 2', so the watcher's own entry point did not complete and produced 2 parses over 10 calls rather than the 10 the section's premise implies; the reported figure of 10 is from observe_log, and the watcher reaches it through _stream_budget at reckon/crew/recovery.py:2596, which short-circuits when the pointer already carries a folded budget, so a repair starting from this repro may cache a layer the failing path does not exercise and leave 'a watcher re-reads every stream on every poll' unaddressed for the observed-pointer case."
+    }
+  ],
+  "head_log_revision": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "there is no code diff to review; the deliverable is report.md (197 lines) plus 11 logs and 5 repro scripts, all under the declared report scope, and its claims are grounded at the named revision rather than restated from the plan.",
+    "done_when": "the done_when demands a per-item verdict at the named revision with file:line evidence, a run-and-logged smallest reproduction plus repair write paths for each unmet item, one executed check per met item, a dispatch order noting shared files, and baseline/head suite records; report.md delivers each, and I re-ran the s4 reproduction (reckon/cli.py:3256 returns suppressed=True for completed_unpromoted, failed and abandoned) and confirmed the s9 premise in reckon/_backends.py:3068 observe_log, which calls parse_events (reckon/_backends.py:2934) on every call with no key on path, size or mtime.",
+    "goal": "the node was dispatched to establish, at main 1c20ca68, which of a-follower-outlives-its-monitor's open followups (f-afoim-001, f-afoim-handoff-01) and implementable sections (s4, s9) still describe unmet work; report.md resolves all six units (two sections, two followups with four handoff sub-items) to met/partly-met/unmet with file:line evidence read from the committed blob at that revision and the landing commit for each met item.",
+    "manifest": "read; status complete, baseline_suite and after_suite both name logs/suite_main.log with the same three failure ids (the node changes nothing, so base == head == 1c20ca68), added failures 0, and its quoted figures reconcile line-for-line with the logs (suite_main.log ends '3 failed, 28 passed, 1 skipped in 87.67s').",
+    "write_paths": "the node was fenced to its reports directory and changed no repository file (manifest commits: none); report.md, the saved repro scripts (repro/) and every log (logs/) are under that directory, and its /tmp scratch is deleted (verified absent)."
+  },
+  "justifications": {
+    "durability": "the claims are re-runnable \u2014 revision-stamped logs plus the kept repro/s4_repro.py and repro/s9_repro.py let a later reader re-derive the two unmet sections, and I re-ran s4 successfully. Off four because nothing re-runs the report when the code moves, so a repaired section is not detected as stale, and the s9 repro's watcher-layer arm is non-functional (repro/s9_repro.py).",
+    "evidence": "every unmet item carries a run-and-logged reproduction and every met item an executed check (logs/met_s2.log through met_s6.log, logs/repro_s4.log through repro_h4.log), all revision-stamped, and I independently reproduced the s4 result; deducted because the s9 reproduction at report.md:63 measures reckon/_backends.py:3068 observe_log, not reckon/crew/recovery.py:2613 classify_pointer that the section's premise names, and its own log records that the classify_pointer arm errored after 2 parses.",
+    "fit": "report.md follows the deliverable contract it was given \u2014 no figure (the done_when names no artifact), no plan edit, and the required dispatch order with shared files (report.md:180) \u2014 and it surfaces two plan-level defects a currency node exists to find (the s6 text names skills/reckon-ship/... which does not exist; s9's write list omits reckon/mcp_views.py).",
+    "goal_fidelity": "report.md:17 and report.md:50 resolve s4 and s9 and both followups to met/partly/unmet with file:line at 1c20ca68 (e.g. reckon/cli.py:3256 delegating to reckon/crew/ticker.py:837 settled_at_attach), so the dispatched goal is met; deducted one because the s9 premise (a watcher re-reads every stream on every poll) is asserted from the lower observe_log layer rather than demonstrated on the watcher's own entry.",
+    "scope_discipline": "the manifest records no commit and no repository path changed; report.md, logs/ and repro/ all sit inside the single dispatched reports directory and its /tmp scratch is deleted."
+  },
+  "node": "review-of-currency-a-follower-outlives-its-monitor",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was dispatched to establish, at main 1c20ca68, which of a-follower-outlives-its-monitor's open followups (f-afoim-001, f-afoim-handoff-01) and implementable sections (s4, s9) still describe unmet work; report.md resolves all six units (two sections, two followups with four handoff sub-items) to met/partly-met/unmet with file:line evidence read from the committed blob at that revision and the landing commit for each met item.\nVERDICT done_when: the done_when demands a per-item verdict at the named revision with file:line evidence, a run-and-logged smallest reproduction plus repair write paths for each unmet item, one executed check per met item, a dispatch order noting shared files, and baseline/head suite records; report.md delivers each, and I re-ran the s4 reproduction (reckon/cli.py:3256 returns suppressed=True for completed_unpromoted, failed and abandoned) and confirmed the s9 premise in reckon/_backends.py:3068 observe_log, which calls parse_events (reckon/_backends.py:2934) on every call with no key on path, size or mtime.\nVERDICT write_paths: the node was fenced to its reports directory and changed no repository file (manifest commits: none); report.md, the saved repro scripts (repro/) and every log (logs/) are under that directory, and its /tmp scratch is deleted (verified absent).\nVERDICT manifest: read; status complete, baseline_suite and after_suite both name logs/suite_main.log with the same three failure ids (the node changes nothing, so base == head == 1c20ca68), added failures 0, and its quoted figures reconcile line-for-line with the logs (suite_main.log ends '3 failed, 28 passed, 1 skipped in 87.67s').\nVERDICT diff: there is no code diff to review; the deliverable is report.md (197 lines) plus 11 logs and 5 repro scripts, all under the declared report scope, and its claims are grounded at the named revision rather than restated from the plan.\nCALL_SITES: reckon/cli.py:_row_is_stale_inventory, reckon/crew/ticker.py:settled_at_attach, reckon/_backends.py:observe_log, reckon/crew/recovery.py:classify_pointer\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:17 and report.md:50 resolve s4 and s9 and both followups to met/partly/unmet with file:line at 1c20ca68 (e.g. reckon/cli.py:3256 delegating to reckon/crew/ticker.py:837 settled_at_attach), so the dispatched goal is met; deducted one because the s9 premise (a watcher re-reads every stream on every poll) is asserted from the lower observe_log layer rather than demonstrated on the watcher's own entry.\nSCORE evidence: 17\nJUSTIFICATION evidence: every unmet item carries a run-and-logged reproduction and every met item an executed check (logs/met_s2.log through met_s6.log, logs/repro_s4.log through repro_h4.log), all revision-stamped, and I independently reproduced the s4 result; deducted because the s9 reproduction at report.md:63 measures reckon/_backends.py:3068 observe_log, not reckon/crew/recovery.py:2613 classify_pointer that the section's premise names, and its own log records that the classify_pointer arm errored after 2 parses.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the manifest records no commit and no repository path changed; report.md, logs/ and repro/ all sit inside the single dispatched reports directory and its /tmp scratch is deleted.\nSCORE durability: 16\nJUSTIFICATION durability: the claims are re-runnable \u2014 revision-stamped logs plus the kept repro/s4_repro.py and repro/s9_repro.py let a later reader re-derive the two unmet sections, and I re-ran s4 successfully. Off four because nothing re-runs the report when the code moves, so a repaired section is not detected as stale, and the s9 repro's watcher-layer arm is non-functional (repro/s9_repro.py).\nSCORE fit: 18\nJUSTIFICATION fit: report.md follows the deliverable contract it was given \u2014 no figure (the done_when names no artifact), no plan edit, and the required dispatch order with shared files (report.md:180) \u2014 and it surfaces two plan-level defects a currency node exists to find (the s6 text names skills/reckon-ship/... which does not exist; s9's write list omits reckon/mcp_views.py).\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-a-follower-outlives-its-monitor/report.md:63 the s9 verdict rests on a reproduction of the wrong layer: repro_s9.log records 'classify_pointer path not measurable: AttributeError' and 'full parses across 10 unchanged classify_pointer calls: 2', so the watcher's own entry point did not complete and produced 2 parses over 10 calls rather than the 10 the section's premise implies; the reported figure of 10 is from observe_log, and the watcher reaches it through _stream_budget at reckon/crew/recovery.py:2596, which short-circuits when the pointer already carries a folded budget, so a repair starting from this repro may cache a layer the failing path does not exercise and leave 'a watcher re-reads every stream on every poll' unaddressed for the observed-pointer case.",
+  "review_logs": [],
+  "review_run_id": "r-20260930T214922841378-review-of-currency-a-follower-outlives-its-monitor",
+  "reviewed_base_sha": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "reviewed_head_sha": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "reviewed_run_id": "r-20260930T212110416437-currency-a-follower-outlives-its-monitor",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T21:57:11.809195+00:00",
+  "total": 90
+}

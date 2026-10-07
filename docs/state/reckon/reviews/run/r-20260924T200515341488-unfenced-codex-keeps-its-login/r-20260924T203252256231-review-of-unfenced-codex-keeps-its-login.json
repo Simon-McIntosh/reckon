@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3926",
+    "reckon/crew/dispatch.py:5413",
+    "reckon/crew/dispatch.py:5758",
+    "reckon/crew/resumption.py:243"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T20:32:52.256231+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit -- d31707b5 (+58/-4: the gate at reckon/_backends.py:2044, its comment, and the new test) and 51d80b95 (+122/-0: the landing record, an evidence anchor whose two-row fenced/unfenced table matches launch_plan:2039-2080, and the red-log copy); the declared mutation reinstates the pre-change shape, and I confirmed the record's lint and format claims (8 to 8 under `ruff check --output-format=concise | wc -l` and both paths already formatted).",
+    "done_when": "the measure at prompt.txt:52-56 asks for CODEX_HOME only where the auth.json bind is composed, an absence assertion under fence=False beside a presence assertion with the bind under fence=True, an executed and logged negative control, and zero added failures over the launch-plan files; tests/test_each_run_owns_its_harness_home.py:475-495 carries both halves of the assertion in one body, logs/negative-control-codex-home-unconditional.red.log shows the mutant red on the CODEX_HOME entry, and both gate sides reproduce (26 passed on my own archive of 27e11161, 27 passed in the reviewed tree at 51d80b95).",
+    "goal": "prompt.txt:25 states the goal as an unfenced codex launch keeping the operator's CODEX_HOME, and reckon/_backends.py:2044-2047 implements it by gating the run codex home on `dialect.name != \"codex\" or fence`, so the fenced codex launch and the claude-shaped harness keep their behaviour.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200515341488-unfenced-codex-keeps-its-login/manifest.md; status complete with commits d31707b5 and 51d80b95, changed_paths matching the diff exactly, gate logs carrying revision, tree and command headers on disk, and `reckon crew check-manifest --run r-20260924T200515341488-unfenced-codex-keeps-its-login` returns {\"findings\": [], \"ok\": true}.",
+    "write_paths": "the declared paths are reckon/_backends.py, tests/test_each_run_owns_its_harness_home.py, docs/evidence/archive/a-worker-cannot-write-your-home-landed.html, docs/figures/a-worker-cannot-write-your-home and docs/plans/a-worker-cannot-write-your-home.html; d31707b5 touches the code and its test, 51d80b95 the landing record, the evidence anchor and the red-log copy, and git status in the reviewed worktree is empty at 51d80b95."
+  },
+  "justifications": {
+    "durability": "tests/test_each_run_owns_its_harness_home.py:476-478 reddens when `adopts_harness_home` returns to its unconditional shape (shown in logs/negative-control-codex-home-unconditional.red.log, not inferred) beside a same-dialect fenced control at :482-487, though the file's blanket requires_bwrap at :199 means a host without bubblewrap skips the guard rather than failing it.",
+    "evidence": "logs/gate-after.log and my own re-runs agree (27 passed at 51d80b95, 26 at 27e11161) and logs/negative-control-codex-home-unconditional.red.log shows the assertion red on the CODEX_HOME entry, though every production call site takes the default fence=True so the changed branch is reachable from tests alone at this base.",
+    "fit": "the comment at reckon/_backends.py:2022-2033 states the mechanism rather than its history, the test name and `adopts_harness_home` are descriptive, and neither commit carries a plan label, ticket reference or AI attribution.",
+    "goal_fidelity": "reckon/_backends.py:2045 makes the adoption conditional, so an unfenced codex launch sets no CODEX_HOME and seeds no run home while the fenced launch at :2046-2047 keeps its home and login bind.",
+    "scope_discipline": "both commits touch only the five declared paths and the docs commit is +122/-0, so no peer's cumulative evidence record is overwritten."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260924T200515341488-unfenced-codex-keeps-its-login at 51d80b95 (base 27e11161).\n\nVERDICT goal: prompt.txt:25 states the goal as an unfenced codex launch keeping the operator's CODEX_HOME, and reckon/_backends.py:2044-2047 implements it by gating the run codex home on `dialect.name != \"codex\" or fence`, so the fenced codex launch and the claude-shaped harness keep their behaviour.\nVERDICT done_when: the measure at prompt.txt:52-56 asks for CODEX_HOME only where the auth.json bind is composed, an absence assertion under fence=False beside a presence assertion with the bind under fence=True, an executed and logged negative control, and zero added failures over the launch-plan files; tests/test_each_run_owns_its_harness_home.py:475-495 carries both halves of the assertion in one body, logs/negative-control-codex-home-unconditional.red.log shows the mutant red on the CODEX_HOME entry, and both gate sides reproduce (26 passed on my own archive of 27e11161, 27 passed in the reviewed tree at 51d80b95).\nVERDICT write_paths: the declared paths are reckon/_backends.py, tests/test_each_run_owns_its_harness_home.py, docs/evidence/archive/a-worker-cannot-write-your-home-landed.html, docs/figures/a-worker-cannot-write-your-home and docs/plans/a-worker-cannot-write-your-home.html; d31707b5 touches the code and its test, 51d80b95 the landing record, the evidence anchor and the red-log copy, and git status in the reviewed worktree is empty at 51d80b95.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200515341488-unfenced-codex-keeps-its-login/manifest.md; status complete with commits d31707b5 and 51d80b95, changed_paths matching the diff exactly, gate logs carrying revision, tree and command headers on disk, and `reckon crew check-manifest --run r-20260924T200515341488-unfenced-codex-keeps-its-login` returns {\"findings\": [], \"ok\": true}.\nVERDICT diff: read commit by commit -- d31707b5 (+58/-4: the gate at reckon/_backends.py:2044, its comment, and the new test) and 51d80b95 (+122/-0: the landing record, an evidence anchor whose two-row fenced/unfenced table matches launch_plan:2039-2080, and the red-log copy); the declared mutation reinstates the pre-change shape, and I confirmed the record's lint and format claims (8 to 8 under `ruff check --output-format=concise | wc -l` and both paths already formatted).\nCALL_SITES: reckon/crew/dispatch.py:3926, reckon/crew/dispatch.py:5413, reckon/crew/dispatch.py:5758, reckon/crew/resumption.py:243\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2045 makes the adoption conditional, so an unfenced codex launch sets no CODEX_HOME and seeds no run home while the fenced launch at :2046-2047 keeps its home and login bind.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-after.log and my own re-runs agree (27 passed at 51d80b95, 26 at 27e11161) and logs/negative-control-codex-home-unconditional.red.log shows the assertion red on the CODEX_HOME entry, though every production call site takes the default fence=True so the changed branch is reachable from tests alone at this base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only the five declared paths and the docs commit is +122/-0, so no peer's cumulative evidence record is overwritten.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_each_run_owns_its_harness_home.py:476-478 reddens when `adopts_harness_home` returns to its unconditional shape (shown in logs/negative-control-codex-home-unconditional.red.log, not inferred) beside a same-dialect fenced control at :482-487, though the file's blanket requires_bwrap at :199 means a host without bubblewrap skips the guard rather than failing it.\nSCORE fit: 20\nJUSTIFICATION fit: the comment at reckon/_backends.py:2022-2033 states the mechanism rather than its history, the test name and `adopts_harness_home` are descriptive, and neither commit carries a plan label, ticket reference or AI attribution.\n",
+  "review_run_id": "r-20260924T203252256231-review-of-unfenced-codex-keeps-its-login",
+  "reviewed_base_sha": "27e111615a8fce1712d44f686f6dd25409638237",
+  "reviewed_head_sha": "51d80b95e1c14134fd5ebb0c69a13a840a10a7e5",
+  "reviewed_run_id": "r-20260924T200515341488-unfenced-codex-keeps-its-login",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T21:09:42.175143+00:00",
+  "total": 96
+}

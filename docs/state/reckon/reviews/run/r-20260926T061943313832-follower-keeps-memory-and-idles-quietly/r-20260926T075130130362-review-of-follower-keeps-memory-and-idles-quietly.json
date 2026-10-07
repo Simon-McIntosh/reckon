@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/cli.py:2291",
+    "reckon/cli.py:2401",
+    "reckon/cli.py:2415",
+    "reckon/cli.py:2868",
+    "reckon/cli.py:2887",
+    "reckon/cli.py:2904",
+    "reckon/cli.py:2934",
+    "reckon/crew/follow_checkpoint.py:404"
+  ],
+  "completed_at": "2026-09-26T09:02:24.612Z",
+  "dispatched_at": "2026-09-26T07:51:42Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "2260",
+      "text": "the place-equality gate never reads whether the checkpoint file still exists, so a checkpoint removed while the pane is idle is not rewritten until the place moves; a reload in that window finds no record and loses the pane memory this change exists to preserve."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "2549",
+      "text": "_follow_history_caps clamps rows below one to the shipped defaults, so the zero-row branch at reckon/crew/follow_checkpoint.py:333 and its check test_a_zero_row_cap_keeps_no_rows pin a state no flight config can produce; the branch is a defensive guard rather than a reachable cap."
+    },
+    {
+      "file": "runs/r-20260926T061943313832-follower-keeps-memory-and-idles-quietly/gate-head.log",
+      "line": "1",
+      "text": "gate-head.log and gate-base.log carry no header naming revision, tree, command, module or cwd, so the node's own four-check claim cannot be bound to the revision it measured from the artifact alone; the sibling gate-follow-watch-base.log does carry that header."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read all seven changed paths at head; the production commit adds the reported map to the attach event, seeds the follower's map from the checkpointed history on a reload, and gates the checkpoint write on a place tuple, while the docs commit records the same in the archive with one figure.",
+    "done_when": "the four named checks pass at the reviewed head and fail at base 80d55621; I reproduced the head arm (4 passed) from the reviewed worktree at e21cb520 and the declared mutation (1 failed at the write-count assertion), and diffed the two suite logs to zero added failures (15 failed/273 passed at base, the four new checks the only base-only reds).",
+    "goal": "read both new checks and the follower loop they drive; a reloaded pane now renders the state it last showed rather than the producer's from_state, and an arming idle across twelve polls writes its place at most twice.",
+    "manifest": "the reviewed run's manifest reads complete with both commits named, the four checks described, the base and head suite figures, and a bare negative_control_log path whose first line repeats the declaration verbatim.",
+    "write_paths": "diff --name-only 80d55621..e21cb520 returns exactly the seven declared paths, four in the production commit and three docs paths, and the plan HTML gained one landing paragraph without touching plan-version or plan-modified."
+  },
+  "justifications": {
+    "durability": "the place tuple at reckon/cli.py:2252-2259 covers stream, offset, identity and the reported map, and written_place is set only after a successful write at 2273, but the gate never consults the checkpoint's existence (finding).",
+    "evidence": "the head arm reproduces from the reviewed tree (recheck-head.log, 4 passed at e21cb520) and the declared control trips the assertion at reckon/cli.py:2260 with its own message, but gate-head.log and gate-base.log name no revision (finding).",
+    "fit": "the change reuses follow_checkpoint.seed_states and the existing checkpoint record rather than a second store, though reckon/cli.py:2622 writes grid._reported directly where a ticker accessor would keep that invariant with its owner.",
+    "goal_fidelity": "tests/test_follower_keeps_memory.py:120 asserts the reloaded row's left side carries blocked, and reinstating the guard on reckon/cli.py:2381 and 2401 reddens exactly that assertion.",
+    "scope_discipline": "the seven changed paths are exactly the declared set, four production and test paths in 3c712a6b and three docs paths in e21cb520, with nothing outside it in either commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read both new checks and the follower loop they drive; a reloaded pane now renders the state it last showed rather than the producer's from_state, and an arming idle across twelve polls writes its place at most twice.\nVERDICT done_when: the four named checks pass at the reviewed head and fail at base 80d55621; I reproduced the head arm (4 passed) from the reviewed worktree at e21cb520 and the declared mutation (1 failed at the write-count assertion), and diffed the two suite logs to zero added failures (15 failed/273 passed at base, the four new checks the only base-only reds).\nVERDICT write_paths: diff --name-only 80d55621..e21cb520 returns exactly the seven declared paths, four in the production commit and three docs paths, and the plan HTML gained one landing paragraph without touching plan-version or plan-modified.\nVERDICT manifest: the reviewed run's manifest reads complete with both commits named, the four checks described, the base and head suite figures, and a bare negative_control_log path whose first line repeats the declaration verbatim.\nVERDICT diff: read all seven changed paths at head; the production commit adds the reported map to the attach event, seeds the follower's map from the checkpointed history on a reload, and gates the checkpoint write on a place tuple, while the docs commit records the same in the archive with one figure.\nCALL_SITES: reckon/cli.py:2291, reckon/cli.py:2401, reckon/cli.py:2415, reckon/cli.py:2868, reckon/cli.py:2887, reckon/cli.py:2904, reckon/cli.py:2934, reckon/crew/follow_checkpoint.py:404\nSCORE goal_fidelity: 18\nSCORE evidence: 16\nSCORE scope_discipline: 18\nSCORE durability: 16\nSCORE fit: 17\nJUSTIFICATION goal_fidelity: tests/test_follower_keeps_memory.py:120 asserts the reloaded row's left side carries blocked, and reinstating the guard on reckon/cli.py:2381 and 2401 reddens exactly that assertion.\nJUSTIFICATION evidence: the head arm reproduces from the reviewed tree (recheck-head.log, 4 passed at e21cb520) and the declared control trips the assertion at reckon/cli.py:2260 with its own message, but gate-head.log and gate-base.log name no revision (finding).\nJUSTIFICATION scope_discipline: the seven changed paths are exactly the declared set, four production and test paths in 3c712a6b and three docs paths in e21cb520, with nothing outside it in either commit.\nJUSTIFICATION durability: the place tuple at reckon/cli.py:2252-2259 covers stream, offset, identity and the reported map, and written_place is set only after a successful write at 2273, but the gate never consults the checkpoint's existence (finding).\nJUSTIFICATION fit: the change reuses follow_checkpoint.seed_states and the existing checkpoint record rather than a second store, though reckon/cli.py:2622 writes grid._reported directly where a ticker accessor would keep that invariant with its owner.\nFINDING reckon/cli.py:2260 the place-equality gate never reads whether the checkpoint file still exists, so a checkpoint removed while the pane is idle is not rewritten until the place moves; a reload in that window finds no record and loses the pane memory this change exists to preserve.\nFINDING reckon/cli.py:2549 _follow_history_caps clamps rows below one to the shipped defaults, so the zero-row branch at reckon/crew/follow_checkpoint.py:333 and its check test_a_zero_row_cap_keeps_no_rows pin a state no flight config can produce; the branch is a defensive guard rather than a reachable cap.\nFINDING runs/r-20260926T061943313832-follower-keeps-memory-and-idles-quietly/gate-head.log:1 gate-head.log and gate-base.log carry no header naming revision, tree, command, module or cwd, so the node's own four-check claim cannot be bound to the revision it measured from the artifact alone; the sibling gate-follow-watch-base.log does carry that header.\n",
+  "review_run_id": "r-20260926T075130130362-review-of-follower-keeps-memory-and-idles-quietly",
+  "reviewed_base_sha": "80d5562139fee5153ccafe0a66054896af43b956",
+  "reviewed_head_sha": "e21cb52043aa960d5505b8ee3be70f2538e7cd8f",
+  "reviewed_run_id": "r-20260926T061943313832-follower-keeps-memory-and-idles-quietly",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T08:55:33.785841+00:00",
+  "total": 85
+}

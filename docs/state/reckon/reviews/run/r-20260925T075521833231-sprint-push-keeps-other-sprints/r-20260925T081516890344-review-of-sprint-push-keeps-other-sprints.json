@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:2788",
+    "reckon/project_state.py:2278",
+    "reckon/mcp.py:1315"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T08:15:16.890344+00:00",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "1315",
+      "text": "the push op description still states the retired invariant that a push demotes any other active sprint, false since 0ad5a171; the node done_when and plan section 4 assign reckon/mcp.py to another node, so this is a declared follow-on rather than a scope breach."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "1760",
+      "text": "the multiple-active-sprints audit still reports error severity on a state this change makes legitimate; section 4 defers its retirement to the node that owns reckon/mcp.py."
+    },
+    {
+      "file": "tests/test_sprint_push_status.py",
+      "line": "74",
+      "text": "the op-level clause of the change, the demotion warnings removed at reckon/project_state.py:2279, has no assertion: nothing in the file reaches apply_resource_ops for the push path, so a regression there would go uncaught."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base e731091f; 0ad5a171 removes the demote loop and its compensation arm from push_sprint (reckon/project_state.py 18+/61-), e8a67fc7 appends the landing record (28+/0-) and the execution record (95+/0-) plus one figure.",
+    "done_when": "the done_when names tests/test_sprint_push_status.py:74 (both stay active), :84 (stale version unchanged) and the declared mutation; the manifest records the gate at 11 passed, and I re-ran the file at the reviewed head (recheck-reviewed-head.log, 11 passed, module resolved to the reviewed worktree).",
+    "goal": "the goal names one method; reckon/project_state.py:1965 push_sprint now writes active on its target alone, leaving every other sprint's stored status untouched.",
+    "manifest": "read in full; it names commits 0ad5a171 and e8a67fc7, the gate and its three logs, the declared mutation with its red log, and the mcp-side residuals it leaves out of scope, all of which match the diff.",
+    "write_paths": "the manifest declares five paths and the two commits touch exactly those five (git diff --numstat e731091f..e8a67fc7), including the one added PNG under docs/figures/a-sprint-is-live-while-a-crew-works-it/."
+  },
+  "justifications": {
+    "durability": "restoring the demote writes reddens tests/test_sprint_push_status.py:81 and restoring the returned demoted key reddens :80 in a scratch export of the head (mutation-M1.log, mutation-M2.log), while the op-level warnings removal at reckon/project_state.py:2279 has no test.",
+    "evidence": "the gate logs are on disk and the file re-ran 11 passed at the reviewed head (recheck-reviewed-head.log), though the base arm is a repro script (repro-base.log) rather than the added test shown red at base.",
+    "fit": "the docstring at reckon/project_state.py:1971 states the hint semantics in the module's own terms, no added name carries a plan or version label, and both commit subjects are conventional with a body.",
+    "goal_fidelity": "push_sprint at reckon/project_state.py:1965 writes its target alone and returns just new_version (reckon/project_state.py:2013), which is the node's goal as dispatched.",
+    "scope_discipline": "git diff --numstat e731091f..e8a67fc7 touches exactly the five declared paths, with zero deletions in both cumulative docs files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal names one method; reckon/project_state.py:1965 push_sprint now writes active on its target alone, leaving every other sprint's stored status untouched.\nVERDICT done_when: the done_when names tests/test_sprint_push_status.py:74 (both stay active), :84 (stale version unchanged) and the declared mutation; the manifest records the gate at 11 passed, and I re-ran the file at the reviewed head (recheck-reviewed-head.log, 11 passed, module resolved to the reviewed worktree).\nVERDICT write_paths: the manifest declares five paths and the two commits touch exactly those five (git diff --numstat e731091f..e8a67fc7), including the one added PNG under docs/figures/a-sprint-is-live-while-a-crew-works-it/.\nVERDICT manifest: read in full; it names commits 0ad5a171 and e8a67fc7, the gate and its three logs, the declared mutation with its red log, and the mcp-side residuals it leaves out of scope, all of which match the diff.\nVERDICT diff: read commit by commit against base e731091f; 0ad5a171 removes the demote loop and its compensation arm from push_sprint (reckon/project_state.py 18+/61-), e8a67fc7 appends the landing record (28+/0-) and the execution record (95+/0-) plus one figure.\nCALL_SITES: reckon/mcp.py:2788, reckon/project_state.py:2278, reckon/mcp.py:1315\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: push_sprint at reckon/project_state.py:1965 writes its target alone and returns just new_version (reckon/project_state.py:2013), which is the node's goal as dispatched.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate logs are on disk and the file re-ran 11 passed at the reviewed head (recheck-reviewed-head.log), though the base arm is a repro script (repro-base.log) rather than the added test shown red at base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat e731091f..e8a67fc7 touches exactly the five declared paths, with zero deletions in both cumulative docs files.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the demote writes reddens tests/test_sprint_push_status.py:81 and restoring the returned demoted key reddens :80 in a scratch export of the head (mutation-M1.log, mutation-M2.log), while the op-level warnings removal at reckon/project_state.py:2279 has no test.\nSCORE fit: 19\nJUSTIFICATION fit: the docstring at reckon/project_state.py:1971 states the hint semantics in the module's own terms, no added name carries a plan or version label, and both commit subjects are conventional with a body.\nFINDING reckon/mcp.py:1315 the push op description still states the retired invariant that a push demotes any other active sprint, false since 0ad5a171; the node done_when and plan section 4 assign reckon/mcp.py to another node, so this is a declared follow-on rather than a scope breach.\nFINDING reckon/mcp.py:1760 the multiple-active-sprints audit still reports error severity on a state this change makes legitimate; section 4 defers its retirement to the node that owns reckon/mcp.py.\nFINDING tests/test_sprint_push_status.py:74 the op-level clause of the change, the demotion warnings removed at reckon/project_state.py:2279, has no assertion: nothing in the file reaches apply_resource_ops for the push path, so a regression there would go uncaught.",
+  "review_run_id": "r-20260925T081516890344-review-of-sprint-push-keeps-other-sprints",
+  "reviewed_base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+  "reviewed_head_sha": "e8a67fc798eb1bc165c83afbcc580302d959a8fa",
+  "reviewed_run_id": "r-20260925T075521833231-sprint-push-keeps-other-sprints",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T09:19:43.246467+00:00",
+  "total": 94
+}

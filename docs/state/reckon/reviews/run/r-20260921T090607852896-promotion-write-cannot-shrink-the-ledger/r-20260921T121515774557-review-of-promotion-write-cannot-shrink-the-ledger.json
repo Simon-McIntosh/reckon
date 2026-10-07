@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T12:15:15.774557+00:00",
+  "findings": [
+    {
+      "file": "tests/test_ledger_write_cannot_shrink.py",
+      "line": "162",
+      "text": "the second writer in the measured concurrency shape is refused by the version-conflict message at reckon/ledger.py:792, not by this node's guard at reckon/ledger.py:755, and the test asserts only that some LedgerError is raised, so it cannot detect a regression of the run-count refusal: with the declared mutation applied to a scratch copy of the reviewed tree it still passes, and only driving that writer with a current version makes the guard fire (measured: refused, committed run count from 4 to 1; the file keeps all four rows either way)."
+    },
+    {
+      "file": "docs/figures/ledger-write-cannot-shrink/guard_flow.svg",
+      "line": "1",
+      "text": "the figure path lies outside the four declared write paths, which matters because the fence is exclusive, though the standing graphic mandate names docs/figures and two sibling landing records in this plan wrote to the same directory, so this reads as a fence-definition gap for the coordinator rather than damage."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "755",
+      "text": "the run refusal compares counts where its sibling at reckon/ledger.py:664 compares ids, so a same-count substitution of every row passes unrefused (measured: a three-row ledger written back with three other run ids is accepted), which is a boundary rather than a defect because the goal names counts and the measured incident shrank 110 to 1."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against the base revision: ddd3b03b changes only reckon/ledger.py and tests/test_ledger_write_cannot_shrink.py, and the second changes the plan, the evidence record and one figure; the source hunk adds a run-count refusal gated on the version matching the stored one, plus one lazily imported helper naming the run store as the recovery.",
+    "done_when": "read the measure and ran it at 37fc6413, tests/test_ledger_write_cannot_shrink.py passing 9 of 9 unmutated; the run-count refusal, the omitted-runs-key refusal, the incident shape and the run-store naming are all genuinely asserted, and both converse probes are green under my own driver, an ordinary appending promotion appends and a same-count patch is accepted, but the concurrency clause is satisfied by a pre-existing check rather than by this node's guard (finding 1).",
+    "goal": "read the node prompt's goal line and the plan's section on a promotion destroying its own ledger, whose goal is that a write reducing the committed run count or the member count be refused naming both counts; driving ledger.write directly at the reviewed revision refuses a 110-run ledger written back as one row and refuses a three-member roster written back as one, each naming both counts, and each refusal names the run store as the recovery.",
+    "manifest": "read manifest.md at the target run directory (mtime 11:31:30), which records commit ddd3b03b, the 15-file cohort at 18 failures before and 18 after, and the log paths; its negative_control_log field is empty there, and the mutation is recorded instead in regcount-negative-control.log, whose first line repeats the declared mutation verbatim and whose test line is a single failure.",
+    "write_paths": "read the node manifest's declared four paths against a five-path diff; reckon/ledger.py, tests/test_ledger_write_cannot_shrink.py, docs/plans/scoring-should-stop-a-promotion.html and docs/evidence/archive/scoring-should-stop-a-promotion-landed.html are all inside the fence, and docs/figures/ledger-write-cannot-shrink/guard_flow.svg is the only path outside it (finding 2)."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger_write_cannot_shrink.py:65 fails DID NOT RAISE once the refusal is removed, so a regression of the guard is loud rather than silent.",
+    "evidence": "five of the nine tests in tests/test_ledger_write_cannot_shrink.py go red under this node's declared mutation (measured on a scratch copy: 5 failed, 4 passed), but the concurrency test the done_when names stays green because the refusal it sees comes from reckon/ledger.py:792 rather than from the new guard.",
+    "fit": "the new refusal mirrors the roster guard at reckon/ledger.py:746 in shape, message register and flag handling, and the helper at reckon/ledger.py:674 is named by mechanism with the store import kept lazy.",
+    "goal_fidelity": "reckon/ledger.py:755 refuses the reduction before the payload is written, and the two refusals named are the only two shapes the goal names.",
+    "scope_discipline": "the diff is a small guarded block in reckon/ledger.py plus a 220-line test file and the two declared docs, with one figure path outside the fence after two sibling landing records in this plan wrote there too."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node prompt's goal line and the plan's section on a promotion destroying its own ledger, whose goal is that a write reducing the committed run count or the member count be refused naming both counts; driving ledger.write directly at the reviewed revision refuses a 110-run ledger written back as one row and refuses a three-member roster written back as one, each naming both counts, and each refusal names the run store as the recovery.\nVERDICT done_when: read the measure and ran it at 37fc6413, tests/test_ledger_write_cannot_shrink.py passing 9 of 9 unmutated; the run-count refusal, the omitted-runs-key refusal, the incident shape and the run-store naming are all genuinely asserted, and both converse probes are green under my own driver, an ordinary appending promotion appends and a same-count patch is accepted, but the concurrency clause is satisfied by a pre-existing check rather than by this node's guard (finding 1).\nVERDICT write_paths: read the node manifest's declared four paths against a five-path diff; reckon/ledger.py, tests/test_ledger_write_cannot_shrink.py, docs/plans/scoring-should-stop-a-promotion.html and docs/evidence/archive/scoring-should-stop-a-promotion-landed.html are all inside the fence, and docs/figures/ledger-write-cannot-shrink/guard_flow.svg is the only path outside it (finding 2).\nVERDICT manifest: read manifest.md at the target run directory (mtime 11:31:30), which records commit ddd3b03b, the 15-file cohort at 18 failures before and 18 after, and the log paths; its negative_control_log field is empty there, and the mutation is recorded instead in regcount-negative-control.log, whose first line repeats the declared mutation verbatim and whose test line is a single failure.\nVERDICT diff: read both commits against the base revision: ddd3b03b changes only reckon/ledger.py and tests/test_ledger_write_cannot_shrink.py, and the second changes the plan, the evidence record and one figure; the source hunk adds a run-count refusal gated on the version matching the stored one, plus one lazily imported helper naming the run store as the recovery.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:755 refuses the reduction before the payload is written, and the two refusals named are the only two shapes the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: five of the nine tests in tests/test_ledger_write_cannot_shrink.py go red under this node's declared mutation (measured on a scratch copy: 5 failed, 4 passed), but the concurrency test the done_when names stays green because the refusal it sees comes from reckon/ledger.py:792 rather than from the new guard.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff is a small guarded block in reckon/ledger.py plus a 220-line test file and the two declared docs, with one figure path outside the fence after two sibling landing records in this plan wrote there too.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_ledger_write_cannot_shrink.py:65 fails DID NOT RAISE once the refusal is removed, so a regression of the guard is loud rather than silent.\nSCORE fit: 19\nJUSTIFICATION fit: the new refusal mirrors the roster guard at reckon/ledger.py:746 in shape, message register and flag handling, and the helper at reckon/ledger.py:674 is named by mechanism with the store import kept lazy.\nFINDING tests/test_ledger_write_cannot_shrink.py:162 the second writer in the measured concurrency shape is refused by the version-conflict message at reckon/ledger.py:792, not by this node's guard at reckon/ledger.py:755, and the test asserts only that some LedgerError is raised, so it cannot detect a regression of the run-count refusal: with the declared mutation applied to a scratch copy of the reviewed tree it still passes, and only driving that writer with a current version makes the guard fire (measured: refused, committed run count from 4 to 1; the file keeps all four rows either way).\nFINDING docs/figures/ledger-write-cannot-shrink/guard_flow.svg:1 the figure path lies outside the four declared write paths, which matters because the fence is exclusive, though the standing graphic mandate names docs/figures and two sibling landing records in this plan wrote to the same directory, so this reads as a fence-definition gap for the coordinator rather than damage.\nFINDING reckon/ledger.py:755 the run refusal compares counts where its sibling at reckon/ledger.py:664 compares ids, so a same-count substitution of every row passes unrefused (measured: a three-row ledger written back with three other run ids is accepted), which is a boundary rather than a defect because the goal names counts and the measured incident shrank 110 to 1.\n",
+  "review_run_id": "r-20260921T121515774557-review-of-promotion-write-cannot-shrink-the-ledger",
+  "reviewed_base_sha": "39bbc7c939e3c857c43e4a2d5b96fc9d470815fe",
+  "reviewed_head_sha": "37fc641391172e8b82e34420d09de68485b12d42",
+  "reviewed_run_id": "r-20260921T090607852896-promotion-write-cannot-shrink-the-ledger",
+  "reviewer_head_sha": "dab9db503f62762a107f65aa2b03b5d5794e635e",
+  "reviewer_run_id": "r-20260921T121515774557-review-of-promotion-write-cannot-shrink-the-ledger",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T13:04:03.966213+00:00",
+  "total": 90
+}

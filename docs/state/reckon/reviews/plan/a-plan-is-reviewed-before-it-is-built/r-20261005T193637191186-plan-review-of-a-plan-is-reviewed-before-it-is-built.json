@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T19:44:59.222Z",
+  "dispatched_at": "2026-10-05T19:36:57Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:326",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a717 states the rule exists precisely so \"a rule blind to it would pass with a second walk alive\"; it must widen rule 4 to catch a tag-name-vs-heading comparison wherever it occurs (not only in HTMLParser handlers), or name `dispatch.py:326`/`:348` in the move set, otherwise the gate proves neither the removal nor the move.",
+      "text": "\u00a717's heading-walk rule reports `find_all`/`find`/`select` arguments naming a heading tag, regex literals containing `<h2`, uses of `_H2_OPEN_RE`, and tag-name comparisons only *inside an HTMLParser start-tag handler*; `dispatch.py:326` and `:348` compare a tag name against `re.fullmatch(r\"h[1-6]\", \u2026)` in BeautifulSoup code, a form the rule is specified not to report, so the census that \u00a716 and \u00a717 lean on to certify \"the span parser alone\" can return its expected count with dispatch's independent heading-level bound left in place",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "df77db4c7a0d41b1a596dc6639719b04e42017e3be723987fdbc441587e9a6b8",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 120,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T193637191186-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "8314528b4dee1b77c5779f4f3411f9048e9a88be",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the three sections consolidate onto one deep parser: \u00a717 hides a raw-text span read behind the single private `_StructuredSectionSpanParser` with two public projections (`plan_headings`, `structured_section_spans`) whose stated difference (protected spans that carry no heading identity) was verified against `_store._landed_card_span`/`_is_structural_boundary`; \u00a716 folds prose and digest behind `_section_digests`; \u00a718 folds the classification rule behind one predicate.",
+    "duplicate_owner": "a finding \u2014 the consolidation is right in direction (re-home onto `reckon/_plan_html.py`), but \u00a717's census cannot see `reckon/crew/dispatch.py:326` and `:348`, which test a tag name against `re.fullmatch(r\"h[1-6]\", \u2026)`, so the census meant to prove \"the span parser alone\" survives can false-pass with that independent heading-level bound still present.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition (`strip_tags`) and states nothing is retired because the identity digest and the prose walk keep their names, \u00a717 adds two (`plan_headings`, the machinery-element predicate) and re-homes `landed_section_ids` under the same name, \u00a718 adds one (the classification predicate) and deletes the private `_LANDING_COMMENT_PREFIX`; each section accounts for its addition and states why the family cannot shrink, and none touches cli_options, mcp_views or refusal_families (the mcp_views.py change in \u00a717 rewrites the sibling traversal and adds no view).",
+    "reuse_search": "pass \u2014 the design searched the tree in depth and cites the owner of each mechanism it extends: `_TAG_RE`/`count_open_decisions` in `reckon/_plan_html.py`, `_StructuredSectionSpanParser` and `structured_section_spans`, `section_record_id`/`section_id_candidates` in `reckon/crew/routing.py`, `plan_fingerprint`/`_fingerprint_forms`/`_without_run_comments` in `reckon/crew/plan_review.py`, the existing AST rule machinery in `reckon/interface_counts.py`, and the schema's declaration enum; every citation was opened and resolved.",
+    "thin_wrapper": "pass \u2014 the two new thin surface points carry justification: `strip_tags` on `reckon/_plan_html.py` exposes the existing `_TAG_RE` across the crew/core boundary rather than adding a second stripper, and `count_open_decisions` is re-expressed over it so the expression keeps one caller; \u00a717's machinery-element predicate replaces fourteen inline `data-reckon` spellings, verified present, rather than wrapping one reader."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.786531+00:00"
+}

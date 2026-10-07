@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/repair.py:119",
+    "reckon/crew/recovery.py:891",
+    "reckon/crew/obligations.py:835",
+    "reckon/crew/reports.py:1366"
+  ],
+  "completed_at": "2026-10-05T08:47:38.436Z",
+  "dispatched_at": "2026-10-05T08:36:08Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T075546675949-reuse-is-a-review-dimension/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records completed:true and \"737 passed, EXIT=0\" for population_head.log, but that log is 13 lines and ends mid-run at \"[ 68%]\" with no pytest summary line and no finite EXIT= line; the arm was killed at 10:34:36 before finishing, so the manifest's completion claim is not carried by the log it cites."
+    },
+    {
+      "file": "tests/test_ledger.py",
+      "line": "922",
+      "severity": "follow-on",
+      "text": "follow-on: the change deleted two assertions (zero[\"review\"][\"status\"] == \"parsed\" and zero[\"review\"][\"total\"] == 0) from test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one, leaving that test's own comment (\"carries a parsed block with total 0) unverified and reducing coverage unrelated to the sixth dimension."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 3608bb44; the single commit a34b2c15 changes the tuple, the prompt text, the flight-defaults floor, the test fixtures and the evidence fragment, and no production file beyond reckon/crew/review.py and the prompt.",
+    "done_when": "the done_when names a focused pytest gate plus the wider importing population; the manifest records the gate at \"250 passed, EXIT=0\" (matched by gate.log:9) and the population at 737/737, whose head log does not carry that figure (see finding).",
+    "goal": "the node scores reuse as a sixth review dimension; reckon/crew/review.py:88 adds \"reuse\" last to REVIEW_DIMENSIONS and reckon/crew/prompts/review.md states its scoring rule, matching the node goal.",
+    "manifest": "read; it records the focused gate 250 passed EXIT=0 and the population 737/737, but its after_suite log population_head.log is truncated and carries no pytest summary, so completed:true is not supported by the cited log.",
+    "write_paths": "read the manifest's declared paths; git diff --name-only 3608bb44e643bb445135f6b78bc9da767d42785e a34b2c15 lists exactly those sixteen paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger.py:922-923 deletes the assertions that a zero-scored review block is parsed with total 0, weakening a guard the sixth dimension did not require touching.",
+    "evidence": "the focused gate is recorded and reproduced (gate.log:9 \"250 passed ... EXIT=0\"), but the after_suite log the manifest names, population_head.log, is incomplete and so the recorded arm overstates its own completion.",
+    "fit": "the change adds one entry to the existing REVIEW_DIMENSIONS registry and its mirrored prompt rather than a new module, and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/review.py:88 adds \"reuse\" as the last entry of REVIEW_DIMENSIONS and reckon/crew/prompts/review.md:91 states the reuse scoring rule and the complementary clone detector, exactly as the node goal states.",
+    "scope_discipline": "git diff --name-only 3608bb44 a34b2c15 returns exactly the sixteen declared write paths; no file outside them changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node scores reuse as a sixth review dimension; reckon/crew/review.py:88 adds \"reuse\" last to REVIEW_DIMENSIONS and reckon/crew/prompts/review.md states its scoring rule, matching the node goal.\nVERDICT done_when: the done_when names a focused pytest gate plus the wider importing population; the manifest records the gate at \"250 passed, EXIT=0\" (matched by gate.log:9) and the population at 737/737, whose head log does not carry that figure (see finding).\nVERDICT write_paths: read the manifest's declared paths; git diff --name-only 3608bb44e643bb445135f6b78bc9da767d42785e a34b2c15 lists exactly those sixteen paths and nothing else.\nVERDICT manifest: read; it records the focused gate 250 passed EXIT=0 and the population 737/737, but its after_suite log population_head.log is truncated and carries no pytest summary, so completed:true is not supported by the cited log.\nVERDICT diff: read commit by commit against base 3608bb44; the single commit a34b2c15 changes the tuple, the prompt text, the flight-defaults floor, the test fixtures and the evidence fragment, and no production file beyond reckon/crew/review.py and the prompt.\nCALL_SITES: reckon/crew/repair.py:119, reckon/crew/recovery.py:891, reckon/crew/obligations.py:835, reckon/crew/reports.py:1366\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:88 adds \"reuse\" as the last entry of REVIEW_DIMENSIONS and reckon/crew/prompts/review.md:91 states the reuse scoring rule and the complementary clone detector, exactly as the node goal states.\nSCORE evidence: 14\nJUSTIFICATION evidence: the focused gate is recorded and reproduced (gate.log:9 \"250 passed ... EXIT=0\"), but the after_suite log the manifest names, population_head.log, is incomplete and so the recorded arm overstates its own completion.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 3608bb44 a34b2c15 returns exactly the sixteen declared write paths; no file outside them changed.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_ledger.py:922-923 deletes the assertions that a zero-scored review block is parsed with total 0, weakening a guard the sixth dimension did not require touching.\nSCORE fit: 19\nJUSTIFICATION fit: the change adds one entry to the existing REVIEW_DIMENSIONS registry and its mirrored prompt rather than a new module, and introduces no name the repository naming rules forbid.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T075546675949-reuse-is-a-review-dimension/manifest.md:18 follow-on: after_suite records completed:true and \"737 passed, EXIT=0\" for population_head.log, but that log is 13 lines and ends mid-run at \"[ 68%]\" with no pytest summary line and no finite EXIT= line; the arm was killed at 10:34:36 before finishing, so the manifest's completion claim is not carried by the log it cites.\nFINDING tests/test_ledger.py:922 follow-on: the change deleted two assertions (zero[\"review\"][\"status\"] == \"parsed\" and zero[\"review\"][\"total\"] == 0) from test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one, leaving that test's own comment (\"carries a parsed block with total 0) unverified and reducing coverage unrelated to the sixth dimension.\n",
+  "review_run_id": "r-20261005T083542954607-review-of-reuse-is-a-review-dimension",
+  "reviewed_base_sha": "3608bb44e643bb445135f6b78bc9da767d42785e",
+  "reviewed_head_sha": "a34b2c15cd1cb7dcaa4c6d38b7d5d5c1f66e5f87",
+  "reviewed_run_id": "r-20261005T075546675949-reuse-is-a-review-dimension",
+  "role": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T08:44:48.047311+00:00",
+  "total": 85
+}

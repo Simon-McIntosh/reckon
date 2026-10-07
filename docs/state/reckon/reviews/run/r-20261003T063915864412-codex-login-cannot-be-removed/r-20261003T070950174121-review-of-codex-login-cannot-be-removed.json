@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:6954",
+    "reckon/crew/dispatch.py:11047",
+    "reckon/crew/resumption.py:247",
+    "reckon/crew/recovery.py:4118",
+    "reckon/crew/promotion.py:4207"
+  ],
+  "completed_at": "2026-10-03T07:19:10.840Z",
+  "dispatched_at": "2026-10-03T07:10:21Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "3843",
+      "severity": "follow-on",
+      "text": "follow-on: observe_log reads the login record from Path(log_path).parent, while launch_plan writes it to Path(manifest).parent at reckon/_backends.py:3172 and :3235, so for a run whose manifest is declared outside its run directory the two disagree and a blanked login is never reported through that run's observation; the default layout, which the tests cover, makes them the same directory."
+    }
+  ],
+  "head_log_revision": "27d347f91f5788c60d3cab7705df2615addb6c74",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against 9e5081bb commit by commit; reckon/_backends.py adds the login-size record, the observe and report functions and the observe_log wiring that carries the report into a run's stream observation, the test file adds guards for remove, replace, truncation and heal plus a no-record case, and the evidence fragment records the observables.",
+    "done_when": "the done_when names tests/test_fenced_codex_can_persist_its_login.py; its test_a_truncated_login_is_reported_after_the_run fails at the base revision 9e5081bb with AttributeError: no observe_codex_login and passes at head 27d347f9, the declared mutation reddens it, and the manifest now carries baseline_suite/after_suite objects with a revision header on each gate log.",
+    "goal": "plan section 7 requires that what a fenced run can do to the operator's writable ~/.codex/auth.json be asserted \u2014 removal and replacement refused, and a zero-byte truncation detected or reported; reckon/_backends.py:2525 record_codex_login_size records the size before the fence opens and reckon/_backends.py:2564 observe_codex_login reports a zero-size reading after the run, so the goal's truncation half is met while the removal/replacement half is asserted by two new tests.",
+    "manifest": "read; it records the base arm at 3 failed and 207 passed and the head arm at 210 passed and 0 failed with zero added failure ids, the truncation negative control red, and repairs the baseline_suite/after_suite and log revision-header gaps section 7 named.",
+    "write_paths": "read the manifest's declared paths (reckon/_backends.py, tests/test_fenced_codex_can_persist_its_login.py, docs/evidence/fragments/a-worker-cannot-write-your-home/codex-login-cannot-be-removed.html); commits 27d347f9 and ccd96c93 touch exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_fenced_codex_can_persist_its_login.py:344 reddens when reckon/_backends.py:2600's zero-size condition is switched off, as logs/negative-control.log records, and its size_before assertion compares against the fixture's own literal length rather than a value the code under test supplied.",
+    "evidence": "logs/base-arm-rerun.log and logs/head-arm.log each name the revision, tree, module and command they ran, the base arm reddens exactly the three truncation ids and the head arm adds none, and logs/negative-control.log shows the declared mutation turning the truncation case red.",
+    "fit": "the new helpers at reckon/_backends.py:2512-2630 sit beside claude_credential_source and _harness_credential_binds in the module's credential idiom and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/_backends.py:2564 observe_codex_login compares the recorded before-size with a post-run stat and reports a zero on the run's record and stderr, meeting section 7's truncation arm, and tests/test_fenced_codex_can_persist_its_login.py:299 and :322 assert removal and replacement are refused, though the report is only reachable where the record and the stream share a directory.",
+    "scope_discipline": "the two commits touch only reckon/_backends.py, tests/test_fenced_codex_can_persist_its_login.py and the evidence fragment under docs/evidence/fragments/a-worker-cannot-write-your-home/, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 7 requires that what a fenced run can do to the operator's writable ~/.codex/auth.json be asserted \u2014 removal and replacement refused, and a zero-byte truncation detected or reported; reckon/_backends.py:2525 record_codex_login_size records the size before the fence opens and reckon/_backends.py:2564 observe_codex_login reports a zero-size reading after the run, so the goal's truncation half is met while the removal/replacement half is asserted by two new tests.\nVERDICT done_when: the done_when names tests/test_fenced_codex_can_persist_its_login.py; its test_a_truncated_login_is_reported_after_the_run fails at the base revision 9e5081bb with AttributeError: no observe_codex_login and passes at head 27d347f9, the declared mutation reddens it, and the manifest now carries baseline_suite/after_suite objects with a revision header on each gate log.\nVERDICT write_paths: read the manifest's declared paths (reckon/_backends.py, tests/test_fenced_codex_can_persist_its_login.py, docs/evidence/fragments/a-worker-cannot-write-your-home/codex-login-cannot-be-removed.html); commits 27d347f9 and ccd96c93 touch exactly those three and nothing else.\nVERDICT manifest: read; it records the base arm at 3 failed and 207 passed and the head arm at 210 passed and 0 failed with zero added failure ids, the truncation negative control red, and repairs the baseline_suite/after_suite and log revision-header gaps section 7 named.\nVERDICT diff: read both commits against 9e5081bb commit by commit; reckon/_backends.py adds the login-size record, the observe and report functions and the observe_log wiring that carries the report into a run's stream observation, the test file adds guards for remove, replace, truncation and heal plus a no-record case, and the evidence fragment records the observables.\nCALL_SITES: reckon/crew/dispatch.py:6954, reckon/crew/dispatch.py:11047, reckon/crew/resumption.py:247, reckon/crew/recovery.py:4118, reckon/crew/promotion.py:4207\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2564 observe_codex_login compares the recorded before-size with a post-run stat and reports a zero on the run's record and stderr, meeting section 7's truncation arm, and tests/test_fenced_codex_can_persist_its_login.py:299 and :322 assert removal and replacement are refused, though the report is only reachable where the record and the stream share a directory.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm-rerun.log and logs/head-arm.log each name the revision, tree, module and command they ran, the base arm reddens exactly the three truncation ids and the head arm adds none, and logs/negative-control.log shows the declared mutation turning the truncation case red.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two commits touch only reckon/_backends.py, tests/test_fenced_codex_can_persist_its_login.py and the evidence fragment under docs/evidence/fragments/a-worker-cannot-write-your-home/, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_fenced_codex_can_persist_its_login.py:344 reddens when reckon/_backends.py:2600's zero-size condition is switched off, as logs/negative-control.log records, and its size_before assertion compares against the fixture's own literal length rather than a value the code under test supplied.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at reckon/_backends.py:2512-2630 sit beside claude_credential_source and _harness_credential_binds in the module's credential idiom and introduce no name the repository naming rules forbid.\nFINDING reckon/_backends.py:3843 follow-on: observe_log reads the login record from Path(log_path).parent, while launch_plan writes it to Path(manifest).parent at reckon/_backends.py:3172 and :3235, so for a run whose manifest is declared outside its run directory the two disagree and a blanked login is never reported through that run's observation; the default layout, which the tests cover, makes them the same directory.\nreviewed_base_sha: 9e5081bb32085947e24a8b17921c94c7935e32df\nreviewed_head_sha: ccd96c93f1a9a0b1870bb78cf4e1466c20cc955a\n",
+  "review_run_id": "r-20261003T070950174121-review-of-codex-login-cannot-be-removed",
+  "reviewed_base_sha": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "reviewed_head_sha": "ccd96c93f1a9a0b1870bb78cf4e1466c20cc955a",
+  "reviewed_run_id": "r-20261003T063915864412-codex-login-cannot-be-removed",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T07:17:44.893578+00:00",
+  "total": 91
+}

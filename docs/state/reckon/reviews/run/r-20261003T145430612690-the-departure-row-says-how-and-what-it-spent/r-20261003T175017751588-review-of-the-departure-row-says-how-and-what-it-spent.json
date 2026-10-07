@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4d1feeed905d145a3130e71293f2cfdf1233f1d7",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:classify_pointer",
+    "reckon/crew/recovery.py:_watch_verdict",
+    "reckon/crew/recovery.py:_recorded_pointer_word",
+    "reckon/crew/recovery.py:_departure_recorded_run_ids",
+    "reckon/crew/recovery.py:fleet_transitions"
+  ],
+  "completed_at": "2026-10-03T17:59:13.101Z",
+  "dispatched_at": "2026-10-03T17:50:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "10140",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm ran at revision 4d1feeed905d145a3130e71293f2cfdf1233f1d7, which is a descendant of the node's declared base 422d114dcce (git merge-base --is-ancestor 4d1feeed 422d114dc is false; the reverse is true), so the base comparison carries peer commits landed after the node's base and a failure those peers introduced would read as pre-existing here; the run discloses the head-overlay of the departure test file but not that the base revision itself moved."
+    }
+  ],
+  "head_log_revision": "82c41a5bba5a23b269bb90e970fc7a6b07fab281",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit 70ddee8b..0fa80a02c: e38ca08e4 rewrites the settled branch of classify_pointer to take fleet_verdict's state, adds LedgerError to the promote guard's catch, and replaces the eager ledger reader with _LedgerRunWordReader reading per-run rows after a membership check; 82c41a5bb updates the boundary assertion to require the recorded word on both surfaces; 527998fac and 0fa80a02c extend the evidence fragment.",
+    "done_when": "The node's done-when names tests/test_the_departure_row_says_how_and_what_it_spent.py over the departure population; the run's arms at head 82c41a5b are resume-3-exact-46-head-lowload.log (607 passed, EXIT=0) and resume-3-exact-46-base.log (6 failed, 599 passed, EXIT=1), both completed true, so added_failure_count is 0 and no failing id was added; the 4 base failures in the departure file are the node's own added cases red before the change.",
+    "goal": "The reviewed range settles a commitless completion under one word across classification and fleet_verdict, refuses a malformed run id as no promotion, and bounds the departure reader to the runs leaving the fleet, closing both follow-ons the prior review at 70ddee8b raised.",
+    "manifest": "status complete; commits through 0fa80a02c; baseline_suite revision 4d1feeed failure_count 6 and after_suite revision 82c41a5b failure_count 0, both completed true with the named logs; the malformed-id and no-commit cases pass at head and fail at base; every sha and log path quoted resolves here.",
+    "write_paths": "All five changed paths sit inside the declared write paths: reckon/crew/recovery.py, tests/test_the_departure_row_says_how_and_what_it_spent.py, tests/test_crew_watch_lifetime.py, tests/test_a_promotion_never_reads_unpromoted.py and the evidence fragment; no file outside them changed in 70ddee8b..0fa80a02c."
+  },
+  "justifications": {
+    "durability": "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_malformed_run_id_cannot_hold_a_promotion fails if the LedgerError catch is dropped and ::test_a_row_with_no_commits_cannot_claim_promotion now asserts classification==recorded==fleet_verdict.state, so both fixes redden if reverted; the negative control shows the added cases red at base source.",
+    "evidence": "the exact 46-file population runs at base 4d1feeed (6 failed, 599 passed) and head 82c41a5b (607 passed, EXIT=0) with the departure file overlaid from head at base; negative-control-no-commit-and-spend.log reddens the no-commit and missing-spend ids the head passes, and the three-worker head arm's 3 failures are all pytest-timeout traces preserved in its own log.",
+    "fit": "the recorded/promoted word is consistent across recovery.py FLEET_SETTLED_STATES, _recorded_pointer_word and _watch_verdict, the bounded reader keeps the existing word contract, and no changed name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "recovery.py classify_pointer now sets classification from fleet_verdict['state'] when it is in FLEET_SETTLED_STATES ({promoted, recorded}), so a commitless row reads recorded on both surfaces (reproduced at head: classification=recorded, fleet_verdict.state=recorded); the two prior follow-ons are closed.",
+    "scope_discipline": "every changed path is inside the declared write paths and the run manifest's changed_paths, and no file outside them changed across the four commits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed range settles a commitless completion under one word across classification and fleet_verdict, refuses a malformed run id as no promotion, and bounds the departure reader to the runs leaving the fleet, closing both follow-ons the prior review at 70ddee8b raised.\nVERDICT done_when: The node's done-when names tests/test_the_departure_row_says_how_and_what_it_spent.py over the departure population; the run's arms at head 82c41a5b are resume-3-exact-46-head-lowload.log (607 passed, EXIT=0) and resume-3-exact-46-base.log (6 failed, 599 passed, EXIT=1), both completed true, so added_failure_count is 0 and no failing id was added; the 4 base failures in the departure file are the node's own added cases red before the change.\nVERDICT write_paths: All five changed paths sit inside the declared write paths: reckon/crew/recovery.py, tests/test_the_departure_row_says_how_and_what_it_spent.py, tests/test_crew_watch_lifetime.py, tests/test_a_promotion_never_reads_unpromoted.py and the evidence fragment; no file outside them changed in 70ddee8b..0fa80a02c.\nVERDICT manifest: status complete; commits through 0fa80a02c; baseline_suite revision 4d1feeed failure_count 6 and after_suite revision 82c41a5b failure_count 0, both completed true with the named logs; the malformed-id and no-commit cases pass at head and fail at base; every sha and log path quoted resolves here.\nVERDICT diff: Read commit by commit 70ddee8b..0fa80a02c: e38ca08e4 rewrites the settled branch of classify_pointer to take fleet_verdict's state, adds LedgerError to the promote guard's catch, and replaces the eager ledger reader with _LedgerRunWordReader reading per-run rows after a membership check; 82c41a5bb updates the boundary assertion to require the recorded word on both surfaces; 527998fac and 0fa80a02c extend the evidence fragment.\nCALL_SITES: reckon/crew/recovery.py:classify_pointer, reckon/crew/recovery.py:_watch_verdict, reckon/crew/recovery.py:_recorded_pointer_word, reckon/crew/recovery.py:_departure_recorded_run_ids, reckon/crew/recovery.py:fleet_transitions\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: recovery.py classify_pointer now sets classification from fleet_verdict['state'] when it is in FLEET_SETTLED_STATES ({promoted, recorded}), so a commitless row reads recorded on both surfaces (reproduced at head: classification=recorded, fleet_verdict.state=recorded); the two prior follow-ons are closed.\nSCORE evidence: 18\nJUSTIFICATION evidence: the exact 46-file population runs at base 4d1feeed (6 failed, 599 passed) and head 82c41a5b (607 passed, EXIT=0) with the departure file overlaid from head at base; negative-control-no-commit-and-spend.log reddens the no-commit and missing-spend ids the head passes, and the three-worker head arm's 3 failures are all pytest-timeout traces preserved in its own log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths and the run manifest's changed_paths, and no file outside them changed across the four commits.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_departure_row_says_how_and_what_it_spent.py::test_malformed_run_id_cannot_hold_a_promotion fails if the LedgerError catch is dropped and ::test_a_row_with_no_commits_cannot_claim_promotion now asserts classification==recorded==fleet_verdict.state, so both fixes redden if reverted; the negative control shows the added cases red at base source.\nSCORE fit: 18\nJUSTIFICATION fit: the recorded/promoted word is consistent across recovery.py FLEET_SETTLED_STATES, _recorded_pointer_word and _watch_verdict, the bounded reader keeps the existing word contract, and no changed name carries a plan, sprint or ticket identifier.\nFINDING reckon/crew/recovery.py:10140 follow-on: the base arm ran at revision 4d1feeed905d145a3130e71293f2cfdf1233f1d7, which is a descendant of the node's declared base 422d114dcce (git merge-base --is-ancestor 4d1feeed 422d114dc is false; the reverse is true), so the base comparison carries peer commits landed after the node's base and a failure those peers introduced would read as pre-existing here; the run discloses the head-overlay of the departure test file but not that the base revision itself moved.\n",
+  "review_run_id": "r-20261003T175017751588-review-of-the-departure-row-says-how-and-what-it-spent",
+  "reviewed_base_sha": "70ddee8b968062f9b3c5b3bb7e1c56f3497b7055",
+  "reviewed_head_sha": "0fa80a02c3364228d82ab5295ad724c2fe2af3fa",
+  "reviewed_run_id": "r-20261003T145430612690-the-departure-row-says-how-and-what-it-spent",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T17:57:16.215454+00:00",
+  "total": 90
+}

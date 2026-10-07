@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused",
+    "tests/test_follow_replays_the_gap.py::test_the_record_follows_every_row_the_pane_receives"
+  ],
+  "added_failures_note": "count and ids derived by set difference (head minus base) over the reviewed run's own baseline_suite and after_suite gate logs (baseline-scratch.log: 11 failed + 4 errors = 15 ids at e85fb9cd8; after-suite.log: 9 failed at d90627fb). Exactly two head-only ids remain \u2014 tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused and tests/test_follow_replays_the_gap.py::test_the_record_follows_every_row_the_pane_receives (the base arm failed a different id in the same file). Neither is touched by the reviewed delta commit adcd078817, which changes only reckon/crew/dispatch.py and tests/test_the_lane_override_is_explicit_and_recorded.py; both pass in isolated head and base controls recorded by the run.",
+  "backend": "local",
+  "base_log_revision": "e85fb9cd816df6d845dc37a9e86b78a96f841ff7",
+  "call_sites": [
+    "reckon/crew/dispatch.py:5659",
+    "reckon/crew/dispatch.py:5665",
+    "reckon/crew/dispatch.py:5666",
+    "reckon/crew/dispatch.py:6862",
+    "reckon/cli.py:2073",
+    "reckon/cli.py:2288"
+  ],
+  "completed_at": "2026-10-05T00:11:34.103Z",
+  "dispatched_at": "2026-10-05T00:03:29Z",
+  "findings": [
+    {
+      "file": "focused-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the reviewed run's own focused receipt for the delta commit is truncated \u2014 revision=adcd07881 with 11 progress dots and no summary line \u2014 because the worker's attempt was killed mid-run (attempt-3-exit.json, ended_during working at 2026-10-05T00:01:52Z) after committing adcd07881; manifest.md predates the delta and names no completed gate for it. My independent re-run at the delta head gave 12 passed EXIT=0."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the two head-only population ids persist in the after_suite arm, are untouched by this delta, and pass in isolation; they lie outside this node's scope so a strict zero-added population verdict from the run's own arms remains unavailable."
+    }
+  ],
+  "head_log_revision": "d90627fbf34f13e43355b6ae9f07648cfd2b539c",
+  "item_verdicts": {
+    "diff": "read adcd078817 against base fef2beb97 \u2014 one commit, two files, 70 insertions, 2 deletions; reckon/crew/dispatch.py adds a six-line guard refusing a reason flag when the resolved lane does not declare serves_orchestrators, and tests/test_the_lane_override_is_explicit_and_recorded.py adds a backend parameter to _cli_dispatch plus two cases (undeclared lane via CLI preview, and budget fallback resolving to another lane).",
+    "done_when": "the delta repairs the prior review's finding at dispatch.py:5657; the refusal fires before any run directory, pointer or worktree exists, names the resolved lane (including after budget fallback) and the inapplicable override, and is fenced by two tests that redden when the guard is removed. Focused gate 12 passed at the delta head; negative control 2 failed EXIT=1.",
+    "goal": "the reviewed commit addresses \u00a72's 'invisible config change' failure: a deliberate override reason is no longer silently dropped when it does not apply. The goal is met.",
+    "manifest": "read; status complete, but predates the delta commit \u2014 it names after_suite revision d90627fb and 'focused gate 10 passed' and names adcd07881 nowhere, so the run's record is stale for its last commit.",
+    "write_paths": "the delta writes exactly the two paths in changed_paths, both within the run's declared fence (reckon/crew/dispatch.py and tests/test_the_lane_override_is_explicit_and_recorded.py)."
+  },
+  "justifications": {
+    "durability": "two regression tests fence the refusal, one per path: test_reason_on_a_lane_without_the_orchestrator_role_is_refused drives the CLI preview against an undeclared lane (exit 1, dispatch-refused, names 'beta', 'override does not apply') and test_reason_is_refused_when_budget_fallback_resolves_to_another_lane drives crew.dispatch through a budget hold to a non-declaring fallback (CrewError naming 'beta'; crew.list_live() empty). My negative control removes the guard and both go red, so neither guard is blind. The declared-lane override and its non-persistence remain covered by the pre-existing cases in the same file.",
+    "evidence": "the delta's own focused receipt is incomplete: focused-head.log names revision=adcd07881 but records only 11 progress dots with no summary line, and manifest.md predates the delta (it names after_suite revision d90627fb and 'focused gate 10 passed'), naming neither adcd07881 nor a completed gate for it. I supplied the missing evidence independently: running the focused gate at the delta head (cwd and imported module both under the run worktree, printed in my log) gave 12 passed EXIT=0, and stripping the guard in a scratch copy under TMPDIR reddened exactly the two new tests (2 failed EXIT=1) with the untouched guard green. Docked because the run's own record leaves the delta's gate unfinished and the negative control is mine rather than the run's.",
+    "fit": "the fix reuses the established machinery \u2014 the existing stop state, ORCHESTRATOR_LANE_DECLARATION_KEY, and CrewError \u2014 and mirrors the sibling empty-reason refusal two lines above, adding no new module, parameter or record field. It closes the exact silent-drop the plan's 'invisible config change' rationale exists to prevent.",
+    "goal_fidelity": "the delta repairs the prior review's follow-on at reckon/crew/dispatch.py:5657: a --allow-orchestrator-lane REASON against a resolved lane that does not declare serves_orchestrators now raises CrewError naming the resolved lane and the inapplicable override (dispatch.py:5659-5664) instead of being silently dropped. Both \u00a72 clauses it touches hold: the override stays explicit and recorded on the orchestrator-lane path, and the misuse is refused rather than accepted invisibly. The guard sits at the single construction point for orchestrator_lane_override (dispatch.py:5665-5667), before any run directory, live pointer or worktree exists, so nothing is written on the refusal. The budget-fallback re-plan (dispatch.py:6862) passes orchestrator_lane_reason, so a fallback that resolves to a non-declaring lane is refused too.",
+    "scope_discipline": "the delta changes exactly reckon/crew/dispatch.py and tests/test_the_lane_override_is_explicit_and_recorded.py, both within the run's declared write paths; the commit subject is conventional with an explanatory body, no AI trailer, and no plan, sprint or ticket identifiers in message, symbols or comments. No other caller of the flag exists in reckon/, tests/ or skills/, so the refusal has no unexercised blast radius."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the delta repairs the prior review's follow-on at reckon/crew/dispatch.py:5657: a --allow-orchestrator-lane REASON against a resolved lane that does not declare serves_orchestrators now raises CrewError naming the resolved lane and the inapplicable override (dispatch.py:5659-5664) instead of being silently dropped. Both \u00a72 clauses it touches hold: the override stays explicit and recorded on the orchestrator-lane path, and the misuse is refused rather than accepted invisibly. The guard sits at the single construction point for orchestrator_lane_override (dispatch.py:5665-5667), before any run directory, live pointer or worktree exists, so nothing is written on the refusal. The budget-fallback re-plan (dispatch.py:6862) passes orchestrator_lane_reason, so a fallback that resolves to a non-declaring lane is refused too.\nSCORE evidence: 17\nJUSTIFICATION evidence: the delta's own focused receipt is incomplete: focused-head.log names revision=adcd07881 but records only 11 progress dots with no summary line, and manifest.md predates the delta (it names after_suite revision d90627fb and 'focused gate 10 passed'), naming neither adcd07881 nor a completed gate for it. I supplied the missing evidence independently: running the focused gate at the delta head (cwd and imported module both under the run worktree, printed in my log) gave 12 passed EXIT=0, and stripping the guard in a scratch copy under TMPDIR reddened exactly the two new tests (2 failed EXIT=1) with the untouched guard green. Docked because the run's own record leaves the delta's gate unfinished and the negative control is mine rather than the run's.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta changes exactly reckon/crew/dispatch.py and tests/test_the_lane_override_is_explicit_and_recorded.py, both within the run's declared write paths; the commit subject is conventional with an explanatory body, no AI trailer, and no plan, sprint or ticket identifiers in message, symbols or comments. No other caller of the flag exists in reckon/, tests/ or skills/, so the refusal has no unexercised blast radius.\nSCORE durability: 20\nJUSTIFICATION durability: two regression tests fence the refusal, one per path: test_reason_on_a_lane_without_the_orchestrator_role_is_refused drives the CLI preview against an undeclared lane (exit 1, dispatch-refused, names 'beta', 'override does not apply') and test_reason_is_refused_when_budget_fallback_resolves_to_another_lane drives crew.dispatch through a budget hold to a non-declaring fallback (CrewError naming 'beta'; crew.list_live() empty). My negative control removes the guard and both go red, so neither guard is blind. The declared-lane override and its non-persistence remain covered by the pre-existing cases in the same file.\nSCORE fit: 20\nJUSTIFICATION fit: the fix reuses the established machinery \u2014 the existing stop state, ORCHESTRATOR_LANE_DECLARATION_KEY, and CrewError \u2014 and mirrors the sibling empty-reason refusal two lines above, adding no new module, parameter or record field. It closes the exact silent-drop the plan's 'invisible config change' rationale exists to prevent.\nFINDING focused-head.log:1 follow-on: the reviewed run's own focused receipt for the delta commit is truncated \u2014 it names revision=adcd07881 but carries 11 progress dots and no summary line, because the worker's attempt was killed mid-run at 00:01:52Z (attempt-3-exit.json) after committing adcd07881 at 00:00:41Z. manifest.md still records status complete with the pre-delta gate (after_suite revision d90627fb, 'focused gate 10 passed') and names adcd07881 nowhere, so the run's own record contains no completed gate for its last commit. My independent re-run supplied it (12 passed EXIT=0); the run-side record should be updated or the delta re-gated before promotion.\nFINDING manifest.md:1 follow-on: the two head-only population ids (tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused and tests/test_follow_replays_the_gap.py::test_the_record_follows_every_row_the_pane_receives) remain in the after_suite arm and are untouched by this delta, which changes neither file. They are pre-existing at the previously reviewed head, pass in isolation (head-failure-controls.log and base-failure-controls.log), and lie outside this node's scope; recorded here as the strict zero-added population verdict from the run's own two arms remains unavailable.\nreviewed_base_sha: fef2beb97c3fcc94e10a076d81c87c4f52b4939b\nreviewed_head_sha: adcd078817bfcca44704270e2e34a32deca2cd1c",
+  "review_run_id": "r-20261005T000312983961-review-of-the-lane-override-is-explicit-and-recorded",
+  "reviewed_base_sha": "fef2beb97c3fcc94e10a076d81c87c4f52b4939b",
+  "reviewed_commits": [
+    "adcd078817bfcca44704270e2e34a32deca2cd1c"
+  ],
+  "reviewed_head_sha": "adcd078817bfcca44704270e2e34a32deca2cd1c",
+  "reviewed_run_id": "r-20261004T222621179293-the-lane-override-is-explicit-and-recorded",
+  "reviewer_run_id": "r-20261005T000312983961-review-of-the-lane-override-is-explicit-and-recorded",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T00:20:00+00:00",
+  "total": 97
+}

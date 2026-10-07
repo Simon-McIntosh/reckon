@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "25460c88caf4e22fb4a649f2f8ce457edf9b1ee2",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:2642",
+    "reckon/crew/recovery.py:4158",
+    "reckon/crew/recovery.py:11421"
+  ],
+  "completed_at": "2026-10-06T14:12:51.893Z",
+  "dispatched_at": "2026-10-06T14:07:25Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T131613589252-a-review-attempt-that-launches-nothing-leaves-nothing/logs/negative-control-lane-paused.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: this negative-control log was written before the 08c65a69 rewrite and its traceback shows the pre-rewrite assertion (source.count(\"_discard_composed_plan_review(fields, report)\")), so as stored it no longer demonstrates that the rewired guard reddens; re-running the declared mutation against the rewritten assertion would store a red log naming the current guard."
+    }
+  ],
+  "head_log_revision": "08c65a698a103f48fa06147e232ca8541b13ac39",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read 08c65a698 against ae129648: one file, +12/-7, replacing a whole-module text scan with inspect.getsource over _discard_composed_plan_review, dispatch_review_for_run and _dispatch_composed_review.",
+    "done_when": "Read the section-27 done-when; the reviewed run's head gate (four files, 55 passed EXIT=0 at the delta head) measures it and the manifest records the result, and the rewritten case is one of the guard tests.",
+    "goal": "The reviewed node's goal is the dispatch half of section 27, a plan-review attempt that launches nothing leaves no run directory behind; the delta commit 08c65a69 is a test-only refinement of the guard over that mechanism and leaves reckon/crew/recovery.py:2363 the single discard call it stands for.",
+    "manifest": "Read; status complete, commits name 08c65a698, after_suite is keyed to 08c65a698 (55 passed EXIT=0) and baseline_suite to 25460c88 (49 passed EXIT=0), so added_failure_count derives to zero.",
+    "write_paths": "The delta touches only tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py, inside the reviewed node's declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py:194 reddens when the single call is removed (caller.count becomes 0) and line 196 reddens when the removal is copied into _dispatch_composed_review, so each check names the change that fails it.",
+    "evidence": "logs/gate-head.log records revision=08c65a698 55 passed EXIT=0 and I reproduced the changed module at head (6 passed, EXIT=0); deducted one because the manifest's negative_control_log predates the delta, so it demonstrates the pre-rewrite assertion rather than the rewritten one.",
+    "fit": "tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py:186 uses inspect.getsource to read the named functions, matches the surrounding test style, and introduces no name the naming rules forbid.",
+    "goal_fidelity": "The delta does what its message states: tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py:186 reads exactly the three functions the guard is about, and reckon/crew/recovery.py:2363 still makes the one discard call the guard stands for.",
+    "reuse": "The delta adds no definition and reuses inspect.getsource, so it forks no capability the repository already owns.",
+    "scope_discipline": "git show 08c65a698 touches only tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py, +12/-7, inside the reviewed node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal is the dispatch half of section 27, a plan-review attempt that launches nothing leaves no run directory behind; the delta commit 08c65a69 is a test-only refinement of the guard over that mechanism and leaves reckon/crew/recovery.py:2363 the single discard call it stands for.\nVERDICT done_when: Read the section-27 done-when; the reviewed run's head gate (four files, 55 passed EXIT=0 at the delta head) measures it and the manifest records the result, and the rewritten case is one of the guard tests.\nVERDICT write_paths: The delta touches only tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py, inside the reviewed node's declared write paths.\nVERDICT manifest: Read; status complete, commits name 08c65a698, after_suite is keyed to 08c65a698 (55 passed EXIT=0) and baseline_suite to 25460c88 (49 passed EXIT=0), so added_failure_count derives to zero.\nVERDICT diff: Read 08c65a698 against ae129648: one file, +12/-7, replacing a whole-module text scan with inspect.getsource over _discard_composed_plan_review, dispatch_review_for_run and _dispatch_composed_review.\nCALL_SITES: reckon/cli.py:2642, reckon/crew/recovery.py:4158, reckon/crew/recovery.py:11421\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The delta does what its message states: tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py:186 reads exactly the three functions the guard is about, and reckon/crew/recovery.py:2363 still makes the one discard call the guard stands for.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-head.log records revision=08c65a698 55 passed EXIT=0 and I reproduced the changed module at head (6 passed, EXIT=0); deducted one because the manifest's negative_control_log predates the delta, so it demonstrates the pre-rewrite assertion rather than the rewritten one.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show 08c65a698 touches only tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py, +12/-7, inside the reviewed node's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py:194 reddens when the single call is removed (caller.count becomes 0) and line 196 reddens when the removal is copied into _dispatch_composed_review, so each check names the change that fails it.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py:186 uses inspect.getsource to read the named functions, matches the surrounding test style, and introduces no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: The delta adds no definition and reuses inspect.getsource, so it forks no capability the repository already owns.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T131613589252-a-review-attempt-that-launches-nothing-leaves-nothing/logs/negative-control-lane-paused.log:1 follow-on: this negative-control log was written before the 08c65a69 rewrite and its traceback shows the pre-rewrite assertion (source.count(\"_discard_composed_plan_review(fields, report)\")), so as stored it no longer demonstrates that the rewired guard reddens; re-running the declared mutation against the rewritten assertion would store a red log naming the current guard.\n",
+  "review_run_id": "r-20261006T140708413087-review-of-a-review-attempt-that-launches-nothing-leaves-nothing",
+  "reviewed_base_sha": "ae129648d9a83d8e8bdfaa2188799648fb74fceb",
+  "reviewed_head_sha": "08c65a698a103f48fa06147e232ca8541b13ac39",
+  "reviewed_run_id": "r-20261006T131613589252-a-review-attempt-that-launches-nothing-leaves-nothing",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:11:53.665147+00:00",
+  "total": 119
+}

@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:3993 crew_discard",
+    "reckon/crew/runs.py:1219 fleet_transitions producer fold",
+    "reckon/crew/recovery.py:5592 fleet_transitions watch fold",
+    "reckon/crew/ticker.py:138 STATE_HUE render path"
+  ],
+  "completed_at": "2026-09-26T13:46:02.899Z",
+  "dispatched_at": "2026-09-26T12:03:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "138",
+      "text": "the gate the manifest records runs no ticker suite although this module gained the discarded hue in both themes, so a regression that dropped the hue would leave the recorded evidence green; the three ticker suites pass at the reviewed head (37 + 70)."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "4600",
+      "text": "this node's own new function signature is not ruff-format-stable, and its edited call at reckon/crew/recovery.py:5201 is rewrapped too, so the commit adds two formatting hunks to a repository whose stated target is a clean ruff format."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 9fafad1f; promotion.py gains a marker write inside the pointer lock, recovery.py a promoted-then-discarded-then-withdrawn fold, ticker.py the discarded hue in both themes, one new test module, and three docs additions.",
+    "done_when": "the done_when names the node's own test module plus three comparison files; the manifest records 105 passed at exit 0, a base arm of 99 passed, and 0 added failures, and I reproduced 105 passed, exit 0 at the reviewed head 05548a14.",
+    "goal": "the node's goal is that a discarded run departs as discarded rather than withdrawn; reckon/crew/promotion.py:4589 writes a discard record inside the pointer lock before the pointer is unlinked and reckon/crew/recovery.py:5117 reads it back, so the departure word the fleet shows for a discarded run is now discarded.",
+    "manifest": "read; status complete at head 05548a14 naming commits 88bd5e41 and 05548a14, its gate result, its base arm, and a negative-control note whose red log I reproduced myself.",
+    "write_paths": "read the manifest's orientation_write_paths and every path in base..head; all seven changed paths fall inside that list and nothing outside it changed."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_discard_reads_discarded.py:99 asserts the departure word before the marker assertions, and it reddens under the declared mutation (my falsification: 1 failed, 5 passed, exit 1).",
+    "evidence": "the gate the manifest records names tests/test_crew_discard_reads_discarded.py and three comparison files, so the hue the change adds at reckon/crew/ticker.py:138 goes unexercised by the recorded gate.",
+    "fit": "reckon/crew/ticker.py:138 and :161 register the hue in the existing STATE_HUE idiom and the added lines carry no banned naming, though ruff format rewraps two hunks the node added.",
+    "goal_fidelity": "reckon/crew/recovery.py:5117 resolves promoted, then discarded, then withdrawn, which is the departure word the goal states, and promotion.py:4600 never recreates a run directory to hold the marker.",
+    "scope_discipline": "every path in base..head is inside the manifest's orientation_write_paths, and the two docs records are pure additions with zero deleted lines."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a discarded run departs as discarded rather than withdrawn; reckon/crew/promotion.py:4589 writes a discard record inside the pointer lock before the pointer is unlinked and reckon/crew/recovery.py:5117 reads it back, so the departure word the fleet shows for a discarded run is now discarded.\nVERDICT done_when: the done_when names the node's own test module plus three comparison files; the manifest records 105 passed at exit 0, a base arm of 99 passed, and 0 added failures, and I reproduced 105 passed, exit 0 at the reviewed head 05548a14.\nVERDICT write_paths: read the manifest's orientation_write_paths and every path in base..head; all seven changed paths fall inside that list and nothing outside it changed.\nVERDICT manifest: read; status complete at head 05548a14 naming commits 88bd5e41 and 05548a14, its gate result, its base arm, and a negative-control note whose red log I reproduced myself.\nVERDICT diff: read commit by commit against base 9fafad1f; promotion.py gains a marker write inside the pointer lock, recovery.py a promoted-then-discarded-then-withdrawn fold, ticker.py the discarded hue in both themes, one new test module, and three docs additions.\nCALL_SITES: reckon/cli.py:3993 crew_discard, reckon/crew/runs.py:1219 fleet_transitions producer fold, reckon/crew/recovery.py:5592 fleet_transitions watch fold, reckon/crew/ticker.py:138 STATE_HUE render path\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:5117 resolves promoted, then discarded, then withdrawn, which is the departure word the goal states, and promotion.py:4600 never recreates a run directory to hold the marker.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate the manifest records names tests/test_crew_discard_reads_discarded.py and three comparison files, so the hue the change adds at reckon/crew/ticker.py:138 goes unexercised by the recorded gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in base..head is inside the manifest's orientation_write_paths, and the two docs records are pure additions with zero deleted lines.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_discard_reads_discarded.py:99 asserts the departure word before the marker assertions, and it reddens under the declared mutation (my falsification: 1 failed, 5 passed, exit 1).\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/ticker.py:138 and :161 register the hue in the existing STATE_HUE idiom and the added lines carry no banned naming, though ruff format rewraps two hunks the node added.\nFINDING reckon/crew/ticker.py:138 the gate the manifest records runs no ticker suite although this module gained the discarded hue in both themes, so a regression that dropped the hue would leave the recorded evidence green; the three ticker suites pass at the reviewed head (37 + 70).\nFINDING reckon/crew/promotion.py:4600 this node's own new function signature is not ruff-format-stable, and its edited call at reckon/crew/recovery.py:5201 is rewrapped too, so the commit adds two formatting hunks to a repository whose stated target is a clean ruff format.\n",
+  "review_run_id": "r-20260926T120335697662-review-of-crew-discard-reads-discarded",
+  "reviewed_base_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_head_sha": "05548a14ebe9c2ece28dd63fae24ed4342e54ef9",
+  "reviewed_run_id": "r-20260926T103152965782-crew-discard-reads-discarded",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T13:35:13.370410+00:00",
+  "total": 93
+}

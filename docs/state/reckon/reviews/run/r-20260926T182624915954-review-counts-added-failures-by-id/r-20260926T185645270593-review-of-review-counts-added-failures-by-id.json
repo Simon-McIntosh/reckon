@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T19:18:45.020Z",
+  "dispatched_at": "2026-09-26T18:56:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "785",
+      "text": "the count, its ids and the cap are gated on a manifest= argument no production caller supplies \u2014 every store_review( call site in the tree is a test (grep -rn \"store_review(\" --include=*.py reckon/ returns the definition alone, and greps for annotate_added_failures, added_failure_count and ADDED_FAILURES_TOTAL_CAP find the same two files) while a production review is a JSON file the review worker writes by hand inside its fence \u2014 so no stored review carries added_failure_count and the plan comment's claim that a stored review now carries it is false of every review the fleet will store."
+    },
+    {
+      "file": "docs/plans/scoring-should-stop-a-promotion.html",
+      "line": "1409",
+      "text": "the landing record keeps \"1 failed / 76 passed at base 2184a9f1 against 1 failed / 80 passed after, with an identical failure set\" although commit 0684130b exists to correct that 80 to 76 because the earlier arm ran a different target list, and both cited receipts now read 1 failed / 76 passed with one shared failing id \u2014 so the plan a coordinator reads disagrees with its own evidence anchor and states a delta that cannot hold."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T182624915954-review-counts-added-failures-by-id/review-cohort-after.log",
+      "line": "1",
+      "text": "the after arm's header gives its command as \"... <review cohort targets>\", an unsubstituted placeholder, so the receipt cited for the after count does not state which files were run \u2014 the exact ambiguity that produced the wrong 80 figure the head commit had to correct."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T182624915954-review-counts-added-failures-by-id/manifest.md",
+      "line": "13",
+      "text": "the tests field claims the focused gate result is \"at head 0684130b\" while the log it cites heads with revision e6340d81; the two revisions differ only in docs so the result stands, but a stated revision the cited receipt does not carry is the reading this plan exists to stop accepting."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read all five commits against base 2184a9f1 \u2014 bd575117 adds the derivation, the cap and the unmeasured rule, ab5e524b reformats, 9838365a makes the annotation conditional on a supplied manifest, e6340d81 writes the landing record, 0684130b corrects the cohort figure \u2014 all additions, nothing removed, and nothing outside review.py, its new test file and the two docs.",
+    "done_when": "the done_when names tests/test_review_counts_added_failures.py with its three cases and the by-number control; I re-ran that file at the reviewed head and read 4 passed, exit 0 (recheck-gate.log), reproducing the recorded result rather than taking the worker's word.",
+    "goal": "the node's goal is that a stored review carries the added-failures-by-id count of the run it reviews, and reckon/crew/review.py:659-737 derives that id-set difference, the cap and the retirement exemption exactly as the brief states, but the annotation is gated on a caller-supplied manifest that no production path provides, so the goal's outcome is unreachable for the reviews the fleet actually stores.",
+    "manifest": "read at the reviewed run's manifest.md; its commits, focused gate and declared control all reproduce under my own reading of the logs, but its tests line names head 0684130b where the cited log heads with e6340d81, and its plan landing sentence asserts a stored review carries the count where no production path can store one.",
+    "write_paths": "the manifest declares five paths and git diff --stat 2184a9f1..0684130b is four files and 393 insertions with zero deletions, every one inside them, with reckon/crew/recovery.py untouched as the done-when requires."
+  },
+  "justifications": {
+    "durability": "the by-number mutation reddens tests/test_review_counts_added_failures.py:85 (1 != 2), removing the cap reddens :90, capping a retired id reddens :104, and storing unmeasured as zero reddens :115, each naming the regression it guards; :90 accepts any total at or below the cap, so a zeroed total would pass it.",
+    "evidence": "the focused gate reproduces at the head (4 passed, exit 0 in recheck-gate.log) and the declared control's first line repeats the declared string with 1 failed at review.py:659, but docs/plans/scoring-should-stop-a-promotion.html:1409 still carries the \"1 failed / 80 passed after\" figure commit 0684130b itself corrected to 76.",
+    "fit": "reckon/crew/review.py:464 names the cap by what it caps, my naming checks over the 318 added lines find no label, deliverable id or changelog prose, and ruff check and ruff format --check are both clean on the two changed source files.",
+    "goal_fidelity": "reckon/crew/review.py:785 annotates only when the caller passes manifest=, and every store_review( call site in the tree is a test file, so the count cannot reach a review record a review worker writes by hand; the cap itself reads nothing that gates promotion, since recovery.py:546 is the only reader of total and requires an int, not a threshold.",
+    "scope_discipline": "git diff --stat 2184a9f1..0684130b is four files and 393 insertions with zero deletions, all inside the five declared write paths, and no plan meta line was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a stored review carries the added-failures-by-id count of the run it reviews, and reckon/crew/review.py:659-737 derives that id-set difference, the cap and the retirement exemption exactly as the brief states, but the annotation is gated on a caller-supplied manifest that no production path provides, so the goal's outcome is unreachable for the reviews the fleet actually stores.\nVERDICT done_when: the done_when names tests/test_review_counts_added_failures.py with its three cases and the by-number control; I re-ran that file at the reviewed head and read 4 passed, exit 0 (recheck-gate.log), reproducing the recorded result rather than taking the worker's word.\nVERDICT write_paths: the manifest declares five paths and git diff --stat 2184a9f1..0684130b is four files and 393 insertions with zero deletions, every one inside them, with reckon/crew/recovery.py untouched as the done-when requires.\nVERDICT manifest: read at the reviewed run's manifest.md; its commits, focused gate and declared control all reproduce under my own reading of the logs, but its tests line names head 0684130b where the cited log heads with e6340d81, and its plan landing sentence asserts a stored review carries the count where no production path can store one.\nVERDICT diff: read all five commits against base 2184a9f1 \u2014 bd575117 adds the derivation, the cap and the unmeasured rule, ab5e524b reformats, 9838365a makes the annotation conditional on a supplied manifest, e6340d81 writes the landing record, 0684130b corrects the cohort figure \u2014 all additions, nothing removed, and nothing outside review.py, its new test file and the two docs.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:785 annotates only when the caller passes manifest=, and every store_review( call site in the tree is a test file, so the count cannot reach a review record a review worker writes by hand; the cap itself reads nothing that gates promotion, since recovery.py:546 is the only reader of total and requires an int, not a threshold.\nSCORE evidence: 16\nJUSTIFICATION evidence: the focused gate reproduces at the head (4 passed, exit 0 in recheck-gate.log) and the declared control's first line repeats the declared string with 1 failed at review.py:659, but docs/plans/scoring-should-stop-a-promotion.html:1409 still carries the \"1 failed / 80 passed after\" figure commit 0684130b itself corrected to 76.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2184a9f1..0684130b is four files and 393 insertions with zero deletions, all inside the five declared write paths, and no plan meta line was touched.\nSCORE durability: 19\nJUSTIFICATION durability: the by-number mutation reddens tests/test_review_counts_added_failures.py:85 (1 != 2), removing the cap reddens :90, capping a retired id reddens :104, and storing unmeasured as zero reddens :115, each naming the regression it guards; :90 accepts any total at or below the cap, so a zeroed total would pass it.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review.py:464 names the cap by what it caps, my naming checks over the 318 added lines find no label, deliverable id or changelog prose, and ruff check and ruff format --check are both clean on the two changed source files.\nFINDING reckon/crew/review.py:785 the count, its ids and the cap are gated on a manifest= argument no production caller supplies \u2014 every store_review( call site in the tree is a test (grep -rn \"store_review(\" --include=*.py reckon/ returns the definition alone, and greps for annotate_added_failures, added_failure_count and ADDED_FAILURES_TOTAL_CAP find the same two files) while a production review is a JSON file the review worker writes by hand inside its fence \u2014 so no stored review carries added_failure_count and the plan comment's claim that a stored review now carries it is false of every review the fleet will store.\nFINDING docs/plans/scoring-should-stop-a-promotion.html:1409 the landing record keeps \"1 failed / 76 passed at base 2184a9f1 against 1 failed / 80 passed after, with an identical failure set\" although commit 0684130b exists to correct that 80 to 76 because the earlier arm ran a different target list, and both cited receipts now read 1 failed / 76 passed with one shared failing id \u2014 so the plan a coordinator reads disagrees with its own evidence anchor and states a delta that cannot hold.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T182624915954-review-counts-added-failures-by-id/review-cohort-after.log:1 the after arm's header gives its command as \"... <review cohort targets>\", an unsubstituted placeholder, so the receipt cited for the after count does not state which files were run \u2014 the exact ambiguity that produced the wrong 80 figure the head commit had to correct.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T182624915954-review-counts-added-failures-by-id/manifest.md:13 the tests field claims the focused gate result is \"at head 0684130b\" while the log it cites heads with revision e6340d81; the two revisions differ only in docs so the result stands, but a stated revision the cited receipt does not carry is the reading this plan exists to stop accepting.",
+  "review_run_id": "r-20260926T185645270593-review-of-review-counts-added-failures-by-id",
+  "reviewed_base_sha": "2184a9f1407789c6ff74af18b09e95663cf97311",
+  "reviewed_head_sha": "0684130beca0391ac3b3b3619b42d3a7f273a920",
+  "reviewed_run_id": "r-20260926T182624915954-review-counts-added-failures-by-id",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T19:15:22.787522+00:00",
+  "total": 89
+}

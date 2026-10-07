@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T17:21:46.417Z",
+  "dispatched_at": "2026-10-04T17:10:38Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:6193",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change is to route the live-view read through the existing classifier (or share that one fold), not to write a stream fold in `mcp.py`, and \u00a730 also says the same fold \"should be what `complete` calls before promoting\", which is the strong signal that it belongs on the existing owner, not in a third caller.",
+      "text": "\u00a730 says the live view \"takes phase from the stored pointer\" and should fold the stream on read, but `_observed_phase`/the classifier already derive the phase a run's evidence supports (worker record, retained commits, stream-should-work, terminal manifest) precisely so a stored launcher label cannot stand; adding a second stream-fold in the MCP read path creates two phase derivations that will drift",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:6193",
+      "id": "reuse_search-1",
+      "reason": "one grep for `_observed_phase`/the classifier would have redirected \u00a730 to an extension of the existing derivation instead of a new one, which is exactly the reuse map this item exists to make unfailable.",
+      "text": "\u00a730 searches `mcp.py` and `observe` but does not cite the phase derivation that already exists, so its \"fold the stream\" remedy was proposed without reading the mechanism it most resembles",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:6193",
+      "id": "duplicate_owner-2",
+      "reason": "this restates the same defect as the finding above and would be resolved by the same change",
+      "text": "\u00a730's remedy also collides with the \u00a74 standing obligation that the stored state and the rendered row agree (both are re-derived from one source); a live-view fold plus the classifier plus `observe`'s writer is three derivations of one fact",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "41c366f5c23c1c58c22e05cdb84de1a09210d77f65ecdc990637a98e4f2d7676",
+  "plan_slug": "crew-observability-truth",
+  "plan_version": 711,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T171023367535-plan-review-of-crew-observability-truth",
+  "reviewed_blob_sha": "dbe0ac288530457b8825be708ee51d981a567a52",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the new behaviour is anchored on existing deep owners rather than spread into parallel small wrappers; \u00a730 is the one place a second implementation is proposed, and it is reported under duplicate_owner.",
+    "duplicate_owner": "a finding \u2014 \u00a730 proposes folding the run phase from the stream in the MCP live view (\"fold the phase from it on read\"), which re-derives a phase that `reckon/crew/recovery.py` already derives from the run's own evidence (`_observed_phase` and the classifier), rather than routing the read through that existing derivation.",
+    "reuse_search": "pass \u2014 the plan cites the existing mechanism for nearly every proposal (`_schema.py:plan_section_anchors`, `prompts.py` time fence, `lane_document.py:read_lane_throughput`, `runs.py` drain, `reports.py`/`promotion.py` for \u00a738/\u00a745), with the single exception noted under \u00a730.",
+    "thin_wrapper": "pass \u2014 the repair-shaped sections (\u00a731\u2013\u00a735, \u00a743, \u00a744) extend or correct a single owner and state why the owner cannot serve as-is; \u00a744's reload gate and \u00a743's unpadded cell are corrections to the existing ticker formatter, not new layers."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T17:59:01.222161+00:00"
+}

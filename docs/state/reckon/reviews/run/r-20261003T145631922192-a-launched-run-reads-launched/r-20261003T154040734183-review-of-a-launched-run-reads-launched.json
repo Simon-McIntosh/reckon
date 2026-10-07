@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew_routes.py::test_discovery_serves_declared_directions_and_plan_alignment"
+  ],
+  "added_failures_note": "count and ids derived from the reviewed run's own manifest arms: baseline_suite (75055cfb9022cd68de67f9e95e8c8db246f8a89a, 10-file population) completed true with 0 failed, after_suite completed true with 1 failed, so the count is 1. The reviewed run's follow_ons names that id in full as a load-sensitive client-side 5 s timeout on the discovery route that passes alone (head-arm-crew-routes-rerun.log, 13 passed); the discovery route does not call _crew_rows, so the failure is not attributed to this change.",
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:744",
+    "reckon/crew/recovery.py:7500"
+  ],
+  "completed_at": "2026-10-03T15:52:55.675Z",
+  "dispatched_at": "2026-10-03T15:40:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T145631922192-a-launched-run-reads-launched/manifest.md",
+      "line": "13",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture response-time 645.7 ms carried in the manifest landing and artifacts is in no log test_logs names; the gate log the manifest cites (gate-head.log) prints 2892.2 ms and an independent reproduction printed 2450.5 ms, so the figure is the single most favourable of at least three readings and does not reconcile with the log it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T145631922192-a-launched-run-reads-launched/head-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite.revision names 1f29f3112 while the head arm's own log header reads '# rev 75055cfb9022cd68de67f9e95e8c8db246f8a89a+worktree-change', so the 10-file population was measured against the uncommitted worktree rather than the commit the field names."
+    },
+    {
+      "file": "docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/a-launched-run-reads-launched.html",
+      "line": "62",
+      "severity": "follow-on",
+      "text": "follow-on: the plan's second cause is unaddressed \u2014 the change classifies every live pointer per request and the fixture GET /crew measured 2450-2892 ms across runs, over the plan's one-second bound \u2014 deferred to a later node as briefed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "commit 1f29f3112 replaces the phase branch in _crew_rows (reckon/serve.py:738-744) with a read of crew.classify_pointer(pointer).get(\"phase\"), keeping the old done/working/idle stream reading only as a fallback when the classifier returns no phase; the new test and the evidence fragment follow in 07b01365.",
+    "done_when": "tests/test_a_launched_run_reads_launched.py drives the real GET /crew route: the launched case (phase=\"starting\", live pid, no stream) asserts the row equals the live view's classification and is not idle (lines 135-153), a fresh stream reads working (line 155) and a terminal stream reads done (line 172); I reproduced 3 passed EXIT=0 at 07b01365, and the base revision with the new test in a scratch tree fails only the launched case with assert 'idle' == 'starting' (negative-control.log); the plan's response-time half is left to a later node as briefed.",
+    "goal": "GET /crew now sets each row's phase from crew.classify_pointer(pointer)[\"phase\"] (reckon/serve.py:744), the same judgement the crew live view renders, keeping the stream-age word only when the classifier returns no phase, so a launched run with a live supervisor and no stream reads the classifier's binding word rather than idle \u2014 the briefed goal and the plan's first cause, with the response fields unchanged.",
+    "manifest": "Read; status complete, tests names the gate at 3 passed EXIT=0 at 1f29f3112, test_logs name the head, base and negative-control logs, and baseline_suite/after_suite are recorded as JSON blocks each completed true; the fixture response-time metric the manifest carries does not reconcile with the gate log it names (see finding).",
+    "write_paths": "git diff --name-only 75055cfb9022cd68de67f9e95e8c8db246f8a89a..07b01365f2dedfa2778b05ab2d91383217ac8d57 is exactly reckon/serve.py, tests/test_a_launched_run_reads_launched.py and the evidence fragment, all inside the node's declared write paths; the declared figures directory is left empty because the node names no figure, and the tree at 07b01365f2dedfa2778b05ab2d91383217ac8d57 is clean."
+  },
+  "justifications": {
+    "durability": "the new test drives the real GET /crew HTTP route over a temporary crew home and asserts the launched case's row equals the classifier's phase for the same pointer and is not idle, plus fresh working and terminal done; the base-revision negative control reddens exactly the launched case, so the test would have caught the regression rather than merely passing, and it reads no state outside its temporary home.",
+    "evidence": "I independently reproduced the head gate at 07b01365 as 3 passed EXIT=0 (fixture GET /crew 2450.5 ms) and the negative control is genuine (base plus the new test reddens only the launched case, assert 'idle' == 'starting'); the arms are recorded completed true (0 failed base / 1 failed head). Two reconciliation defects: the 645.7 ms the manifest and fragment cite appears in no log the manifest names while the gate log it names prints 2892.2 ms, and after_suite.revision names 1f29f3112 while its head-arm.log header reads 75055cfb plus worktree-change.",
+    "fit": "the change reuses the one shared classify_pointer judgement instead of adding a second phase rule and keeps the stream reading only as a fallback \u2014 a clean fit with the single-source rule; two costs: it classifies every live pointer per request (fixture GET /crew measured 2450-2892 ms, over the plan's one-second bound), and for a real terminal run the row word changes from the route's old done to the classifier's complete/blocked/failed, a value change the fragment's 'the response's fields are unchanged' does not spell out (the SPA tolerates it).",
+    "goal_fidelity": "reckon/serve.py:744 sets the row phase to the shared classifier's phase and falls back to the stream-age word only for a phase-less pointer, so a launched run reads the classifier's launching word instead of idle \u2014 the briefed goal met exactly; the plan's second cause (GET /crew under one second) is explicitly left to a later node, so \u00a73 is half-satisfied as briefed.",
+    "scope_discipline": "git diff --name-only 75055cfb9022cd68de67f9e95e8c8db246f8a89a..07b01365f2dedfa2778b05ab2d91383217ac8d57 touches only reckon/serve.py, tests/test_a_launched_run_reads_launched.py and the evidence fragment, every path declared, with the declared figures directory left empty; the tree at 07b01365f2dedfa2778b05ab2d91383217ac8d57 is clean and the change is a linear two-commit chain on the node's base 75055cfb9022cd68de67f9e95e8c8db246f8a89a."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: GET /crew now sets each row's phase from crew.classify_pointer(pointer)[\"phase\"] (reckon/serve.py:744), the same judgement the crew live view renders, keeping the stream-age word only when the classifier returns no phase, so a launched run with a live supervisor and no stream reads the classifier's binding word rather than idle \u2014 the briefed goal and the plan's first cause, with the response fields unchanged.\nVERDICT done_when: tests/test_a_launched_run_reads_launched.py drives the real GET /crew route: the launched case (phase=\"starting\", live pid, no stream) asserts the row equals the live view's classification and is not idle (lines 135-153), a fresh stream reads working (line 155) and a terminal stream reads done (line 172); I reproduced 3 passed EXIT=0 at 07b01365, and the base revision with the new test in a scratch tree fails only the launched case with assert 'idle' == 'starting' (negative-control.log); the plan's response-time half is left to a later node as briefed.\nVERDICT write_paths: git diff --name-only 75055cfb9022cd68de67f9e95e8c8db246f8a89a..07b01365f2dedfa2778b05ab2d91383217ac8d57 is exactly reckon/serve.py, tests/test_a_launched_run_reads_launched.py and the evidence fragment, all inside the node's declared write paths; the declared figures directory is left empty because the node names no figure, and the tree at 07b01365f2dedfa2778b05ab2d91383217ac8d57 is clean.\nVERDICT manifest: Read; status complete, tests names the gate at 3 passed EXIT=0 at 1f29f3112, test_logs name the head, base and negative-control logs, and baseline_suite/after_suite are recorded as JSON blocks each completed true; the fixture response-time metric the manifest carries does not reconcile with the gate log it names (see finding).\nVERDICT diff: commit 1f29f3112 replaces the phase branch in _crew_rows (reckon/serve.py:738-744) with a read of crew.classify_pointer(pointer).get(\"phase\"), keeping the old done/working/idle stream reading only as a fallback when the classifier returns no phase; the new test and the evidence fragment follow in 07b01365.\nCALL_SITES: reckon/serve.py:744, reckon/crew/recovery.py:7500\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/serve.py:744 sets the row phase to the shared classifier's phase and falls back to the stream-age word only for a phase-less pointer, so a launched run reads the classifier's launching word instead of idle \u2014 the briefed goal met exactly; the plan's second cause (GET /crew under one second) is explicitly left to a later node, so \u00a73 is half-satisfied as briefed.\nSCORE evidence: 13\nJUSTIFICATION evidence: I independently reproduced the head gate at 07b01365 as 3 passed EXIT=0 (fixture GET /crew 2450.5 ms) and the negative control is genuine (base plus the new test reddens only the launched case, assert 'idle' == 'starting'); the arms are recorded completed true (0 failed base / 1 failed head). Two reconciliation defects: the 645.7 ms the manifest and fragment cite appears in no log the manifest names while the gate log it names prints 2892.2 ms, and after_suite.revision names 1f29f3112 while its head-arm.log header reads 75055cfb plus worktree-change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 75055cfb9022cd68de67f9e95e8c8db246f8a89a..07b01365f2dedfa2778b05ab2d91383217ac8d57 touches only reckon/serve.py, tests/test_a_launched_run_reads_launched.py and the evidence fragment, every path declared, with the declared figures directory left empty; the tree at 07b01365f2dedfa2778b05ab2d91383217ac8d57 is clean and the change is a linear two-commit chain on the node's base 75055cfb9022cd68de67f9e95e8c8db246f8a89a.\nSCORE durability: 18\nJUSTIFICATION durability: the new test drives the real GET /crew HTTP route over a temporary crew home and asserts the launched case's row equals the classifier's phase for the same pointer and is not idle, plus fresh working and terminal done; the base-revision negative control reddens exactly the launched case, so the test would have caught the regression rather than merely passing, and it reads no state outside its temporary home.\nSCORE fit: 16\nJUSTIFICATION fit: the change reuses the one shared classify_pointer judgement instead of adding a second phase rule and keeps the stream reading only as a fallback \u2014 a clean fit with the single-source rule; two costs: it classifies every live pointer per request (fixture GET /crew measured 2450-2892 ms, over the plan's one-second bound), and for a real terminal run the row word changes from the route's old done to the classifier's complete/blocked/failed, a value change the fragment's 'the response's fields are unchanged' does not spell out (the SPA tolerates it).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T145631922192-a-launched-run-reads-launched/manifest.md:13 follow-on: the fixture response-time 645.7 ms carried in the manifest landing and artifacts is in no log test_logs names; the gate log the manifest cites (gate-head.log) prints 2892.2 ms and an independent reproduction printed 2450.5 ms, so the figure is the single most favourable of at least three readings and does not reconcile with the log it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T145631922192-a-launched-run-reads-launched/head-arm.log:1 follow-on: after_suite.revision names 1f29f3112 while the head arm's own log header reads '# rev 75055cfb9022cd68de67f9e95e8c8db246f8a89a+worktree-change', so the 10-file population was measured against the uncommitted worktree rather than the commit the field names.\nFINDING docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/a-launched-run-reads-launched.html:62 follow-on: the plan's second cause is unaddressed \u2014 the change classifies every live pointer per request and the fixture GET /crew measured 2450-2892 ms across runs, over the plan's one-second bound \u2014 deferred to a later node as briefed.\nreviewed_base_sha: 75055cfb9022cd68de67f9e95e8c8db246f8a89a\nreviewed_head_sha: 07b01365f2dedfa2778b05ab2d91383217ac8d57",
+  "review_run_id": "r-20261003T154040734183-review-of-a-launched-run-reads-launched",
+  "reviewed_base_sha": "75055cfb9022cd68de67f9e95e8c8db246f8a89a",
+  "reviewed_commits": [
+    "1f29f3112fecb7837a77ac04495a999950bf5790",
+    "07b01365f2dedfa2778b05ab2d91383217ac8d57"
+  ],
+  "reviewed_head_sha": "07b01365f2dedfa2778b05ab2d91383217ac8d57",
+  "reviewed_run_id": "r-20261003T145631922192-a-launched-run-reads-launched",
+  "reviewer_run_id": "r-20261003T154040734183-review-of-a-launched-run-reads-launched",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T15:50:00.000000+00:00",
+  "total": 85
+}

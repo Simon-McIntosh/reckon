@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5b197dc8884177012621fb28c6ed3d09a10a453f",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:dispatch_repair_for_run",
+    "reckon/crew/recovery.py:_record_repair_dispatch",
+    "reckon/crew/recovery.py:_opened_repair_rounds"
+  ],
+  "completed_at": "2026-10-01T06:20:45.696Z",
+  "dispatched_at": "2026-10-01T05:49:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2191",
+      "severity": "follow-on",
+      "text": "follow-on: the hand-back writes repair_dispatch for the new round, overwriting the already-opened round's record, and repair_rounds keeps only count/round_id/attempts, so the repair node standing for the first round is no longer discoverable from the pointer the coordinator is handed."
+    },
+    {
+      "file": "manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names no baseline_suite/after_suite arm pair, so reckon.crew.review.annotate_review_of_run reads the added-failure count unmeasured; measured 0 added by reviewer arms at the reviewed base and head."
+    },
+    {
+      "file": "tests/test_one_automatic_repair_round_per_run.py",
+      "line": "204",
+      "severity": "follow-on",
+      "text": "follow-on: the dispatched member of REPAIR_ROUND_OPENING_STATUSES (reckon/crew/recovery.py:936) is never driven, so a round opened by a dispatched repair rather than a resume is not exercised."
+    }
+  ],
+  "head_log_revision": "b24d299130831244df6f8b6255847a7f55954606",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read one landed change at a time against 5b197dc; fe641491 adds the cap and its test, b24d29913 adds the evidence fragment, nothing else.",
+    "done_when": "the done_when names tests/test_one_automatic_repair_round_per_run.py; the run's manifest records that gate at 27 passed, and I reproduced it (27 passed, EXIT=0).",
+    "goal": "the goal caps the reflex at one automatic repair round per reviewed run; reckon/crew/recovery.py:2183 hands a later round back to its coordinator instead of opening a second.",
+    "manifest": "read; it records gate 27 passed EXIT=0 and the negative control 1 failed EXIT=1, and its /tmp deletion claim holds.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, the new test file and the evidence fragment; the diff touches exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_one_automatic_repair_round_per_run.py:245 reads the durable pointer and asserts handed_to_coordinator, which reddens when the cap is removed.",
+    "evidence": "tests/test_one_automatic_repair_round_per_run.py covers all three done-when cases, but the reviewed manifest names no baseline_suite/after_suite arms so its own added-failure count reads unmeasured.",
+    "fit": "reckon/crew/recovery.py:938 names the record by mechanism and the comments explain the cap without plan or ticket labels.",
+    "goal_fidelity": "reckon/crew/recovery.py:2183 records handed-to-coordinator and returns without resuming or dispatching once a round has opened.",
+    "scope_discipline": "the diff's three paths are exactly the manifest's declared write paths, and ruff check adds no finding to reckon/crew/recovery.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal caps the reflex at one automatic repair round per reviewed run; reckon/crew/recovery.py:2183 hands a later round back to its coordinator instead of opening a second.\nVERDICT done_when: the done_when names tests/test_one_automatic_repair_round_per_run.py; the run's manifest records that gate at 27 passed, and I reproduced it (27 passed, EXIT=0).\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, the new test file and the evidence fragment; the diff touches exactly those three paths.\nVERDICT manifest: read; it records gate 27 passed EXIT=0 and the negative control 1 failed EXIT=1, and its /tmp deletion claim holds.\nVERDICT diff: read one landed change at a time against 5b197dc; fe641491 adds the cap and its test, b24d29913 adds the evidence fragment, nothing else.\nCALL_SITES: reckon/crew/recovery.py:dispatch_repair_for_run, reckon/crew/recovery.py:_record_repair_dispatch, reckon/crew/recovery.py:_opened_repair_rounds\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2183 records handed-to-coordinator and returns without resuming or dispatching once a round has opened.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_one_automatic_repair_round_per_run.py covers all three done-when cases, but the reviewed manifest names no baseline_suite/after_suite arms so its own added-failure count reads unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's three paths are exactly the manifest's declared write paths, and ruff check adds no finding to reckon/crew/recovery.py.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_one_automatic_repair_round_per_run.py:245 reads the durable pointer and asserts handed_to_coordinator, which reddens when the cap is removed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery.py:938 names the record by mechanism and the comments explain the cap without plan or ticket labels.\nFINDING reckon/crew/recovery.py:2191 follow-on: the hand-back writes repair_dispatch for the new round, overwriting the already-opened round's record, and repair_rounds keeps only count/round_id/attempts, so the repair node standing for the first round is no longer discoverable from the pointer the coordinator is handed.\nFINDING manifest.md:14 follow-on: the reviewed manifest names no baseline_suite/after_suite arm pair, so reckon.crew.review.annotate_review_of_run reads the added-failure count unmeasured; measured 0 added by reviewer arms at the reviewed base and head.\nFINDING tests/test_one_automatic_repair_round_per_run.py:204 follow-on: the dispatched member of REPAIR_ROUND_OPENING_STATUSES (reckon/crew/recovery.py:936) is never driven, so a round opened by a dispatched repair rather than a resume is not exercised.\n",
+  "review_run_id": "legacy-d7e60d910711",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "5b197dc8884177012621fb28c6ed3d09a10a453f",
+  "reviewed_head_sha": "b24d299130831244df6f8b6255847a7f55954606",
+  "reviewed_run_id": "r-20261001T054841706917-one-automatic-repair-round-per-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T06:36:58.548910+00:00",
+  "total": 96
+}

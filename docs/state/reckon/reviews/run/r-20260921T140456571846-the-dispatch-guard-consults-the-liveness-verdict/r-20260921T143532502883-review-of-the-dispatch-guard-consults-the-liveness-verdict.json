@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "blocking_findings": [
+    "The independently rerun focused five-test gate failed at the target head: tests/test_crew.py::test_double_dispatch_refuses_a_member_with_a_non_terminal_run launched the second dispatch."
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T14:35:32.502883+00:00",
+  "evidence": {
+    "independent_focused_gate": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<target-worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_guard_consults_liveness.py tests/test_crew.py::test_double_dispatch_refuses_a_member_with_a_non_terminal_run --basetemp=<review-run>/focused-gate-tmp",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_crew.py::test_double_dispatch_refuses_a_member_with_a_non_terminal_run"
+      ],
+      "import_paths": [
+        "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-dispatch-guard-consults-the-liveness-verdict/reckon/__init__.py",
+        "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-dispatch-guard-consults-the-liveness-verdict/reckon/crew/dispatch.py"
+      ],
+      "receipt": "....F                                                                    [100%]\nFAILED tests/test_crew.py::test_double_dispatch_refuses_a_member_with_a_non_terminal_run\nFailed: the member must not be launched\n1 failed, 4 passed in 18.23s"
+    },
+    "reproduction": {
+      "mechanism": "The existing fixture launches its holder with synthetic pid 4242; the new three-valued guard sees that nonexistent local pid as gone and correctly allows the second dispatch, while the old regression still expects phase-only refusal.",
+      "source": "tests/test_crew.py:1720"
+    },
+    "target_manifest_gate_receipt": {
+      "limitation": "The worker receipt does not record the imported module paths; it conflicts with the independently rerun target-head result.",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T140456571846-the-dispatch-guard-consults-the-liveness-verdict/final-focused.log",
+      "receipt": ".....                                                                    [100%]\n5 passed in 4.51s"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": "1720",
+      "text": "The existing named-member regression uses synthetic pid 4242, so the new liveness rule admits the second dispatch and the source node's declared five-test gate fails."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commits 8a3ebe90, 40c428d9, 377fd131, and 4312179d against e07371a38c0290cbe0ae920395318bee3a462c47: the production loop now calls refuse_member_in_flight for each matching member and the new dispatch-level test covers live, gone, unknown, and source wiring.",
+    "done_when": "The done-when requires the four dispatch-level liveness cases and the named-member regression; the first four pass, but the independently rerun combined five-test gate fails one named-member regression at tests/test_crew.py:1720.",
+    "goal": "The goal is to make the production dispatch guard consult the three-valued liveness verdict, and reckon/crew/dispatch.py:3241 now delegates each matching holder to refuse_member_in_flight.",
+    "manifest": "Read the worker manifest and its final-focused receipt: it records the pre-repair MemberInFlight reproduction and claims five passing tests, but the receipt has no import-origin line and conflicts with the independent target-head rerun.",
+    "write_paths": "The manifest declares reckon/crew/dispatch.py, tests/test_dispatch_guard_consults_liveness.py, and the two plan/evidence HTML files; the four-commit diff changes exactly those four paths."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_guard_consults_liveness.py:129-164 protects the live, gone, unknown, and source-wiring behavior, but tests/test_crew.py:1720 demonstrates that the combined declared gate does not yet remain green.",
+    "evidence": "The worker retained a phase-only negative-control receipt, yet the independent target-head run produced 1 failed and 4 passed while its recorded five-pass receipt gives no imported-source identity.",
+    "fit": "reckon/crew/dispatch.py:3241 uses the existing refuse_member_in_flight helper rather than duplicating its liveness predicate, matching the caller boundary defined in reckon/crew/node.py:268.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3241 replaces the old phase-only MemberInFlight raise with refuse_member_in_flight, and all four new dispatch-entry-point cases pass in the independent run.",
+    "scope_discipline": "git diff e07371a38c0290cbe0ae920395318bee3a462c47..4312179d changes only the four paths declared by the target manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to make the production dispatch guard consult the three-valued liveness verdict, and reckon/crew/dispatch.py:3241 now delegates each matching holder to refuse_member_in_flight.\nVERDICT done_when: The done-when requires the four dispatch-level liveness cases and the named-member regression; the first four pass, but the independently rerun combined five-test gate fails one named-member regression at tests/test_crew.py:1720.\nVERDICT write_paths: The manifest declares reckon/crew/dispatch.py, tests/test_dispatch_guard_consults_liveness.py, and the two plan/evidence HTML files; the four-commit diff changes exactly those four paths.\nVERDICT manifest: Read the worker manifest and its final-focused receipt: it records the pre-repair MemberInFlight reproduction and claims five passing tests, but the receipt has no import-origin line and conflicts with the independent target-head rerun.\nVERDICT diff: Read commits 8a3ebe90, 40c428d9, 377fd131, and 4312179d against e07371a38c0290cbe0ae920395318bee3a462c47: the production loop now calls refuse_member_in_flight for each matching member and the new dispatch-level test covers live, gone, unknown, and source wiring.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3241 replaces the old phase-only MemberInFlight raise with refuse_member_in_flight, and all four new dispatch-entry-point cases pass in the independent run.\nSCORE evidence: 6\nJUSTIFICATION evidence: The worker retained a phase-only negative-control receipt, yet the independent target-head run produced 1 failed and 4 passed while its recorded five-pass receipt gives no imported-source identity.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff e07371a38c0290cbe0ae920395318bee3a462c47..4312179d changes only the four paths declared by the target manifest.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_dispatch_guard_consults_liveness.py:129-164 protects the live, gone, unknown, and source-wiring behavior, but tests/test_crew.py:1720 demonstrates that the combined declared gate does not yet remain green.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch.py:3241 uses the existing refuse_member_in_flight helper rather than duplicating its liveness predicate, matching the caller boundary defined in reckon/crew/node.py:268.\nFINDING tests/test_crew.py:1720 The existing named-member regression uses synthetic pid 4242, so the new liveness rule admits the second dispatch and the source node's declared five-test gate fails.\n",
+  "recommendation": "reject",
+  "review_run_id": "r-20260921T143532502883-review-of-the-dispatch-guard-consults-the-liveness-verdict",
+  "reviewed_base_sha": "e07371a38c0290cbe0ae920395318bee3a462c47",
+  "reviewed_commit": "4312179d",
+  "reviewed_head": "4312179daafff3c7d515013b75ba38eb3e85bdad",
+  "reviewed_run_id": "r-20260921T140456571846-the-dispatch-guard-consults-the-liveness-verdict",
+  "reviewer_run_id": "r-20260921T143532502883-review-of-the-dispatch-guard-consults-the-liveness-verdict",
+  "scope_note": "This review evaluates only the target run's declared four paths and focused gate; repair of the failing pre-existing regression is outside this review node's write scope.",
+  "scores": {
+    "durability": 15,
+    "evidence": 6,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T14:48:11+00:00",
+  "total": 79,
+  "verification_head": "4312179daafff3c7d515013b75ba38eb3e85bdad"
+}

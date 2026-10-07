@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T07:53:19.517Z",
+  "dispatched_at": "2026-10-05T07:46:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-reuses-before-it-writes.html#s6",
+      "id": "reuse_search-1",
+      "reason": "\u00a76 must say whether the dimension reads `clone_matches` as its measured input, or why the LLM-judged dimension and the deterministic detector are deliberately independent; the plan cites neither and so hides that two reuse instruments now exist.",
+      "text": "\u00a76 defines a `reuse` code-review dimension that scores at most 0..20 and at most 5 when \"an added definition re-implements a capability the repository already owns\", yet the plan's own \u00a74 already landed `reckon/clones.py`, a deterministic six-line normalised clone detector whose stated purpose is \"a private copy is a review signal\", and promotion already records its result as `clone_matches`; \u00a76 names neither",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-reuses-before-it-writes.html#s3",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a73 should state that a function-local delegate counts as reuse and record the import-cycle reason, or direct the callers to `metering.run_streams` directly; as written the section proposes a replacement it does not deliver.",
+      "text": "\u00a73 says `metering.run_streams` replaces the promotion and ledger copies, but the landed design keeps two thin function-local wrappers \u2014 `reckon/crew/promotion.py:3421 _run_streams(path)` and `reckon/ledger.py:3161 _run_streams(run_id, streams_root)` \u2014 each adapting a different call shape and importing `metering` inside the function to dodge the facade import cycle; \u00a73's text names no such wrapper and its done-when (\"one implementation per concept, with any retained exception listed with its reason\") is ambiguous about whether a delegate counts, which is the open question comment `c-awrbiw-parsers-and-writer-landed` leaves unresolved",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6b30e24afebcf27553b8c74eee50a773c8f70af14750876008c7dea031e8bd2f",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 77,
+  "project": "reckon",
+  "responses": {
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T07:55:18.340689+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "section 3 is still open on this plan and its two function-local run_streams delegates belong to that section's remaining node, which will either state the facade import-cycle reason for a delegate or route the callers to metering.run_streams directly; section 6 does not touch them",
+      "when": "2026-10-05T07:55:19.082967+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T074615011786-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "c9d64d2a4e666bd6a9e2940b0744237d5bfef567",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72 and \u00a73 hide each shared policy behind one small interface (`reckon/_timestamps.py:parse_utc`, `reckon/_store.py:write_json_atomically`, `reckon/crew/metering.py:run_streams`, `reckon/_observations.py:optional_number`), and \u00a76 adds one entry to the existing `REVIEW_DIMENSIONS` registry rather than a new subsystem.",
+    "duplicate_owner": "pass \u2014 the plan names the owner of each capability it touches (`reckon/_timestamps.py`, `reckon/_store.py`, `reckon/crew/metering.py`, `reckon/_observations.py`, `reckon/crew/review.py`) and extends each rather than forking; \u00a73 defers its census re-run to \u00a72 (\"as in \u00a72\") so one pin serves both thresholds.",
+    "interface_budget": "pass \u2014 supplied counts public_definitions 1473, cli_options 317, mcp_views 33, refusal_families 23; \u00a76 adds a review dimension and a `gates.dimension_floors` key, none of which is in a counted family (`interface_counts.interfaces` counts command/group decorators, option decorators, `format_refusal` codes and MCP view names), and it names the clause it merges \u2014 the `fit` reuse clause from `the-orchestrator-orchestrates` \u00a74 moves into the new dimension.",
+    "reuse_search": "a finding \u2014 \u00a72/\u00a73 cite the structural census and the owners they extend (`reckon/_store.py`, `reckon/crew/metering.py`, `reckon/_observations.py`), and \u00a76 cites the landed `fit` reuse clause, but \u00a76 adds an LLM-scored `reuse` dimension without citing `reckon/clones.py`, the deterministic clone detector \u00a74 of this same plan already landed.",
+    "thin_wrapper": "a finding \u2014 \u00a73 states `metering.run_streams` replaces the promotion and the ledger copies, but the design that landed keeps two thin function-local delegating wrappers over it, whose signature adaptation and import-cycle justification \u00a73's own text does not carry."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T07:54:08.298540+00:00"
+}

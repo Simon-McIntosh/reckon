@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/after-suite.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/baseline-suite.log",
+    "note": "count and ids are the set difference over the two gate logs the reviewed manifest names under baseline_suite and after_suite, computed with reckon.crew.review.added_failures_from_gate_logs; both logs report zero FAILED or ERROR lines, so the difference is empty"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:628 _require_gate_evidence",
+    "reckon/crew/promotion.py:1449 _manifest_cites_a_commit",
+    "reckon/crew/promotion.py:1550 _require_commit_for_changed_manifest",
+    "reckon/crew/promotion.py:3191 complete"
+  ],
+  "completed_at": "2026-09-28T18:34:01.830Z",
+  "dispatched_at": "2026-09-28T18:05:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "478",
+      "text": "the boundaries are enumerated as \"comma, semicolon, colon, dash, em dash, opening parenthesis...\" while the pattern at reckon/crew/promotion.py:449 also accepts a closing parenthesis; measured in my own probe, `commits: none)review only` promotes on a review, so the docstring does not state exactly what the code reads \u2014 the gap is permissive, but this enumeration is the reader's only description of the accepted dialect."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "449",
+      "text": "the boundary set admits six separators and not sentence punctuation, so `commits: none. no repository change` on a review is refused with \"does not resolve to an object\" (measured in my own probe) and the hand edit the node set out to remove survives for that shape; an en dash, a slash and a bang are refused the same way, which leaves the plan's broader claim true only for the boundaries the pattern enumerates."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against the base; cf03fea8 reads the declaration from the raw commits line through _raw_manifest_field and _opens_with_an_absence_word for a commitless role (reckon/crew/promotion.py:454, :474, :490), routes the changed-manifest guard through the same declaration (reckon/crew/promotion.py:1449), and adds the bare-shape and nonesuch cases to the delivered file's ten tests.",
+    "done_when": "the source node's done-when asks for the review promotion, the implement refusal, a red declared mutation and zero added failures by id; found repro-base.log recording 6 failed / 4 passed over the delivered test file at the base source, baseline-suite.log and after-suite.log each carrying zero FAILED or ERROR lines, negative-control.log reddening exactly the comma case (1 failed, 9 passed), and my own arm at cf03fea8 passing 32 of 32 probes beside the delivered file's 10.",
+    "goal": "the node's goal is that a commitless role's prose declaration promotes on a review while the same prose is refused on an implement run; measured at cf03fea8 through crew.complete in my own arm \u2014 all ten review shapes (bare comma, comma with a space, semicolon, dash, parenthetical, and the vocabulary forms n/a, nil and hyphen) promoted with the record carrying no commits, all four implement shapes were refused with \"does not resolve to an object\", nonesuch and nonexistent were refused as the citations they are, and a revision first token was read as the commit it names, with the residuals under FINDING.",
+    "manifest": "read; it records the six commits, the base arm at 40d23d9b with promotion.py restored in place, the declared mutation and the assertion it reddens, and it names after_suite at cf03fea8 with tree 1b9c14e8, which `git rev-parse cf03fea8^{tree}` confirms is that revision's tree.",
+    "write_paths": "the manifest declares five paths and `git diff --stat 40d23d9b cf03fea8` lists three files \u2014 reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and docs/figures/the-audit-agrees-with-the-skill/commitless-review-promotes/commitless-review-decision.svg \u2014 every one of them inside that declared set."
+  },
+  "justifications": {
+    "durability": "the delivered tests pin each declared separator and the implement refusal \u2014 the comma case is the one the declared mutation reddens (negative-control.log) \u2014 and my probe re-measured them, but no assertion pins a revision-shaped first token or the boundary set itself, so a widened boundary or a declaration that swallowed a citation would leave the suite green.",
+    "evidence": "after-suite.log names cf03fea8 with tree 1b9c14e8 and focused.log the same pair, while baseline-suite.log names 40d23d9b with tree 214474034c, each matching its revision's tree, and both suite logs carry zero FAILED or ERROR lines.",
+    "fit": "reckon/crew/promotion.py:454-528 keeps the module's private-helper and long-docstring idiom, imports the absence vocabulary from reckon/crew/reports.py rather than restating it, and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "every shape this review was dispatched to check behaves as the plan's \u00a73 asks at reckon/crew/promotion.py:490, but a declaration followed by a full stop is still refused (measured), so \"a commits: value beginning none is read as an empty list\" holds only for the boundaries the pattern enumerates.",
+    "scope_discipline": "`git diff --stat 40d23d9b cf03fea8` lists only reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and the declared figure, all inside the manifest's five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "REVIEWED_BASE_SHA: 40d23d9bbefd0199d68c74caec573769bed888ff\nREVIEWED_HEAD_SHA: cf03fea8407bf9fa6588a258d5722211efc6098b\nVERDICT goal: the node's goal is that a commitless role's prose declaration promotes on a review while the same prose is refused on an implement run; measured at cf03fea8 through crew.complete in my own arm \u2014 all ten review shapes (bare comma, comma with a space, semicolon, dash, parenthetical, and the vocabulary forms n/a, nil and hyphen) promoted with the record carrying no commits, all four implement shapes were refused with \"does not resolve to an object\", nonesuch and nonexistent were refused as the citations they are, and a revision first token was read as the commit it names, with the residuals under FINDING.\nVERDICT done_when: the source node's done-when asks for the review promotion, the implement refusal, a red declared mutation and zero added failures by id; found repro-base.log recording 6 failed / 4 passed over the delivered test file at the base source, baseline-suite.log and after-suite.log each carrying zero FAILED or ERROR lines, negative-control.log reddening exactly the comma case (1 failed, 9 passed), and my own arm at cf03fea8 passing 32 of 32 probes beside the delivered file's 10.\nVERDICT write_paths: the manifest declares five paths and `git diff --stat 40d23d9b cf03fea8` lists three files \u2014 reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and docs/figures/the-audit-agrees-with-the-skill/commitless-review-promotes/commitless-review-decision.svg \u2014 every one of them inside that declared set.\nVERDICT manifest: read; it records the six commits, the base arm at 40d23d9b with promotion.py restored in place, the declared mutation and the assertion it reddens, and it names after_suite at cf03fea8 with tree 1b9c14e8, which `git rev-parse cf03fea8^{tree}` confirms is that revision's tree.\nVERDICT diff: read commit by commit against the base; cf03fea8 reads the declaration from the raw commits line through _raw_manifest_field and _opens_with_an_absence_word for a commitless role (reckon/crew/promotion.py:454, :474, :490), routes the changed-manifest guard through the same declaration (reckon/crew/promotion.py:1449), and adds the bare-shape and nonesuch cases to the delivered file's ten tests.\nCALL_SITES: reckon/crew/promotion.py:628 _require_gate_evidence, reckon/crew/promotion.py:1449 _manifest_cites_a_commit, reckon/crew/promotion.py:1550 _require_commit_for_changed_manifest, reckon/crew/promotion.py:3191 complete\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every shape this review was dispatched to check behaves as the plan's \u00a73 asks at reckon/crew/promotion.py:490, but a declaration followed by a full stop is still refused (measured), so \"a commits: value beginning none is read as an empty list\" holds only for the boundaries the pattern enumerates.\nSCORE evidence: 19\nJUSTIFICATION evidence: after-suite.log names cf03fea8 with tree 1b9c14e8 and focused.log the same pair, while baseline-suite.log names 40d23d9b with tree 214474034c, each matching its revision's tree, and both suite logs carry zero FAILED or ERROR lines.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 40d23d9b cf03fea8` lists only reckon/crew/promotion.py, tests/test_commitless_review_promotes.py and the declared figure, all inside the manifest's five declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the delivered tests pin each declared separator and the implement refusal \u2014 the comma case is the one the declared mutation reddens (negative-control.log) \u2014 and my probe re-measured them, but no assertion pins a revision-shaped first token or the boundary set itself, so a widened boundary or a declaration that swallowed a citation would leave the suite green.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion.py:454-528 keeps the module's private-helper and long-docstring idiom, imports the absence vocabulary from reckon/crew/reports.py rather than restating it, and introduces no name the repository naming rules forbid.\nFINDING reckon/crew/promotion.py:478 the boundaries are enumerated as \"comma, semicolon, colon, dash, em dash, opening parenthesis...\" while the pattern at reckon/crew/promotion.py:449 also accepts a closing parenthesis; measured in my own probe, `commits: none)review only` promotes on a review, so the docstring does not state exactly what the code reads \u2014 the gap is permissive, but this enumeration is the reader's only description of the accepted dialect.\nFINDING reckon/crew/promotion.py:449 the boundary set admits six separators and not sentence punctuation, so `commits: none. no repository change` on a review is refused with \"does not resolve to an object\" (measured in my own probe) and the hand edit the node set out to remove survives for that shape; an en dash, a slash and a bang are refused the same way, which leaves the plan's broader claim true only for the boundaries the pattern enumerates.",
+  "review_run_id": "r-20260928T180502659922-review-of-commitless-review-promotes",
+  "reviewed_base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "reviewed_head_sha": "cf03fea8407bf9fa6588a258d5722211efc6098b",
+  "reviewed_run_id": "r-20260928T144638621685-commitless-review-promotes",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T18:27:31.789286+00:00",
+  "total": 93
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken; an independent head arm over the ten delta modules ran 71 passed / 0 failed, which resolves the done_when clause to zero added failures.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:dispatch_review_for_run calls carry_review_forward (recovery.py:1858)",
+    "reckon/crew/recovery.py:dispatch_awaiting_reviews calls withdraw_superseded_review (recovery.py:3241) and review_settle_seconds_remaining (recovery.py:3255) through the sweep"
+  ],
+  "completed_at": "2026-10-02T21:33:55.637Z",
+  "dispatched_at": "2026-10-02T21:14:13Z",
+  "findings": [
+    {
+      "file": "tests/test_reflex_keys_on_reviewed_run_and_head.py",
+      "line": "308",
+      "severity": "follow-on",
+      "text": "scope: commit 31798fcd edits tests/test_reflex_keys_on_reviewed_run_and_head.py (29 insertions, 4 deletions), which is not among the node's granted write paths \u2014 prompt.txt:66-71 grants only reckon/crew/recovery.py, reckon/crew/obligations.py, tests/test_review_carries_forward.py and the evidence/figure paths. The adaptation is legitimate (the stale-half case moved its head over a data file, which the new carry-forward now absorbs, so the assertion no longer held), but the file lands outside the declared fence and its change is needed for the suite to stay honest."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T183953299469-review-carries-forward/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "evidence: the reviewed manifest's after_suite names delta.log, which never reached a summary line, and baseline_suite names no log, so the run's own added-failure count derives as unmeasured (null). Measured independently at this head, the ten delta modules run 71 passed / 0 failed (delta-head-arm.log), so the done_when clause resolves to zero added failures \u2014 a measurement the reviewed manifest does not carry."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1431",
+      "severity": "follow-on",
+      "text": "the section's rule that a review already running when a resume lands finishes is not distinguished from the queued case: withdraw_superseded_review marks the recorded attempt withdrawn whenever the resume is newer and the head no longer covered, without consulting whether the review worker already launched (the run's own worker.json / exit record). The live-pointer scan in _review_in_flight softens the same-head case, but a running review whose head the resume moved is recorded withdrawn and no longer stands for that head while its worker still runs."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against base 2a581fb4: cc17465e adds the recovery helpers and the five source tests, 8b9b6800 adds the evidence fragment, 31798fcd repairs the reflex-key test's stale half; the diff touches recovery.py, both test files and the fragment.",
+    "done_when": "the three named cases exist and pass in tests/test_review_carries_forward.py (10 passed at 31798fcd with test_reflex_keys_on_reviewed_run_and_head.py); the negative control is genuine (EXIT=1); the delta modules measured at this head add zero failures (71 passed / 0 failed).",
+    "goal": "the section's three deliverables are implemented and joined to the reflex: a resume withdraws the superseded queued review, a data-only move carries the stored record forward with no review-missing obligation, and a runtime-source move earns a light review scoped to the moved paths alone.",
+    "manifest": "read; it reports 5 passed for the source test at cc17465e and 10 passed with the reflex-key test in repair.log, names gate.log / negative-control.log / delta.log, and leaves the delta arm incomplete under follow_ons.",
+    "write_paths": "the carry-forward commit stayed inside the declared scope, but the delivered head includes commit 31798fcd editing tests/test_reflex_keys_on_reviewed_run_and_head.py, which the grant did not cover."
+  },
+  "justifications": {
+    "durability": "the guards are real and the behaviour is forced by tests: removing the carried-forward record write reddens the relocation case, and test_a_runtime_source_commit_earns_a_light_review_of_that_commit monkeypatches review_tiers.changes_runtime_source to prove the verdict is not re-derived on the move path.",
+    "evidence": "tests/test_review_carries_forward.py drives all three cases against a real git history and reads the carry-forward back through the obligation producer; the negative control is genuine (EXIT=1 on test_a_data_file_relocation_carries_the_review_forward, which the head arm passes), but the manifest's own delta-module clause was left unmeasured (after_suite names delta.log with no summary line, baseline_suite names no log), so its added-failure count derives as unmeasured.",
+    "fit": "the helpers delegate classification to reckon.review_tiers.changes_runtime_source (review_tiers.py:57) rather than a second predicate, follow the module's existing naming (_review_*, _mutate_pointer, _record_review_dispatch) and reuse review_module.store_review/read_review; the docstrings state the mechanism and the fail-safe.",
+    "goal_fidelity": "the three deliverables of the section are present and reached end to end: withdraw_superseded_review (recovery.py:1431) withdraws a review a resume moved past, carry_review_forward (recovery.py:1356) re-stores the stored record over a data-only head move and marks it with the revision it came from, and a runtime-source move returns review_tier light with the moved paths as scope, composed in dispatch_review_for_run (recovery.py:1858).",
+    "scope_discipline": "the carry-forward commit touches only recovery.py and its own test file, but the later commit 31798fcd edits tests/test_reflex_keys_on_reviewed_run_and_head.py, which is not among the node's granted write paths (prompt.txt:66-71), so the delivered head reaches outside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section's three deliverables are implemented and joined to the reflex: a resume withdraws the superseded queued review, a data-only move carries the stored record forward with no review-missing obligation, and a runtime-source move earns a light review scoped to the moved paths alone.\nVERDICT done_when: the three named cases exist and pass in tests/test_review_carries_forward.py (10 passed at 31798fcd with test_reflex_keys_on_reviewed_run_and_head.py); the negative control is genuine (EXIT=1); the delta modules measured at this head add zero failures (71 passed / 0 failed).\nVERDICT write_paths: the carry-forward commit stayed inside the declared scope, but the delivered head includes commit 31798fcd editing tests/test_reflex_keys_on_reviewed_run_and_head.py, which the grant did not cover.\nVERDICT manifest: read; it reports 5 passed for the source test at cc17465e and 10 passed with the reflex-key test in repair.log, names gate.log / negative-control.log / delta.log, and leaves the delta arm incomplete under follow_ons.\nVERDICT diff: read commit by commit against base 2a581fb4: cc17465e adds the recovery helpers and the five source tests, 8b9b6800 adds the evidence fragment, 31798fcd repairs the reflex-key test's stale half; the diff touches recovery.py, both test files and the fragment.\nCALL_SITES: reckon/crew/recovery.py:dispatch_review_for_run calls carry_review_forward (recovery.py:1858), reckon/crew/recovery.py:dispatch_awaiting_reviews calls withdraw_superseded_review (recovery.py:3241) and review_settle_seconds_remaining (recovery.py:3255) through the sweep\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the three deliverables of the section are present and reached end to end: withdraw_superseded_review (recovery.py:1431) withdraws a review a resume moved past, carry_review_forward (recovery.py:1356) re-stores the stored record over a data-only head move and marks it with the revision it came from, and a runtime-source move returns review_tier light with the moved paths as scope, composed in dispatch_review_for_run (recovery.py:1858).\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_review_carries_forward.py drives all three cases against a real git history and reads the carry-forward back through the obligation producer; the negative control is genuine (EXIT=1 on test_a_data_file_relocation_carries_the_review_forward, which the head arm passes), but the manifest's own delta-module clause was left unmeasured (after_suite names delta.log with no summary line, baseline_suite names no log), so its added-failure count derives as unmeasured.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the carry-forward commit touches only recovery.py and its own test file, but the later commit 31798fcd edits tests/test_reflex_keys_on_reviewed_run_and_head.py, which is not among the node's granted write paths (prompt.txt:66-71), so the delivered head reaches outside the declared fence.\nSCORE durability: 18\nJUSTIFICATION durability: the guards are real and the behaviour is forced by tests: removing the carried-forward record write reddens the relocation case, and test_a_runtime_source_commit_earns_a_light_review_of_that_commit monkeypatches review_tiers.changes_runtime_source to prove the verdict is not re-derived on the move path.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers delegate classification to reckon.review_tiers.changes_runtime_source (review_tiers.py:57) rather than a second predicate, follow the module's existing naming (_review_*, _mutate_pointer, _record_review_dispatch) and reuse review_module.store_review/read_review; the docstrings state the mechanism and the fail-safe.\nFINDING tests/test_reflex_keys_on_reviewed_run_and_head.py:308 follow-on: scope: commit 31798fcd edits tests/test_reflex_keys_on_reviewed_run_and_head.py (29 insertions, 4 deletions), which is not among the node's granted write paths \u2014 prompt.txt:66-71 grants only reckon/crew/recovery.py, reckon/crew/obligations.py, tests/test_review_carries_forward.py and the evidence/figure paths. The adaptation is legitimate (the stale-half case moved its head over a data file, which the new carry-forward now absorbs, so the assertion no longer held), but the file lands outside the declared fence and its change is needed for the suite to stay honest.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T183953299469-review-carries-forward/manifest.md:15 follow-on: evidence: the reviewed manifest's after_suite names delta.log, which never reached a summary line, and baseline_suite names no log, so the run's own added-failure count derives as unmeasured (null). Measured independently at this head, the ten delta modules run 71 passed / 0 failed (delta-head-arm.log), so the done_when clause resolves to zero added failures \u2014 a measurement the reviewed manifest does not carry.\nFINDING reckon/crew/recovery.py:1431 follow-on: the section's rule that a review already running when a resume lands finishes is not distinguished from the queued case: withdraw_superseded_review marks the recorded attempt withdrawn whenever the resume is newer and the head no longer covered, without consulting whether the review worker already launched (the run's own worker.json / exit record). The live-pointer scan in _review_in_flight softens the same-head case, but a running review whose head the resume moved is recorded withdrawn and no longer stands for that head while its worker still runs.",
+  "review_run_id": "r-20261002T211336063671-review-of-review-carries-forward",
+  "reviewed_base_sha": "2a581fb443537002de44c581f544abc78fac9d3e",
+  "reviewed_head_sha": "31798fcde6749988ab9e7c7b34612f71905a5295",
+  "reviewed_run_id": "r-20261002T183953299469-review-carries-forward",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T21:34:00.000000+00:00",
+  "total": 85
+}

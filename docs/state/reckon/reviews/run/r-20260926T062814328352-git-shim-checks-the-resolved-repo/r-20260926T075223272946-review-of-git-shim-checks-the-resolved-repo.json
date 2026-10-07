@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4670 launch_search_path",
+    "reckon/crew/dispatch.py:4723 persisted worker environment",
+    "reckon/crew/dispatch.py:4811 launch",
+    "reckon/crew/dispatch.py:4852 launch",
+    "reckon/crew/dispatch.py:4958 launch",
+    "reckon/worker_shims/git",
+    "reckon/worker_git_shim.py:313 main"
+  ],
+  "completed_at": "2026-09-26T08:13:41.412Z",
+  "dispatched_at": "2026-09-26T07:52:31Z",
+  "findings": [
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "161",
+      "text": "the mutating set is matched against the argv verb, with only the invocation's own -c aliases expanded, so a mutating alias defined in a config file is forwarded and mutates a foreign checkout: probe-alias-bypass.log measures git ci --allow-empty -m via-alias with alias.ci=commit in the target repository's own config exiting 0 and moving that checkout's HEAD while the same mutation spelled verbatim exited 97 under the identical environment and PATH."
+    },
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "228",
+      "text": "the docstring claims the run id is reduced to its basename before it names a file, but the body passes it whole to pointer_path, which is live_dir() / f\"{run_id}.json\" at reckon/crew/runs.py:75 and performs no reduction, where the sibling this docstring is copied from does reduce it at reckon/hooks/worker_git_guard.py:178; a RECKON_RUN_ID carrying a separator or .. therefore reads a JSON file outside the live directory and the shim takes that file's worktree field as the run's own worktree."
+    },
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "91",
+      "text": "_ATTACHED_PREFIXES is defined and referenced nowhere in the module, so it documents an attached-option list the verb scan does not use."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against base 7f97afda; fd521f3c adds the decision module, the shim script and the PATH wiring, 6e3c5f67 and 51fe7654 add the plan record, the cumulative anchor and the measurement logs, and 883a1bb7 corrects one figure the log does not support, with nothing outside the declared scope and no plan version or modified meta line touched.",
+    "done_when": "the done_when names an env-prefixed GIT_DIR, a cd, a pushd and a plain -C each refused with the other checkout's HEAD unchanged, the same verbs succeeding inside the worktree, read-only verbs passing, transparency without RECKON_RUN_ID, and a launch plan showing the shim first; tests/test_git_shim_checks_the_resolved_repo.py:162 and its four companions through line 283 cover every clause, and tests/test_worker_path_carries_shims.py:264 covers the outside-allocation path.",
+    "goal": "the goal asks for a git shim first on every crew worker's PATH that refuses a mutating verb decided from the repository the real git resolves for that invocation; reckon/worker_git_shim.py carries that decision, reckon/worker_shims/git is what a worker runs, and reckon/crew/dispatch.py:4686 prepends the shim's directory both inside an allocation and out of one.",
+    "manifest": "read; it records four commits, both gate arms with their log paths, the declared negative control and its reverted arm, the lint delta, and a follow_on naming the merged-result check as a separately dispatched test node, and every path it names resolves at the head.",
+    "write_paths": "the manifest declares eight paths and all fourteen files of git diff 7f97afda..883a1bb7 fall inside them, with the reviewed worktree clean at the head."
+  },
+  "justifications": {
+    "durability": "each refusal assertion re-reads the foreign repository's HEAD with a separate real git (tests/test_git_shim_checks_the_resolved_repo.py:176) rather than trusting what the shim reported, and the declared control fails exactly the five refusal cases, while the alias spelling my probe measured is left untested by the suite.",
+    "evidence": "docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt records 25 passed at head and negative-control-git-shim.txt records 5 failed of 8 with the resolved-repo check bypassed, so the red the done_when asks for is behavioural and not only the collection error the base arm shows.",
+    "fit": "the module reuses the RUN_ID_ENV idiom of reckon/hooks/worker_git_guard.py:47 and no plan or sprint identifier reaches a symbol, but it carries a docstring claim its body does not implement (FINDING at reckon/worker_git_shim.py:228) and a constant referenced nowhere (FINDING at reckon/worker_git_shim.py:91).",
+    "goal_fidelity": "the four named spellings are refused end-to-end at tests/test_git_shim_checks_the_resolved_repo.py:175 and :219 and my recheck of the named suite passed 8 of 8 at the head, but one spelling that reaches a mutation unrefused is measured in probe-alias-bypass.log (FINDING at reckon/worker_git_shim.py:161).",
+    "scope_discipline": "every path in the diff is inside the eight declared write paths, both docs files are pure insertions (60 and 63 added, 0 removed), and docs/figures/a-worker-cannot-write-your-home/git-shim-resolution.svg parses as XML with 28 text nodes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks for a git shim first on every crew worker's PATH that refuses a mutating verb decided from the repository the real git resolves for that invocation; reckon/worker_git_shim.py carries that decision, reckon/worker_shims/git is what a worker runs, and reckon/crew/dispatch.py:4686 prepends the shim's directory both inside an allocation and out of one.\nVERDICT done_when: the done_when names an env-prefixed GIT_DIR, a cd, a pushd and a plain -C each refused with the other checkout's HEAD unchanged, the same verbs succeeding inside the worktree, read-only verbs passing, transparency without RECKON_RUN_ID, and a launch plan showing the shim first; tests/test_git_shim_checks_the_resolved_repo.py:162 and its four companions through line 283 cover every clause, and tests/test_worker_path_carries_shims.py:264 covers the outside-allocation path.\nVERDICT write_paths: the manifest declares eight paths and all fourteen files of git diff 7f97afda..883a1bb7 fall inside them, with the reviewed worktree clean at the head.\nVERDICT manifest: read; it records four commits, both gate arms with their log paths, the declared negative control and its reverted arm, the lint delta, and a follow_on naming the merged-result check as a separately dispatched test node, and every path it names resolves at the head.\nVERDICT diff: read commit by commit against base 7f97afda; fd521f3c adds the decision module, the shim script and the PATH wiring, 6e3c5f67 and 51fe7654 add the plan record, the cumulative anchor and the measurement logs, and 883a1bb7 corrects one figure the log does not support, with nothing outside the declared scope and no plan version or modified meta line touched.\nCALL_SITES: reckon/crew/dispatch.py:4670 launch_search_path, reckon/crew/dispatch.py:4723 persisted worker environment, reckon/crew/dispatch.py:4811 launch, reckon/crew/dispatch.py:4852 launch, reckon/crew/dispatch.py:4958 launch, reckon/worker_shims/git, reckon/worker_git_shim.py:313 main\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the four named spellings are refused end-to-end at tests/test_git_shim_checks_the_resolved_repo.py:175 and :219 and my recheck of the named suite passed 8 of 8 at the head, but one spelling that reaches a mutation unrefused is measured in probe-alias-bypass.log (FINDING at reckon/worker_git_shim.py:161).\nSCORE evidence: 18\nJUSTIFICATION evidence: docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt records 25 passed at head and negative-control-git-shim.txt records 5 failed of 8 with the resolved-repo check bypassed, so the red the done_when asks for is behavioural and not only the collection error the base arm shows.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the eight declared write paths, both docs files are pure insertions (60 and 63 added, 0 removed), and docs/figures/a-worker-cannot-write-your-home/git-shim-resolution.svg parses as XML with 28 text nodes.\nSCORE durability: 16\nJUSTIFICATION durability: each refusal assertion re-reads the foreign repository's HEAD with a separate real git (tests/test_git_shim_checks_the_resolved_repo.py:176) rather than trusting what the shim reported, and the declared control fails exactly the five refusal cases, while the alias spelling my probe measured is left untested by the suite.\nSCORE fit: 15\nJUSTIFICATION fit: the module reuses the RUN_ID_ENV idiom of reckon/hooks/worker_git_guard.py:47 and no plan or sprint identifier reaches a symbol, but it carries a docstring claim its body does not implement (FINDING at reckon/worker_git_shim.py:228) and a constant referenced nowhere (FINDING at reckon/worker_git_shim.py:91).\nFINDING reckon/worker_git_shim.py:161 the mutating set is matched against the argv verb, with only the invocation's own -c aliases expanded, so a mutating alias defined in a config file is forwarded and mutates a foreign checkout: probe-alias-bypass.log measures git ci --allow-empty -m via-alias with alias.ci=commit in the target repository's own config exiting 0 and moving that checkout's HEAD while the same mutation spelled verbatim exited 97 under the identical environment and PATH.\nFINDING reckon/worker_git_shim.py:228 the docstring claims the run id is reduced to its basename before it names a file, but the body passes it whole to pointer_path, which is live_dir() / f\"{run_id}.json\" at reckon/crew/runs.py:75 and performs no reduction, where the sibling this docstring is copied from does reduce it at reckon/hooks/worker_git_guard.py:178; a RECKON_RUN_ID carrying a separator or .. therefore reads a JSON file outside the live directory and the shim takes that file's worktree field as the run's own worktree.\nFINDING reckon/worker_git_shim.py:91 _ATTACHED_PREFIXES is defined and referenced nowhere in the module, so it documents an attached-option list the verb scan does not use.\n",
+  "review_run_id": "r-20260926T075223272946-review-of-git-shim-checks-the-resolved-repo",
+  "reviewed_base_sha": "7f97afdaf6dfe2a3da3445bc8b8b229b552d36f3",
+  "reviewed_head_sha": "883a1bb710afd9197a3631803e597ebd3597fe79",
+  "reviewed_run_id": "r-20260926T062814328352-git-shim-checks-the-resolved-repo",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T08:22:00+00:00",
+  "total": 85
+}

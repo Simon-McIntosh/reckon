@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T21:46:47.047679+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/work-does-not-fall-to-the-coordinator.html",
+      "line": "316",
+      "text": "the gate paragraph states git diff --stat 6c577fa2..HEAD \"is two new files with no existing file modified\", but the measured stat at 6f6f4322 is four files and 581 insertions including this comment's own file and the evidence archive; the manifest's \"no existing source file modified\" is the accurate form and the dropped qualifier makes the one claim a reader can check against the diff false as written."
+    },
+    {
+      "file": "docs/plans/work-does-not-fall-to-the-coordinator.html",
+      "line": "316",
+      "text": "the same paragraph attributes the four-file cohort to all_debug, while the run manifest names that partition only for the two tests/test_crew.py runs and the three-file log (81.80s, 10 failed) carries no srun marker, so in a plan whose subject is gate evidence the record asserts more about where the second half of the gate ran than its receipts show."
+    },
+    {
+      "file": "tests/test_claim_release.py",
+      "line": "36",
+      "text": "the isolation control compares only the entry names of the real live-pointer directory while the landing record at docs/plans/work-does-not-fall-to-the-coordinator.html:316 and the run manifest both describe it as the real crew config home being byte-identical, so a test that mutated an existing pointer file or wrote under the real crew manifests or runs directory would pass the control it is cited as proving."
+    }
+  ],
+  "justifications": {
+    "durability": "ten tests regress the mechanism and every refusal, e.g. tests/test_claim_release.py:144 holds a claim on a live pid and asserts the refusal leaves the claim intact, and the file runs in 0.62s measured; deducted because the isolation control at tests/test_claim_release.py:36 compares only entry names of the real live-pointer directory and the recorded-start-tick branch at reckon/crew/claims.py:265 has no test.",
+    "evidence": "the falsifier is asserted through plan_scope_lanes (tests/test_claim_release.py:97) rather than by reading the pointer back, and I re-ran tests/test_claim_release.py at the run's head 6f6f4322 (10 passed in 0.62s) and diffed the cited cohort logs, whose FAILED lists at head and base are byte-identical (11 ids, 193 passed at both) with all ten remaining failures in tests/test_crew_cross_project_claims.py each reporting \"spec-level: no specification level is declared\"; deducted because the brief's \"captured to one log\" arrived as two invocations and the three-file member's zero delta rests on file identity rather than a base run of that file.",
+    "fit": "the module follows its siblings exactly \u2014 the frozen report dataclass at reckon/crew/claims.py:62 with its as_dict() at :73, a CrewError subclass at :53, and _write_json imported from reckon/crew/runs.py as promotion.py:40 does \u2014 and the naming checks over both new files return nothing (no plan labels, ticket references or changelog prose).",
+    "goal_fidelity": "the brief's deliverable was the release path in reckon/crew/claims.py with reckon/cli.py deliberately left to the node that owns it, and that is what landed \u2014 release_claim at reckon/crew/claims.py:128 and narrow_claim at :90 with the intended entry point named for the caller \u2014 leaving the deduction that a coordinator must still write Python by hand until the surface node lands the command.",
+    "scope_discipline": "git diff --name-only and --stat 6c577fa2..HEAD at the run's head list exactly the four declared write paths \u2014 reckon/crew/claims.py, tests/test_claim_release.py, and the two docs \u2014 as 581 insertions, and the only importer of the new module is its own test, so the unwired deliverable carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the brief's deliverable was the release path in reckon/crew/claims.py with reckon/cli.py deliberately left to the node that owns it, and that is what landed \u2014 release_claim at reckon/crew/claims.py:128 and narrow_claim at :90 with the intended entry point named for the caller \u2014 leaving the deduction that a coordinator must still write Python by hand until the surface node lands the command.\nSCORE evidence: 17\nJUSTIFICATION evidence: the falsifier is asserted through plan_scope_lanes (tests/test_claim_release.py:97) rather than by reading the pointer back, and I re-ran tests/test_claim_release.py at the run's head 6f6f4322 (10 passed in 0.62s) and diffed the cited cohort logs, whose FAILED lists at head and base are byte-identical (11 ids, 193 passed at both) with all ten remaining failures in tests/test_crew_cross_project_claims.py each reporting \"spec-level: no specification level is declared\"; deducted because the brief's \"captured to one log\" arrived as two invocations and the three-file member's zero delta rests on file identity rather than a base run of that file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only and --stat 6c577fa2..HEAD at the run's head list exactly the four declared write paths \u2014 reckon/crew/claims.py, tests/test_claim_release.py, and the two docs \u2014 as 581 insertions, and the only importer of the new module is its own test, so the unwired deliverable carries nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: ten tests regress the mechanism and every refusal, e.g. tests/test_claim_release.py:144 holds a claim on a live pid and asserts the refusal leaves the claim intact, and the file runs in 0.62s measured; deducted because the isolation control at tests/test_claim_release.py:36 compares only entry names of the real live-pointer directory and the recorded-start-tick branch at reckon/crew/claims.py:265 has no test.\nSCORE fit: 19\nJUSTIFICATION fit: the module follows its siblings exactly \u2014 the frozen report dataclass at reckon/crew/claims.py:62 with its as_dict() at :73, a CrewError subclass at :53, and _write_json imported from reckon/crew/runs.py as promotion.py:40 does \u2014 and the naming checks over both new files return nothing (no plan labels, ticket references or changelog prose).\nFINDING docs/plans/work-does-not-fall-to-the-coordinator.html:316 the gate paragraph states git diff --stat 6c577fa2..HEAD \"is two new files with no existing file modified\", but the measured stat at 6f6f4322 is four files and 581 insertions including this comment's own file and the evidence archive; the manifest's \"no existing source file modified\" is the accurate form and the dropped qualifier makes the one claim a reader can check against the diff false as written.\nFINDING docs/plans/work-does-not-fall-to-the-coordinator.html:316 the same paragraph attributes the four-file cohort to all_debug, while the run manifest names that partition only for the two tests/test_crew.py runs and the three-file log (81.80s, 10 failed) carries no srun marker, so in a plan whose subject is gate evidence the record asserts more about where the second half of the gate ran than its receipts show.\nFINDING tests/test_claim_release.py:36 the isolation control compares only the entry names of the real live-pointer directory while the landing record at docs/plans/work-does-not-fall-to-the-coordinator.html:316 and the run manifest both describe it as the real crew config home being byte-identical, so a test that mutated an existing pointer file or wrote under the real crew manifests or runs directory would pass the control it is cited as proving.",
+  "review_run_id": "r-20260917T214647047679-review-of-a-claim-can-be-released-without-a-promotion",
+  "reviewed_run_id": "r-20260917T161244058815-a-claim-can-be-released-without-a-promotion",
+  "reviewer": {
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260917T214647047679-review-of-a-claim-can-be-released-without-a-promotion",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T22:46:41.379143+00:00",
+  "total": 91
+}

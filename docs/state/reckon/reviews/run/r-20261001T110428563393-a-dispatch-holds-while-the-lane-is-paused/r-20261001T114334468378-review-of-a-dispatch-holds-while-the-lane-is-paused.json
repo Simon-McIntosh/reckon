@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:1603 (crew dispatch dry-run hold)",
+    "reckon/cli.py:1680 (crew dispatch LanePaused -> exit 75)",
+    "reckon/crew/recovery.py:1719 (dispatch_review_for_run)",
+    "reckon/crew/recovery.py:2576 (dispatch_repair_for_run)",
+    "reckon/crew/recovery.py:2781 (dispatch_awaiting_reviews bucket)"
+  ],
+  "completed_at": "2026-10-01T11:50:50.368Z",
+  "dispatched_at": "2026-10-01T11:44:27Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "1603",
+      "severity": "follow-on",
+      "text": "follow-on: the dry-run lane-paused branch is added but no test drives a dry run with a paused or unreadable gate, so the fragment's claim that the dry run reaches the same hold is not gated and a regression in that branch would pass the suite green."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against a0d770a61; the change adds the gate reader and its five-state rule, the LanePaused hold, the CLI exit 75, the gate_document schema slot and the reflex and sweep handling, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_dispatch_holds_while_the_lane_is_paused.py and the manifest records it at 19 passed EXIT=0; the gate drives every row of the five-state rule, the config_path comparison, the reflex and the CLI exit 75, though it never exercises the dry-run hold at reckon/cli.py:1603.",
+    "goal": "the node's goal is to hold a dispatch while the lane gate file says paused; reckon/crew/dispatch.py:3413 names the two waiting states and dispatch() raises LanePaused on them before the run directory, pointer or worktree is created.",
+    "manifest": "read; it records gate 19 passed EXIT=0, related regression 400 passed / 2 skipped EXIT=0, and negative control 10 failed EXIT=1, each with its log path.",
+    "write_paths": "read the manifest's nine declared paths; all eight files in the diff a0d770a61..416653fb1 are inside them and no file outside them changed."
+  },
+  "justifications": {
+    "durability": "the declared negative control at logs/negative-control.log removes the gate raise and reddens 10 ids the head arm does not fail, but the dry-run lane-paused branch at reckon/cli.py:1603 is asserted by no test and would regress silently.",
+    "evidence": "tests/test_dispatch_holds_while_the_lane_is_paused.py:140 and :309 drive the paused and unreadable rows and assert exit 75 with no pointer, but the dry-run hold added at reckon/cli.py:1603 has no test, so the fragment's claim that the dry run reaches the same hold is ungated.",
+    "fit": "reckon/crew/dispatch.py:3429 sits LanePaused beside BudgetHold in the same exempted-N818 voice, the docstrings name the mechanism, and the changed source carries no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:5297 raises LanePaused when the resolved backend's gate_document reads paused or unreadable, before the run directory is created, so a paused lane holds the dispatch exactly as the goal states.",
+    "scope_discipline": "the diff a0d770a61..416653fb1 touches eight files, all inside the nine declared write paths, with 1105 insertions and 2 deletions and nothing outside the scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hold a dispatch while the lane gate file says paused; reckon/crew/dispatch.py:3413 names the two waiting states and dispatch() raises LanePaused on them before the run directory, pointer or worktree is created.\nVERDICT done_when: the done_when names tests/test_dispatch_holds_while_the_lane_is_paused.py and the manifest records it at 19 passed EXIT=0; the gate drives every row of the five-state rule, the config_path comparison, the reflex and the CLI exit 75, though it never exercises the dry-run hold at reckon/cli.py:1603.\nVERDICT write_paths: read the manifest's nine declared paths; all eight files in the diff a0d770a61..416653fb1 are inside them and no file outside them changed.\nVERDICT manifest: read; it records gate 19 passed EXIT=0, related regression 400 passed / 2 skipped EXIT=0, and negative control 10 failed EXIT=1, each with its log path.\nVERDICT diff: read commit by commit against a0d770a61; the change adds the gate reader and its five-state rule, the LanePaused hold, the CLI exit 75, the gate_document schema slot and the reflex and sweep handling, all inside the declared scope.\nCALL_SITES: reckon/cli.py:1603 (crew dispatch dry-run hold), reckon/cli.py:1680 (crew dispatch LanePaused -> exit 75), reckon/crew/recovery.py:1719 (dispatch_review_for_run), reckon/crew/recovery.py:2576 (dispatch_repair_for_run), reckon/crew/recovery.py:2781 (dispatch_awaiting_reviews bucket)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:5297 raises LanePaused when the resolved backend's gate_document reads paused or unreadable, before the run directory is created, so a paused lane holds the dispatch exactly as the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_dispatch_holds_while_the_lane_is_paused.py:140 and :309 drive the paused and unreadable rows and assert exit 75 with no pointer, but the dry-run hold added at reckon/cli.py:1603 has no test, so the fragment's claim that the dry run reaches the same hold is ungated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a0d770a61..416653fb1 touches eight files, all inside the nine declared write paths, with 1105 insertions and 2 deletions and nothing outside the scope.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control at logs/negative-control.log removes the gate raise and reddens 10 ids the head arm does not fail, but the dry-run lane-paused branch at reckon/cli.py:1603 is asserted by no test and would regress silently.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch.py:3429 sits LanePaused beside BudgetHold in the same exempted-N818 voice, the docstrings name the mechanism, and the changed source carries no plan, sprint or ticket identifier.\nFINDING reckon/cli.py:1603 follow-on: the dry-run lane-paused branch is added but no test drives a dry run with a paused or unreadable gate, so the fragment's claim that the dry run reaches the same hold is not gated and a regression in that branch would pass the suite green.",
+  "review_run_id": "r-20261001T114334468378-review-of-a-dispatch-holds-while-the-lane-is-paused",
+  "reviewed_base_sha": "a0d770a61d284beb150f3582993075299157affe",
+  "reviewed_head_sha": "416653fb140d3de14bbde30e9d4ca30e48313016",
+  "reviewed_run_id": "r-20261001T110428563393-a-dispatch-holds-while-the-lane-is-paused",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T114334468378-review-of-a-dispatch-holds-while-the-lane-is-paused",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.542170+00:00",
+  "total": 95
+}

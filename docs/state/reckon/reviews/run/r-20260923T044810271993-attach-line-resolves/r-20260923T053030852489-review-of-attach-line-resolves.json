@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/runs.py:follower_state",
+    "reckon/crew/runs.py:watch_state",
+    "reckon/crew/runs.py:project_watch_visibility",
+    "reckon/crew/runs.py:render_watch_unit"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T05:30:30.852489+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/a-follower-outlives-its-monitor.html",
+      "line": "104",
+      "text": "the landed record cites the gate revision as f8f6617, which is not an object in the repository (git cat-file -t exits 128) while logs/gate_new_test.log names f8f36b76, so a reader checking the record opens a revision that does not exist."
+    },
+    {
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": "253",
+      "text": "the expected attach line was replaced by a fresh call to the composer under test, so this assertion and the regression it names now move together: restoring the bare word leaves it green and only the new gate file reddens."
+    },
+    {
+      "file": "tests/test_watch_arming_isolation.py",
+      "line": "165",
+      "text": "the same substitution leaves the recorded waiver compared against the composer's own output, so the file pins no behaviour of the line it names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit; f8f36b76 changes only runs.py plus three test files, and f2a036e3 adds the plan landed record (39 insertions) and a new evidence file (88 insertions) with no rewrites.",
+    "done_when": "the done-when's first three clauses are asserted by tests/test_attach_line_resolves.py (absolute path, executable file, token run as `crew follow --help` under PATH=/usr/bin:/bin requiring exit 0, plus the refusal), and its last two are recorded in the manifest's logs; the clause that every existing test asserting on the attach line text still passes holds over the two granted fixture files only, the two out-of-scope assertions being red at the head and named in follow_ons.",
+    "goal": "the goal is that the follower attach line names the absolute path of the running reckon entry point; reckon/crew/runs.py:2452 composes its first token through _reckon_console_script (runs.py:1992), and my own re-run of the gate showed the composed token is the executable virtualenv console script.",
+    "manifest": "read; it records the gate as 2 passed at f8f36b76 with its log, added failures 0 against the base logs, and the executed negative control, and its two follow-ons match the stale literals I read at tests/test_crew_session_delivery.py:223 and tests/test_crew.py:1887.",
+    "write_paths": "the seven declared paths fence reckon/crew/runs.py, three test files and two docs; the diff d6817708..f2a036e3 touches six files and every one is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_attach_line_resolves.py fails on the declared regression, executed and logged red; but tests/test_crew_dispatch_guard.py:253 and tests/test_watch_arming_isolation.py:165 now compare against a re-call of the composer, so a composer regression leaves them green.",
+    "evidence": "logs/gate_new_test.log names revision f8f36b76, tree and command, the before/after logs reproduce the same five failures (added failures 0), and negative_control.log reds the gate at PYTEST_EXIT=1; the residual is that the landed record's revision citation and the two red out-of-scope assertions are named rather than measured green.",
+    "fit": "reckon/crew/runs.py:1992 names the helper for what it returns, is shared by both callers, and its docstring states the symlink reason for dropping .resolve(); the tests follow the file's monkeypatch idiom.",
+    "goal_fidelity": "reckon/crew/runs.py:1992 returns the running interpreter's sibling without resolving the virtualenv symlink away, and my re-run of tests/test_attach_line_resolves.py composed a first token that is the venv's executable console script.",
+    "scope_discipline": "the diff of d6817708..f2a036e3 changes six files, all inside the seven declared write paths, and the two out-of-scope attach-line literals were left untouched as the fence required."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the follower attach line names the absolute path of the running reckon entry point; reckon/crew/runs.py:2452 composes its first token through _reckon_console_script (runs.py:1992), and my own re-run of the gate showed the composed token is the executable virtualenv console script.\nVERDICT done_when: the done-when's first three clauses are asserted by tests/test_attach_line_resolves.py (absolute path, executable file, token run as `crew follow --help` under PATH=/usr/bin:/bin requiring exit 0, plus the refusal), and its last two are recorded in the manifest's logs; the clause that every existing test asserting on the attach line text still passes holds over the two granted fixture files only, the two out-of-scope assertions being red at the head and named in follow_ons.\nVERDICT write_paths: the seven declared paths fence reckon/crew/runs.py, three test files and two docs; the diff d6817708..f2a036e3 touches six files and every one is inside them.\nVERDICT manifest: read; it records the gate as 2 passed at f8f36b76 with its log, added failures 0 against the base logs, and the executed negative control, and its two follow-ons match the stale literals I read at tests/test_crew_session_delivery.py:223 and tests/test_crew.py:1887.\nVERDICT diff: read commit by commit; f8f36b76 changes only runs.py plus three test files, and f2a036e3 adds the plan landed record (39 insertions) and a new evidence file (88 insertions) with no rewrites.\nCALL_SITES: reckon/crew/dispatch.py:dispatch, reckon/crew/runs.py:follower_state, reckon/crew/runs.py:watch_state, reckon/crew/runs.py:project_watch_visibility, reckon/crew/runs.py:render_watch_unit\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1992 returns the running interpreter's sibling without resolving the virtualenv symlink away, and my re-run of tests/test_attach_line_resolves.py composed a first token that is the venv's executable console script.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate_new_test.log names revision f8f36b76, tree and command, the before/after logs reproduce the same five failures (added failures 0), and negative_control.log reds the gate at PYTEST_EXIT=1; the residual is that the landed record's revision citation and the two red out-of-scope assertions are named rather than measured green.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff of d6817708..f2a036e3 changes six files, all inside the seven declared write paths, and the two out-of-scope attach-line literals were left untouched as the fence required.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_attach_line_resolves.py fails on the declared regression, executed and logged red; but tests/test_crew_dispatch_guard.py:253 and tests/test_watch_arming_isolation.py:165 now compare against a re-call of the composer, so a composer regression leaves them green.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/runs.py:1992 names the helper for what it returns, is shared by both callers, and its docstring states the symlink reason for dropping .resolve(); the tests follow the file's monkeypatch idiom.\nFINDING docs/plans/a-follower-outlives-its-monitor.html:104 the landed record cites the gate revision as f8f6617, which is not an object in the repository (git cat-file -t exits 128) while logs/gate_new_test.log names f8f36b76, so a reader checking the record opens a revision that does not exist.\nFINDING tests/test_crew_dispatch_guard.py:253 the expected attach line was replaced by a fresh call to the composer under test, so this assertion and the regression it names now move together: restoring the bare word leaves it green and only the new gate file reddens.\nFINDING tests/test_watch_arming_isolation.py:165 the same substitution leaves the recorded waiver compared against the composer's own output, so the file pins no behaviour of the line it names.",
+  "review_run_id": "r-20260923T053030852489-review-of-attach-line-resolves",
+  "reviewed_base_sha": "d6817708a55941eafa2e1522ec63b3197265d541",
+  "reviewed_head_sha": "f2a036e3a6232e825847554500add7676bf6bf79",
+  "reviewed_run_id": "r-20260923T044810271993-attach-line-resolves",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260923T053030852489-review-of-attach-line-resolves",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T06:58:30.468732+00:00",
+  "total": 93
+}

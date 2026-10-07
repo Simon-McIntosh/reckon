@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived here from the reviewed run's own baseline_suite and after_suite gate logs, resolved from its manifest's log_path fields (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T121951276204-shadow-pick-off-critical-path/base-gate-resumed.log and .../head-gate-resumed.log; 0 added ids, independently reproduced with reckon.crew.review.added_failures_from_gate_logs over the same two logs, whose base arm reports its known-present 3 failures and whose head arm reports none)",
+  "backend": "clive",
+  "carried_forward": {
+    "at": "2026-10-04T16:41:07Z",
+    "from": "ea67260c90baabe3cf997e87d6769530192fcf24",
+    "paths": [
+      "tests/test_routing_picker_key.py"
+    ],
+    "to": "17b97d6fca707bc99d098cf7f59334199a94410d"
+  },
+  "completed_at": "2026-10-04T13:41:13.341Z",
+  "dispatched_at": "2026-10-04T13:32:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "7797",
+      "severity": "follow-on",
+      "text": "promotion builds the ledger row by reading the run pointer (reckon/ledger.py:2209 promoted_picker_selection), so a run promoted within the five-second shadow window records no picker_selection and loses the comparison datum; the node names this in its own follow_ons."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_shadow_pick_off_critical_path.py fails at :142 on the base source with picker_selection already set, shown by the run's negative-control log.",
+    "evidence": "the paired logs record median 10.012 s base to 6.816 s head and the matched gate head 186 passed against a base of 183 passed and 3 failed.",
+    "fit": "the detached spawn follows the surrounding idiom at reckon/crew/dispatch.py:1183 and reuses _pointer_lock and read_pointer rather than a private mechanism.",
+    "goal_fidelity": "reckon/crew/dispatch.py:6606 defers the pick for explicit and deterministic lanes and :7797 starts the bounded detached picker after launch, so an explicit lane returns without awaiting it.",
+    "scope_discipline": "every changed path is inside the declared write paths, though the diff also reworks _publish_stored_phase at reckon/crew/dispatch.py:10207 beyond the stated picker-block edit."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that an explicit-lane dispatch never waits on its shadow pick; reckon/crew/dispatch.py:6606 sets deferred_shadow_selection for deterministic and explicitly-named lanes and the pick is started after the launch at :7797.\nVERDICT done_when: the done_when asks for a fresh-process before/after wall-time measurement recorded in the fragment and a slow-picker test; the paired logs under the run directory and tests/test_shadow_pick_off_critical_path.py:142 provide both.\nVERDICT write_paths: read the manifest's declared paths; every changed path in the diff is inside them (reckon/crew/dispatch.py, tests/test_shadow_pick_off_critical_path.py, docs/evidence/fragments/one-typesafe-model-picker/shadow-pick-off-critical-path.html).\nVERDICT manifest: read; it reports head 186 passed and matched base 183 passed/3 failed, names the six gate logs, and records the paired medians.\nVERDICT diff: read commit by commit against 2c93bc6a; three files, 399 insertions, all within the declared fragment, test and dispatch.py.\nCALL_SITES: reckon/cli.py (the crew dispatch command invokes dispatch.dispatch), reckon/crew/dispatch.py:10207 _publish_stored_phase (supervisor phase publication), reckon/ledger.py:2209 promoted_picker_selection reads the run pointer the shadow picker writes\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:6606 defers the pick for explicit and deterministic lanes and :7797 starts the bounded detached picker after launch, so an explicit lane returns without awaiting it.\nSCORE evidence: 18\nJUSTIFICATION evidence: the paired logs record median 10.012 s base to 6.816 s head and the matched gate head 186 passed against a base of 183 passed and 3 failed.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths, though the diff also reworks _publish_stored_phase at reckon/crew/dispatch.py:10207 beyond the stated picker-block edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_shadow_pick_off_critical_path.py fails at :142 on the base source with picker_selection already set, shown by the run's negative-control log.\nSCORE fit: 17\nJUSTIFICATION fit: the detached spawn follows the surrounding idiom at reckon/crew/dispatch.py:1183 and reuses _pointer_lock and read_pointer rather than a private mechanism.\nFINDING reckon/crew/dispatch.py:7797 follow-on: promotion builds the ledger row by reading the run pointer, so a run promoted within the five-second shadow window records no picker_selection and loses the comparison datum; the node names this in its own follow_ons.\n",
+  "review_run_id": "r-20261004T133231820798-review-of-shadow-pick-off-critical-path",
+  "reviewed_base": "2c93bc6ace00d65430f9874a5af97f35f5ca509a",
+  "reviewed_base_sha": "ea67260c90baabe3cf997e87d6769530192fcf24",
+  "reviewed_commit": "ea67260c90baabe3cf997e87d6769530192fcf24",
+  "reviewed_head_sha": "17b97d6fca707bc99d098cf7f59334199a94410d",
+  "reviewed_run_id": "r-20261004T121951276204-shadow-pick-off-critical-path",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T16:41:07Z",
+  "total": 87
+}

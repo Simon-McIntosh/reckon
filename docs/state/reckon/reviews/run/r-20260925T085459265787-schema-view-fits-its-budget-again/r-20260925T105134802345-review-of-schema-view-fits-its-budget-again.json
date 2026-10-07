@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:751",
+    "reckon/mcp_views.py:1218",
+    "reckon/_schema.py:1407"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T10:51:34.802345+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/dependency-edge-semantics.html",
+      "line": "363",
+      "text": "the title measurement reads generated schema (14455 \u2192 12111), but measuring the two named revisions gives 14998 at base and 12580 at head for the generated schema; 14455 and 12111 are PlanState.model_json_schema() before and after the strip inside one process, so the pair as written is reproducible only that way, and it is repeated unqualified at docs/evidence/archive/dependency-edge-semantics-landed.html:598."
+    },
+    {
+      "file": "docs/plans/dependency-edge-semantics.html",
+      "line": "369",
+      "text": "the head-arm receipts cited for c57c1d6c were written before that commit existed (head-size.log at 12:38:44 naming rev=99a17d7c in its own header, head-gates.log at 12:40:00 carrying no revision header, the commit at 12:40:58), so the 49 passed and the 22483 beside them are true and I reproduced both at the named revisions, but the cited receipts do not themselves show the head they are cited for."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read at 8adc6fd9 commit by commit; c57c1d6c adds the strip helper and the regenerated artifact (151 removals, 50 insertions), and 8adc6fd9 appends the landing record and the evidence anchor; the plan's version and modified meta lines are untouched.",
+    "done_when": "the named check is the budget assertion at tests/test_mcp_views.py:735 plus three sibling gates; I re-ran the same 49-test set from the reviewed tree at 8adc6fd9 (49 passed, exit 0) and reproduced the base arm in a scratch export of 99a17d7c (1 failed, assert 24938 <= (24 * 1024)).",
+    "goal": "the goal is the read_plan schema view under its 24576-byte budget, which it now is \u2014 my re-run of the node's driver at the reviewed head reads 22483, a margin of 2093 \u2014 but the landed mechanism drops pydantic's derived titles rather than tightening the after description the brief named, and the named route is arithmetically insufficient (24938 - 318 = 24620, still 44 bytes over), so the outcome is met and the named route is not.",
+    "manifest": "read; it records the head size, every log, the gate result and it declares that the check itself is the control, red at the dispatch base as its base log records, and reports the deviation from the brief as a blocker for the coordinator rather than presenting the landed mechanism as the requested one.",
+    "write_paths": "the five declared paths are reckon/_schema.py, docs/_shared/plan.schema.json, docs/evidence/archive/dependency-edge-semantics-landed.html, docs/figures/dependency-edge-semantics and docs/plans/dependency-edge-semantics.html; the diff 99a17d7c..8adc6fd9 touches four of them and no path outside the fence, and adds no figure."
+  },
+  "justifications": {
+    "durability": "restoring the removed helper reddens the pre-existing budget assertion, which I reproduced red at base 99a17d7c, and the artifact parity test at tests/test_schema.py:526 guards the committed schema, so a regression cannot land green.",
+    "evidence": "the check measures the published view and both arms reproduce at their named revisions \u2014 base 24938 failing the assertion at tests/test_mcp_views.py:735, head 22483 passing \u2014 with the record's two provenance defects named in the findings below.",
+    "fit": "the helper at reckon/_schema.py:1361 is named for what it does and documents why the annotations are redundant, and the commits carry conventional subjects with bodies, no plan or ticket labels, and no attribution.",
+    "goal_fidelity": "dropping the derived titles at reckon/_schema.py:1393 leaves every description intact and takes the view to 22483, so the goal's outcome holds while the brief named a different mechanism, which is the coordinator's accept-or-reroute decision.",
+    "scope_discipline": "every path in 99a17d7c..8adc6fd9 lies inside the declared fence and nothing else changed, and the strip reaches titles on pre-existing fields beyond the brief's named edit, which is the declared deviation rather than an undeclared one."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is the read_plan schema view under its 24576-byte budget, which it now is \u2014 my re-run of the node's driver at the reviewed head reads 22483, a margin of 2093 \u2014 but the landed mechanism drops pydantic's derived titles rather than tightening the after description the brief named, and the named route is arithmetically insufficient (24938 - 318 = 24620, still 44 bytes over), so the outcome is met and the named route is not.\nVERDICT done_when: the named check is the budget assertion at tests/test_mcp_views.py:735 plus three sibling gates; I re-ran the same 49-test set from the reviewed tree at 8adc6fd9 (49 passed, exit 0) and reproduced the base arm in a scratch export of 99a17d7c (1 failed, assert 24938 <= (24 * 1024)).\nVERDICT write_paths: the five declared paths are reckon/_schema.py, docs/_shared/plan.schema.json, docs/evidence/archive/dependency-edge-semantics-landed.html, docs/figures/dependency-edge-semantics and docs/plans/dependency-edge-semantics.html; the diff 99a17d7c..8adc6fd9 touches four of them and no path outside the fence, and adds no figure.\nVERDICT manifest: read; it records the head size, every log, the gate result and it declares that the check itself is the control, red at the dispatch base as its base log records, and reports the deviation from the brief as a blocker for the coordinator rather than presenting the landed mechanism as the requested one.\nVERDICT diff: read at 8adc6fd9 commit by commit; c57c1d6c adds the strip helper and the regenerated artifact (151 removals, 50 insertions), and 8adc6fd9 appends the landing record and the evidence anchor; the plan's version and modified meta lines are untouched.\nCALL_SITES: reckon/mcp.py:751, reckon/mcp_views.py:1218, reckon/_schema.py:1407\nSCORE goal_fidelity: 17\nSCORE evidence: 17\nSCORE scope_discipline: 18\nSCORE durability: 19\nSCORE fit: 19\nJUSTIFICATION goal_fidelity: dropping the derived titles at reckon/_schema.py:1393 leaves every description intact and takes the view to 22483, so the goal's outcome holds while the brief named a different mechanism, which is the coordinator's accept-or-reroute decision.\nJUSTIFICATION evidence: the check measures the published view and both arms reproduce at their named revisions \u2014 base 24938 failing the assertion at tests/test_mcp_views.py:735, head 22483 passing \u2014 with the record's two provenance defects named in the findings below.\nJUSTIFICATION scope_discipline: every path in 99a17d7c..8adc6fd9 lies inside the declared fence and nothing else changed, and the strip reaches titles on pre-existing fields beyond the brief's named edit, which is the declared deviation rather than an undeclared one.\nJUSTIFICATION durability: restoring the removed helper reddens the pre-existing budget assertion, which I reproduced red at base 99a17d7c, and the artifact parity test at tests/test_schema.py:526 guards the committed schema, so a regression cannot land green.\nJUSTIFICATION fit: the helper at reckon/_schema.py:1361 is named for what it does and documents why the annotations are redundant, and the commits carry conventional subjects with bodies, no plan or ticket labels, and no attribution.\nFINDING docs/plans/dependency-edge-semantics.html:363 the title measurement reads generated schema (14455 \u2192 12111), but measuring the two named revisions gives 14998 at base and 12580 at head for the generated schema; 14455 and 12111 are PlanState.model_json_schema() before and after the strip inside one process, so the pair as written is reproducible only that way, and it is repeated unqualified at docs/evidence/archive/dependency-edge-semantics-landed.html:598.\nFINDING docs/plans/dependency-edge-semantics.html:369 the head-arm receipts cited for c57c1d6c were written before that commit existed (head-size.log at 12:38:44 naming rev=99a17d7c in its own header, head-gates.log at 12:40:00 carrying no revision header, the commit at 12:40:58), so the 49 passed and the 22483 beside them are true and I reproduced both at the named revisions, but the cited receipts do not themselves show the head they are cited for.",
+  "review_run_id": "r-20260925T105134802345-review-of-schema-view-fits-its-budget-again",
+  "reviewed_base_sha": "99a17d7c6cd532771ca82bfdfa28e02233b8168c",
+  "reviewed_head_sha": "8adc6fd973594fd1b1fdb0beff4f119b7498b969",
+  "reviewed_run_id": "r-20260925T085459265787-schema-view-fits-its-budget-again",
+  "reviewer": "review-of-schema-view-fits-its-budget-again",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:51:21.490008+00:00",
+  "total": 90
+}

@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T21:57:38.284Z",
+  "dispatched_at": "2026-10-04T21:48:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/dispatch.py:6904",
+      "id": "reuse_search-1",
+      "reason": "naming the existing provenance write lets \u00a72 extend the one owner (the run/plan/ledger reason record) and reuse it rather than invite a second override-provenance path that drifts from `--no-fence`.",
+      "text": "\u00a72 presents \"a flag whose reason is recorded on the run and reaches the ledger row\" as a new mechanism, but `--no-fence REASON` already does exactly that (cli.py:1815 `no_fence_reason`; dispatch.py:6904-6920, whose comment states the reason \"is recorded on the run, its composed plan and its ledger row\"), and the plan cites neither it nor the sibling override family (refusals.py D11 `--allow-unreconciled-runs`, D13/D18/D19 `--no-watch`, D23 `--allow-unreviewed-plan`) as prior art",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/refusals.py:9",
+      "id": "duplicate_owner-1",
+      "reason": "the registry is the owner the refusal-visibility test and the refusal census read, so a discharge that never enters it is invisible to both and the two remedies will drift as the fence changes severity between recorded and refused.",
+      "text": "the fence composes its \"discharge\" as a bespoke string inside `_dispatch_orchestrator_lane_stop` (dispatch.py:4416-4456) with no family id registered, while `reckon/crew/refusals.py` owns \"render crew refusals with the command that resolves them\" through `DISPATCH_REFUSAL_REMEDIES` and `format_refusal`, so \u00a72's override and \u00a74's move-to-refusal would add a second remedy surface beside the registry",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "77bd6d0cf188d9871d161a11561f8c19b5a7a122e4061498ac0c74d73fa97784",
+  "plan_slug": "the-orchestrator-lane-is-not-a-worker-lane",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214805085879-plan-review-of-the-orchestrator-lane-is-not-a-worker-lane",
+  "reviewed_blob_sha": "23148742556e877b8ed20761feef46fddab62099",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is added; the fence is composed in dispatch resolution as one small stop mapping (`_dispatch_orchestrator_lane_stop`) that reuses `resolve_role_override` to enumerate discharge candidates, so the behaviour sits behind the existing dispatch interface rather than behind parallel wrappers.",
+    "duplicate_owner": "a finding \u2014 the fence's discharge is composed inline in `_dispatch_orchestrator_lane_stop` (reckon/crew/dispatch.py:4399) instead of extending `reckon/crew/refusals.py`, the module that owns discharge rendering and the refusal census.",
+    "reuse_search": "a finding \u2014 \u00a72 describes a reason-recording override as new, while `--no-fence REASON` (reckon/crew/dispatch.py:6904) already records an override's reason on the run, plan and ledger row, and is cited nowhere in the plan.",
+    "thin_wrapper": "pass \u2014 the only new interface \u00a72 adds is one CLI flag, the established override-flag family pattern (`--no-watch`, `--allow-unreconciled-runs`, `--allow-unreviewed-plan`), and \u00a72 states why the override must exist and be recorded rather than taken by a config edit, so the layer is justified rather than a silent parallel to an extendable mechanism."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T22:26:26.163075+00:00"
+}

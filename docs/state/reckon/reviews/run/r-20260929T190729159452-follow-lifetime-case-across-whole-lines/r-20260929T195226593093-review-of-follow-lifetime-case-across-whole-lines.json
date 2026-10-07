@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured by the reviewer from the reviewed run's own two arms, 70 logs each: tests/test_follow_lifetime.py::test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on is the only FAILED node id either arm prints, so the head arm 2728ea21 adds none. The store's read-time annotation reports this unmeasured (added_failure_count null) because the reviewed manifest's baseline_suite/after_suite log_path names the logs/ directory, which reckon/crew/review.py:765 cannot read; see the finding at manifest.md:16.",
+  "added_failures_source": {
+    "after_suite": {
+      "arm": "merge under test (whole-line follower): 50 isolated runs + 20 whole-file runs",
+      "failing_runs": 4,
+      "failure_ids": [
+        "tests/test_follow_lifetime.py::test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190729159452-follow-lifetime-case-across-whole-lines/logs/",
+      "revision": "2728ea2122f3a072d37155aec2f46948446e3f67",
+      "runs": 70
+    },
+    "baseline_suite": {
+      "arm": "first parent (base): 50 isolated runs + 20 whole-file runs",
+      "failing_runs": 4,
+      "failure_ids": [
+        "tests/test_follow_lifetime.py::test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190729159452-follow-lifetime-case-across-whole-lines/logs/",
+      "revision": "06149d982550928383d75dfcbe21b367b24f2e43",
+      "runs": 70
+    },
+    "derivation": "set(after_suite failure ids) - set(baseline_suite failure ids) over all 140 logs the two arms' records name (70 per arm: 50 isolated + 20 whole-file), each log's own revision header tying it to its arm; the single node id appears on both sides, so the difference is empty. Recount and store-reader probe: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T195226593093-review-of-follow-lifetime-case-across-whole-lines/review-derivation.log"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T20:37:35.426Z",
+  "dispatched_at": "2026-09-29T19:52:42Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190729159452-follow-lifetime-case-across-whole-lines/manifest.md",
+      "line": "16",
+      "text": "both suite records name log_path as the run's logs/ directory rather than a readable log, so the review store's own added-failure derivation cannot reach the 140 logs the manifest cites: running annotate_review_of_run (reckon/crew/review.py:1201) against this run returned added_failure_count null with the note \"unmeasured: the reviewed manifest names no base gate log\" and base_log_revision and head_log_revision both null, which means every stored review of this run reads back as an unmeasured count and neither arm can be tied to its revision through the record; one arm-summary log per arm whose first line names revision, tree and command would give a reader a single file to open, which is the shape the store's reader needs (reckon/crew/review.py:765 reads one file)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md",
+      "line": "12",
+      "text": "the practical claim \"No failure-rate change is attributable to 2728ea21\" (repeated at that file's line 102) is stronger than the design can support at 70 runs per arm: against the base arm's 2/70, two-sided Fisher exact reaches p<0.05 only at 10/70, so a head arm at 8/70 (11%, nearly four times the base rate) would still have been reported as equal, and a coordinator closing the merge on this verdict should read it as \"no increase detected\" rather than \"no increase\"."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "commits: none - this is a read-only measurement node, so its diff is empty by construction (the worktree is clean at fc3a14d4c20f79386083aead18d0ba5f2f12ab11 and changed_paths name only the run directory's own records plus the granted report), and the deliverable reviewed is the measurement record rather than a code change.",
+    "done_when": "the dispatch's evidence fence asks for 50 isolated and 20 whole-file runs of the target per revision, interleaved, each run in its own neutral basetemp on node-local /tmp with one log per run headed by revision, tree, command and imported module path and ending in an EXIT= line, and drive.sh:68-71 interleaves A then B per index while drive.sh:50-58 writes exactly those headers; all 140 logs carry them and all reached a pytest summary line.",
+    "goal": "the goal asks whether the target test fails more often at the whole-line follower merge 2728ea21 than at its first parent 06149d98, and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md:12 answers at exactly those two revisions (2/50 isolated and 2/20 whole-file at 2728ea21; 1/50 and 3/20 at 06149d98), which I recounted from the run's own 140 logs to the same figures.",
+    "manifest": "the manifest's headline numbers match the run's own logs id for id (I recounted 2/50, 1/50, 2/20 and 3/20 failing runs against 5 line-273 and 3 line-205 signatures, all on the one node id the target names), failure_attribution {} agrees with a zero added-failure set, and both suite records name log_path as the logs/ directory, which the store's own reader cannot open.",
+    "write_paths": "the node's declared scope was the single path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md (its prompt.txt FENCE - SCOPE names that one path), that file is the report, and the reviewed worktree at fc3a14d4c20f79386083aead18d0ba5f2f12ab11 is clean under git status --porcelain, so no repository file was touched."
+  },
+  "justifications": {
+    "durability": "the instrument is preserved and re-runnable (drive.sh:40 skips any run whose log already ends in EXIT=, summarise.py tallies the logs, and the two measured trees are re-derivable from the shas the report names at its line 139), and it is not 20 because nothing committed guards the conclusion - the read-only scope leaves no regression test, and the extracted trees live on node-local /tmp.",
+    "evidence": "the gate is real and I re-derived all of it (every log's header names its revision, tree, command and imported module; the two scratch trees are byte-identical to 2728ea21 and 06149d98 for the report's module and test file; the Fisher p=1.0000 recomputes for every stratum I computed; logs/control-forced-06149d9.log reds at tests/test_follow_lifetime.py:205 with the mutated 0.05 bound), and it is not 20 because manifest.md:16 names log_path as the logs/ directory so the store's own derivation reads nothing (I ran reckon/crew/review.py:1201 annotate_review_of_run against this run: added_failure_count null, base_log_revision and head_log_revision null) and because the report's line 12 asserts \"No failure-rate change is attributable to 2728ea21\" where a design of 70 runs per arm against a 2/70 base would reject only at 10/70.",
+    "fit": "the report follows the crew-report convention the plan's own follow-ups cite for peer nodes (markdown under ~/.config/reckon/crew/reports/reckon/), every name states the mechanism with no plan, sprint or ticket label, and it is not 20 because its lines 137-143 give only a single-run repro command and never name the drive.sh invocation that produced its table.",
+    "goal_fidelity": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md:12 answers the goal's question at the two revisions the goal names under the pre-declared verdict \"equal at both revisions\", and my independent recount of the 140 logs under the run directory's logs/ gives the report's own 2/50, 1/50, 2/20 and 3/20.",
+    "scope_discipline": "the only repository-adjacent artifact is the report at its one granted path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md, the reviewed worktree is clean at fc3a14d4c, and the manifest, logs, drive.sh and summarise.py sit in the run directory the dispatch provides for them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks whether the target test fails more often at the whole-line follower merge 2728ea21 than at its first parent 06149d98, and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md:12 answers at exactly those two revisions (2/50 isolated and 2/20 whole-file at 2728ea21; 1/50 and 3/20 at 06149d98), which I recounted from the run's own 140 logs to the same figures.\nVERDICT done_when: the dispatch's evidence fence asks for 50 isolated and 20 whole-file runs of the target per revision, interleaved, each run in its own neutral basetemp on node-local /tmp with one log per run headed by revision, tree, command and imported module path and ending in an EXIT= line, and drive.sh:68-71 interleaves A then B per index while drive.sh:50-58 writes exactly those headers; all 140 logs carry them and all reached a pytest summary line.\nVERDICT write_paths: the node's declared scope was the single path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md (its prompt.txt FENCE - SCOPE names that one path), that file is the report, and the reviewed worktree at fc3a14d4c20f79386083aead18d0ba5f2f12ab11 is clean under git status --porcelain, so no repository file was touched.\nVERDICT manifest: the manifest's headline numbers match the run's own logs id for id (I recounted 2/50, 1/50, 2/20 and 3/20 failing runs against 5 line-273 and 3 line-205 signatures, all on the one node id the target names), failure_attribution {} agrees with a zero added-failure set, and both suite records name log_path as the logs/ directory, which the store's own reader cannot open.\nVERDICT diff: commits: none - this is a read-only measurement node, so its diff is empty by construction (the worktree is clean at fc3a14d4c20f79386083aead18d0ba5f2f12ab11 and changed_paths name only the run directory's own records plus the granted report), and the deliverable reviewed is the measurement record rather than a code change.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md:12 answers the goal's question at the two revisions the goal names under the pre-declared verdict \"equal at both revisions\", and my independent recount of the 140 logs under the run directory's logs/ gives the report's own 2/50, 1/50, 2/20 and 3/20.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is real and I re-derived all of it (every log's header names its revision, tree, command and imported module; the two scratch trees are byte-identical to 2728ea21 and 06149d98 for the report's module and test file; the Fisher p=1.0000 recomputes for every stratum I computed; logs/control-forced-06149d9.log reds at tests/test_follow_lifetime.py:205 with the mutated 0.05 bound), and it is not 20 because manifest.md:16 names log_path as the logs/ directory so the store's own derivation reads nothing (I ran reckon/crew/review.py:1201 annotate_review_of_run against this run: added_failure_count null, base_log_revision and head_log_revision null) and because the report's line 12 asserts \"No failure-rate change is attributable to 2728ea21\" where a design of 70 runs per arm against a 2/70 base would reject only at 10/70.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only repository-adjacent artifact is the report at its one granted path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md, the reviewed worktree is clean at fc3a14d4c, and the manifest, logs, drive.sh and summarise.py sit in the run directory the dispatch provides for them.\nSCORE durability: 18\nJUSTIFICATION durability: the instrument is preserved and re-runnable (drive.sh:40 skips any run whose log already ends in EXIT=, summarise.py tallies the logs, and the two measured trees are re-derivable from the shas the report names at its line 139), and it is not 20 because nothing committed guards the conclusion - the read-only scope leaves no regression test, and the extracted trees live on node-local /tmp.\nSCORE fit: 19\nJUSTIFICATION fit: the report follows the crew-report convention the plan's own follow-ups cite for peer nodes (markdown under ~/.config/reckon/crew/reports/reckon/), every name states the mechanism with no plan, sprint or ticket label, and it is not 20 because its lines 137-143 give only a single-run repro command and never name the drive.sh invocation that produced its table.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190729159452-follow-lifetime-case-across-whole-lines/manifest.md:16 both suite records name log_path as the run's logs/ directory rather than a readable log, so the review store's own added-failure derivation cannot reach the 140 logs the manifest cites: running annotate_review_of_run (reckon/crew/review.py:1201) against this run returned added_failure_count null with the note \"unmeasured: the reviewed manifest names no base gate log\" and base_log_revision and head_log_revision both null, which means every stored review of this run reads back as an unmeasured count and neither arm can be tied to its revision through the record; one arm-summary log per arm whose first line names revision, tree and command would give a reader a single file to open, which is the shape the store's reader needs (reckon/crew/review.py:765 reads one file).\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follow-lifetime-case-across-whole-lines.md:12 the practical claim \"No failure-rate change is attributable to 2728ea21\" (repeated at that file's line 102) is stronger than the design can support at 70 runs per arm: against the base arm's 2/70, two-sided Fisher exact reaches p<0.05 only at 10/70, so a head arm at 8/70 (11%, nearly four times the base rate) would still have been reported as equal, and a coordinator closing the merge on this verdict should read it as \"no increase detected\" rather than \"no increase\".",
+  "review_run_id": "r-20260929T195226593093-review-of-follow-lifetime-case-across-whole-lines",
+  "reviewed_base_note": "the reviewed node made no repository change, so base and head are the same revision: the worktree head fc3a14d4c20f79386083aead18d0ba5f2f12ab11 that carries its measurement record. The two revisions the measurement itself read are 2728ea2122f3a072d37155aec2f46948446e3f67 (head arm) and 06149d982550928383d75dfcbe21b367b24f2e43 (base arm), named in the report and in the reviewed manifest's baseline_suite/after_suite.",
+  "reviewed_base_sha": "fc3a14d4c20f79386083aead18d0ba5f2f12ab11",
+  "reviewed_commits": [],
+  "reviewed_head_sha": "fc3a14d4c20f79386083aead18d0ba5f2f12ab11",
+  "reviewed_manifest": {
+    "bytes": 6432,
+    "last_modified": "2026-09-29T19:50:54.290168+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190729159452-follow-lifetime-case-across-whole-lines/manifest.md",
+    "sha256": "22acf437a4918a71a56d75873fbf705794eb6b60eddcaa5dceabc5df4193a2c0"
+  },
+  "reviewed_run_id": "r-20260929T190729159452-follow-lifetime-case-across-whole-lines",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/follow-lifetime-case-across-whole-lines",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-follow-lifetime-case-across-whole-lines",
+  "reviewer_run_id": "r-20260929T195226593093-review-of-follow-lifetime-case-across-whole-lines",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T20:28:55.672800+00:00",
+  "total": 94
+}

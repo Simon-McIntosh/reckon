@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T10:08:40.578500+00:00",
+  "findings": [
+    {
+      "file": "tests/test_hook_installer.py",
+      "line": "95",
+      "text": "the fragment is compared against a command the test builds from installer.hook_script_path() itself, so a regression that moves the script into another directory while keeping its filename leaves all ten tests green - I applied that mutation in a scratch copy (with_name(HOOK_SCRIPT_NAME) replaced by parent/\"nested\"/HOOK_SCRIPT_NAME) and the file reported 10 passed, the log is at the run directory as review-negctl-hook-script-path.log, and the consequence is a settings file that invokes a script which does not exist while this node's gate reports nothing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit - fbf1bca1 adds reckon/hooks/install.py and its ten tests, 9f04406a appends the archive evidence section, the plan's landed record and the figure, leaving plan-state closure to the coordinator.",
+    "done_when": "the done_when's ten test cases, its real-settings bytes-and-mtime comparison and its \"make the default call write\" mutation are each present in tests/test_hook_installer.py and in the run's recorded logs.",
+    "goal": "the goal is a module that builds the obligations hook fragment, prints it by default and merges it into a settings file only when asked to write; reckon/hooks/install.py:67-105 lands exactly that pair, and the CLI verb the goal assigns to another node is absent by design.",
+    "manifest": "read; it records both gate arms (33 passed at the base rev d8f13a61, 43 at fbf1bca1), the mutation log and the real user-settings fingerprint, and I reproduced the test file at the reviewed head (10 passed, module resolving inside the worktree) with the same fingerprint 1790169285 4965 6bafa8d72966f7d7 before and after.",
+    "write_paths": "git diff --name-only d8f13a61..9f04406a lists five files, every one inside the node's five declared write paths, 590 insertions and no deletions."
+  },
+  "justifications": {
+    "durability": "the ten tests each name a condition that reddens them and the declared mutation was observed red, but the expected commands at tests/test_hook_installer.py:53-58 come from installer.hook_script_path(), the same function the fragment itself calls, leaving one confirmed seam unguarded (see FINDING).",
+    "evidence": "the after arm is recorded at fbf1bca1 rather than at the reviewed head 9f04406a, though my own re-run there reproduced it (10 passed, zero added failures against the 33-test base arm at d8f13a61).",
+    "fit": "reckon/hooks/install.py follows the surrounding standard-library, Path-and-atomic-replace idiom and is ruff-clean, though it duplicates the atomic writer at reckon/cli.py:123 rather than sharing it and reckon/hooks/__init__.py:3 still describes every module in that package as a standalone hook script.",
+    "goal_fidelity": "reckon/hooks/install.py:97-99 prints and returns the fragment while write is false and merges only under write=True, and the recorded mutation shows a default that writes reddens three tests, so the split is measured rather than claimed.",
+    "scope_discipline": "every path in the range is one of the five declared write paths, both commits carry no deleted lines, and no CLI, MCP or plan-state surface was added."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a module that builds the obligations hook fragment, prints it by default and merges it into a settings file only when asked to write; reckon/hooks/install.py:67-105 lands exactly that pair, and the CLI verb the goal assigns to another node is absent by design.\nVERDICT done_when: the done_when's ten test cases, its real-settings bytes-and-mtime comparison and its \"make the default call write\" mutation are each present in tests/test_hook_installer.py and in the run's recorded logs.\nVERDICT write_paths: git diff --name-only d8f13a61..9f04406a lists five files, every one inside the node's five declared write paths, 590 insertions and no deletions.\nVERDICT manifest: read; it records both gate arms (33 passed at the base rev d8f13a61, 43 at fbf1bca1), the mutation log and the real user-settings fingerprint, and I reproduced the test file at the reviewed head (10 passed, module resolving inside the worktree) with the same fingerprint 1790169285 4965 6bafa8d72966f7d7 before and after.\nVERDICT diff: read commit by commit - fbf1bca1 adds reckon/hooks/install.py and its ten tests, 9f04406a appends the archive evidence section, the plan's landed record and the figure, leaving plan-state closure to the coordinator.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/install.py:97-99 prints and returns the fragment while write is false and merges only under write=True, and the recorded mutation shows a default that writes reddens three tests, so the split is measured rather than claimed.\nSCORE evidence: 18\nJUSTIFICATION evidence: the after arm is recorded at fbf1bca1 rather than at the reviewed head 9f04406a, though my own re-run there reproduced it (10 passed, zero added failures against the 33-test base arm at d8f13a61).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the range is one of the five declared write paths, both commits carry no deleted lines, and no CLI, MCP or plan-state surface was added.\nSCORE durability: 17\nJUSTIFICATION durability: the ten tests each name a condition that reddens them and the declared mutation was observed red, but the expected commands at tests/test_hook_installer.py:53-58 come from installer.hook_script_path(), the same function the fragment itself calls, leaving one confirmed seam unguarded (see FINDING).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/hooks/install.py follows the surrounding standard-library, Path-and-atomic-replace idiom and is ruff-clean, though it duplicates the atomic writer at reckon/cli.py:123 rather than sharing it and reckon/hooks/__init__.py:3 still describes every module in that package as a standalone hook script.\nFINDING tests/test_hook_installer.py:95 the fragment is compared against a command the test builds from installer.hook_script_path() itself, so a regression that moves the script into another directory while keeping its filename leaves all ten tests green - I applied that mutation in a scratch copy (with_name(HOOK_SCRIPT_NAME) replaced by parent/\"nested\"/HOOK_SCRIPT_NAME) and the file reported 10 passed, the log is at the run directory as review-negctl-hook-script-path.log, and the consequence is a settings file that invokes a script which does not exist while this node's gate reports nothing.\nreviewed_base_sha: d8f13a61645724d29abdbaa12ae2327d1d60de1e\nreviewed_head_sha: 9f04406a04aff894f5823335b582cca1e7cea326",
+  "review_run_id": "r-20260925T100840578500-review-of-hook-installer-prints-before-it-writes",
+  "reviewed_base_sha": "d8f13a61645724d29abdbaa12ae2327d1d60de1e",
+  "reviewed_head_sha": "9f04406a04aff894f5823335b582cca1e7cea326",
+  "reviewed_run_id": "r-20260925T080918504205-hook-installer-prints-before-it-writes",
+  "reviewer": "review-of-hook-installer-prints-before-it-writes",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:02:28.547507+00:00",
+  "total": 91
+}

@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T06:09:32.564292+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+      "line": "2103",
+      "text": "the Evidence and figure paragraph names logs/base-read-views.log inside the run record, but that file does not exist \u2014 the base-arm log behind the 155.50 s half of the headline metric survives only at /tmp/sgh-ledger/base-read-views.log, and manifest.md:14 repeats the missing path \u2014 so the duration the plan note publishes has no durable measurement behind it; that log's header also omits the module.__file__ and cwd lines the run-record convention asks a scratch-tree measurement to carry."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against d4f13e1a \u2014 e885dee7 changes only tests/test_ledger.py (141 added, 21 removed; 95 test functions at base and 96 at head, none skipped or xfailed) and 718d7838 lands the plan note and evidence anchor, which gains 73 lines with zero deletions so no peer anchor is displaced.",
+    "done_when": "read it against the landed change and the recorded logs \u2014 part (1) is the two-direction stand-in control (tests/test_ledger.py:2452), part (2) is the synthetic checkout (tests/test_ledger.py:2051) whose default assertions print the envelope (tests/test_ledger.py:1998), and part (3)'s three loaded -n 8 whole-file runs are logs/load-file-n8-run{1,2,3}.log (96 passed each) beside the serial whole-file run (logs/ledger-serial-full.log, 96 passed).",
+    "goal": "read the node's goal (tests/test_ledger.py reads and compares only state its own tests created) and the diff \u2014 _owned_live_state (tests/test_ledger.py:2408) narrows the compared live set to this file's own project and _read_surface_checkout (tests/test_ledger.py:2005) replaces the whole-repository read with a two-plan tree, which is what the goal states.",
+    "manifest": "read; it states the gate and its results, but its test_logs line 14 names logs/base-read-views.log, which does not exist \u2014 the base-arm measurement it stands for lives only at /tmp/sgh-ledger/base-read-views.log.",
+    "write_paths": "read the manifest's four declared paths and compared every path in the diff \u2014 the five changed files (tests/test_ledger.py; docs/evidence/archive/the-suite-is-green-at-head-landed.html; docs/figures/the-suite-is-green-at-head/ledger-reader-scope.py and .png; docs/plans/the-suite-is-green-at-head.html) are each inside them and no reckon/ file is touched."
+  },
+  "justifications": {
+    "durability": "the added control reddens in both directions (restoring the unfiltered listing fails tests/test_ledger.py:2477; an emptied filter fails tests/test_ledger.py:2482) and I re-ran it at the reviewed head (1 passed in 2.61s), while the filter's filename arm (tests/test_ledger.py:2399) is exercised by no dispatch in the file and the synthetic-checkout half has no assertion that reddens if the test reverts to the real checkout.",
+    "evidence": "every gate log I opened reads as claimed (logs/ledger-serial-full.log: 96 passed; logs/load-file-n8-run2.log: 96 passed in 60.60s) but the base-arm --durations log the headline duration rests on is named at a path that does not exist (manifest.md:14) and survives only in node-local /tmp.",
+    "fit": "the new helpers keep the file's private-helper idiom with type hints and mechanism docstrings (tests/test_ledger.py:2383) and the added lines carry no plan label, ticket reference or author attribution.",
+    "goal_fidelity": "both mechanisms the goal names land (tests/test_ledger.py:2419 narrows the compared set, tests/test_ledger.py:2051 reads the appended synthetic checkout), while two pre-existing tests in the file (tests/test_ledger.py:2875, tests/test_ledger.py:2912) still read the real repository ledger and the real config-home store path, unchanged at base and outside this node's done_when.",
+    "scope_discipline": "git diff --numstat d4f13e1a..718d7838 lists five changed paths, every one inside the manifest's declared write paths, with no reckon/ file and zero deletions from the cumulative evidence page."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node's goal (tests/test_ledger.py reads and compares only state its own tests created) and the diff \u2014 _owned_live_state (tests/test_ledger.py:2408) narrows the compared live set to this file's own project and _read_surface_checkout (tests/test_ledger.py:2005) replaces the whole-repository read with a two-plan tree, which is what the goal states.\nVERDICT done_when: read it against the landed change and the recorded logs \u2014 part (1) is the two-direction stand-in control (tests/test_ledger.py:2452), part (2) is the synthetic checkout (tests/test_ledger.py:2051) whose default assertions print the envelope (tests/test_ledger.py:1998), and part (3)'s three loaded -n 8 whole-file runs are logs/load-file-n8-run{1,2,3}.log (96 passed each) beside the serial whole-file run (logs/ledger-serial-full.log, 96 passed).\nVERDICT write_paths: read the manifest's four declared paths and compared every path in the diff \u2014 the five changed files (tests/test_ledger.py; docs/evidence/archive/the-suite-is-green-at-head-landed.html; docs/figures/the-suite-is-green-at-head/ledger-reader-scope.py and .png; docs/plans/the-suite-is-green-at-head.html) are each inside them and no reckon/ file is touched.\nVERDICT manifest: read; it states the gate and its results, but its test_logs line 14 names logs/base-read-views.log, which does not exist \u2014 the base-arm measurement it stands for lives only at /tmp/sgh-ledger/base-read-views.log.\nVERDICT diff: read commit by commit against d4f13e1a \u2014 e885dee7 changes only tests/test_ledger.py (141 added, 21 removed; 95 test functions at base and 96 at head, none skipped or xfailed) and 718d7838 lands the plan note and evidence anchor, which gains 73 lines with zero deletions so no peer anchor is displaced.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both mechanisms the goal names land (tests/test_ledger.py:2419 narrows the compared set, tests/test_ledger.py:2051 reads the appended synthetic checkout), while two pre-existing tests in the file (tests/test_ledger.py:2875, tests/test_ledger.py:2912) still read the real repository ledger and the real config-home store path, unchanged at base and outside this node's done_when.\nSCORE evidence: 16\nJUSTIFICATION evidence: every gate log I opened reads as claimed (logs/ledger-serial-full.log: 96 passed; logs/load-file-n8-run2.log: 96 passed in 60.60s) but the base-arm --durations log the headline duration rests on is named at a path that does not exist (manifest.md:14) and survives only in node-local /tmp.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat d4f13e1a..718d7838 lists five changed paths, every one inside the manifest's declared write paths, with no reckon/ file and zero deletions from the cumulative evidence page.\nSCORE durability: 17\nJUSTIFICATION durability: the added control reddens in both directions (restoring the unfiltered listing fails tests/test_ledger.py:2477; an emptied filter fails tests/test_ledger.py:2482) and I re-ran it at the reviewed head (1 passed in 2.61s), while the filter's filename arm (tests/test_ledger.py:2399) is exercised by no dispatch in the file and the synthetic-checkout half has no assertion that reddens if the test reverts to the real checkout.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers keep the file's private-helper idiom with type hints and mechanism docstrings (tests/test_ledger.py:2383) and the added lines carry no plan label, ticket reference or author attribution.\nFINDING docs/evidence/archive/the-suite-is-green-at-head-landed.html:2103 the Evidence and figure paragraph names logs/base-read-views.log inside the run record, but that file does not exist \u2014 the base-arm log behind the 155.50 s half of the headline metric survives only at /tmp/sgh-ledger/base-read-views.log, and manifest.md:14 repeats the missing path \u2014 so the duration the plan note publishes has no durable measurement behind it; that log's header also omits the module.__file__ and cwd lines the run-record convention asks a scratch-tree measurement to carry.",
+  "review_run_id": "r-20260925T060932564292-review-of-test-ledger-reads-only-its-own-state",
+  "reviewed_base_sha": "d4f13e1ac6d57b4c72e708367d3e628ba24d5a07",
+  "reviewed_head_sha": "718d783893ced0c6ed89b28703fb035d39b66f09",
+  "reviewed_run_id": "r-20260925T053343436358-test-ledger-reads-only-its-own-state",
+  "reviewer": "review-of-test-ledger-reads-only-its-own-state",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T06:26:47.273194+00:00",
+  "total": 89
+}

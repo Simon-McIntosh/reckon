@@ -1,0 +1,46 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:3538 _widen_eligibility at the command read",
+    "reckon/cli.py:3556 the re-read under the per-run lock before the pointer write"
+  ],
+  "completed_at": "2026-09-26T10:50:49.918Z",
+  "dispatched_at": "2026-09-26T09:54:32Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 3e6115fb -- 184fbbed changes the predicate, its comment and two docstrings and adds three cases, and 3baa6451 appends the landing record and evidence anchors additively (86 and 3 added lines, no deletions).",
+    "done_when": "the measure names tests/test_widen_reaches_a_blocked_run.py plus tests/test_fence_widening.py in one invocation under a temporary config home with the real home asserted untouched; the manifest records base 13 passed and head 16 passed, and my independent three-arm run reproduced base 13 passed, base-code-with-head-tests 2 failed, head 16 passed.",
+    "goal": "the goal is that crew widen refuse a run whose worker is still running so the predicate matches the invariant its comment states; reckon/cli.py:3476 reads the recorded worker process through record_process_alive and reckon/cli.py:3448-3453 refuses it naming the pid and the next move, which I reproduced through the command both at the dispatch base and at the reviewed head.",
+    "manifest": "read; its two commits, its seven gate logs, its reproduction and negative-control arms and its zero-added ruff claim each held when checked, including the evidence document's 86 added and zero deleted lines.",
+    "write_paths": "the declared scope is reckon/cli.py, tests/test_widen_reaches_a_blocked_run.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/figures/crew-observability-truth and docs/plans/crew-observability-truth.html, and every changed path in the diff lies inside it."
+  },
+  "justifications": {
+    "durability": "reverting the refusal at reckon/cli.py:3476 reddens both added refusal cases (my base-code arm: 2 failed) while the stopped twin at tests/test_widen_reaches_a_blocked_run.py:583 keeps the admission for an exited worker, the no-process admission itself resting on the pre-existing cases in tests/test_fence_widening.py rather than on a new one.",
+    "evidence": "the gate the done_when names ran in one invocation at base 13 passed and head 16 passed with module.__file__ and cwd recorded on its header lines in gate-head.log, and my own arms in review-arms.log reproduce the base acceptance that the two added refusal cases redden on.",
+    "fit": "the helper and constant names state the mechanism rather than any plan item, the read follows the lazy-import idiom already used at reckon/cli.py:3321, and ruff reports the same two pre-existing findings at both arms.",
+    "goal_fidelity": "the predicate, the comment at reckon/cli.py:3359-3364 and the command docstring at reckon/cli.py:3512-3520 state one rule, and the one residual is that reckon/cli.py:3469 admits a record naming no process rather than requiring a provably stopped one, a limit the predicate documents at reckon/cli.py:3476 and the converse arm measures rather than leaving silent.",
+    "scope_discipline": "all five changed paths lie inside the declared write paths, and both cumulative documents are additive (docs/evidence/archive/crew-observability-truth-landed.html +86/-0, docs/plans/crew-observability-truth.html +3/-0)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that crew widen refuse a run whose worker is still running so the predicate matches the invariant its comment states; reckon/cli.py:3476 reads the recorded worker process through record_process_alive and reckon/cli.py:3448-3453 refuses it naming the pid and the next move, which I reproduced through the command both at the dispatch base and at the reviewed head.\nVERDICT done_when: the measure names tests/test_widen_reaches_a_blocked_run.py plus tests/test_fence_widening.py in one invocation under a temporary config home with the real home asserted untouched; the manifest records base 13 passed and head 16 passed, and my independent three-arm run reproduced base 13 passed, base-code-with-head-tests 2 failed, head 16 passed.\nVERDICT write_paths: the declared scope is reckon/cli.py, tests/test_widen_reaches_a_blocked_run.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/figures/crew-observability-truth and docs/plans/crew-observability-truth.html, and every changed path in the diff lies inside it.\nVERDICT manifest: read; its two commits, its seven gate logs, its reproduction and negative-control arms and its zero-added ruff claim each held when checked, including the evidence document's 86 added and zero deleted lines.\nVERDICT diff: read commit by commit against 3e6115fb -- 184fbbed changes the predicate, its comment and two docstrings and adds three cases, and 3baa6451 appends the landing record and evidence anchors additively (86 and 3 added lines, no deletions).\nCALL_SITES: reckon/cli.py:3538 _widen_eligibility at the command read, reckon/cli.py:3556 the re-read under the per-run lock before the pointer write\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the predicate, the comment at reckon/cli.py:3359-3364 and the command docstring at reckon/cli.py:3512-3520 state one rule, and the one residual is that reckon/cli.py:3469 admits a record naming no process rather than requiring a provably stopped one, a limit the predicate documents at reckon/cli.py:3476 and the converse arm measures rather than leaving silent.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate the done_when names ran in one invocation at base 13 passed and head 16 passed with module.__file__ and cwd recorded on its header lines in gate-head.log, and my own arms in review-arms.log reproduce the base acceptance that the two added refusal cases redden on.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five changed paths lie inside the declared write paths, and both cumulative documents are additive (docs/evidence/archive/crew-observability-truth-landed.html +86/-0, docs/plans/crew-observability-truth.html +3/-0).\nSCORE durability: 19\nJUSTIFICATION durability: reverting the refusal at reckon/cli.py:3476 reddens both added refusal cases (my base-code arm: 2 failed) while the stopped twin at tests/test_widen_reaches_a_blocked_run.py:583 keeps the admission for an exited worker, the no-process admission itself resting on the pre-existing cases in tests/test_fence_widening.py rather than on a new one.\nSCORE fit: 20\nJUSTIFICATION fit: the helper and constant names state the mechanism rather than any plan item, the read follows the lazy-import idiom already used at reckon/cli.py:3321, and ruff reports the same two pre-existing findings at both arms.\n",
+  "review_run_id": "r-20260926T095412236290-review-of-widen-refuses-a-running-worker",
+  "reviewed_base_sha": "3e6115fb99660b6934ffb503056800d37cb8d4ce",
+  "reviewed_head_sha": "3baa6451fba461ddf1050b1f72a914573a9833e7",
+  "reviewed_run_id": "r-20260926T085215770567-widen-refuses-a-running-worker",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T10:20:01.351769+00:00",
+  "total": 98
+}

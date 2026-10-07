@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:3077 start_fleet_change_watch(load_mounts()) in main",
+    "reckon/serve.py:3064 _SIGNATURE_TTL_S = _served_signature_ttl() in main",
+    "reckon/serve.py:237 _invalidate_discovery_signatures(watch.root)",
+    "reckon/serve.py:238 _invalidate_discovery_tree(watch.root)",
+    "reckon/serve.py:2895 do_POST clearing every memoised walk"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T12:32:18.254417+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T170003171968-rollup-reuses-watched-walks/manifest.md",
+      "line": "11",
+      "text": "commits names c06b0764cdf067005ff0ce0805fe56ef4f05f8e4, which git cat-file -t reports as no object in the reviewed worktree or the main checkout; the landed commit is c06b0764cdf067005ff0ce0805fe56ef4f05f92a, named correctly in the regression log beside it, so a reader trusting this line verifies nothing."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "3077",
+      "text": "no test fails if this call is removed: the suite starts its own watch at tests/test_rollup_reuses_watched_walks.py:107, so the production wiring that makes the 60 s reuse window safe is unguarded, and its removal would leave the served process answering from stale walks for up to a minute after a tree changes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T170003171968-rollup-reuses-watched-walks/manifest.md",
+      "line": "17",
+      "text": "the control note cites the failing assertion at tests/test_rollup_reuses_watched_walks.py:192, but that assertion sits at :200 in the landed file, because the red log's own header records it ran at base plus the node's uncommitted change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against base e7f60e14; c06b0764 extracts _ProjectChangeWatch.consume and adds _FleetChangeWatch, _invalidate_discovery_tree and the 60 s served reuse window, and 2415b7a0 adds the landing record, the figure and the four logs.",
+    "done_when": "the measure is four named behaviours in tests/test_rollup_reuses_watched_walks.py; docs/figures/a-page-load-reads-each-file-once/logs/gate-rollup-walks.txt names revision c06b0764, its tree and its command and records 4 passed plus eleven regression passes at base and head, and all four cases pass again in the reviewed tree.",
+    "goal": "the goal is that the served process drops a docs tree's memoised walk on that tree's change notification so the fleet rollup reuses walks; reckon/serve.py:237-238 drops exactly the notifying tree's walk signature and memoised discovery and no other tree's.",
+    "manifest": "read; it records the gate, the declared negative control with its red log, and the base/head regression pair, but its commits line 11 names a full sha that resolves to no object.",
+    "write_paths": "the source dispatch fence names five paths; every one of the nine paths in the diff lies inside them, the plan edit is additive (39 insertions, none deleted) and the cumulative evidence record was spliced rather than rewritten (79 insertions, four meta scalars updated in place)."
+  },
+  "justifications": {
+    "durability": "tests/test_rollup_reuses_watched_walks.py:182 and :200 fail if the walk reuse or the watch's per-tree drop regresses, both reproduced here on disk at exit 0 and exit 1, yet no assertion fails if reckon/serve.py:3077 is deleted, so the production wiring the 60 s window depends on is unguarded.",
+    "evidence": "the gate log records exit 0 with 4 passed at c06b0764 on all_debug and I reproduced both the green pass and the declared red at tests/test_rollup_reuses_watched_walks.py:200, but the manifest's commits line 11 names a sha no reader can resolve.",
+    "fit": "serve.py:189 follows the idiom of the _ProjectChangeWatch it extends (module LOGGER, same drain-and-settle, same noqa form), each new name describes its mechanism, and no plan, ticket or version label appears in the source.",
+    "goal_fidelity": "reckon/serve.py:237-238 is the goal verbatim, confirmed by three independent runs of tests/test_rollup_reuses_watched_walks.py, less the startup cost that main's pre-listen walk of every mounted tree imposes and the plan's own followup records and defers.",
+    "scope_discipline": "all nine changed paths lie inside the five declared write paths and both doc edits are additive, but reckon/serve.py:333 and three sibling hunks are formatter-only reflows of code the goal does not touch."
+  },
+  "node": "review-of-rollup-reuses-watched-walks",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the served process drops a docs tree's memoised walk on that tree's change notification so the fleet rollup reuses walks; reckon/serve.py:237-238 drops exactly the notifying tree's walk signature and memoised discovery and no other tree's.\nVERDICT done_when: the measure is four named behaviours in tests/test_rollup_reuses_watched_walks.py; docs/figures/a-page-load-reads-each-file-once/logs/gate-rollup-walks.txt names revision c06b0764, its tree and its command and records 4 passed plus eleven regression passes at base and head, and all four cases pass again in the reviewed tree.\nVERDICT write_paths: the source dispatch fence names five paths; every one of the nine paths in the diff lies inside them, the plan edit is additive (39 insertions, none deleted) and the cumulative evidence record was spliced rather than rewritten (79 insertions, four meta scalars updated in place).\nVERDICT manifest: read; it records the gate, the declared negative control with its red log, and the base/head regression pair, but its commits line 11 names a full sha that resolves to no object.\nVERDICT diff: read both commits against base e7f60e14; c06b0764 extracts _ProjectChangeWatch.consume and adds _FleetChangeWatch, _invalidate_discovery_tree and the 60 s served reuse window, and 2415b7a0 adds the landing record, the figure and the four logs.\nCALL_SITES: reckon/serve.py:3077 start_fleet_change_watch(load_mounts()) in main, reckon/serve.py:3064 _SIGNATURE_TTL_S = _served_signature_ttl() in main, reckon/serve.py:237 _invalidate_discovery_signatures(watch.root), reckon/serve.py:238 _invalidate_discovery_tree(watch.root), reckon/serve.py:2895 do_POST clearing every memoised walk\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/serve.py:237-238 is the goal verbatim, confirmed by three independent runs of tests/test_rollup_reuses_watched_walks.py, less the startup cost that main's pre-listen walk of every mounted tree imposes and the plan's own followup records and defers.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log records exit 0 with 4 passed at c06b0764 on all_debug and I reproduced both the green pass and the declared red at tests/test_rollup_reuses_watched_walks.py:200, but the manifest's commits line 11 names a sha no reader can resolve.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all nine changed paths lie inside the five declared write paths and both doc edits are additive, but reckon/serve.py:333 and three sibling hunks are formatter-only reflows of code the goal does not touch.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_rollup_reuses_watched_walks.py:182 and :200 fail if the walk reuse or the watch's per-tree drop regresses, both reproduced here on disk at exit 0 and exit 1, yet no assertion fails if reckon/serve.py:3077 is deleted, so the production wiring the 60 s window depends on is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: serve.py:189 follows the idiom of the _ProjectChangeWatch it extends (module LOGGER, same drain-and-settle, same noqa form), each new name describes its mechanism, and no plan, ticket or version label appears in the source.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T170003171968-rollup-reuses-watched-walks/manifest.md:11 commits names c06b0764cdf067005ff0ce0805fe56ef4f05f8e4, which git cat-file -t reports as no object in the reviewed worktree or the main checkout; the landed commit is c06b0764cdf067005ff0ce0805fe56ef4f05f92a, named correctly in the regression log beside it, so a reader trusting this line verifies nothing.\nFINDING reckon/serve.py:3077 no test fails if this call is removed: the suite starts its own watch at tests/test_rollup_reuses_watched_walks.py:107, so the production wiring that makes the 60 s reuse window safe is unguarded, and its removal would leave the served process answering from stale walks for up to a minute after a tree changes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T170003171968-rollup-reuses-watched-walks/manifest.md:17 the control note cites the failing assertion at tests/test_rollup_reuses_watched_walks.py:192, but that assertion sits at :200 in the landed file, because the red log's own header records it ran at base plus the node's uncommitted change.",
+  "review_run_id": "r-20260924T123218254417-review-of-rollup-reuses-watched-walks",
+  "reviewed_base_sha": "e7f60e1440d707869ddcc28f01f915cbe94cf009",
+  "reviewed_head_sha": "2415b7a00a6476c9cda832f3a2b29b4f7a5cefef",
+  "reviewed_run_id": "r-20260923T170003171968-rollup-reuses-watched-walks",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 18
+  },
+  "source_node": "rollup-reuses-watched-walks",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T12:59:26.262881+00:00",
+  "total": 83
+}

@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 5,
+  "added_failure_ids": [
+    "tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input",
+    "tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it",
+    "tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it",
+    "tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger",
+    "tests/test_ledger.py::test_promotion_refuses_a_merge_conflicted_ledger"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "added_failures_source": {
+    "after_suite": {
+      "failure_count": 5,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/case-head-f61f41b7a.log",
+      "revision": "f61f41b7a"
+    },
+    "baseline_suite": {
+      "failure_count": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/control-57e4ea2e.log",
+      "revision": "57e4ea2e"
+    },
+    "derivation": "set difference of pytest failure ids parsed from the reviewed run's own baseline_suite and after_suite gate logs via reckon.crew.review.added_failures_from_gate_logs"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T19:10:53.963Z",
+  "dispatched_at": "2026-09-29T18:30:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/report.md",
+      "line": "28",
+      "text": "the parenthetical \"467c0aab differs from it only by the plan-filing commit\" is false \u2014 git diff --stat 467c0aab f61f41b7a is 38 files, +8738/-51 across 67 commits \u2014 so the 467c0aab arm is a different tree and reads as an interval endpoint, not as current main."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/run_five.sh",
+      "line": "22",
+      "text": "the \"# module under test\" probe runs with the driver's cwd (the worktree carries a reckon/ package), so every arm's header prints the worktree copy (control-57e4ea2e.log:5 and hdr-head-f61f41b7a.txt:3 are identical) while the measured process imported the scratch tree (case-head-f61f41b7a.log:23), and report.md:12-14 repeats that claim; the same probe is at bisect_step.sh:19."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node landed no repository commit (manifest commits: none, changed_paths []), so I read its delivered artefacts commit-style instead \u2014 report.md and the two driver scripts \u2014 and every measurement path they cite resolves to a file that exists.",
+    "done_when": "the done_when asks for the first failing revision, its causal change and a repair site, and report.md:54-79 answers all three; my re-runs matched its boundary (repro-s2-6d528821.log 5 passed, repro-s8-8ab1f3c7.log 5 failed).",
+    "goal": "read the node goal (attribute the five red test_ledger.py cases to the change that reddens them and name where the repair belongs) against report.md and re-derived its boundary arms myself in fresh scratch trees (5 passed at 6d528821, 5 failed at 8ab1f3c7), so the attribution holds.",
+    "manifest": "read the reviewed manifest (5846 bytes, sha256 c3dd09f590a1bf076d027ff5d0218a11d53858149104fa125ba9f114a55e78b9); its baseline_suite and after_suite blocks (0 and 5 failures) match the two logs, and its failure_attribution keys equal the five ids I re-derived through reckon.crew.review.",
+    "write_paths": "read the manifest's declared scope against every artefact; report.md, run_five.sh, bisect_step.sh and the arm logs all sit in the reports dir or node-local /tmp, and the reviewed worktree is clean at f61f41b7a (git status --porcelain empty)."
+  },
+  "justifications": {
+    "durability": "the measurement reddens on a wrong attribution \u2014 green base control, unanimity at each of eight revisions, both boundary arms reproduced (report.md:54-71) \u2014 but the module-under-test header (run_five.sh:22) is a provenance receipt that cannot detect a mis-set tree.",
+    "evidence": "the two gate logs the record annotates are the run's own arms (control-57e4ea2e.log 5 passed, case-head-f61f41b7a.log 5 failed) and my production read-path re-derivation returns the same five added ids, with the deductions being two false provenance statements (report.md:28, report.md:12-14).",
+    "fit": "report.md follows the node's declared shape (measure, control, bisect, mechanism, repair, logs) and the drivers, logs and report use no name the repository naming rules forbid.",
+    "goal_fidelity": "report.md:73-75 names 8ab1f3c7 as the first failing revision with parent 6d528821 passing, and I verified git rev-parse 8ab1f3c7^ is 6d528821 with that parent-to-child diffstat exactly reckon/crew/runs.py +34/-7.",
+    "scope_discipline": "every artefact is inside the declared reports dir or node-local /tmp (manifest changed_paths [], clean worktree) and the drivers reach no repository state beyond git archive into /tmp."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (attribute the five red test_ledger.py cases to the change that reddens them and name where the repair belongs) against report.md and re-derived its boundary arms myself in fresh scratch trees (5 passed at 6d528821, 5 failed at 8ab1f3c7), so the attribution holds.\nVERDICT done_when: the done_when asks for the first failing revision, its causal change and a repair site, and report.md:54-79 answers all three; my re-runs matched its boundary (repro-s2-6d528821.log 5 passed, repro-s8-8ab1f3c7.log 5 failed).\nVERDICT write_paths: read the manifest's declared scope against every artefact; report.md, run_five.sh, bisect_step.sh and the arm logs all sit in the reports dir or node-local /tmp, and the reviewed worktree is clean at f61f41b7a (git status --porcelain empty).\nVERDICT manifest: read the reviewed manifest (5846 bytes, sha256 c3dd09f590a1bf076d027ff5d0218a11d53858149104fa125ba9f114a55e78b9); its baseline_suite and after_suite blocks (0 and 5 failures) match the two logs, and its failure_attribution keys equal the five ids I re-derived through reckon.crew.review.\nVERDICT diff: the node landed no repository commit (manifest commits: none, changed_paths []), so I read its delivered artefacts commit-style instead \u2014 report.md and the two driver scripts \u2014 and every measurement path they cite resolves to a file that exists.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:73-75 names 8ab1f3c7 as the first failing revision with parent 6d528821 passing, and I verified git rev-parse 8ab1f3c7^ is 6d528821 with that parent-to-child diffstat exactly reckon/crew/runs.py +34/-7.\nSCORE evidence: 17\nJUSTIFICATION evidence: the two gate logs the record annotates are the run's own arms (control-57e4ea2e.log 5 passed, case-head-f61f41b7a.log 5 failed) and my production read-path re-derivation returns the same five added ids, with the deductions being two false provenance statements (report.md:28, report.md:12-14).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every artefact is inside the declared reports dir or node-local /tmp (manifest changed_paths [], clean worktree) and the drivers reach no repository state beyond git archive into /tmp.\nSCORE durability: 17\nJUSTIFICATION durability: the measurement reddens on a wrong attribution \u2014 green base control, unanimity at each of eight revisions, both boundary arms reproduced (report.md:54-71) \u2014 but the module-under-test header (run_five.sh:22) is a provenance receipt that cannot detect a mis-set tree.\nSCORE fit: 19\nJUSTIFICATION fit: report.md follows the node's declared shape (measure, control, bisect, mechanism, repair, logs) and the drivers, logs and report use no name the repository naming rules forbid.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/report.md:28 the parenthetical \"467c0aab differs from it only by the plan-filing commit\" is false \u2014 git diff --stat 467c0aab f61f41b7a is 38 files, +8738/-51 across 67 commits \u2014 so the 467c0aab arm is a different tree and reads as an interval endpoint, not as current main.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/run_five.sh:22 the \"# module under test\" probe runs with the driver's cwd (the worktree carries a reckon/ package), so every arm's header prints the worktree copy (control-57e4ea2e.log:5 and hdr-head-f61f41b7a.txt:3 are identical) while the measured process imported the scratch tree (case-head-f61f41b7a.log:23), and report.md:12-14 repeats that claim; the same probe is at bisect_step.sh:19.",
+  "review_run_id": "r-20260929T182947887166-review-of-five-ledger-cases-turned-red",
+  "reviewed_base_sha": "f61f41b7aa63cd6977c31b9d191c9feab2e4888d",
+  "reviewed_commits": [],
+  "reviewed_head_sha": "f61f41b7aa63cd6977c31b9d191c9feab2e4888d",
+  "reviewed_manifest": {
+    "bytes": 5846,
+    "last_modified": "2026-09-29T18:28:16.369642+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T175359855658-five-ledger-cases-turned-red/manifest.md",
+    "sha256": "c3dd09f590a1bf076d027ff5d0218a11d53858149104fa125ba9f114a55e78b9"
+  },
+  "reviewed_run_id": "r-20260929T175359855658-five-ledger-cases-turned-red",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/five-ledger-cases-turned-red",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-five-ledger-cases-turned-red",
+  "reviewer_run_id": "r-20260929T182947887166-review-of-five-ledger-cases-turned-red",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T19:01:54.323845+00:00",
+  "total": 92
+}

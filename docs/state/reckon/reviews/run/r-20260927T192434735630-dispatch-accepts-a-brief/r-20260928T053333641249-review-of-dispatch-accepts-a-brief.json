@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_derivation": {
+    "base_logs": [
+      "logs/base-brief-prompt.log",
+      "logs/base-dispatch-guard.log"
+    ],
+    "excluded_log": "logs/negative-control-repair.log",
+    "head_logs": [
+      "logs/arm-brief-prompt.log",
+      "logs/arm-dispatch-guard.log",
+      "logs/arm-dispatch-guard-repair.log",
+      "logs/gate-brief-dispatch.log",
+      "logs/gate-repair.log"
+    ],
+    "measured_by": "reckon.crew.review.added_failures_from_gate_logs",
+    "note": "the reviewed manifest names no baseline_suite/after_suite pair, so these values are derived here from the logs it does name and its own tests prose; the quoted revision for the head logs is the one their gate run reports",
+    "positive_control": {
+      "count": 4,
+      "ids": [
+        "tests/test_brief_dispatch.py::test_a_brief_dispatch_dry_run_resolves_without_a_plan",
+        "tests/test_brief_dispatch.py::test_a_brief_dispatch_prompt_carries_the_brief_and_no_plan_pointer",
+        "tests/test_brief_dispatch.py::test_a_brief_dispatch_records_its_digest_and_copy_on_the_pointer",
+        "tests/test_brief_dispatch.py::test_a_later_read_survives_the_source_brief_being_removed"
+      ],
+      "log": "logs/negative-control-repair.log"
+    }
+  },
+  "added_failures_note": "derived by reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate logs: base = logs/base-brief-prompt.log + logs/base-dispatch-guard.log (revision 3f251453), head = logs/arm-brief-prompt.log + logs/arm-dispatch-guard.log + logs/arm-dispatch-guard-repair.log + logs/gate-brief-dispatch.log + logs/gate-repair.log (revision 92b7eca7). The difference is empty, so the count is a measured zero: every head log's pytest run is green. The reviewed run's declared mutation log is deliberately red and is excluded; the same extractor sees its failures in the positive control logged in the reviewing run's logs/check-falsification.log. The reviewed manifest names those logs under test_logs and declares no baseline_suite/after_suite pair, so the store's own read-time annotation reports this reviewed run unmeasured; that reading and this derivation are of the same logs.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/cli.py:crew_dispatch",
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/dispatch.py:plan_dispatch",
+    "reckon/crew/dispatch.py:change_lane",
+    "reckon/crew/dispatch.py:shadow_source",
+    "reckon/crew/dispatch.py:_recorded_task_node",
+    "reckon/crew/node.py:validate_node",
+    "reckon/crew/prompts.py:compose_prompt"
+  ],
+  "completed_at": "2026-09-28T07:04:38.442Z",
+  "dispatched_at": "2026-09-28T05:33:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1048",
+      "text": "a node naming both a plan and a brief passes validation (the fully-specified guard refuses only when both are empty) and reckon/crew/dispatch.py:3169 then takes the brief branch and skips require_plan_section_visible and require_plan_reviewed for a node that does name a plan section, although that branch's own comment says the gates have nothing to read; the exclusivity the plan states is enforced only in argv at reckon/cli.py:1252, so a programmatic caller can reach the silent skip."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against the base; dcb66ac8 lands the CLI, validator, pointer and prompt plumbing with the test file, 9f6f58b3 and cea78e5e are the two landing records, 92b7eca7 reads the digest from the stored copy and adds the section refusal with three tests, and neither docs commit touches a plan-status, plan-impl, plan-version or plan-modified meta line.",
+    "done_when": "the four bullets each have a named case in tests/test_brief_dispatch.py \u2014 the dry-run dispatch and the stub-launcher dispatch asserting brief.sha256, brief.path and the run-directory copy at :174 and :199, the missing done-when refused as not-dispatchable at :229, and the --brief with --plan refusal at :245 \u2014 and the declared mutation is recorded red in logs/negative-control-repair.log, whose first line repeats the declared string, whose summary reads 4 failed, 3 passed, EXIT=1, and whose failure text carries error plan-unavailable at :29.",
+    "goal": "the node's goal is that dispatch carry a stored brief in place of a committed plan section; reckon/cli.py:1061 makes --plan optional and :1063 adds --brief with the refusals at :1252 and :1256, reckon/crew/dispatch.py:3169 takes the brief branch in place of the plan gates, :4030 stores the brief under the run directory, and :4031 with :4059 and :4342 carries its digest and stored path onto the pointer, the pre-launch claim and the dispatch payload.",
+    "manifest": "read at head cea78e5e; it carries status complete, names the gate command and its 7 passed result, seven log paths under test_logs, the negative-control log whose first line repeats the declared mutation, and a checkpoint naming the four commits, with the three repaired behaviours under review_findings; it declares neither baseline_suite nor after_suite, so the two regression arms appear only as loose test_logs entries.",
+    "write_paths": "read the manifest's nine declared paths; every path in the diff over 3f251453..cea78e5e lies inside them (reckon/cli.py, reckon/crew/dispatch.py, reckon/crew/node.py, tests/test_brief_dispatch.py, docs/plans/a-worker-can-take-a-brief.html, docs/evidence/archive/a-worker-can-take-a-brief-landed.html, docs/figures/a-worker-can-take-a-brief/brief-dispatch-flow.svg), with reckon/crew.py and tests/fixtures/crew-public-surface.txt declared and correctly untouched because the change exposes no new public symbol."
+  },
+  "justifications": {
+    "durability": "each repair's added assertion names a condition that reddens it \u2014 tests/test_brief_dispatch.py:345 deletes the source so :361 raises or fails if the lane change re-reads it, :311 fails if the brief never reaches prompt.txt, and :284 fails if the section refusal is removed \u2014 while no case covers a node naming both a plan and a brief, and the digest equality at :361 sets two code outputs against each other rather than the independent BRIEF_TEXT digest.",
+    "evidence": "the gate log names its revision, tree, module and cwd, and its 7 passed EXIT=0 at cea78e5e is reproduced in logs/review-gate-at-cea78e5e.log of this review run; the reviewed manifest's two regression arms are recorded only as loose test_logs entries, and the digest is taken at dispatch.py:3178 from the source before the copy is made at :4030, so the two are never compared in code.",
+    "fit": "the four private helpers at reckon/crew/dispatch.py:2877-2937 follow the surrounding why-docstring idiom and carry no plan or version identifier, with the sole wrinkle that a brief still gets a plan block carrying an empty base_sha at dispatch.py:3181.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3169-3181 skips the plan gates for a brief and dispatch.py:4030-4031 with :4059 and :4342 store its copy and record the digest and path as the goal states, with the deduction that the two authorities are made exclusive only in argv at reckon/cli.py:1252.",
+    "scope_discipline": "every path in the four commits lies inside the manifest's nine declared paths, the cumulative evidence record at docs/evidence/archive/a-worker-can-take-a-brief-landed.html keeps the earlier anchor and spliced its own block beside it, and no plan-state meta line is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that dispatch carry a stored brief in place of a committed plan section; reckon/cli.py:1061 makes --plan optional and :1063 adds --brief with the refusals at :1252 and :1256, reckon/crew/dispatch.py:3169 takes the brief branch in place of the plan gates, :4030 stores the brief under the run directory, and :4031 with :4059 and :4342 carries its digest and stored path onto the pointer, the pre-launch claim and the dispatch payload.\nVERDICT done_when: the four bullets each have a named case in tests/test_brief_dispatch.py \u2014 the dry-run dispatch and the stub-launcher dispatch asserting brief.sha256, brief.path and the run-directory copy at :174 and :199, the missing done-when refused as not-dispatchable at :229, and the --brief with --plan refusal at :245 \u2014 and the declared mutation is recorded red in logs/negative-control-repair.log, whose first line repeats the declared string, whose summary reads 4 failed, 3 passed, EXIT=1, and whose failure text carries error plan-unavailable at :29.\nVERDICT write_paths: read the manifest's nine declared paths; every path in the diff over 3f251453..cea78e5e lies inside them (reckon/cli.py, reckon/crew/dispatch.py, reckon/crew/node.py, tests/test_brief_dispatch.py, docs/plans/a-worker-can-take-a-brief.html, docs/evidence/archive/a-worker-can-take-a-brief-landed.html, docs/figures/a-worker-can-take-a-brief/brief-dispatch-flow.svg), with reckon/crew.py and tests/fixtures/crew-public-surface.txt declared and correctly untouched because the change exposes no new public symbol.\nVERDICT manifest: read at head cea78e5e; it carries status complete, names the gate command and its 7 passed result, seven log paths under test_logs, the negative-control log whose first line repeats the declared mutation, and a checkpoint naming the four commits, with the three repaired behaviours under review_findings; it declares neither baseline_suite nor after_suite, so the two regression arms appear only as loose test_logs entries.\nVERDICT diff: read commit by commit against the base; dcb66ac8 lands the CLI, validator, pointer and prompt plumbing with the test file, 9f6f58b3 and cea78e5e are the two landing records, 92b7eca7 reads the digest from the stored copy and adds the section refusal with three tests, and neither docs commit touches a plan-status, plan-impl, plan-version or plan-modified meta line.\nCALL_SITES: reckon/cli.py:crew_dispatch, reckon/crew/dispatch.py:dispatch, reckon/crew/dispatch.py:plan_dispatch, reckon/crew/dispatch.py:change_lane, reckon/crew/dispatch.py:shadow_source, reckon/crew/dispatch.py:_recorded_task_node, reckon/crew/node.py:validate_node, reckon/crew/prompts.py:compose_prompt\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3169-3181 skips the plan gates for a brief and dispatch.py:4030-4031 with :4059 and :4342 store its copy and record the digest and path as the goal states, with the deduction that the two authorities are made exclusive only in argv at reckon/cli.py:1252.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate log names its revision, tree, module and cwd, and its 7 passed EXIT=0 at cea78e5e is reproduced in logs/review-gate-at-cea78e5e.log of this review run; the reviewed manifest's two regression arms are recorded only as loose test_logs entries, and the digest is taken at dispatch.py:3178 from the source before the copy is made at :4030, so the two are never compared in code.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the four commits lies inside the manifest's nine declared paths, the cumulative evidence record at docs/evidence/archive/a-worker-can-take-a-brief-landed.html keeps the earlier anchor and spliced its own block beside it, and no plan-state meta line is touched.\nSCORE durability: 16\nJUSTIFICATION durability: each repair's added assertion names a condition that reddens it \u2014 tests/test_brief_dispatch.py:345 deletes the source so :361 raises or fails if the lane change re-reads it, :311 fails if the brief never reaches prompt.txt, and :284 fails if the section refusal is removed \u2014 while no case covers a node naming both a plan and a brief, and the digest equality at :361 sets two code outputs against each other rather than the independent BRIEF_TEXT digest.\nSCORE fit: 18\nJUSTIFICATION fit: the four private helpers at reckon/crew/dispatch.py:2877-2937 follow the surrounding why-docstring idiom and carry no plan or version identifier, with the sole wrinkle that a brief still gets a plan block carrying an empty base_sha at dispatch.py:3181.\nFINDING reckon/crew/node.py:1048 a node naming both a plan and a brief passes validation (the fully-specified guard refuses only when both are empty) and reckon/crew/dispatch.py:3169 then takes the brief branch and skips require_plan_section_visible and require_plan_reviewed for a node that does name a plan section, although that branch's own comment says the gates have nothing to read; the exclusivity the plan states is enforced only in argv at reckon/cli.py:1252, so a programmatic caller can reach the silent skip.\n",
+  "review_run_id": "r-20260928T053333641249-review-of-dispatch-accepts-a-brief",
+  "reviewed_base_sha": "3f251453cb064dd19f185bd32301a7e0ee59e491",
+  "reviewed_head_sha": "cea78e5eb9a3b8767d2f4a2fe199f94cff38c7ae",
+  "reviewed_run_id": "r-20260927T192434735630-dispatch-accepts-a-brief",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T06:29:06.645497+00:00",
+  "total": 91
+}

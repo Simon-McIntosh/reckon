@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c47424bd75e134cee6fa51e3b30948a11253372d",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:serve",
+    "reckon/crew/fleet_supervisor.py:handle_line",
+    "reckon/crew/fleet_supervisor.py:main"
+  ],
+  "completed_at": "2026-10-02T08:03:05.258Z",
+  "dispatched_at": "2026-10-02T07:47:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T053135752847-fleet-supervisor-runs-declared-services/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the tests: field carries the placeholders <tree> and <gate files>, so it cannot be run verbatim, though the structured baseline_suite and after_suite commands are literal."
+    }
+  ],
+  "head_log_revision": "8b2946cb2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read revision by revision; 3ce19a602 lands the services; 8b2946cb2 adds the seven cases; 3a27d2142 adds the evidence fragment.",
+    "done_when": "the done_when names five properties and every one is asserted in tests/test_fleet_supervisor_runs_declared_services.py between lines 161 and 423.",
+    "goal": "the node goal is to generalise the health sampler into config-declared standing services; reckon/crew/fleet_supervisor.py:1109 declared_services reads the config-home fleet/services.json.",
+    "manifest": "read; it records base 52 passed EXIT=0 and head 59 passed EXIT=0 with no added failure id, and names a lock-removal negative-control log at EXIT=1.",
+    "write_paths": "the declared paths name fleet_supervisor.py, the new test file and the evidence fragment, and every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_supervisor_runs_declared_services.py:236 proves restart not before the backoff with a hand-driven clock, and the lock-removal negative control reddens the no-second-copy case.",
+    "evidence": "the gate logs (base 52 passed and head 59 passed, both EXIT=0) measure the done_when, though the manifest tests: line carries the placeholders <tree> and <gate files>.",
+    "fit": "reckon/crew/fleet_supervisor.py:1109 follows the module's naming and idiom and introduces no plan label or versioned name.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1109-1213 adds start-once behind a lock, backoff restart, bounded logs and reload-by-recorded-pid, matching plan section one.",
+    "scope_discipline": "every path in the diff is inside the declared write paths; the only edit outside the goal is a line-wrap of a pre-existing call at reckon/crew/fleet_supervisor.py:1194."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to generalise the health sampler into config-declared standing services; reckon/crew/fleet_supervisor.py:1109 declared_services reads the config-home fleet/services.json.\nVERDICT done_when: the done_when names five properties and every one is asserted in tests/test_fleet_supervisor_runs_declared_services.py between lines 161 and 423.\nVERDICT write_paths: the declared paths name fleet_supervisor.py, the new test file and the evidence fragment, and every path in the diff is inside them.\nVERDICT manifest: read; it records base 52 passed EXIT=0 and head 59 passed EXIT=0 with no added failure id, and names a lock-removal negative-control log at EXIT=1.\nVERDICT diff: read revision by revision; 3ce19a602 lands the services; 8b2946cb2 adds the seven cases; 3a27d2142 adds the evidence fragment.\nCALL_SITES: reckon/crew/fleet_supervisor.py:serve, reckon/crew/fleet_supervisor.py:handle_line, reckon/crew/fleet_supervisor.py:main\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1109-1213 adds start-once behind a lock, backoff restart, bounded logs and reload-by-recorded-pid, matching plan section one.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate logs (base 52 passed and head 59 passed, both EXIT=0) measure the done_when, though the manifest tests: line carries the placeholders <tree> and <gate files>.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths; the only edit outside the goal is a line-wrap of a pre-existing call at reckon/crew/fleet_supervisor.py:1194.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fleet_supervisor_runs_declared_services.py:236 proves restart not before the backoff with a hand-driven clock, and the lock-removal negative control reddens the no-second-copy case.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1109 follows the module's naming and idiom and introduces no plan label or versioned name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T053135752847-fleet-supervisor-runs-declared-services/manifest.md:14 follow-on: the tests: field carries the placeholders <tree> and <gate files>, so it cannot be run verbatim, though the structured baseline_suite and after_suite commands are literal.",
+  "review_run_id": "r-20261002T074714574031-review-of-fleet-supervisor-runs-declared-services",
+  "reviewed_base_sha": "c47424bd75e134cee6fa51e3b30948a11253372d",
+  "reviewed_head_sha": "3a27d21428b101e33b42a296d8f7c77918312640",
+  "reviewed_run_id": "r-20261002T053135752847-fleet-supervisor-runs-declared-services",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T08:00:52.743849+00:00",
+  "total": 94
+}

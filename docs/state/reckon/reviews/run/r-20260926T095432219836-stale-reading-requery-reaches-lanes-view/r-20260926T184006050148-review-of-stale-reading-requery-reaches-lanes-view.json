@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:687 crew_lanes_view",
+    "reckon/mcp_views.py:919 staleness.resolve_configured_reading call",
+    "reckon/mcp.py:3736 lanes view surface",
+    "reckon/crew/resumption.py:288 probe_lane_availability"
+  ],
+  "completed_at": "2026-09-26T19:15:01.352Z",
+  "dispatched_at": "2026-09-26T18:40:23Z",
+  "findings": [
+    {
+      "file": "tests/test_lanes_view_is_live.py",
+      "line": "185",
+      "text": "the autouse guard inventories the real home's lane-probe cache tree, but both crew_lanes_view call sites in this file inject a probe reader (tests/test_lanes_view_is_live.py:223 and :574), so no case here reaches the tree's only production writer (resumption.probe_lane_availability, called from reckon/budget.py:1626); the assertion therefore cannot fire on the reviewed code, and its realistic trigger is a concurrent session's own probe refresh, which it would report as a lanes-view case writing the real home - the race the sibling guard at tests/test_mcp_recovery.py:348-352 avoids by scoping to the case's own run id. Low severity: the repaired tree is the right one and the repair's positive control is the out-of-file demonstration. Remedy: scope the comparison to writes attributable to the case, or keep a sentinel writer in the fixture as a live positive control."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "ADDRESSED - the diff is the mechanism the plan asks for: helpers _own_lane_figure and _declared_probe_reading bind the probe the composition already read, one composition moment is taken so ages are deterministic, and 526a90cc removed the ownership gate so a shared command's lanes still re-query.",
+    "done_when": "ADDRESSED - re-ran the declared four-file gate at the reviewed head in an isolated worktree: 44 passed exit 0 (log /tmp/review-stale-requery/gate-head.log), and the added cases assert each outcome clause (probe wins for every lane on that account, a command declared by two pools still answers, a failed re-query keeps the old figure and its age, a receipt inside its shelf life is reported without a requery).",
+    "goal": "ADDRESSED - read plan section 5b's done-when against the merged diff at 93b848f8: crew_lanes_view re-queries a reading older than budget.evidence_shelf_life_minutes through the single pre-existing resolver staleness.resolve_configured_reading (no second resolver), the probe's figure is the one returned, and a failed re-query keeps the old figure with its age and a serving state of unknown under reason requery_did_not_answer.",
+    "manifest": "ADDRESSED - the target manifest's fields resolve: changed_paths match the commit range 6b8decd9..93b848f8, the worktree at the recorded head is clean, the declared negative control string matches the first line of logs/review-negative-control.log verbatim, and the stated deviation (cycle logs stored beside the report manifest) is accurate.",
+    "write_paths": "ADDRESSED - all ten commits from the base to 93b848f8 stay inside reckon/mcp_views.py, tests/test_lanes_view_is_live.py and this run's own plan/evidence/figure paths; no truth-source file outside the declared set is touched, and no project index or other plan is mutated."
+  },
+  "justifications": {
+    "durability": "every added assertion names a change that would redden it (ownership gate reinstated reddens the pooled-lane case, an unconditional requery reddens the inside-shelf-life case, an undetected probe failure reddens the unknown-state case), though the home-untouched tripwire's only realistic in-file trigger is a concurrent peer write rather than the reviewed code.",
+    "evidence": "tests/test_lanes_view_is_live.py:570 asserts (invocations, quota_source) == (1, \"probe\") before asserting requeried is True, so the probe-wins check reddens if the resolver call is removed rather than merely if the new field exists.",
+    "fit": "the lane dict gains the single field requeried at reckon/mcp_views.py:980 beside the probe's own figures, and the re-query goes through the pre-existing staleness module resolved at import time rather than through a new abstraction.",
+    "goal_fidelity": "reckon/mcp_views.py:919 calls staleness_module.resolve_configured_reading exactly once, and the inside-shelf-life case reports the lane's own figure 43 rather than the probe's 37 at 30 minutes against a 60-minute shelf life, so the plan's mechanism is used rather than a parallel one.",
+    "scope_discipline": "git show --stat over 04a88cbb..93b848f8 lists only the declared source and test files plus the run's own docs and figure, and the twenty-one deleted doc lines in that range are this run's own superseded guard narrative rather than a peer's content."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: ADDRESSED - read plan section 5b's done-when against the merged diff at 93b848f8: crew_lanes_view re-queries a reading older than budget.evidence_shelf_life_minutes through the single pre-existing resolver staleness.resolve_configured_reading (no second resolver), the probe's figure is the one returned, and a failed re-query keeps the old figure with its age and a serving state of unknown under reason requery_did_not_answer.\nVERDICT done_when: ADDRESSED - re-ran the declared four-file gate at the reviewed head in an isolated worktree: 44 passed exit 0 (log /tmp/review-stale-requery/gate-head.log), and the added cases assert each outcome clause (probe wins for every lane on that account, a command declared by two pools still answers, a failed re-query keeps the old figure and its age, a receipt inside its shelf life is reported without a requery).\nVERDICT write_paths: ADDRESSED - all ten commits from the base to 93b848f8 stay inside reckon/mcp_views.py, tests/test_lanes_view_is_live.py and this run's own plan/evidence/figure paths; no truth-source file outside the declared set is touched, and no project index or other plan is mutated.\nVERDICT manifest: ADDRESSED - the target manifest's fields resolve: changed_paths match the commit range 6b8decd9..93b848f8, the worktree at the recorded head is clean, the declared negative control string matches the first line of logs/review-negative-control.log verbatim, and the stated deviation (cycle logs stored beside the report manifest) is accurate.\nVERDICT call_sites: VERIFIED - the four production call sites in the CALL_SITES line were each opened at the reviewed head: the lanes view entry point, the single resolver call it makes, the MCP surface that exposes it, and the guarded cache tree's writer.\nVERDICT diff: ADDRESSED - the diff is the mechanism the plan asks for: helpers _own_lane_figure and _declared_probe_reading bind the probe the composition already read, one composition moment is taken so ages are deterministic, and 526a90cc removed the ownership gate so a shared command's lanes still re-query.\nCALL_SITES: reckon/mcp_views.py:687 crew_lanes_view, reckon/mcp_views.py:919 staleness.resolve_configured_reading call, reckon/mcp.py:3736 lanes view surface, reckon/crew/resumption.py:288 probe_lane_availability\nSCORE goal_fidelity: 18\nSCORE evidence: 18\nSCORE scope_discipline: 19\nSCORE durability: 17\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:919 calls staleness_module.resolve_configured_reading exactly once, and the inside-shelf-life case reports the lane's own figure 43 rather than the probe's 37 at 30 minutes against a 60-minute shelf life, so the plan's mechanism is used rather than a parallel one.\nJUSTIFICATION evidence: tests/test_lanes_view_is_live.py:570 asserts (invocations, quota_source) == (1, \"probe\") before asserting requeried is True, so the probe-wins check reddens if the resolver call is removed rather than merely if the new field exists.\nJUSTIFICATION scope_discipline: git show --stat over 04a88cbb..93b848f8 lists only the declared source and test files plus the run's own docs and figure, and the twenty-one deleted doc lines in that range are this run's own superseded guard narrative rather than a peer's content.\nJUSTIFICATION durability: every added assertion names a change that would redden it (ownership gate reinstated reddens the pooled-lane case, an unconditional requery reddens the inside-shelf-life case, an undetected probe failure reddens the unknown-state case), though the home-untouched tripwire's only realistic in-file trigger is a concurrent peer write rather than the reviewed code.\nJUSTIFICATION fit: the lane dict gains the single field requeried at reckon/mcp_views.py:980 beside the probe's own figures, and the re-query goes through the pre-existing staleness module resolved at import time rather than through a new abstraction.\nFINDING tests/test_lanes_view_is_live.py:185 the autouse guard inventories the real home's lane-probe cache tree, but both crew_lanes_view call sites in this file inject a probe reader (tests/test_lanes_view_is_live.py:223 and :574), so no case here reaches the tree's only production writer (resumption.probe_lane_availability, called from reckon/budget.py:1626); the assertion therefore cannot fire on the reviewed code, and its realistic trigger is a concurrent session's own probe refresh, which it would report as a lanes-view case writing the real home - the race the sibling guard at tests/test_mcp_recovery.py:348-352 avoids by scoping to the case's own run id. Low severity: the repaired tree is the right one and the repair's positive control is the out-of-file demonstration. Remedy: scope the comparison to writes attributable to the case, or keep a sentinel writer in the fixture as a live positive control.\nREVIEWED_BASE_SHA: 6b8decd9ea4bb9a68eade43bdc15a15de03fdcee\nREVIEWED_HEAD_SHA: 93b848f8e87405d78dd7ed1ebd79f0520786f44d\n",
+  "review_run_id": "r-20260926T184006050148-review-of-stale-reading-requery-reaches-lanes-view",
+  "reviewed_base_sha": "6b8decd9ea4bb9a68eade43bdc15a15de03fdcee",
+  "reviewed_head_sha": "93b848f8e87405d78dd7ed1ebd79f0520786f44d",
+  "reviewed_run_id": "r-20260926T095432219836-stale-reading-requery-reaches-lanes-view",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T19:11:30.688054+00:00",
+  "total": 90
+}

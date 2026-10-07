@@ -1,0 +1,45 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2847 inside plan_dispatch at reckon/crew/dispatch.py:2677",
+    "reckon/crew.py:73 the crew package surface that re-exports validate_node"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T10:58:44.968393+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; 27311d59 carries reckon/crew/node.py and tests/test_role_write_scope_wording.py, and 02749ee0 only the plan landing record, the evidence anchor and the figure, with no plan meta line altered and the anchor spliced with 0 deletions.",
+    "done_when": "read tests/test_role_write_scope_wording.py at head; both wordings are asserted from the message emitted through validate_node (reckon/crew/node.py:1055) and plan_dispatch (reckon/crew/dispatch.py:2677), the manifest records the two-file zero-added-failure arms, and an independent re-run of the new file at the reviewed head passed 6 of 6 while the base revision's node.py made 4 of 6 fail, the declared case among them.",
+    "goal": "the node goal is that the read-only role's write refusal name the delivery roots it enumerated instead of asserting the path resolves inside the repository; reckon/crew/node.py:739-773 splits a refused scope into repository paths and paths outside every delivery root, and node.py:700-733 gives the outside case its own sentence naming the enumerated roots and the correction they allow.",
+    "manifest": "read; it records the two commits, the gate logs with revision, module and cwd pins, the base and head arm JSON, and the executed negative control, and each log named is on disk carrying that content.",
+    "write_paths": "read the five declared paths against the five files of b453d763..02749ee0; every changed file lies inside them, the figure under the declared docs/figures/crew-observability-truth directory."
+  },
+  "justifications": {
+    "durability": "reinstating the base node.py from the b453d763 blob (sha256 checked) reddens tests/test_role_write_scope_wording.py:153 at the declared assertion plus three more cases of the file, so the guarding assertion fails on exactly the regression it was added for.",
+    "evidence": "the manifest's arms at gate-arm-base.txt and gate-arm-head.txt carry the revision, tree, command, module.__file__ and cwd headers it cites, the cohort at gate-cohort.txt pins the reviewed revision, and an independent re-run of the new file at the reviewed head reproduced 6 passed with the module pinned to the recheck tree.",
+    "fit": "the classification at node.py:671-773 follows the module's idiom of small documented helpers with keyword-only arguments and introduces no forbidden name, though the new _delivery_write_roots sits beside the pre-existing, differently scoped runs.delivery_roots() at reckon/crew/runs.py:58.",
+    "goal_fidelity": "node.py:739-773 satisfies the section's done-when, naming the enumerated roots and the correction at node.py:725-733 for the outside case while node.py:713-720 keeps the repository sentence for the real one, the enumerated list at node.py:729 counting the manifest file among \"roots\" being the one imprecision.",
+    "scope_discipline": "every one of the five changed files lies inside the five declared write paths, the plan-record commit touched no plan meta line, and the evidence anchor added 84 lines with 0 deletions so a peer's anchors survive."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the read-only role's write refusal name the delivery roots it enumerated instead of asserting the path resolves inside the repository; reckon/crew/node.py:739-773 splits a refused scope into repository paths and paths outside every delivery root, and node.py:700-733 gives the outside case its own sentence naming the enumerated roots and the correction they allow.\nVERDICT done_when: read tests/test_role_write_scope_wording.py at head; both wordings are asserted from the message emitted through validate_node (reckon/crew/node.py:1055) and plan_dispatch (reckon/crew/dispatch.py:2677), the manifest records the two-file zero-added-failure arms, and an independent re-run of the new file at the reviewed head passed 6 of 6 while the base revision's node.py made 4 of 6 fail, the declared case among them.\nVERDICT write_paths: read the five declared paths against the five files of b453d763..02749ee0; every changed file lies inside them, the figure under the declared docs/figures/crew-observability-truth directory.\nVERDICT manifest: read; it records the two commits, the gate logs with revision, module and cwd pins, the base and head arm JSON, and the executed negative control, and each log named is on disk carrying that content.\nVERDICT diff: read commit by commit; 27311d59 carries reckon/crew/node.py and tests/test_role_write_scope_wording.py, and 02749ee0 only the plan landing record, the evidence anchor and the figure, with no plan meta line altered and the anchor spliced with 0 deletions.\nCALL_SITES: reckon/crew/dispatch.py:2847 inside plan_dispatch at reckon/crew/dispatch.py:2677, reckon/crew.py:73 the crew package surface that re-exports validate_node\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: node.py:739-773 satisfies the section's done-when, naming the enumerated roots and the correction at node.py:725-733 for the outside case while node.py:713-720 keeps the repository sentence for the real one, the enumerated list at node.py:729 counting the manifest file among \"roots\" being the one imprecision.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's arms at gate-arm-base.txt and gate-arm-head.txt carry the revision, tree, command, module.__file__ and cwd headers it cites, the cohort at gate-cohort.txt pins the reviewed revision, and an independent re-run of the new file at the reviewed head reproduced 6 passed with the module pinned to the recheck tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the five changed files lies inside the five declared write paths, the plan-record commit touched no plan meta line, and the evidence anchor added 84 lines with 0 deletions so a peer's anchors survive.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the base node.py from the b453d763 blob (sha256 checked) reddens tests/test_role_write_scope_wording.py:153 at the declared assertion plus three more cases of the file, so the guarding assertion fails on exactly the regression it was added for.\nSCORE fit: 18\nJUSTIFICATION fit: the classification at node.py:671-773 follows the module's idiom of small documented helpers with keyword-only arguments and introduces no forbidden name, though the new _delivery_write_roots sits beside the pre-existing, differently scoped runs.delivery_roots() at reckon/crew/runs.py:58.\n",
+  "review_run_id": "r-20260925T105844968393-review-of-refusal-names-the-roots-it-checked",
+  "reviewed_base_sha": "b453d7632ec4d56392caba3b1efde4aa0475b23b",
+  "reviewed_head_sha": "02749ee0437a105fa2bb705ec11406f884b5926c",
+  "reviewed_run_id": "r-20260925T082220783770-refusal-names-the-roots-it-checked",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:42:33.265761+00:00",
+  "total": 95
+}

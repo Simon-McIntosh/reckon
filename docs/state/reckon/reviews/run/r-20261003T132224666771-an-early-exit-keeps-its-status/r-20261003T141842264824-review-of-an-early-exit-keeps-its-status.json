@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed manifest's gate logs, both population arms green (base-population.log 15 passed EXIT=0; head-population.log 18 passed EXIT=0), so the run added no failing test; the note records that the reviewed suite fields name no log_path, so review.read_review's own read-path derivation returns unmeasured rather than this zero",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3226"
+  ],
+  "completed_at": "2026-10-03T14:32:04.642Z",
+  "dispatched_at": "2026-10-03T14:19:10Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T132224666771-an-early-exit-keeps-its-status/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite/after_suite carry revision and prose but no log_path, so review._gate_log_path returns None and the read path reports the run's added-failure count unmeasured although the manifest names the gate logs in test_logs; the numbers are correct but unreachable by the contract reader."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/an-early-exit-keeps-its-status.html",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment declares reckon-type=doc with plan/node metas where the plan's sibling fragments declare reckon-type=evidence with plan-slug/plan-title; functionally inert because fragments are discovered by path and composed by body, but it diverges from the convention every sibling follows."
+    },
+    {
+      "file": "tests/test_an_early_exit_keeps_its_status.py",
+      "line": "66",
+      "severity": "follow-on",
+      "text": "follow-on: the signal case runs a fence-shaped argv rather than bubblewrap, which reports a signalled worker as 128+signal, so a worker signalled inside the window under a real fence records bubblewrap's code rather than its own signal; the node discloses this in the fragment and its follow_ons and does not change it."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base b67d70a28 - fac9f9557 adds the carry, c34c0ab97 stops a leftover child displacing it, 1fb7d3f1b adds the evidence fragment, 0a524ce6f formats the test, 742af3855 corrects the fragment's figures; no production file beyond dispatch.py is touched.",
+    "done_when": "the done-when requires the named killed-worker test to pass alone and in its file, a new test spawning a fenced-shaped worker that exits inside the window and reads a non-null exit code, and a negative control that drops the carry and reddens it; head-named-alone.log reads 1 passed in 25.19s EXIT=0, head-named-file.log 1 passed in 25.89s EXIT=0, and negative-control.log reads 3 failed EXIT=1 with the carry dropped.",
+    "goal": "the node's goal was to make a worker reaped during the spawn helper's startup poll keep its exit status and have the supervisor write it on the attempt's exit record; reckon/crew/dispatch.py:9388 _wait_status_from_returncode, :9408 _WorkerPid and :9475 _supervisor_spawn_worker carry the collected exit, and :10309 writes it as the attempt's exit.",
+    "manifest": "read; status complete, changed_paths names the three files, negative_control_log names negative-control.log whose 3 failed EXIT=1 names the declared mutation, and the head arms are green; its baseline_suite/after_suite name no log_path.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_an_early_exit_keeps_its_status.py and docs/evidence/fragments/crew-runtime-positive-controls/an-early-exit-keeps-its-status.html; the diff b67d70a28..742af3855 touches exactly those three and the reviewed worktree is untouched elsewhere."
+  },
+  "justifications": {
+    "durability": "tests/test_an_early_exit_keeps_its_status.py fails if the carry regresses - replacing the _WorkerPid return with process.pid in a scratch head copy gave 3 failed, including assert 0 == 7.",
+    "evidence": "base-named-reproduction.log reads 1 failed EXIT=1 (assert None == 0) and my own rerun of that test at b67d70a28 reproduces it, but the manifest's baseline_suite/after_suite name no log_path so review._gate_log_path returns None and the added-failure count is unmeasured through the contract reader.",
+    "fit": "reckon/crew/dispatch.py:9388 follows the module's wait-status idiom (_wait_status_record at :7475), but the fragment's head metas (reckon-type=doc, plan, node) diverge from the sibling fragments' (reckon-type=evidence, plan-slug, plan-title).",
+    "goal_fidelity": "reckon/crew/dispatch.py:10309 writes the carried wait status as the same attempt's exit, and the new cases read exit_code 7 and signal SIGTERM off the record at head.",
+    "scope_discipline": "git diff --name-only b67d70a28..742af3855 returns exactly the three declared write paths and the reviewed worktree is untouched elsewhere."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal was to make a worker reaped during the spawn helper's startup poll keep its exit status and have the supervisor write it on the attempt's exit record; reckon/crew/dispatch.py:9388 _wait_status_from_returncode, :9408 _WorkerPid and :9475 _supervisor_spawn_worker carry the collected exit, and :10309 writes it as the attempt's exit.\nVERDICT done_when: the done-when requires the named killed-worker test to pass alone and in its file, a new test spawning a fenced-shaped worker that exits inside the window and reads a non-null exit code, and a negative control that drops the carry and reddens it; head-named-alone.log reads 1 passed in 25.19s EXIT=0, head-named-file.log 1 passed in 25.89s EXIT=0, and negative-control.log reads 3 failed EXIT=1 with the carry dropped.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_an_early_exit_keeps_its_status.py and docs/evidence/fragments/crew-runtime-positive-controls/an-early-exit-keeps-its-status.html; the diff b67d70a28..742af3855 touches exactly those three and the reviewed worktree is untouched elsewhere.\nVERDICT manifest: read; status complete, changed_paths names the three files, negative_control_log names negative-control.log whose 3 failed EXIT=1 names the declared mutation, and the head arms are green; its baseline_suite/after_suite name no log_path.\nVERDICT diff: read commit by commit against base b67d70a28 - fac9f9557 adds the carry, c34c0ab97 stops a leftover child displacing it, 1fb7d3f1b adds the evidence fragment, 0a524ce6f formats the test, 742af3855 corrects the fragment's figures; no production file beyond dispatch.py is touched.\nCALL_SITES: reckon/crew/dispatch.py:3226\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:10309 writes the carried wait status as the same attempt's exit, and the new cases read exit_code 7 and signal SIGTERM off the record at head.\nSCORE evidence: 17\nJUSTIFICATION evidence: base-named-reproduction.log reads 1 failed EXIT=1 (assert None == 0) and my own rerun of that test at b67d70a28 reproduces it, but the manifest's baseline_suite/after_suite name no log_path so review._gate_log_path returns None and the added-failure count is unmeasured through the contract reader.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only b67d70a28..742af3855 returns exactly the three declared write paths and the reviewed worktree is untouched elsewhere.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_early_exit_keeps_its_status.py fails if the carry regresses - replacing the _WorkerPid return with process.pid in a scratch head copy gave 3 failed, including assert 0 == 7.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:9388 follows the module's wait-status idiom (_wait_status_record at :7475), but the fragment's head metas (reckon-type=doc, plan, node) diverge from the sibling fragments' (reckon-type=evidence, plan-slug, plan-title).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T132224666771-an-early-exit-keeps-its-status/manifest.md:17 follow-on: baseline_suite/after_suite carry revision and prose but no log_path, so review._gate_log_path returns None and the read path reports the run's added-failure count unmeasured although the manifest names the gate logs in test_logs; the numbers are correct but unreachable by the contract reader.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/an-early-exit-keeps-its-status.html:4 follow-on: the fragment declares reckon-type=doc with plan/node metas where the plan's sibling fragments declare reckon-type=evidence with plan-slug/plan-title; functionally inert because fragments are discovered by path and composed by body, but it diverges from the convention every sibling follows.\nFINDING tests/test_an_early_exit_keeps_its_status.py:66 follow-on: the signal case runs a fence-shaped argv rather than bubblewrap, which reports a signalled worker as 128+signal, so a worker signalled inside the window under a real fence records bubblewrap's code rather than its own signal; the node discloses this in the fragment and its follow_ons and does not change it.\n",
+  "review_run_id": "r-20261003T141842264824-review-of-an-early-exit-keeps-its-status",
+  "reviewed_base_sha": "b67d70a288a4b3cf0ac05351e7223c8fb20714c3",
+  "reviewed_head_sha": "742af38551210cd499789385ee3f1b59d487996c",
+  "reviewed_run_id": "r-20261003T132224666771-an-early-exit-keeps-its-status",
+  "reviewer_run_id": "r-20261003T141842264824-review-of-an-early-exit-keeps-its-status",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T14:28:18.056944+00:00",
+  "total": 93
+}

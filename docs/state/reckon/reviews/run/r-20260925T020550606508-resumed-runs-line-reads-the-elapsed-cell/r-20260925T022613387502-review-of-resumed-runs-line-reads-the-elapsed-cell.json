@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T02:26:13.387502+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base de965e07 \u2014 41737d3e collapses the two-cell helper into one measure cell and re-points both assertions at it, and d1cf9e23 appends 25 plan lines, 55 evidence lines and a 54-line figure, all appends with no deletion, so no peer node's landed record was displaced (the evidence page keeps its seven node sections and the plan edit touches no plan-version or plan-modified meta line).",
+    "done_when": "all four legs are recorded and three are reproduced \u2014 the base red log names the unmodified base test file failing with AttributeError: module 'reckon.crew.ticker' has no attribute 'RATE' at its helper loop (I confirmed de965e07:tests/test_crew_recovery.py:2402 is that loop and de965e07:reckon/crew/ticker.py carries no RATE), the head gate log records 92 passed with exit 0, the repair touches one test file and adds no skip, xfail or mark (41737d3e numstat 13/14), and I re-ran the named id from the reviewed tree myself (1 passed, reckon.__file__ resolving inside that worktree).",
+    "goal": "the goal is that the resumed-runs line test asserts the row's shipped elapsed-time cell instead of the removed rate cell; the landed helper returns that one cell (tests/test_crew_recovery.py:2381) and the test asserts the measured figure and the marker in it (:2567-2569), which is the shipped _spend_cells behaviour (reckon/crew/ticker.py:1000-1005).",
+    "manifest": "read at the run directory; its commits, gate command and 92-passed result match the logs it names, and its negative_control_note (mutation at tests/test_crew_recovery.py:2403, 1 failed in 1.49s) matches the log's own text, whose first line repeats the declared string verbatim.",
+    "write_paths": "the declared paths are tests/test_crew_recovery.py, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head and docs/plans/the-suite-is-green-at-head.html; git diff --stat de965e07 d1cf9e23 returns exactly those four files (13/14, 55/0, 54/0, 25/0) with nothing outside them."
+  },
+  "justifications": {
+    "durability": "the measured assertion is pinned by the independent literal \"2h00m\" at tests/test_crew_recovery.py:2568 and reddens if the renderer emits the marker or another format there, while the absent assertion's expected side reads the renderer's own ticker_module.DIM_MARKER and both sides pad through ticker_module.WALL, so a redefined marker constant or a resized measure cell moves both sides together and that assertion cannot see it.",
+    "evidence": "the gate (tests/test_crew_recovery.py, 92 passed, exit 0 in logs/gate-test_crew_recovery.log) plus the base arm and negative control I opened and my own rerun of the named id measure every clause of the done_when, with the one reservation that both controls redden in the helper, so the added assertions' discriminating power rests on a reading I reproduced rather than on a control of their own.",
+    "fit": "the assertion follows the sibling layout tests' own idiom (tests/test_crew_ticker_layout.py:1317 uses ticker_module.DIM_MARKER.rjust(width)), the helper's rename matches its new singular return, and no symbol, comment or commit message carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_crew_recovery.py:2569 asserts the shipped elapsed figure in the row's single measure cell, and rendering a plain 7,200 s event through that worktree's reckon/crew/ticker.py reproduced ' 2h00m' and '     \u2013' in that cell exactly.",
+    "scope_discipline": "git show 41737d3e --numstat is 13/14 in tests/test_crew_recovery.py, and d1cf9e23 adds 134 lines across the three declared docs paths with zero deletions, so the diff carries nothing outside the declared scope."
+  },
+  "node": "review-of-resumed-runs-line-reads-the-elapsed-cell",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the resumed-runs line test asserts the row's shipped elapsed-time cell instead of the removed rate cell; the landed helper returns that one cell (tests/test_crew_recovery.py:2381) and the test asserts the measured figure and the marker in it (:2567-2569), which is the shipped _spend_cells behaviour (reckon/crew/ticker.py:1000-1005).\nVERDICT done_when: all four legs are recorded and three are reproduced \u2014 the base red log names the unmodified base test file failing with AttributeError: module 'reckon.crew.ticker' has no attribute 'RATE' at its helper loop (I confirmed de965e07:tests/test_crew_recovery.py:2402 is that loop and de965e07:reckon/crew/ticker.py carries no RATE), the head gate log records 92 passed with exit 0, the repair touches one test file and adds no skip, xfail or mark (41737d3e numstat 13/14), and I re-ran the named id from the reviewed tree myself (1 passed, reckon.__file__ resolving inside that worktree).\nVERDICT write_paths: the declared paths are tests/test_crew_recovery.py, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head and docs/plans/the-suite-is-green-at-head.html; git diff --stat de965e07 d1cf9e23 returns exactly those four files (13/14, 55/0, 54/0, 25/0) with nothing outside them.\nVERDICT manifest: read at the run directory; its commits, gate command and 92-passed result match the logs it names, and its negative_control_note (mutation at tests/test_crew_recovery.py:2403, 1 failed in 1.49s) matches the log's own text, whose first line repeats the declared string verbatim.\nVERDICT diff: read both commits against base de965e07 \u2014 41737d3e collapses the two-cell helper into one measure cell and re-points both assertions at it, and d1cf9e23 appends 25 plan lines, 55 evidence lines and a 54-line figure, all appends with no deletion, so no peer node's landed record was displaced (the evidence page keeps its seven node sections and the plan edit touches no plan-version or plan-modified meta line).\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_recovery.py:2569 asserts the shipped elapsed figure in the row's single measure cell, and rendering a plain 7,200 s event through that worktree's reckon/crew/ticker.py reproduced ' 2h00m' and '     \u2013' in that cell exactly.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate (tests/test_crew_recovery.py, 92 passed, exit 0 in logs/gate-test_crew_recovery.log) plus the base arm and negative control I opened and my own rerun of the named id measure every clause of the done_when, with the one reservation that both controls redden in the helper, so the added assertions' discriminating power rests on a reading I reproduced rather than on a control of their own.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show 41737d3e --numstat is 13/14 in tests/test_crew_recovery.py, and d1cf9e23 adds 134 lines across the three declared docs paths with zero deletions, so the diff carries nothing outside the declared scope.\nSCORE durability: 17\nJUSTIFICATION durability: the measured assertion is pinned by the independent literal \"2h00m\" at tests/test_crew_recovery.py:2568 and reddens if the renderer emits the marker or another format there, while the absent assertion's expected side reads the renderer's own ticker_module.DIM_MARKER and both sides pad through ticker_module.WALL, so a redefined marker constant or a resized measure cell moves both sides together and that assertion cannot see it.\nSCORE fit: 20\nJUSTIFICATION fit: the assertion follows the sibling layout tests' own idiom (tests/test_crew_ticker_layout.py:1317 uses ticker_module.DIM_MARKER.rjust(width)), the helper's rename matches its new singular return, and no symbol, comment or commit message carries a plan, sprint or ticket identifier.\n",
+  "review_run_id": "r-20260925T022613387502-review-of-resumed-runs-line-reads-the-elapsed-cell",
+  "reviewed_base_sha": "de965e07c1e9701b203133be247ff547bed4b776",
+  "reviewed_head_sha": "d1cf9e2364270fe2d3f04ecefb395cdbe43a09a4",
+  "reviewed_run_id": "r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T02:47:53.458860+00:00",
+  "total": 96
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:5509",
+    "reckon/crew/obligations.py:860",
+    "reckon/crew/obligation_snapshot.py:744",
+    "reckon/hooks/coordinator_obligations.py:801"
+  ],
+  "completed_at": "2026-10-03T07:30:32.488Z",
+  "dispatched_at": "2026-10-03T07:25:25Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "5504",
+      "severity": "follow-on",
+      "text": "follow-on: the crew ack docstring 'Defer one live run's obligations' and the --run help 'Live run whose obligations are deliberately deferred' at reckon/cli.py:5490 still describe the deferral as live-run-only while record_run_acknowledgement now accepts a promoted run, so the command's own help contradicts the capability this node landed."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "206",
+      "severity": "follow-on",
+      "text": "follow-on: the promoted half of _acknowledgements_in_force reads only the aggregate copy of the ledger (_aggregate_rows), so a row that a future ledger split moved into a per-run file alone would hide the deferral until the next aggregate write; the manifest records this and no such move happens on today's reader path."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 9e5081bb; 6f9bb1056 adds the ledger fallback in runs.py plus the promoted half of the reader in obligations.py and the test file, bb0347100 moves the reader's promoted lookup onto the cached ledger aggregate instead of a held-tree scan, and f941d4a26 adds the evidence fragment.",
+    "done_when": "section 25's done-when names the promote-then-acknowledge test; tests/test_ack_after_promotion.py promotes a run whose tree is still held (lines 120-150), asserts the duty leaves the stop path (line 139), returns past its until (lines 153-170), and is refused with no reason (lines 173-184); at base 9e5081bb both recording cases fail (gate-base.log, 2 failed) and at head all three pass, and the negative control restores the live-pointer requirement so the ack is refused (negative-control.log, 2 failed EXIT=1).",
+    "goal": "plan section 25 requires a promoted run's deliberate remainder be acknowledged from its ledger record with a reason, expiring when the condition clears; reckon/crew/runs.py:1053 falls back to _record_acknowledgement_on_ledger when no live pointer exists and reckon/crew/obligations.py:203-215 reads the promoted deferral, so the goal is met.",
+    "manifest": "read; it records the base arm at 2 failed/76 passed, the head arm at 78 passed/0 failed with zero added failure ids over the manifest's own named logs, the negative control red at EXIT=1, and names its gate logs.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/runs.py, reckon/crew/obligations.py, tests/test_ack_after_promotion.py, docs/evidence/fragments/crew-observability-truth/ack-after-promotion.html, docs/figures/crew-observability-truth/ack-after-promotion); the three commits touch exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_ack_after_promotion.py:139 and :169 redden at base 9e5081bb (gate-base.log) and redden again under the declared negative control that removes the ledger fallback (negative-control.log), and their assertions read the obligations reader's output rather than a value the test handed in.",
+    "evidence": "gate-base.log carries the 9e5081bb revision header and two failures, my independent re-run of tests/test_ack_after_promotion.py at head printed 3 passed, and negative-control.log shows the refusal; the deduction is that the manifest's after_suite names flake-head-1.log, a green repeat whose first line names no revision, while the head gate arm at bb0347100 (gate-head-arm3.log) carried one load-sensitive snapshot failure.",
+    "fit": "reckon/crew/runs.py:1053 and _record_acknowledgement_on_ledger follow the module's reader/writer idiom and introduce no forbidden name, but the CLI at reckon/cli.py:5490 and :5504 still describes the deferral as applying to a live run.",
+    "goal_fidelity": "reckon/crew/runs.py:1053 records the deferral on the promoted run's ledger row and reckon/crew/obligations.py:206-215 withholds the duty while it is in force, which is exactly what section 25 asks a promoted remainder to be able to do.",
+    "scope_discipline": "git show --stat over 6f9bb1056, bb0347100 and f941d4a26 touches only the four declared paths, and nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 25 requires a promoted run's deliberate remainder be acknowledged from its ledger record with a reason, expiring when the condition clears; reckon/crew/runs.py:1053 falls back to _record_acknowledgement_on_ledger when no live pointer exists and reckon/crew/obligations.py:203-215 reads the promoted deferral, so the goal is met.\nVERDICT done_when: section 25's done-when names the promote-then-acknowledge test; tests/test_ack_after_promotion.py promotes a run whose tree is still held (lines 120-150), asserts the duty leaves the stop path (line 139), returns past its until (lines 153-170), and is refused with no reason (lines 173-184); at base 9e5081bb both recording cases fail (gate-base.log, 2 failed) and at head all three pass, and the negative control restores the live-pointer requirement so the ack is refused (negative-control.log, 2 failed EXIT=1).\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/runs.py, reckon/crew/obligations.py, tests/test_ack_after_promotion.py, docs/evidence/fragments/crew-observability-truth/ack-after-promotion.html, docs/figures/crew-observability-truth/ack-after-promotion); the three commits touch exactly those four files and nothing else.\nVERDICT manifest: read; it records the base arm at 2 failed/76 passed, the head arm at 78 passed/0 failed with zero added failure ids over the manifest's own named logs, the negative control red at EXIT=1, and names its gate logs.\nVERDICT diff: read commit by commit against 9e5081bb; 6f9bb1056 adds the ledger fallback in runs.py plus the promoted half of the reader in obligations.py and the test file, bb0347100 moves the reader's promoted lookup onto the cached ledger aggregate instead of a held-tree scan, and f941d4a26 adds the evidence fragment.\nCALL_SITES: reckon/cli.py:5509, reckon/crew/obligations.py:860, reckon/crew/obligation_snapshot.py:744, reckon/hooks/coordinator_obligations.py:801\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1053 records the deferral on the promoted run's ledger row and reckon/crew/obligations.py:206-215 withholds the duty while it is in force, which is exactly what section 25 asks a promoted remainder to be able to do.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log carries the 9e5081bb revision header and two failures, my independent re-run of tests/test_ack_after_promotion.py at head printed 3 passed, and negative-control.log shows the refusal; the deduction is that the manifest's after_suite names flake-head-1.log, a green repeat whose first line names no revision, while the head gate arm at bb0347100 (gate-head-arm3.log) carried one load-sensitive snapshot failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over 6f9bb1056, bb0347100 and f941d4a26 touches only the four declared paths, and nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_ack_after_promotion.py:139 and :169 redden at base 9e5081bb (gate-base.log) and redden again under the declared negative control that removes the ledger fallback (negative-control.log), and their assertions read the obligations reader's output rather than a value the test handed in.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/runs.py:1053 and _record_acknowledgement_on_ledger follow the module's reader/writer idiom and introduce no forbidden name, but the CLI at reckon/cli.py:5490 and :5504 still describes the deferral as applying to a live run.\nFINDING reckon/cli.py:5504 follow-on: the crew ack docstring 'Defer one live run's obligations' and the --run help 'Live run whose obligations are deliberately deferred' at reckon/cli.py:5490 still describe the deferral as live-run-only while record_run_acknowledgement now accepts a promoted run, so the command's own help contradicts the capability this node landed.\nFINDING reckon/crew/obligations.py:206 follow-on: the promoted half of _acknowledgements_in_force reads only the aggregate copy of the ledger (_aggregate_rows), so a row that a future ledger split moved into a per-run file alone would hide the deferral until the next aggregate write; the manifest records this and no such move happens on today's reader path.\nreviewed_base_sha: 9e5081bb32085947e24a8b17921c94c7935e32df\nreviewed_head_sha: f941d4a26047a28d2d426892ffa260cb0dd88404",
+  "review_run_id": "r-20261003T072453755624-review-of-ack-after-promotion",
+  "reviewed_base_sha": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "reviewed_head_sha": "f941d4a26047a28d2d426892ffa260cb0dd88404",
+  "reviewed_run_id": "r-20261003T063805035021-ack-after-promotion",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T07:29:52.172187+00:00",
+  "total": 91
+}

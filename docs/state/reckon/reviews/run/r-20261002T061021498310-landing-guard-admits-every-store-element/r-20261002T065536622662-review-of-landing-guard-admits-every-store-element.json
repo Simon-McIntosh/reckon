@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:_plan_differs_only_by_the_stores_own_writes"
+  ],
+  "completed_at": "2026-10-02T07:27:32.521Z",
+  "dispatched_at": "2026-10-02T06:55:56Z",
+  "findings": [
+    {
+      "file": "logs/after-4files.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's gate log header records repo_revision=7a50473b (the base sha) while the arm measured head content and passed the collapse test it lacks at base, and the manifest's after_suite declares revision ebadacae3, so the read-time head_log_revision reads this arm as having run at the base commit and a reader cannot tie the zero added failures to the reviewed head without opening the log."
+    },
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite and after_suite `command` fields record `python -m pytest -p no:cacheprovider --timeout=300 -q <files>` while the logs' own command lines record `-n 4` and the absolute interpreter, so the stored suite records name a command that did not run and the reviewed gate cannot be reproduced from the record alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "one production call site found: _strip_store_owned_content is reached only through _plan_differs_only_by_the_stores_own_writes at reckon/crew/promotion.py:3376, the refusal path in _refuse_unrelated_plan_edit.",
+    "diff": "read 7a50473b71d95ee25290be57c56c3a5398936fbf to ebadacae376319e5afe7020207f9cce57a82073c; reckon/crew/promotion.py changes only the selector and docstrings and drops data-reckon from _RECORD_ATTRIBUTES (now redundant), the test file adds one case, the fragment is new.",
+    "done_when": "the done_when measures the widened strip, both docstrings, a new promoting collapse test, the still-refusing authored-edit case, an executed negative control and zero added failures; the head collapse test passes and fails under the reverted selector (I reproduced both in a scratch head tree), tests/test_landing_commit_carries_only_its_own_comment.py holds 7 cases at head, and the arms are 1 failed/80 passed (base) and 81 passed (head).",
+    "goal": "the node's goal is to make the landing guard admit every data-reckon element the plan store writes, not only section elements; reckon/crew/promotion.py:3337 now decomposes soup.select(\"[data-reckon]\"), and docs/plans carry 49 div[data-reckon=landed], 9 div and 1 p[data-reckon=landing] elements the base selector did not touch.",
+    "manifest": "read; status complete, baseline_suite and after_suite carry failure_count 1 and 0 with the added failures derived, negative_control_log names the red log, follow_ons empty; the two suite `command` fields are not the literal command the logs record.",
+    "write_paths": "the declared paths are reckon/crew/promotion.py, tests/test_landing_commit_carries_only_its_own_comment.py, docs/evidence/fragments/the-suite-is-green-at-head/landing-guard-admits-every-store-element.html and a figure directory; `git diff --numstat 7a50473b ebadacae3` lists exactly those three files and no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_landing_commit_carries_only_its_own_comment.py:284 asserts the promoted commit carries the literal store-written summary and leaves the plan clean, and reverting the selector reddens it with CrewError at promotion.py:3376, which I reproduced in a scratch head tree.",
+    "evidence": "the arms are recorded and the measure reproduces (base 1 failed/80 passed EXIT=1, head 81 passed EXIT=0, zero added failures), but the head arm's header at logs/after-4files.log line 1 names the base sha while measuring head content, and the manifest's suite `command` fields drop the -n 4 the logs show ran.",
+    "fit": "the widened select(\"[data-reckon]\") matches the store's own data-reckon marker idiom seen across docs/plans and introduces no new name, keeping the module's existing BeautifulSoup style.",
+    "goal_fidelity": "the diff at reckon/crew/promotion.py:3337 widens the selector to every [data-reckon] element and both docstrings at promotion.py:3257 and promotion.py:3331 now present the class as examples, which is the goal.",
+    "scope_discipline": "`git diff --numstat 7a50473b ebadacae3` lists exactly the three declared paths and nothing else, and the declared figure directory is correctly untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the landing guard admit every data-reckon element the plan store writes, not only section elements; reckon/crew/promotion.py:3337 now decomposes soup.select(\"[data-reckon]\") so every marked element is removed from both sides before the comparison, where the base selected only section[data-reckon].\nVERDICT done_when: the done_when names _strip_store_owned_content decomposing every [data-reckon] element, both docstrings naming the admitted class with examples rather than an exhaustive list, a new test whose only uncommitted difference is a store-written collapse note that must promote, the authored-edit refusal still refusing, a declared negative control executed and logged, and zero added failures at base and head; each clause holds and I reproduced the load-bearing one myself in a scratch head tree (the collapse test passes at head and, with the selector reverted to section[data-reckon], fails with CrewError at promotion.py:3376).\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py, tests/test_landing_commit_carries_only_its_own_comment.py, a fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and a figure directory; `git diff --numstat 7a50473b ebadacae3` lists exactly three files, all inside those paths, with the figure directory correctly untouched.\nVERDICT manifest: read; it records status complete, both arms' commands/revisions/failure counts via baseline_suite and after_suite with the zero added failures derived, the declared negative control and its EXIT=1 log, and an empty follow_ons, though both suite `command` fields omit the -n 4 the logs show actually ran.\nVERDICT diff: read 7a50473b71d95ee25290be57c56c3a5398936fbf to ebadacae376319e5afe7020207f9cce57a82073c commit by commit; three files, the guard selector widened in reckon/crew/promotion, both docstrings rewritten, and one new test case added to the file (7 tests at head, 6 at base), 73 insertions and 24 deletions across the two source paths.\nCALL_SITES: reckon/crew/promotion.py:_plan_differs_only_by_the_stores_own_writes\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the diff at reckon/crew/promotion.py:3337 widens the selector to every [data-reckon] element and both docstrings at promotion.py:3257 and promotion.py:3331 now present the class as examples, which is the goal, leaving only the goal's own over-claim that the newly-decomposed non-section elements and the section card are the same writer.\nSCORE evidence: 15\nJUSTIFICATION evidence: the arms are recorded and the measure reproduces (base 1 failed/80 passed EXIT=1, head 81 passed EXIT=0, zero added failures), but the head arm's log header at logs/after-4files.log line 1 names the base sha 7a50473b while measuring head content, and both baseline_suite and after_suite `command` fields in the manifest drop the -n 4 the log command line carries.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff` --numstat 7a50473b ebadacae3 lists exactly the three declared paths and nothing else.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_landing_commit_carries_only_its_own_comment.py:284 asserts the promoted commit carries the literal store-written summary text and leaves the plan clean, and reverting the selector to section[data-reckon] in a scratch head tree reddens that test with CrewError at reckon/crew/promotion.py:3376, which I ran myself.\nSCORE fit: 19\nJUSTIFICATION fit: the widened select(\"[data-reckon\") matches the store's own data-reckon marker idiom (docs/plans carry 49 div[data-reckon=landed], 9 div and 1 p[data-reckon=landing]) and no new name is introduced.\nFINDING logs/after-4files.log:1 follow-on: the head arm's gate log header records repo_revision=7a50473b (the base sha) while the arm measured head content and passed the collapse test it lacks at base, and the manifest's after_suite declares revision ebadacae3, so the read-time head_log_revision reads this arm as having run at the base commit and a reader cannot tie the zero added failures to the reviewed head without opening the log.\nFINDING manifest.md:20 follow-on: the baseline_suite and after_suite `command` fields record `python -m pytest -p no:cacheprovider --timeout=300 -q <files>` while the logs' own command lines record `-n 4` and the absolute interpreter, so the stored suite records name a command that did not run and the reviewed gate cannot be reproduced from the record alone.",
+  "review_run_id": "r-20261002T065536622662-review-of-landing-guard-admits-every-store-element",
+  "reviewed_base_sha": "7a50473b71d95ee25290be57c56c3a5398936fbf",
+  "reviewed_head_sha": "ebadacae376319e5afe7020207f9cce57a82073c",
+  "reviewed_run_id": "r-20261002T061021498310-landing-guard-admits-every-store-element",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T07:19:57.796895+00:00",
+  "total": 92
+}

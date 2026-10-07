@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3835 dispatch calls _worker_host_line",
+    "reckon/crew/dispatch.py:4065 in-harness directive environment",
+    "reckon/crew/dispatch.py:4672 resolve_launch_executable",
+    "reckon/crew/dispatch.py:4713 apply_backend_placement",
+    "reckon/crew/dispatch.py:4819 assert_routable_backends_resolvable",
+    "reckon/crew/dispatch.py:4117 _supervisor_spec"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:22:03.137398+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 2d07ce08; a690ab92 adds the prepend and the prompt line, 7326f7fe narrows persisted launch data to the backend overlay plus PATH, and the two docs commits record the evidence without touching plan lifecycle metadata.",
+    "done_when": "done_when names tests/test_worker_path_carries_shims.py on fixture host facts; its log ends \"48 passed in 6.05s\" at 7326f7fe, and my recheck of that file at 2130295f passed 4 of 4 with dispatch imported from the reviewed tree.",
+    "goal": "the goal is a shim-first worker PATH plus one host line when the dispatcher is inside an allocation; reckon/crew/dispatch.py:4619 prepends the shim directory and :4600 composes the line, wired into the launch at :3835, :3999 and :4117, and offered to an in-harness caller at :4065.",
+    "manifest": "read; it names four commits, eight run-directory logs including both mutation red logs, the 48-test gate and its ruff deltas, and every log path it names exists on disk.",
+    "write_paths": "the diff touches only the five declared paths (reckon/crew/dispatch.py, reckon/crew/prompts.py, tests/test_worker_path_carries_shims.py, the landed-evidence page and the plan page) and nothing else."
+  },
+  "justifications": {
+    "durability": "reinstating the pre-change path makes tests/test_worker_path_carries_shims.py:111 fail (reproduced here, 1 failed 3 passed) and :199 fails under the full-merge mutant, but both mutants are installed by test-side hooks at :84 and :156 rather than by reverting the product function in place.",
+    "evidence": "tests/test_worker_path_carries_shims.py:111 and :212 assert the shim-first entry and the prompt clauses under fixture host facts, the gate log at 7326f7fe ends \"48 passed in 6.05s\", and my recheck at 2130295f passed on a node that is itself inside job 1277272.",
+    "fit": "reckon/crew/dispatch.py:4640 keeps the file's pass-facts-into-helpers idiom and introduces no name carrying a version, plan or ticket identifier, and prompts.py:237 threads the host line the way delivery_directory_note is threaded.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4619 returns the inherited path unchanged outside an allocation and shim-first inside it, and this dispatcher's own live prompt.txt:29 carries the composed host line verbatim, though the in-harness surface at :4065 offers the PATH to the caller's launcher rather than enforcing it.",
+    "scope_discipline": "every path in the diff lies inside the manifest's declared write paths, and the declared docs/figures directory was never written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a shim-first worker PATH plus one host line when the dispatcher is inside an allocation; reckon/crew/dispatch.py:4619 prepends the shim directory and :4600 composes the line, wired into the launch at :3835, :3999 and :4117, and offered to an in-harness caller at :4065.\nVERDICT done_when: done_when names tests/test_worker_path_carries_shims.py on fixture host facts; its log ends \"48 passed in 6.05s\" at 7326f7fe, and my recheck of that file at 2130295f passed 4 of 4 with dispatch imported from the reviewed tree.\nVERDICT write_paths: the diff touches only the five declared paths (reckon/crew/dispatch.py, reckon/crew/prompts.py, tests/test_worker_path_carries_shims.py, the landed-evidence page and the plan page) and nothing else.\nVERDICT manifest: read; it names four commits, eight run-directory logs including both mutation red logs, the 48-test gate and its ruff deltas, and every log path it names exists on disk.\nVERDICT diff: read commit by commit against 2d07ce08; a690ab92 adds the prepend and the prompt line, 7326f7fe narrows persisted launch data to the backend overlay plus PATH, and the two docs commits record the evidence without touching plan lifecycle metadata.\nCALL_SITES: reckon/crew/dispatch.py:3835 dispatch calls _worker_host_line, reckon/crew/dispatch.py:4065 in-harness directive environment, reckon/crew/dispatch.py:4672 resolve_launch_executable, reckon/crew/dispatch.py:4713 apply_backend_placement, reckon/crew/dispatch.py:4819 assert_routable_backends_resolvable, reckon/crew/dispatch.py:4117 _supervisor_spec\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4619 returns the inherited path unchanged outside an allocation and shim-first inside it, and this dispatcher's own live prompt.txt:29 carries the composed host line verbatim, though the in-harness surface at :4065 offers the PATH to the caller's launcher rather than enforcing it.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_worker_path_carries_shims.py:111 and :212 assert the shim-first entry and the prompt clauses under fixture host facts, the gate log at 7326f7fe ends \"48 passed in 6.05s\", and my recheck at 2130295f passed on a node that is itself inside job 1277272.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff lies inside the manifest's declared write paths, and the declared docs/figures directory was never written.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the pre-change path makes tests/test_worker_path_carries_shims.py:111 fail (reproduced here, 1 failed 3 passed) and :199 fails under the full-merge mutant, but both mutants are installed by test-side hooks at :84 and :156 rather than by reverting the product function in place.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch.py:4640 keeps the file's pass-facts-into-helpers idiom and introduces no name carrying a version, plan or ticket identifier, and prompts.py:237 threads the host line the way delivery_directory_note is threaded.",
+  "review_run_id": "r-20260925T072203137398-review-of-worker-path-carries-the-shims",
+  "reviewed_base_sha": "2d07ce0809dadcb4023c4f4643348f1d0d06eb17",
+  "reviewed_head_sha": "2130295fa506f1a9a57f27727c8e9eec37e3d4c6",
+  "reviewed_run_id": "r-20260925T064115204245-worker-path-carries-the-shims",
+  "reviewer": "review-of-worker-path-carries-the-shims",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T07:44:33.833739+00:00",
+  "total": 95
+}

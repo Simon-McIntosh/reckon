@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "commits_read": [
+    "ee356a937d098f7e6fba05904594a1160d6e5f3d",
+    "d9e1842358deb647b489778c4d2affc3f9947533",
+    "76a368078234dff35fbd19a9c20c0a99dffd2983",
+    "e9de1fdfd0d6b55e989d1115a6c20de9beb083d3",
+    "f17ab71c09101f0d0b29879cff9aced2e5a364e1",
+    "22ac4df0fc473bc42972e35ec6780754f8533170",
+    "def50a95b8f46703ee71d72bf35ea9171b77ca6f",
+    "cabde677d72a96eb831352d4450aaf9fd823dbef"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-18T13:28:00.563796+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "line": "394",
+      "text": "the comment's guarantee that genuine arrivals sharing a second are left alone is narrower than its wording, and the extraction's own output at the merged head shows the gap: 1 of 3066 nodes (reckon/review-of-an-orientation-stub-declares-no-wait) has no arrival at all because its earliest row at reckon-18dc8a86709b.events:3189 was swallowed as re-inventory, so a reader of the arrivals view sees that node materialise at a later state change."
+    },
+    {
+      "file": "tests/test_transition_extraction.py",
+      "line": "235",
+      "text": "the same-instant coverage pins the all-new wave and the all-known re-inventory but not the mixed group (a newly dispatched node sharing one stamp with an already-known member), which is the shape the burst rule gets wrong and the one the live corpus exhibits, so the remaining defect this review found has no fixture that would fail on its repair."
+    }
+  ],
+  "gate_receipt": {
+    "head_command": "PYTHONPATH=$PWD python -m pytest -q tests/test_transition_extraction.py",
+    "head_result": "9 passed in 0.28s",
+    "pre_fix_guard_result": "2 failed, 7 passed in 0.67s"
+  },
+  "justifications": {
+    "durability": "reckon/crew/query.py:485's one-token branch is pinned by tests/test_transition_extraction.py:348, which I confirmed fails with the pre-fix parser restored (2 failed, 7 passed), but the third corpus shape - a new node sharing one stamp with an already-known member, which tests/test_transition_extraction.py:235 does not cover - is the shape that leaves 1 live node with no arrival.",
+    "evidence": "the gate is non-vacuous in both directions as I measured it myself rather than read it - tests/test_transition_extraction.py passes 9 of 9 at the merged head and fails exactly 2 of 9 with the pre-fix guard restored, and the recorded gate (30 passed against 21 sibling at base, 0 added) is consistent with the focused file I re-ran (9 passed in 0.28s).",
+    "fit": "the change follows the module's own token-based idiom and re-derives the population comment from the function's own rows with its reading stamped at reckon/crew/query.py:381, but the sentence at reckon/crew/query.py:394 that genuine same-instant arrivals are left alone reads as a general guarantee and the extraction's own output at the merged head refutes it for the mixed group.",
+    "goal_fidelity": "the one-token rendered arrival is now returned as its node's arrival - my re-measure at ff2ad80b finds 0 of 2314 rendered rows dropped (656 dropped at f17ab71c's parent), 614 of the 656 being a node's earliest row, against 1 of 3066 nodes still left with no arrival for the separate burst reason at reckon/crew/query.py:392.",
+    "scope_discipline": "the run's five commits diff to exactly the four declared write paths against ee356a93 (reckon/crew/query.py +326, tests/test_transition_extraction.py +390, docs/plans/crew-observability-truth.html +23, docs/evidence/archive/crew-observability-truth-landed.html +74; 811 insertions and 2 deletions), and reckon/crew/query.py:634 defers CLI wiring to the surface that owns it."
+  },
+  "merged_head_measurement": {
+    "json_rows": 10379,
+    "nodes": 3066,
+    "nodes_with_no_arrival": 1,
+    "one_token_rendered_rows": 656,
+    "one_token_returned_as_arrivals": 614,
+    "pre_fix_dropped_earliest_of_node": 614,
+    "rendered_rows": 2314,
+    "rendered_rows_dropped_at_head": 0,
+    "rendered_rows_dropped_pre_fix": 656,
+    "streams": 6,
+    "taken_at_utc": "2026-09-18T13:43:38Z"
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "REVIEW r-20260918T132800563796-re-review-of-the-arrival-extraction-at-the-merged-head\nSUPERSEDES r-20260917T183334853430-review-of-the-arrival-is-the-first-row-for-a-node (72/100, taken at e9de1fdf against base ee356a93)\nREVIEWED r-20260917T165959552736-the-arrival-is-the-first-row-for-a-node at the merged head\nMERGED_HEAD ff2ad80bee08736d987ddc83f16aeda6851b135e\nRUN_COMMITS d9e18423 76a36807 e9de1fdf f17ab71c 22ac4df0\nMERGE_COMMIT def50a95b8f46703ee71d72bf35ea9171b77ca6f\nPROMOTION_COMMIT cabde677d72a96eb831352d4450aaf9fd823dbef\nBASE ee356a937d098f7e6fba05904594a1160d6e5f3d\nSUPERSEDED VERDICT ANSWERED FOR SIX OF SEVEN FINDINGS. The headline finding, that the transition branch at reckon/crew/query.py:473 dropped 656 rendered rows of which 614 were the earliest record of their node, is answered by f17ab71c: re-measured over the same six live streams at 2026-09-18T13:43Z, 2,314 of 2,314 rendered rows parse and the drop count is 0, with the pre-fix parser still dropping 656 on the same corpus (614 earliest-of-node) as a positive control. The sample at query.py:474 is answered by the verbatim fixture at tests/test_transition_extraction.py:353 (imas-ambix line 1); the docstring promise at query.py:501 is answered for rows because every rendered row in the corpus parses; the fixture-shape finding at tests/test_transition_extraction.py:283 is answered because each rendered fixture is now a verbatim live line naming its stream and line; the archive figure at docs/evidence/archive/crew-observability-truth-landed.html:1629 is corrected in place with its derivation; the population comment at reckon/crew/query.py:376 is re-derived from the function's own rows at a dated stamp. ONE FINDING STILL STANDS: the burst test's failure direction. Measured at the merged head, exactly 1 of 3,066 nodes has no arrival at all because its earliest row was swallowed as re-inventory, which is the case the superseded review called latent with zero live occurrences; it now has one.\nCORPUS 6 streams at 2026-09-18T13:43Z: 10379 JSON rows + 2314 rendered rows = 12693 rows, 3066 nodes; extraction at head: 3065 arrivals, 9352 state changes, 276 re-inventory rows, 2314 rows whose stamp is not establishable.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the one-token rendered arrival is now returned as its node's arrival - my re-measure at ff2ad80b finds 0 of 2314 rendered rows dropped (656 dropped at f17ab71c's parent), 614 of the 656 being a node's earliest row, against 1 of 3066 nodes still left with no arrival for the separate burst reason at reckon/crew/query.py:392.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate is non-vacuous in both directions as I measured it myself rather than read it - tests/test_transition_extraction.py passes 9 of 9 at the merged head and fails exactly 2 of 9 with the pre-fix guard restored, and the recorded gate (30 passed against 21 sibling at base, 0 added) is consistent with the focused file I re-ran (9 passed in 0.28s).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the run's five commits diff to exactly the four declared write paths against ee356a93 (reckon/crew/query.py +326, tests/test_transition_extraction.py +390, docs/plans/crew-observability-truth.html +23, docs/evidence/archive/crew-observability-truth-landed.html +74; 811 insertions and 2 deletions), and reckon/crew/query.py:634 defers CLI wiring to the surface that owns it.\nSCORE durability: 16\nJUSTIFICATION durability: reckon/crew/query.py:485's one-token branch is pinned by tests/test_transition_extraction.py:348, which I confirmed fails with the pre-fix parser restored (2 failed, 7 passed), but the third corpus shape - a new node sharing one stamp with an already-known member, which tests/test_transition_extraction.py:235 does not cover - is the shape that leaves 1 live node with no arrival.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the module's own token-based idiom and re-derives the population comment from the function's own rows with its reading stamped at reckon/crew/query.py:381, but the sentence at reckon/crew/query.py:394 that genuine same-instant arrivals are left alone reads as a general guarantee and the extraction's own output at the merged head refutes it for the mixed group.\nFINDING reckon/crew/query.py:394 the comment's guarantee that genuine arrivals sharing a second are left alone is narrower than its wording, and the extraction's own output at the merged head shows the gap: 1 of 3066 nodes (reckon/review-of-an-orientation-stub-declares-no-wait) has no arrival at all because its earliest row at reckon-18dc8a86709b.events:3189 was swallowed as re-inventory, so a reader of the arrivals view sees that node materialise at a later state change.\nFINDING tests/test_transition_extraction.py:235 the same-instant coverage pins the all-new wave and the all-known re-inventory but not the mixed group (a newly dispatched node sharing one stamp with an already-known member), which is the shape the burst rule gets wrong and the one the live corpus exhibits, so the remaining defect this review found has no fixture that would fail on its repair.\n",
+  "review_run_id": "r-20260918T132800563796-re-review-of-the-arrival-extraction-at-the-merged-head",
+  "reviewed_base": "ee356a937d098f7e6fba05904594a1160d6e5f3d",
+  "reviewed_commit": "ff2ad80bee08736d987ddc83f16aeda6851b135e",
+  "reviewed_head": "merged head, four files, exactly the declared write paths",
+  "reviewed_run_id": "r-20260917T165959552736-the-arrival-is-the-first-row-for-a-node",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "superseded": {
+    "review_run_id": "r-20260917T183334853430-review-of-the-arrival-is-the-first-row-for-a-node",
+    "reviewed_commit": "e9de1fdfd0d6b55e989d1115a6c20de9beb083d3",
+    "total": 72,
+    "verdict": "answered for six of seven findings by the later commits; the burst-test failure direction still stands and now has one live occurrence"
+  },
+  "times_source": "run-id",
+  "timestamp": "2026-09-18T14:11:16.051423+00:00",
+  "total": 89
+}

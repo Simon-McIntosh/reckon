@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_landing_fragment_paths"
+  ],
+  "completed_at": "2026-10-01T11:34:27.937Z",
+  "dispatched_at": "2026-10-01T11:23:43Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "line": "1761",
+      "severity": "follow-on",
+      "text": "follow-on: the anchor cites the grep receipt at a path inside the citation-checking run's directory, which is not version-controlled and may be reclaimed, so the receipt backing the rows' citation claim is less durable than the record it supports; a committed reproduction step or an in-repo copy would outlive it."
+    },
+    {
+      "file": "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "line": "1691",
+      "severity": "follow-on",
+      "text": "follow-on: no committed test fails if the stream-line citations are dropped, so a future whole-file rewrite of the shared anchor could regress the repair with nothing in CI to catch it."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base a0d770a61; a966f59c0 edits the archive anchor (42 insertions, 13 deletions, all inside old lines 1617-1748) and cf29de828 adds the 27-line fragment, nothing outside.",
+    "done_when": "the done-when names the stream-line citations, the .worker_stop_blocks counter, a per-file grep receipt with every count at least 1, and no deleted line outside the anchor; the manifest records the verify-citations gate at EXIT=0 and its negative control at EXIT=1, and each clause re-verified from the run's own files.",
+    "goal": "the node goal is to make each smoke-record cell cite a file holding the text it quotes; at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1691,1708,1719 rows 4-6 now cite stream.jsonl lines 1327/2304/2183, which independently hold the phrase 2/4/4 times, and the log citations kept at :1695,1713,1724 hold the exit and file checks they are quoted for.",
+    "manifest": "read; it is status complete with a checkpoint, a landing line, a resolvable base sha, and the gate command, its log paths and its result.",
+    "write_paths": "the manifest declares the archive record and the fragment; git diff a0d770a61..cf29de828 touches exactly those two files, both inside the grant, and every deletion is inside the anchor."
+  },
+  "justifications": {
+    "durability": "nothing in the repository fails if the citation repair regresses, because verify-citations.py lives at .config/reckon/crew/runs/r-20261001T110601090354-the-smoke-record-cites-its-observables/verify-citations.py and is not committed.",
+    "evidence": "verify-citations.log records the gate's RESULT PASS EXIT=0 and negative-control-wrong-line.txt its EXIT=0 FAIL on a scratch copy, so the measure the done-when states is asserted and its result recorded, though the gate is a run-directory script rather than a committed test.",
+    "fit": "the fragment docs/evidence/fragments/a-worker-cannot-write-your-home/the-smoke-record-cites-its-observables.html carries the plan-slug, plan-verifies and plan-verdict metas the evidence idiom uses and introduces no forbidden name.",
+    "goal_fidelity": "the archive anchor at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1691 now cites stream.jsonl line 1327 for the refusal row 4 quotes, which the file holds twice, so the cell's quote and its citation agree.",
+    "scope_discipline": "git diff a0d770a61..cf29de828 over docs/evidence/ touches only the two declared paths, and all 13 deleted lines sit inside the anchor's old lines 1617-1748."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make each smoke-record cell cite a file holding the text it quotes; at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1691,1708,1719 rows 4-6 now cite stream.jsonl lines 1327/2304/2183, which independently hold the phrase 2/4/4 times, and the log citations kept at :1695,1713,1724 hold the exit and file checks they are quoted for.\nVERDICT done_when: the done-when names the stream-line citations, the .worker_stop_blocks counter, a per-file grep receipt with every count at least 1, and no deleted line outside the anchor; the manifest records the verify-citations gate at EXIT=0 and its negative control at EXIT=1, and each clause re-verified from the run's own files.\nVERDICT write_paths: the manifest declares the archive record and the fragment; git diff a0d770a61..cf29de828 touches exactly those two files, both inside the grant, and every deletion is inside the anchor.\nVERDICT manifest: read; it is status complete with a checkpoint, a landing line, a resolvable base sha, and the gate command, its log paths and its result.\nVERDICT diff: read commit by commit against base a0d770a61; a966f59c0 edits the archive anchor (42 insertions, 13 deletions, all inside old lines 1617-1748) and cf29de828 adds the 27-line fragment, nothing outside.\nCALL_SITES: reckon/crew/dispatch.py:_landing_fragment_paths\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the archive anchor at docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1691 now cites stream.jsonl line 1327 for the refusal row 4 quotes, which the file holds twice, so the cell's quote and its citation agree.\nSCORE evidence: 19\nJUSTIFICATION evidence: verify-citations.log records the gate's RESULT PASS EXIT=0 and negative-control-wrong-line.txt its EXIT=0 FAIL on a scratch copy, so the measure the done-when states is asserted and its result recorded, though the gate is a run-directory script rather than a committed test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a0d770a61..cf29de828 over docs/evidence/ touches only the two declared paths, and all 13 deleted lines sit inside the anchor's old lines 1617-1748.\nSCORE durability: 12\nJUSTIFICATION durability: nothing in the repository fails if the citation repair regresses, because verify-citations.py lives at .config/reckon/crew/runs/r-20261001T110601090354-the-smoke-record-cites-its-observables/verify-citations.py and is not committed.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment docs/evidence/fragments/a-worker-cannot-write-your-home/the-smoke-record-cites-its-observables.html carries the plan-slug, plan-verifies and plan-verdict metas the evidence idiom uses and introduces no forbidden name.\nFINDING docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1761 follow-on: the anchor cites the grep receipt at a path inside the citation-checking run's directory, which is not version-controlled and may be reclaimed, so the receipt backing the rows' citation claim is less durable than the record it supports; a committed reproduction step or an in-repo copy would outlive it.\nFINDING docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1691 follow-on: no committed test fails if the stream-line citations are dropped, so a future whole-file rewrite of the shared anchor could regress the repair with nothing in CI to catch it.\n",
+  "review_run_id": "r-20261001T112317224923-review-of-the-smoke-record-cites-its-observables",
+  "reviewed_base_sha": "a0d770a61d284beb150f3582993075299157affe",
+  "reviewed_head_sha": "cf29de82868178633c8f64c85dcd2fdaf85d1a96",
+  "reviewed_run_id": "r-20261001T110601090354-the-smoke-record-cites-its-observables",
+  "reviewer_run_id": "r-20261001T112317224923-review-of-the-smoke-record-cites-its-observables",
+  "scores": {
+    "durability": 12,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.555566+00:00",
+  "total": 90
+}

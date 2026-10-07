@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T151851526457-strict-arms-refusal-impact/logs/tests-repair.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T151851526457-strict-arms-refusal-impact/logs/tests-main.log",
+    "note": "both logs read in full; neither reports a FAILED or ERROR line"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:_require_declared_negative_control",
+    "reckon/crew/promotion.py:_baseline_suite_failure_ids",
+    "reckon/crew/promotion.py:_head_suite_failure_ids",
+    "reckon/crew/reports.py:parse_manifest"
+  ],
+  "completed_at": "2026-09-29T16:25:41.614Z",
+  "dispatched_at": "2026-09-29T16:12:28Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "13",
+      "text": "the report and the manifest both call cb41f9ff9d82600ce1492f742c87b1c7 and 73b81ef3665cc4fb66baa02974d45606 module sha256, but both values are md5 digests of the two trees' reckon/crew/promotion.py; the true sha256 are 6d19f6b249d09edd48c2fbe9963f8bcbf2a6cef149267b19e2fd5da4825d42d6 and 75fe118e3e53c15632c4e250f6f372fbcec0de9dd2afd06f4e28e65505203cd5, which the run's own check-log headers record correctly, so a reader who verifies the stated figure with sha256sum cannot reproduce it even though the claim it supports is true."
+    },
+    {
+      "file": "report.md",
+      "line": "46",
+      "text": "the census reads \"baseline_suite recorded but not complete in 24\" as a figure within the 39 runs whose arms both lack completed, but within that subset the count is 23, which is 23 recorded-without-completion plus 16 absent; 24 is the whole-population count that logs/comparison.json carries, so the prose moves a full-population figure onto a subset and the three within-subset numbers no longer sum to the 39 they are scoped to."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "there is no diff to review \u2014 the manifest declares commits [] and changed_paths [] \u2014 so the review reads the deliverable itself, report.md plus the eleven logs it names, and reads the candidate repair's own diff separately, which is confined to reckon/crew/promotion.py.",
+    "done_when": "the measure asks whether the rule refuses controls main admits, and report.md:22-24 answers it quantitatively over a named population with logs/comparison.json holding the per-run rows behind the table.",
+    "goal": "the node's goal is to measure what the unmerged baseline-arm completion rule does to real promotions, and report.md:17-24 states the population of 108 runs, the per-arm admission counts and the five flips; I reproduced all five flips and twelve stable controls by re-executing the decision in both trees myself.",
+    "manifest": "read; it declares status complete, names both gate logs with 43 passed and 0 failed in each arm, and carries measurement_module and measurement_cwd for the scratch-tree runs, but its stated module digest is mislabelled and is not reproducible under the algorithm it names.",
+    "write_paths": "the node's only declared write path is its report under crew/reports, which is what it wrote; logs and scratch went to its own run directory and to node-local /tmp, and git status in the assigned worktree 1af8e33f prints nothing."
+  },
+  "justifications": {
+    "durability": "the trees the measurement used live in node-local /tmp but are re-materialisable from the revisions the manifest names, and removing the completion guard at reckon/crew/promotion.py:5072 reddens exactly the two baseline cases in tests/test_control_is_compared_with_the_head_arm.py, so the rule the report measures is pinned outside the six-file population it names.",
+    "evidence": "the digest at report.md:13 is an md5 labelled sha256 and the census at report.md:46 re-scopes a whole-population figure onto a subset, though the underlying logs at check-main.log:7 carry the correct sha256.",
+    "fit": "the node meets the repository's negative-control rule for a read-only role by declaring none with its reason and falsifying its own instrument instead, which logs/positive-control.log records as ADMITTED on main against REFUSED at the repair.",
+    "goal_fidelity": "report.md:22 reports the five flips and the reverse direction as zero, and my own re-execution in /tmp checked the recorded verdicts for all seventeen sampled rows with zero disagreements.",
+    "scope_discipline": "the node modified no repository path and declared commits [] and changed_paths [], reporting its own self-audit finding rather than fabricating a sha to clear its self-audit; nothing in the deliverable exceeds the measurement it was dispatched for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure what the unmerged baseline-arm completion rule does to real promotions, and report.md:17-24 states the population of 108 runs, the per-arm admission counts and the five flips; I reproduced all five flips and twelve stable controls by re-executing the decision in both trees myself.\nVERDICT done_when: the measure asks whether the rule refuses controls main admits, and report.md:22-24 answers it quantitatively over a named population with logs/comparison.json holding the per-run rows behind the table.\nVERDICT write_paths: the node's only declared write path is its report under crew/reports, which is what it wrote; logs and scratch went to its own run directory and to node-local /tmp, and git status in the assigned worktree 1af8e33f prints nothing.\nVERDICT manifest: read; it declares status complete, names both gate logs with 43 passed and 0 failed in each arm, and carries measurement_module and measurement_cwd for the scratch-tree runs, but its stated module digest is mislabelled and is not reproducible under the algorithm it names.\nVERDICT diff: there is no diff to review \u2014 the manifest declares commits [] and changed_paths [] \u2014 so the review reads the deliverable itself, report.md plus the eleven logs it names, and reads the candidate repair's own diff separately, which is confined to reckon/crew/promotion.py.\nCALL_SITES: reckon/crew/promotion.py:_require_declared_negative_control, reckon/crew/promotion.py:_baseline_suite_failure_ids, reckon/crew/promotion.py:_head_suite_failure_ids, reckon/crew/reports.py:parse_manifest\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:22 reports the five flips and the reverse direction as zero, and my own re-execution in /tmp checked the recorded verdicts for all seventeen sampled rows with zero disagreements.\nSCORE evidence: 16\nJUSTIFICATION evidence: the digest at report.md:13 is an md5 labelled sha256 and the census at report.md:46 re-scopes a whole-population figure onto a subset, though the underlying logs at check-main.log:7 carry the correct sha256.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node modified no repository path and declared commits [] and changed_paths [], reporting its own self-audit finding rather than fabricating a sha to clear its self-audit; nothing in the deliverable exceeds the measurement it was dispatched for.\nSCORE durability: 18\nJUSTIFICATION durability: the trees the measurement used live in node-local /tmp but are re-materialisable from the revisions the manifest names, and removing the completion guard at reckon/crew/promotion.py:5072 reddens exactly the two baseline cases in tests/test_control_is_compared_with_the_head_arm.py, so the rule the report measures is pinned outside the six-file population it names.\nSCORE fit: 19\nJUSTIFICATION fit: the node meets the repository's negative-control rule for a read-only role by declaring none with its reason and falsifying its own instrument instead, which logs/positive-control.log records as ADMITTED on main against REFUSED at the repair.\nFINDING report.md:13 the report and the manifest both call cb41f9ff9d82600ce1492f742c87b1c7 and 73b81ef3665cc4fb66baa02974d45606 module sha256, but both values are md5 digests of the two trees' reckon/crew/promotion.py; the true sha256 are 6d19f6b249d09edd48c2fbe9963f8bcbf2a6cef149267b19e2fd5da4825d42d6 and 75fe118e3e53c15632c4e250f6f372fbcec0de9dd2afd06f4e28e65505203cd5, which the run's own check-log headers record correctly, so a reader who verifies the stated figure with sha256sum cannot reproduce it even though the claim it supports is true.\nFINDING report.md:46 the census reads \"baseline_suite recorded but not complete in 24\" as a figure within the 39 runs whose arms both lack completed, but within that subset the count is 23, which is 23 recorded-without-completion plus 16 absent; 24 is the whole-population count that logs/comparison.json carries, so the prose moves a full-population figure onto a subset and the three within-subset numbers no longer sum to the 39 they are scoped to.\n",
+  "review_run_id": "r-20260929T161201154274-review-of-strict-arms-refusal-impact",
+  "reviewed_base_note": "base equals head: the reviewed node is a read-only measurement that committed nothing (manifest commits [] and changed_paths []), so the diff this review read is empty and both revisions name the tree the deliverable was produced in",
+  "reviewed_base_sha": "1af8e33fd252d962958267e40e9b9ffa8bb7da36",
+  "reviewed_head_sha": "1af8e33fd252d962958267e40e9b9ffa8bb7da36",
+  "reviewed_run_id": "r-20260929T151851526457-strict-arms-refusal-impact",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T161201154274-review-of-strict-arms-refusal-impact",
+  "reviewer_verification_logs": {
+    "mutation_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T161201154274-review-of-strict-arms-refusal-impact/logs/review-mutation.log",
+    "spotcheck_console": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T161201154274-review-of-strict-arms-refusal-impact/logs/review-spotcheck.log",
+    "spotcheck_main": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T161201154274-review-of-strict-arms-refusal-impact/logs/review-spotcheck-arms-tree-main.json",
+    "spotcheck_repair": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T161201154274-review-of-strict-arms-refusal-impact/logs/review-spotcheck-arms-tree-repair.json"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T16:33:00+00:00",
+  "total": 90
+}

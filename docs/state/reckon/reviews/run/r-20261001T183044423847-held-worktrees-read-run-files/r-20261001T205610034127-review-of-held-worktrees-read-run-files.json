@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "env PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/r-20261001T183044423847-held-worktrees-read-run-files/bt-head /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_held_worktrees_read_run_files.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_a_resumed_run_counts_as_working.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_crew_ack.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_crew_obligations.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_mcp_crew_obligations.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_obligations_do_not_mislead.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_review_in_flight_by_record_path.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_sub_floor_dimension_is_an_obligation.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/held-worktrees-read-run-files/tests/test_sub_floor_disposition_has_a_writer.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T183044423847-held-worktrees-read-run-files/gate-head.log",
+    "revision": "cd1dffd658d47119c7e0ced0d273d128a3016921"
+  },
+  "baseline_suite": {
+    "command": "env PYTHONPATH=/tmp/r-20261001T183044423847-held-worktrees-read-run-files/base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/r-20261001T183044423847-held-worktrees-read-run-files/bt-base /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_held_worktrees_read_run_files.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_a_resumed_run_counts_as_working.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_crew_ack.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_crew_obligations.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_mcp_crew_obligations.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_obligations_do_not_mislead.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_review_in_flight_by_record_path.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_sub_floor_dimension_is_an_obligation.py /tmp/r-20261001T183044423847-held-worktrees-read-run-files/base/tests/test_sub_floor_disposition_has_a_writer.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_held_worktrees_read_run_files.py::test_inspected_runs_are_read_from_their_own_files",
+      "tests/test_crew_obligations_reads_scoring_without_observing_or_dispatching.py::test_obligations_reads_scoring_without_observing_or_dispatching"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T183044423847-held-worktrees-read-run-files/gate-base.log",
+    "revision": "64a56280f21a10d8312b04fc3441373d1207e857"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:4247",
+    "reckon/hooks/coordinator_obligations.py:476"
+  ],
+  "completed_at": "2026-10-01T21:28:20.868Z",
+  "dispatched_at": "2026-10-01T20:56:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T183044423847-held-worktrees-read-run-files/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's baseline_suite failure_ids names tests/test_crew_obligations_reads_scoring_without_observing_or_dispatching.py, which does not exist; the base log's summary line names tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching, so a consumer that computes the added set with ledger.added_failure_ids over the JSON fields reads one spurious added failure where the log-derived count is 0."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T183044423847-held-worktrees-read-run-files/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's negative_control_log (repro-parity-divergence.log) exercises the mixed-state parity case, not the declared mutation (restore the whole-ledger load; the never-called case fails), which is the run recorded in gate-negative-control.log, so the declared string and the named log describe two different mutations."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "356",
+      "severity": "follow-on",
+      "text": "follow-on: the fast path admits a per-run file only when the node token in its run id equals the worktree directory name (_run_id_names_node at obligations.py:228), so a record whose node id differs from its retained tree's directory name is reached only by the whole-ledger fallback, and a tree that another record also names can resolve in the fast path to a different run than the merged reader would pick; the five generated mixed states do not cover this shape."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the range below commit by commit; eight commits, three files. The production change is one file, reckon/crew/obligations.py, which adds _run_id_names_node, _run_file_record, _names_worktree, _aggregate_rows, _ledger_order_key and _holding_record and rewrites the matching loop in _held_worktrees (obligations.py:408-437).",
+    "done_when": "the done-when names tests/test_held_worktrees_read_run_files.py with a parity case, a never-called case (ledger.runs and ledger.load patched to raise) and a fallback case, plus a base-arm and head-arm gate; the manifest records gate-base.log 2 failed 54 passed EXIT=1 and gate-head.log 1 failed 55 passed EXIT=1, and added_failures_from_gate_logs over those two logs returns count 0 with no ids, so the head arm adds none.",
+    "goal": "the node's goal is that obligations._held_worktrees stops loading crew.json whole and resolves each inspected tree from the per-run ledger file of the run that named it; reckon/crew/obligations.py:370 _held_worktrees now reads ledger._run_files at obligations.py:412 and resolves each tree through _holding_record at obligations.py:330 over both the aggregate rows and the per-run files, keeping the whole-ledger read only as a fallback for a tree neither source names.",
+    "manifest": "read the run-dir manifest; it records the two gate arms with revisions and exits, the negative control, the timing arms (base 3.324 s, head first call 1.198 s), and the aggregate-row source under evidence_inputs, but its baseline_suite failure id names a module file that does not exist (tests/test_crew_obligations_reads_scoring_without_observing_or_dispatching.py) where the base log names tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching.",
+    "write_paths": "the node declares reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html and a figures directory; a diff of the reviewed range touches exactly those three files (17 deleted, 625 inserted), and the figures directory is never created."
+  },
+  "justifications": {
+    "durability": "tests/test_held_worktrees_read_run_files.py:327 test_inspected_runs_are_read_from_their_own_files is red at base (gate-base.log) where the whole-ledger reader raises, and test_a_mixed_state_goes_to_the_run at :296 is red when the answering change is reverted (repro-parity-divergence.log fails file-and-aggregate-row), and each parity expectation is computed by the independent _whole_ledger_held helper at :139 rather than from the value under test.",
+    "evidence": "gate-base.log and gate-head.log each open with their revision and command and end 2 failed 54 passed / 1 failed 55 passed with a bare EXIT=1 line, and added_failures_from_gate_logs over them returns count 0 with no ids, but the timing arms were measured on session s21-1c whose worktree set is empty, so they exercise only the crew.json memo and never the per-run or fallback path.",
+    "fit": "the helpers in reckon/crew/obligations.py:225-368 name a mechanism (_run_id_names_node, _aggregate_rows, _ledger_order_key) with no plan, sprint or version label, matching the surrounding module; the change reaches private ledger helpers (_load_aggregate at ledger.py:670, _run_files at ledger.py:666), which is a light coupling the module did not have before.",
+    "goal_fidelity": "reckon/crew/obligations.py:412 reads ledger._run_files and obligations.py:330 _holding_record resolves each inspected tree from a per-run file or an aggregate row, so the per-run read lands; but crew.json is still parsed whole by obligations.py:293 _aggregate_rows and the derivation keeps its own _AGGREGATE_ROWS index at obligations.py:288, which are the two things the plan's item 3 (falls back to crew.json only for runs that do not, and builds no index of its own) says must not happen.",
+    "scope_discipline": "the reviewed range touches only the three declared non-figure paths under reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html, and no path in it lies outside the declared scope."
+  },
+  "manifest_note": "the reviewed manifest armed baseline_suite and after_suite; the added-failure count and ids were derived from those two gate logs by this reviewer via reckon.crew.review.added_failures_from_gate_logs, which reads the log text rather than the reviewed manifest's failure_ids field; the reviewed run's head gate arm ran at cd1dffd658d47119c7e0ced0d273d128a3016921 while the reviewed head is 93c328388e38b22384aaf86bfef63eede4808581, whose remaining delta is docs/evidence commits only.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that obligations._held_worktrees stops loading crew.json whole and resolves each inspected tree from the per-run ledger file of the run that named it; reckon/crew/obligations.py:370 _held_worktrees now reads ledger._run_files at obligations.py:412 and resolves each tree through _holding_record at obligations.py:330 over both the aggregate rows and the per-run files, keeping the whole-ledger read only as a fallback for a tree neither source names.\nVERDICT done_when: the done-when names tests/test_held_worktrees_read_run_files.py with a parity case, a never-called case (ledger.runs and ledger.load patched to raise) and a fallback case, plus a base-arm and head-arm gate; the manifest records gate-base.log 2 failed 54 passed EXIT=1 and gate-head.log 1 failed 55 passed EXIT=1, and added_failures_from_gate_logs over those two logs returns count 0 with no ids, so the head arm adds none.\nVERDICT write_paths: the node declares reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html and a figures directory; a diff of the reviewed range touches exactly those three files (17 deleted, 625 inserted), and the figures directory is never created.\nVERDICT manifest: read the run-dir manifest; it records the two gate arms with revisions and exits, the negative control, the timing arms (base 3.324 s, head first call 1.198 s), and the aggregate-row source under evidence_inputs, but its baseline_suite failure id names a module file that does not exist (tests/test_crew_obligations_reads_scoring_without_observing_or_dispatching.py) where the base log names tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching.\nVERDICT diff: read the range below commit by commit; eight commits, three files. The production change is one file, reckon/crew/obligations.py, which adds _run_id_names_node, _run_file_record, _names_worktree, _aggregate_rows, _ledger_order_key and _holding_record and rewrites the matching loop in _held_worktrees (obligations.py:408-437).\nCALL_SITES: reckon/mcp.py:4247, reckon/hooks/coordinator_obligations.py:476\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:412 reads ledger._run_files and obligations.py:330 _holding_record resolves each inspected tree from a per-run file or an aggregate row, so the per-run read lands; but crew.json is still parsed whole by obligations.py:293 _aggregate_rows and the derivation keeps its own _AGGREGATE_ROWS index at obligations.py:288, which are the two things the plan's item 3 (falls back to crew.json only for runs that do not, and builds no index of its own) says must not happen.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-base.log and gate-head.log each open with their revision and command and end 2 failed 54 passed / 1 failed 55 passed with a bare EXIT=1 line, and added_failures_from_gate_logs over them returns count 0 with no ids, but the timing arms were measured on session s21-1c whose worktree set is empty, so they exercise only the crew.json memo and never the per-run or fallback path.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the reviewed range touches only the three declared non-figure paths under reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html, and no path in it lies outside the declared scope.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_held_worktrees_read_run_files.py:327 test_inspected_runs_are_read_from_their_own_files is red at base (gate-base.log) where the whole-ledger reader raises, and test_a_mixed_state_goes_to_the_run at :296 is red when the answering change is reverted (repro-parity-divergence.log fails file-and-aggregate-row), and each parity expectation is computed by the independent _whole_ledger_held helper at :139 rather than from the value under test.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers in reckon/crew/obligations.py:225-368 name a mechanism (_run_id_names_node, _aggregate_rows, _ledger_order_key) with no plan, sprint or version label, matching the surrounding module; the change reaches private ledger helpers (_load_aggregate at ledger.py:670, _run_files at ledger.py:666), which is a light coupling the module did not have before.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T183044423847-held-worktrees-read-run-files/manifest.md:16 follow-on: the manifest's baseline_suite failure_ids names tests/test_crew_obligations_reads_scoring_without_observing_or_dispatching.py, which does not exist; the base log's summary line names tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching, so a consumer that computes the added set with ledger.added_failure_ids over the JSON fields reads one spurious added failure where the log-derived count is 0.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T183044423847-held-worktrees-read-run-files/manifest.md:14 follow-on: the manifest's negative_control_log (repro-parity-divergence.log) exercises the mixed-state parity case, not the declared mutation (restore the whole-ledger load; the never-called case fails), which is the run recorded in gate-negative-control.log, so the declared string and the named log describe two different mutations.\nFINDING reckon/crew/obligations.py:356 follow-on: the fast path admits a per-run file only when the node token in its run id equals the worktree directory name (_run_id_names_node at obligations.py:228), so a record whose node id differs from its retained tree's directory name is reached only by the whole-ledger fallback, and a tree that another record also names can resolve in the fast path to a different run than the merged reader would pick; the five generated mixed states do not cover this shape.",
+  "review_run_id": "r-20261001T205610034127-review-of-held-worktrees-read-run-files",
+  "reviewed_base_sha": "64a56280f21a10d8312b04fc3441373d1207e857",
+  "reviewed_head_sha": "93c328388e38b22384aaf86bfef63eede4808581",
+  "reviewed_run_id": "r-20261001T183044423847-held-worktrees-read-run-files",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T205610034127-review-of-held-worktrees-read-run-files",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T21:18:13.465763+00:00",
+  "total": 82
+}

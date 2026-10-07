@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-09-28T07:44:15.960Z",
+  "dispatched_at": "2026-09-28T04:54:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pace_replay.py",
+      "line": "116",
+      "text": "four row reads still bypass the guarded door -- pace_row.get(\"allowance\") at :116, record.get(\"run_id\") or pace_row.get(\"node\") at :125, pace_row.get(\"hold\") at :134 and record.get(\"pace\") at :237 -- none of them applies a conversion today so none can crash, but the module's stated invariant that every row read goes through one guarded reader is not literally held, and a later edit adding a conversion at one of them would reintroduce the crash class outside the guard."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T045443284910-replay-guards-every-row-read/manifest.md",
+      "line": "20",
+      "text": "the reviewed manifest's baseline_suite (line 20) and after_suite (line 21) fields are prose rather than the log_path object or bare path the review store's resolver reads, so the read-time annotation finds no gate log and reports added_failure_count unmeasured for this run; the true pair (0, no ids) had to be read out of reports/pace-gate-baseline.log and reports/pace-gate.log by hand and is stored under gate_log_evidence."
+    },
+    {
+      "file": "tests/test_pace_replay.py",
+      "line": "641",
+      "text": "against the review revision the delivered sweep is red on (('lane',), None) -- a writable-candidate case -- so the logged red line does not by itself separate the crash-class fix from the writable-path change; the crash class is evidenced by the separate probe (TypeError: float() argument must be a string or a real number, not 'NoneType'), which I reproduced independently at the review revision and not at the head."
+    }
+  ],
+  "gate_log_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T045443284910-replay-guards-every-row-read/reports/pace-gate.log",
+    "after_result": "22 passed, exit 0",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T045443284910-replay-guards-every-row-read/reports/pace-gate-baseline.log",
+    "baseline_result": "21 passed, exit 0",
+    "derived_by": "the reviewing node, by hand, from the two logs the reviewed manifest names",
+    "failed_or_error_ids_in_either_log": [],
+    "note": "the store's read-time annotation overwrites added_failure_count/added_failure_ids with its unmeasured pair because the manifest wrote its suite fields as prose; the stored pair above is the derived truth"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the diff is the whole change and nothing else -- guarded reader, table-driven sweep, import ordering, landing evidence record and figure; no plan meta, no index, no unrelated file",
+    "done_when": "the delivered sweep is green at the head (22 passed, exit 0, reproduced by me in this session), the damaged row is marked unmeasured with a reason and the week's report still returns, and the same damage against the review revision raises TypeError and returns no report",
+    "goal": "the guarded reader is delivered as a single door -- _read() owns the module's only two conversions, float(value) at reckon/crew/pace_replay.py:398 and datetime.fromisoformat(text) at :409 -- over the row's own keys, with the sweep test sweeping them",
+    "manifest": "commits, tests, logs and the negative control are all named; the two suite fields are prose, so the store's read-time annotation reports the added failures unmeasured and the count had to be read out of the two logs by hand",
+    "write_paths": "git diff --numstat 0999053b..295d9134 touches exactly the five declared paths (69/0 landing record, 63/0 figure, 28/0 plan section, 406/103 pace_replay.py, 267/0 sweep test) -- the 103 deletions are the superseded reader inside pace_replay.py, and the cumulative landing record has zero deletions"
+  },
+  "justifications": {
+    "durability": "the sweep enumerates the row's own keys so a field the producer starts writing is covered without an edit (tests/test_pace_replay.py:592), and the four bare accesses above are the remaining place a future conversion could slip outside the door",
+    "evidence": "both gate logs and a real negative control are stored and I reproduced both halves independently, but the manifest's prose suite fields leave the store's read-time added-failure annotation unmeasured and the sweep's logged red at the review revision is the writable-candidate deviation rather than the crash class",
+    "fit": "evidence lands in the cumulative docs/evidence/archive/a-window-paces-the-lane-landed.html record with a figure, the module carries no plan or ticket labels, and the node recorded its own spec deviation as a follow-on rather than leaving it implicit",
+    "goal_fidelity": "one guarded reader owns the module's only two conversions (reckon/crew/pace_replay.py:398, :409), but four bare row reads at :116, :125, :134 and :237 still bypass the door",
+    "scope_discipline": "the diff between 0999053b and 295d9134 touches exactly the five declared paths, the cumulative landing record is spliced with zero deletions, and ruff check and format are clean on both code paths"
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260928T045443284910-replay-guards-every-row-read at 295d91345e8792b78b2f88a4b9af491c2205d6cc, read against base 0999053b5bd9f442ab848d83c5271038d6eb6203.\nReviewed by hand: the plan section the node belongs to, the node's brief, its\nmanifest, the three commits, both suite logs and the negative control log. The\nadded-failure pair was derived by hand from the reviewed run's own gate logs,\nbecause the manifest wrote its two suite fields as prose and the review store's\nread-time annotation therefore resolves no gate log for this run: baseline log\nreports 21 passed, exit 0 and the after log reports 22 passed, exit 0, with zero\nFAILED or ERROR ids in either, so added_failure_count is 0 with no ids. That\nderivation is kept under gate_log_evidence because the read-time annotation\noverwrites added_failure_count and added_failure_ids with its unmeasured pair,\nwhich is itself recorded as a finding below.\n\nVERDICT goal: the guarded reader is delivered as a single door -- _read() owns the module's only two conversions, float(value) at reckon/crew/pace_replay.py:398 and datetime.fromisoformat(text) at :409 -- over the row's own keys, with the sweep test sweeping them.\nVERDICT done_when: the delivered sweep is green at the head (22 passed, exit 0, reproduced by me in this session), the damaged row is marked unmeasured with a reason and the week's report still returns, and the same damage against the review revision raises TypeError and returns no report.\nVERDICT write_paths: git diff --numstat 0999053b5bd9f442ab848d83c5271038d6eb6203..295d91345e8792b78b2f88a4b9af491c2205d6cc touches exactly the five declared paths (69/0 landing record, 63/0 figure, 28/0 plan section, 406/103 pace_replay.py, 267/0 sweep test) -- the 103 deletions are the superseded reader inside pace_replay.py, and the cumulative landing record has zero deletions.\nVERDICT manifest: commits, tests, logs and the negative control are all named; the two suite fields are prose, so the store's read-time annotation reports the added failures unmeasured and the count had to be read out of the two logs by hand.\nVERDICT diff: the diff is the whole change and nothing else -- guarded reader, table-driven sweep, import ordering, landing evidence record and figure; no plan meta, no index, no unrelated file.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: one guarded reader owns the module's only two conversions (reckon/crew/pace_replay.py:398, :409), but four bare row reads at :116, :125, :134 and :237 still bypass the door.\nSCORE evidence: 16\nJUSTIFICATION evidence: both gate logs and a real negative control are stored and I reproduced both halves independently, but the manifest's prose suite fields leave the store's read-time added-failure annotation unmeasured and the sweep's logged red at the review revision is the writable-candidate deviation rather than the crash class.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff between 0999053b5bd9f442ab848d83c5271038d6eb6203 and 295d91345e8792b78b2f88a4b9af491c2205d6cc touches exactly the five declared paths, the cumulative landing record is spliced with zero deletions, and ruff check and format are clean on both code paths.\nSCORE durability: 17\nJUSTIFICATION durability: the sweep enumerates the row's own keys so a field the producer starts writing is covered without an edit (tests/test_pace_replay.py:592), and the four bare accesses above are the remaining place a future conversion could slip outside the door.\nSCORE fit: 18\nJUSTIFICATION fit: evidence lands in the cumulative docs/evidence/archive/a-window-paces-the-lane-landed.html record with a figure, the module carries no plan or ticket labels, and the node recorded its own spec deviation as a follow-on rather than leaving it implicit.\nFINDING reckon/crew/pace_replay.py:116 four row reads still bypass the guarded door -- pace_row.get(\"allowance\") at :116, record.get(\"run_id\") or pace_row.get(\"node\") at :125, pace_row.get(\"hold\") at :134 and record.get(\"pace\") at :237 -- none of them applies a conversion today so none can crash, but the module's stated invariant that every row read goes through one guarded reader is not literally held, and a later edit adding a conversion at one of them would reintroduce the crash class outside the guard.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T045443284910-replay-guards-every-row-read/manifest.md:20 the reviewed manifest's baseline_suite (line 20) and after_suite (line 21) fields are prose rather than the log_path object or bare path the review store's resolver reads, so the read-time annotation finds no gate log and reports added_failure_count unmeasured for this run; the true pair (0, no ids) had to be read out of reports/pace-gate-baseline.log and reports/pace-gate.log by hand and is stored under gate_log_evidence.\nFINDING tests/test_pace_replay.py:641 against the review revision the delivered sweep is red on (('lane',), None) -- a writable-candidate case -- so the logged red line does not by itself separate the crash-class fix from the writable-path change; the crash class is evidenced by the separate probe (TypeError: float() argument must be a string or a real number, not 'NoneType'), which I reproduced independently at the review revision and not at the head.\n",
+  "review_run_id": "legacy-56869b4ae36c",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "0999053b5bd9f442ab848d83c5271038d6eb6203",
+  "reviewed_head_sha": "295d91345e8792b78b2f88a4b9af491c2205d6cc",
+  "reviewed_run_id": "r-20260928T045443284910-replay-guards-every-row-read",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:01.344973+00:00",
+  "total": 88
+}

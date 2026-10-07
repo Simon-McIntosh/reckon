@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absence_control": "a missing log returns (None, []) \u2014 unmeasured, never a measured zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T112107745919-promotion-bookkeeping-follows-the-run/arm-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T112107745919-promotion-bookkeeping-follows-the-run/arm-base.log",
+    "count_derivation": "added_failures_from_gate_logs over the reviewed manifest's own baseline_suite/after_suite logs (manifest.md:21-22); both logs read, so the count is a measured zero and annotate_review_of_run leaves the total uncapped",
+    "positive_control": {
+      "count": 2,
+      "ids": [
+        "tests/test_bookkeeping_follows_the_run.py::test_a_checkout_past_the_merge_with_unknown_run_paths_is_refused",
+        "tests/test_bookkeeping_follows_the_run.py::test_a_path_comparison_that_cannot_be_taken_is_refused"
+      ],
+      "log_as_head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T112107745919-promotion-bookkeeping-follows-the-run/arm-probe-mutation.log",
+      "mutation": "the reviewed run's own probe-mutation arm (fail-open restored in a scratch copy) taken as the head: the extractor sees exactly the two refusal cases, so it is not blind to a failure"
+    }
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:4598 (crew_complete -> crew.complete)",
+    "reckon/cli.py:4696 (crew_verify_gate -> record_gate_rerun_at_integrated_revision)"
+  ],
+  "completed_at": "2026-09-28T14:22:50.951Z",
+  "dispatched_at": "2026-09-28T13:23:24Z",
+  "findings": [
+    {
+      "file": "docs/plans/a-refusal-is-about-the-work.html",
+      "line": "169",
+      "text": "the node's plan comment, and the landing summary at :98-101, still cite the pre-repair measurements (\"5 passed\", \"31 passed at head\", one negative control), so the plan surface a coordinator reads when closing the section shows counts the repaired head has superseded (7 passed, 33 passed, and a second mutation arm), with the repair visible only through the evidence link."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 3c7e7872 \u2014 0ff4101a lands the three narrowings plus two flag help texts; 315f7b7a closes the fail-open at reckon/crew/promotion.py:1177 and deletes the shadowed duplicate ancestry helper; 187ad16f is the repair record in the evidence anchor only.",
+    "done_when": "the done-when in the run's own brief names a test per narrowing and a verify-gate run two ledger commits past the merge, which tests/test_bookkeeping_follows_the_run.py:142, :205, :349, :368, :387 and :412 supply, with the manifest's armed arms recording 31 passed at c649a057 and 33 at 315f7b7a.",
+    "goal": "the node's goal is to narrow three promotion bookkeeping refusals to the run they judge, and all three are landed in reckon/crew/promotion.py \u2014 the corrective attempt-kind exemption at :4213, the review-run outcome default at :3023, and the descending-checkout ladder at :1125 \u2014 with only the section's --repairs declaration deferred, as the run's manifest follow_ons states.",
+    "manifest": "read; its baseline_suite and after_suite lines at manifest.md:21-22 hold armed JSON naming arm-base.log and arm-head.log, both complete and green, so the added-failure derivation over them is a measured zero rather than the unmeasured prose the first review found.",
+    "write_paths": "the run's manifest declares six write paths and git show --stat over its three cited commits lists exactly those files \u2014 0ff4101a touches all six, 315f7b7a two of them, 187ad16f one \u2014 so every landed change stayed inside the fence."
+  },
+  "justifications": {
+    "durability": "the probe-mutation log the manifest names proves both new refusal cases redden when the fail-open is restored, tests/test_bookkeeping_follows_the_run.py:412 pins the refusal by the absence of stored.marker, and only the report field's new null on a checkout already sitting on the integrated revision is asserted nowhere.",
+    "evidence": "the manifest's armed arms at manifest.md:21-22 are complete logs whose headers print the revision and the module path, and the added-failure count over them is a measured zero, but the manifest's tests line also cites nine- and sixty-one-test runs in other files with no log named.",
+    "fit": "the change follows the module's idiom (the attempt-kind frozenset at reckon/crew/promotion.py:4169, one _revision_is_ancestor at :5298) and 693 added lines carry no forbidden label, though the deleted duplicate existed only because the module already carried its single helper.",
+    "goal_fidelity": "each of the three narrowings named at docs/plans/a-refusal-is-about-the-work.html:84 is implemented at reckon/crew/promotion.py:4213, :3023 and :1125 with its named test, and only the section's --repairs element is deferred, so the section is not yet fully delivered.",
+    "scope_discipline": "git show --stat lists only the six declared paths across the run's cited commits, and the second main integration at c649a057 resolves docs/plans/a-landing-record-never-conflicts.html to main's side with nothing lost."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to narrow three promotion bookkeeping refusals to the run they judge, and all three are landed in reckon/crew/promotion.py \u2014 the corrective attempt-kind exemption at :4213, the review-run outcome default at :3023, and the descending-checkout ladder at :1125 \u2014 with only the section's --repairs declaration deferred, as the run's manifest follow_ons states.\nVERDICT done_when: the done-when in the run's own brief names a test per narrowing and a verify-gate run two ledger commits past the merge, which tests/test_bookkeeping_follows_the_run.py:142, :205, :349, :368, :387 and :412 supply, with the manifest's armed arms recording 31 passed at c649a057 and 33 at 315f7b7a.\nVERDICT write_paths: the run's manifest declares six write paths and git show --stat over its three cited commits lists exactly those files \u2014 0ff4101a touches all six, 315f7b7a two of them, 187ad16f one \u2014 so every landed change stayed inside the fence.\nVERDICT manifest: read; its baseline_suite and after_suite lines at manifest.md:21-22 hold armed JSON naming arm-base.log and arm-head.log, both complete and green, so the added-failure derivation over them is a measured zero rather than the unmeasured prose the first review found.\nVERDICT diff: read commit by commit against base 3c7e7872 \u2014 0ff4101a lands the three narrowings plus two flag help texts; 315f7b7a closes the fail-open at reckon/crew/promotion.py:1177 and deletes the shadowed duplicate ancestry helper; 187ad16f is the repair record in the evidence anchor only.\nCALL_SITES: reckon/cli.py:4598 (crew_complete -> crew.complete), reckon/cli.py:4696 (crew_verify_gate -> record_gate_rerun_at_integrated_revision)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: each of the three narrowings named at docs/plans/a-refusal-is-about-the-work.html:84 is implemented at reckon/crew/promotion.py:4213, :3023 and :1125 with its named test, and only the section's --repairs element is deferred, so the section is not yet fully delivered.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's armed arms at manifest.md:21-22 are complete logs whose headers print the revision and the module path, and the added-failure count over them is a measured zero, but the manifest's tests line also cites nine- and sixty-one-test runs in other files with no log named.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat lists only the six declared paths across the run's cited commits, and the second main integration at c649a057 resolves docs/plans/a-landing-record-never-conflicts.html to main's side with nothing lost.\nSCORE durability: 19\nJUSTIFICATION durability: the probe-mutation log the manifest names proves both new refusal cases redden when the fail-open is restored, tests/test_bookkeeping_follows_the_run.py:412 pins the refusal by the absence of stored.marker, and only the report field's new null on a checkout already sitting on the integrated revision is asserted nowhere.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's idiom (the attempt-kind frozenset at reckon/crew/promotion.py:4169, one _revision_is_ancestor at :5298) and 693 added lines carry no forbidden label, though the deleted duplicate existed only because the module already carried its single helper.\nFINDING docs/plans/a-refusal-is-about-the-work.html:169 the node's plan comment, and the landing summary at :98-101, still cite the pre-repair measurements (\"5 passed\", \"31 passed at head\", one negative control), so the plan surface a coordinator reads when closing the section shows counts the repaired head has superseded (7 passed, 33 passed, and a second mutation arm), with the repair visible only through the evidence link.",
+  "review_run_id": "r-20260928T132309057581-review-of-promotion-bookkeeping-follows-the-run",
+  "reviewed_base_sha": "3c7e7872770f5ed4997e270e40d0aac9fdab6bbd",
+  "reviewed_head_sha": "187ad16f993d5f2b3bcd89daa4ba4384b3c8c737",
+  "reviewed_run_id": "r-20260928T112107745919-promotion-bookkeeping-follows-the-run",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T14:10:02.090146+00:00",
+  "total": 93
+}

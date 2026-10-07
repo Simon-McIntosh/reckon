@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/routing.py:require_plan_reviewed",
+    "reckon/crew/recovery.py:_plan_review_pending",
+    "reckon/_store.py:827"
+  ],
+  "completed_at": "2026-10-06T00:49:51.952Z",
+  "dispatched_at": "2026-10-06T00:44:18Z",
+  "findings": [
+    {
+      "file": "tests/test_one_raw_text_section_reader.py",
+      "line": "226",
+      "severity": "follow-on",
+      "text": "follow-on: the file is edited outside the declared write paths (the fence names tests/test_review_plan_command.py, test_plan_review_store.py, test_plan_review_gate.py and test_a_section_reviewed_as_authored_stays_reviewed.py only), and its heading-walk expectation had to drop reckon/crew/plan_review.py when _AuthoredProseParser was deleted, so the edit is implied by the done-when but was not fenced."
+    },
+    {
+      "file": "tests/test_plan_review_dispatch.py",
+      "line": "140",
+      "severity": "follow-on",
+      "text": "follow-on: also outside the declared write paths; the write_review_sidecar signature change from plan_fingerprint to document forced its call update, again necessary to hold the suite green but ungranted."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the three commits against base e853f22 \u2014 5238ab5 adds the reproducer, 05cf6e7 lands the section-digest coverage and replaces _AuthoredProseParser with the shared strip_tags, d337068 records the evidence fragment.",
+    "done_when": "read; the run's own tests/test_a_slice.py-style file tests/test_a_section_reviewed_as_authored_stays_reviewed.py asserts each clause (collapse keeps coverage at :123, authored edit uncovers only its section at :135, decision edit uncovers only _document at :145, digestless records at :159, unstored sidecar promotion at :203, dotted identity at :232), and the manifest records 373 passed at base and 394 passed at head with a declared negative control.",
+    "goal": "the goal is section-keyed review coverage that survives an authored-section collapse, and the diff delivers it \u2014 reckon/crew/plan_review.py:296 _section_digests keys a digest map by each authored section identity plus the _document unit, and reckon/crew/routing.py:2657 require_plan_reviewed now composes the refusal from the uncovered set plan_review._review_coverage returns.",
+    "manifest": "read; it records 394 passed EXIT=0 against 373 at base, control 1 failed EXIT=1, and its changed_paths discloses both out-of-grant test files, so the scope excess is stated rather than hidden.",
+    "write_paths": "the grant names reckon/crew/plan_review.py, reckon/crew/recovery.py, reckon/crew/routing.py, reckon/_plan_html.py plus four test files and the evidence fragment; the diff touches those and additionally tests/test_one_raw_text_section_reader.py and tests/test_plan_review_dispatch.py, which the grant omits."
+  },
+  "justifications": {
+    "durability": "the declared mutation restoring the whole-document comparison reddens tests/test_a_section_reviewed_as_authored_stays_reviewed.py::test_collapse_keeps_coverage (1 failed, EXIT=1).",
+    "evidence": "tests/test_a_section_reviewed_as_authored_stays_reviewed.py:123 asserts a collapse keeps coverage and the declared control reddens it, but the done-when's \"predict census of \u00a711 still resolves every anchor\" clause is unmet at 58/61 both arms.",
+    "fit": "reckon/crew/plan_review.py:281 _digest and the module's other private helpers state their mechanism and introduce no name the repository rules forbid.",
+    "goal_fidelity": "reckon/crew/plan_review.py:296 keys the digest map by section identity plus _document and reckon/crew/routing.py:2657 turns the uncovered set into the gate's refusal.",
+    "reuse": "reckon/_plan_html.py:1880 strip_tags reuses the existing _TAG_RE owner and plan_review.py:148 _prose_slices replaces _AuthoredProseParser by composing plan_headings and structured_section_spans, though plan_review.py:281 _digest parallels project_state.py:334 without extending it.",
+    "scope_discipline": "git diff --name-only e853f22 d337068 lists tests/test_one_raw_text_section_reader.py:226 and tests/test_plan_review_dispatch.py:140, neither inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is section-keyed review coverage that survives an authored-section collapse, and the diff delivers it \u2014 reckon/crew/plan_review.py:296 _section_digests keys a digest map by each authored section identity plus the _document unit, and reckon/crew/routing.py:2657 require_plan_reviewed now composes the refusal from the uncovered set plan_review._review_coverage returns.\nVERDICT done_when: read; the run's own tests/test_a_slice.py-style file tests/test_a_section_reviewed_as_authored_stays_reviewed.py asserts each clause (collapse keeps coverage at :123, authored edit uncovers only its section at :135, decision edit uncovers only _document at :145, digestless records at :159, unstored sidecar promotion at :203, dotted identity at :232), and the manifest records 373 passed at base and 394 passed at head with a declared negative control.\nVERDICT write_paths: the grant names reckon/crew/plan_review.py, reckon/crew/recovery.py, reckon/crew/routing.py, reckon/_plan_html.py plus four test files and the evidence fragment; the diff touches those and additionally tests/test_one_raw_text_section_reader.py and tests/test_plan_review_dispatch.py, which the grant omits.\nVERDICT manifest: read; it records 394 passed EXIT=0 against 373 at base, control 1 failed EXIT=1, and its changed_paths discloses both out-of-grant test files, so the scope excess is stated rather than hidden.\nVERDICT diff: read the three commits against base e853f22 \u2014 5238ab5 adds the reproducer, 05cf6e7 lands the section-digest coverage and replaces _AuthoredProseParser with the shared strip_tags, d337068 records the evidence fragment.\nCALL_SITES: reckon/crew/routing.py:require_plan_reviewed, reckon/crew/recovery.py:_plan_review_pending, reckon/_store.py:827\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:296 keys the digest map by section identity plus _document and reckon/crew/routing.py:2657 turns the uncovered set into the gate's refusal.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_section_reviewed_as_authored_stays_reviewed.py:123 asserts a collapse keeps coverage and the declared control reddens it, but the done-when's \"predict census of \u00a711 still resolves every anchor\" clause is unmet at 58/61 both arms.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: git diff --name-only e853f22 d337068 lists tests/test_one_raw_text_section_reader.py:226 and tests/test_plan_review_dispatch.py:140, neither inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the declared mutation restoring the whole-document comparison reddens tests/test_a_section_reviewed_as_authored_stays_reviewed.py::test_collapse_keeps_coverage (1 failed, EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/plan_review.py:281 _digest and the module's other private helpers state their mechanism and introduce no name the repository rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/_plan_html.py:1880 strip_tags reuses the existing _TAG_RE owner and plan_review.py:148 _prose_slices replaces _AuthoredProseParser by composing plan_headings and structured_section_spans, though plan_review.py:281 _digest parallels project_state.py:334 without extending it.\nFINDING tests/test_one_raw_text_section_reader.py:226 follow-on: the file is edited outside the declared write paths (the fence names tests/test_review_plan_command.py, test_plan_review_store.py, test_plan_review_gate.py and test_a_section_reviewed_as_authored_stays_reviewed.py only), and its heading-walk expectation had to drop reckon/crew/plan_review.py when _AuthoredProseParser was deleted, so the edit is implied by the done-when but was not fenced.\nFINDING tests/test_plan_review_dispatch.py:140 follow-on: also outside the declared write paths; the write_review_sidecar signature change from plan_fingerprint to document forced its call update, again necessary to hold the suite green but ungranted.\nreviewed_base_sha: e853f22d45f7ce65dbac91820508d4b1cdc5d71c\nreviewed_head_sha: d337068393dd755dba369d24e720e8e30e3e783b\n",
+  "review_run_id": "r-20261006T004401927853-review-of-a-section-reviewed-as-authored-stays-reviewed",
+  "reviewed_base_sha": "e853f22d45f7ce65dbac91820508d4b1cdc5d71c",
+  "reviewed_head_sha": "d337068393dd755dba369d24e720e8e30e3e783b",
+  "reviewed_node": "a-section-reviewed-as-authored-stays-reviewed",
+  "reviewed_run_id": "r-20261005T235645625085-a-section-reviewed-as-authored-stays-reviewed",
+  "reviewer_node": "review-of-a-section-reviewed-as-authored-stays-reviewed",
+  "reviewer_run_id": "r-20261006T004401927853-review-of-a-section-reviewed-as-authored-stays-reviewed",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T00:49:02.977383+00:00",
+  "total": 108
+}

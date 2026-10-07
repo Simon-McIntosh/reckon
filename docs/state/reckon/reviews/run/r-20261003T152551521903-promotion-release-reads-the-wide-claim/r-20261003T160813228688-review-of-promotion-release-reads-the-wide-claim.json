@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "acff5221202a3e13585c98d23f28ebf171464552",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py::_release_after_promotion",
+    "reckon/crew/promotion.py::_remove_discarded_worktree"
+  ],
+  "completed_at": "2026-10-03T16:17:18.644Z",
+  "dispatched_at": "2026-10-03T16:08:37Z",
+  "findings": [
+    {
+      "file": "tests/test_every_removal_path_reads_the_wide_claim.py",
+      "line": "146",
+      "severity": "follow-on",
+      "text": "follow-on: the enumeration walks only ast.parse(source).body module-level functions and matches only the adjacent literal worktree/remove pair, so a removal path defined as a class method, or one issuing a dynamically-built argv, is not enumerated; this is the limitation already recorded against the removal-path enumeration, carried into the release door this node added, and the node does not widen the walk."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm gate log ran at 9c26ee1d8 while the reviewed head is 47faf9f5c (the docs-only fragment commit), so the measured code equals the reviewed code but a reader reconciling the added-failure count against the reviewed head should know the gate ran on its parent revision."
+    }
+  ],
+  "head_log_revision": "9c26ee1d8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit - 9c26ee1d8 swaps _live_worktree_claims for _live_pointer_worktrees in _release_run_workspace, updates its docstring and adds the why-comment; 47faf9f5c adds the 78-line evidence fragment; the extended removal-path test replaces its owns_target carve-out with a direct driver per discovered path.",
+    "done_when": "the done-when asks that a test promote a run while a parked peer's pointer names the same tree and assert the tree survives, that the caller-enumerating removal-path test cover this path too, and that a scratch copy restoring the phase-gated read fail the parked-peer case; tests/test_promotion_release_reads_the_wide_claim.py:154 drives the shared tree through crew.complete and asserts worktree_released is False with the tree standing, tests/test_every_removal_path_reads_the_wide_claim.py:203 registers a direct driver for reckon/crew/promotion.py::_release_run_workspace and :272 requires every discovered removal path to read the wide claim and none the phase-gated one, and the declared control reddens the parked-peer case.",
+    "goal": "\u00a747's goal is that _release_run_workspace in reckon/crew/promotion.py decides a tree's liveness through _live_pointer_worktrees() minus its own run; promotion.py:6147 now builds the release's claims list from _live_pointer_worktrees().get(worktree.resolve(), []) filtered by claim != run_id, so a peer parked on an external wait keeps the share of the tree its pointer names, and _live_worktree_claims keeps only report-only callers.",
+    "manifest": "read; status complete, commits 9c26ee1d8 (fix) and 47faf9f5c (fragment), base arm 26 passed EXIT=0 and head arm 28 passed EXIT=0 with log paths, the negative control recorded with its path, and measurement_module naming the base scratch copy of promotion.py.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, tests/test_promotion_release_reads_the_wide_claim.py, tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/crew-runtime-positive-controls/promotion-release-reads-the-wide-claim.html; git diff --name-only acff5221202a3e13585c98d23f28ebf171464552..47faf9f5c361f24fe2bbcb797d834e2779039c07 returns exactly those four and the reviewed worktree is clean."
+  },
+  "justifications": {
+    "durability": "the enumeration guard at tests/test_every_removal_path_reads_the_wide_claim.py:146 fails a new module-level removal path that reads the phase-gated claim, and the independent mutation confirmed it fires for the release door; the walk still sees only module-level defs and the literal worktree/remove pair, so a class-method or dynamically-built path escapes, an inherited limit recorded as a follow-on.",
+    "evidence": "the base-reproduction log shows the new file red against base product code (1 failed, 1 passed, EXIT=1), the head arm is 28 passed EXIT=0 over five files and an independent re-run of the two changed files returned 5 passed EXIT=0; an independent scratch mutation of the release call back to _live_worktree_claims reddened 3 cases EXIT=1, and the production added-failures deriver over the two gate logs yields count 0 and ids [].",
+    "fit": "the change reuses the existing _live_pointer_worktrees helper and the routing.py docstring idiom, the added comment states why the wide claim is required, both commits carry conventional subjects with bodies, the fragment follows the reckon-type=doc evidence layout, and the naming checks find no plan label in the changed source.",
+    "goal_fidelity": "reckon/crew/promotion.py:6147 builds the release's liveness claims from _live_pointer_worktrees().get(worktree.resolve(), []) minus the released run, the wide reading the done-when names; _live_worktree_claims is left only for report-only callers, so no removal path remains on the phase-gated read.",
+    "scope_discipline": "git diff --name-only acff5221202a3e13585c98d23f28ebf171464552..47faf9f5c361f24fe2bbcb797d834e2779039c07 returns exactly the four declared write paths (promotion.py, the new test, the extended removal-path test, the fragment), the reviewed worktree is clean, and no shared plan or index state is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a747's goal is that _release_run_workspace in reckon/crew/promotion.py decides a tree's liveness through _live_pointer_worktrees() minus its own run; promotion.py:6147 now builds the release's claims list from _live_pointer_worktrees().get(worktree.resolve(), []) filtered by claim != run_id, so a peer parked on an external wait keeps the share of the tree its pointer names, and _live_worktree_claims keeps only report-only callers.\nVERDICT done_when: the done-when asks that a test promote a run while a parked peer's pointer names the same tree and assert the tree survives, that the caller-enumerating removal-path test cover this path too, and that a scratch copy restoring the phase-gated read fail the parked-peer case; tests/test_promotion_release_reads_the_wide_claim.py:154 drives the shared tree through crew.complete and asserts worktree_released is False with the tree standing, tests/test_every_removal_path_reads_the_wide_claim.py:203 registers a direct driver for reckon/crew/promotion.py::_release_run_workspace and :272 requires every discovered removal path to read the wide claim and none the phase-gated one, and the declared control reddens the parked-peer case.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, tests/test_promotion_release_reads_the_wide_claim.py, tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/crew-runtime-positive-controls/promotion-release-reads-the-wide-claim.html; git diff --name-only acff5221202a3e13585c98d23f28ebf171464552..47faf9f5c361f24fe2bbcb797d834e2779039c07 returns exactly those four and the reviewed worktree is clean.\nVERDICT manifest: read; status complete, commits 9c26ee1d8 (fix) and 47faf9f5c (fragment), base arm 26 passed EXIT=0 and head arm 28 passed EXIT=0 with log paths, the negative control recorded with its path, and measurement_module naming the base scratch copy of promotion.py.\nVERDICT diff: read commit by commit - 9c26ee1d8 swaps _live_worktree_claims for _live_pointer_worktrees in _release_run_workspace, updates its docstring and adds the why-comment; 47faf9f5c adds the 78-line evidence fragment; the extended removal-path test replaces its owns_target carve-out with a direct driver per discovered path.\nCALL_SITES: reckon/crew/promotion.py::_release_after_promotion, reckon/crew/promotion.py::_remove_discarded_worktree\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:6147 builds the release's liveness claims from _live_pointer_worktrees().get(worktree.resolve(), []) minus the released run, the wide reading the done-when names; _live_worktree_claims is left only for report-only callers, so no removal path remains on the phase-gated read.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base-reproduction log shows the new file red against base product code (1 failed, 1 passed, EXIT=1), the head arm is 28 passed EXIT=0 over five files and an independent re-run of the two changed files returned 5 passed EXIT=0; an independent scratch mutation of the release call back to _live_worktree_claims reddened 3 cases EXIT=1, and the production added-failures deriver over the two gate logs yields count 0 and ids [].\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only acff5221202a3e13585c98d23f28ebf171464552..47faf9f5c361f24fe2bbcb797d834e2779039c07 returns exactly the four declared write paths (promotion.py, the new test, the extended removal-path test, the fragment), the reviewed worktree is clean, and no shared plan or index state is touched.\nSCORE durability: 17\nJUSTIFICATION durability: the enumeration guard at tests/test_every_removal_path_reads_the_wide_claim.py:146 fails a new module-level removal path that reads the phase-gated claim, and the independent mutation confirmed it fires for the release door; the walk still sees only module-level defs and the literal worktree/remove pair, so a class-method or dynamically-built path escapes, an inherited limit recorded as a follow-on.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the existing _live_pointer_worktrees helper and the routing.py docstring idiom, the added comment states why the wide claim is required, both commits carry conventional subjects with bodies, the fragment follows the reckon-type=doc evidence layout, and the naming checks find no plan label in the changed source.\nreviewed_base_sha: acff5221202a3e13585c98d23f28ebf171464552\nreviewed_head_sha: 47faf9f5c361f24fe2bbcb797d834e2779039c07\nFINDING tests/test_every_removal_path_reads_the_wide_claim.py:146 follow-on: the enumeration walks only ast.parse(source).body module-level functions and matches only the adjacent literal worktree/remove pair, so a removal path defined as a class method, or one issuing a dynamically-built argv, is not enumerated; this is the limitation already recorded against the removal-path enumeration, carried into the release door this node added, and the node does not widen the walk.\nFINDING manifest.md:17 follow-on: the head-arm gate log ran at 9c26ee1d8 while the reviewed head is 47faf9f5c (the docs-only fragment commit), so the measured code equals the reviewed code but a reader reconciling the added-failure count against the reviewed head should know the gate ran on its parent revision.\n",
+  "review_run_id": "r-20261003T160813228688-review-of-promotion-release-reads-the-wide-claim",
+  "reviewed_base_sha": "acff5221202a3e13585c98d23f28ebf171464552",
+  "reviewed_head_sha": "47faf9f5c361f24fe2bbcb797d834e2779039c07",
+  "reviewed_run_id": "r-20261003T152551521903-promotion-release-reads-the-wide-claim",
+  "reviewer_run_id": "r-20261003T160813228688-review-of-promotion-release-reads-the-wide-claim",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T16:16:05.780474+00:00",
+  "total": 93
+}

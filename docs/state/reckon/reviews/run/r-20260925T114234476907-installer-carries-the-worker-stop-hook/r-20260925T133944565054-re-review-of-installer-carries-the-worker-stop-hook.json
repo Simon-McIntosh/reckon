@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_site_search": {
+    "command": "rg -n build_hook_snippet|install_hook_settings|hooks\\.install|from .*hooks import install <target>/reckon <target>/tests/test_hook_installer.py",
+    "positive_control": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/installer-carries-the-worker-stop-hook/tests/test_hook_installer.py:122 calls install_hook_settings; production hits are only definitions and internal use in install.py",
+    "production_external_callers": 0,
+    "scope": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/installer-carries-the-worker-stop-hook/reckon"
+  },
+  "call_sites": [],
+  "completed_at": "2026-09-25T13:50:13Z",
+  "dispatched_at": "2026-09-25T13:40:05Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/install.py",
+      "line": "105",
+      "text": "[P2] The existing script_path override changes only the coordinator commands; the worker command always resolves beside install.py, so a caller naming the canonical checkout's coordinator path while importing this worktree gets Stop commands from two different checkouts; review-gate.log reproduces the preceding review's finding at ed41c352, and the path-pinning test covers only the default branch."
+    },
+    {
+      "file": "reckon/hooks/install.py",
+      "line": "271",
+      "text": "[P2] On a partial install, _write_settings re-renders the whole document at two-space indentation, changing the bytes of the skipped pre-existing worker group; existing-entry-bytes.log shows the original compact group bytes absent after the merge although its parsed object is equal, so the resume requirement and landing records' byte-for-byte claim are stronger than the implemented semantic preservation and tests/test_hook_installer.py:261 cannot detect the difference."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read the change from 15fa121bd7bca9ab3551a88564fc3f29f8e70bf7 to ed41c35230575de4e67fb19d9995316800bd2f85 and its four-commit sequence: 0a1ccdec adds the worker Stop/path assertion, 1545f049 adds its records/figure, 989f9339 adds per-event skipping and HookInstallResult, and ed41c352 updates the landing records; the prior whole-install duplicate refusal is superseded by the explicit resume instruction.",
+    "done_when": "The original measure and resume-1-advice.txt were read; tests/test_hook_installer.py:139-153 independently pins repository script paths, :238-267 covers a preinstalled worker entry, :224-235 covers the second install, and the independent check at ed41c352 reports 3 added, 1 skipped, exactly 2 Stop commands and no duplication; literal preservation of an existing group's bytes on a partial install is not met, as existing-entry-bytes.log demonstrates.",
+    "goal": "The source node's goal is met for the default snippet: reckon/hooks/install.py:105-113 emits both Stop commands and preserves the two prompt registrations; the explicit script_path branch still mixes checkouts as the preceding review reported, reproduced in review-gate.log.",
+    "manifest": "The source manifest's 63-passed base and 66-passed current-head results match base-hooks-gate.log and after-entry-skip-gate.log, and both negative-control receipts were opened individually; this review reran the exact partial-install case (1 passed) and independently exercised partial install, repeat install, dry run and malformed-JSON refusal without changing real settings.",
+    "write_paths": "All four source commits stay within the five granted paths recorded in the source live pointer; the cumulative evidence and plan changes are additions only, and the figure uses the project-absolute /reckon/figures path."
+  },
+  "justifications": {
+    "durability": "tests/test_hook_installer.py:150 fails the nested-path mutation and :232/:251 fail the removed-skip mutation in the preserved red receipts, but neither the mixed-checkout override nor literal existing-entry bytes has a regression assertion.",
+    "evidence": "tests/test_hook_installer.py:238 passes at the exact reviewed head and review-gate.log records the imported module and positive/refusal results, while the source's byte-preservation claim exceeds its dictionary-equality evidence at :261.",
+    "fit": "reckon/hooks/install.py:68-82 uses a frozen result dataclass, existing standard-library JSON/path helpers and the existing atomic writer, with mechanism-based names and no runtime dependency added.",
+    "goal_fidelity": "reckon/hooks/install.py:230 skips the existing worker command and adds all missing coordinator commands, but :105 leaves the worker path outside script_path's checkout and :271 reserializes the pre-existing group despite the resume requirement that its bytes stay untouched.",
+    "scope_discipline": "The diff is confined to reckon/hooks/install.py, tests/test_hook_installer.py and the three granted documentation/figure paths, and the reviewed worktree has no tracked modifications."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is met for the default snippet: reckon/hooks/install.py:105-113 emits both Stop commands and preserves the two prompt registrations; the explicit script_path branch still mixes checkouts as the preceding review reported, reproduced in review-gate.log.\nVERDICT done_when: The original measure and resume-1-advice.txt were read; tests/test_hook_installer.py:139-153 independently pins repository script paths, :238-267 covers a preinstalled worker entry, :224-235 covers the second install, and the independent check at ed41c352 reports 3 added, 1 skipped, exactly 2 Stop commands and no duplication; literal preservation of an existing group's bytes on a partial install is not met, as existing-entry-bytes.log demonstrates.\nVERDICT write_paths: All four source commits stay within the five granted paths recorded in the source live pointer; the cumulative evidence and plan changes are additions only, and the figure uses the project-absolute /reckon/figures path.\nVERDICT manifest: The source manifest's 63-passed base and 66-passed current-head results match base-hooks-gate.log and after-entry-skip-gate.log, and both negative-control receipts were opened individually; this review reran the exact partial-install case (1 passed) and independently exercised partial install, repeat install, dry run and malformed-JSON refusal without changing real settings.\nVERDICT diff: Read the change from 15fa121bd7bca9ab3551a88564fc3f29f8e70bf7 to ed41c35230575de4e67fb19d9995316800bd2f85 and its four-commit sequence: 0a1ccdec adds the worker Stop/path assertion, 1545f049 adds its records/figure, 989f9339 adds per-event skipping and HookInstallResult, and ed41c352 updates the landing records; the prior whole-install duplicate refusal is superseded by the explicit resume instruction.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/hooks/install.py:230 skips the existing worker command and adds all missing coordinator commands, but :105 leaves the worker path outside script_path's checkout and :271 reserializes the pre-existing group despite the resume requirement that its bytes stay untouched.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_hook_installer.py:238 passes at the exact reviewed head and review-gate.log records the imported module and positive/refusal results, while the source's byte-preservation claim exceeds its dictionary-equality evidence at :261.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff is confined to reckon/hooks/install.py, tests/test_hook_installer.py and the three granted documentation/figure paths, and the reviewed worktree has no tracked modifications.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_hook_installer.py:150 fails the nested-path mutation and :232/:251 fail the removed-skip mutation in the preserved red receipts, but neither the mixed-checkout override nor literal existing-entry bytes has a regression assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/hooks/install.py:68-82 uses a frozen result dataclass, existing standard-library JSON/path helpers and the existing atomic writer, with mechanism-based names and no runtime dependency added.\nFINDING reckon/hooks/install.py:105 [P2] The existing script_path override changes only the coordinator commands; the worker command always resolves beside install.py, so a caller naming the canonical checkout's coordinator path while importing this worktree gets Stop commands from two different checkouts; review-gate.log reproduces the preceding review's finding at ed41c352, and the path-pinning test covers only the default branch.\nFINDING reckon/hooks/install.py:271 [P2] On a partial install, _write_settings re-renders the whole document at two-space indentation, changing the bytes of the skipped pre-existing worker group; existing-entry-bytes.log shows the original compact group bytes absent after the merge although its parsed object is equal, so the resume requirement and landing records' byte-for-byte claim are stronger than the implemented semantic preservation and tests/test_hook_installer.py:261 cannot detect the difference.\n",
+  "required_scenario": {
+    "added": 3,
+    "result": "passed",
+    "second_install_added": 0,
+    "second_install_bytes_mtime_mode_unchanged": true,
+    "second_install_skipped": 4,
+    "skipped": 1,
+    "stop_commands": 2,
+    "worker_command_occurrences": 1
+  },
+  "review_run_id": "r-20260925T133944565054-re-review-of-installer-carries-the-worker-stop-hook",
+  "reviewed_base_sha": "15fa121bd7bca9ab3551a88564fc3f29f8e70bf7",
+  "reviewed_head_sha": "ed41c35230575de4e67fb19d9995316800bd2f85",
+  "reviewed_run_id": "r-20260925T114234476907-installer-carries-the-worker-stop-hook",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T133944565054-re-review-of-installer-carries-the-worker-stop-hook/review-gate.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T133944565054-re-review-of-installer-carries-the-worker-stop-hook/existing-entry-bytes.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:47:18.425494+00:00",
+  "total": 96
+}

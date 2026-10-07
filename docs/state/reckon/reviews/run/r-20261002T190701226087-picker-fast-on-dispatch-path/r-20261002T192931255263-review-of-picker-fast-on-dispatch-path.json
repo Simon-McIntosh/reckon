@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured zero from the reviewed run's own armed arms: baseline_suite (gate-base.log, revision aa231c204, 87 passed, EXIT=0, failure_count 0, failure_ids []) and after_suite (gate-head.log, 90 passed, EXIT=0, failure_count 0, failure_ids []); no failing test id appears in either arm, so nothing was added. The head arm's header names revision e0b44c03 rather than the manifested head aa7f1002, but git diff of the two commits' trees is empty (identical), so the arm is readable at the reviewed head.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5546",
+    "reckon/crew/dispatch.py:4151"
+  ],
+  "completed_at": "2026-10-02T19:35:39.777Z",
+  "dispatched_at": "2026-10-02T19:29:59Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T190701226087-picker-fast-on-dispatch-path/measurement-base.log",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the base measurement arm is non-diagnostic. All ten base picks record action \"fallback\" with jev_median_ms 0.402 (the Jev caller raised and the pick fell back to a flight default), so measurement-base.log reports median 299.510 ms \u2014 not the \"about 15,000 ms\" the done-when names for the base revision, and not a like-for-like arm. The head arm made ten successful Jev-routed picks (jev_median_ms 351.179). The two arms therefore differ by whether Jev served at the measured instant, not by the change, and measurement-head.log (median 1767.949 ms) is not evidence that the node reduced pick latency. The worker records this in its own follow_ons."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T190701226087-picker-fast-on-dispatch-path/measurement-head.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the measured request supplies estimated_hours=0.5, so _estimated_hours returns (0.5, \"node\") before reaching the resource scan \u2014 and before the new planless early return \u2014 on both the base and head arms. The measured path therefore never exercises the resource-scan fix the node is about, so the latency figure says nothing about clause (1) of the done-when; clause (1) is instead carried by the new unit test and its negative control."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T190701226087-picker-fast-on-dispatch-path/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's header names revision e0b44c03 and the head measurement log names revision=working-tree, neither of which is the manifested landing commit aa7f1002. The two commits e0b44c03 and aa7f1002 have identical trees (git diff empty), so the gate is materially at the reviewed head, but the evidence is not pinned to the landing sha a later reader can resolve."
+    },
+    {
+      "file": "tests/test_picker_latency.py",
+      "line": "198",
+      "severity": "follow-on",
+      "text": "follow-on: test_dispatch_picker_reuses_its_budget_and_ledger_inputs calls dispatch_picker_selection directly with records, verdict_inputs and budget_snapshot constructed inline, so it verifies pick honours those parameters but does not exercise dispatch()'s own construction of them at reckon/crew/dispatch.py:5546-5551. Reverting that call site to omit the three arguments reddens no test, so the dispatch-path half of the goal has no failing guard."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "201",
+      "severity": "follow-on",
+      "text": "follow-on: the landing commit also rewrites the section_record_id docstring and removes a \"\u00a76\" plan reference from the resolve_dispatch_authority message \u2014 both inside the write fence but unrelated to the node goal and unmentioned in the commit body, so the commit's stated change under-describes its diff."
+    }
+  ],
+  "item_aggregate": null,
+  "item_verdicts": {
+    "done_when": "clause (1) met and carried by tests/test_picker_latency.py::test_unneeded_plan_lookup_never_scans_resources[-None] with a valid negative control; clause (2) implemented at dispatch.py:5546-5558 but its test bypasses dispatch(); clause (3) head targets met (median 1767.949 ms <= 2000, max 3018.089 ms <= 5000, Jev shown separately) but the required base comparison ~15,000 ms is not reproduced (base log 299.510 ms, all fallback); clause (4) gate base 87 / head 90 passed, zero added failure ids.",
+    "goal": "Bring a dispatch-path pick under two seconds by reusing dispatch's own inputs: the mechanism is present \u2014 _estimated_hours returns (None, \"unavailable\") for a planless node before reckon.resources.resolve_resource, and dispatch() reads ledger.runs, shared_verdict_inputs and snapshot.budget_view once and passes them into dispatch_picker_selection at reckon/crew/dispatch.py:5546-5558. Head median 1767.949 ms is under the 2,000 ms target, but the before/after baseline is invalid so the \"reuse makes it fast\" claim is not demonstrated.",
+    "write_paths": "commit aa7f1002 touches exactly reckon/crew/dispatch.py, reckon/crew/routing.py, tests/test_picker_latency.py and docs/evidence/fragments/one-typesafe-model-picker/picker-fast-on-dispatch-path.html \u2014 four of the declared write paths, no file outside the fence."
+  },
+  "justifications": {
+    "durability": "reverting the guard ``if not node.plan.strip(): return None, \"unavailable\"`` reddens test_unneeded_plan_lookup_never_scans_resources[-None] (shown red at EXIT=1 in negative-resource-scan.log). Reverting the dispatch call site at reckon/crew/dispatch.py:5546-5558 reddens nothing, because the reuse test constructs its inputs inline and calls dispatch_picker_selection directly.",
+    "evidence": "gate-base.log 87 passed EXIT=0 and gate-head.log 90 passed EXIT=0, zero added failure ids; negative-resource-scan.log reproduces red at EXIT=1 (1 failed, 1 passed) with iter_resources called; reproduction-base.log records iter_resources_calls=1 at base revision aa231c204. Points withheld because the headline latency comparison is not like-for-like (base arm fell back on a Jev error, head arm served), the measured request never reaches the fixed planless branch, and two logs cite non-commit revisions.",
+    "fit": "the early return and the reuse wiring follow the module idioms; the new test carries a mechanism docstring and no plan or ticket identifier; the commit is conventional with a body and no attribution trailer.",
+    "goal_fidelity": "the specified mechanism is implemented and its unit behaviour is asserted \u2014 resource discovery is skipped for a planless pick and dispatch passes its shared ledger, budget and verdict inputs into pick \u2014 but the end-to-end latency claim is unestablished, so the node achieves the letter of clauses (1),(2),(4) and only the head figures of (3).",
+    "scope_discipline": "the diff touches only declared write paths and mutates no shared plan, index or sprint state; two unrelated routing.py edits are folded in unreported."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to bring a dispatch-path pick under two seconds by reusing dispatch's own inputs; reckon/crew/routing.py makes _estimated_hours return (None, \"unavailable\") for a planless node before reckon.resources.resolve_resource, and reckon/crew/dispatch.py:5546-5558 reads ledger.runs, shared_verdict_inputs and snapshot.budget_view once and passes them into dispatch_picker_selection via its records, verdict_inputs and budget_snapshot parameters. The mechanism is present, but the before/after latency comparison that would show it works is not valid.\nVERDICT done_when: (1) met \u2014 test_unneeded_plan_lookup_never_scans_resources[-None] asserts iter_resources is not called, reddened by the declared mutation. (2) implemented \u2014 dispatch passes the three inputs at dispatch.py:5546-5558. (3) head met (median 1767.949 ms <= 2000, max 3018.089 ms <= 5000, Jev 351.179 ms shown separately) but the required base figure ~15,000 ms is not reproduced; measurement-base.log reads 299.510 ms with all ten picks falling back. (4) met \u2014 gate base 87 passed / head 90 passed, EXIT=0, zero added failure ids.\nVERDICT write_paths: commit aa7f1002 touches reckon/crew/dispatch.py, reckon/crew/routing.py, tests/test_picker_latency.py and docs/evidence/fragments/one-typesafe-model-picker/picker-fast-on-dispatch-path.html only \u2014 all inside the declared fence.\nVERDICT manifest: read; it records the head gate at 90 passed and base at 87 passed, the negative control red at EXIT=1, and honestly flags in follow_ons that the base measurement arm is incomparable.\nCALL_SITES: reckon/crew/dispatch.py:5546, reckon/crew/dispatch.py:4151\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the specified mechanism is implemented and its unit behaviour is asserted, but the end-to-end latency claim is unestablished because the measured request supplies estimated_hours=0.5 (bypassing the fixed planless branch) and the base arm fell back on a Jev error.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate base 87 / head 90 passed at EXIT=0 with zero added failures, negative control red at EXIT=1, and iter_resources_calls=1 reproduced at base; withheld because the headline latency comparison is not like-for-like, the measured path never reaches the fixed branch, and the head gate/measurement logs cite revisions (e0b44c03, working-tree) other than the landing sha.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: diff touches only declared write paths and mutates no shared plan, index or sprint state; two unrelated routing.py edits are folded in unreported.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control proves the planless guard fires, but the dispatch call-site change has no test that would redden on revert because the reuse test constructs its inputs inline.\nSCORE fit: 18\nJUSTIFICATION fit: idiomatic code, mechanism docstrings, no plan identifiers, conventional commit with body and no attribution trailer.\nFINDING tests/test_picker_latency.py:198 follow-on: the reuse test bypasses dispatch()'s construction of records/verdict_inputs/budget_snapshot, so reverting dispatch.py:5546-5551 reddens no test.\nreviewed_base_sha: aa231c204bacade0f70b1c9da25816af61cf5942\nreviewed_head_sha: aa7f10024fbc8dded38fba70ef7a5d832236d1eb",
+  "review_run_id": "r-20261002T192931255263-review-of-picker-fast-on-dispatch-path",
+  "reviewed_base_sha": "aa231c204bacade0f70b1c9da25816af61cf5942",
+  "reviewed_head_sha": "aa7f10024fbc8dded38fba70ef7a5d832236d1eb",
+  "reviewed_run_id": "r-20261002T190701226087-picker-fast-on-dispatch-path",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T192931255263-review-of-picker-fast-on-dispatch-path",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T19:34:14.467965+00:00",
+  "total": 79
+}

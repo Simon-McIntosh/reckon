@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-base.log",
+    "count_derivation": "derived with review.added_failures_from_gate_logs over the two gate logs the reviewed manifest's own baseline_suite/after_suite fields name: the base log reports 192 passed with no FAILED or ERROR node id, and the head log 205 passed at EXIT=0 with none either, so the added set is the measured empty set, not an untaken measurement"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1140",
+    "reckon/mcp.py:3965"
+  ],
+  "completed_at": "2026-09-28T17:45:10.545Z",
+  "dispatched_at": "2026-09-28T17:10:53Z",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "2019",
+      "text": "total_runs counts every receipt of a rising window while the rise at 2015 spans the intervals between them, so the per-run cost is low by n/(n-1) -- the docstring's own \"runs that produced it\" is n-1 runs -- and runs remaining is overstated, up to 2x on a two-receipt window: terra's 96 percent remaining over one two-receipt window prices 1.5 percent per run and reports 64 runs where an interval-consistent count prices 3.0 and reports 32, the direction that weakens the refusal this node exists to provide; the tests encode the convention (tests/test_preflight_runs_remaining.py:228), so none can catch it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log",
+      "line": "4",
+      "text": "the head arm's command header is an elided placeholder (\"<ten budget and pace files incl tests/test_preflight_runs_remaining.py>\") where the base arm names its files in full, so the head log alone names no runnable command to reproduce the 205 passed; the manifest's after_suite JSON carries the full command, so the fact is recorded, but the artefact a reader opens first is not re-runnable."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against fb7475289c1d5e0230e6c146dc44891b02a23420; 0f135716 replaces the level reading with _run_cost_flow, its unmeasured reason and the per-role flow beside the discriminating test cases, and f00c293c records the landing in the plan and the cumulative evidence file; both commits touch only the declared paths, and the two production call sites reach budget.preflight.",
+    "done_when": "the done-when asks for a synthetic wave projected past its reset to be refused with the runs-remaining figure in the refusal, and tests/test_preflight_runs_remaining.py:515-538 asserts that refusal text with \"15.00 runs remain\"; re-run at the committed head from a git-extracted scratch tree the node's own file passes 13 of 13, the node's declared level-pricing control reddens 8 of its cases (8 failed, 5 passed, EXIT=1), and an independent mutation dropping the per-reset-boundary keying reddens exactly the mid-series-reset case (1 failed, 12 passed, EXIT=1).",
+    "goal": "read the goal (\"Report runs remaining before the weekly reset per budget group and role, and refuse a wave projected past it\") and the plan section's wording (\"from the mean quota cost per run over the trailing seven days\") against the diff: reckon/budget.py:1983-2024 prices each reset window by the rise between its earliest and latest receipt over the runs that produced it and sums the rises per window, reckon/budget.py:2101 divides the remaining window by that flow, the per-role split repeats it at 2120-2131, and the refusal at 2154 names both figures (\"15.00 runs remain before the weekly reset at ...\"); run independently over reckon's committed ledger (2252 records) the flow supports 25.2-101.4 runs remaining against 3.2-10.4 for the same receipts' mean level, reproducing the node's headline.",
+    "manifest": "read; the baseline_suite and after_suite fields now carry JSON with revision, command, exit_status, log_path, completed, failure_count 0 and failure_ids [], so the store's own gate-log resolver (reckon/crew/review.py:612) finds both arms and derives a measured added_failure_count of 0, which is the repair of both follow_ons the prior review left.",
+    "write_paths": "read the manifest's seven declared paths; git show --stat over 0f13571660f6259b7f63ca909e613a6adfc2b10c and f00c293c5f639ccc9c65726184754a409467310e lists five files -- reckon/budget.py, tests/test_preflight_runs_remaining.py, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/archive/the-fleet-reports-its-velocity-landed.html and docs/figures/the-fleet-reports-its-velocity/quota-runway.png -- and every one is inside them."
+  },
+  "justifications": {
+    "durability": "the flow reading is falsified by mutation rather than merely asserted -- the node's declared level-pricing control reddens 8 of 13 cases and my independent one-window keying mutation reddens exactly the mid-series-reset case -- but the denominator convention is asserted by a case written to it (tests/test_preflight_runs_remaining.py:228 pins 8.0/12.0), so no case can catch the 1/n bias.",
+    "evidence": "both arms carry JSON with revisions, commands, log_path and a measured zero added failures, the head log names revision f00c293c, its tree, the module paths, 205 passed and EXIT=0, and I reproduced the headline independently over the live ledger; the head log's own command header is an elided placeholder, so the log alone cannot be re-run.",
+    "fit": "the change follows the module's idiom -- unmeasured-not-zero sentinels with a named reason, format_refusal for the refusal, mechanism names _run_cost_flow, _priced_runs and RUNWAY_TRAILING_DAYS -- and introduces no plan label or version token.",
+    "goal_fidelity": "the figure is now a rise over the runs that produced it and every named element landed -- per group, per role, refusal naming runs and reset -- but the denominator at reckon/budget.py:2019 counts every receipt of a rising window while the rise at 2015 spans one interval fewer, so the mean is low and runs remaining overstated, by up to 2x on the two-receipt windows sparse wallets have, in the direction that weakens the guard.",
+    "scope_discipline": "both commits change five files, all inside the seven declared write paths, and the group and role figures reuse pace.drain_deadline and the budget group declaration rather than restating them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal (\"Report runs remaining before the weekly reset per budget group and role, and refuse a wave projected past it\") and the plan section's wording (\"from the mean quota cost per run over the trailing seven days\") against the diff: reckon/budget.py:1983-2024 prices each reset window by the rise between its earliest and latest receipt over the runs that produced it and sums the rises per window, reckon/budget.py:2101 divides the remaining window by that flow, the per-role split repeats it at 2120-2131, and the refusal at 2154 names both figures (\"15.00 runs remain before the weekly reset at ...\"); run independently over reckon's committed ledger (2252 records) the flow supports 25.2-101.4 runs remaining against 3.2-10.4 for the same receipts' mean level, reproducing the node's headline.\nVERDICT done_when: the done-when asks for a synthetic wave projected past its reset to be refused with the runs-remaining figure in the refusal, and tests/test_preflight_runs_remaining.py:515-538 asserts that refusal text with \"15.00 runs remain\"; re-run at the committed head from a git-extracted scratch tree the node's own file passes 13 of 13, the node's declared level-pricing control reddens 8 of its cases (8 failed, 5 passed, EXIT=1), and an independent mutation dropping the per-reset-boundary keying reddens exactly the mid-series-reset case (1 failed, 12 passed, EXIT=1).\nVERDICT write_paths: read the manifest's seven declared paths; git show --stat over 0f13571660f6259b7f63ca909e613a6adfc2b10c and f00c293c5f639ccc9c65726184754a409467310e lists five files -- reckon/budget.py, tests/test_preflight_runs_remaining.py, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/archive/the-fleet-reports-its-velocity-landed.html and docs/figures/the-fleet-reports-its-velocity/quota-runway.png -- and every one is inside them.\nVERDICT manifest: read; the baseline_suite and after_suite fields now carry JSON with revision, command, exit_status, log_path, completed, failure_count 0 and failure_ids [], so the store's own gate-log resolver (reckon/crew/review.py:612) finds both arms and derives a measured added_failure_count of 0, which is the repair of both follow_ons the prior review left.\nVERDICT diff: read commit by commit against fb7475289c1d5e0230e6c146dc44891b02a23420; 0f135716 replaces the level reading with _run_cost_flow, its unmeasured reason and the per-role flow beside the discriminating test cases, and f00c293c records the landing in the plan and the cumulative evidence file; both commits touch only the declared paths, and the two production call sites reach budget.preflight.\nCALL_SITES: reckon/cli.py:1140, reckon/mcp.py:3965\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the figure is now a rise over the runs that produced it and every named element landed -- per group, per role, refusal naming runs and reset -- but the denominator at reckon/budget.py:2019 counts every receipt of a rising window while the rise at 2015 spans one interval fewer, so the mean is low and runs remaining overstated, by up to 2x on the two-receipt windows sparse wallets have, in the direction that weakens the guard.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arms carry JSON with revisions, commands, log_path and a measured zero added failures, the head log names revision f00c293c, its tree, the module paths, 205 passed and EXIT=0, and I reproduced the headline independently over the live ledger; the head log's own command header is an elided placeholder, so the log alone cannot be re-run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both commits change five files, all inside the seven declared write paths, and the group and role figures reuse pace.drain_deadline and the budget group declaration rather than restating them.\nSCORE durability: 18\nJUSTIFICATION durability: the flow reading is falsified by mutation rather than merely asserted -- the node's declared level-pricing control reddens 8 of 13 cases and my independent one-window keying mutation reddens exactly the mid-series-reset case -- but the denominator convention is asserted by a case written to it (tests/test_preflight_runs_remaining.py:228 pins 8.0/12.0), so no case can catch the 1/n bias.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's idiom -- unmeasured-not-zero sentinels with a named reason, format_refusal for the refusal, mechanism names _run_cost_flow, _priced_runs and RUNWAY_TRAILING_DAYS -- and introduces no plan label or version token.\nFINDING reckon/budget.py:2019 total_runs counts every receipt of a rising window while the rise at 2015 spans the intervals between them, so the per-run cost is low by n/(n-1) -- the docstring's own \"runs that produced it\" is n-1 runs -- and runs remaining is overstated, up to 2x on a two-receipt window: terra's 96 percent remaining over one two-receipt window prices 1.5 percent per run and reports 64 runs where an interval-consistent count prices 3.0 and reports 32, the direction that weakens the refusal this node exists to provide; the tests encode the convention (tests/test_preflight_runs_remaining.py:228), so none can catch it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log:4 the head arm's command header is an elided placeholder (\"<ten budget and pace files incl tests/test_preflight_runs_remaining.py>\") where the base arm names its files in full, so the head log alone names no runnable command to reproduce the 205 passed; the manifest's after_suite JSON carries the full command, so the fact is recorded, but the artefact a reader opens first is not re-runnable.\n",
+  "review_run_id": "r-20260928T171036653688-review-of-preflight-reports-runs-remaining",
+  "reviewed_base_sha": "fb7475289c1d5e0230e6c146dc44891b02a23420",
+  "reviewed_head_sha": "f00c293c5f639ccc9c65726184754a409467310e",
+  "reviewed_run_id": "r-20260928T140618988787-preflight-reports-runs-remaining",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T17:42:57.089551+00:00",
+  "total": 88
+}

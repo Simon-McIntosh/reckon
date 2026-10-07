@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e89a94bdeb6917a4c2604a2cd6f7a81abe1b22d4",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:crew_follow"
+  ],
+  "completed_at": "2026-10-02T08:06:30.868Z",
+  "dispatched_at": "2026-10-02T07:47:06Z",
+  "findings": [
+    {
+      "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+      "line": "118",
+      "severity": "follow-on",
+      "text": "follow-on: the tests inject producer_reload_window=WINDOW (1.0s) and never reference PRODUCER_RELOAD_WINDOW_SECONDS, so the shipped 5.0s value and its adequacy against a real producer's reload catch-up (a whole-package compile probe bounded at 30s, reckon/cli.py:2135) are neither measured nor asserted; a reload slower than the window would still emit the cycle advice the incident complained of."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "3023",
+      "severity": "follow-on",
+      "text": "follow-on: the deferral is gated on reloading=bool(resume_state), the reader checkpoint _take_follower_checkpoint returns at reckon/cli.py:2090; a reload that carries an empty checkpoint leaves reloading False and reports the mismatch at once, so the deferral holds only where the in-place reload always hands a non-empty checkpoint."
+    }
+  ],
+  "head_log_revision": "3213f8dd64f8e6f287fbd5834408766c48475088",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 3213f8dd against base e89a94bd; reckon/cli.py:2382 adds PRODUCER_RELOAD_WINDOW_SECONDS (5.0) and FOLLOWER_PRODUCER_RELOADING_EVENT, replaces the first_attach-only warning with _producer_code_events deferred on the reload path (reckon/cli.py:3160) and re-read on both wait passes, and routes the reloading event to text and JSON at reckon/cli.py:3881.",
+    "done_when": "the done_when names tests/test_stale_producer_warning_waits_for_its_reload.py driving a sub-window seat (no advice) and a past-window seat (advice), with zero added failures across the two arm files; the manifest records gate 3 passed EXIT=0 and both arms 8 passed EXIT=0.",
+    "goal": "the node's goal is that the follower warns of a stale producer only once it has not reloaded within its reload window; reckon/cli.py:3082 _producer_code_events defers a mismatch first seen on the in-place reload path and owes the cycle advice only after the window has passed.",
+    "manifest": "read; status complete, commit 3213f8dd, recording gate 3 passed, arms base e89a94bd 8 passed and head 3213f8dd 8 passed, and a genuine negative control (2 failed, EXIT=1).",
+    "write_paths": "the declared paths are reckon/cli.py, tests/test_stale_producer_warning_waits_for_its_reload.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/stale-producer-warning-waits-for-its-reload.html; commit 3213f8dd touches exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_stale_producer_warning_waits_for_its_reload.py:143 and :172 assert the reloading note without advice and the advice past the window by planting an external seat record, and the declared negative control (reckon/cli.py:3110 'if reloading' -> 'if False') reddens both (2 failed, EXIT=1); the shipped 5.0s window is not itself asserted.",
+    "evidence": "the gate log logs/gate-head.log and the arms logs record 3 passed EXIT=0 and 8 passed EXIT=0 at the declared revisions; the manifest's after_suite command omits the PYTHONPATH prefix its own arms-head.log header carries, so the recorded command is not literally the one that ran.",
+    "fit": "the nested _producer_code_events helper and event dicts match the surrounding _follow_watch_lines idiom at reckon/cli.py:3048, and PRODUCER_RELOAD_WINDOW_SECONDS / FOLLOWER_PRODUCER_RELOADING_EVENT follow the FOLLOWER_* family with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/cli.py:3082 defers a mismatch first seen while reloading and emits the cycle advice only past the window, which is the goal's behaviour; the deferral's precondition reloading=bool(resume_state) at reckon/cli.py:3023 is not exercised for an empty checkpoint.",
+    "scope_discipline": "commit 3213f8dd touches exactly the three declared write paths (reckon/cli.py, the test file, the evidence fragment) and changes no other file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the follower warns of a stale producer only once it has not reloaded within its reload window; reckon/cli.py:3082 _producer_code_events defers a mismatch first seen on the in-place reload path and owes the cycle advice only after the window has passed.\nVERDICT done_when: the done_when names tests/test_stale_producer_warning_waits_for_its_reload.py driving a sub-window seat (no advice) and a past-window seat (advice), with zero added failures across the two arm files; the manifest records gate 3 passed EXIT=0 and both arms 8 passed EXIT=0.\nVERDICT write_paths: the declared paths are reckon/cli.py, tests/test_stale_producer_warning_waits_for_its_reload.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/stale-producer-warning-waits-for-its-reload.html; commit 3213f8dd touches exactly those three and nothing else.\nVERDICT manifest: read; status complete, commit 3213f8dd, recording gate 3 passed, arms base e89a94bd 8 passed and head 3213f8dd 8 passed, and a genuine negative control (2 failed, EXIT=1).\nVERDICT diff: read 3213f8dd against base e89a94bd; reckon/cli.py:2382 adds PRODUCER_RELOAD_WINDOW_SECONDS (5.0) and FOLLOWER_PRODUCER_RELOADING_EVENT, replaces the first_attach-only warning with _producer_code_events deferred on the reload path (reckon/cli.py:3160) and re-read on both wait passes, and routes the reloading event to text and JSON at reckon/cli.py:3881.\nCALL_SITES: reckon/cli.py:crew_follow\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:3082 defers a mismatch first seen while reloading and emits the cycle advice only past the window, which is the goal's behaviour; the deferral's precondition reloading=bool(resume_state) at reckon/cli.py:3023 is not exercised for an empty checkpoint.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate log logs/gate-head.log and the arms logs record 3 passed EXIT=0 and 8 passed EXIT=0 at the declared revisions; the manifest's after_suite command omits the PYTHONPATH prefix its own arms-head.log header carries, so the recorded command is not literally the one that ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 3213f8dd touches exactly the three declared write paths (reckon/cli.py, the test file, the evidence fragment) and changes no other file.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_stale_producer_warning_waits_for_its_reload.py:143 and :172 assert the reloading note without advice and the advice past the window by planting an external seat record, and the declared negative control (reckon/cli.py:3110 'if reloading' -> 'if False') reddens both (2 failed, EXIT=1); the shipped 5.0s window is not itself asserted.\nSCORE fit: 19\nJUSTIFICATION fit: the nested _producer_code_events helper and event dicts match the surrounding _follow_watch_lines idiom at reckon/cli.py:3048, and PRODUCER_RELOAD_WINDOW_SECONDS / FOLLOWER_PRODUCER_RELOADING_EVENT follow the FOLLOWER_* family with no plan or ticket identifier.\nFINDING tests/test_stale_producer_warning_waits_for_its_reload.py:118 follow-on: the tests inject producer_reload_window=WINDOW (1.0s) and never reference PRODUCER_RELOAD_WINDOW_SECONDS, so the shipped 5.0s value and its adequacy against a real producer's reload catch-up (a whole-package compile probe bounded at 30s, reckon/cli.py:2135) are neither measured nor asserted; a reload slower than the window would still emit the cycle advice the incident complained of.\nFINDING reckon/cli.py:3023 follow-on: the deferral is gated on reloading=bool(resume_state), the reader checkpoint _take_follower_checkpoint returns at reckon/cli.py:2090; a reload that carries an empty checkpoint leaves reloading False and reports the mismatch at once, so the deferral holds only where the in-place reload always hands a non-empty checkpoint.\n",
+  "review_run_id": "r-20261002T074643034614-review-of-stale-producer-warning-waits-for-its-reload",
+  "reviewed_base_sha": "e89a94bdeb6917a4c2604a2cd6f7a81abe1b22d4",
+  "reviewed_head_sha": "3213f8dd64f8e6f287fbd5834408766c48475088",
+  "reviewed_run_id": "r-20261002T062817109981-stale-producer-warning-waits-for-its-reload",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T08:04:27.447566+00:00",
+  "total": 95
+}

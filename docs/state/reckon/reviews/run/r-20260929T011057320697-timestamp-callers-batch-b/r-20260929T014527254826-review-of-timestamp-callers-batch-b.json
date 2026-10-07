@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/doccheck.py:228",
+    "reckon/roadmap.py:514",
+    "reckon/archive.py:87",
+    "reckon/mcp_views.py:2030",
+    "reckon/project_state.py:544",
+    "reckon/project_state.py:631",
+    "reckon/project_state.py:791",
+    "reckon/schedule.py:68",
+    "reckon/sprint_liveness.py:237",
+    "reckon/hooks/worker_stop.py:181"
+  ],
+  "completed_at": "2026-09-29T02:22:45.402Z",
+  "dispatched_at": "2026-09-29T01:45:45Z",
+  "findings": [
+    {
+      "file": "reckon/doccheck.py",
+      "line": "216",
+      "text": "modified_age_days now reads the UTC calendar day of a stamp instead of its literal first ten characters, so a near-midnight offset value (2024-03-05T00:30:00+02:00 yields 2024-03-04) shifts the derived age by a day and a value that is a valid date plus trailing text (2024-03-05bogus) returns None, silently switching derived_plan_age at reckon/doccheck.py:228 to its filesystem fallback; neither shape is in the recorded inputs (tests/test_timestamp_callers_batch_b.py:38) or named in CHANGED (:54), though the server stamps modified as a date-only string (reckon/_store.py:1011) so the exposure needs a hand-edited or foreign plan meta."
+    },
+    {
+      "file": "reckon/project_state.py",
+      "line": "636",
+      "text": "_validate_review now accepts resolved_at values the base datetime.fromisoformat refused, surrounding whitespace and a lowercase z, verified against both implementations, widening a validator beyond the ISO spellings it enforced before."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011057320697-timestamp-callers-batch-b/manifest.md",
+      "line": "17",
+      "text": "the after_suite command carries the unsubstituted placeholder <worktree> where the base arm at :16 names its resolved scratch tree, so the recorded head-arm command as written does not run and does not set PYTHONPATH."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read the four commits against base a15e11cb; 369 insertions and 30 deletions across the eight declared paths, all six readers rewired through reckon/_timestamps.py, plus a bare-script import fix for the hook and one evidence fragment with its figure.",
+    "done_when": "the fence names the six callers as the measure and requires the pre-edit output table plus an AST scan; tests/test_timestamp_callers_batch_b.py:38-63 records the nine shared inputs and the 54 cells, :176 walks the modules for a residual fromisoformat, and both gate arms are on disk at manifest.md:11.",
+    "goal": "read all six fenced readers at the reviewed head and each now delegates to parse_utc, at reckon/doccheck.py:213, reckon/hooks/worker_stop.py:127, reckon/project_state.py:525, reckon/project_state.py:636, reckon/schedule.py:38 and reckon/sprint_liveness.py:84, with no second parser left in any of them.",
+    "manifest": "read manifest.md; its four commit shas all resolve at the reviewed worktree, its head arm is green at the committed head with the base arm recording the six pre-migration failures, and negative_control_log at manifest.md:14 repeats the declared mutation verbatim and fails the declared cell.",
+    "write_paths": "read the eight declared paths against a15e11cb..2b66e89f and every changed path is one of them, with reckon/hooks/install.py, the only module the change makes stale, untouched and carried as a follow_on at manifest.md:21."
+  },
+  "justifications": {
+    "durability": "tests/test_timestamp_callers_batch_b.py:176 reddens when fromisoformat returns, as the base arm shows, and :201 reddens when a module stops binding parse_utc, but the doccheck delta at reckon/doccheck.py:216 has no covering cell and the five behaviour-preserving callers' cells cannot tell a revert from the recorded base.",
+    "evidence": "both arms' logs, armed JSON with FAILED ids and the negative-control log are on disk and re-derive to no added failures, though the after_suite command at manifest.md:17 carries an unsubstituted placeholder a reader cannot run.",
+    "fit": "the changed lines keep each caller's policy in a line or two around the call, as reckon/schedule.py:38-41 keeps epoch milliseconds and naive-as-UTC, and no added name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "six of six readers delegate to the shared parser, but reckon/doccheck.py:216 changes the derived calendar day for an offset-bearing stamp and returns None for a valid date plus trailing text, shapes the recorded inputs at tests/test_timestamp_callers_batch_b.py:38 do not cover.",
+    "scope_discipline": "every path in a15e11cb..2b66e89f is one of the eight paths declared at manifest.md:3, and the one module the change makes stale is left untouched with a follow_on."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read all six fenced readers at the reviewed head and each now delegates to parse_utc, at reckon/doccheck.py:213, reckon/hooks/worker_stop.py:127, reckon/project_state.py:525, reckon/project_state.py:636, reckon/schedule.py:38 and reckon/sprint_liveness.py:84, with no second parser left in any of them.\nVERDICT done_when: the fence names the six callers as the measure and requires the pre-edit output table plus an AST scan; tests/test_timestamp_callers_batch_b.py:38-63 records the nine shared inputs and the 54 cells, :176 walks the modules for a residual fromisoformat, and both gate arms are on disk at manifest.md:11.\nVERDICT write_paths: read the eight declared paths against a15e11cb..2b66e89f and every changed path is one of them, with reckon/hooks/install.py, the only module the change makes stale, untouched and carried as a follow_on at manifest.md:21.\nVERDICT manifest: read manifest.md; its four commit shas all resolve at the reviewed worktree, its head arm is green at the committed head with the base arm recording the six pre-migration failures, and negative_control_log at manifest.md:14 repeats the declared mutation verbatim and fails the declared cell.\nVERDICT diff: read the four commits against base a15e11cb; 369 insertions and 30 deletions across the eight declared paths, all six readers rewired through reckon/_timestamps.py, plus a bare-script import fix for the hook and one evidence fragment with its figure.\nCALL_SITES: reckon/doccheck.py:228, reckon/roadmap.py:514, reckon/archive.py:87, reckon/mcp_views.py:2030, reckon/project_state.py:544, reckon/project_state.py:631, reckon/project_state.py:791, reckon/schedule.py:68, reckon/sprint_liveness.py:237, reckon/hooks/worker_stop.py:181\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: six of six readers delegate to the shared parser, but reckon/doccheck.py:216 changes the derived calendar day for an offset-bearing stamp and returns None for a valid date plus trailing text, shapes the recorded inputs at tests/test_timestamp_callers_batch_b.py:38 do not cover.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms' logs, armed JSON with FAILED ids and the negative-control log are on disk and re-derive to no added failures, though the after_suite command at manifest.md:17 carries an unsubstituted placeholder a reader cannot run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in a15e11cb..2b66e89f is one of the eight paths declared at manifest.md:3, and the one module the change makes stale is left untouched with a follow_on.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_timestamp_callers_batch_b.py:176 reddens when fromisoformat returns, as the base arm shows, and :201 reddens when a module stops binding parse_utc, but the doccheck delta at reckon/doccheck.py:216 has no covering cell and the five behaviour-preserving callers' cells cannot tell a revert from the recorded base.\nSCORE fit: 19\nJUSTIFICATION fit: the changed lines keep each caller's policy in a line or two around the call, as reckon/schedule.py:38-41 keeps epoch milliseconds and naive-as-UTC, and no added name carries a plan, sprint or ticket identifier.\nFINDING reckon/doccheck.py:216 modified_age_days now reads the UTC calendar day of a stamp instead of its literal first ten characters, so a near-midnight offset value (2024-03-05T00:30:00+02:00 yields 2024-03-04) shifts the derived age by a day and a value that is a valid date plus trailing text (2024-03-05bogus) returns None, silently switching derived_plan_age at reckon/doccheck.py:228 to its filesystem fallback; neither shape is in the recorded inputs (tests/test_timestamp_callers_batch_b.py:38) or named in CHANGED (:54), though the server stamps modified as a date-only string (reckon/_store.py:1011) so the exposure needs a hand-edited or foreign plan meta.\nFINDING reckon/project_state.py:636 _validate_review now accepts resolved_at values the base datetime.fromisoformat refused, surrounding whitespace and a lowercase z, verified against both implementations, widening a validator beyond the ISO spellings it enforced before.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011057320697-timestamp-callers-batch-b/manifest.md:17 the after_suite command carries the unsubstituted placeholder <worktree> where the base arm at :16 names its resolved scratch tree, so the recorded head-arm command as written does not run and does not set PYTHONPATH.\n",
+  "review_run_id": "r-20260929T014527254826-review-of-timestamp-callers-batch-b",
+  "reviewed_base_sha": "a15e11cbf453c71af872bc9e402ac9c1224bd929",
+  "reviewed_head_sha": "2b66e89f0b9e0d1f7472e00e4688382724cd7946",
+  "reviewed_run_id": "r-20260929T011057320697-timestamp-callers-batch-b",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T02:14:17.415153+00:00",
+  "total": 91
+}

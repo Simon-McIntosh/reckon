@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_store.py:1017 read_plan",
+    "reckon/_store.py:1773 _apply_set",
+    "reckon/mcp.py:_read_plan",
+    "reckon/mcp.py:_roadmap into reckon/roadmap.py:81",
+    "reckon/_plan_html.py:1150 write_state",
+    "reckon/serve.py:1570"
+  ],
+  "completed_at": "2026-09-26T20:23:14.737Z",
+  "dispatched_at": "2026-09-26T20:02:46Z",
+  "findings": [
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "359",
+      "text": "the regex fast path accepts a record element the parsed path refuses \u2014 reproduced on a `<section data-reckon=\"section\" data-id=\"first\" data-effort-hours=\"4\" data-status=\"done\">` carrying authored prose: `_section_records_from_text` returns a record and `derive_impl_from_sections` yields 1.0 while `read_state` raises ValueError at reckon/_plan_html.py:411, so parse_meta and the roadmap report an impl for a plan whose parsed state refuses, which is the one figure the done_when requires every reader to agree on."
+    },
+    {
+      "file": "tests/test_impl_is_computed.py",
+      "line": "114",
+      "text": "the assertion reads the in-memory fixture string `three` rather than the file just written, so the mutation it says it rules out \u2014 a read path rewriting the stored plan-impl meta \u2014 leaves it true; the same property is guarded against the file at tests/test_impl_is_computed.py:100 and :144, so this instance is redundant rather than a hole."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/impl-is-computed-from-section-records/manifest.md",
+      "line": "71",
+      "text": "the head_arm is recorded as \"2 failed, 399 passed\" while the log it names reads \"1 failed, 400 passed\", so a promotion reading the count and a reader opening the receipt disagree about the same run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit at 4d7f15bb against base bcca11f0 \u2014 8e67f2bc adds the derivation, the write_state guard and the set-impl refusal over reckon/_plan_html.py and reckon/_store.py, bcacdebf and a19a9021 append the evidence anchor and the plan paragraph with a deleted-line count of zero, and 4d7f15bb reformats only what this change added.",
+    "done_when": "the gate asserts all four spec bullets plus the read_plan/roadmap parity in tests/test_impl_is_computed.py, both arms are logged (logs/base-gate.log 3 failed, 392 passed of 395 collected; logs/head-gate.log 1 failed, 400 passed of 401), so zero added failures, and the negative control's first line repeats the declared mutation verbatim and reddens the 0.4 assertions.",
+    "goal": "the node's goal is that a plan carrying typed section records reports impl computed from those records and refuses a hand-set value; reckon/_plan_html.py:484 derives it on the parsed path and reckon/_plan_html.py:1373 on the regex path, and reckon/_store.py:1901 refuses a state-mode set impl on such a plan.",
+    "manifest": "read at the dispatch's path; it records four commits, the five changed paths, both gate arms with their logs, the negative control with its mutation and result, the ruff counts, and the two section-level done-when items it did not land, declared as follow-ons rather than claimed.",
+    "write_paths": "the manifest declares twelve paths, and the five files in the diff \u2014 reckon/_plan_html.py, reckon/_store.py, tests/test_impl_is_computed.py, docs/plans/section-contract-and-computed-impl.html and docs/evidence/archive/section-contract-and-computed-impl-landed.html \u2014 are each inside them, with the SPA files untouched as the spec permits."
+  },
+  "justifications": {
+    "durability": "with the derivation replaced at import time the suite reads 0.9 where it expects 0.4 and four of six cases fail (logs/negative-control.log, tests/test_impl_is_computed.py:176), so the guard is falsified rather than merely green.",
+    "evidence": "the arms and the negative control are on disk with their counts and the control's first line repeats the declared mutation, but the manifest's head_arm figure (2 failed, 399 passed at line 71) disagrees with the log it names (logs/head-gate.log:22 reads 1 failed, 400 passed).",
+    "fit": "the change follows the module's existing section-record idiom at reckon/_plan_html.py:284-388 and the four commits carry bodies with no attribution, but the docstring at reckon/_plan_html.py:359 claims a malformed-record check the code does not make.",
+    "goal_fidelity": "reckon/_plan_html.py:484 overrides the stored 0.9 meta with 0.4 for the dispatch fixture and reckon/_store.py:1898 refuses the hand-set value, which is the goal sentence in full.",
+    "scope_discipline": "every path in `git diff bcca11f0..4d7f15bb --stat` sits inside the twelve declared write paths, the evidence anchor carries zero deleted lines, and the plan diff adds one paragraph without touching the plan-version, plan-modified, impl or status meta lines."
+  },
+  "node": "review-of-impl-is-computed-from-section-records",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan carrying typed section records reports impl computed from those records and refuses a hand-set value; reckon/_plan_html.py:484 derives it on the parsed path and reckon/_plan_html.py:1373 on the regex path, and reckon/_store.py:1901 refuses a state-mode set impl on such a plan.\nVERDICT done_when: the gate asserts all four spec bullets plus the read_plan/roadmap parity in tests/test_impl_is_computed.py, both arms are logged (logs/base-gate.log 3 failed, 392 passed of 395 collected; logs/head-gate.log 1 failed, 400 passed of 401), so zero added failures, and the negative control's first line repeats the declared mutation verbatim and reddens the 0.4 assertions.\nVERDICT write_paths: the manifest declares twelve paths, and the five files in the diff \u2014 reckon/_plan_html.py, reckon/_store.py, tests/test_impl_is_computed.py, docs/plans/section-contract-and-computed-impl.html and docs/evidence/archive/section-contract-and-computed-impl-landed.html \u2014 are each inside them, with the SPA files untouched as the spec permits.\nVERDICT manifest: read at the dispatch's path; it records four commits, the five changed paths, both gate arms with their logs, the negative control with its mutation and result, the ruff counts, and the two section-level done-when items it did not land, declared as follow-ons rather than claimed.\nVERDICT diff: read commit by commit at 4d7f15bb against base bcca11f0 \u2014 8e67f2bc adds the derivation, the write_state guard and the set-impl refusal over reckon/_plan_html.py and reckon/_store.py, bcacdebf and a19a9021 append the evidence anchor and the plan paragraph with a deleted-line count of zero, and 4d7f15bb reformats only what this change added.\nCALL_SITES: reckon/_store.py:1017 read_plan, reckon/_store.py:1773 _apply_set, reckon/mcp.py:_read_plan, reckon/mcp.py:_roadmap into reckon/roadmap.py:81, reckon/_plan_html.py:1150 write_state, reckon/serve.py:1570\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:484 overrides the stored 0.9 meta with 0.4 for the dispatch fixture and reckon/_store.py:1898 refuses the hand-set value, which is the goal sentence in full.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms and the negative control are on disk with their counts and the control's first line repeats the declared mutation, but the manifest's head_arm figure (2 failed, 399 passed at line 71) disagrees with the log it names (logs/head-gate.log:22 reads 1 failed, 400 passed).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff bcca11f0..4d7f15bb --stat` sits inside the twelve declared write paths, the evidence anchor carries zero deleted lines, and the plan diff adds one paragraph without touching the plan-version, plan-modified, impl or status meta lines.\nSCORE durability: 17\nJUSTIFICATION durability: with the derivation replaced at import time the suite reads 0.9 where it expects 0.4 and four of six cases fail (logs/negative-control.log, tests/test_impl_is_computed.py:176), so the guard is falsified rather than merely green.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the module's existing section-record idiom at reckon/_plan_html.py:284-388 and the four commits carry bodies with no attribution, but the docstring at reckon/_plan_html.py:359 claims a malformed-record check the code does not make.\nFINDING reckon/_plan_html.py:359 the regex fast path accepts a record element the parsed path refuses \u2014 reproduced on a `<section data-reckon=\"section\" data-id=\"first\" data-effort-hours=\"4\" data-status=\"done\">` carrying authored prose: `_section_records_from_text` returns a record and `derive_impl_from_sections` yields 1.0 while `read_state` raises ValueError at reckon/_plan_html.py:411, so parse_meta and the roadmap report an impl for a plan whose parsed state refuses, which is the one figure the done_when requires every reader to agree on.\nFINDING tests/test_impl_is_computed.py:114 the assertion reads the in-memory fixture string `three` rather than the file just written, so the mutation it says it rules out \u2014 a read path rewriting the stored plan-impl meta \u2014 leaves it true; the same property is guarded against the file at tests/test_impl_is_computed.py:100 and :144, so this instance is redundant rather than a hole.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/impl-is-computed-from-section-records/manifest.md:71 the head_arm is recorded as \"2 failed, 399 passed\" while the log it names reads \"1 failed, 400 passed\", so a promotion reading the count and a reader opening the receipt disagree about the same run.\nREVIEWED_BASE_SHA: bcca11f03b2125caa58c1f539d944bf6ae5de961\nREVIEWED_HEAD_SHA: 4d7f15bb8e94d04ab16b9e2668edda46d62d5239\n\nRead scope: the dispatch's goal, done_when, write paths and negative control from the source run's prompt.txt; the manifest at its declared path; the four commits and their logs; reckon/_plan_html.py, reckon/_store.py and the new test file at 4d7f15bb; the call sites named above by source trace; and one read-only reproduction of the finding at reckon/_plan_html.py:359 against the head tree. The suite was not re-run; the arms are read from their logs.",
+  "review_run_id": "r-20260926T200232513791-review-of-impl-is-computed-from-section-records",
+  "reviewed_base_sha": "bcca11f03b2125caa58c1f539d944bf6ae5de961",
+  "reviewed_head_sha": "4d7f15bb8e94d04ab16b9e2668edda46d62d5239",
+  "reviewed_run_id": "r-20260926T192056949404-impl-is-computed-from-section-records",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T20:15:00.459461+00:00",
+  "total": 87
+}

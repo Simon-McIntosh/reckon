@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_ensure_watch_producer",
+    "reckon/crew/dispatch.py:dispatch"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:53:58.074435+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T140323647770-orphan-case-declares-its-specification-level/gate.log",
+      "line": "1",
+      "text": "neither gate.log nor base-gate.log names the revision or the command it ran, so a later reader ties each log to a revision only through the manifest's after_suite and baseline_suite blocks; reproduce.sh covers the done_when's reproducibility clause, so this is a receipt-header gap rather than a missing control."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against base c25fafac; 58ae0425 adds the spec_level declaration and rewrites the docstring at tests/test_crew_orphan.py:201 to state the mechanism instead of the removed \"This test used to ...\" narration, and 8f3f8109 appends the landing paragraphs to plan section 14 and to the evidence archive with no plan meta line touched.",
+    "done_when": "the measure names tests/test_crew_orphan.py, the replacement assertion, the declared mutation red-logged verbatim and the driver recorded; gate.log reads 2 passed EXIT=0, base-gate.log reads 1 failed, 1 passed EXIT=1 at c25fafac with the spec-level CrewError quoted in full, negative_control.log:1 repeats the run record's negative_control field verbatim, and reproduce.sh carries the exact commands.",
+    "goal": "the goal is that the orphaned-watcher replacement case reaches the replacement path and proves it rather than being refused at validation; tests/test_crew_orphan.py:168 now declares spec_level=\"guided\" on the fixture node, so the dispatch at tests/test_crew_orphan.py:215 passes plan validation and reaches the watcher arming path, and re-running that file at the merged head f16342a4 read 2 passed, exit 0.",
+    "manifest": "read; it records the gate as 2 passed exit 0, the negative control as 1 failed 1 passed exit 1 applied to a scratch copy with no tracked file edited, and a base suite of 1 failed 1 passed at c25fafac naming the failing test id, citing gate.log, base-gate.log, negative_control.log and reproduce.sh.",
+    "write_paths": "the manifest declares tests/test_crew_orphan.py, docs/evidence/archive/crew-runtime-positive-controls-landed.html and docs/plans/crew-runtime-positive-controls.html, and git diff --stat c25fafac..8f3f8109 lists exactly those three at 60 insertions and 4 deletions, nothing outside the fence."
+  },
+  "justifications": {
+    "durability": "with the orphan branch bypassed the case reddens at tests/test_crew_orphan.py:228 and with the spec_level declaration removed it reddens at validation as base-gate.log shows, so both halves of the change carry a demonstrated failing control.",
+    "evidence": "gate.log and base-gate.log record the runs the done_when names and negative_control.log:5 resolves the mutated module under a scratch cwd, but neither gate log names its revision or command, so each log ties to a revision only through the manifest and reproduce.sh.",
+    "fit": "spec_level=\"guided\" is the level 31 test fixtures across tests/ declare against 17 declaring \"exact\", and the rewritten docstring at tests/test_crew_orphan.py:201 states the mechanism rather than the \"This test used to ...\" form the naming rules ban.",
+    "goal_fidelity": "tests/test_crew_orphan.py:168 admits the fixture and tests/test_crew_orphan.py:228 asserts replacement[\"pid\"] != pid, and bypassing the orphan branch at reckon/crew/dispatch.py:791 reddens exactly that assertion, so the case proves the replacement path rather than passing over a refusal.",
+    "scope_discipline": "git diff --stat c25fafac..8f3f8109 lists exactly the three declared paths at 60 insertions and four deletions, the deletions being replaced docstring lines inside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the orphaned-watcher replacement case reaches the replacement path and proves it rather than being refused at validation; tests/test_crew_orphan.py:168 now declares spec_level=\"guided\" on the fixture node, so the dispatch at tests/test_crew_orphan.py:215 passes plan validation and reaches the watcher arming path, and re-running that file at the merged head f16342a4 read 2 passed, exit 0.\nVERDICT done_when: the measure names tests/test_crew_orphan.py, the replacement assertion, the declared mutation red-logged verbatim and the driver recorded; gate.log reads 2 passed EXIT=0, base-gate.log reads 1 failed, 1 passed EXIT=1 at c25fafac with the spec-level CrewError quoted in full, negative_control.log:1 repeats the run record's negative_control field verbatim, and reproduce.sh carries the exact commands.\nVERDICT write_paths: the manifest declares tests/test_crew_orphan.py, docs/evidence/archive/crew-runtime-positive-controls-landed.html and docs/plans/crew-runtime-positive-controls.html, and git diff --stat c25fafac..8f3f8109 lists exactly those three at 60 insertions and 4 deletions, nothing outside the fence.\nVERDICT manifest: read; it records the gate as 2 passed exit 0, the negative control as 1 failed 1 passed exit 1 applied to a scratch copy with no tracked file edited, and a base suite of 1 failed 1 passed at c25fafac naming the failing test id, citing gate.log, base-gate.log, negative_control.log and reproduce.sh.\nVERDICT diff: read both commits against base c25fafac; 58ae0425 adds the spec_level declaration and rewrites the docstring at tests/test_crew_orphan.py:201 to state the mechanism instead of the removed \"This test used to ...\" narration, and 8f3f8109 appends the landing paragraphs to plan section 14 and to the evidence archive with no plan meta line touched.\nCALL_SITES: reckon/crew/dispatch.py:_ensure_watch_producer, reckon/crew/dispatch.py:dispatch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_orphan.py:168 admits the fixture and tests/test_crew_orphan.py:228 asserts replacement[\"pid\"] != pid, and bypassing the orphan branch at reckon/crew/dispatch.py:791 reddens exactly that assertion, so the case proves the replacement path rather than passing over a refusal.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log and base-gate.log record the runs the done_when names and negative_control.log:5 resolves the mutated module under a scratch cwd, but neither gate log names its revision or command, so each log ties to a revision only through the manifest and reproduce.sh.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c25fafac..8f3f8109 lists exactly the three declared paths at 60 insertions and four deletions, the deletions being replaced docstring lines inside the fence.\nSCORE durability: 19\nJUSTIFICATION durability: with the orphan branch bypassed the case reddens at tests/test_crew_orphan.py:228 and with the spec_level declaration removed it reddens at validation as base-gate.log shows, so both halves of the change carry a demonstrated failing control.\nSCORE fit: 19\nJUSTIFICATION fit: spec_level=\"guided\" is the level 31 test fixtures across tests/ declare against 17 declaring \"exact\", and the rewritten docstring at tests/test_crew_orphan.py:201 states the mechanism rather than the \"This test used to ...\" form the naming rules ban.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T140323647770-orphan-case-declares-its-specification-level/gate.log:1 neither gate.log nor base-gate.log names the revision or the command it ran, so a later reader ties each log to a revision only through the manifest's after_suite and baseline_suite blocks; reproduce.sh covers the done_when's reproducibility clause, so this is a receipt-header gap rather than a missing control.",
+  "review_run_id": "r-20260921T165358074435-review-of-orphan-case-declares-its-specification-level",
+  "reviewed_run_id": "r-20260921T140323647770-orphan-case-declares-its-specification-level",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260921T165358074435-review-of-orphan-case-declares-its-specification-level",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:27:29.347401+00:00",
+  "total": 96
+}

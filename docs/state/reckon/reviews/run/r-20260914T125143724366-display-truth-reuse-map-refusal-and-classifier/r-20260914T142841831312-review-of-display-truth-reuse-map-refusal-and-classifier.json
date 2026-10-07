@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T14:28:41.831312+00:00",
+  "findings": [
+    {
+      "file": "crew/reports/display-truth-reuse-refusal-classifier.md",
+      "line": "141",
+      "text": "the citation for the terminal vocabulary anchors recovery.py:72-76, but TERMINAL_MANIFEST_STATUSES is defined at recovery.py:87 and lines 72-76 are RECOVERY_CLASSES members (running/waiting/.../abandoned), so a reader following the citation sees a different distinguished set than the sentence cites; the claim itself (complete, blocked, failed) is correct at :87."
+    },
+    {
+      "file": "crew/reports/display-truth-reuse-refusal-classifier.md",
+      "line": "49",
+      "text": "the deadlock result is recorded only as prose \u2014 the probe log named in the manifest (/tmp/reuse-map-deadlock-probe.log) is 0 bytes because block-buffered pytest output dies with the timeout kill, so the \"exit 124\" claim carries no receipt in the artifact; an independent 130 s probe reproduced exit 124 at the surveyed base, so the claim is right but the numeric code should live in the report text itself."
+    },
+    {
+      "file": "crew/reports/display-truth-reuse-refusal-classifier.md",
+      "line": "1",
+      "text": "the report is unguarded \u2014 no test asserts over the crew/reports directory (the directory is not a git repository either), so a later edit to a verdict or a citation can silently contradict the tree it describes; the same weakness was recorded for the wave-and-soft-limit map in the review of r-20260914T125035036163."
+    }
+  ],
+  "justifications": {
+    "durability": "nothing reads this report \u2014 no test asserts over the crew/reports directory and it is not a git repository, so an edited verdict or a citation pointing at a line that no longer exists fails nothing; the same weakness was scored 5 in the review of the sibling reuse map.",
+    "evidence": "every load-bearing reproduction independently reproduced: the watch test at tests/test_crew.py:1806 rode a 130 s timeout to exit 124 in a fresh probe, the run-on status produced by reports.py:129-131 made manifest_status_is_terminal False and classify_pointer return abandoned with \"redispatch if needed\" (recovery.py:1614-1641), the fixture scan found zero column-0 bullets directly under status: across 263 test files, the commits field parsed clean beside the unusable status, and every sampled citation resolved to its claimed content.",
+    "fit": "the map follows the reuse-map idiom of crew/reports/display-truth-reuse-wave-soft-limit.md with a settled satisfied/partial/absent vocabulary and per-section write-path tables naming the asserting test files, and introduces no plan, sprint or ticket label into the filename or content; it is docked for the recovery.py:72-76 anchor that names RECOVERY_CLASSES members rather than TERMINAL_MANIFEST_STATUSES at recovery.py:87.",
+    "goal_fidelity": "the report maps all nine measure rows of the \u00a715 and \u00a716 tables at the surveyed base 5384182 (6 in \u00a715, 3 in \u00a716 \u2014 verified against the plan HTML at that base, whose extra \u00a715 rows are 2026-09-14 additions absent from the surveyed revision), one row per measure with a satisfied/partial/absent verdict, a file:line citation on every satisfied and partial verdict, and the stated count 9 matches the gate expectation.",
+    "scope_discipline": "the node wrote exactly one path, its declared write path /home/ITER/mcintos/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md, made no commit because that directory is not a git repository, and recorded that honestly in the manifest rather than claiming one."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the report maps all nine measure rows of the \u00a715 and \u00a716 tables at the surveyed base 5384182, one row per measure with a satisfied/partial/absent verdict, a file:line citation on every satisfied and partial verdict, and the stated count 9 matches the gate expectation.\nSCORE evidence: 17\nJUSTIFICATION evidence: every load-bearing reproduction independently reproduced \u2014 the watch test at tests/test_crew.py:1806 rode a 130 s timeout to exit 124, the run-on status produced by reports.py:129-131 made manifest_status_is_terminal False and classify_pointer return abandoned with \"redispatch if needed\" (recovery.py:1614-1641), the fixture scan found zero column-0 bullets directly under status:, and every sampled citation resolved to its claimed content.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node wrote exactly one path, its declared write path /home/ITER/mcintos/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md, made no commit because that directory is not a git repository, and recorded that honestly in the manifest.\nSCORE durability: 5\nJUSTIFICATION durability: nothing reads this report \u2014 no test asserts over the crew/reports directory and it is not a git repository, so an edited verdict or a citation pointing at a line that no longer exists fails nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the map follows the reuse-map idiom of crew/reports/display-truth-reuse-wave-soft-limit.md and introduces no plan or sprint label; it is docked for the recovery.py:72-76 anchor, which names RECOVERY_CLASSES members rather than TERMINAL_MANIFEST_STATUSES at recovery.py:87.\nFINDING crew/reports/display-truth-reuse-refusal-classifier.md:141 the citation for the terminal vocabulary anchors recovery.py:72-76, but TERMINAL_MANIFEST_STATUSES is defined at recovery.py:87 and lines 72-76 are RECOVERY_CLASSES members, so a reader following the citation sees a different distinguished set than the sentence cites.\nFINDING crew/reports/display-truth-reuse-refusal-classifier.md:49 the deadlock result is recorded only as prose \u2014 the probe log named in the manifest (/tmp/reuse-map-deadlock-probe.log) is 0 bytes because block-buffered pytest output dies with the timeout kill, so the \"exit 124\" claim carries no receipt in the artifact; an independent 130 s probe reproduced exit 124 at the surveyed base.\nFINDING crew/reports/display-truth-reuse-refusal-classifier.md:1 the report is unguarded \u2014 no test asserts over the crew/reports directory and the directory is not a git repository, so a later edit to a verdict or a citation can silently contradict the tree it describes.",
+  "review_run_id": "r-20260914T142841831312-review-of-display-truth-reuse-map-refusal-and-classifier",
+  "reviewed_base": "5384182abc14ee26159c13769f3eadb81ccf296c",
+  "reviewed_commit": null,
+  "reviewed_run_id": "r-20260914T125143724366-display-truth-reuse-map-refusal-and-classifier",
+  "scores": {
+    "durability": 5,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T16:29:00.000000+00:00",
+  "total": 78
+}

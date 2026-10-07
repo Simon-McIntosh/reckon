@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:460 (compose_landed_record \u2014 accepts this fragment byte for byte in a scratch tree and carries its rows table)",
+    "reckon/serve.py:2106 (a plan's record response body composes it)",
+    "reckon/mcp.py:1139 (a plan read composes the record)",
+    "reckon/doccheck.py:1230 (the evidence-doc audit composes and anchor-audits it)"
+  ],
+  "completed_at": "2026-09-28T22:21:45.111Z",
+  "dispatched_at": "2026-09-28T21:54:29Z",
+  "emission_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T215415651449-review-of-classify-rules-in-the-other-references/review-emission.log",
+  "findings": [
+    {
+      "file": "docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-other-references/rows.py",
+      "line": "126",
+      "text": "the row for conditional-guidance.md:31 (rendered at classify-rules-in-the-other-references.html:62) names reckon/roadmap.py as the enforcing code, cites no test, and its reason carries no demotion clause, so it reads as an enforced row although the fragment's own method at :24 says that where one of the three conditions is missing the row's reason says which half failed."
+    },
+    {
+      "file": "docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-other-references/rows.py",
+      "line": "251",
+      "text": "the row for worker-protocol.md:59 (rendered at classify-rules-in-the-other-references.html:232) repeats the omission \u2014 enforcing code named as reckon/crew/dispatch.py, no test, no demotion clause \u2014 making these the only two keep rows of the twelve that name real enforcement without a symbol and do not say so in their own reason."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 7c25dee7 \u2014 96473a37 adds the fragment and the figure, f50aaa89 re-derives every enforcement citation in rows.py from the tree, 4cce86f0 redraws the SVG \u2014 and the result reduces enforced rows from 156 to 33 with every surviving citation resolving, which my own re-derivation confirms.",
+    "done_when": "every clause of the fence's measure is answerable from the artifact and I reproduced each with an instrument of my own (check-rows.py, check-rows.log at the review run directory) \u2014 290 rows against 604 sentences from sentence_counts.py:62, 33 enforced rows naming 23 distinct tests, 288 keep against 2 delete-as-obsolete, and the two obsolete rows' premises re-checked in the tree (reckon/cli.py:4522 wires --waive-resume-path, so the rule retired at outage-recovery.md:149 is dead) \u2014 while the reviewed manifest's empty baseline_suite/after_suite (:20-21) leaves the added-failure count unmeasured rather than zero.",
+    "goal": "read the node goal (one row per binding sentence across the nine files under skills/reckon-build/references/) against the delivered fragment, whose Scope section at docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-other-references.html:21-22 states what counts as binding and the read revision, and whose table at :50 carries a row for every binding sentence of all nine files; I re-derived the split independently and found no file and no class unrepresented.",
+    "manifest": "read; status complete at head 4cce86f0 with commits f50aaa89 and 4cce86f0, and its tests line reproduces both cited logs' own verdict lines that I read at source (30 passed in 31.67s EXIT=0; 20 failed, 556 passed in 1016.11s EXIT=1), whose 20 failure ids recount per file as 16/3/1, exactly its failure_attribution.",
+    "write_paths": "the manifest declares docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-other-references.html and the figure directory beside it, and `git diff --stat 7c25dee7 4cce86f0` returns exactly five paths inside those two with nothing under skills/ or reckon/ touched."
+  },
+  "justifications": {
+    "durability": "the diff adds no test assertion at all, and the delivered fragment is written by render.py:362 rather than asserted against rows.py, so a hand-edit of the HTML or a stale rows.py reddens nothing \u2014 the derivation is reproducible (sentence_counts.py:62 derives COUNTS from the tree at import) but unchecked.",
+    "evidence": "both logs are cited by absolute path at classify-rules-in-the-other-references.html:363-364 and their own verdict lines reproduce the quoted figures, but the reviewed manifest leaves baseline_suite and after_suite empty (manifest.md:20-21) so read_review records the added-failure count as unmeasured, and the enforced-gate log's header names revision 96473a37 while the delivered head is 4cce86f0 \u2014 its set file was regenerated from the round-two tree 34 seconds before the run (mtime 23:51:51 against a 23:52:25 run) and the intervening diff is documentation only, so the log covers the delivered citations but a reader must reconcile mtimes to see it.",
+    "fit": "the three scripts are named by capability and the fragment is rendered rather than hand-written, but render.py:24-25 hardcodes an absolute crew-home run directory whose absence silently substitutes a placeholder sentence for the gate summary.",
+    "goal_fidelity": "the table at classify-rules-in-the-other-references.html:50 holds 290 rows and my re-derivation of its own four demotion classes (136 cited no test, 88 cited a module, 11 cited a test that names neither, 12 named no symbol, 10 named no check) plus its 33 enforced rows sums to its stated 290, matching the per-file totals table at :33 row for row.",
+    "scope_discipline": "`git diff --stat 7c25dee7 4cce86f0` returns exactly five paths, all inside the fragment and the figure directory the manifest declares, with no source, skill or plan file in the diff."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260928T205719503443-classify-rules-in-the-other-references at head 4cce86f006c712596d71253c84ed9803378f89f7 over base 7c25dee788bd668dfbfd36624f8ec590e9dba129.\n\nVERDICT goal: read the node goal (one row per binding sentence across the nine files under skills/reckon-build/references/) against the delivered fragment, whose Scope section at docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-other-references.html:21-22 states what counts as binding and the read revision, and whose table at :50 carries a row for every binding sentence of all nine files; I re-derived the split independently and found no file and no class unrepresented.\nVERDICT done_when: every clause of the fence's measure is answerable from the artifact and I reproduced each with an instrument of my own (check-rows.py, check-rows.log at the review run directory) \u2014 290 rows against 604 sentences from sentence_counts.py:62, 33 enforced rows naming 23 distinct tests, 288 keep against 2 delete-as-obsolete, and the two obsolete rows' premises re-checked in the tree (reckon/cli.py:4522 wires --waive-resume-path, so the rule retired at outage-recovery.md:149 is dead) \u2014 while the reviewed manifest's empty baseline_suite/after_suite (:20-21) leaves the added-failure count unmeasured rather than zero.\nVERDICT write_paths: the manifest declares docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-other-references.html and the figure directory beside it, and `git diff --stat 7c25dee7 4cce86f0` returns exactly five paths inside those two with nothing under skills/ or reckon/ touched.\nVERDICT manifest: read; status complete at head 4cce86f0 with commits f50aaa89 and 4cce86f0, and its tests line reproduces both cited logs' own verdict lines that I read at source (30 passed in 31.67s EXIT=0; 20 failed, 556 passed in 1016.11s EXIT=1), whose 20 failure ids recount per file as 16/3/1, exactly its failure_attribution.\nVERDICT diff: read commit by commit against 7c25dee7 \u2014 96473a37 adds the fragment and the figure, f50aaa89 re-derives every enforcement citation in rows.py from the tree, 4cce86f0 redraws the SVG \u2014 and the result reduces enforced rows from 156 to 33 with every surviving citation resolving, which my own re-derivation confirms.\nCALL_SITES: reckon/evidence.py:460 (compose_landed_record \u2014 accepts this fragment byte for byte in a scratch tree and carries its rows table), reckon/serve.py:2106 (a plan's record response body composes it), reckon/mcp.py:1139 (a plan read composes the record), reckon/doccheck.py:1230 (the evidence-doc audit composes and anchor-audits it)\n\nSCORE goal_fidelity: 19\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 12\nSCORE fit: 18\n\nJUSTIFICATION goal_fidelity: the table at classify-rules-in-the-other-references.html:50 holds 290 rows and my re-derivation of its own four demotion classes (136 cited no test, 88 cited a module, 11 cited a test that names neither, 12 named no symbol, 10 named no check) plus its 33 enforced rows sums to its stated 290, matching the per-file totals table at :33 row for row.\nJUSTIFICATION evidence: both logs are cited by absolute path at classify-rules-in-the-other-references.html:363-364 and their own verdict lines reproduce the quoted figures, but the reviewed manifest leaves baseline_suite and after_suite empty (manifest.md:20-21) so read_review records the added-failure count as unmeasured, and the enforced-gate log's header names revision 96473a37 while the delivered head is 4cce86f0 \u2014 its set file was regenerated from the round-two tree 34 seconds before the run (mtime 23:51:51 against a 23:52:25 run) and the intervening diff is documentation only, so the log covers the delivered citations but a reader must reconcile mtimes to see it.\nJUSTIFICATION scope_discipline: `git diff --stat 7c25dee7 4cce86f0` returns exactly five paths, all inside the fragment and the figure directory the manifest declares, with no source, skill or plan file in the diff.\nJUSTIFICATION durability: the diff adds no test assertion at all, and the delivered fragment is written by render.py:362 rather than asserted against rows.py, so a hand-edit of the HTML or a stale rows.py reddens nothing \u2014 the derivation is reproducible (sentence_counts.py:62 derives COUNTS from the tree at import) but unchecked.\nJUSTIFICATION fit: the three scripts are named by capability and the fragment is rendered rather than hand-written, but render.py:24-25 hardcodes an absolute crew-home run directory whose absence silently substitutes a placeholder sentence for the gate summary.\n\nFINDING docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-other-references/rows.py:126 the row for conditional-guidance.md:31 (rendered at classify-rules-in-the-other-references.html:62) names reckon/roadmap.py as the enforcing code, cites no test, and its reason carries no demotion clause, so it reads as an enforced row although the fragment's own method at :24 says that where one of the three conditions is missing the row's reason says which half failed.\nFINDING docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-other-references/rows.py:251 the row for worker-protocol.md:59 (rendered at classify-rules-in-the-other-references.html:232) repeats the omission \u2014 enforcing code named as reckon/crew/dispatch.py, no test, no demotion clause \u2014 making these the only two keep rows of the twelve that name real enforcement without a symbol and do not say so in their own reason.",
+  "review_run_id": "r-20260928T215415651449-review-of-classify-rules-in-the-other-references",
+  "reviewed_base_sha": "7c25dee788bd668dfbfd36624f8ec590e9dba129",
+  "reviewed_head_sha": "4cce86f006c712596d71253c84ed9803378f89f7",
+  "reviewed_run_id": "r-20260928T205719503443-classify-rules-in-the-other-references",
+  "reviewer_run_id": "r-20260928T215415651449-review-of-classify-rules-in-the-other-references",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T22:14:48.674325+00:00",
+  "total": 85
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:main",
+    "reckon/budget.py:preflight",
+    "reckon/budget.py:_published_windows",
+    "reckon/cli.py:964",
+    "reckon/mcp.py:3497"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T22:38:40.873587+00:00",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "1474",
+      "text": "the published document has no production reader at this head: reckon/cli.py:964 and reckon/mcp.py:3497 both pass windows=recorded_windows(...) and name no document or document_path, so nothing in production paces from the document and the plan's \"Preflight and dispatch read that document\" is false live; it is outside this node's fence and is carried as a follow-on."
+    },
+    {
+      "file": "docs/plans/the-local-lane-is-the-default.html",
+      "line": "124",
+      "text": "the landed paragraph, and the same clause at docs/evidence/archive/the-local-lane-is-the-default-landed.html:61, still describes the pre-repair contract -- the pre-flight takes its figures from the document \"when the caller supplies no reading of its own\" -- where at this head the caller must also name the document, so the sentence under-specifies the interface the follow-on wiring in cli.py and mcp.py has to satisfy."
+    },
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "503",
+      "text": "--help and -h are accepted by the parser and discarded, so the documented command run with --help publishes a document instead of printing usage."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from base 02e2757d; db50a1e3 adds reckon/crew/paid_lanes.py (530 lines), 40 lines in reckon/budget.py and 273 test lines, 559e9fe7 adds the 11-line plan paragraph with the new cumulative evidence record and the figure, and d1ae179c repairs the four findings in 11 lines of paid_lanes.py, 22 of budget.py and 278 test lines.",
+    "done_when": "the done_when's four document-level properties, the zero-added-failure suite delta and the entry-point clause are each exercised in tests/test_paid_lanes_document.py; re-running the gate from the reviewed tree reproduces 9 passed in 0.84s against the recorded 9 passed in 0.88s, and the two suite logs' FAILED sets diff empty at six failures each.",
+    "goal": "the node's goal is paid-backend headroom published as one document the pre-flight reads; at the reviewed head reckon/crew/paid_lanes.py:235 composes it per account and reckon/budget.py:1474 reads it when the caller names one, and the repaired entry point at reckon/crew/paid_lanes.py:487 was measured from the reviewed tree writing /tmp/rr-out/paid-lanes.json while leaving the redirected default location untouched.",
+    "manifest": "read; it carries commits, changed paths, the gate command with its result, four log paths, the negative control's mutation and red output, the base and head suite results and six follow_ons, and every claim I rechecked held, including its checkpoint that the four findings of the earlier review are repaired at d1ae179c.",
+    "write_paths": "git diff --numstat over 02e2757d..d1ae179c lists exactly the declared paths (reckon/crew/paid_lanes.py, reckon/budget.py, tests/test_paid_lanes_document.py, docs/plans/the-local-lane-is-the-default.html, the new docs/evidence/archive/the-local-lane-is-the-default-landed.html and the figure), no path lies outside them, and the reviewed worktree is clean at d1ae179c."
+  },
+  "justifications": {
+    "durability": "the three repaired behaviours carry assertions that can fail -- tests/test_paid_lanes_document.py:306 reads the path the product wrote as a real process, :527 asserts unknown against a document the environment makes reachable, :416 asserts literal per-source figures -- the deduction is that the rollout reader the gatherer dispatches through is injected, so its production default is untouched here.",
+    "evidence": "the gate re-run is recorded at gate_recheck.log with the revision, tree and command on its first line (9 passed in 0.84s) and the negative control's first line repeats the declared mutation verbatim with its red traceback, but suite_base.log and suite_after.log open with pytest progress dots naming neither the revision they ran at, the tree, nor the command.",
+    "fit": "reckon/crew/paid_lanes.py reuses window_reading and the pre-flight's own readers and the added lines carry no plan or ticket identifier, with the deduction that :503 accepts --help and discards it.",
+    "goal_fidelity": "reckon/crew/paid_lanes.py:235 composes the per-window document with its per-window source and observed_at and the entry point at :487 now honours its command line, but reckon/budget.py:1474 reads a document only when the caller names one and no production caller does, so the plan's \"pre-flight and dispatch read that document\" is not yet live.",
+    "scope_discipline": "git diff --numstat over 02e2757d..d1ae179c lists exactly the six declared paths, the evidence record is a new file with zero deletions and the plan page is 11 insertions with the server-written meta lines reverted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is paid-backend headroom published as one document the pre-flight reads; at the reviewed head reckon/crew/paid_lanes.py:235 composes it per account and reckon/budget.py:1474 reads it when the caller names one, and the repaired entry point at reckon/crew/paid_lanes.py:487 was measured from the reviewed tree writing /tmp/rr-out/paid-lanes.json while leaving the redirected default location untouched.\nVERDICT done_when: the done_when's four document-level properties, the zero-added-failure suite delta and the entry-point clause are each exercised in tests/test_paid_lanes_document.py; re-running the gate from the reviewed tree reproduces 9 passed in 0.84s against the recorded 9 passed in 0.88s, and the two suite logs' FAILED sets diff empty at six failures each.\nVERDICT write_paths: git diff --numstat over 02e2757d..d1ae179c lists exactly the declared paths (reckon/crew/paid_lanes.py, reckon/budget.py, tests/test_paid_lanes_document.py, docs/plans/the-local-lane-is-the-default.html, the new docs/evidence/archive/the-local-lane-is-the-default-landed.html and the figure), no path lies outside them, and the reviewed worktree is clean at d1ae179c.\nVERDICT manifest: read; it carries commits, changed paths, the gate command with its result, four log paths, the negative control's mutation and red output, the base and head suite results and six follow_ons, and every claim I rechecked held, including its checkpoint that the four findings of the earlier review are repaired at d1ae179c.\nVERDICT diff: read commit by commit from base 02e2757d; db50a1e3 adds reckon/crew/paid_lanes.py (530 lines), 40 lines in reckon/budget.py and 273 test lines, 559e9fe7 adds the 11-line plan paragraph with the new cumulative evidence record and the figure, and d1ae179c repairs the four findings in 11 lines of paid_lanes.py, 22 of budget.py and 278 test lines.\nCALL_SITES: reckon/crew/paid_lanes.py:main, reckon/budget.py:preflight, reckon/budget.py:_published_windows, reckon/cli.py:964, reckon/mcp.py:3497\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/paid_lanes.py:235 composes the per-window document with its per-window source and observed_at and the entry point at :487 now honours its command line, but reckon/budget.py:1474 reads a document only when the caller names one and no production caller does, so the plan's \"pre-flight and dispatch read that document\" is not yet live.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate re-run is recorded at gate_recheck.log with the revision, tree and command on its first line (9 passed in 0.84s) and the negative control's first line repeats the declared mutation verbatim with its red traceback, but suite_base.log and suite_after.log open with pytest progress dots naming neither the revision they ran at, the tree, nor the command.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --numstat over 02e2757d..d1ae179c lists exactly the six declared paths, the evidence record is a new file with zero deletions and the plan page is 11 insertions with the server-written meta lines reverted.\nSCORE durability: 17\nJUSTIFICATION durability: the three repaired behaviours carry assertions that can fail -- tests/test_paid_lanes_document.py:306 reads the path the product wrote as a real process, :527 asserts unknown against a document the environment makes reachable, :416 asserts literal per-source figures -- the deduction is that the rollout reader the gatherer dispatches through is injected, so its production default is untouched here.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/paid_lanes.py reuses window_reading and the pre-flight's own readers and the added lines carry no plan or ticket identifier, with the deduction that :503 accepts --help and discards it.\nFINDING reckon/budget.py:1474 the published document has no production reader at this head: reckon/cli.py:964 and reckon/mcp.py:3497 both pass windows=recorded_windows(...) and name no document or document_path, so nothing in production paces from the document and the plan's \"Preflight and dispatch read that document\" is false live; it is outside this node's fence and is carried as a follow-on.\nFINDING docs/plans/the-local-lane-is-the-default.html:124 the landed paragraph, and the same clause at docs/evidence/archive/the-local-lane-is-the-default-landed.html:61, still describes the pre-repair contract -- the pre-flight takes its figures from the document \"when the caller supplies no reading of its own\" -- where at this head the caller must also name the document, so the sentence under-specifies the interface the follow-on wiring in cli.py and mcp.py has to satisfy.\nFINDING reckon/crew/paid_lanes.py:503 --help and -h are accepted by the parser and discarded, so the documented command run with --help publishes a document instead of printing usage.\nreviewed_base_sha: 02e2757d4795338d9c3af4209aef400cfbd4f7f4\nreviewed_head_sha: d1ae179c538a7fa055d5b4b9244941ddc3f1ce8d",
+  "review_run_id": "r-20260924T223840873587-rereview-of-paid-headroom-is-published",
+  "reviewed_base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+  "reviewed_head_sha": "d1ae179c538a7fa055d5b4b9244941ddc3f1ce8d",
+  "reviewed_run_id": "r-20260924T200633890250-paid-headroom-is-published",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T23:24:35.381060+00:00",
+  "total": 87
+}

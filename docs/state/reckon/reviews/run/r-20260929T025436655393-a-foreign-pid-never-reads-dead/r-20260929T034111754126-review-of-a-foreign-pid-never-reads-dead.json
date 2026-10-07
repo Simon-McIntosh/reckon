@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/runs.py:497",
+    "reckon/crew/recovery.py:3645",
+    "reckon/crew/recovery.py:3873",
+    "reckon/crew/dispatch.py:6981",
+    "reckon/crew/directory.py:69"
+  ],
+  "completed_at": "2026-09-29T04:09:29.859Z",
+  "dispatched_at": "2026-09-29T03:41:34Z",
+  "findings": [
+    {
+      "file": "reckon/sprint_liveness.py",
+      "line": "146",
+      "text": "The fallback guards on record.get(\"process_alive\") is not False, a field the fleet read no longer populates, so a run whose local process has just died now reaches the guard as None and the sprint row reads live true where the pre-repair tree read live false \u2014 measured with one fixture against both arms, the fleet read handing on None at the head and False at the base, and the guard landed two days after the write it depends on."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "509",
+      "text": "The sentence says consumers derive liveness each under its own host gate, but record_process_alive takes a bare local probe and reckon/crew/directory.py:69 writes that probe into process_alive for every pointer, so a foreign run's pid number held here passes as the run's liveness: measured at the head, the directory row reads process_alive true with is_dispatching true when the recorded start tick matches the local holder, and reads unreadable with is_dispatching false when the recorded tick is the worker's own, which is the ordinary case."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "recovery.py:3645 and the launched_here gates at recovery.py:3873 and recovery.py:3907 are the right shape and I reproduced their effect with my own pointer fixture, and the two defects I record are a consumer the change did not measure and a claim its own measurements do not support.",
+    "done_when": "The evidence fence is met as written: tests/test_a_foreign_pid_never_reads_dead.py holds case F, case H, the local-absent-pid control, the recorded-exit route and the direct interruption gate, the real crew home is fingerprinted before and after every case by the fixture at tests/test_a_foreign_pid_never_reads_dead.py:93, and the negative-control log opens with the declared mutation verbatim and ends EXIT=1.",
+    "goal": "A run's recorded pid is read only on the host that issued it, delivered in both halves \u2014 the probe removed from the fleet read and the retained-work interruption gated on a liveness this host proved \u2014 and I reproduced each half on its own rather than accepting the account.",
+    "manifest": "Both suite fields carry revision, command, exit status, one log path and failure ids, and the head arm's added_failure_ids empty is a claim I re-derived from those same logs with the store's own derivation and got 0.",
+    "write_paths": "The diff between fc6c5ecb and 03b5131a touches exactly the five declared paths and nothing else, 545 insertions and 18 deletions across runs.py, recovery.py, the new test module, the fragment and its figure."
+  },
+  "justifications": {
+    "durability": "Five failing-at-base cases plus a landed fragment and figure give a later reader a durable account; one deduction because the producer removed from the fleet read has no test over the consumers that read the field it populated, which is exactly what let the sprint reading change unmeasured.",
+    "evidence": "I re-ran both arms and the pre-existing failure at main cea6da07, re-derived the added-failure count from the reviewed manifest's own logs, and re-probed the raw pointer on both arms; one deduction because the gate logs open with pytest's progress line rather than a header naming revision and command, so a log cannot be resolved to a revision without the manifest beside it.",
+    "fit": "The commit subjects and bodies state the mechanism, the test names and docstrings name what they measure rather than a plan item, and the figure carries the read path; one deduction because the docstring sentence at reckon/crew/runs.py:509 states a consumer guarantee that no test covers.",
+    "goal_fidelity": "Both halves are load-bearing and each was reproduced in a scratch tree of its own; one deduction because the change's own account at reckon/crew/runs.py:509 asserts of its consumers a property that is false for one of them.",
+    "scope_discipline": "The diff touches exactly the five declared paths, both commits are local, and the tests read no state outside a temporary crew home \u2014 the fingerprint at tests/test_a_foreign_pid_never_reads_dead.py:93 asserts the real home is untouched before and after every case."
+  },
+  "node": "review-of-a-foreign-pid-never-reads-dead",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T025436655393-a-foreign-pid-never-reads-dead\n(node a-foreign-pid-never-reads-dead, plan a-stalled-row-says-whether-the-worker-lives, role review, spec guided)\nreviewed_base_sha: fc6c5ecb5f953f3f68d138f7728e3249571efd47\nreviewed_head_sha: 03b5131a77ff2c74074170ce558be651a03a2e30\nRead at the head: the run's prompt.txt, its manifest, both gate logs, the negative-control log, the raw-pointer probe log, the two-commit diff against the base, the new test module, and the landing fragment with its figure. Read beside them: a scratch tree built from each arm.\nVERDICT goal: A run's recorded pid is read only on the host that issued it, delivered in both halves \u2014 the probe removed from the fleet read and the retained-work interruption gated on a liveness this host proved \u2014 and I reproduced each half on its own rather than accepting the account.\nVERDICT done_when: The evidence fence is met as written: tests/test_a_foreign_pid_never_reads_dead.py holds case F, case H, the local-absent-pid control, the recorded-exit route and the direct interruption gate, the real crew home is fingerprinted before and after every case by the fixture at tests/test_a_foreign_pid_never_reads_dead.py:93, and the negative-control log opens with the declared mutation verbatim and ends EXIT=1.\nVERDICT write_paths: The diff between fc6c5ecb and 03b5131a touches exactly the five declared paths and nothing else, 545 insertions and 18 deletions across runs.py, recovery.py, the new test module, the fragment and its figure.\nVERDICT manifest: Both suite fields carry revision, command, exit status, one log path and failure ids, and the head arm's added_failure_ids empty is a claim I re-derived from those same logs with the store's own derivation and got 0.\nVERDICT diff: recovery.py:3645 and the launched_here gates at recovery.py:3873 and recovery.py:3907 are the right shape and I reproduced their effect with my own pointer fixture, and the two defects I record are a consumer the change did not measure and a claim its own measurements do not support.\nCALL_SITES: reckon/crew/runs.py:497, reckon/crew/recovery.py:3645, reckon/crew/recovery.py:3873, reckon/crew/dispatch.py:6981, reckon/crew/directory.py:69\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: Both halves are load-bearing and each was reproduced in a scratch tree of its own; one deduction because the change's own account at reckon/crew/runs.py:509 asserts of its consumers a property that is false for one of them.\nSCORE evidence: 19\nJUSTIFICATION evidence: I re-ran both arms and the pre-existing failure at main cea6da07, re-derived the added-failure count from the reviewed manifest's own logs, and re-probed the raw pointer on both arms; one deduction because the gate logs open with pytest's progress line rather than a header naming revision and command, so a log cannot be resolved to a revision without the manifest beside it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff touches exactly the five declared paths, both commits are local, and the tests read no state outside a temporary crew home \u2014 the fingerprint at tests/test_a_foreign_pid_never_reads_dead.py:93 asserts the real home is untouched before and after every case.\nSCORE durability: 18\nJUSTIFICATION durability: Five failing-at-base cases plus a landed fragment and figure give a later reader a durable account; one deduction because the producer removed from the fleet read has no test over the consumers that read the field it populated, which is exactly what let the sprint reading change unmeasured.\nSCORE fit: 19\nJUSTIFICATION fit: The commit subjects and bodies state the mechanism, the test names and docstrings name what they measure rather than a plan item, and the figure carries the read path; one deduction because the docstring sentence at reckon/crew/runs.py:509 states a consumer guarantee that no test covers.\nFINDING reckon/sprint_liveness.py:146 The fallback guards on record.get(\"process_alive\") is not False, a field the fleet read no longer populates, so a run whose local process has just died now reaches the guard as None and the sprint row reads live true where the pre-repair tree read live false \u2014 measured with one fixture against both arms, the fleet read handing on None at the head and False at the base, and the guard landed two days after the write it depends on.\nFINDING reckon/crew/runs.py:509 The sentence says consumers derive liveness each under its own host gate, but record_process_alive takes a bare local probe and reckon/crew/directory.py:69 writes that probe into process_alive for every pointer, so a foreign run's pid number held here passes as the run's liveness: measured at the head, the directory row reads process_alive true with is_dispatching true when the recorded start tick matches the local holder, and reads unreadable with is_dispatching false when the recorded tick is the worker's own, which is the ordinary case.",
+  "review_run_id": "r-20260929T034111754126-review-of-a-foreign-pid-never-reads-dead",
+  "reviewed_base_sha": "fc6c5ecb5f953f3f68d138f7728e3249571efd47",
+  "reviewed_head_sha": "03b5131a77ff2c74074170ce558be651a03a2e30",
+  "reviewed_run_id": "r-20260929T025436655393-a-foreign-pid-never-reads-dead",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "host": "98dci4-clu-2018.iter.org",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T034111754126-review-of-a-foreign-pid-never-reads-dead",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T04:04:48.875140+00:00",
+  "total": 94
+}

@@ -1,0 +1,37 @@
+{
+  "absent": [],
+  "backend": "codex",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T10:14:29.956692+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "tests/test_landing_comment_authorship.py:122-250 leaves permanent regressions for coordinator attribution, committed worker attribution, changed-body refusal, unchanged-body idempotency, and the four-attempt conflict retry.",
+    "evidence": "tests/test_landing_comment_authorship.py:122-250 directly exercises both repaired defects and all three required controls; the recorded pre-repair receipt reports 2 failed and 3 passed, the independent review run reports 5 passed, and the SDCC cohort retains the same 22 failure identifiers with five additional passes.",
+    "fit": "reckon/crew/promotion.py:51 and 1381-1430 use the surrounding module's named constant, CrewError refusal, HTML-normalized body, worker-commit provenance helper, and bounded VersionConflict retry idioms without introducing plan-labelled source names.",
+    "goal_fidelity": "reckon/crew/promotion.py:1400-1423 now distinguishes an unchanged retry from a same-id narrative mismatch, while reckon/crew/promotion.py:2630-2640 and 2805-2819 attribute coordinator-written comments to the coordinator without bypassing the existing worker-authored-record check.",
+    "scope_discipline": "The diff from bccb617654c3d2e90b3e56a1eaff7d6e74ad5119 through 1aca7d5c65fc49dafdc25eeac3bdb038ce8d3bea changes exactly reckon/crew/promotion.py, tests/test_landing_comment_authorship.py, and the two declared plan-evidence paths."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1400-1423 now distinguishes an unchanged retry from a same-id narrative mismatch, while reckon/crew/promotion.py:2630-2640 and 2805-2819 attribute coordinator-written comments to the coordinator without bypassing the existing worker-authored-record check.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_landing_comment_authorship.py:122-250 directly exercises both repaired defects and all three required controls; the recorded pre-repair receipt reports 2 failed and 3 passed, the independent review run reports 5 passed, and the SDCC cohort retains the same 22 failure identifiers with five additional passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff from bccb617654c3d2e90b3e56a1eaff7d6e74ad5119 through 1aca7d5c65fc49dafdc25eeac3bdb038ce8d3bea changes exactly reckon/crew/promotion.py, tests/test_landing_comment_authorship.py, and the two declared plan-evidence paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_landing_comment_authorship.py:122-250 leaves permanent regressions for coordinator attribution, committed worker attribution, changed-body refusal, unchanged-body idempotency, and the four-attempt conflict retry.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion.py:51 and 1381-1430 use the surrounding module's named constant, CrewError refusal, HTML-normalized body, worker-commit provenance helper, and bounded VersionConflict retry idioms without introducing plan-labelled source names.\n",
+  "review_run_id": "r-20260917T101429956692-review-of-the-landing-comment-names-its-writer",
+  "reviewed_base_sha": "bccb617654c3d2e90b3e56a1eaff7d6e74ad5119",
+  "reviewed_commits": [
+    "7bf1f8d662e70522dac9d38ea8c8fd1d2cafec05",
+    "1aca7d5c65fc49dafdc25eeac3bdb038ce8d3bea"
+  ],
+  "reviewed_head_sha": "1aca7d5c65fc49dafdc25eeac3bdb038ce8d3bea",
+  "reviewed_run_id": "r-20260917T093508184482-the-landing-comment-names-its-writer",
+  "reviewer_run_id": "r-20260917T101429956692-review-of-the-landing-comment-names-its-writer",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T10:21:05+00:00",
+  "total": 100
+}

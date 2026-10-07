@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/directory.py:70",
+    "reckon/crew/query.py:166",
+    "reckon/crew/runs.py:1019",
+    "reckon/mcp_views.py:1358",
+    "reckon/crew/promotion.py:4489",
+    "reckon/crew/ticker.py:1350",
+    "reckon/crew/recovery.py:5431"
+  ],
+  "completed_at": "2026-09-29T01:14:16.994Z",
+  "dispatched_at": "2026-09-29T00:54:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T001417713998-orientation-stub-is-not-unwritten/manifest.md",
+      "line": "31",
+      "text": "measurement_module and measurement_cwd are recorded inside evidence_inputs rather than as the top-level keys the manifest contract names, and measurement_module holds the relative path of a test file rather than the module under test's absolute __file__ (the base arm imported /tmp/base-orientation-stub-2b216b8a/reckon/crew/recovery.py), so a verifier reading the declared key finds no value and has to reconstruct module identity from baseline_suite.command."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit 2b216b8a against base 923b75e0; it adds one private helper, one arm inside classify_pointer, and the new test file, and changes nothing else.",
+    "done_when": "the gate names tests/test_orientation_stub_is_not_unwritten.py with a worker process the test starts, a manifest of three orientation fields, a stream holding one assistant record, a first case asserting the word is not unwritten with phase working, a second case killing the process first, and a scratch negative control; both arms are recorded under baseline_suite and after_suite, and re-deriving the set difference with the repository's own added_failures_from_gate_logs over the two named logs reports 0 added ids, matching the manifest.",
+    "goal": "the goal is that a live worker whose manifest holds only its orientation fields is not classified unwritten; reckon/crew/recovery.py:3014 adds the private helper and reckon/crew/recovery.py:4734 consults it inside the unwritten arm, which reaches the measured case for a run whose worker record is live (independent probe: recovery_classification running, recovery observe, phase working) and leaves the goal's literal \"never as unwritten while the worker process lives\" unreached only for a live run carrying no worker record and no assistant turn, a shape pinned at tests/test_a_run_in_motion_is_not_unwritten.py:249 outside this node's fence.",
+    "manifest": "read; it records status complete, one commit, four changed paths, both suite arms with exit_status and failure_ids, the negative-control log whose first line repeats the declared mutation verbatim and ends EXIT=1, and the four ids failing in both arms; the two measurement keys the contract names are recorded inside evidence_inputs instead of at top level, with values that do not answer the field (see finding).",
+    "write_paths": "the declared scope is reckon/crew/recovery.py, tests/test_orientation_stub_is_not_unwritten.py, docs/evidence/fragments/crew-observability-truth/orientation-stub-is-not-unwritten.html and the docs/figures/crew-observability-truth/orientation-stub-is-not-unwritten directory; the single commit 2b216b8a touches exactly those, the figure svg inside the declared directory."
+  },
+  "justifications": {
+    "durability": "tests/test_orientation_stub_is_not_unwritten.py fails at the base revision (gate-base.log) and reddens under the declared mutation (negative-control.log), but the stream route at reckon/crew/recovery.py:3039 is reached only by the fixture's pointer shape, which carries launcher_host and no worker record.",
+    "evidence": "the reviewed manifest records both gate arms with log_path and failure_ids and the negative-control log repeats the declared mutation on its first line with EXIT=1, but the measurement provenance keys are misfiled (see finding).",
+    "fit": "the helper sits beside _carries_orientation_write at reckon/crew/recovery.py:2994 and follows the module's private-helper and docstring idiom, and ruff reports nine findings in the reviewed reckon/crew/recovery.py at head against nine at the base revision (review-evidence/ruff-head.log, review-evidence/ruff-base.log), so the commit adds none.",
+    "goal_fidelity": "the production pointer shape fires at reckon/crew/recovery.py:3037, where a live worker record answers before the stream is read, measured by independent probes as classification running with recovery observe and phase working both when the stream grows and when it holds no assistant turn (review-evidence/live-silent.log), while a dead worker record keeps unwritten with the resume verb (review-evidence/debug-dead.log), per the goal's last sentence.",
+    "scope_discipline": "every path in commit 2b216b8a is one of the four declared paths in the reviewed prompt's FENCE \u2014 SCOPE, and the diff adds no file the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a live worker whose manifest holds only its orientation fields is not classified unwritten; reckon/crew/recovery.py:3014 adds the private helper and reckon/crew/recovery.py:4734 consults it inside the unwritten arm, which reaches the measured case for a run whose worker record is live (independent probe: recovery_classification running, recovery observe, phase working) and leaves the goal's literal \"never as unwritten while the worker process lives\" unreached only for a live run carrying no worker record and no assistant turn, a shape pinned at tests/test_a_run_in_motion_is_not_unwritten.py:249 outside this node's fence.\nVERDICT done_when: the gate names tests/test_orientation_stub_is_not_unwritten.py with a worker process the test starts, a manifest of three orientation fields, a stream holding one assistant record, a first case asserting the word is not unwritten with phase working, a second case killing the process first, and a scratch negative control; both arms are recorded under baseline_suite and after_suite, and re-deriving the set difference with the repository's own added_failures_from_gate_logs over the two named logs reports 0 added ids, matching the manifest.\nVERDICT write_paths: the declared scope is reckon/crew/recovery.py, tests/test_orientation_stub_is_not_unwritten.py, docs/evidence/fragments/crew-observability-truth/orientation-stub-is-not-unwritten.html and the docs/figures/crew-observability-truth/orientation-stub-is-not-unwritten directory; the single commit 2b216b8a touches exactly those, the figure svg inside the declared directory.\nVERDICT manifest: read; it records status complete, one commit, four changed paths, both suite arms with exit_status and failure_ids, the negative-control log whose first line repeats the declared mutation verbatim and ends EXIT=1, and the four ids failing in both arms; the two measurement keys the contract names are recorded inside evidence_inputs instead of at top level, with values that do not answer the field (see finding).\nVERDICT diff: read commit 2b216b8a against base 923b75e0; it adds one private helper, one arm inside classify_pointer, and the new test file, and changes nothing else.\nCALL_SITES: reckon/crew/directory.py:70, reckon/crew/query.py:166, reckon/crew/runs.py:1019, reckon/mcp_views.py:1358, reckon/crew/promotion.py:4489, reckon/crew/ticker.py:1350, reckon/crew/recovery.py:5431\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the production pointer shape fires at reckon/crew/recovery.py:3037, where a live worker record answers before the stream is read, measured by independent probes as classification running with recovery observe and phase working both when the stream grows and when it holds no assistant turn (review-evidence/live-silent.log), while a dead worker record keeps unwritten with the resume verb (review-evidence/debug-dead.log), per the goal's last sentence.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed manifest records both gate arms with log_path and failure_ids and the negative-control log repeats the declared mutation on its first line with EXIT=1, but the measurement provenance keys are misfiled (see finding).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in commit 2b216b8a is one of the four declared paths in the reviewed prompt's FENCE \u2014 SCOPE, and the diff adds no file the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_orientation_stub_is_not_unwritten.py fails at the base revision (gate-base.log) and reddens under the declared mutation (negative-control.log), but the stream route at reckon/crew/recovery.py:3039 is reached only by the fixture's pointer shape, which carries launcher_host and no worker record.\nSCORE fit: 18\nJUSTIFICATION fit: the helper sits beside _carries_orientation_write at reckon/crew/recovery.py:2994 and follows the module's private-helper and docstring idiom, and ruff reports nine findings in the reviewed reckon/crew/recovery.py at head against nine at the base revision (review-evidence/ruff-head.log, review-evidence/ruff-base.log), so the commit adds none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T001417713998-orientation-stub-is-not-unwritten/manifest.md:31 measurement_module and measurement_cwd are recorded inside evidence_inputs rather than as the top-level keys the manifest contract names, and measurement_module holds the relative path of a test file rather than the module under test's absolute __file__ (the base arm imported /tmp/base-orientation-stub-2b216b8a/reckon/crew/recovery.py), so a verifier reading the declared key finds no value and has to reconstruct module identity from baseline_suite.command.\n",
+  "review_run_id": "r-20260929T005422993496-review-of-orientation-stub-is-not-unwritten",
+  "reviewed_base_sha": "923b75e0212285b802bb1d34aa19c070362bdce8",
+  "reviewed_head_sha": "2b216b8a4dc9eeb4b0882d25d16538b1aa3f4de0",
+  "reviewed_run_id": "r-20260929T001417713998-orientation-stub-is-not-unwritten",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T005422993496-review-of-orientation-stub-is-not-unwritten",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T01:10:39.581456+00:00",
+  "total": 88
+}

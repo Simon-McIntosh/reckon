@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T01:27:00.841Z",
+  "dispatched_at": "2026-10-06T01:19:23Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:145",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name the owner of the document-unit key (move `_DOCUMENT_UNIT` beside `section_prose` and import it back, or pass it in), else the digest map and the reader can disagree on which bucket is the document and a decision/followup edit silently stops moving the fingerprint.",
+      "text": "`_DOCUMENT_UNIT = \"_document\"` is defined here and consumed inside `_prose_slices` (line 177), the function the plan moves to `reckon/_plan_html.py` as `section_prose`; the plan fixes one owner for section identity but never says where the document-unit key lives after the move, so `_plan_html.section_prose` and `plan_review._section_digests`/`_review_coverage` (lines 299, 538) will each spell the remainder bucket key \u2014 the same \"one spelling\" defect the section exists to remove, applied to the one key that carries decisions, followups and authored comments",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py:394",
+      "id": "duplicate_owner-2",
+      "reason": "the waste is internal and no done-when measures it; the plan's reuse and depth claims hold, and the reader could derive its headings from the one record set without changing its interface.",
+      "text": "`section_prose` (per the plan and its present stand-in `_prose_slices` at `plan_review.py:148`) obtains its inputs through `plan_headings` and `structured_section_spans`, each of which independently calls the uncached `_structural_spans`, so the \"one raw-text section reader\" runs the structural parser twice per call \u2014 the double walk \u00a717's single-parser premise removed",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d661a467c474004889e4fe43cb65056b7eb4dde936f229f266220a5082276f83",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 161,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T011901011140-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "169b2e2fc915719e42e299dcf4467a393820efe5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the section's one new module, `section_prose` on `reckon/_plan_html.py`, hides the heading walk, the marked-element and landed-card span subtraction, the remainder bucketing and the document-unit join behind an ordered slice sequence.",
+    "duplicate_owner": "a finding \u2014 the plan names `section_record_id` as the one owner of section identity but is silent on the owner of the document-unit bucket key, which the moved reader must also produce.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 states its net as one public definition (`section_prose`) with `strip_tags` made private and the `legacy` flag retired, holding 1481, and \u00a720 states \"no public definition is added and nothing is retired; tests only\", so both sections account for their surface.",
+    "reuse_search": "pass \u2014 the plan searched, and its census reproduces: `grep -rn 'stripped_strings\\|get_text(' reckon/` reports exactly the 14 lines it claims, converging on `section_prose`; it names the machinery it extends (`_TAG_RE`/`_PROSE_SKIP_TAGS` in `reckon/_plan_html.py:1876`, `structured_section_spans`, `section_record_id`, `roadmap.implementable_sections`, `list_plan_reviews`) and says why the two neighbour derivations (`evidence._section_key`, `ledger.normalize_section`) stay.",
+    "thin_wrapper": "pass \u2014 the second node's changes are a move (slicer to `section_prose`) and a rename (`strip_tags`\u2192private `_strip_tags`), not a new layer beside the span machinery; each existing extractor is repointed to the single reader rather than wrapped."
+  },
+  "section_digests": {
+    "_document": "81635abc293ac834eb5c88c1b0f17e260d168d764cf05d9f1319483da13d99ea",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "9c636c482de6ecd0d1914ba756380961ac455a3f9c7638f67a259904fa09a067",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d79e31683151df1a56a87dbbfed8e823d115500358f376d349ab3896ca4ee1ee",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.723672+00:00"
+}

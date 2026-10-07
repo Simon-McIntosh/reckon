@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T10:00:29.019Z",
+  "dispatched_at": "2026-10-03T09:54:52Z",
+  "findings": [
+    {
+      "file": "skills/reckon-build/references/sprint-orchestration.md",
+      "line": "588",
+      "severity": "follow-on",
+      "text": "the reference adds the lower-bound rule and the empty-ledger negative (an empty ledger beside a nonzero remainder is an unfinished drain, not a tidy stop), but tests/test_skill_contracts.py:1216 asserts only the three-figure ledger line in the two files and one fence sentence in SKILL.md, so a revert of the reference's negative rule reddens no test."
+    },
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "1105",
+      "severity": "follow-on",
+      "text": "the ledger line and its fence leave the fixed read-set only 12 estimated tokens under the ceiling the manifest names (head 15,588 against FIXED_READ_SET_TOKEN_BUDGET 15,600 in tests/test_skill_contracts.py:712), so the next addition to this file crosses a test-enforced limit this change brought to within a rounding of; the budget test at tests/test_skill_contracts.py:715 catches it, but the margin is worth recording."
+    }
+  ],
+  "head_log_revision": "3d6d2cdeb691c81c7117e6821325d7014c60360f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site; the edited files are skill prose read by the agent, and the only programmatic reader of the changed strings is the node's own contract test, which does not count.",
+    "diff": "read commit by commit against base 7fbe5fd8963bdb30816189f515c709c37d913f3b; three commits (0c01c836c801, 1d04fc5d3cd2, 3d6d2cdeb691) change the ledger line and the fence sentences in skills/reckon-build/SKILL.md and skills/reckon-build/references/sprint-orchestration.md, rename and extend tests/test_skill_contracts.py::test_closure_ledger_carries_all_drain_counts, and add the evidence fragment; no reckon/ source is touched.",
+    "done_when": "the done_when names the two skill files, a test that asserts the ledger names all three zeros and fails at base, and a recorded gate; tests/test_skill_contracts.py:1216 asserts the three-figure line in both files and base-assertion-against-base-skill.log records the assertion failing at EXIT=1 on the base skill text, and the two-arm gate the manifest names ran with pytest -n 8 --timeout=300.",
+    "goal": "the goal is that the closure ledger names executable-remaining as its third zero; skills/reckon-build/SKILL.md:1105 and skills/reckon-build/references/sprint-orchestration.md:585 both carry foldable-remaining, unreconciled-runs and executable-remaining on the ledger line.",
+    "manifest": "read; status complete, three commits listed, baseline_suite and after_suite both record 1 failed / 91 passed with the same single id test_every_registered_crew_verb_is_documented_or_exempt, the negative-control log is named, and the ruff claim is stated in artifacts without a log path.",
+    "write_paths": "read the manifest's declared paths; the diff touches exactly skills/reckon-build/SKILL.md, skills/reckon-build/references/sprint-orchestration.md, tests/test_skill_contracts.py and docs/evidence/fragments/crew-observability-truth/closure-ledger-third-zero.html, all inside the declared scope, and the declared docs/figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_skill_contracts.py:1216 asserts the literal three-figure string against file text read from disk, independent of any value the test passes in, and negative-control.log shows it reddening at EXIT=1 when executable-remaining is removed from the ledger line, so it fails on the regression it guards; docked because the reference's own negative rule at sprint-orchestration.md:588 and the no-longer-two-zeros clause are stated in prose and guarded by no assertion.",
+    "evidence": "the gate named in the done_when ran at both revisions and its result is recorded rather than claimed - gate-base.log reads 1 failed, 91 passed (EXIT=1) and gate-head-3d6d2cdeb.log reads 1 failed, 91 passed (EXIT=1), the same single id test_every_registered_crew_verb_is_documented_or_exempt at both, re-derived from the reviewed run's own logs; docked because the done_when's ruff-cleanliness claim is stated in artifacts with no ruff log path recorded.",
+    "fit": "the edits match the surrounding idiom of ledger figures and fence sentences in skills/reckon-build/SKILL.md and the contract-test style of tests/test_skill_contracts.py:1207, and no changed symbol or filename carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:1105 and skills/reckon-build/references/sprint-orchestration.md:585 both carry foldable-remaining, unreconciled-runs and executable-remaining on the ledger line, and SKILL.md:768 sources the third figure from the drain view's executable_remainder, which is exactly the node goal.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths and no reckon/ source is touched, so the change is confined to the skill text, its reference, the contract test and the evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the closure ledger names executable-remaining as its third zero; skills/reckon-build/SKILL.md:1105 and skills/reckon-build/references/sprint-orchestration.md:585 both carry foldable-remaining, unreconciled-runs and executable-remaining on the ledger line.\nVERDICT done_when: the done_when names the two skill files, a test that asserts the ledger names all three zeros and fails at base, and a recorded gate; tests/test_skill_contracts.py:1216 asserts the three-figure line in both files and base-assertion-against-base-skill.log records the assertion failing at EXIT=1 on the base skill text, and the two-arm gate the manifest names ran with pytest -n 8 --timeout=300.\nVERDICT write_paths: read the manifest's declared paths; the diff touches exactly skills/reckon-build/SKILL.md, skills/reckon-build/references/sprint-orchestration.md, tests/test_skill_contracts.py and docs/evidence/fragments/crew-observability-truth/closure-ledger-third-zero.html, all inside the declared scope, and the declared docs/figures directory is unused.\nVERDICT manifest: read; status complete, three commits listed, baseline_suite and after_suite both record 1 failed / 91 passed with the same single id test_every_registered_crew_verb_is_documented_or_exempt, the negative-control log is named, and the ruff claim is stated in artifacts without a log path.\nVERDICT diff: read commit by commit against base 7fbe5fd8963bdb30816189f515c709c37d913f3b; three commits (0c01c836c801, 1d04fc5d3cd2, 3d6d2cdeb691) change the ledger line and the fence sentences in skills/reckon-build/SKILL.md and skills/reckon-build/references/sprint-orchestration.md, rename and extend tests/test_skill_contracts.py::test_closure_ledger_carries_all_drain_counts, and add the evidence fragment; no reckon/ source is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:1105 and skills/reckon-build/references/sprint-orchestration.md:585 both carry foldable-remaining, unreconciled-runs and executable-remaining on the ledger line, and SKILL.md:768 sources the third figure from the drain view's executable_remainder, which is exactly the node goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate named in the done_when ran at both revisions and its result is recorded rather than claimed - gate-base.log reads 1 failed, 91 passed (EXIT=1) and gate-head-3d6d2cdeb.log reads 1 failed, 91 passed (EXIT=1), the same single id test_every_registered_crew_verb_is_documented_or_exempt at both, re-derived from the reviewed run's own logs; docked because the done_when's ruff-cleanliness claim is stated in artifacts with no ruff log path recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths and no reckon/ source is touched, so the change is confined to the skill text, its reference, the contract test and the evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_skill_contracts.py:1216 asserts the literal three-figure string against file text read from disk, independent of any value the test passes in, and negative-control.log shows it reddening at EXIT=1 when executable-remaining is removed from the ledger line, so it fails on the regression it guards; docked because the reference's own negative rule at sprint-orchestration.md:588 and the no-longer-two-zeros clause are stated in prose and guarded by no assertion.\nSCORE fit: 20\nJUSTIFICATION fit: the edits match the surrounding idiom of ledger figures and fence sentences in skills/reckon-build/SKILL.md and the contract-test style of tests/test_skill_contracts.py:1207, and no changed symbol or filename carries a plan, sprint or ticket identifier.\nFINDING skills/reckon-build/references/sprint-orchestration.md:588 follow-on: the reference adds the lower-bound rule and the empty-ledger negative (an empty ledger beside a nonzero remainder is an unfinished drain, not a tidy stop), but tests/test_skill_contracts.py:1216 asserts only the three-figure ledger line in the two files and one fence sentence in SKILL.md, so a revert of the reference's negative rule reddens no test.\nFINDING skills/reckon-build/SKILL.md:1105 follow-on: the ledger line and its fence leave the fixed read-set only 12 estimated tokens under the ceiling the manifest names (head 15,588 against FIXED_READ_SET_TOKEN_BUDGET 15,600 in tests/test_skill_contracts.py:712), so the next addition to this file crosses a test-enforced limit this change brought to within a rounding of; the budget test at tests/test_skill_contracts.py:715 catches it, but the margin is worth recording.\n",
+  "review_run_id": "r-20261003T095411410522-review-of-closure-ledger-third-zero",
+  "reviewed_base_sha": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "reviewed_head_sha": "3d6d2cdeb691c81c7117e6821325d7014c60360f",
+  "reviewed_run_id": "r-20261003T092704179408-closure-ledger-third-zero",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:07.208655+00:00",
+  "total": 97
+}

@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:_crew",
+    "reckon/crew/obligations.py:obligations"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T11:18:30.165649+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/an-orchestrator-cannot-forget-its-obligations.html",
+      "line": "153",
+      "text": "the landing comment cites commit c78ffabc, which resolves to no object in this repository (git rev-parse --verify c78ffabc fails); the reseed commit is c78ffabd, so the citation cannot be checked."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 72bb6a5a; c78ffabd rewrites the fixture and the assertions in the test file and 08282bc1 adds the landing-record section, the plan comment and the figure, all inside the declared paths.",
+    "done_when": "the done_when names the reseed, both declared mutations and the ruff state; the manifest records the gate at 08282bc1 and both red mutation logs exist, failing on the assertions the file adds (lines 152-153, 176).",
+    "goal": "the node goal is to make the obligations MCP view test measure real derived duties again, and tests/test_mcp_crew_obligations.py at 08282bc1 seeds live pointers, complete manifests and run directories and reads the derivation's own kinds, which I re-ran at that head for 2 passed.",
+    "manifest": "read; it reports status complete, the 2-passed gate at 08282bc1, three logs, and measurement_module/measurement_cwd naming the reviewed worktree.",
+    "write_paths": "the declared paths are tests/test_mcp_crew_obligations.py, docs/plans/an-orchestrator-cannot-forget-its-obligations.html, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html and docs/figures/an-orchestrator-cannot-forget-its-obligations, and git diff --stat 72bb6a5a..08282bc1 names exactly those four artifacts."
+  },
+  "justifications": {
+    "durability": "tests/test_mcp_crew_obligations.py:152-153 fails if the seeding stops producing a kind or a kind drifts, as the inert-patch mutation log shows with assert [] at line 176.",
+    "evidence": "gate.log names revision 08282bc1, the absolute interpreter and module.__file__ inside the reviewed tree, and both mutation logs are red, though their revision header (72bb6a5a) names the base commit rather than the uncommitted reseeded file they ran.",
+    "fit": "the fixture reuses the census vocabulary and helpers (tests/test_crew_obligations.py:24-84) instead of a second copy, the added names carry no plan label, and ruff on the file reports no findings when I ran it at the head.",
+    "goal_fidelity": "tests/test_mcp_crew_obligations.py:151-153 reads kinds from seeded pointers through recovery.classify_pointer (reckon/crew/obligations.py:91) instead of a stub, which is the goal.",
+    "scope_discipline": "git diff --stat 72bb6a5a..08282bc1 changes only tests/test_mcp_crew_obligations.py and the three declared docs artifacts, with no production module touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the obligations MCP view test measure real derived duties again, and tests/test_mcp_crew_obligations.py at 08282bc1 seeds live pointers, complete manifests and run directories and reads the derivation's own kinds, which I re-ran at that head for 2 passed.\nVERDICT done_when: the done_when names the reseed, both declared mutations and the ruff state; the manifest records the gate at 08282bc1 and both red mutation logs exist, failing on the assertions the file adds (lines 152-153, 176).\nVERDICT write_paths: the declared paths are tests/test_mcp_crew_obligations.py, docs/plans/an-orchestrator-cannot-forget-its-obligations.html, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html and docs/figures/an-orchestrator-cannot-forget-its-obligations, and git diff --stat 72bb6a5a..08282bc1 names exactly those four artifacts.\nVERDICT manifest: read; it reports status complete, the 2-passed gate at 08282bc1, three logs, and measurement_module/measurement_cwd naming the reviewed worktree.\nVERDICT diff: read commit by commit against 72bb6a5a; c78ffabd rewrites the fixture and the assertions in the test file and 08282bc1 adds the landing-record section, the plan comment and the figure, all inside the declared paths.\nCALL_SITES: reckon/mcp.py:_crew, reckon/crew/obligations.py:obligations\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_mcp_crew_obligations.py:151-153 reads kinds from seeded pointers through recovery.classify_pointer (reckon/crew/obligations.py:91) instead of a stub, which is the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log names revision 08282bc1, the absolute interpreter and module.__file__ inside the reviewed tree, and both mutation logs are red, though their revision header (72bb6a5a) names the base commit rather than the uncommitted reseeded file they ran.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 72bb6a5a..08282bc1 changes only tests/test_mcp_crew_obligations.py and the three declared docs artifacts, with no production module touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_mcp_crew_obligations.py:152-153 fails if the seeding stops producing a kind or a kind drifts, as the inert-patch mutation log shows with assert [] at line 176.\nSCORE fit: 18\nJUSTIFICATION fit: the fixture reuses the census vocabulary and helpers (tests/test_crew_obligations.py:24-84) instead of a second copy, the added names carry no plan label, and ruff on the file reports no findings when I ran it at the head.\nFINDING docs/plans/an-orchestrator-cannot-forget-its-obligations.html:153 the landing comment cites commit c78ffabc, which resolves to no object in this repository (git rev-parse --verify c78ffabc fails); the reseed commit is c78ffabd, so the citation cannot be checked.\n",
+  "review_run_id": "r-20260925T111830165649-review-of-mcp-obligations-test-seeds-real-pointers",
+  "reviewed_base_sha": "72bb6a5aea5ec6858a2222915f27d9e2ec9b7bf7",
+  "reviewed_head_sha": "08282bc1fd877420fd113dabeb55a61a0a10e7c4",
+  "reviewed_run_id": "r-20260925T103032479587-mcp-obligations-test-seeds-real-pointers",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:38:44.211020+00:00",
+  "total": 92
+}

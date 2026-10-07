@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/conftest.py::test_temp_config_home"
+  ],
+  "added_failures_note": "measured from the reviewed run's own two arm logs (gate-base.log / gate-head.log): added_failure_count=1, the sole id being the head arm's conftest collection ERROR tests/conftest.py::test_temp_config_home -- an artifact of the head arm including tests/conftest.py where the base arm excluded it (the reviewed manifest's tests field). The reviewed manifest names that id, so the total is not capped.",
+  "backend": "clive",
+  "base_log_revision": "f171e702dac3a6285de5bb1f1ebf8564aa3e08e2",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_backends.py:fence_argv",
+    "reckon/_backends.py:launch_plan",
+    "reckon/_backends.py:protected_checkouts",
+    "reckon/crew/dispatch.py:dispatch"
+  ],
+  "completed_at": "2026-10-01T08:19:11.574Z",
+  "dispatched_at": "2026-10-01T08:08:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "8728",
+      "severity": "follow-on",
+      "text": "follow-on: the resume and lane-change paths compose the fence through launch_plan without fence_config, so a run resumed or lane-changed under a host declaring unprotected_paths re-seals a default the layer left writable; the declared key is what runs only on the primary dispatch path (dispatch.py:5490)."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "6555",
+      "severity": "follow-on",
+      "text": "follow-on: the ledger row carries fence_waiver but not fence_unprotected_paths, and no production reader consumes the pointer key, so a removed default is recorded only on the run pointer and never reaches the durable ledger row the plan's section 3 names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T072944602396-the-protected-set-is-declared/manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the base and head gate arms are not selection-comparable -- the head arm includes tests/conftest.py where the base arm excludes it -- so the head arm's sole added failing id is the collection ERROR tests/conftest.py::test_temp_config_home, an artifact of arm composition rather than the change."
+    }
+  ],
+  "head_log_revision": "f171e702dac3a6285de5bb1f1ebf8564aa3e08e2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base f171e702; seven files changed, all inside the declared scope, adding the flight slots, the composer, the pointer key and five tests.",
+    "done_when": "the done_when names tests/test_the_protected_set_is_declared.py; the manifest records 5 passed at head (re-confirmed here: 5 passed) and the base/head arms, but those arms differ in file selection (manifest.md:10), so the added-failure figure is not a clean delta.",
+    "goal": "the node's goal is to declare the fence's protected set as the flight key `protected_paths` with today's built-in list as its shipped default, `unprotected_paths` as the only removal path, and the removal recorded on the run; the diff does exactly that.",
+    "manifest": "read; it states the five-case gate at head 5 passed, the base arm 19 failed/2090 passed and the head arm 17 failed/2097 passed, names the three logs, records commit 42394e86, and names a negative control whose log reddens case 4 with EXIT=1.",
+    "write_paths": "every path in the diff (reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, reckon/_backends.py, reckon/crew/dispatch.py, tests/test_the_protected_set_is_declared.py, docs/evidence/fragments/a-worker-cannot-write-your-home/the-protected-set-is-declared.html) is inside the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_the_protected_set_is_declared.py:203 reddens under the dropped-default mutation (negative-control.log EXIT=1) and each case asserts against an independently-derived expectation, but no case covers the resume or lane-change fence path.",
+    "evidence": "the gate names tests/test_the_protected_set_is_declared.py and its 5 passed result is recorded in the manifest, but the base and head arms cover different file sets (manifest.md:10), so the recorded added-failure figure is an arm-composition artifact rather than a measured delta.",
+    "fit": "reckon/_backends.py:2472 follows the module's helper-and-composer idiom and the LinkML-derived model is regenerated rather than hand-edited; no plan label or version name is introduced.",
+    "goal_fidelity": "reckon/_backends.py:2472 composes the shipped default with layer additions minus named removals exactly as the node goal states, and reckon/crew/dispatch.py:5528 records the removals on the run pointer.",
+    "scope_discipline": "every changed path listed in the manifest's changed_paths is inside its declared write_paths, and no file outside them is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to declare the fence's protected set as the flight key `protected_paths` with today's built-in list as its shipped default, `unprotected_paths` as the only removal path, and the removal recorded on the run; the diff does exactly that.\nVERDICT done_when: the done_when names tests/test_the_protected_set_is_declared.py; the manifest records 5 passed at head (re-confirmed here: 5 passed) and the base/head arms, but those arms differ in file selection (manifest.md:10), so the added-failure figure is not a clean delta.\nVERDICT write_paths: every path in the diff (reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, reckon/_backends.py, reckon/crew/dispatch.py, tests/test_the_protected_set_is_declared.py, docs/evidence/fragments/a-worker-cannot-write-your-home/the-protected-set-is-declared.html) is inside the manifest's declared write paths.\nVERDICT manifest: read; it states the five-case gate at head 5 passed, the base arm 19 failed/2090 passed and the head arm 17 failed/2097 passed, names the three logs, records commit 42394e86, and names a negative control whose log reddens case 4 with EXIT=1.\nVERDICT diff: read commit by commit against base f171e702; seven files changed, all inside the declared scope, adding the flight slots, the composer, the pointer key and five tests.\nCALL_SITES: reckon/_backends.py:fence_argv, reckon/_backends.py:launch_plan, reckon/_backends.py:protected_checkouts, reckon/crew/dispatch.py:dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2472 composes the shipped default with layer additions minus named removals exactly as the node goal states, and reckon/crew/dispatch.py:5528 records the removals on the run pointer.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate names tests/test_the_protected_set_is_declared.py and its 5 passed result is recorded in the manifest, but the base and head arms cover different file sets (manifest.md:10), so the recorded added-failure figure is an arm-composition artifact rather than a measured delta.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path listed in the manifest's changed_paths is inside its declared write_paths, and no file outside them is touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_protected_set_is_declared.py:203 reddens under the dropped-default mutation (negative-control.log EXIT=1) and each case asserts against an independently-derived expectation, but no case covers the resume or lane-change fence path.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_backends.py:2472 follows the module's helper-and-composer idiom and the LinkML-derived model is regenerated rather than hand-edited; no plan label or version name is introduced.\nFINDING reckon/crew/dispatch.py:8728 follow-on: the resume and lane-change paths compose the fence through launch_plan without fence_config, so a run resumed or lane-changed under a host declaring unprotected_paths re-seals a default the layer left writable; the declared key is what runs only on the primary dispatch path (dispatch.py:5490).\nFINDING reckon/crew/promotion.py:6555 follow-on: the ledger row carries fence_waiver but not fence_unprotected_paths, and no production reader consumes the pointer key, so a removed default is recorded only on the run pointer and never reaches the durable ledger row the plan's section 3 names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T072944602396-the-protected-set-is-declared/manifest.md:10 follow-on: the base and head gate arms are not selection-comparable -- the head arm includes tests/conftest.py where the base arm excludes it -- so the head arm's sole added failing id is the collection ERROR tests/conftest.py::test_temp_config_home, an artifact of arm composition rather than the change.\n",
+  "review_run_id": "r-20261001T080820440206-review-of-the-protected-set-is-declared",
+  "reviewed_base_sha": "f171e702dac3a6285de5bb1f1ebf8564aa3e08e2",
+  "reviewed_head_sha": "42394e86a8d9ee48bf3d83a925493d44972f4203",
+  "reviewed_run_id": "r-20261001T072944602396-the-protected-set-is-declared",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.417397+00:00",
+  "total": 85
+}

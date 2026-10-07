@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "deepseek",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/ticker.py:1647 (render calls _lane_cells)",
+    "reckon/crew/ticker.py:1492 (_lane_cells calls _lane_reading)",
+    "reckon/crew/ticker.py:1465 (_lane_reading calls lane_mean_from_text)"
+  ],
+  "completed_at": "2026-10-03T12:36:13.256Z",
+  "dispatched_at": "2026-10-03T12:30:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1493",
+      "severity": "follow-on",
+      "text": "follow-on: the no-document branch returns a 5-column cell where every document-bearing row returns 27, so the reason cell that follows starts 22 columns earlier for a backend without a lane document; the fixed-column design the module states at ticker.py:737-744 is kept across the mean and clause states but not across the no-clause one, and no test binds the lane cell to one width."
+    },
+    {
+      "file": "tests/test_lane_cell_names_its_cause.py",
+      "line": "210",
+      "severity": "follow-on",
+      "text": "follow-on: the no-clause test asserts LANE_LABEL ('lane') is absent from the whole rendered row, so it would false-fail the day any other column's text (node, reason) contains that substring; asserting the lane cell directly, or that the row carries no LANE_MEAN_UNPUBLISHED/LANE_DOC_STALE clause, would bind the same behaviour without depending on unrelated columns."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit: fd0ad2b1e replaces LANE_MEAN_UNAVAILABLE with LANE_MEAN_UNPUBLISHED/LANE_DOC_STALE and a per-cause return, 47e430875 only reorders the new test's imports, d6900b355 adds the evidence fragment alone.",
+    "done_when": "the four cases render through Ticker.render and each of tests/test_lane_cell_names_its_cause.py's four tests asserts its clause plus a literal 'unavailable' guard; I re-ran that file with tests/test_ticker_shows_the_lane_mean.py at head and read 16 passed.",
+    "goal": "the node makes the lane cell name why it holds no mean instead of a phrase read as an outage; reckon/crew/ticker.py:805 lane_mean_from_text and ticker.py:1469 _lane_cells return the no-document case with no lane clause, the no-throughput case as LANE_MEAN_UNPUBLISHED, the stale case as LANE_DOC_STALE, and a real mean as before.",
+    "manifest": "read; status complete; baseline_suite at cee50d7f4 (38 failed/373 passed, completed true) and after_suite at d6900b355 (29 failed/382 passed, completed true) are recorded with literal commands and log paths, and added_failure_ids is empty.",
+    "write_paths": "the diff spans exactly docs/evidence/fragments/crew-observability-truth/lane-cell-names-its-cause.html, reckon/crew/ticker.py, tests/test_lane_cell_names_its_cause.py and tests/test_ticker_shows_the_lane_mean.py, which equal the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_lane_cell_names_its_cause.py:62's assert_no_outage_wording uses an independent literal, and the negative-control mutation that reapplied an 'unavailable' clause word reddened it; docked because the clause-presence assertions compare the output against the same module constant the code interpolates, so only the wording guard is independent of the implementation.",
+    "evidence": "both arms are recorded at their own revisions with completed true and literal commands, head-arm.log names revision d6900b3556 (the reviewed head), and the negative control ends EXIT=1 with a failing id absent from the head arm; docked because the base arm's tree carried the new test file that cee50d7f4 does not contain, so its three lane-cause failures are the reproduction rather than a clean base arm, and two session_delivery ids differ between arms as a load flake.",
+    "fit": "constants are named by mechanism and the dead LANE_MEAN_UNAVAILABLE is removed cleanly at reckon/crew/ticker.py:737; docked because the no-document branch shrinks the lane cell, letting the trailing reason column start at a different offset for a codex-shaped row than for a document-bearing one in the same pane.",
+    "goal_fidelity": "reconcile/crew/ticker.py:1492-1499 -- the no-document backend returns the bare rate with no clause, a declared-but-unread document returns LANE_MEAN_UNPUBLISHED, a stale one LANE_DOC_STALE, and a mean as before; docked one because the no-document cell is 5 columns wide against 27 for every document-bearing row and no test binds the lane cell to one width.",
+    "scope_discipline": "git diff --stat cee50d7f4..d6900b355 touches only the four declared paths and the third commit is docs-only, with no plan or shared index mutated."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node makes the lane cell name why it holds no mean instead of a phrase read as an outage; reckon/crew/ticker.py:805 lane_mean_from_text and ticker.py:1469 _lane_cells return the no-document case with no lane clause, the no-throughput case as LANE_MEAN_UNPUBLISHED, the stale case as LANE_DOC_STALE, and a real mean as before.\nVERDICT done_when: the four cases render through Ticker.render and each of tests/test_lane_cell_names_its_cause.py's four tests asserts its clause plus a literal 'unavailable' guard; I re-ran that file with tests/test_ticker_shows_the_lane_mean.py at head and read 16 passed.\nVERDICT write_paths: the diff spans exactly docs/evidence/fragments/crew-observability-truth/lane-cell-names-its-cause.html, reckon/crew/ticker.py, tests/test_lane_cell_names_its_cause.py and tests/test_ticker_shows_the_lane_mean.py, which equal the manifest's declared write paths.\nVERDICT manifest: read; status complete; baseline_suite at cee50d7f4 (38 failed/373 passed, completed true) and after_suite at d6900b355 (29 failed/382 passed, completed true) are recorded with literal commands and log paths, and added_failure_ids is empty.\nVERDICT diff: read commit by commit: fd0ad2b1e replaces LANE_MEAN_UNAVAILABLE with LANE_MEAN_UNPUBLISHED/LANE_DOC_STALE and a per-cause return, 47e430875 only reorders the new test's imports, d6900b355 adds the evidence fragment alone.\nCALL_SITES: reckon/crew/ticker.py:1647 (render calls _lane_cells), reckon/crew/ticker.py:1492 (_lane_cells calls _lane_reading), reckon/crew/ticker.py:1465 (_lane_reading calls lane_mean_from_text)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reconcile/crew/ticker.py:1492-1499 -- the no-document backend returns the bare rate with no clause, a declared-but-unread document returns LANE_MEAN_UNPUBLISHED, a stale one LANE_DOC_STALE, and a mean as before; docked one because the no-document cell is 5 columns wide against 27 for every document-bearing row and no test binds the lane cell to one width.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arms are recorded at their own revisions with completed true and literal commands, head-arm.log names revision d6900b3556 (the reviewed head), and the negative control ends EXIT=1 with a failing id absent from the head arm; docked because the base arm's tree carried the new test file that cee50d7f4 does not contain, so its three lane-cause failures are the reproduction rather than a clean base arm, and two session_delivery ids differ between arms as a load flake.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat cee50d7f4..d6900b355 touches only the four declared paths and the third commit is docs-only, with no plan or shared index mutated.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_lane_cell_names_its_cause.py:62's assert_no_outage_wording uses an independent literal, and the negative-control mutation that reapplied an 'unavailable' clause word reddened it; docked because the clause-presence assertions compare the output against the same module constant the code interpolates, so only the wording guard is independent of the implementation.\nSCORE fit: 18\nJUSTIFICATION fit: constants are named by mechanism and the dead LANE_MEAN_UNAVAILABLE is removed cleanly at reckon/crew/ticker.py:737; docked because the no-document branch shrinks the lane cell, letting the trailing reason column start at a different offset for a codex-shaped row than for a document-bearing one in the same pane.\nFINDING reckon/crew/ticker.py:1493 follow-on: the no-document branch returns a 5-column cell where every document-bearing row returns 27, so the reason cell that follows starts 22 columns earlier for a backend without a lane document; the fixed-column design the module states at ticker.py:737-744 is kept across the mean and clause states but not across the no-clause one, and no test binds the lane cell to one width.\nFINDING tests/test_lane_cell_names_its_cause.py:210 follow-on: the no-clause test asserts LANE_LABEL ('lane') is absent from the whole rendered row, so it would false-fail the day any other column's text (node, reason) contains that substring; asserting the lane cell directly, or that the row carries no LANE_MEAN_UNPUBLISHED/LANE_DOC_STALE clause, would bind the same behaviour without depending on unrelated columns.",
+  "review_run_id": "r-20261003T122937659283-review-of-lane-cell-names-its-cause",
+  "reviewed_base_sha": "cee50d7f47c8c0404ef2272eb06a5355da1e9087",
+  "reviewed_head_sha": "d6900b3556fa19e8d00b6c9ffbc236a61a7fe76f",
+  "reviewed_run_id": "r-20261003T115439572726-lane-cell-names-its-cause",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T12:35:19.674987+00:00",
+  "total": 92
+}

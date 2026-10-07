@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "810e9a319f689a2b7e94b4265add55242ee6f2bc",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2791",
+    "reckon/serve.py:3696",
+    "reckon/serve.py:3906"
+  ],
+  "completed_at": "2026-10-03T06:44:22.952Z",
+  "dispatched_at": "2026-10-03T06:35:27Z",
+  "findings": [
+    {
+      "file": "tests/test_server_serves_one_code_version.py",
+      "line": "72",
+      "severity": "follow-on",
+      "text": "follow-on: the helper still sets serve._SERVER_CODE_STAMP with raising=False, a symbol this change deleted from reckon/serve.py, so the line is a silent no-op that guards nothing and can mislead a reader into thinking the refusal still reads that stamp."
+    }
+  ],
+  "head_log_revision": "d102a85e9c8b35deb35684a348ff0f7db9549842",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read all three commits (212934296, 16372ca9a, d102a85e9) against 810e9a31; reckon/serve.py replaces the package-drift request check with the shared 30-second executed-definition report so both stamps derive from the report's own files, adds _CodeReload, and the test file adds four independent guards.",
+    "done_when": "the done_when names a test that changes a module on disk under a running server so a lazily imported name appears, asserts the server does not answer with an ImportError, and a negative control that reproduces the ImportError; tests/test_server_serves_one_code_version.py:180 implements exactly that pair, and repair-final-negative-control.log records the 500 cannot-import-name with the guard removed.",
+    "goal": "plan section 8 requires a long-running server either to reload onto one consistent revision when its code changes or to refuse with a named, visible stale-code error instead of a mid-request ImportError; reckon/serve.py:2398 _refuse_stale_code answers HTTP 503 error stale-code before any handler can lazily import, and _CodeReload at reckon/serve.py:1027 stops the listener, drains and re-execs.",
+    "manifest": "read; it records the base arm at 5 failed and the head arm at 1 failed with zero added failure ids, the four new guard tests green at head, and the guard-removal control red.",
+    "write_paths": "read the manifest's declared write paths; all three commits touch only reckon/serve.py, tests/test_server_serves_one_code_version.py and docs/evidence/fragments/a-page-load-reads-each-file-once/server-serves-one-code-version.html, every one inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_server_serves_one_code_version.py:93 fails if executed-code drift stops refusing the request, and the guard-removal control reddens the lazy-import case with a 500.",
+    "evidence": "repair-base-suite.log and repair-final-head-suite.log each name the revision, tree and command they ran, and the head arm adds zero failure ids over the base arm.",
+    "fit": "reckon/serve.py:991 routes requests and the status route through one served_code.served_report call in the codebase idiom, but tests/test_server_serves_one_code_version.py:72 still monkeypatches a symbol the change removed.",
+    "goal_fidelity": "reckon/serve.py:2398 refuses with HTTP 503 stale-code before the handler can lazily import, and _CodeReload at reckon/serve.py:1027 re-execs the process onto one revision, satisfying both arms of the section's done-when.",
+    "scope_discipline": "the three commits touch only the two declared source/test paths and the evidence fragment, and carry nothing the section's goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 8 requires a long-running server either to reload onto one consistent revision when its code changes or to refuse with a named, visible stale-code error instead of a mid-request ImportError; reckon/serve.py:2398 _refuse_stale_code answers HTTP 503 error stale-code before any handler can lazily import, and _CodeReload at reckon/serve.py:1027 stops the listener, drains and re-execs.\nVERDICT done_when: the done_when names a test that changes a module on disk under a running server so a lazily imported name appears, asserts the server does not answer with an ImportError, and a negative control that reproduces the ImportError; tests/test_server_serves_one_code_version.py:180 implements exactly that pair, and repair-final-negative-control.log records the 500 cannot-import-name with the guard removed.\nVERDICT write_paths: read the manifest's declared write paths; all three commits touch only reckon/serve.py, tests/test_server_serves_one_code_version.py and docs/evidence/fragments/a-page-load-reads-each-file-once/server-serves-one-code-version.html, every one inside the declared scope.\nVERDICT manifest: read; it records the base arm at 5 failed and the head arm at 1 failed with zero added failure ids, the four new guard tests green at head, and the guard-removal control red.\nVERDICT diff: read all three commits (212934296, 16372ca9a, d102a85e9) against 810e9a31; reckon/serve.py replaces the package-drift request check with the shared 30-second executed-definition report so both stamps derive from the report's own files, adds _CodeReload, and the test file adds four independent guards.\nCALL_SITES: reckon/serve.py:2791, reckon/serve.py:3696, reckon/serve.py:3906\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:2398 refuses with HTTP 503 stale-code before the handler can lazily import, and _CodeReload at reckon/serve.py:1027 re-execs the process onto one revision, satisfying both arms of the section's done-when.\nSCORE evidence: 18\nJUSTIFICATION evidence: repair-base-suite.log and repair-final-head-suite.log each name the revision, tree and command they ran, and the head arm adds zero failure ids over the base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three commits touch only the two declared source/test paths and the evidence fragment, and carry nothing the section's goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_server_serves_one_code_version.py:93 fails if executed-code drift stops refusing the request, and the guard-removal control reddens the lazy-import case with a 500.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/serve.py:991 routes requests and the status route through one served_code.served_report call in the codebase idiom, but tests/test_server_serves_one_code_version.py:72 still monkeypatches a symbol the change removed.\nFINDING tests/test_server_serves_one_code_version.py:72 follow-on: the helper still sets serve._SERVER_CODE_STAMP with raising=False, a symbol this change deleted from reckon/serve.py, so the line is a silent no-op that guards nothing and can mislead a reader into thinking the refusal still reads that stamp.\nreviewed_base_sha: 810e9a319f689a2b7e94b4265add55242ee6f2bc\nreviewed_head_sha: d102a85e9c8b35deb35684a348ff0f7db9549842\n",
+  "review_run_id": "r-20261003T063458462919-review-of-server-serves-one-code-version",
+  "reviewed_base_sha": "810e9a319f689a2b7e94b4265add55242ee6f2bc",
+  "reviewed_head_sha": "d102a85e9c8b35deb35684a348ff0f7db9549842",
+  "reviewed_run_id": "r-20261003T054514895506-server-serves-one-code-version",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T06:43:23.914431+00:00",
+  "total": 93
+}

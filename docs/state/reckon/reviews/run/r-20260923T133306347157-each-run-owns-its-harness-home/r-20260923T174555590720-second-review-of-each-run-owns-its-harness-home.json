@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3926",
+    "reckon/crew/dispatch.py:5421",
+    "reckon/crew/dispatch.py:5766",
+    "reckon/crew/resumption.py:243"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T17:45:55.590720+00:00",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "2039",
+      "text": "a fence=False codex launch sets CODEX_HOME to <run>/codex-home while the read-only auth.json bind is composed only inside the `if fence:` block at line 2055, so the seeded home carries no login and the worker loses the operator credential the base revision reached through ~/.codex; no production caller passes fence=False today so the seeded-but-unbound codex home is latent, but the variable is set unconditionally."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against d753e65b; c72c460e adds the harness home and flips the default, ed6f3f3c is a lint fix in the new test, f073da71 is the landing record and evidence anchor.",
+    "done_when": "the done_when names tests/test_each_run_owns_its_harness_home.py asserting the environment and argv through launch_plan and a fenced MCP edit refusal; the manifest records that run and logs/gate-final.log carries its result.",
+    "goal": "the node goal is to give each fenced worker its own harness home and switch the fence on by default; reckon/_backends.py:1791 resolves <run>/harness or <run>/codex-home per dialect and reckon/_backends.py:2003 defaults fence=True.",
+    "manifest": "read; it states 3 failed/48 passed at head over the declared selection with the same three failing ids as base, and names its three logs and its negative-control log.",
+    "write_paths": "read the manifest's declared paths; every path in the d753e65b..f073da71 diff lies inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_each_run_owns_its_harness_home.py:385 asserts CLAUDE_CONFIG_DIR equals the literal <run>/harness so reverting the assignment reddens it, and tests/test_each_run_owns_its_harness_home.py:465 compares write_lock_directory to _store._config_home rather than to itself.",
+    "evidence": "logs/gate-final.log records 3 failed/48 passed at head with the same three failing ids as base and tests/test_each_run_owns_its_harness_home.py:1-33 runs a fenced stub whose real filesystem effects (state write, login unremovable, MCP refusal) are asserted.",
+    "fit": "the new helpers sit in the existing fence section of reckon/_backends.py beside protected_paths and fence_argv, follow that docstring idiom, and introduce no plan, version or ticket identifier.",
+    "goal_fidelity": "reckon/_backends.py:2037-2039 seeds <run>/harness or <run>/codex-home and points CLAUDE_CONFIG_DIR/CODEX_HOME at it, while reckon/_backends.py:2003 makes the fence compose by default.",
+    "scope_discipline": "the d753e65b..f073da71 diffstat touches only files inside the seven declared write paths, and the four neighbouring failures the default flip reddens are reported under follow_ons rather than edited, as the gate clause directs."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to give each fenced worker its own harness home and switch the fence on by default; reckon/_backends.py:1791 resolves <run>/harness or <run>/codex-home per dialect and reckon/_backends.py:2003 defaults fence=True.\nVERDICT done_when: the done_when names tests/test_each_run_owns_its_harness_home.py asserting the environment and argv through launch_plan and a fenced MCP edit refusal; the manifest records that run and logs/gate-final.log carries its result.\nVERDICT write_paths: read the manifest's declared paths; every path in the d753e65b..f073da71 diff lies inside the declared set.\nVERDICT manifest: read; it states 3 failed/48 passed at head over the declared selection with the same three failing ids as base, and names its three logs and its negative-control log.\nVERDICT diff: read commit by commit against d753e65b; c72c460e adds the harness home and flips the default, ed6f3f3c is a lint fix in the new test, f073da71 is the landing record and evidence anchor.\nCALL_SITES: reckon/crew/dispatch.py:3926, reckon/crew/dispatch.py:5421, reckon/crew/dispatch.py:5766, reckon/crew/resumption.py:243\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2037-2039 seeds <run>/harness or <run>/codex-home and points CLAUDE_CONFIG_DIR/CODEX_HOME at it, while reckon/_backends.py:2003 makes the fence compose by default.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-final.log records 3 failed/48 passed at head with the same three failing ids as base and tests/test_each_run_owns_its_harness_home.py:1-33 runs a fenced stub whose real filesystem effects (state write, login unremovable, MCP refusal) are asserted.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the d753e65b..f073da71 diffstat touches only files inside the seven declared write paths, and the four neighbouring failures the default flip reddens are reported under follow_ons rather than edited, as the gate clause directs.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_each_run_owns_its_harness_home.py:385 asserts CLAUDE_CONFIG_DIR equals the literal <run>/harness so reverting the assignment reddens it, and tests/test_each_run_owns_its_harness_home.py:465 compares write_lock_directory to _store._config_home rather than to itself.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers sit in the existing fence section of reckon/_backends.py beside protected_paths and fence_argv, follow that docstring idiom, and introduce no plan, version or ticket identifier.\nFINDING reckon/_backends.py:2039 a fence=False codex launch sets CODEX_HOME to <run>/codex-home while the read-only auth.json bind is composed only inside the `if fence:` block at line 2055, so the seeded home carries no login and the worker loses the operator credential the base revision reached through ~/.codex; no production caller passes fence=False today so the seeded-but-unbound codex home is latent, but the variable is set unconditionally.\n",
+  "review_run_id": "r-20260923T174555590720-second-review-of-each-run-owns-its-harness-home",
+  "reviewed_base_sha": "d753e65b7ef1ae0f3e3bda70ff5eb76d1d994e91",
+  "reviewed_head_sha": "f073da717b3d6b2946133e6c91e275402256970d",
+  "reviewed_run_id": "r-20260923T133306347157-each-run-owns-its-harness-home",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T18:01:41.566857+00:00",
+  "total": 88
+}

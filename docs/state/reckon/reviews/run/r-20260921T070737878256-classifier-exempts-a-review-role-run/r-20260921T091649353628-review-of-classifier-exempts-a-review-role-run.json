@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T09:16:49.353628+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "523",
+      "text": "the refusal accumulator still appends `report for report in (report,)` \u2014 a generator, not the report \u2014 so the first refusal makes the sweep's own return value unserialisable (measured: element type generator, str() prints <generator object>, json.dumps raises TypeError); the plan body at docs/plans/scoring-should-stop-a-promotion.html:591 states this defect \"is repaired here\", the landing comment at :653 records it still open, no follow-on carries it, and recovery.py was inside this node's own write paths."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1980",
+      "text": "reads the role with `record.get(\"role\") at the root only, while recovery._pointer_role at reckon/crew/recovery.py:3037 accepts the node block as well; measured at the merged head on one synthesised record an implement run recording its role only on the node block classifies scoring and is promoted with neither refusal nor waiver (`PROMOTION[node-only/implement] classify=scoring -> no refusal`), which is the fail-open the two-exemption agreement exists to catch; latent on the live path, where all 42 live pointers carry both spellings because dispatch writes the root at reckon/crew/dispatch.py:3441."
+    },
+    {
+      "file": "tests/test_review_role_is_not_reviewed.py",
+      "line": "287",
+      "text": "the agreement test that is meant to hold the two exemptions together builds both records with the role at the root spelling only, so the divergence above is invisible to it while the sibling test at :200 asserts the classifier accepts the node-only spelling the boundary then fails to see."
+    },
+    {
+      "file": "docs/plans/scoring-should-stop-a-promotion.html",
+      "line": "591",
+      "text": "the section body asserts the sweep's refusal accumulator \"is repaired here\" while the landing comment eight paragraphs later records it as still open and the code at recovery.py:523 still carries it, so a reader of the section takes a defect for closed that a single refusal would expose."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "6bd5f9e2 adds REVIEW_ROLE and one arm to classify_pointer's completed branch plus a 306-line module; f407e072 records the evidence and the section comment; both are reachable from the merged head.",
+    "done_when": "the node's declared measure is that a completed review-role run stops classifying as scoring while an implement run with no stored review still composes its own review; measured at the merged head, both halves hold and the sweep dispatches exactly one review.",
+    "goal": "read \u00a73 of docs/plans/scoring-should-stop-a-promotion.html (lines 527-660) and the node's declared goal \u2014 the classifier exemption for a review-role run \u2014 and the change lands the exemption, its negative half and the promotion-boundary agreement in recovery.py.",
+    "manifest": "the manifest at runs/r-20260921T070737878256-classifier-exempts-a-review-role-run/manifest.md carries status complete, both commits, the base-revision reproduction, the cohort delta and the negative control naming its mutation.",
+    "write_paths": "the change is confined to the four declared paths \u2014 reckon/crew/recovery.py, tests/test_review_role_is_not_reviewed.py and the two landing records \u2014 with no plan status, impl or followup mutation."
+  },
+  "justifications": {
+    "durability": "the change is on the live path with a module of its own, but the kernel of persistence \u2014 that the classifier and the boundary judge role identically on the same record \u2014 turns on recovery.py:3037 while promotion.py:1980 reads only the root spelling.",
+    "evidence": "the base revision reproduces the defect (6 failed/1 passed), the module passes 7/7, the 15-file promotion cohort holds at its recorded 18 failures with identical ids, and the negative control (exemption removed) turns 6/7 red at recovery.py \u2014 docked because no positive control was produced that the chain actually forms, so the guard is shown to fire only by removal, not by the fleet it names.",
+    "fit": "the constant sits beside REVIEW_NODE_PREFIX, the arm precedes the stored-review branch, and the tests live in a module named for the behaviour; docked because the review run's next_action is prose rather than the runnable `crew complete` command that recovery.py:2121 composes for every other promotable classification.",
+    "goal_fidelity": "the exemption is exactly what \u00a73 names as its first blocker \u2014 a completed review-role run returns promotable with a next_action composing no dispatch naming it \u2014 and the plan's remaining-work paragraph is accurate about the run's narrow delivery; docked because the same section body claims the refusal accumulator is repaired here, which the code contradicts.",
+    "scope_discipline": "the node wrote exactly its four declared paths across two commits, left the plan's status, impl and followups untouched, and announced its direct plan-HTML edit as a bypass."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read \u00a73 of docs/plans/scoring-should-stop-a-promotion.html (lines 527-660) and the node's declared goal \u2014 the classifier exemption for a review-role run \u2014 and the change lands the exemption, its negative half and the promotion-boundary agreement in recovery.py.\nVERDICT done_when: the node's declared measure is that a completed review-role run stops classifying as scoring while an implement run with no stored review still composes its own review; measured at the merged head, both halves hold and the sweep dispatches exactly one review.\nVERDICT write_paths: the change is confined to the four declared paths \u2014 reckon/crew/recovery.py, tests/test_review_role_is_not_reviewed.py and the two landing records \u2014 with no plan status, impl or followup mutation.\nVERDICT manifest: the manifest at runs/r-20260921T070737878256-classifier-exempts-a-review-role-run/manifest.md carries status complete, both commits, the base-revision reproduction, the cohort delta and the negative control naming its mutation.\nVERDICT diff: 6bd5f9e2 adds REVIEW_ROLE and one arm to classify_pointer's completed branch plus a 306-line module; f407e072 records the evidence and the section comment; both are reachable from the merged head.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the exemption is exactly what \u00a73 names as its first blocker \u2014 a completed review-role run returns promotable with a next_action composing no dispatch naming it \u2014 and the plan's remaining-work paragraph is accurate about the run's narrow delivery; docked because the same section body claims the refusal accumulator is repaired here, which the code contradicts.\nSCORE evidence: 17\nJUSTIFICATION evidence: the base revision reproduces the defect (6 failed/1 passed), the module passes 7/7, the 15-file promotion cohort holds at its recorded 18 failures with identical ids, and the negative control (exemption removed) turns 6/7 red at recovery.py \u2014 docked because no positive control was produced that the chain actually forms, so the guard is shown to fire only by removal, not by the fleet it names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node wrote exactly its four declared paths across two commits, left the plan's status, impl and followups untouched, and announced its direct plan-HTML edit as a bypass.\nSCORE durability: 16\nJUSTIFICATION durability: the change is on the live path with a module of its own, but the kernel of persistence \u2014 that the classifier and the boundary judge role identically on the same record \u2014 turns on recovery.py:3037 while promotion.py:1980 reads only the root spelling.\nSCORE fit: 17\nJUSTIFICATION fit: the constant sits beside REVIEW_NODE_PREFIX, the arm precedes the stored-review branch, and the tests live in a module named for the behaviour; docked because the review run's next_action is prose rather than the runnable `crew complete` command that recovery.py:2121 composes for every other promotable classification.\nFINDING reckon/crew/recovery.py:523 the refusal accumulator still appends `report for report in (report,)` \u2014 a generator, not the report \u2014 so the first refusal makes the sweep's own return value unserialisable (measured: element type generator, str() prints <generator object>, json.dumps raises TypeError); the plan body at docs/plans/scoring-should-stop-a-promotion.html:591 states this defect \"is repaired here\", the landing comment at :653 records it still open, no follow-on carries it, and recovery.py was inside this node's own write paths.\nFINDING reckon/crew/promotion.py:1980 reads the role with `record.get(\"role\") at the root only, while recovery._pointer_role at reckon/crew/recovery.py:3037 accepts the node block as well; measured at the merged head on one synthesised record an implement run recording its role only on the node block classifies scoring and is promoted with neither refusal nor waiver (`PROMOTION[node-only/implement] classify=scoring -> no refusal`), which is the fail-open the two-exemption agreement exists to catch; latent on the live path, where all 42 live pointers carry both spellings because dispatch writes the root at reckon/crew/dispatch.py:3441.\nFINDING tests/test_review_role_is_not_reviewed.py:287 the agreement test that is meant to hold the two exemptions together builds both records with the role at the root spelling only, so the divergence above is invisible to it while the sibling test at :200 asserts the classifier accepts the node-only spelling the boundary then fails to see.\nFINDING docs/plans/scoring-should-stop-a-promotion.html:591 the section body asserts the sweep's refusal accumulator \"is repaired here\" while the landing comment eight paragraphs later records it as still open and the code at recovery.py:523 still carries it, so a reader of the section takes a defect for closed that a single refusal would expose.\n",
+  "review_run_id": "r-20260921T091649353628-review-of-classifier-exempts-a-review-role-run",
+  "reviewed_base_sha": "aa3c5ac61b28bd545c81e4ba6f8740e7c0cf3666",
+  "reviewed_evidence_sha": "f407e072",
+  "reviewed_head_sha": "9949e5aaa4f50e93c5b3a667ead06e300f615369",
+  "reviewed_run_head_sha": "6bd5f9e21ab7f1ef367c911d5b2a411ea1811660",
+  "reviewed_run_id": "r-20260921T070737878256-classifier-exempts-a-review-role-run",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T09:41:50.368112+00:00",
+  "total": 88
+}

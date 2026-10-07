@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_schema.py:1361",
+    "reckon/_schema.py:1374",
+    "reckon/mcp.py:750",
+    "reckon/mcp_views.py:1218"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T06:32:58.506733+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit by commit against base 4a87503f \u2014 4a1d7a15 changes only the generated artifact (8 insertions, the single after property) and 29df6835 adds only the plan aside, the archive anchor and the figure, so the run is 112 insertions and zero deletions.",
+    "done_when": "Read against the landed artifact and then re-run independently \u2014 the named regeneration command is byte-identical at head, both named targets pass at the final head 29df6835 (9 passed), and the declared mutation reddens the equality check (1 failed), all reproduced in logs/review-recheck.log arms A\u2013D.",
+    "goal": "The node's goal is that the published plan schema carries the after edge's declared field; docs/_shared/plan.schema.json:915 carries the single after property and the equality check passes against the head model.",
+    "manifest": "Read; its commits (4a1d7a15, 29df6835), changed_paths, test_logs, negative_control_log, measurement_module/cwd and artifacts each verify against the reviewed tree and the three logs, and negative-control.log's first line repeats the declared mutation verbatim.",
+    "write_paths": "Read the four declared paths against git diff --numstat 4a87503f..29df6835 \u2014 exactly those four files changed (8/0, 55/0, 38/0, 19/0), zero deletions, and the plan's version and modified metas are untouched."
+  },
+  "justifications": {
+    "durability": "the pre-existing equality check tests/test_schema.py:533 fails on a stale artifact \u2014 demonstrated by putting the base copy at head (arm C) \u2014 so the regeneration cannot silently regress; only the docs half of the change carries no reddening assertion.",
+    "evidence": "every gate, base-arm and mutation claim is recorded with a headed log and all four arms reproduced independently (logs/review-recheck.log); the one gap is that the node's own control log carries only the mutated arm, its unmutated pass sitting in head-gates.log on a different tree, which arm A re-ran to close.",
+    "fit": "the artifact is regenerated through the model's own entry point rather than hand-edited, the aside follows the plan's sibling worker-aside idiom (docs/plans/dependency-edge-semantics.html:332), and the added lines carry no plan label, ticket reference or attribution.",
+    "goal_fidelity": "docs/_shared/plan.schema.json:915 declares after exactly as the model generates it, and regenerating through reckon/_schema.py:1381 at head is byte-identical, so the published artifact carries the field rather than approximating it.",
+    "scope_discipline": "git diff --numstat 4a87503f..29df6835 lists exactly the four declared paths with zero deletions, and the cumulative anchor gains its section (docs/evidence/archive/dependency-edge-semantics-landed.html:440) while displacing no peer anchor."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the published plan schema carries the after edge's declared field; docs/_shared/plan.schema.json:915 carries the single after property and the equality check passes against the head model.\nVERDICT done_when: Read against the landed artifact and then re-run independently \u2014 the named regeneration command is byte-identical at head, both named targets pass at the final head 29df6835 (9 passed), and the declared mutation reddens the equality check (1 failed), all reproduced in logs/review-recheck.log arms A\u2013D.\nVERDICT write_paths: Read the four declared paths against git diff --numstat 4a87503f..29df6835 \u2014 exactly those four files changed (8/0, 55/0, 38/0, 19/0), zero deletions, and the plan's version and modified metas are untouched.\nVERDICT manifest: Read; its commits (4a1d7a15, 29df6835), changed_paths, test_logs, negative_control_log, measurement_module/cwd and artifacts each verify against the reviewed tree and the three logs, and negative-control.log's first line repeats the declared mutation verbatim.\nVERDICT diff: Read commit by commit against base 4a87503f \u2014 4a1d7a15 changes only the generated artifact (8 insertions, the single after property) and 29df6835 adds only the plan aside, the archive anchor and the figure, so the run is 112 insertions and zero deletions.\nCALL_SITES: reckon/_schema.py:1361, reckon/_schema.py:1374, reckon/mcp.py:750, reckon/mcp_views.py:1218\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/_shared/plan.schema.json:915 declares after exactly as the model generates it, and regenerating through reckon/_schema.py:1381 at head is byte-identical, so the published artifact carries the field rather than approximating it.\nSCORE evidence: 19\nJUSTIFICATION evidence: every gate, base-arm and mutation claim is recorded with a headed log and all four arms reproduced independently (logs/review-recheck.log); the one gap is that the node's own control log carries only the mutated arm, its unmutated pass sitting in head-gates.log on a different tree, which arm A re-ran to close.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 4a87503f..29df6835 lists exactly the four declared paths with zero deletions, and the cumulative anchor gains its section (docs/evidence/archive/dependency-edge-semantics-landed.html:440) while displacing no peer anchor.\nSCORE durability: 19\nJUSTIFICATION durability: the pre-existing equality check tests/test_schema.py:533 fails on a stale artifact \u2014 demonstrated by putting the base copy at head (arm C) \u2014 so the regeneration cannot silently regress; only the docs half of the change carries no reddening assertion.\nSCORE fit: 20\nJUSTIFICATION fit: the artifact is regenerated through the model's own entry point rather than hand-edited, the aside follows the plan's sibling worker-aside idiom (docs/plans/dependency-edge-semantics.html:332), and the added lines carry no plan label, ticket reference or attribution.",
+  "review_run_id": "r-20260925T063258506733-review-of-plan-schema-carries-the-after-edge",
+  "reviewed_base_sha": "4a87503ff60672d2304867402ed23f1c72b750d2",
+  "reviewed_head_sha": "29df6835815360d539810edeede114eb40a2e3c9",
+  "reviewed_run_id": "r-20260925T062128479468-plan-schema-carries-the-after-edge",
+  "reviewer": "review-of-plan-schema-carries-the-after-edge",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T06:49:06.357323+00:00",
+  "total": 98
+}

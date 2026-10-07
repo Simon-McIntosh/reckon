@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T09:15:58.920329+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/review_metrics.py",
+      "line": "152",
+      "text": "The scan selects every JSON file under the review store with no de-duplication, and the store leaves byte-identical duplicates (the head-keyed copy beside the legacy path, and re-stores under a second run identity): 161 of 835 selected files at review time, 153 of 820 at capture, duplicate another selected file's exact bytes, so the headline 820 record count is 667 distinct records and every absolute count is inflated by about 19%."
+    },
+    {
+      "file": "docs/research/review-node-utility.html",
+      "line": "105",
+      "text": "The repair criterion is satisfied by a duplicate file of the same review: records are ordered by the review record's own timestamp and a duplicate carries the identical stamp, so the twin reads as a later finding-bearing review of the same implement run; nine duplicate pairs carry opposite repair flags, and file-level repairs exceed distinct repaired reviews."
+    },
+    {
+      "file": "docs/research/review-node-utility.html",
+      "line": "26",
+      "text": "The record pins no corpus revision and names measurement.log as an output while that log is zero bytes, so nothing on disk attests the gate the manifest claims; a re-run of the same script bytes at review time returns 835 records, 707 finding-bearing and 172 repairs, and no pinned state lets a reader reconcile that against the reported 820, 692 and 171."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commit by commit against base e731091f0d04055bb3246fb1a9fdcb9b988f23ef: a single docs commit of 277 insertions and 1 deletion across 5 paths carrying the research page, two figures, the archive anchor and the plan landing; no source or test path is touched, and the one deletion is the archive file's own closing tag.",
+    "done_when": "Enumerated check by check: the population and filter at html:26-44, the cost table at html:64-79, the model table at html:81-97, the catch and repair tables at html:99-125, the score bands at html:135-151, the positive control at html:153-163, the decision table at html:165-182 and the reproduction inventory at html:184-192; review_metrics.py and its three outputs exist in the reports directory (820 rows in review-rows.jsonl at capture); the doc is committed at fec736c4 and the reviewed manifest reads complete.",
+    "goal": "The node's goal is a cross-project census of review wall time and turns, findings, repairs, missed defects, latency, score and node class, delivered as a research record with the analysis script and its outputs in the reports directory; docs/research/review-node-utility.html carries each measure with its population and the script named in its reproduction section, two figures with project-absolute sources, and a decision table, so the goal is met and the deliverable is committed at fec736c4.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075602082989-review-node-utility/manifest.md; it reports status complete with commits [fec736c463958e226257a5f91c064603e25531c4], names the reports-directory outputs and the doccheck logs, and discloses the conservative join and the missing model labels.",
+    "write_paths": "Declared as docs/research/review-node-utility.html, docs/figures/review-node-utility, the reports directory, docs/evidence/archive/the-local-lane-is-the-default-landed.html, docs/figures/the-local-lane-is-the-default and docs/plans/the-local-lane-is-the-default.html; the commit touches five of those paths and no other, and the cumulative archive record was spliced rather than rewritten (26 insertions, and the only deleted line is the file's own closing tag re-emitted), so a predecessor's anchors survive."
+  },
+  "justifications": {
+    "durability": "The page, both figures, the script and its three outputs are durable in the repository and the reports directory, but the census pins no corpus state, file list or digest, so a re-run at review time returns 835 records and a reader cannot separate corpus growth from drift.",
+    "evidence": "All three named figures match the reviewed node's own outputs exactly and the pinned script re-derives its own behaviour on a re-run, but the repair test admits a duplicate file of the same review as a later review, measurement.log is empty so the named gate log attests nothing, and no corpus revision is pinned so the census is not re-derivable at the reviewed state.",
+    "fit": "The record is a well-formed research page (reckon-type=research, project-absolute figure sources, method and limits stated, decision table offered as data and not as a default) that fits the plan's census work.",
+    "goal_fidelity": "The census and decision data are delivered as described across docs/research/review-node-utility.html:26-192, but the headline population counts stored files rather than reviews, so the central \"820 review records\" reads as 820 reviews when 667 distinct records back it at capture.",
+    "scope_discipline": "Every changed path lies inside the declared write paths, and the shared archive record was appended to (26 insertions; the sole deletion is its own closing tag), so no peer evidence was displaced."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: e731091f0d04055bb3246fb1a9fdcb9b988f23ef\nreviewed_head_sha: fec736c463958e226257a5f91c064603e25531c4\nVERDICT goal: The node's goal is a cross-project census of review wall time and turns, findings, repairs, missed defects, latency, score and node class, delivered as a research record with the analysis script and its outputs in the reports directory; docs/research/review-node-utility.html carries each measure with its population and the script named in its reproduction section, two figures with project-absolute sources, and a decision table, so the goal is met and the deliverable is committed at fec736c4.\nVERDICT done_when: Enumerated check by check: the population and filter at html:26-44, the cost table at html:64-79, the model table at html:81-97, the catch and repair tables at html:99-125, the score bands at html:135-151, the positive control at html:153-163, the decision table at html:165-182 and the reproduction inventory at html:184-192; review_metrics.py and its three outputs exist in the reports directory (820 rows in review-rows.jsonl at capture); the doc is committed at fec736c4 and the reviewed manifest reads complete.\nVERDICT write_paths: Declared as docs/research/review-node-utility.html, docs/figures/review-node-utility, the reports directory, docs/evidence/archive/the-local-lane-is-the-default-landed.html, docs/figures/the-local-lane-is-the-default and docs/plans/the-local-lane-is-the-default.html; the commit touches five of those paths and no other, and the cumulative archive record was spliced rather than rewritten (26 insertions, and the only deleted line is the file's own closing tag re-emitted), so a predecessor's anchors survive.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075602082989-review-node-utility/manifest.md; it reports status complete with commits [fec736c463958e226257a5f91c064603e25531c4], names the reports-directory outputs and the doccheck logs, and discloses the conservative join and the missing model labels.\nVERDICT diff: Read commit by commit against base e731091f0d04055bb3246fb1a9fdcb9b988f23ef: a single docs commit of 277 insertions and 1 deletion across 5 paths carrying the research page, two figures, the archive anchor and the plan landing; no source or test path is touched, and the one deletion is the archive file's own closing tag.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: The census and decision data are delivered as described across docs/research/review-node-utility.html:26-192, but the headline population counts stored files rather than reviews, so the central \"820 review records\" reads as 820 reviews when 667 distinct records back it at capture.\nSCORE evidence: 15\nJUSTIFICATION evidence: All three named figures match the reviewed node's own outputs exactly and the pinned script re-derives its own behaviour on a re-run, but the repair test admits a duplicate file of the same review as a later review, measurement.log is empty so the named gate log attests nothing, and no corpus revision is pinned so the census is not re-derivable at the reviewed state.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every changed path lies inside the declared write paths, and the shared archive record was appended to (26 insertions; the sole deletion is its own closing tag), so no peer evidence was displaced.\nSCORE durability: 16\nJUSTIFICATION durability: The page, both figures, the script and its three outputs are durable in the repository and the reports directory, but the census pins no corpus state, file list or digest, so a re-run at review time returns 835 records and a reader cannot separate corpus growth from drift.\nSCORE fit: 18\nJUSTIFICATION fit: The record is a well-formed research page (reckon-type=research, project-absolute figure sources, method and limits stated, decision table offered as data and not as a default) that fits the plan's census work.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/review_metrics.py:152 The scan selects every JSON file under the review store with no de-duplication, and the store leaves byte-identical duplicates (the head-keyed copy beside the legacy path, and re-stores under a second run identity): 161 of 835 selected files at review time, 153 of 820 at capture, duplicate another selected file's exact bytes, so the headline 820 record count is 667 distinct records and every absolute count is inflated by about 19%.\nFINDING docs/research/review-node-utility.html:105 The repair criterion is satisfied by a duplicate file of the same review: records are ordered by the review record's own timestamp and a duplicate carries the identical stamp, so the twin reads as a later finding-bearing review of the same implement run; nine duplicate pairs carry opposite repair flags, and file-level repairs exceed distinct repaired reviews.\nFINDING docs/research/review-node-utility.html:26 The record pins no corpus revision and names measurement.log as an output while that log is zero bytes, so nothing on disk attests the gate the manifest claims; a re-run of the same script bytes at review time returns 835 records, 707 finding-bearing and 172 repairs, and no pinned state lets a reader reconcile that against the reported 820, 692 and 171.",
+  "review_run_id": "r-20260925T091558920329-review-of-review-node-utility",
+  "reviewed_base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+  "reviewed_head_sha": "fec736c463958e226257a5f91c064603e25531c4",
+  "reviewed_run_id": "r-20260925T075602082989-review-node-utility",
+  "reviewer": "review-of-review-node-utility",
+  "reviewer_run_id": "r-20260925T091558920329-review-of-review-node-utility",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T10:13:26.750267+00:00",
+  "total": 84
+}

@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:23:22.640Z",
+  "dispatched_at": "2026-10-05T17:20:47Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:118",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must either normalise both sides through the one `section_record_id` derivation or state that declaration keys are already normalised, which they are not; without it \u00a716's stated \"one producer of identity\" invariant is broken at the exact join it exists to serve.",
+      "text": "`implementable_sections` returns the raw authored declaration key (`str(raw_section).strip()`, so a plan id authored `s5.1` yields `s5.1`), while \u00a716 keys `_section_digests` through `section_record_id`, which normalises `s5.1` to `s5-1` (routing.py:215-226). \u00a718 fixes the coverage predicate on `implementable_sections` unchanged and \u00a716 joins its output to the digest keys, so for any plan carrying a dotted section id \u2014 and `docs/plans/crew-effort-routing.html` and `docs/plans/self-hosted-worker-backends.html` carry `s1.1`\u2026`s11.6` today \u2014 the outstanding section and its stored digest never compare equal, and the gate composes a fresh review on every dispatch of a section that is in fact covered.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py:386",
+      "id": "duplicate_owner-2",
+      "reason": "the plan should name these two inline sites and converge them on the hoisted derivation (or extend the census rule to report inline heading-identity expressions), otherwise \u00a717 lands the derivation beside a fork of itself.",
+      "text": "the file \u00a717 designates as the home of the hoisted identity derivation already derives section identity by a rule of its own, twice: `_read_section_records` takes `element.get(\"id\",\"\")` for an h2 and `element.get(\"data-id\",\"\")` for a section (386-389), and `_splice_section_records` repeats the same expression at 861; both hand back the raw element id, so `s5.1` stays `s5.1` where `section_record_id` would return `s5-1`. \u00a717's done-when instrument (the thirteen-name grep, the no-import-from-store grep, the moved-name importer grep, `def landed_section_ids`) looks for named helpers and imports and cannot see either inline expression, so the section can pass its gate with three identity rules co-resident in the file it calls identity's owner.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a35cb95feffe5c182627729349f5bc00e82eb7e59943d37994e6e63d862d8f64",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 98,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T172028861459-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "f12ec9f7c6ad33e241a9af0a30665bde820e582b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 hides heading enumeration, identity, level, span and card recognition behind one parser with one public reader (`plan_headings`); \u00a716 hides the prose bucketing, the section-set digest and the coverage join behind one private function each, and the interface is smaller than the behaviour behind it.",
+    "duplicate_owner": "a finding \u2014 \u00a716 joins `roadmap.implementable_sections` to its new section digests across two different spellings of one identity.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 is the only section adding a public definition and names what moves in its place (`landed_section_ids` re-homed under the same name, net one), while \u00a716 and \u00a718 state in their own text that nothing is added or retired.",
+    "reuse_search": "pass \u2014 every mechanism the design names (the span parser, the store's twelve heading/card helpers, the interface-count census, the four \u00a718 readers, the two c-run- owners) was opened in the tree and exists where the plan says; the plan searched before proposing.",
+    "thin_wrapper": "pass \u2014 \u00a716 states why the coverage predicate is not a wrapper over `read_plan_review` (it joins an outstanding set to a union of digests, adding no walk of its own) and \u00a717 extends the existing parser rather than layering a scanner over it, so neither the predicate nor `plan_headings` is an unjustified thin layer."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.836546+00:00"
+}

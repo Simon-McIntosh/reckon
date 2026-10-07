@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Measured over the reviewed run's own manifest fields: logs/baseline-suite.log and logs/after-suite.log carry no FAILED or ERROR node id, so the set difference over pytest node ids is empty. Positive control: the same line-oriented extraction over logs/negative-control-mutation.log returns 1 (tests/test_summaries_list_live_and_recent_sprints.py::test_both_summaries_list_live_open_and_recently_closed), so an absence is reported by an instrument shown to see a presence.",
+  "base_log_revision": "192aa9a4cca25fa3251d5d3d6ce786afc41a6491",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/mcp.py:_discovery_summary",
+    "reckon/mcp_views.py:_roadmap_project_summary",
+    "reckon/flight.py:validate_layer",
+    "reckon/flight.py:sprint_recent_days"
+  ],
+  "completed_at": "2026-09-30T08:32:54.480Z",
+  "dispatched_at": "2026-09-30T08:07:45Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-sprint-is-live-while-a-crew-works-it/summaries-list-live-and-recent-sprints.html",
+      "line": "33",
+      "text": "The node's landing record still reads \"five new tests pass\" and \"148 passed at the worktree head\", but the repair commit carried the test file to seven tests and the head gate log records 150, so the plan-facing anchor understates the landed work it describes."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "2030",
+      "text": "_resolved_sprint_recent_days duplicates reckon/roadmap.py:1162 _sprint_recent_days exactly - the same flight.resolve call on the same parent directory, the same two excepted errors and the same default - so one configured window has two owners and a change to either (a new key, a cache, a stricter fallback) can leave the discovery and roadmap surfaces resolving different windows while both still take their rows from the one shared builder."
+    }
+  ],
+  "gate_logs": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204340453599-summaries-list-live-and-recent-sprints/logs/after-suite.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204340453599-summaries-list-live-and-recent-sprints/logs/baseline-suite.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204340453599-summaries-list-live-and-recent-sprints/logs/negative-control-mutation.log"
+  },
+  "head_log_revision": "e0f9caf17bfb503308eea539d762c89b7dc27aac",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit against base 192aa9a4: cffc63fd5 adds the shared row builder, the flight window key and the discovery call; 685657cbc adds the evidence fragment; e0f9caf17 renames the summary's finished set to SPRINT_FINISHED_STATUSES and moves the rows onto the summary_sprints key on both surfaces.",
+    "done_when": "The done_when names a synthetic ordering case and a response-budget reading; tests/test_summaries_list_live_and_recent_sprints.py:242 asserts the order on both surfaces, :294 asserts the forty-day close is absent, :333 measures the reckon discovery summary against response_ceiling(), and the manifest's 150 passed against 143 at the base reconciles with both gate logs.",
+    "goal": "The node goal is that discovery and the roadmap summary each carry one compact sprint list naming every sprint not done or shipped plus every sprint closed inside the window; at head both reach roadmap.sprint_summary_rows (reckon/mcp.py:2021, reckon/roadmap.py:2837), and a live read of the reckon discovery summary returns summary_sprints as a four-row list beside sprints as the integer 20.",
+    "manifest": "Read; it states 150 passed at head and 143 at the base, names both suite logs and three negative-control logs, and its after_suite object names revision e0f9caf17 with tree worktree(head) resolved in the reviewed worktree.",
+    "write_paths": "Read the manifest's declared paths; git diff --stat 192aa9a4..e0f9caf17 names six files and every one is inside them (reckon/mcp.py, reckon/mcp_views.py, reckon/roadmap.py, reckon/flight.py, tests/test_summaries_list_live_and_recent_sprints.py, the evidence fragment), and the declared figures directory was left unused."
+  },
+  "justifications": {
+    "durability": "each declared mutation reddens a named new assertion (logs/negative-control-mutation.log:1 the ordering case, logs/negative-control-closed-statuses.log:1 the archived/closed case, logs/negative-control-key-shape.log:1 the key-shape case), and tests/test_summaries_list_live_and_recent_sprints.py:321 asserts against a window the test itself writes, so it reddens if the reader ignores flight config.",
+    "evidence": "the head gate log's first line names revision e0f9caf17 with the reviewed worktree as its tree, its summary line reads 150 passed, and re-deriving through reckon/crew/review.py returns added_failure_count 0 while the same instrument sees 1 against the negative-control log as a positive control; but the node's own landing fragment at docs/evidence/fragments/a-sprint-is-live-while-a-crew-works-it/summaries-list-live-and-recent-sprints.html:33 still records five tests and 148 passed at the worktree head.",
+    "fit": "the module-level name bound twice, which the earlier review found, is gone (reckon/roadmap.py:1120 binds SPRINT_FINISHED_STATUSES once and the wider CLOSED_SPRINT_STATUSES keeps its own use at :1651), but reckon/mcp.py:2030 reimplements reckon/roadmap.py:1162 line for line.",
+    "goal_fidelity": "reckon/roadmap.py:1228 lists every sprint whose stored status is not done or shipped and :1230 windows only the finished ones, so an archived sprint rides the open bucket (tests/test_summaries_list_live_and_recent_sprints.py:249) instead of being dropped as it was at 685657cbc, though the rows key is omitted rather than empty for a sprint-less project (reckon/mcp.py:2094).",
+    "scope_discipline": "git diff --stat 192aa9a4..e0f9caf17 names exactly the files the manifest declares and no seventh, and repair commit e0f9caf17 stays inside the three modules and the one test file its fence named."
+  },
+  "plan": "a-sprint-is-live-while-a-crew-works-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that discovery and the roadmap summary each carry one compact sprint list naming every sprint not done or shipped plus every sprint closed inside the window; at head both reach roadmap.sprint_summary_rows (reckon/mcp.py:2021, reckon/roadmap.py:2837), and a live read of the reckon discovery summary returns summary_sprints as a four-row list beside sprints as the integer 20.\nVERDICT done_when: The done_when names a synthetic ordering case and a response-budget reading; tests/test_summaries_list_live_and_recent_sprints.py:242 asserts the order on both surfaces, :294 asserts the forty-day close is absent, :333 measures the reckon discovery summary against response_ceiling(), and the manifest's 150 passed against 143 at the base reconciles with both gate logs.\nVERDICT write_paths: Read the manifest's declared paths; git diff --stat 192aa9a4..e0f9caf17 names six files and every one is inside them (reckon/mcp.py, reckon/mcp_views.py, reckon/roadmap.py, reckon/flight.py, tests/test_summaries_list_live_and_recent_sprints.py, the evidence fragment), and the declared figures directory was left unused.\nVERDICT manifest: Read; it states 150 passed at head and 143 at the base, names both suite logs and three negative-control logs, and its after_suite object names revision e0f9caf17 with tree worktree(head) resolved in the reviewed worktree.\nVERDICT diff: Read commit by commit against base 192aa9a4: cffc63fd5 adds the shared row builder, the flight window key and the discovery call; 685657cbc adds the evidence fragment; e0f9caf17 renames the summary's finished set to SPRINT_FINISHED_STATUSES and moves the rows onto the summary_sprints key on both surfaces.\nCALL_SITES: reckon/roadmap.py:_build_roadmap, reckon/mcp.py:_discovery_summary, reckon/mcp_views.py:_roadmap_project_summary, reckon/flight.py:validate_layer, reckon/flight.py:sprint_recent_days\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1228 lists every sprint whose stored status is not done or shipped and :1230 windows only the finished ones, so an archived sprint rides the open bucket (tests/test_summaries_list_live_and_recent_sprints.py:249) instead of being dropped as it was at 685657cbc, though the rows key is omitted rather than empty for a sprint-less project (reckon/mcp.py:2094).\nSCORE evidence: 16\nJUSTIFICATION evidence: the head gate log's first line names revision e0f9caf17 with the reviewed worktree as its tree, its summary line reads 150 passed, and re-deriving through reckon/crew/review.py returns added_failure_count 0 while the same instrument sees 1 against the negative-control log as a positive control; but the node's own landing fragment at docs/evidence/fragments/a-sprint-is-live-while-a-crew-works-it/summaries-list-live-and-recent-sprints.html:33 still records five tests and 148 passed at the worktree head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 192aa9a4..e0f9caf17 names exactly the files the manifest declares and no seventh, and repair commit e0f9caf17 stays inside the three modules and the one test file its fence named.\nSCORE durability: 18\nJUSTIFICATION durability: each declared mutation reddens a named new assertion (logs/negative-control-mutation.log:1 the ordering case, logs/negative-control-closed-statuses.log:1 the archived/closed case, logs/negative-control-key-shape.log:1 the key-shape case), and tests/test_summaries_list_live_and_recent_sprints.py:321 asserts against a window the test itself writes, so it reddens if the reader ignores flight config.\nSCORE fit: 16\nJUSTIFICATION fit: the module-level name bound twice, which the earlier review found, is gone (reckon/roadmap.py:1120 binds SPRINT_FINISHED_STATUSES once and the wider CLOSED_SPRINT_STATUSES keeps its own use at :1651), but reckon/mcp.py:2030 reimplements reckon/roadmap.py:1162 line for line.\nFINDING docs/evidence/fragments/a-sprint-is-live-while-a-crew-works-it/summaries-list-live-and-recent-sprints.html:33 The node's landing record still reads \"five new tests pass\" and \"148 passed at the worktree head\", but the repair commit carried the test file to seven tests and the head gate log records 150, so the plan-facing anchor understates the landed work it describes.\nFINDING reckon/mcp.py:2030 _resolved_sprint_recent_days duplicates reckon/roadmap.py:1162 _sprint_recent_days exactly - the same flight.resolve call on the same parent directory, the same two excepted errors and the same default - so one configured window has two owners and a change to either (a new key, a cache, a stricter fallback) can leave the discovery and roadmap surfaces resolving different windows while both still take their rows from the one shared builder.",
+  "review_node": "review-of-summaries-list-live-and-recent-sprints",
+  "review_run_id": "r-20260930T080724144935-review-of-summaries-list-live-and-recent-sprints",
+  "reviewed_base_sha": "192aa9a4cca25fa3251d5d3d6ce786afc41a6491",
+  "reviewed_head_sha": "e0f9caf17bfb503308eea539d762c89b7dc27aac",
+  "reviewed_run_id": "r-20260929T204340453599-summaries-list-live-and-recent-sprints",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "section": "s3",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T08:26:11.843075+00:00",
+  "total": 87
+}

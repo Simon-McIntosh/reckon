@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "53b5172bc154af05c3e1a99443f0ce70e8b2037d",
+  "call_site_count": 2,
+  "call_sites": [
+    "bin/fleet-supervisor",
+    "reckon/crew/fleet_supervisor.py:main"
+  ],
+  "completed_at": "2026-10-03T08:42:56.852Z",
+  "dispatched_at": "2026-10-03T08:38:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1284",
+      "severity": "follow-on",
+      "text": "follow-on: the serve() docstring still states 'the loop ends only when the allocation does or when a reload replaces this image', but the change in this same diff adds the stop verb (handle_line returns False, serve breaks) that terminates the loop, so the docstring now contradicts the code it documents."
+    }
+  ],
+  "head_log_revision": "91ff84f541813f69a30f038319725a50ac217577",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against 53b5172bc; 91ff84f54 adds stop_all, the stop verb and the handle_line bool return threaded through serve(), and 234 lines of test changes pinning XDG_CONFIG_HOME and holding two new cases; 019f9fbb5 adds the evidence fragment.",
+    "done_when": "the done_when asks that every case resolve the services file inside its temp dir and that stopping the reader stops every declared service; tests/test_fleet_supervisor.py:215 adds the autouse isolated_config_home fixture and tests/test_fleet_supervisor.py:917 adds the stub-service survivor case, and the manifest records base 24 survivors / head 0.",
+    "goal": "the node goal is that tests/test_fleet_supervisor.py starts nothing real; the diff adds an autouse fixture setting XDG_CONFIG_HOME under tmp_path, a reader stop path (stop verb + DeclaredServices.stop_all), and a fixture stop() that uses it.",
+    "manifest": "read; it records base 59 passed EXIT=0 with 24 survivors enumerated from /proc and reaped by pid, head 61 passed EXIT=0 with 0 survivors, and a negative control red in two variants (2 failed and 1 failed, both EXIT=1).",
+    "write_paths": "read the manifest's declared paths; the diff touches tests/test_fleet_supervisor.py, reckon/crew/fleet_supervisor.py and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_supervisor.py:981 asserts _processes_with_env('RECKON_HOME', str(reckon_home)) == [] after the stop and :1010 asserts the operator-shaped path was never opened, and both redden under the declared controls (the stop sweep removed, and the config-home pin removed), which I read in negative-control.log.",
+    "evidence": "the base arm reproduces the defect (base-arm-survivors.txt: 24 real imas-ambix services, 12 cases x the operator's 2 declared services) and the head arm leaves 0 with the survivor scan shown seeing a live probe first (head-arm-survivors.txt); docked one because the done-when's 'nothing is read from the operator's path' clause is asserted by a unit test of the loader rather than through a live reader.",
+    "fit": "reckon/crew/fleet_supervisor.py:704 stop_all follows the existing _stop_locked idiom and the new comments state the mechanism; docked because the same diff leaves the serve() docstring at line 1284 stating the loop has no terminator.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1265 monkeypatches XDG_CONFIG_HOME under tmp_path for every case and tests/test_fleet_supervisor.py:981 shows a declared stub service is stopped with the reader, which is the whole done-when.",
+    "scope_discipline": "every changed path (tests/test_fleet_supervisor.py, reckon/crew/fleet_supervisor.py, docs/evidence/fragments/crew-runtime-positive-controls/fleet-supervisor-tests-start-nothing-real.html) is inside the manifest's declared write paths and carries nothing beyond the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_fleet_supervisor.py starts nothing real; the diff adds an autouse fixture setting XDG_CONFIG_HOME under tmp_path, a reader stop path (stop verb + DeclaredServices.stop_all), and a fixture stop() that uses it.\nVERDICT done_when: the done_when asks that every case resolve the services file inside its temp dir and that stopping the reader stops every declared service; tests/test_fleet_supervisor.py:215 adds the autouse isolated_config_home fixture and tests/test_fleet_supervisor.py:917 adds the stub-service survivor case, and the manifest records base 24 survivors / head 0.\nVERDICT write_paths: read the manifest's declared paths; the diff touches tests/test_fleet_supervisor.py, reckon/crew/fleet_supervisor.py and the evidence fragment, all inside them.\nVERDICT manifest: read; it records base 59 passed EXIT=0 with 24 survivors enumerated from /proc and reaped by pid, head 61 passed EXIT=0 with 0 survivors, and a negative control red in two variants (2 failed and 1 failed, both EXIT=1).\nVERDICT diff: read both commits against 53b5172bc; 91ff84f54 adds stop_all, the stop verb and the handle_line bool return threaded through serve(), and 234 lines of test changes pinning XDG_CONFIG_HOME and holding two new cases; 019f9fbb5 adds the evidence fragment.\nCALL_SITES: bin/fleet-supervisor, reckon/crew/fleet_supervisor.py:main\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1265 monkeypatches XDG_CONFIG_HOME under tmp_path for every case and tests/test_fleet_supervisor.py:981 shows a declared stub service is stopped with the reader, which is the whole done-when.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base arm reproduces the defect (base-arm-survivors.txt: 24 real imas-ambix services, 12 cases x the operator's 2 declared services) and the head arm leaves 0 with the survivor scan shown seeing a live probe first (head-arm-survivors.txt); docked one because the done-when's 'nothing is read from the operator's path' clause is asserted by a unit test of the loader rather than through a live reader.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path (tests/test_fleet_supervisor.py, reckon/crew/fleet_supervisor.py, docs/evidence/fragments/crew-runtime-positive-controls/fleet-supervisor-tests-start-nothing-real.html) is inside the manifest's declared write paths and carries nothing beyond the goal.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fleet_supervisor.py:981 asserts _processes_with_env('RECKON_HOME', str(reckon_home)) == [] after the stop and :1010 asserts the operator-shaped path was never opened, and both redden under the declared controls (the stop sweep removed, and the config-home pin removed), which I read in negative-control.log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:704 stop_all follows the existing _stop_locked idiom and the new comments state the mechanism; docked because the same diff leaves the serve() docstring at line 1284 stating the loop has no terminator.\nFINDING reckon/crew/fleet_supervisor.py:1284 follow-on: the serve() docstring still states 'the loop ends only when the allocation does or when a reload replaces this image', but the change in this same diff adds the stop verb (handle_line returns False, serve breaks) that terminates the loop, so the docstring now contradicts the code it documents.",
+  "review_run_id": "r-20261003T083733272629-review-of-fleet-supervisor-tests-start-nothing-real",
+  "reviewed_base_sha": "53b5172bc154af05c3e1a99443f0ce70e8b2037d",
+  "reviewed_head_sha": "019f9fbb5d00eb3cfbd93ad5eab80f51cd10a669",
+  "reviewed_run_id": "r-20261003T080556071218-fleet-supervisor-tests-start-nothing-real",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T08:42:00+00:00",
+  "total": 96
+}

@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:_roadmap",
+    "reckon/mcp_views.py:_roadmap_project_summary",
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/serve.py build_roadmap call",
+    "reckon/flight.py build_roadmap call"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T22:28:34.450777+00:00",
+  "findings": [
+    {
+      "file": "tests/test_sprint_summary_lists_pending.py",
+      "line": "121",
+      "text": "the pair of assertions at 121-122 asserts the absence of section_readiness and ready_sections from a row, but the row builder emits those keys only when a section-scoped dependency blocker exists and this fixture creates none, so no regression of the landed change or of the row builder can make either assertion fail; it reads as coverage of the section-blocker arm while measuring only that the fixture is what it is."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "both commits read in full; 20258e3a adds _pending_plan_row and the sprint-gated summary key in reckon/mcp_views.py:2304-2397 and computes implementable_sections per pending row in reckon/roadmap.py:1886-1891 with the plan-file fallback at reckon/roadmap.py:102-143; 8bc09a50 adds the archive record, the landing note and the figure, and both messages carry bodies and no attribution.",
+    "done_when": "the gate file tests/test_sprint_summary_lists_pending.py ran 6 passed at head (logs/gate-sprint-summary.log); its clauses were re-derived here rather than read \u2014 the shipped plan is absent and the pending pair is exactly the two expected slugs, the no-sprint summary is byte-identical to the base tree (head test module driven against a git-archive of a130260c with the import path proven to be the base, BASE_EQUALS_TEST_LITERAL True; the first attempt's import resolved to the review tree and was discarded), the section column is not a false zero on the real path (26 of 45 S22 rows carry ids via the plan-file fallback), and the S22 read measures 8,322 characters against the 20,000-character bound.",
+    "goal": "the node goal is a sprint-scoped roadmap summary carrying one compact row per pending plan; reckon/mcp_views.py:2392-2397 attaches pending_plans when the report's scope names a sprint, and a live read through reckon/mcp.py:_roadmap at the reviewed head returns 45 rows, each carrying slug, status, impl, ready, blocking and implementable_sections and nothing else.",
+    "manifest": "read; it reads complete with its base/head pair and names its logs; every log it cites exists and its negative-control first line matches the declared mutation verbatim; its headline S22 figure re-measures 28 characters higher at the same head, which is the sprint's own contents moving rather than a disagreement, and both sit far under the bound.",
+    "write_paths": "git diff --name-status a130260c..8bc09a50 lists exactly seven paths and every one lies inside the six declared, the sixth being the directory docs/figures/the-mcp-answers-within-its-ceiling: the two product modules, the gate test, the archive record, the plan landing note and the figure generator plus its PNG; no other path is touched."
+  },
+  "justifications": {
+    "durability": "the declared mutation removes the projection and five of the six tests redden with KeyError on pending_plans (logs/negative-control.log), and the fallback is guarded by the literal at tests/test_sprint_summary_lists_pending.py:148 the mutation does not reach; the deduction is the inert pair at tests/test_sprint_summary_lists_pending.py:121-122.",
+    "evidence": "the gate is recorded and independently re-derived (base-tree literal parity, the 20,000-character bound re-measured at 8,322, the fallback's positive control on the real path); the deduction is that the bound is asserted only in manifest prose, tests/test_sprint_summary_lists_pending.py containing no length assertion.",
+    "fit": "names describe mechanism (implementable_sections, _plan_declarations, _pending_plan_row), docstrings state why the projection selects rather than re-derives, commits carry bodies with no attribution, and the figure under docs/figures/the-mcp-answers-within-its-ceiling/ follows the archive and figure conventions.",
+    "goal_fidelity": "a sprint-scoped read through reckon/mcp.py:_roadmap returns 45 pending rows each carrying exactly the six keys the goal names, with blocking populated on 17 and section ids on 26, and all 45 rows are S22 rows on the raw report.",
+    "scope_discipline": "the seven changed paths are all inside the six declared ones; the deduction is that reckon/roadmap.py:1886-1891 adds the row key unconditionally, so the detail and raw views grow with it, which the manifest itself names as an open follow-on."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a sprint-scoped roadmap summary carrying one compact row per pending plan; reckon/mcp_views.py:2392-2397 attaches pending_plans when the report's scope names a sprint, and a live read through reckon/mcp.py:_roadmap at the reviewed head returns 45 rows, each carrying slug, status, impl, ready, blocking and implementable_sections and nothing else.\nVERDICT done_when: the gate file tests/test_sprint_summary_lists_pending.py ran 6 passed at head (logs/gate-sprint-summary.log); its clauses were re-derived here rather than read \u2014 the shipped plan is absent and the pending pair is exactly the two expected slugs, the no-sprint summary is byte-identical to the base tree (head test module driven against a git-archive of a130260c with the import path proven to be the base, BASE_EQUALS_TEST_LITERAL True; the first attempt's import resolved to the review tree and was discarded), the section column is not a false zero on the real path (26 of 45 S22 rows carry ids via the plan-file fallback), and the S22 read measures 8,322 characters against the 20,000-character bound.\nVERDICT write_paths: git diff --name-status a130260c..8bc09a50 lists exactly seven paths and every one lies inside the six declared, the sixth being the directory docs/figures/the-mcp-answers-within-its-ceiling: the two product modules, the gate test, the archive record, the plan landing note and the figure generator plus its PNG; no other path is touched.\nVERDICT manifest: read; it reads complete with its base/head pair and names its logs; every log it cites exists and its negative-control first line matches the declared mutation verbatim; its headline S22 figure re-measures 28 characters higher at the same head, which is the sprint's own contents moving rather than a disagreement, and both sit far under the bound.\nVERDICT diff: both commits read in full; 20258e3a adds _pending_plan_row and the sprint-gated summary key in reckon/mcp_views.py:2304-2397 and computes implementable_sections per pending row in reckon/roadmap.py:1886-1891 with the plan-file fallback at reckon/roadmap.py:102-143; 8bc09a50 adds the archive record, the landing note and the figure, and both messages carry bodies and no attribution.\nCALL_SITES: reckon/mcp.py:_roadmap, reckon/mcp_views.py:_roadmap_project_summary, reckon/roadmap.py:_build_roadmap, reckon/serve.py build_roadmap call, reckon/flight.py build_roadmap call\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: a sprint-scoped read through reckon/mcp.py:_roadmap returns 45 pending rows each carrying exactly the six keys the goal names, with blocking populated on 17 and section ids on 26, and all 45 rows are S22 rows on the raw report.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded and independently re-derived (base-tree literal parity, the 20,000-character bound re-measured at 8,322, the fallback's positive control on the real path); the deduction is that the bound is asserted only in manifest prose, tests/test_sprint_summary_lists_pending.py containing no length assertion.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the seven changed paths are all inside the six declared ones; the deduction is that reckon/roadmap.py:1886-1891 adds the row key unconditionally, so the detail and raw views grow with it, which the manifest itself names as an open follow-on.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation removes the projection and five of the six tests redden with KeyError on pending_plans (logs/negative-control.log), and the fallback is guarded by the literal at tests/test_sprint_summary_lists_pending.py:148 the mutation does not reach; the deduction is the inert pair at tests/test_sprint_summary_lists_pending.py:121-122.\nSCORE fit: 19\nJUSTIFICATION fit: names describe mechanism (implementable_sections, _plan_declarations, _pending_plan_row), docstrings state why the projection selects rather than re-derives, commits carry bodies with no attribution, and the figure under docs/figures/the-mcp-answers-within-its-ceiling/ follows the archive and figure conventions.\nFINDING tests/test_sprint_summary_lists_pending.py:121 the pair of assertions at 121-122 asserts the absence of section_readiness and ready_sections from a row, but the row builder emits those keys only when a section-scoped dependency blocker exists and this fixture creates none, so no regression of the landed change or of the row builder can make either assertion fail; it reads as coverage of the section-blocker arm while measuring only that the fixture is what it is.\nreviewed_base_sha: a130260c4ad33e9e9cc9bcfab207f7e9286a30e0\nreviewed_head_sha: 8bc09a50088111a45d7394c0d2e6695aa497b5b3",
+  "review_run_id": "r-20260924T222834450777-review-of-sprint-summary-lists-pending",
+  "reviewed_base_sha": "a130260c4ad33e9e9cc9bcfab207f7e9286a30e0",
+  "reviewed_head_sha": "8bc09a50088111a45d7394c0d2e6695aa497b5b3",
+  "reviewed_run_id": "r-20260924T211753094532-sprint-summary-lists-pending",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T22:58:48.478958+00:00",
+  "total": 92
+}

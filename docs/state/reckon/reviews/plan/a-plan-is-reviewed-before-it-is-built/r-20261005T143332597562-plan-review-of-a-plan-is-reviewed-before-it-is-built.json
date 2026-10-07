@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:38:02.030Z",
+  "dispatched_at": "2026-10-05T14:33:48Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "interface_budget-1",
+      "reason": "retiring the flag as written breaks those two cases, so the section must name them (and either update them to construct the legacy form another way or keep a private entry point), which its own \"names every call site it checked\" promise currently does not cover.",
+      "text": "the section retires the public `legacy` keyword from `plan_fingerprint` on the claim that it is a parameter \"which nothing outside that helper passes\", but two call sites outside `_fingerprint_forms` do pass it: `tests/test_review_plan_command.py:230` and `tests/test_plan_review_store.py:486` both call `plan_fingerprint(..., legacy=True)`",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e0d8c50fb958060a4c9ef6a523a8d22b747545f45ac11bd49534fe6ea66f0c64",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 77,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T143332597562-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "a03a5151e3fac297aef1939327cf982b4412cf30",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 hides section enumeration, identity, extent and the replaced span behind one raw-text parser and rewrites the walks onto it; \u00a716 keeps one public identity (`plan_fingerprint` returns the same digest) while moving per-section granularity into the private `_authored_prose` walk and a module-private coverage predicate over `read_plan_review`; \u00a718 adds one hoisted reader. Net public-definition change is at most +1, stated in \u00a718, with no spread of shallow wrappers.",
+    "duplicate_owner": "pass \u2014 the recurring duplicates are named with their owner and consolidating mechanism: \u00a718 names the two `c-run-` prefix owners (`reckon/crew/promotion.py:7209 _LANDING_COMMENT_PREFIX` and `reckon/crew/plan_review.py:123 RUN_COMMENT_PREFIX`) and hoists both the constant and the recogniser to `reckon/_store.py`; \u00a717 names the two raw-text span implementations (the store's `_H2_OPEN_RE`/`_SECTION_OPEN_RE`/`_matching_section_close` in `reckon/_store.py` and `_StructuredSectionSpanParser`) and collapses the store onto the parser. No finding: the plan extends owners rather than forking them.",
+    "interface_budget": "a finding \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 correctly states it adds no public definition and adds none to the other three families, but its stated accounting of what it retires is wrong (see the finding below), so the retirement half of the rule is not satisfied as written.",
+    "reuse_search": "pass \u2014 each section cites and extends a mechanism that already exists rather than proposing new machinery: \u00a717 extends `_StructuredSectionSpanParser`/`structured_section_spans` in `reckon/_plan_html.py` and reuses the private-rule pattern in `reckon/interface_counts.py` (`read_trees`, `definitions`, `_staged_writes`); \u00a716 extends `plan_fingerprint`/`_AuthoredProseParser` and `_fingerprint_forms` in `reckon/crew/plan_review.py`; \u00a718 hoists `promotion._plan_remaining_sections` to `reckon/_store.py` and reuses `landed_section_ids`.",
+    "thin_wrapper": "pass \u2014 \u00a716 argues explicitly that the coverage predicate is not a wrapper over `read_plan_review` (it joins a set of outstanding sections to the union of stored digests) and names why nothing is retired; \u00a717 extends the existing parser instead of adding a parallel scanner; \u00a718 extends the store rather than forking it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.893632+00:00"
+}

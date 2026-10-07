@@ -1,0 +1,38 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T11:08:57.431448+00:00",
+  "findings": [
+    {
+      "file": "tests/test_schema.py",
+      "line": "645",
+      "text": "exempts every path under docs/evidence/archive/ from tests/test_schema.py's conformance scan, so the reviewed record can be corrupted or given a SHA that never existed and no test fails; the archive exemption is why the durability claim has no backing and it applies to every archived evidence record, not only this one."
+    }
+  ],
+  "justifications": {
+    "durability": "no test reads this record \u2014 tests/test_schema.py:645 exempts docs/evidence/archive/ from the only corpus-wide parse guard and audit-doc is a manual CLI, so an edited anchor or a fabricated SHA here fails nothing automatically.",
+    "evidence": "independently reproduced \u2014 21 of 21 cited SHAs resolve and are ancestors (18 of 18 against the source base 8ca2c3c), the section-attached comment census is exactly 56 (4/1/28/3/20 on s3/s4/s5/s7/s8, _top excluded), all 26 cited comment ids exist in the plan at 8ca2c3c, there are 0 image/figure tags, and audit-doc exits 0 with no errors, every result recorded with its log under the run directory.",
+    "fit": "the record follows the evidence-doc idiom of its neighbours (plan-evidence-for and plan-verifies metas, stable plan-section anchors, no figure where a table is clearer) and introduces no version, sprint or ticket label into its filename or ids.",
+    "goal_fidelity": "docs/evidence/archive/concurrency-and-schedule-visibility-landed.html:47-239 gives each authored section s1-s8 a stable anchor carrying its material outcome, measures and commit identities, matching the done-when's \"one stable anchor id per plan section s1 through s8\"; the goal's \"one anchor per material result\" is realised at section granularity with the individual landings enumerated inside each anchor.",
+    "scope_discipline": "commit 64c5c77 changes exactly one path, docs/evidence/archive/concurrency-and-schedule-visibility-landed.html, its declared write path, 242 insertions and no other file touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/archive/concurrency-and-schedule-visibility-landed.html:47-239 gives each authored section s1-s8 a stable anchor carrying its material outcome, measures and commit identities, matching the done-when's \"one stable anchor id per plan section s1 through s8\"; the goal's \"one anchor per material result\" is realised at section granularity with the individual landings enumerated inside each anchor.\nSCORE evidence: 19\nJUSTIFICATION evidence: independently reproduced \u2014 21 of 21 cited SHAs resolve and are ancestors (18 of 18 against the source base 8ca2c3c), the section-attached comment census is exactly 56 (4/1/28/3/20 on s3/s4/s5/s7/s8, _top excluded), all 26 cited comment ids exist in the plan at 8ca2c3c, there are 0 image/figure tags, and audit-doc exits 0 with no errors, every result recorded with its log under the run directory.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: commit 64c5c77 changes exactly one path, docs/evidence/archive/concurrency-and-schedule-visibility-landed.html, its declared write path, 242 insertions and no other file touched.\nSCORE durability: 6\nJUSTIFICATION durability: no test reads this record \u2014 tests/test_schema.py:645 exempts docs/evidence/archive/ from the only corpus-wide parse guard and audit-doc is a manual CLI, so an edited anchor or a fabricated SHA here fails nothing automatically.\nSCORE fit: 17\nJUSTIFICATION fit: the record follows the evidence-doc idiom of its neighbours (plan-evidence-for and plan-verifies metas, stable plan-section anchors, no figure where a table is clearer) and introduces no version, sprint or ticket label into its filename or ids.\nFINDING tests/test_schema.py:645 exempts every path under docs/evidence/archive/ from tests/test_schema.py's conformance scan, so the reviewed record can be corrupted or given a SHA that never existed and no test fails; the archive exemption is why the durability claim has no backing and it applies to every archived evidence record, not only this one.",
+  "review_run_id": "r-20260914T110857431448-review-of-csv-landed-record",
+  "reviewed_base": "8ca2c3c1872d0c12e9e72aa92f0394596d93a3c6",
+  "reviewed_commit": "64c5c778d23820fcece7ff810d34a8d74c4e876b",
+  "reviewed_run_id": "r-20260914T094316532378-csv-landed-record",
+  "scores": {
+    "durability": 6,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T12:14:39.936016+00:00",
+  "total": 79
+}

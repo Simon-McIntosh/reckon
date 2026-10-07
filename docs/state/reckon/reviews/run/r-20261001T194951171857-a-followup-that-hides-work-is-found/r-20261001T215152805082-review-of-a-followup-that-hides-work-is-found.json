@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "73a6cdc48a7dcc53e688d61f703d5efb1769724e",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/roadmap.py:_followup_work_findings",
+    "reckon/roadmap.py:_build_roadmap"
+  ],
+  "completed_at": "2026-10-01T22:25:50.959Z",
+  "dispatched_at": "2026-10-01T21:52:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-is-a-section-not-a-followup/predicate-and-finding.html",
+      "line": "62",
+      "severity": "follow-on",
+      "text": "follow-on: the real-tree disagreement list names a single row over a reconstruction of section 1's heuristic, but section 1 kept only counts and the reconstruction's rule order lived only in the scan script that was deleted with the scratch tree, so no reader can re-derive the claim that the predicate disagrees on exactly one row; the retained real-tree-scan.log and real-tree-result.json carry the outcome but not the rule."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 73a6cdc48 - 0545d8495 adds reckon/followup_pointers.py and the roadmap wiring, 7df874037 and 7fecea42 add the evidence fragments, 4a4013a9 repairs the two test fixtures and adds the MCP summary case; all seven paths are inside the fence.",
+    "done_when": "the done-when names five cases and the exactly-three roadmap finding set; tests/test_a_followup_that_hides_work_is_found.py covers all five plus the sprint and recommends_skill fallback and the MCP summary path, the manifest records the base arm (73a6cdc48, 438 passed, 2 skipped, EXIT=0) and head arm (4a4013a9, 449 passed, 2 skipped, EXIT=0) logs, and the declared negative control is in negative-control.log (4 failed, 7 passed, EXIT=1).",
+    "goal": "the landed change is the node goal - one predicate in the new reckon/followup_pointers.py classifies an open followup as a pointer or as hiding work with a fixed reason word, and reckon/roadmap.py:_followup_work_findings reports each hiding open followup as a warn-severity wiring finding built on that same predicate for every plan the roadmap inventories, completed plans included.",
+    "manifest": "read manifest.md; status complete, the commits and landing line are present, changed_paths names all seven edited paths, and baseline_suite/after_suite both carry completed true and zero failing ids; the after_suite revision field (4a4013a9) differs from gate-head.log's own header (7df87403+working tree), which describes the same content but by a different commit.",
+    "write_paths": "the diff edits seven paths, all inside the node's declared write paths and the two test files its resume-1 advice widened the fence to (tests/test_roadmap.py, tests/test_sprint_summary_lists_pending.py); no path outside the fence was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_followup_that_hides_work_is_found.py:136 asserts fixed reason literals per case and the declared negative control (negative-control.log) reddens the no-section case, so the guard fails on regression rather than merely passing.",
+    "evidence": "the base/head arms and the negative control are on disk at the run directory, but the real-tree disagreement arm rests on a reconstruction whose encoding script is deleted with the scratch tree, so predicate-and-finding.html:62's one-row disagreement list cannot be re-derived.",
+    "fit": "reckon/followup_pointers.py follows the frozen-dataclass and module-constant idiom of its neighbours and introduces no plan or stage names.",
+    "goal_fidelity": "reckon/followup_pointers.py:105 classify_followup returns FollowupVerdict(pointer, reason) with the fixed word set, and reckon/roadmap.py:2920 calls the finding builder over all_plans so completed plans are judged.",
+    "scope_discipline": "the base..head diff touches seven paths and every one is named in manifest.md:10 and lies inside the documented fence, including the two test files the resume-1 fence widening authorised."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 73a6cdc48a7dcc53e688d61f703d5efb1769724e\nreviewed_head_sha: 7fecea42d717bcdcf086a1ff041b59255c7298c1\nVERDICT goal: the landed change is the node goal - one predicate in the new reckon/followup_pointers.py classifies an open followup as a pointer or as hiding work with a fixed reason word, and reckon/roadmap.py:_followup_work_findings reports each hiding open followup as a warn-severity wiring finding built on that same predicate for every plan the roadmap inventories, completed plans included.\nVERDICT done_when: the done-when names five cases and the exactly-three roadmap finding set; tests/test_a_followup_that_hides_work_is_found.py covers all five plus the sprint and recommends_skill fallback and the MCP summary path, the manifest records the base arm (73a6cdc48, 438 passed, 2 skipped, EXIT=0) and head arm (4a4013a9, 449 passed, 2 skipped, EXIT=0) logs, and the declared negative control is in negative-control.log (4 failed, 7 passed, EXIT=1).\nVERDICT write_paths: the diff edits seven paths, all inside the node's declared write paths and the two test files its resume-1 advice widened the fence to (tests/test_roadmap.py, tests/test_sprint_summary_lists_pending.py); no path outside the fence was touched.\nVERDICT manifest: read manifest.md; status complete, the commits and landing line are present, changed_paths names all seven edited paths, and baseline_suite/after_suite both carry completed true and zero failing ids; the after_suite revision field (4a4013a9) differs from gate-head.log's own header (7df87403+working tree), which describes the same content but by a different commit.\nVERDICT diff: read commit by commit against 73a6cdc48 - 0545d8495 adds reckon/followup_pointers.py and the roadmap wiring, 7df874037 and 7fecea42 add the evidence fragments, 4a4013a9 repairs the two test fixtures and adds the MCP summary case; all seven paths are inside the fence.\nCALL_SITES: reckon/roadmap.py:_followup_work_findings, reckon/roadmap.py:_build_roadmap\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/followup_pointers.py:105 classify_followup returns FollowupVerdict(pointer, reason) with the fixed word set, and reckon/roadmap.py:2920 calls the finding builder over all_plans so completed plans are judged.\nSCORE evidence: 15\nJUSTIFICATION evidence: the base/head arms and the negative control are on disk at the run directory, but the real-tree disagreement arm rests on a reconstruction whose encoding script is deleted with the scratch tree, so predicate-and-finding.html:62's one-row disagreement list cannot be re-derived.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the base..head diff touches seven paths and every one is named in manifest.md:10 and lies inside the documented fence, including the two test files the resume-1 fence widening authorised.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_followup_that_hides_work_is_found.py:136 asserts fixed reason literals per case and the declared negative control (negative-control.log) reddens the no-section case, so the guard fails on regression rather than merely passing.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/followup_pointers.py follows the frozen-dataclass and module-constant idiom of its neighbours and introduces no plan or stage names.\nFINDING docs/evidence/fragments/work-is-a-section-not-a-followup/predicate-and-finding.html:62 follow-on: the real-tree disagreement list names a single row over a reconstruction of section 1's heuristic, but section 1 kept only counts and the reconstruction's rule order lived only in the scan script that was deleted with the scratch tree, so no reader can re-derive the claim that the predicate disagrees on exactly one row; the retained real-tree-scan.log and real-tree-result.json carry the outcome but not the rule.\n",
+  "review_run_id": "r-20261001T215152805082-review-of-a-followup-that-hides-work-is-found",
+  "reviewed_base_sha": "73a6cdc48a7dcc53e688d61f703d5efb1769724e",
+  "reviewed_head_sha": "7fecea42d717bcdcf086a1ff041b59255c7298c1",
+  "reviewed_run_id": "r-20261001T194951171857-a-followup-that-hides-work-is-found",
+  "reviewer_run_id": "r-20261001T215152805082-review-of-a-followup-that-hides-work-is-found",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T22:16:15.628062+00:00",
+  "total": 86
+}

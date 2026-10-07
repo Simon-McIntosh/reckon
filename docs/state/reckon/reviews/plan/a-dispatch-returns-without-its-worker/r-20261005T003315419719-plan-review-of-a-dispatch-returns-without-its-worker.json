@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T00:35:59.642Z",
+  "dispatched_at": "2026-10-05T00:33:30Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:11354",
+      "id": "reuse_search-1",
+      "reason": "\u00a711 is already marked done, so the machinery exists and no section text changes; the finding is recorded so the design stops implying a rebuild and the surviving half (the stderr-read launch-failure classification) is judged against `exit.json`'s `ended_during: launch` that \u00a73 already landed.",
+      "text": "\u00a711 is written as new work (\"Make dispatch detect a held session before launching and either wait for release, or fall back to a fresh session with that substitution reported\"), but `_prior_session_still_held` (dispatch.py:11354) already withholds a session whose prior run is still a live pointer \u2014 judging it by `member_in_flight_verdict` (node.py:357) \u2014 and `_task_session_resolution` (dispatch.py:11403) already falls back to a fresh session and reports the substitution under `withheld`; \u00a711 cites none of this and so reads as a mechanism still to be built.",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/supervisor_main.py:1",
+      "id": "deep_module-1",
+      "reason": "naming where the module boundary lands against the existing entry module removes the ambiguity that otherwise lets the interface sprawl across three files, which is the defect the item exists to prevent.",
+      "text": "\u00a717 lists the helpers to fold into a supervisor module (`_supervisor_spec`, `_supervisor_argv`, `_start_supervisor`, `_spawn_detached_supervisor`, `_spawn_through_fleet`, `_confirm_supervisor_survived`, `_write_boundary_tree_snapshot`) and the second supervisor in `fleet_supervisor.py`, but never names `supervisor_main.py`, the 32-line entry module that already imports and forwards to `_supervisor_command`; without saying whether the new module subsumes that entry or keeps it as the launch seam, the node can land a third supervisor file beside the two the plan already knows about.",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "749f436ea31fcd0f75d25e2d3bc5c86de2d09bd04568635b2f5ca4071727fcd7",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 158,
+  "project": "reckon",
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T00:56:41.553707+00:00"
+    },
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 11 is already done (landed at 1be48d1ff); the machinery the finding names is that landing, and the reviewer marks the finding as not changing the plan",
+      "when": "2026-10-05T00:56:32.557093+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T003315419719-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "8b8c6ea701dcb62e22bfae440809ee8e4d6f2ceb",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a717 correctly captures that the per-run supervisor hides the boundary snapshot, the detached spawn, the worker wait, the signal handling and the exit record without a module boundary, but its enumeration of files to fold omits `supervisor_main.py`, the entry module that already forwards to `_supervisor_command`.",
+    "duplicate_owner": "pass \u2014 \u00a718 names the owner to extend: `fleet_supervisor.state_directory` (`reckon/crew/fleet_supervisor.py:253`), which resolves the fleet record from `FLEET_STATE_DIR`, and the duplicate `dispatch._fleet_record_path` (`reckon/crew/dispatch.py:9614`) which resolves it from `RECKON_FLEET_RECORD`/`XDG_STATE_HOME`; `fleet_node.py` already reads through the owner.",
+    "reuse_search": "a finding \u2014 \u00a711 (a-dispatch-returns-without-its-worker \u00a711) proposes to make dispatch \"detect a held session before launching and either wait for release, or fall back to a fresh session with that substitution reported\", but that exact behaviour already exists in `_prior_session_still_held` and `_task_session_resolution` in `reckon/crew/dispatch.py`.",
+    "thin_wrapper": "pass \u2014 the only new layer the plan adds, \u00a710's `spawn <run-id> <spec-path>` verb, runs the spec's `argv` verbatim and is justified by the lead's decision to retire dotfiles' `bin/fleet-supervisor` in favour of `reckon/crew/fleet_supervisor.py`; it is an extension of the existing batch step, not an unjustified wrapper over it."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T00:56:03.219236+00:00"
+}

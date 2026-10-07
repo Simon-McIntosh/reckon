@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/routing.py:_context_fit_verdict",
+    "reckon/crew/dispatch.py:plan_dispatch"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:01:24.897969+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1504-1514",
+      "text": "The estimator marks any matching pre-existing node.write_paths entry as provenance granted instead of tracking which paths dispatch appended; at b83af9ba an explicitly declared 4,000,000-byte evidence file is charged 0 tokens, while the positive control naming that identical file in done_when is charged 1,142,858. This violates the explicit-declaration requirement. Reproduction: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T160124897969-review-of-granted-landing-paths-are-not-charged-as-read-context/provenance-reproduction.log"
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commits 9b5b069e and b83af9ba against base b946e1b0; the routing estimator and focused regression test are in scope, but the implementation derives grant status from shared identities instead of preserving which paths dispatch appended.",
+    "done_when": "Read the target manifest and the named focused test; the 4,000,000-byte reproduction, 2-pass focused gate, and 2-failure negative control are recorded, but the test's explicit case names the evidence path in done_when and does not exercise a pre-existing write_paths declaration.",
+    "goal": "Read the dispatched goal and reckon/crew/routing.py:1498-1598; the change removes ordinary landing targets from charged context and retains their write scope, but it does not preserve explicit-write provenance.",
+    "manifest": "Read the source manifest; it records commits 9b5b069e and b83af9ba, the 1,142,919-token base reproduction, focused and negative-control receipts, and the out-of-scope follow-on with no blocker.",
+    "write_paths": "Read the source manifest and both commit diffs; routing.py, its focused test, and the plan/evidence records are all within the target node's declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_context_estimate_excludes_granted_paths.py:75-109 covers the ordinary grant and a named done_when input, but no test fails when the evidence path is already present in node.write_paths before _grant_landing_write_paths appends the other targets.",
+    "evidence": "The source context-estimate-before.log records 1,142,919 repository-file tokens and context-estimate-after.log records 2 passed; independent provenance-reproduction.log at target b83af9ba records 0 tokens for the pre-grant write declaration versus 1,142,858 for the same 4,000,000-byte file named in done_when.",
+    "fit": "reckon/crew/routing.py:1508-1514 uses a local import to avoid the dispatch cycle and emits machine-readable provenance, but the identity reconstruction cannot distinguish an appended target from a caller-owned matching path.",
+    "goal_fidelity": "reckon/crew/routing.py:1504-1534 excludes matching landing identities even when they were pre-existing declarations; the independent 4,000,000-byte reproduction shows the explicit evidence input is not charged.",
+    "scope_discipline": "The target manifest and git diff b946e1b0..HEAD show only reckon/crew/routing.py, its focused test, and the two declared documentation records changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the dispatched goal and reckon/crew/routing.py:1498-1598; the change removes ordinary landing targets from charged context and retains their write scope, but it does not preserve explicit-write provenance.\nVERDICT done_when: Read the target manifest and the named focused test; the 4,000,000-byte reproduction, 2-pass focused gate, and 2-failure negative control are recorded, but the test's explicit case names the evidence path in done_when and does not exercise a pre-existing write_paths declaration.\nVERDICT write_paths: Read the source manifest and both commit diffs; routing.py, its focused test, and the plan/evidence records are all within the target node's declared write paths.\nVERDICT manifest: Read the source manifest; it records commits 9b5b069e and b83af9ba, the 1,142,919-token base reproduction, focused and negative-control receipts, and the out-of-scope follow-on with no blocker.\nVERDICT diff: Read commits 9b5b069e and b83af9ba against base b946e1b0; the routing estimator and focused regression test are in scope, but the implementation derives grant status from shared identities instead of preserving which paths dispatch appended.\nCALL_SITES: reckon/crew/routing.py:_context_fit_verdict, reckon/crew/dispatch.py:plan_dispatch\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1504-1534 excludes matching landing identities even when they were pre-existing declarations; the independent 4,000,000-byte reproduction shows the explicit evidence input is not charged.\nSCORE evidence: 16\nJUSTIFICATION evidence: The source context-estimate-before.log records 1,142,919 repository-file tokens and context-estimate-after.log records 2 passed; independent provenance-reproduction.log at target b83af9ba records 0 tokens for the pre-grant write declaration versus 1,142,858 for the same 4,000,000-byte file named in done_when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The target manifest and git diff b946e1b0..HEAD show only reckon/crew/routing.py, its focused test, and the two declared documentation records changed.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_context_estimate_excludes_granted_paths.py:75-109 covers the ordinary grant and a named done_when input, but no test fails when the evidence path is already present in node.write_paths before _grant_landing_write_paths appends the other targets.\nSCORE fit: 12\nJUSTIFICATION fit: reckon/crew/routing.py:1508-1514 uses a local import to avoid the dispatch cycle and emits machine-readable provenance, but the identity reconstruction cannot distinguish an appended target from a caller-owned matching path.\nFINDING reckon/crew/routing.py:1504-1514 The estimator marks any matching pre-existing node.write_paths entry as provenance granted instead of tracking which paths dispatch appended; at b83af9ba an explicitly declared 4,000,000-byte evidence file is charged 0 tokens, while the positive control naming that identical file in done_when is charged 1,142,858. This violates the explicit-declaration requirement. Reproduction: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T160124897969-review-of-granted-landing-paths-are-not-charged-as-read-context/provenance-reproduction.log\n",
+  "review_run_id": "r-20260921T160124897969-review-of-granted-landing-paths-are-not-charged-as-read-context",
+  "reviewed_run_id": "r-20260921T152600175270-granted-landing-paths-are-not-charged-as-read-context",
+  "scores": {
+    "durability": 8,
+    "evidence": 16,
+    "fit": 12,
+    "goal_fidelity": 8,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T16:18:09.578194+00:00",
+  "total": 64
+}

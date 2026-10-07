@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_backends.py:2241",
+    "reckon/_backends.py:2239",
+    "reckon/flight.py:536",
+    "reckon/flight.py:544"
+  ],
+  "completed_at": "2026-09-25T21:02:47.050Z",
+  "dispatched_at": "2026-09-25T20:32:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "line": "1",
+      "text": "the done_when requires this record to carry an anchor with a table of what each dialect's declaration carries and the node contract requires the plan's landing record, but neither this file nor docs/plans/a-worker-cannot-write-your-home.html carries any landing record for this node at 132a7d4b, so the delivery is short of its own measure by the plan record, the evidence anchor and the dialect table."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "one commit against base dccc29a3, read file by file \u2014 reckon/flight.py:121-240 adds the declaration constant, the resolver, the schema-view strip and the shape validator, with validate_layer stripping at :536 and checking at :544; reckon/schema/flight-defaults.yaml:34 ships the claude (settings.json with keys [hooks], CLAUDE.md) and codex (AGENTS.md, config.toml, rules) tables; reckon/_backends.py:1805-1942 adds the seeding helpers called at :2241.",
+    "done_when": "I read the six enumerated cases with their gate: five run in tests/test_harness_home_carries_the_operator_config.py (11 passed at the reviewed head in my recheck of that file), the clive composition is logs/composition-clive.log, but two clauses are short \u2014 tests/test_crew_dispatch_resume.py, one of the four named gate arms, does not exist at the reviewed head, and the clause requiring the evidence record to carry an anchor with a per-dialect table has no artefact at all (docs/evidence/archive/a-worker-cannot-write-your-home-landed.html holds zero occurrences of the node slug at 132a7d4b).",
+    "goal": "the goal is that a fenced run's harness home carries the operator-home files its backend declares in flight config, and the landed code does that \u2014 reckon/flight.py:124-159 resolves the per-dialect declaration with a backend entry replacing it, and reckon/_backends.py:1840-1850 copies it into the run home \u2014 and my own recheck of the new gate at f01992d3 is 11 passed.",
+    "manifest": "read in full and its numbers check out against the logs on disk (gate head 94 passed / 2 skipped against base 94 passed / 2 skipped, control 7 failed / 4 passed, composition log present, and /tmp/base-arm/reckon/_backends.py carries no harness_home_files so the base arm really measured base code), but its changed_paths names four paths where the fence granted seven, which is the coordinator's integration commit rather than the node's declared delivery.",
+    "write_paths": "the fence declares seven paths; the commit f01992d3 touches four, all inside them (reckon/_backends.py, reckon/flight.py, reckon/schema/flight-defaults.yaml, tests/test_harness_home_carries_the_operator_config.py), while the evidence record, the plan and the figures directory are untouched in the reviewed tree."
+  },
+  "justifications": {
+    "durability": "the added assertions name real regressions \u2014 tests/test_harness_home_carries_the_operator_config.py:179-181 reddens on a regression to an unfiltered copy of the operator's settings, :242 reddens if the transcript is not placed at the same relative path, and :276-294 reddens if an existing run-home file is overwritten \u2014 and the declared mutation reddens seven of them in my own recheck, though the real-home clause at :344 is a marker scan rather than the before/after comparison the fence's wording asks for.",
+    "evidence": "the gate and the composition log are recorded and reproduce in my recheck of tests/test_harness_home_carries_the_operator_config.py (11 passed at f01992d3, 7 failed / 4 passed under the declared mutation), but the done_when's evidence-anchor clause has no artefact and its fourth named arm tests/test_just... tests/test_crew_dispatch_resume.py does not exist, so that clause is unmeasurable rather than measured.",
+    "fit": "the helpers follow the module's idiom with Mapping/Iterable guards and docstrings (reckon/_backends.py:1846-1942), every new name describes the mechanism with no plan or version label, and ruff at the reviewed head reports 6 findings on reckon/_backends.py and 7 on reckon/flight.py, identical to the base export dccc29a3, so the commit adds none.",
+    "goal_fidelity": "reckon/_backends.py:2241-2248 seeds each dialect's declared operator files into the run home on every claude and clive launch and every fenced codex launch, which is the behaviour the goal states, and the declaration lives in flight config rather than in per-dialect code (reckon/schema/flight-defaults.yaml:34).",
+    "scope_discipline": "git show --stat f01992d3 lists exactly the four in-scope files and nothing outside the seven declared write paths, and no plan-version or plan-modified meta line moved."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a fenced run's harness home carries the operator-home files its backend declares in flight config, and the landed code does that \u2014 reckon/flight.py:124-159 resolves the per-dialect declaration with a backend entry replacing it, and reckon/_backends.py:1840-1850 copies it into the run home \u2014 and my own recheck of the new gate at f01992d3 is 11 passed.\nVERDICT done_when: I read the six enumerated cases with their gate: five run in tests/test_harness_home_carries_the_operator_config.py (11 passed at the reviewed head in my recheck of that file), the clive composition is logs/composition-clive.log, but two clauses are short \u2014 tests/test_crew_dispatch_resume.py, one of the four named gate arms, does not exist at the reviewed head, and the clause requiring the evidence record to carry an anchor with a per-dialect table has no artefact at all (docs/evidence/archive/a-worker-cannot-write-your-home-landed.html holds zero occurrences of the node slug at 132a7d4b).\nVERDICT write_paths: the fence declares seven paths; the commit f01992d3 touches four, all inside them (reckon/_backends.py, reckon/flight.py, reckon/schema/flight-defaults.yaml, tests/test_harness_home_carries_the_operator_config.py), while the evidence record, the plan and the figures directory are untouched in the reviewed tree.\nVERDICT manifest: read in full and its numbers check out against the logs on disk (gate head 94 passed / 2 skipped against base 94 passed / 2 skipped, control 7 failed / 4 passed, composition log present, and /tmp/base-arm/reckon/_backends.py carries no harness_home_files so the base arm really measured base code), but its changed_paths names four paths where the fence granted seven, which is the coordinator's integration commit rather than the node's declared delivery.\nVERDICT diff: one commit against base dccc29a3, read file by file \u2014 reckon/flight.py:121-240 adds the declaration constant, the resolver, the schema-view strip and the shape validator, with validate_layer stripping at :536 and checking at :544; reckon/schema/flight-defaults.yaml:34 ships the claude (settings.json with keys [hooks], CLAUDE.md) and codex (AGENTS.md, config.toml, rules) tables; reckon/_backends.py:1805-1942 adds the seeding helpers called at :2241.\nCALL_SITES: reckon/_backends.py:2241, reckon/_backends.py:2239, reckon/flight.py:536, reckon/flight.py:544\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2241-2248 seeds each dialect's declared operator files into the run home on every claude and clive launch and every fenced codex launch, which is the behaviour the goal states, and the declaration lives in flight config rather than in per-dialect code (reckon/schema/flight-defaults.yaml:34).\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate and the composition log are recorded and reproduce in my recheck of tests/test_harness_home_carries_the_operator_config.py (11 passed at f01992d3, 7 failed / 4 passed under the declared mutation), but the done_when's evidence-anchor clause has no artefact and its fourth named arm tests/test_just... tests/test_crew_dispatch_resume.py does not exist, so that clause is unmeasurable rather than measured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat f01992d3 lists exactly the four in-scope files and nothing outside the seven declared write paths, and no plan-version or plan-modified meta line moved.\nSCORE durability: 18\nJUSTIFICATION durability: the added assertions name real regressions \u2014 tests/test_harness_home_carries_the_operator_config.py:179-181 reddens on a regression to an unfiltered copy of the operator's settings, :242 reddens if the transcript is not placed at the same relative path, and :276-294 reddens if an existing run-home file is overwritten \u2014 and the declared mutation reddens seven of them in my own recheck, though the real-home clause at :344 is a marker scan rather than the before/after comparison the fence's wording asks for.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers follow the module's idiom with Mapping/Iterable guards and docstrings (reckon/_backends.py:1846-1942), every new name describes the mechanism with no plan or version label, and ruff at the reviewed head reports 6 findings on reckon/_backends.py and 7 on reckon/flight.py, identical to the base export dccc29a3, so the commit adds none.\nFINDING docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:1 the done_when requires this record to carry an anchor with a table of what each dialect's declaration carries and the node contract requires the plan's landing record, but neither this file nor docs/plans/a-worker-cannot-write-your-home.html carries any landing record for this node at 132a7d4b, so the delivery is short of its own measure by the plan record, the evidence anchor and the dialect table.\n",
+  "review_run_id": "r-20260925T203208565337-review-of-harness-home-carries-the-operator-config",
+  "reviewed_base_sha": "dccc29a3ba3c9cf93fc01d412501b3e59ac66f67",
+  "reviewed_head_note": "The reviewed worktree sits clean at f01992d3; the commit was made by the coordinator from outside the fence because the fence sealed the main checkout holding this linked worktree's git directory, and the diff it carries is the worker's own.",
+  "reviewed_head_sha": "f01992d3d6b56b4b072c09a0861f125a10d9ad25",
+  "reviewed_run_id": "r-20260925T165045662374-harness-home-carries-the-operator-config",
+  "reviewed_tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/harness-home-carries-the-operator-config",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T20:57:09.456211+00:00",
+  "total": 87
+}

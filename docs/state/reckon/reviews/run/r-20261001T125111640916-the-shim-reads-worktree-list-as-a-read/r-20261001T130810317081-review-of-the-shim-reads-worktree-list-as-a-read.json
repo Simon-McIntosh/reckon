@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4e5f0a870c00a33a14f63b09ac5c450ca46a4683",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/worker_git_shim.py:217 _READ_OPTIONS[\"worktree\"] (the admission)",
+    "reckon/crew/routing.py:489 _registered_worktrees (the consumer that issues `git worktree list --porcelain`)"
+  ],
+  "completed_at": "2026-10-01T13:24:47.505Z",
+  "dispatched_at": "2026-10-01T13:08:37Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/worker_git_guard.py",
+      "line": "96",
+      "severity": "follow-on",
+      "text": "follow-on: the pre-tool-use guard classifies by its own READ_ONLY_VERBS, which omits `worktree`, so _is_mutating returns True and a worker still cannot run `git worktree list` for another checkout through the Bash tool where the shim now forwards it; the two classifiers can drift and only the shim was updated, which the reviewed manifest discloses as a fenced follow-on."
+    }
+  ],
+  "head_log_revision": "0fcfa249b50f67df2d146284a5a0a9f0e554412c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "checked the consumer that issues the refused form (reckon/crew/routing.py:492) and the admission itself (reckon/worker_git_shim.py:217).",
+    "diff": "read 4e5f0a870c against 0fcfa249b2; the shim gains one frozenset union on _READ_OPTIONS[\"worktree\"] plus a mechanism comment, and the gate file gains four cases.",
+    "done_when": "the four named modifiers alone and together are admitted, the porcelain listing answers against another checkout, prune is still refused with its metadata unmoved, and _registered_worktrees reads through the shim under a run id; restoring the list-only option reddens exactly those cases (8 failed, EXIT=1, independently reproduced).",
+    "goal": "reckon/worker_git_shim.py:217 admits `worktree list` under --porcelain, -z, -v/--verbose and --expired for any repository, the mutating worktree actions stay refused, and reckon/crew/routing.py:489 _registered_worktrees running `git worktree list --porcelain` under RECKON_RUN_ID answers with the checkout's worktrees rather than raising; all green at the reviewed head.",
+    "manifest": "read at the run directory; status complete, commits 518f5ef83 and 0fcfa249b named, gate-head.txt and negative-control.txt named, negative_control_log present with its declared mutation; the manifest names no baseline_suite/after_suite pair, so its own record leaves the added-failure count unmeasured and this review ran the two arms itself.",
+    "write_paths": "the diff 4e5f0a870c..0fcfa249b2 touches reckon/worker_git_shim.py, tests/test_git_shim_checks_the_resolved_repo.py, and the declared evidence fragment; every path is inside the fence."
+  },
+  "justifications": {
+    "durability": "the new cases build real repositories, compare the shim's forward against real git's own porcelain output, and assert the prune refusal by the metadata directory surviving; the guard is proved to fire by an independent mutation, not merely by a green suite; held back one point because the safety of the admitted modifiers rests on their consuming no value, which the code comment states and no test pins against a value-taking spelling.",
+    "evidence": "gate-head.txt carries revision, tree, cwd, module.__file__ and the literal command, and reads 185 passed EXIT=0 at 0fcfa249b2; the negative control names its mutation on line 1 and ends EXIT=1 with 8 failing ids matching the new cases, reproduced independently at 8 failed/177 passed/EXIT=1; docked because the reviewed manifest names no baseline_suite/after_suite, so its own record leaves the added-failure count unmeasured and this review supplied the pair (both arms 0 failures).",
+    "fit": "the change is a one-entry frozenset union in the existing admission table with a mechanism comment and a conventional two-part commit body, matching the file's style; docked one point because the same verb classification now lives in two places (this table and reckon/hooks/worker_git_guard.py's READ_ONLY_VERBS) and only one was updated, a latent divergence left as a disclosed follow-on.",
+    "goal_fidelity": "the reported failure mode is closed at the reviewed head: `git worktree list --porcelain` against another checkout is forwarded, _registered_worktrees answers under a run id, and every mutating worktree action (prune pinned with its metadata directory unmoved) stays refused; the negative control reddens exactly the porcelain and modifier cases.",
+    "scope_discipline": "the diff touches exactly the two declared code/test paths plus the declared evidence fragment, with no out-of-scope edit; the adjacent pre-tool-use guard that duplicates the classification is disclosed as a follow-on rather than touched."
+  },
+  "node": "review-of-the-shim-reads-worktree-list-as-a-read",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reckon/worker_git_shim.py:217 admits `worktree list` under --porcelain, -z, -v/--verbose and --expired for any repository, the mutating worktree actions stay refused, and reckon/crew/routing.py:489 _registered_worktrees running `git worktree list --porcelain` under RECKON_RUN_ID answers with the checkout's worktrees rather than raising; all green at the reviewed head.\nVERDICT done_when: the four named modifiers alone and together are admitted (tests/test_git_shim_checks_the_resolved_repo.py:1177), the porcelain listing answers against another checkout (:1158), prune is still refused with its metadata unmoved (:1240), and _registered_worktrees reads through the shim under a run id (:1272); restoring the list-only option reddens exactly those cases (8 failed, EXIT=1, independently reproduced).\nVERDICT write_paths: the diff 4e5f0a870c..0fcfa249b2 touches reckon/worker_git_shim.py (+6/-1), tests/test_git_shim_checks_the_resolved_repo.py (+154), and the declared evidence fragment (+29); every path is inside the fence.\nVERDICT manifest: read at the run directory; status complete, commits 518f5ef83 and 0fcfa249b named, gate-head.txt and negative-control.txt named, negative_control_log present with its declared mutation; the manifest names no baseline_suite/after_suite pair, so its own record leaves the added-failure count unmeasured and this review ran the two arms itself.\nVERDICT diff: read 4e5f0a870c against 0fcfa249b2; the shim gains one frozenset union on _READ_OPTIONS[\"worktree\"] plus a mechanism comment, and the gate file gains four cases (a porcelain listing against another checkout, six parametrized modifier forms, a prune-refusal with metadata unmoved, and the routing helper through PATH).\nVERDICT call_sites: checked the consumer that issues the refused form (reckon/crew/routing.py:492) and the admission itself (reckon/worker_git_shim.py:217).\nCALL_SITES: reckon/worker_git_shim.py:217 _READ_OPTIONS[\"worktree\"] (the admission), reckon/crew/routing.py:489 _registered_worktrees (the consumer that issues `git worktree list --porcelain`)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the reported failure mode is closed at the reviewed head: `git worktree list --porcelain` against another checkout is forwarded, _registered_worktrees answers under a run id, and every mutating worktree action (prune pinned with its metadata directory unmoved) stays refused; the negative control reddens exactly the porcelain and modifier cases.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.txt carries revision, tree, cwd, module.__file__ and the literal command, and reads 185 passed EXIT=0 at 0fcfa249b2; the negative control names its mutation on line 1 and ends EXIT=1 with 8 failing ids matching the new cases, reproduced independently at 8 failed/177 passed/EXIT=1; docked because the reviewed manifest names no baseline_suite/after_suite, so its own record leaves the added-failure count unmeasured and this review supplied the pair (both arms 0 failures).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the two declared code/test paths plus the declared evidence fragment, with no out-of-scope edit; the adjacent pre-tool-use guard that duplicates the classification is disclosed as a follow-on rather than touched.\nSCORE durability: 19\nJUSTIFICATION durability: the new cases build real repositories, compare the shim's forward against real git's own porcelain output, and assert the prune refusal by the metadata directory surviving; the guard is proved to fire by an independent mutation, not merely by a green suite; held back one point because the safety of the admitted modifiers rests on their consuming no value, which the code comment states and no test pins against a value-taking spelling.\nSCORE fit: 19\nJUSTIFICATION fit: the change is a one-entry frozenset union in the existing admission table with a mechanism comment and a conventional two-part commit body, matching the file's style; docked one point because the same verb classification now lives in two places (this table and reckon/hooks/worker_git_guard.py's READ_ONLY_VERBS) and only one was updated, a latent divergence left as a disclosed follow-on.\nFINDING reckon/hooks/worker_git_guard.py:96 follow-on: the pre-tool-use guard classifies by its own READ_ONLY_VERBS, which omits `worktree`, so _is_mutating returns True and a worker still cannot run `git worktree list` for another checkout through the Bash tool where the shim now forwards it; the two classifiers can drift and only the shim was updated, which the reviewed manifest discloses as a fenced follow-on.",
+  "review_run_id": "r-20261001T130810317081-review-of-the-shim-reads-worktree-list-as-a-read",
+  "reviewed_base_sha": "4e5f0a870c00a33a14f63b09ac5c450ca46a4683",
+  "reviewed_head_sha": "0fcfa249b50f67df2d146284a5a0a9f0e554412c",
+  "reviewed_run_id": "r-20261001T125111640916-the-shim-reads-worktree-list-as-a-read",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T130810317081-review-of-the-shim-reads-worktree-list-as-a-read",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T13:23:15.533201+00:00",
+  "total": 96
+}

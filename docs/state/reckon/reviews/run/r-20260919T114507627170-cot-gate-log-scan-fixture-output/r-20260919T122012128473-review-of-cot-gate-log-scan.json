@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "commits_read": [
+    "a6fe28d7431d83635bc0c506b70e03e1628a06e1",
+    "6e4d93d2905b88e7e0fa58d5d77c099a3daa08d5",
+    "f6d26ae6ac6b2248407184d634fc1bd99ab80b39"
+  ],
+  "completed_at": "",
+  "coverage": {
+    "durability": "examined: the summary-acceptance, line-naming and EXIT=127 refusals are pinned; a mutation narrowing the sentinel rule to `recorded == 0` leaves the focused gate green, recorded as a finding",
+    "evidence": "examined and re-run: head 55 passed / 3 failed against base 52 passed / 3 failed with identical failure ids; the three new cases fail at base (3 failed, 11 passed) and pass at head (14 passed); the recorded real fixture is refused at base and accepted at head",
+    "fit": "examined and clean: helper shape, docstring form and refusal wording match the surrounding module, and no banned name pattern appears on the added lines",
+    "goal_fidelity": "examined and clean: the three commits' diffs against 568f92dd, the driving followup text on the plan, and a direct probe of _require_gate_log_agrees over five log shapes run against both the head worktree and a materialised base tree",
+    "scope_discipline": "examined and clean: diffstat lists exactly the four declared write paths, plan meta lines untouched, node worktree clean, ruff finding count 10 at base and 10 at head on the changed pair"
+  },
+  "dispatched_at": "2026-09-19T12:20:12.128473+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "405",
+      "text": "the acceptance half of the by-value sentinel rule is untested: replacing `recorded is not None and recorded not in _UNEXECUTED_EXIT_CODES` with `recorded == 0` in a scratch head tree leaves the whole focused gate green at 55 passed / 3 failed, so a regression refusing a log that carries the diagnostic beside a terminal EXIT outside 126 and 127 but no runner summary would ship unseen."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T114507627170-cot-gate-log-scan-fixture-output/manifest.md",
+      "line": "14",
+      "text": "the three cited gate logs live under /tmp and will not survive the session, repeating the ephemeral-evidence pattern already recorded on this plan for a sibling node; the result is reproducible from the recorded commands, but a later reader finds the citations unresolvable."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_crew_gate_log_agrees.py:321, :270 and :295 pin the summary acceptance, the line-naming refusal and the EXIT=127 refusal, but substituting `recorded == 0` for the _UNEXECUTED_EXIT_CODES test at reckon/crew/promotion.py:405 leaves 14 passed in that file and 55 passed / 3 failed across the focused gate, so the non-126/127 sentinel acceptance is unpinned.",
+    "evidence": "the focused gate reproduces here as 55 passed / 3 failed at head against 52 passed / 3 failed on a materialised 568f92dd tree with identical failure ids and zero added, the three new cases fail at base and pass at head (tests/test_crew_gate_log_agrees.py:270, :295, :321), and the plan comment plus the \u00a710 evidence anchor record the same figures.",
+    "fit": "the two helpers follow the shape of their sibling at reckon/crew/promotion.py:394-418, the refusal keeps the \"Found: ...\" form of the neighbouring checks, ruff reports 10 findings on the pair at base and 10 at head, and the banned-name scan over the added lines is empty.",
+    "goal_fidelity": "reckon/crew/promotion.py:511 reads the quoted diagnostic only behind _log_shows_the_command_ran, and a direct probe reproduced the followup's case at both revisions: the recorded fixture runs/r-20260915T093545453615-the-guard-holds-at-the-merged-head/after.log is refused at base 568f92dd and accepted at head, with a diagnostic-only log refused naming \"diagnostic at line 1\" and the matched text.",
+    "scope_discipline": "git diff 568f92dd..f6d26ae6 --stat lists exactly the four declared write paths - reckon/crew/promotion.py, tests/test_crew_gate_log_agrees.py, docs/plans/crew-observability-truth.html and docs/evidence/archive/crew-observability-truth-landed.html - with the plan-version and plan-modified meta lines untouched and the node worktree clean."
+  },
+  "not_examined": [
+    "the promotion call sites beyond _require_gate_log_agrees were exercised only through the CLI in the delivered tests and my re-runs, not read line by line",
+    "the merge-time re-run path (_merged_gate_finding) was not exercised; it is unchanged by these commits"
+  ],
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:511 reads the quoted diagnostic only behind _log_shows_the_command_ran, and a direct probe reproduced the followup's case at both revisions: the recorded fixture runs/r-20260915T093545453615-the-guard-holds-at-the-merged-head/after.log is refused at base 568f92dd and accepted at head, with a diagnostic-only log refused naming \"diagnostic at line 1\" and the matched text.\nSCORE evidence: 19\nJUSTIFICATION evidence: the focused gate reproduces here as 55 passed / 3 failed at head against 52 passed / 3 failed on a materialised 568f92dd tree with identical failure ids and zero added, the three new cases fail at base and pass at head (tests/test_crew_gate_log_agrees.py:270, :295, :321), and the plan comment plus the \u00a710 evidence anchor record the same figures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 568f92dd..f6d26ae6 --stat lists exactly the four declared write paths - reckon/crew/promotion.py, tests/test_crew_gate_log_agrees.py, docs/plans/crew-observability-truth.html and docs/evidence/archive/crew-observability-truth-landed.html - with the plan-version and plan-modified meta lines untouched and the node worktree clean.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_crew_gate_log_agrees.py:321, :270 and :295 pin the summary acceptance, the line-naming refusal and the EXIT=127 refusal, but substituting `recorded == 0` for the _UNEXECUTED_EXIT_CODES test at reckon/crew/promotion.py:405 leaves 14 passed in that file and 55 passed / 3 failed across the focused gate, so the non-126/127 sentinel acceptance is unpinned.\nSCORE fit: 19\nJUSTIFICATION fit: the two helpers follow the shape of their sibling at reckon/crew/promotion.py:394-418, the refusal keeps the \"Found: ...\" form of the neighbouring checks, ruff reports 10 findings on the pair at base and 10 at head, and the banned-name scan over the added lines is empty.\nFINDING reckon/crew/promotion.py:405 the acceptance half of the by-value sentinel rule is untested: replacing `recorded is not None and recorded not in _UNEXECUTED_EXIT_CODES` with `recorded == 0` in a scratch head tree leaves the whole focused gate green at 55 passed / 3 failed, so a regression refusing a log that carries the diagnostic beside a terminal EXIT outside 126 and 127 but no runner summary would ship unseen.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T114507627170-cot-gate-log-scan-fixture-output/manifest.md:14 the three cited gate logs live under /tmp and will not survive the session, repeating the ephemeral-evidence pattern already recorded on this plan for a sibling node; the result is reproducible from the recorded commands, but a later reader finds the citations unresolvable.\n",
+  "review_run_id": "r-20260919T122012128473-review-of-cot-gate-log-scan",
+  "reviewed_base_sha": "568f92ddfed031eeedfa06fee133e9fdfb81bc77",
+  "reviewed_head_sha": "f6d26ae6ac6b2248407184d634fc1bd99ab80b39",
+  "reviewed_node": "cot-gate-log-scan-fixture-output",
+  "reviewed_run_id": "r-20260919T114507627170-cot-gate-log-scan-fixture-output",
+  "reviewer_node": "review-of-cot-gate-log-scan",
+  "reviewer_run_id": "r-20260919T122012128473-review-of-cot-gate-log-scan",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-19T12:30:51.528852+00:00",
+  "total": 93
+}

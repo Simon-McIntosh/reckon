@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T175645048110-dispatch-declares-the-run-it-repairs/logs/base-arm.txt and /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T175645048110-dispatch-declares-the-run-it-repairs/logs/head-arm.txt",
+  "backend": "clive",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/cli.py:1309",
+    "reckon/cli.py:1454",
+    "reckon/cli.py:1542",
+    "reckon/crew/dispatch.py:3290",
+    "reckon/crew/dispatch.py:4270",
+    "reckon/crew/dispatch.py:4827",
+    "reckon/crew/promotion.py:4221"
+  ],
+  "completed_at": "2026-09-28T19:31:42.816Z",
+  "dispatched_at": "2026-09-28T19:11:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs.html",
+      "line": "114",
+      "text": "the fragment says the unreadable-ledger case fails at c34d88cc \"because the read failure was reduced to an absent ledger and the target was refused as an unknown run\", but the log it names shows `reckon._store.CorruptEnvelopeError` escaping uncaught from `_require_repairs_target`; that is the other damage shape, since a `LedgerError` is what the old handler reduced to an absent ledger, so the record states a cause its own receipt refutes, which is the misattribution this section exists to remove."
+    },
+    {
+      "file": "docs/evidence/fragments/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs.html",
+      "line": "133",
+      "text": "the base-arm row and the paragraph at :141 present \"4 failed, 30 passed\" as the same cases measured on both arms, but that log collects 34 tests against the head arm's 35 because it predates the unreadable-ledger case, so the delivered file's fifth `--repairs` case is measured only in the c34d88cc arm and the two arms differ by the test file as well as by the change under test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against 9e727bd0 \u2014 c710b880 carries the option, the admission check, the pointer field and the promotion branch; c34d88cc adds the fragment and figure; abfef36e closes the unreadable-ledger path; 707e852b records that repair in the fragment.",
+    "done_when": "the done_when asks that a dispatch naming a promoted run promote with the impl move exempt; tests/test_dispatch_declares_the_run_it_repairs.py:193 drives that through `crew.complete` and asserts the reason `corrective-run:repairs:<id>`, and the manifest records the head arm at logs/head-arm.txt (35 passed, EXIT=0) over the base arm at logs/base-arm.txt (4 failed, EXIT=1).",
+    "goal": "the goal is the \u00a74 `--repairs RUN_ID` declaration; reckon/cli.py:1309 adds the option, reckon/crew/dispatch.py:3290 admits the target before launch, reckon/crew/dispatch.py:4827 records it on the pointer, and reckon/crew/promotion.py:4221 exempts the impl move, which is what the goal states.",
+    "manifest": "read; it names four arms, each with a revision header, an exit status and a log path, and its claimed head 707e852b was the worktree's HEAD with a clean status; the worktree has since been reclaimed on promotion, and the four commits stay reachable from the main checkout's HEAD.",
+    "write_paths": "`git diff --numstat 9e727bd0 707e852b` lists exactly the six paths the manifest declares, and every count sits in the added column."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_declares_the_run_it_repairs.py:262 reddens on the pre-fix head and on a swallow regression, but no committed test drives the CLI forwardings at reckon/cli.py:1454 and :1542, so dropping either leaves the suite green.",
+    "evidence": "the head arm measures the done_when and is recorded (logs/head-arm.txt 35 passed at 707e852b, logs/new-case-at-delivered-head.txt red at c34d88cc), but the fragment's prose at :114 states a failure mechanism its own named log contradicts and its base-arm row at :133 offers a 34-test arm as the delivered file.",
+    "fit": "the branch at reckon/crew/promotion.py:4217 sits beside the attempt-kind branch it mirrors, reuses the corrective-run reason prefix, and reckon/crew/dispatch.py:4132 catches the store error beside the ledger error instead of adding a refusal shape.",
+    "goal_fidelity": "reckon/crew/promotion.py:4221 reads the recorded `repairs` and returns the exemption with reason `corrective-run:repairs:<run_id>`, so the declared repair promotes through `crew.complete` with no `--no-impl-change`.",
+    "scope_discipline": "`git diff --numstat 9e727bd0 707e852b` lists exactly the six paths the manifest declares, with no deleted line on any of them."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is the \u00a74 `--repairs RUN_ID` declaration; reckon/cli.py:1309 adds the option, reckon/crew/dispatch.py:3290 admits the target before launch, reckon/crew/dispatch.py:4827 records it on the pointer, and reckon/crew/promotion.py:4221 exempts the impl move, which is what the goal states.\nVERDICT done_when: the done_when asks that a dispatch naming a promoted run promote with the impl move exempt; tests/test_dispatch_declares_the_run_it_repairs.py:193 drives that through `crew.complete` and asserts the reason `corrective-run:repairs:<id>`, and the manifest records the head arm at logs/head-arm.txt (35 passed, EXIT=0) over the base arm at logs/base-arm.txt (4 failed, EXIT=1).\nVERDICT write_paths: `git diff --numstat 9e727bd0 707e852b` lists exactly the six paths the manifest declares, and every count sits in the added column.\nVERDICT manifest: read; it names four arms, each with a revision header, an exit status and a log path, and its claimed head 707e852b was the worktree's HEAD with a clean status; the worktree has since been reclaimed on promotion, and the four commits stay reachable from the main checkout's HEAD.\nVERDICT diff: read commit by commit against 9e727bd0 \u2014 c710b880 carries the option, the admission check, the pointer field and the promotion branch; c34d88cc adds the fragment and figure; abfef36e closes the unreadable-ledger path; 707e852b records that repair in the fragment.\nCALL_SITES: reckon/cli.py:1309, reckon/cli.py:1454, reckon/cli.py:1542, reckon/crew/dispatch.py:3290, reckon/crew/dispatch.py:4270, reckon/crew/dispatch.py:4827, reckon/crew/promotion.py:4221\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:4221 reads the recorded `repairs` and returns the exemption with reason `corrective-run:repairs:<run_id>`, so the declared repair promotes through `crew.complete` with no `--no-impl-change`.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head arm measures the done_when and is recorded (logs/head-arm.txt 35 passed at 707e852b, logs/new-case-at-delivered-head.txt red at c34d88cc), but the fragment's prose at :114 states a failure mechanism its own named log contradicts and its base-arm row at :133 offers a 34-test arm as the delivered file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --numstat 9e727bd0 707e852b` lists exactly the six paths the manifest declares, with no deleted line on any of them.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_dispatch_declares_the_run_it_repairs.py:262 reddens on the pre-fix head and on a swallow regression, but no committed test drives the CLI forwardings at reckon/cli.py:1454 and :1542, so dropping either leaves the suite green.\nSCORE fit: 19\nJUSTIFICATION fit: the branch at reckon/crew/promotion.py:4217 sits beside the attempt-kind branch it mirrors, reuses the corrective-run reason prefix, and reckon/crew/dispatch.py:4132 catches the store error beside the ledger error instead of adding a refusal shape.\nFINDING docs/evidence/fragments/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs.html:114 the fragment says the unreadable-ledger case fails at c34d88cc \"because the read failure was reduced to an absent ledger and the target was refused as an unknown run\", but the log it names shows `reckon._store.CorruptEnvelopeError` escaping uncaught from `_require_repairs_target`; that is the other damage shape, since a `LedgerError` is what the old handler reduced to an absent ledger, so the record states a cause its own receipt refutes, which is the misattribution this section exists to remove.\nFINDING docs/evidence/fragments/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs.html:133 the base-arm row and the paragraph at :141 present \"4 failed, 30 passed\" as the same cases measured on both arms, but that log collects 34 tests against the head arm's 35 because it predates the unreadable-ledger case, so the delivered file's fifth `--repairs` case is measured only in the c34d88cc arm and the two arms differ by the test file as well as by the change under test.\n",
+  "review_run_id": "r-20260928T191137074264-review-of-dispatch-declares-the-run-it-repairs",
+  "reviewed_base_sha": "9e727bd0c6e92841a4980ae139dfd4319d135ee9",
+  "reviewed_head_sha": "707e852b59aac5fd13b05f9480fc9930f4b794fe",
+  "reviewed_run_id": "r-20260928T175645048110-dispatch-declares-the-run-it-repairs",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T19:27:34.243082+00:00",
+  "total": 92
+}

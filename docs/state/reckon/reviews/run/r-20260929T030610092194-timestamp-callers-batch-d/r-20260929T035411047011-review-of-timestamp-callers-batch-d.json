@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 17,
+  "call_sites": [
+    "reckon/cli.py:3350",
+    "reckon/flight.py:1484",
+    "reckon/serve.py:635",
+    "reckon/serve.py:664",
+    "reckon/ledger.py:2481",
+    "reckon/ledger.py:2547",
+    "reckon/crew/summary.py:565",
+    "reckon/mcp_views.py:141",
+    "reckon/mcp_views.py:303",
+    "reckon/mcp_views.py:483",
+    "reckon/mcp_views.py:671",
+    "reckon/mcp_views.py:1291",
+    "reckon/mcp_views.py:2483",
+    "reckon/roadmap.py:2660",
+    "reckon/velocity.py:551",
+    "reckon/velocity.py:1037",
+    "reckon/velocity.py:1203"
+  ],
+  "completed_at": "2026-09-29T04:21:06.793Z",
+  "dispatched_at": "2026-09-29T03:54:29Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "2937",
+      "text": "the guard `(\"T\" not in text and \" \" not in text)` also refuses stamps whose date and time are separated by a lowercase `t`, which the base loop read through datetime.fromisoformat; measured against the base function on a frozen clock, base resolves 2024-03-05t00:00:00+00:00 to 1709596800.0 and head returns the reading moment, so such a row is placed at now instead of at its own stamp, and no recorded input exercises the shape."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-d.html",
+      "line": "45",
+      "text": "the prose states every cell below is that run's output, but the table carries the literal `window` in place of the recorded mappings for mcp_views.compose_review and velocity.measure and truncates ledger._event_completion values mid-string (`\"2026-09-29T01:02:0\"` for `\"2026-09-29T01:02:03+00:00\"`), leaving 37 of the 176 cells unauditable from the fragment even though the full table survives in the run's base_probe.json."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 17 production call site(s)",
+    "diff": "read both commits against the base; a7e28ed7 carries the six module edits and ff12088a the evidence fragment and figure, and the only behaviour change outside the recorded sixteen inputs is the cli guard narrowing named in the finding below.",
+    "done_when": "the done_when requires the migrated callers to reproduce their recorded base output for all sixteen inputs; tests/test_timestamp_callers_batch_d.py asserts that cell by cell over 176 cells and its result is recorded in the reviewed manifest's after_suite, whose revision is ff12088a, exit_status 0, failure_count 0.",
+    "goal": "the goal is to move eleven deferred timestamp readers in cli, flight, ledger, mcp_views, serve and velocity onto reckon._timestamps.parse_utc while keeping each caller's observable behaviour; reckon/_timestamps.py:1 is the shared parser, ten callers now route through it, and ledger._parse_timestamp is retained with its zone-preserving reason stated at docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-d.html:59.",
+    "manifest": "read; it reports gate_baseline.log at 249 passed and 2 skipped with exit 0 and gate_head.log at 429 passed and 2 skipped with exit 0, names the negative-control log, and carries the unmeasured-vs-zero fields the schema expects.",
+    "write_paths": "the manifest declares nine paths and cea6da07..ff12088a touches exactly those nine across two commits (606 insertions, 79 deletions): six modules, one test file and two evidence artifacts."
+  },
+  "justifications": {
+    "durability": "tests/test_timestamp_callers_batch_d.py::test_migrated_caller_reproduces_recorded_output reddens on the declared negative control mutation of reckon/velocity.py:114, which the reviewed run's negative_control.log records as 8 failed against 8 named ids.",
+    "evidence": "tests/test_timestamp_callers_batch_d.py asserts 176 cells against the base table recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T030610092194-timestamp-callers-batch-d/base_probe.json and both gate logs exit 0.",
+    "fit": "reckon/ledger.py and reckon/mcp_views.py each carry their own copy of the same explicit-zone regex rather than sharing one home in reckon/_timestamps.py, which the node's fence did not cover.",
+    "goal_fidelity": "reckon/ledger.py:2602 keeps one parser and its zone-preserving reason is stated at docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-d.html:59, but reckon/cli.py:2937 narrows the accepted stamps beyond the recorded sixteen.",
+    "scope_discipline": "git diff --stat cea6da07..ff12088a lists exactly the nine paths the reviewed manifest declares, with no out-of-scope edit and no new lint finding on the six modules."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to move eleven deferred timestamp readers in cli, flight, ledger, mcp_views, serve and velocity onto reckon._timestamps.parse_utc while keeping each caller's observable behaviour; reckon/_timestamps.py:1 is the shared parser, ten callers now route through it, and ledger._parse_timestamp is retained with its zone-preserving reason stated at docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-d.html:59.\nVERDICT done_when: the done_when requires the migrated callers to reproduce their recorded base output for all sixteen inputs; tests/test_timestamp_callers_batch_d.py asserts that cell by cell over 176 cells and its result is recorded in the reviewed manifest's after_suite, whose revision is ff12088a, exit_status 0, failure_count 0.\nVERDICT write_paths: the manifest declares nine paths and cea6da07..ff12088a touches exactly those nine across two commits (606 insertions, 79 deletions): six modules, one test file and two evidence artifacts.\nVERDICT manifest: read; it reports gate_baseline.log at 249 passed and 2 skipped with exit 0 and gate_head.log at 429 passed and 2 skipped with exit 0, names the negative-control log, and carries the unmeasured-vs-zero fields the schema expects.\nVERDICT diff: read both commits against the base; a7e28ed7 carries the six module edits and ff12088a the evidence fragment and figure, and the only behaviour change outside the recorded sixteen inputs is the cli guard narrowing named in the finding below.\nCALL_SITES: reckon/cli.py:3350, reckon/flight.py:1484, reckon/serve.py:635, reckon/serve.py:664, reckon/ledger.py:2481, reckon/ledger.py:2547, reckon/crew/summary.py:565, reckon/mcp_views.py:141, reckon/mcp_views.py:303, reckon/mcp_views.py:483, reckon/mcp_views.py:671, reckon/mcp_views.py:1291, reckon/mcp_views.py:2483, reckon/roadmap.py:2660, reckon/velocity.py:551, reckon/velocity.py:1037, reckon/velocity.py:1203\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2602 keeps one parser and its zone-preserving reason is stated at docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-d.html:59, but reckon/cli.py:2937 narrows the accepted stamps beyond the recorded sixteen.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_timestamp_callers_batch_d.py asserts 176 cells against the base table recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T030610092194-timestamp-callers-batch-d/base_probe.json and both gate logs exit 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat cea6da07..ff12088a lists exactly the nine paths the reviewed manifest declares, with no out-of-scope edit and no new lint finding on the six modules.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_timestamp_callers_batch_d.py::test_migrated_caller_reproduces_recorded_output reddens on the declared negative control mutation of reckon/velocity.py:114, which the reviewed run's negative_control.log records as 8 failed against 8 named ids.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py and reckon/mcp_views.py each carry their own copy of the same explicit-zone regex rather than sharing one home in reckon/_timestamps.py, which the node's fence did not cover.\nFINDING reckon/cli.py:2937 the guard `(\"T\" not in text and \" \" not in text)` also refuses stamps whose date and time are separated by a lowercase `t`, which the base loop read through datetime.fromisoformat; measured against the base function on a frozen clock, base resolves 2024-03-05t00:00:00+00:00 to 1709596800.0 and head returns the reading moment, so such a row is placed at now instead of at its own stamp, and no recorded input exercises the shape.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-d.html:45 the prose states every cell below is that run's output, but the table carries the literal `window` in place of the recorded mappings for mcp_views.compose_review and velocity.measure and truncates ledger._event_completion values mid-string (`\"2026-09-29T01:02:0\"` for `\"2026-09-29T01:02:03+00:00\"`), leaving 37 of the 176 cells unauditable from the fragment even though the full table survives in the run's base_probe.json.",
+  "review_run_id": "r-20260929T035411047011-review-of-timestamp-callers-batch-d",
+  "reviewed_base_sha": "cea6da07b60e6bf92e7476e52b4c52d8e114ebb0",
+  "reviewed_head_sha": "ff12088a9735f327c2828a297d9245b3f917416b",
+  "reviewed_run_id": "r-20260929T030610092194-timestamp-callers-batch-d",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T04:16:43.958711+00:00",
+  "total": 93
+}

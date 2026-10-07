@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e853f22d45f7ce65dbac91820508d4b1cdc5d71c",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/roadmap.py:1126",
+    "reckon/_store.py:3089"
+  ],
+  "completed_at": "2026-10-06T00:16:14.824Z",
+  "dispatched_at": "2026-10-06T00:11:48Z",
+  "findings": [
+    {
+      "file": "tests/test_the_invocation_parser_spells_a_section.py",
+      "line": "178",
+      "severity": "follow-on",
+      "text": "follow-on: the composition pin asserts the module source contains the literal SECTION_NUMBER_PATTERN exactly twice, so an unrelated docstring or a second legitimate composition in the same module reddens the guard with no regression; the pattern-membership assertion at tests/test_the_invocation_parser_spells_a_section.py:175 already holds the property the count proxies for."
+    }
+  ],
+  "head_log_revision": "04e755946b3a07acfebb537f6dc4a33b70a18bbc",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base e853f22d; 04e7559 composes the section token from SECTION_NUMBER_PATTERN and normalises through section_record_id with the boundary lookahead that rejects 5a, d93fdf9 adds the evidence fragment and 47cdd58e reconciles its head figure, and no product code outside reckon/followup_pointers.py changes.",
+    "done_when": "the done-when names a test pinning the section of followup_pointers.classify_followup for 5, 5.1, 5-1 and 5a at base and head, a per-plan census of every open followup's resolved section at both revisions, a widened census reporting seven core-composed section-spelling frames, the existing followup-pointer/roadmap/plan-review tests, and a negative control restoring the bare number token; tests/test_the_invocation_parser_spells_a_section.py:44 pins the four spellings, tests/test_the_invocation_parser_spells_a_section.py:150 asserts the seven-frame census, and the manifest records base 184 / head 196 passed EXIT=0, focused 12 passed EXIT=0, control 10 failed EXIT=1, and open-followup-census.json holding 42 rows with moved=[].",
+    "goal": "the goal is that followup_pointers._INVOCATION_RE's section token compose the shared section-number core and normalise the captured number through section_record_id, so a followup prompt naming 5.1 or 5-1 resolves to s5-1 and an alphabetic suffix captures no section; reckon/followup_pointers.py:60 composes SECTION_NUMBER_PATTERN into the token and reckon/followup_pointers.py:102 normalises the capture through section_record_id.",
+    "manifest": "read; status complete, commits 04e7559 / d93fdf9 / 47cdd58e named, the base and head arms and the negative control recorded with log paths, and measurement_module naming the base scratch copy of reckon/followup_pointers.py.",
+    "write_paths": "the declared scope is reckon/followup_pointers.py, tests/test_the_invocation_parser_spells_a_section.py, the evidence fragment and the figures directory; git diff --name-only e853f22d..47cdd58e names exactly the first three and every one lies inside the declared set, with the figures directory unused."
+  },
+  "justifications": {
+    "durability": "the negative control restores the bare section token and reddens 10 ids in tests/test_the_invocation_parser_spells_a_section.py including the dotted and hyphenated pins, and the head assertions compare parse_invocation's output against the literal s5-1 and None rather than against a value the test supplied.",
+    "evidence": "the reviewed run's base-gate.log (184 passed EXIT=0) and head-gate.log (196 passed EXIT=0) record the measure, negative-control.log records the mutation at EXIT=1, and the independent re-run of tests/test_the_invocation_parser_spells_a_section.py returned 12 passed EXIT=0, though head-gate.log's header names the implementation revision 04e7559 while the reviewed head is the records-only commit 47cdd58e.",
+    "fit": "reckon/followup_pointers.py:38 imports the shared core rather than re-declaring the number grammar, the module docstring states the boundary rule, and the commits carry conventional subjects with bodies, though the source-token count at tests/test_the_invocation_parser_spells_a_section.py:178 pins an implementation detail rather than a behaviour.",
+    "goal_fidelity": "reckon/followup_pointers.py:60 composes the token from SECTION_NUMBER_PATTERN and reckon/followup_pointers.py:102 routes the capture through section_record_id, so 5.1 and 5-1 become s5-1 and 5a becomes no section, exactly what the goal states.",
+    "reuse": "the change adds no production definition and extends the existing owner reckon/_plan_html.py:63, using SECTION_NUMBER_PATTERN and section_record_id rather than forking a parallel section-number grammar.",
+    "scope_discipline": "git diff --name-only e853f22d..47cdd58e returns only reckon/followup_pointers.py, tests/test_the_invocation_parser_spells_a_section.py and the evidence fragment, all inside the declared write paths, and the change adds nothing the goal does not imply."
+  },
+  "node": "review-of-the-invocation-parser-spells-a-section-like-every-other-reader",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that followup_pointers._INVOCATION_RE's section token compose the shared section-number core and normalise the captured number through section_record_id, so a followup prompt naming 5.1 or 5-1 resolves to s5-1 and an alphabetic suffix captures no section; reckon/followup_pointers.py:60 composes SECTION_NUMBER_PATTERN into the token and reckon/followup_pointers.py:102 normalises the capture through section_record_id.\nVERDICT done_when: the done-when names a test pinning the section of followup_pointers.classify_followup for 5, 5.1, 5-1 and 5a at base and head, a per-plan census of every open followup's resolved section at both revisions, a widened census reporting seven core-composed section-spelling frames, the existing followup-pointer/roadmap/plan-review tests, and a negative control restoring the bare number token; tests/test_the_invocation_parser_spells_a_section.py:44 pins the four spellings, tests/test_the_invocation_parser_spells_a_section.py:150 asserts the seven-frame census, and the manifest records base 184 / head 196 passed EXIT=0, focused 12 passed EXIT=0, control 10 failed EXIT=1, and open-followup-census.json holding 42 rows with moved=[].\nVERDICT write_paths: the declared scope is reckon/followup_pointers.py, tests/test_the_invocation_parser_spells_a_section.py, the evidence fragment and the figures directory; git diff --name-only e853f22d..47cdd58e names exactly the first three and every one lies inside the declared set, with the figures directory unused.\nVERDICT manifest: read; status complete, commits 04e7559 / d93fdf9 / 47cdd58e named, the base and head arms and the negative control recorded with log paths, and measurement_module naming the base scratch copy of reckon/followup_pointers.py.\nVERDICT diff: read commit by commit against base e853f22d; 04e7559 composes the section token from SECTION_NUMBER_PATTERN and normalises through section_record_id with the boundary lookahead that rejects 5a, d93fdf9 adds the evidence fragment and 47cdd58e reconciles its head figure, and no product code outside reckon/followup_pointers.py changes.\nCALL_SITES: reckon/roadmap.py:1126, reckon/_store.py:3089\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/followup_pointers.py:60 composes the token from SECTION_NUMBER_PATTERN and reckon/followup_pointers.py:102 routes the capture through section_record_id, so 5.1 and 5-1 become s5-1 and 5a becomes no section, exactly what the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's base-gate.log (184 passed EXIT=0) and head-gate.log (196 passed EXIT=0) record the measure, negative-control.log records the mutation at EXIT=1, and the independent re-run of tests/test_the_invocation_parser_spells_a_section.py returned 12 passed EXIT=0, though head-gate.log's header names the implementation revision 04e7559 while the reviewed head is the records-only commit 47cdd58e.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only e853f22d..47cdd58e returns only reckon/followup_pointers.py, tests/test_the_invocation_parser_spells_a_section.py and the evidence fragment, all inside the declared write paths, and the change adds nothing the goal does not imply.\nSCORE durability: 20\nJUSTIFICATION durability: the negative control restores the bare section token and reddens 10 ids in tests/test_the_invocation_parser_spells_a_section.py including the dotted and hyphenated pins, and the head assertions compare parse_invocation's output against the literal s5-1 and None rather than against a value the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/followup_pointers.py:38 imports the shared core rather than re-declaring the number grammar, the module docstring states the boundary rule, and the commits carry conventional subjects with bodies, though the source-token count at tests/test_the_invocation_parser_spells_a_section.py:178 pins an implementation detail rather than a behaviour.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition and extends the existing owner reckon/_plan_html.py:63, using SECTION_NUMBER_PATTERN and section_record_id rather than forking a parallel section-number grammar.\nFINDING tests/test_the_invocation_parser_spells_a_section.py:178 follow-on: the composition pin asserts the module source contains the literal SECTION_NUMBER_PATTERN exactly twice, so an unrelated docstring or a second legitimate composition in the same module reddens the guard with no regression; the pattern-membership assertion at tests/test_the_invocation_parser_spells_a_section.py:175 already holds the property the count proxies for.\n",
+  "review_run_id": "r-20261006T001130063362-review-of-the-invocation-parser-spells-a-section-like-every-other-reader",
+  "reviewed_base_sha": "e853f22d45f7ce65dbac91820508d4b1cdc5d71c",
+  "reviewed_head_sha": "47cdd58e5d3713db6884d303457220725422edfb",
+  "reviewed_run_id": "r-20261005T235802630844-the-invocation-parser-spells-a-section-like-every-other-reader",
+  "reviewer_run_id": "r-20261006T001130063362-review-of-the-invocation-parser-spells-a-section-like-every-other-reader",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T00:15:29.621014+00:00",
+  "total": 118
+}

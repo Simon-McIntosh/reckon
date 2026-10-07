@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:classify_pointer",
+    "reckon/cli.py:crew_repair_status",
+    "reckon/hooks/worker_stop.py:decide",
+    "reckon/crew/recovery.py:_fleet_counts"
+  ],
+  "completed_at": "2026-10-02T16:48:11.724Z",
+  "dispatched_at": "2026-10-02T16:34:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "6353",
+      "severity": "follow-on",
+      "text": "follow-on: the exited-unfinished action string hardcodes --status complete, but the state fires precisely when no verdict word was written and the run may equally have exhausted or failed; the suggested remediation nudges the coordinator toward a complete verdict for a run the evidence does not show completed."
+    },
+    {
+      "file": "reckon/hooks/worker_stop.py",
+      "line": "43",
+      "severity": "follow-on",
+      "text": "follow-on: the hook declares its own WAITING_STATUS = \"waiting\" while reckon/crew/recovery.py:99 owns the same vocabulary and the hook already imports _manifest_wait from that module at line 44, so a rename on either side would leave the module-level status check silently testing the wrong word."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit \u2014 b88a904a9 (feature: recovery state, runs repair, cli verb, hook wait, ticker palette, watch vocabulary, five tests), 3896a49ab (help-census row and count), 5a5918d18 (format fold), all inside scope.",
+    "done_when": "the done-when requires one test per defect failing before the change, each naming its own reproduction, and the manifest records the base and head arms \u2014 base 5 failed at tests/test_run_state_reads_what_the_worker_reached.py and tests/test_crew_help_names_its_state.py, head 1 failed at the later id.",
+    "goal": "the node's goal is defects 1 and 2 of plan crew-observability-truth section 26 \u2014 give a run whose recorded exit left an open manifest status its own state, provide a sanctioned status repair, and let the worker stop hook accept a well-formed status waiting; reckon/crew/recovery.py:6342 and reckon/hooks/worker_stop.py:236 carry both.",
+    "manifest": "read; it states the arms, the negative control and the ruff delta, and its baseline_suite and after_suite blocks name the gate logs that the logs themselves reproduce.",
+    "write_paths": "read the manifest's seven declared paths; the diff over 53a72f8c..5a5918d18 shows every changed file inside them and the worktree clean at head."
+  },
+  "justifications": {
+    "durability": "the five new assertions each fail on the code change they guard (the negative control reverted waiting acceptance and tests/test_run_state_reads_what_the_worker_reached.py:243 reddened), and none compares a value against the same variable the test passed in; docked because no test pins the boundary the docstring claims \u2014 that a killed worker with no exit record stays interrupted, and that exited-unfinished does not fire with zero commits beyond base.",
+    "evidence": "gate-base.log reads 5 failed, 539 passed and gate-head-2.log 1 failed, 544 passed, the head failure id is one of the base five so no failure id is added, the negative control negative-control-2.log is EXIT=1 with the waiting case failing, and I re-ran tests/test_run_state_reads_what_the_worker_reached.py at head (5 passed in 2.11s) \u2014 recorded, not claimed.",
+    "fit": "the state is mechanism-named and wired through the existing RECOVERY_CLASSES, RECOVERY_VERBS, NEEDS_ACTION and WATCH_ATTENTION_STATES sets rather than a parallel path, and the hook reads the classifier's own wait reader; docked because reckon/hooks/worker_stop.py:43 duplicates the WAITING_STATUS literal that reckon/crew/recovery.py:99 already owns rather than importing it beside the _manifest_wait import it already makes.",
+    "goal_fidelity": "reckon/crew/recovery.py:6339 emits a recognised exited-unfinished state with a repair verb and action, reckon/cli.py:5417 adds crew repair-status keeping manifest.md.asdelivered (reckon/crew/runs.py:1103), and reckon/hooks/worker_stop.py:227 accepts a waiting manifest whose wait block _manifest_wait honours \u2014 both defects reproduced and repaired, docked for the action hardcoding --status complete at recovery.py:6353.",
+    "scope_discipline": "every path in 53a72f8c..5a5918d18 (reckon/cli.py, reckon/crew/recovery.py, reckon/crew/runs.py, reckon/crew/ticker.py, reckon/hooks/worker_stop.py, tests/test_run_state_reads_what_the_worker_reached.py, tests/test_crew_help_names_its_state.py) is inside the manifest's declared write paths, and the census count 34 to 35 matches the repair-status row it added."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is defects 1 and 2 of plan crew-observability-truth section 26 \u2014 give a run whose recorded exit left an open manifest status its own state, provide a sanctioned status repair, and let the worker stop hook accept a well-formed status waiting; reckon/crew/recovery.py:6342 and reckon/hooks/worker_stop.py:236 carry both.\nVERDICT done_when: the done-when requires one test per defect failing before the change, each naming its own reproduction, and the manifest records the base and head arms \u2014 base 5 failed at tests/test_run_state_reads_what_the_worker_reached.py and tests/test_crew_help_names_its_state.py, head 1 failed at the later id.\nVERDICT write_paths: read the manifest's seven declared paths; the diff over 53a72f8c..5a5918d18 shows every changed file inside them and the worktree clean at head.\nVERDICT manifest: read; it states the arms, the negative control and the ruff delta, and its baseline_suite and after_suite blocks name the gate logs that the logs themselves reproduce.\nVERDICT diff: read commit by commit \u2014 b88a904a9 (feature: recovery state, runs repair, cli verb, hook wait, ticker palette, watch vocabulary, five tests), 3896a49ab (help-census row and count), 5a5918d18 (format fold), all inside scope.\nCALL_SITES: reckon/crew/recovery.py:classify_pointer, reckon/cli.py:crew_repair_status, reckon/hooks/worker_stop.py:decide, reckon/crew/recovery.py:_fleet_counts\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:6339 emits a recognised exited-unfinished state with a repair verb and action, reckon/cli.py:5417 adds crew repair-status keeping manifest.md.asdelivered (reckon/crew/runs.py:1103), and reckon/hooks/worker_stop.py:227 accepts a waiting manifest whose wait block _manifest_wait honours \u2014 both defects reproduced and repaired, docked for the action hardcoding --status complete at recovery.py:6353.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-base.log reads 5 failed, 539 passed and gate-head-2.log 1 failed, 544 passed, the head failure id is one of the base five so no failure id is added, the negative control negative-control-2.log is EXIT=1 with the waiting case failing, and I re-ran tests/test_run_state_reads_what_the_worker_reached.py at head (5 passed in 2.11s) \u2014 recorded, not claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 53a72f8c..5a5918d18 (reckon/cli.py, reckon/crew/recovery.py, reckon/crew/runs.py, reckon/crew/ticker.py, reckon/hooks/worker_stop.py, tests/test_run_state_reads_what_the_worker_reached.py, tests/test_crew_help_names_its_state.py) is inside the manifest's declared write paths, and the census count 34 to 35 matches the repair-status row it added.\nSCORE durability: 18\nJUSTIFICATION durability: the five new assertions each fail on the code change they guard (the negative control reverted waiting acceptance and tests/test_run_state_reads_what_the_worker_reached.py:243 reddened), and none compares a value against the same variable the test passed in; docked because no test pins the boundary the docstring claims \u2014 that a killed worker with no exit record stays interrupted, and that exited-unfinished does not fire with zero commits beyond base.\nSCORE fit: 18\nJUSTIFICATION fit: the state is mechanism-named and wired through the existing RECOVERY_CLASSES, RECOVERY_VERBS, NEEDS_ACTION and WATCH_ATTENTION_STATES sets rather than a parallel path, and the hook reads the classifier's own wait reader; docked because reckon/hooks/worker_stop.py:43 duplicates the WAITING_STATUS literal that reckon/crew/recovery.py:99 already owns rather than importing it beside the _manifest_wait import it already makes.\nFINDING reckon/crew/recovery.py:6353 follow-on: the exited-unfinished action string hardcodes --status complete, but the state fires precisely when no verdict word was written and the run may equally have exhausted or failed; the suggested remediation nudges the coordinator toward a complete verdict for a run the evidence does not show completed.\nFINDING reckon/hooks/worker_stop.py:43 follow-on: the hook declares its own WAITING_STATUS = \"waiting\" while reckon/crew/recovery.py:99 owns the same vocabulary and the hook already imports _manifest_wait from that module at line 44, so a rename on either side would leave the module-level status check silently testing the wrong word.\n",
+  "review_run_id": "r-20261002T163345662069-review-of-exited-unfinished-run-reads-its-own-state",
+  "reviewed_base_sha": "53a72f8c99784e731660beecee07f8dc5ed745a4",
+  "reviewed_head_sha": "5a5918d18c5d80efa7bb0df2c9cc206f73da5b46",
+  "reviewed_run_id": "r-20261002T130153068144-exited-unfinished-run-reads-its-own-state",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T16:44:50.782154+00:00",
+  "total": 94
+}

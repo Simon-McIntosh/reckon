@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery.py:4947",
+    "reckon/crew/recovery.py:5518",
+    "reckon/crew/recovery.py:5624",
+    "reckon/crew/runs.py:1105",
+    "reckon/cli.py:2026",
+    "reckon/cli.py:2958",
+    "reckon/cli.py:3096",
+    "reckon/crew/ticker.py:1165"
+  ],
+  "completed_at": "2026-09-26T19:53:46.690Z",
+  "dispatched_at": "2026-09-26T19:12:30Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against bf17b5a8; the code change is exactly the witness clause (recovery.py:4886-4890) admitting two proofs of death \u2014 the row's own liveness_proven or the supervisor's exit record \u2014 with a live process still outranking a record because the row carries only the effective record (recovery.py:3441, recovery.py:3570), and the rest is the delivered cases, the figure and the node's own record sections.",
+    "done_when": "the declared done-when is the three-file gate at the delivered head; re-run at a scratch export of 2cd7f0a8 it returns 30 passed, exit 0 (logs/gate-rereview-at-2cd7f0a8.log, whose header names module.__file__ /tmp/rv-2cd7f0a8/reckon/crew/recovery.py and cwd /tmp/rv-2cd7f0a8), and the negative direction at bf17b5a8 with the delivered test files copied in unchanged returns 6 failed / 24 passed, exit 1, all six inside the node's own assertions (logs/base-arm-at-bf17b5a8.log), matching the manifest.",
+    "goal": "plan section 3 asks a stalled row to name the process state in words; at 2cd7f0a8 the clause at reckon/crew/recovery.py:4886-4895 names all three, the prior review's recorded-exit finding is resolved \u2014 the same recorded-exit pointer renders \"process gone, quiet 31m\" at 2cd7f0a8 against \"liveness unknown, quiet 31m\" at b7c1272e (logs/probe-routes-at-2cd7f0a8.log, logs/probe-routes-at-b7c1272e.log) \u2014 and the unknown-liveness case still holds, the unrecorded and foreign-host routes reading \"liveness unknown, quiet 31m\" at both revisions.",
+    "manifest": "the node manifest reads complete with six commits 8be6a8af..2cd7f0a8, the gate 30 passed exit 0, the base arm 6 failed / 24 passed and a named negative-control log, and I reproduced the gate, the base arm and the delivered-cases arm against prior code \u2014 1 failed / 4 passed, the one failure being test_a_stalled_row_names_a_recorded_exit on \"liveness unknown\" (logs/delivered-liveness-cases-against-prior-code.log).",
+    "write_paths": "the fence covers the plan page, its landed record, the figure with its generator, reckon/crew/recovery.py and the two test files; `git diff --stat bf17b5a8..2cd7f0a8` lists exactly those seven paths, the declared reckon/crew/ticker.py is untouched, and the pane reaches the word through its existing clause at ticker.py:1165-1185."
+  },
+  "justifications": {
+    "durability": "reinstating the regression \u2014 dropping `or row.get(\"exit_record\") is not None` at recovery.py:4890 \u2014 reddens test_stalled_row_names_a_recorded_exit, measured as 1 failed / 4 passed against b7c1272e's code (logs/delivered-liveness-cases-against-prior-code.log), though no delivered case pairs a live pid with a present exit record, that direction resting on the effective-record drop at recovery.py:3441.",
+    "evidence": "the gate, the base arm and the prior-code arm each reproduce the manifest's figures at scratch exports (logs/gate-rereview-at-2cd7f0a8.log, logs/base-arm-at-bf17b5a8.log, logs/delivered-liveness-cases-against-prior-code.log), with the pane clause path verified by reading ticker.py:1165-1185 rather than by a delivered test.",
+    "fit": "the new test names and constants are mechanism-named with no plan or ticket identifiers (tests/test_stalled_row_names_liveness.py:210-306), no commit message carries an attribution trailer, and the clause follows the file's own commenting idiom at recovery.py:4871-4895.",
+    "goal_fidelity": "recovery.py:4886-4895 renders all three states and the recorded-exit route is repaired, with the death word travelling in the composed detail while the row's process_alive and liveness_proven booleans keep the bare measurement and exit_record (recovery.py:3570) carries the record beside them.",
+    "scope_discipline": "every one of the seven paths in `git diff --stat bf17b5a8..2cd7f0a8` lies inside the declared fence and the docs edits stay within the node's own plan and landed-record sections."
+  },
+  "node": "review-of-stalled-row-names-liveness",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 3 asks a stalled row to name the process state in words; at 2cd7f0a8 the clause at reckon/crew/recovery.py:4886-4895 names all three, the prior review's recorded-exit finding is resolved \u2014 the same recorded-exit pointer renders \"process gone, quiet 31m\" at 2cd7f0a8 against \"liveness unknown, quiet 31m\" at b7c1272e (logs/probe-routes-at-2cd7f0a8.log, logs/probe-routes-at-b7c1272e.log) \u2014 and the unknown-liveness case still holds, the unrecorded and foreign-host routes reading \"liveness unknown, quiet 31m\" at both revisions.\nVERDICT done_when: the declared done-when is the three-file gate at the delivered head; re-run at a scratch export of 2cd7f0a8 it returns 30 passed, exit 0 (logs/gate-rereview-at-2cd7f0a8.log, whose header names module.__file__ /tmp/rv-2cd7f0a8/reckon/crew/recovery.py and cwd /tmp/rv-2cd7f0a8), and the negative direction at bf17b5a8 with the delivered test files copied in unchanged returns 6 failed / 24 passed, exit 1, all six inside the node's own assertions (logs/base-arm-at-bf17b5a8.log), matching the manifest.\nVERDICT write_paths: the fence covers the plan page, its landed record, the figure with its generator, reckon/crew/recovery.py and the two test files; `git diff --stat bf17b5a8..2cd7f0a8` lists exactly those seven paths, the declared reckon/crew/ticker.py is untouched, and the pane reaches the word through its existing clause at ticker.py:1165-1185.\nVERDICT manifest: the node manifest reads complete with six commits 8be6a8af..2cd7f0a8, the gate 30 passed exit 0, the base arm 6 failed / 24 passed and a named negative-control log, and I reproduced the gate, the base arm and the delivered-cases arm against prior code \u2014 1 failed / 4 passed, the one failure being test_a_stalled_row_names_a_recorded_exit on \"liveness unknown\" (logs/delivered-liveness-cases-against-prior-code.log).\nVERDICT diff: read commit by commit against bf17b5a8; the code change is exactly the witness clause (recovery.py:4886-4890) admitting two proofs of death \u2014 the row's own liveness_proven or the supervisor's exit record \u2014 with a live process still outranking a record because the row carries only the effective record (recovery.py:3441, recovery.py:3570), and the rest is the delivered cases, the figure and the node's own record sections.\nCALL_SITES: reckon/crew/recovery.py:4947, reckon/crew/recovery.py:5518, reckon/crew/recovery.py:5624, reckon/crew/runs.py:1105, reckon/cli.py:2026, reckon/cli.py:2958, reckon/cli.py:3096, reckon/crew/ticker.py:1165\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery.py:4886-4895 renders all three states and the recorded-exit route is repaired, with the death word travelling in the composed detail while the row's process_alive and liveness_proven booleans keep the bare measurement and exit_record (recovery.py:3570) carries the record beside them.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate, the base arm and the prior-code arm each reproduce the manifest's figures at scratch exports (logs/gate-rereview-at-2cd7f0a8.log, logs/base-arm-at-bf17b5a8.log, logs/delivered-liveness-cases-against-prior-code.log), with the pane clause path verified by reading ticker.py:1165-1185 rather than by a delivered test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the seven paths in `git diff --stat bf17b5a8..2cd7f0a8` lies inside the declared fence and the docs edits stay within the node's own plan and landed-record sections.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the regression \u2014 dropping `or row.get(\"exit_record\") is not None` at recovery.py:4890 \u2014 reddens test_stalled_row_names_a_recorded_exit, measured as 1 failed / 4 passed against b7c1272e's code (logs/delivered-liveness-cases-against-prior-code.log), though no delivered case pairs a live pid with a present exit record, that direction resting on the effective-record drop at recovery.py:3441.\nSCORE fit: 20\nJUSTIFICATION fit: the new test names and constants are mechanism-named with no plan or ticket identifiers (tests/test_stalled_row_names_liveness.py:210-306), no commit message carries an attribution trailer, and the clause follows the file's own commenting idiom at recovery.py:4871-4895.\nREVIEWED_BASE_SHA: bf17b5a8a44cdf280251cca7ed5cadbc7ac7dca6\nREVIEWED_HEAD_SHA: 2cd7f0a8d1db3436fffe72948442cb1295c33d62",
+  "review_run_id": "r-20260926T191216459832-review-of-stalled-row-names-liveness",
+  "reviewed_base_sha": "bf17b5a8a44cdf280251cca7ed5cadbc7ac7dca6",
+  "reviewed_head_sha": "2cd7f0a8d1db3436fffe72948442cb1295c33d62",
+  "reviewed_run_id": "r-20260926T153738209222-stalled-row-names-liveness",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T19:47:16.231356+00:00",
+  "total": 97
+}

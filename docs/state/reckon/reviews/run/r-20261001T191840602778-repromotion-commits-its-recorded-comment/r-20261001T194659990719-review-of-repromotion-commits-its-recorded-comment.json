@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-10-01T19:54:26.960Z",
+  "dispatched_at": "2026-10-01T19:47:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3227",
+      "severity": "follow-on",
+      "text": "follow-on: the already-recorded branch now stages the whole plan file whenever it differs from HEAD, so an unrelated uncommitted edit to the same plan present at re-promotion time is swept into this run's landing commit; the guard keys on the file differing, not on the differing hunk being this run's own write."
+    }
+  ],
+  "head_log_revision": "7956b3a51d1afeb5e8944be1b6f49eceff3e3367",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 2c49c0457; three files changed \u2014 promotion.py adds _path_differs_from_head and includes the plan file in the already-recorded branch, the new test file, and the fragment \u2014 all inside scope.",
+    "done_when": "the done-when names tests/test_repromotion_commits_its_recorded_comment.py driving a first landing failed by a held index.lock then a re-promotion asserting git status --porcelain empty for the plan file and the plan file in the landing commit's file list; the manifest records that run, the base and head arms, and the negative control.",
+    "goal": "the node goal is that a re-promotion finding its landing comment already recorded still commits the plan file; reckon/crew/promotion.py:3225 now includes the plan file when the already-recorded comment's file differs from HEAD.",
+    "manifest": "read; it states 2 passed EXIT=0 for the gate, 55 passed EXIT=0 at base 2c49c0457 and 55 passed EXIT=0 at head 7956b3a5, and names the negative-control log.",
+    "write_paths": "the declared scope is reckon/crew/promotion.py, tests/test_repromotion_commits_its_recorded_comment.py and the evidence fragment; every path in the diff is inside it."
+  },
+  "justifications": {
+    "durability": "the declared negative control was executed and reddened the named case (tests/test_repromotion_commits_its_recorded_comment.py:200, M docs/plans/repromotion-target.html, EXIT=1), so the added assertion fails exactly when the already-recorded branch drops the plan file, and the boundary test holds the over-inclusion side.",
+    "evidence": "tests/test_repromotion_commits_its_recorded_comment.py asserts git status --porcelain empty for the plan file and the plan file present in the landing commit, its result is recorded in the manifest with the base/head arms and the negative control, and its log is on disk; docked one because the head arm ran pre-commit on a working tree recorded as content-identical rather than at the commit object.",
+    "fit": "_path_differs_from_head and the revised _plan_comment_store_path docstring follow the surrounding helper idiom in reckon/crew/promotion.py and introduce no plan, sprint or ticket identifier in any name or comment.",
+    "goal_fidelity": "reckon/crew/promotion.py:3225 returns the plan file when the comment is already recorded but the file differs from HEAD, which is exactly the stranded write the goal names, and the named test drives that path green.",
+    "scope_discipline": "the diff touches only reckon/crew/promotion.py, the declared test file and the declared evidence fragment, and the change adds no behaviour the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a re-promotion finding its landing comment already recorded still commits the plan file; reckon/crew/promotion.py:3225 now includes the plan file when the already-recorded comment's file differs from HEAD.\nVERDICT done_when: the done-when names tests/test_repromotion_commits_its_recorded_comment.py driving a first landing failed by a held index.lock then a re-promotion asserting git status --porcelain empty for the plan file and the plan file in the landing commit's file list; the manifest records that run, the base and head arms, and the negative control.\nVERDICT write_paths: the declared scope is reckon/crew/promotion.py, tests/test_repromotion_commits_its_recorded_comment.py and the evidence fragment; every path in the diff is inside it.\nVERDICT manifest: read; it states 2 passed EXIT=0 for the gate, 55 passed EXIT=0 at base 2c49c0457 and 55 passed EXIT=0 at head 7956b3a5, and names the negative-control log.\nVERDICT diff: read commit by commit against base 2c49c0457; three files changed \u2014 promotion.py adds _path_differs_from_head and includes the plan file in the already-recorded branch, the new test file, and the fragment \u2014 all inside scope.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3225 returns the plan file when the comment is already recorded but the file differs from HEAD, which is exactly the stranded write the goal names, and the named test drives that path green.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_repromotion_commits_its_recorded_comment.py asserts git status --porcelain empty for the plan file and the plan file present in the landing commit, its result is recorded in the manifest with the base/head arms and the negative control, and its log is on disk; docked one because the head arm ran pre-commit on a working tree recorded as content-identical rather than at the commit object.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/promotion.py, the declared test file and the declared evidence fragment, and the change adds no behaviour the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control was executed and reddened the named case (tests/test_repromotion_commits_its_recorded_comment.py:200, M docs/plans/repromotion-target.html, EXIT=1), so the added assertion fails exactly when the already-recorded branch drops the plan file, and the boundary test holds the over-inclusion side.\nSCORE fit: 18\nJUSTIFICATION fit: _path_differs_from_head and the revised _plan_comment_store_path docstring follow the surrounding helper idiom in reckon/crew/promotion.py and introduce no plan, sprint or ticket identifier in any name or comment.\nFINDING reckon/crew/promotion.py:3227 follow-on: the already-recorded branch now stages the whole plan file whenever it differs from HEAD, so an unrelated uncommitted edit to the same plan present at re-promotion time is swept into this run's landing commit; the guard keys on the file differing, not on the differing hunk being this run's own write.\n",
+  "review_run_id": "r-20261001T194659990719-review-of-repromotion-commits-its-recorded-comment",
+  "reviewed_base_sha": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+  "reviewed_head_sha": "7956b3a51d1afeb5e8944be1b6f49eceff3e3367",
+  "reviewed_run_id": "r-20261001T191840602778-repromotion-commits-its-recorded-comment",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T19:52:31.013078+00:00",
+  "total": 96
+}

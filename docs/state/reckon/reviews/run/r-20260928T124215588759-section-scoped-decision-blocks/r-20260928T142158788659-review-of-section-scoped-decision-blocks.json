@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "derived at write time through reckon.crew.review.annotate_review_of_run from the reviewed run's own manifest.md baseline_suite=logs/baseline-suite.log and after_suite=logs/after-suite.log; both arms report the same three pre-existing tests/test_schema.py ids, so no failing id was added. log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T142158788659-review-of-section-scoped-decision-blocks/logs/added-failure-derivation.log",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/roadmap.py:resolve_graph_target",
+    "reckon/roadmap.py:_plan_decision_sections",
+    "reckon/_plan_html.py:read_state",
+    "reckon/_plan_html.py:_render_decisions"
+  ],
+  "completed_at": "2026-09-28T15:10:04.523Z",
+  "dispatched_at": "2026-09-28T14:22:12Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2371",
+      "text": "an open decision's named sections enter decision_section_blockers with no check against the plan's declared anchors, so a decision scoped to a section the plan never declares (a typo, or one renamed later) silently manufactures a phantom section \u2014 measured: scoping to s99 yields blocked_sections ['s99'] and section_readiness carrying a section the plan does not contain, while the intended section stays ready \u2014 and decision_section_refusals (reckon/_schema.py:580), which detects exactly this, is called only from tests/test_schema.py:441 while its sibling section_dependency_refusals is wired at reckon/roadmap.py:652 and the docstring at reckon/_schema.py:387 claims the refusal is reported."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2287",
+      "text": "is_blocked no longer consumes a scoped open decision while the persisted-blocked fallback at reckon/roadmap.py:2259 still tests the unfiltered open_decisions; measured: a plan persisted blocked whose only open decision is scoped reports readiness 'deferred' and effective_status 'active' where the same plan with the decision unscoped reports 'blocked' and 'blocked', so a persisted plan-level block is erased from the derived status and no case covers the interaction."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 0f2d631d435d78f9864934f0ec7b14e5e76c2c46; nine files, 745 insertions, no path outside the (granted) fence, and no plan version meta or followup touched.",
+    "done_when": "the done-when (reviewed prompt.txt:75-81) names tests/test_roadmap.py plus tests/test_schema.py with a scoped case, an unscoped case, a round-trip case and a refusal case; the manifest records both arms under baseline_suite and after_suite, and I reproduced the arm counts and the added-failure derivation from those logs.",
+    "goal": "the reviewed node's goal (reviewed prompt.txt:25) is that a decision naming sections holds only those while an unscoped one keeps blocking the whole plan; reckon/roadmap.py:2244-2287 consumes only the plan-level open decisions for readiness and reckon/roadmap.py:2366-2400 reports each scoped hold per section, which is that behaviour, measured in tests/test_roadmap.py:636-674 and reproduced by my own probe.",
+    "manifest": "read; it states the two roadmap cases, the round-trip case, both arm counts, the schema sha256 and the declared negative control, and every one of those that I could check independently holds.",
+    "write_paths": "the manifest's declared list (manifest.md:5) covers every changed path; reckon/_plan_html.py and docs/_shared/plan.schema.json lie inside it only by the coordinator's resume grant (resume-1-*advice.txt in the reviewed run directory), which I read."
+  },
+  "justifications": {
+    "durability": "reinstating the regression (ignoring decision['sections'] in a scratch roadmap.py) reddens tests/test_roadmap.py:636 first, logged as the negative control, and tests/test_schema.py:439-441 covers the state-write round trip; neither case exercises the persisted-blocked interaction at reckon/roadmap.py:2287, which is the deduction.",
+    "evidence": "tests/test_roadmap.py:636-674 asserts the done-when's two behaviours and the manifest records both arms, and my independent derivation from logs/baseline-suite.log and logs/after-suite.log gives added_failure_count 0 with the same three pre-existing ids in both arms, though the done-when's refusal half is asserted only at unit level against a helper production never calls.",
+    "fit": "the new names (data-sections, decision_sections, plan_level_decisions, decision_section_refusals) follow the surrounding idiom at reckon/roadmap.py:234 and reckon/_plan_html.py:853, and the naming checks over the changed paths run clean.",
+    "goal_fidelity": "reckon/roadmap.py:2287 gates is_ready and is_blocked on plan_holding_decisions, so a decision scoped to s3 and s4 leaves s2 ready and the plan active exactly as the goal states, with the phantom-section gap at reckon/roadmap.py:2371 lying outside its letter.",
+    "scope_discipline": "every one of the nine changed paths is inside the declared fence as extended by the coordinator's resume grant, and the two doc edits splice into cumulative records without touching plan meta or followups."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal (reviewed prompt.txt:25) is that a decision naming sections holds only those while an unscoped one keeps blocking the whole plan; reckon/roadmap.py:2244-2287 consumes only the plan-level open decisions for readiness and reckon/roadmap.py:2366-2400 reports each scoped hold per section, which is that behaviour, measured in tests/test_roadmap.py:636-674 and reproduced by my own probe.\nVERDICT done_when: the done-when (reviewed prompt.txt:75-81) names tests/test_roadmap.py plus tests/test_schema.py with a scoped case, an unscoped case, a round-trip case and a refusal case; the manifest records both arms under baseline_suite and after_suite, and I reproduced the arm counts and the added-failure derivation from those logs.\nVERDICT write_paths: the manifest's declared list (manifest.md:5) covers every changed path; reckon/_plan_html.py and docs/_shared/plan.schema.json lie inside it only by the coordinator's resume grant (resume-1-*advice.txt in the reviewed run directory), which I read.\nVERDICT manifest: read; it states the two roadmap cases, the round-trip case, both arm counts, the schema sha256 and the declared negative control, and every one of those that I could check independently holds.\nVERDICT diff: read commit by commit against 0f2d631d435d78f9864934f0ec7b14e5e76c2c46; nine files, 745 insertions, no path outside the (granted) fence, and no plan version meta or followup touched.\nCALL_SITES: reckon/roadmap.py:_build_roadmap, reckon/roadmap.py:resolve_graph_target, reckon/roadmap.py:_plan_decision_sections, reckon/_plan_html.py:read_state, reckon/_plan_html.py:_render_decisions\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:2287 gates is_ready and is_blocked on plan_holding_decisions, so a decision scoped to s3 and s4 leaves s2 ready and the plan active exactly as the goal states, with the phantom-section gap at reckon/roadmap.py:2371 lying outside its letter.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_roadmap.py:636-674 asserts the done-when's two behaviours and the manifest records both arms, and my independent derivation from logs/baseline-suite.log and logs/after-suite.log gives added_failure_count 0 with the same three pre-existing ids in both arms, though the done-when's refusal half is asserted only at unit level against a helper production never calls.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the nine changed paths is inside the declared fence as extended by the coordinator's resume grant, and the two doc edits splice into cumulative records without touching plan meta or followups.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression (ignoring decision['sections'] in a scratch roadmap.py) reddens tests/test_roadmap.py:636 first, logged as the negative control, and tests/test_schema.py:439-441 covers the state-write round trip; neither case exercises the persisted-blocked interaction at reckon/roadmap.py:2287, which is the deduction.\nSCORE fit: 19\nJUSTIFICATION fit: the new names (data-sections, decision_sections, plan_level_decisions, decision_section_refusals) follow the surrounding idiom at reckon/roadmap.py:234 and reckon/_plan_html.py:853, and the naming checks over the changed paths run clean.\nFINDING reckon/roadmap.py:2371 an open decision's named sections enter decision_section_blockers with no check against the plan's declared anchors, so a decision scoped to a section the plan never declares (a typo, or one renamed later) silently manufactures a phantom section \u2014 measured: scoping to s99 yields blocked_sections ['s99'] and section_readiness carrying a section the plan does not contain, while the intended section stays ready \u2014 and decision_section_refusals (reckon/_schema.py:580), which detects exactly this, is called only from tests/test_schema.py:441 while its sibling section_dependency_refusals is wired at reckon/roadmap.py:652 and the docstring at reckon/_schema.py:387 claims the refusal is reported.\nFINDING reckon/roadmap.py:2287 is_blocked no longer consumes a scoped open decision while the persisted-blocked fallback at reckon/roadmap.py:2259 still tests the unfiltered open_decisions; measured: a plan persisted blocked whose only open decision is scoped reports readiness 'deferred' and effective_status 'active' where the same plan with the decision unscoped reports 'blocked' and 'blocked', so a persisted plan-level block is erased from the derived status and no case covers the interaction.",
+  "review_run_id": "r-20260928T142158788659-review-of-section-scoped-decision-blocks",
+  "reviewed_base_sha": "0f2d631d435d78f9864934f0ec7b14e5e76c2c46",
+  "reviewed_head_sha": "e3abf94e856617955170ae71f4608d1f16db3e08",
+  "reviewed_run_id": "r-20260928T124215588759-section-scoped-decision-blocks",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T14:56:14.673888+00:00",
+  "total": 94
+}

@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T18:47:23.290Z",
+  "dispatched_at": "2026-10-05T18:42:42Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:171",
+      "id": "reuse_search-1",
+      "reason": "the section must correct the mischaracterised grammar and either pin the document check's before/after output on dotted, hyphenated and bare ids or state why its grammar is exempt from the single core, because otherwise the consolidation silently changes which headings `_implementable_section_ids` counts as sections.",
+      "text": "\u00a717 states that `doccheck._NUMBERED_SECTION_ID` \"full-matches heading ids\" and \"accept[s] only the dotted or bare numbered form\"; the regex at `reckon/doccheck.py:135` is `re.compile(r\"s[1-9][0-9]*\")`, which accepts neither a dotted nor a bare form \u2014 it requires the `s` prefix and forbids every separator, so `s5.1`, `s5-1` and `5` all fail its `fullmatch` today. Folding it onto routing's `_SECTION_IDENTITY` core (`reckon/crew/routing.py:219`, `^(?:\u00a7|#)?\\s*(?:s(?:ection)?[\\s.-]*)?(\\d+(?:[.-]\\d+)*)$`) is therefore not the neutral \"same grammar answers\" the section claims: it widens the document check's recognised section set to bare `5`, `\u00a75`, `section 5`, `s5.1` and `s5-1`, and \u00a717 pins the before/after outputs only for the ledger and the evidence key, not for the document check, even though two plans in this project already carry dotted section ids.",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1e5e3120fff42e564f8054044c27822f8ac3b6d21fa43c28239c19b695495781",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 112,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T184208385414-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "09ed15f7846d042b08cc2137d24a3f293d393dc6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 keeps one private span parser behind one public reader (`plan_headings`) with `structured_section_spans` as a projection of it, and \u00a716 hides the section set, the digest map and the coverage join behind `_section_digests` and one module-private predicate.",
+    "duplicate_owner": "pass \u2014 \u00a716/\u00a717/\u00a718 consolidate owners rather than fork them (section identity to `reckon/_plan_html.py`, the landing rule to `reckon/_schema.py`, the `c-run-` prefix to `reckon/crew/plan_review.py`), and each names the file it extends; the two identity-adjacent helpers (`evidence._section_key`, `ledger.normalize_section`) are kept with a stated distinct output.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716, \u00a717 and \u00a718 each carry an interface-accounting paragraph that names its additions (three public definitions across the three: the heading reader and machinery predicate in \u00a717, the classification predicate in \u00a718) and states why nothing can be retired.",
+    "reuse_search": "a finding \u2014 the plan searched the section-grammar and heading-walk machinery it names, but mischaracterises one existing regex it is about to fold onto a shared core, so the one-grammar rule rests on a false premise.",
+    "thin_wrapper": "pass \u2014 the coverage predicate is justified as a join over two existing readers that \"adds no walk of its own\", `structured_section_spans` is retained because it has callers outside the module, and no proposed layer merely forwards to existing machinery."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.810741+00:00"
+}

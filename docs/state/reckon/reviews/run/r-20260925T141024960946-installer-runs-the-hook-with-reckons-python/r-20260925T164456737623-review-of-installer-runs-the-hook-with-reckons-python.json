@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_site_search": "git grep -n 'install_hook_settings|build_hook_snippet|from reckon.hooks' 8bd3beb8 -- '*.py' - only tests/test_hook_installer.py imports reckon.hooks.install; reckon/cli.py installs its own PreToolUse guard groups directly",
+  "call_sites": [],
+  "completed_at": "2026-09-25T17:35:09.986Z",
+  "dispatched_at": "2026-09-25T16:45:13Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/install.py",
+      "line": "118",
+      "text": "[P2] The interpreter is resolved from this module's checkout and the command's script from that same tree, but in this repository's worktrees <tree>/.venv is a symlink to the shared /home/ITER/mcintos/Code/reckon/.venv whose editable install resolves `reckon` to the main checkout: launching the head hook exactly as the fragment composes it, from cwd /home/ITER/mcintos/Code/vv with PYTHONVERBOSE, imports /home/ITER/mcintos/Code/reckon/reckon/crew/ modules and not the named tree, so the \"imports reckon.crew.obligations from the same checkout\" claim in the plan and the evidence record, which rests on the `-c` probe in logs/e2e-installed-command.log, is not what the launch shape does; an install run from a worktree, which is where this fleet's coordinator session itself lives, writes a command naming a script that disappears when the worktree is cleaned, and nothing rejects or warns when the named interpreter is absent."
+    },
+    {
+      "file": "tests/test_hook_installer.py",
+      "line": "76",
+      "text": "[P3] _hook_command() composes the merge cases' expected commands through installer.interpreter_path() and installer.hook_script_path(), so both sides of assertions such as the skip tuple at :391 move together and swapping either helper for another path leaves every merge case green; the independent pin at :197/:206 compares against INTERPRETER and COORDINATOR_HOOK resolved from the test file, so the snippet shape is net-caught, but the merge cases themselves cannot detect a path or interpreter change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commit by commit from 8f9ef4e3: 7d66ca9c adds interpreter_path, HOOK_SCRIPT_NAMES, _registered_identities and _command_identity and rewrites the two coordinator commands, and 8bd3beb8 appends the evidence anchor, the plan landing section and the launch-path figure, with nothing removed from either document.",
+    "done_when": "Each clause was read against its artefact: interpreter resolution at reckon/hooks/install.py:110-118, the unchanged worker command at :131, bare-form identity at :286-302, the interpreter-presence and first-token assertions at tests/test_hook_installer.py:197-224, the bare-form recognition cases at :373-393 and :395-419, the declared mutation reddening the interpreter case (negative-control.log, 9 failed, 7 passed, the interpreter case named), the arms 38 passed at 8f9ef4e3 against 41 passed at 7d66ca9c with zero added failures (arm-base-hooks.log, arm-head-hooks.log), and the real settings fingerprint identical before and after (negative-control.log, sha256 9ff12e7a unchanged).",
+    "goal": "The goal is that the installer invoke the coordinator obligations hook under the repository's venv interpreter so the hook can import reckon; reckon/hooks/install.py:126-131 composes both coordinator commands as <interpreter> <script> --hook prompt|stop and leaves the standard-library worker Stop command bare, and the named file re-ran 16 passed at the head export (logs/review-gate-head.log).",
+    "manifest": "Read; its five logs exist under the run's logs directory, the arm headers name revision, tree, command, module.__file__ and cwd as the manifest says, the negative_control_log is the declared string's own log and its first line repeats the declared mutation verbatim, and the manifest reports the ~78-minute overshoot of the 40-minute fence rather than absorbing it.",
+    "write_paths": "The two commits touch exactly the five granted paths - reckon/hooks/install.py and tests/test_hook_installer.py in 7d66ca9c, plus the evidence record and plan append and the new figure in 8bd3beb8 - with no path outside the fence and both docs commits additions-only (83 insertions, 0 deletions)."
+  },
+  "justifications": {
+    "durability": "tests/test_hook_installer.py:197 reddens under the declared mutation and :373/:395 fail if identity normalisation is removed, but the merge expectations at :76 are composed from the installer's own helpers, so a changed interpreter or script path keeps them green.",
+    "evidence": "Every done_when clause has a durable receipt I opened and one bounded re-run reproduced it (logs/review-gate-head.log, 16 passed at 7d66ca9c), but the third block of logs/e2e-installed-command.log establishes the import only in a `-c` shape whose sys.path is not the launch's.",
+    "fit": "reckon/hooks/install.py:286-302 keeps the module standard-library only, places module-level constants beside the script names and a leading-underscore helper beside _group_commands, and adds no name the repository rules forbid.",
+    "goal_fidelity": "reckon/hooks/install.py:126-131 composes the command the goal names and tests/test_hook_installer.py:197 passes at the reviewed head, but :118's resolution holds only when the install runs from the tree the venv's editable install points at.",
+    "scope_discipline": "Every path in 8f9ef4e3..8bd3beb8 is inside the five granted write paths, the two docs commits are additions only, and nothing outside the fence is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that the installer invoke the coordinator obligations hook under the repository's venv interpreter so the hook can import reckon; reckon/hooks/install.py:126-131 composes both coordinator commands as <interpreter> <script> --hook prompt|stop and leaves the standard-library worker Stop command bare, and the named file re-ran 16 passed at the head export (logs/review-gate-head.log).\nVERDICT done_when: Each clause was read against its artefact: interpreter resolution at reckon/hooks/install.py:110-118, the unchanged worker command at :131, bare-form identity at :286-302, the interpreter-presence and first-token assertions at tests/test_hook_installer.py:197-224, the bare-form recognition cases at :373-393 and :395-419, the declared mutation reddening the interpreter case (negative-control.log, 9 failed, 7 passed, the interpreter case named), the arms 38 passed at 8f9ef4e3 against 41 passed at 7d66ca9c with zero added failures (arm-base-hooks.log, arm-head-hooks.log), and the real settings fingerprint identical before and after (negative-control.log, sha256 9ff12e7a unchanged).\nVERDICT write_paths: The two commits touch exactly the five granted paths - reckon/hooks/install.py and tests/test_hook_installer.py in 7d66ca9c, plus the evidence record and plan append and the new figure in 8bd3beb8 - with no path outside the fence and both docs commits additions-only (83 insertions, 0 deletions).\nVERDICT manifest: Read; its five logs exist under the run's logs directory, the arm headers name revision, tree, command, module.__file__ and cwd as the manifest says, the negative_control_log is the declared string's own log and its first line repeats the declared mutation verbatim, and the manifest reports the ~78-minute overshoot of the 40-minute fence rather than absorbing it.\nVERDICT diff: Read commit by commit from 8f9ef4e3: 7d66ca9c adds interpreter_path, HOOK_SCRIPT_NAMES, _registered_identities and _command_identity and rewrites the two coordinator commands, and 8bd3beb8 appends the evidence anchor, the plan landing section and the launch-path figure, with nothing removed from either document.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/hooks/install.py:126-131 composes the command the goal names and tests/test_hook_installer.py:197 passes at the reviewed head, but :118's resolution holds only when the install runs from the tree the venv's editable install points at.\nSCORE evidence: 18\nJUSTIFICATION evidence: Every done_when clause has a durable receipt I opened and one bounded re-run reproduced it (logs/review-gate-head.log, 16 passed at 7d66ca9c), but the third block of logs/e2e-installed-command.log establishes the import only in a `-c` shape whose sys.path is not the launch's.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in 8f9ef4e3..8bd3beb8 is inside the five granted write paths, the two docs commits are additions only, and nothing outside the fence is touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_hook_installer.py:197 reddens under the declared mutation and :373/:395 fail if identity normalisation is removed, but the merge expectations at :76 are composed from the installer's own helpers, so a changed interpreter or script path keeps them green.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/hooks/install.py:286-302 keeps the module standard-library only, places module-level constants beside the script names and a leading-underscore helper beside _group_commands, and adds no name the repository rules forbid.\nFINDING reckon/hooks/install.py:118 [P2] The interpreter is resolved from this module's checkout and the command's script from that same tree, but in this repository's worktrees <tree>/.venv is a symlink to the shared /home/ITER/mcintos/Code/reckon/.venv whose editable install resolves `reckon` to the main checkout: launching the head hook exactly as the fragment composes it, from cwd /home/ITER/mcintos/Code/vv with PYTHONVERBOSE, imports /home/ITER/mcintos/Code/reckon/reckon/crew/ modules and not the named tree, so the \"imports reckon.crew.obligations from the same checkout\" claim in the plan and the evidence record, which rests on the `-c` probe in logs/e2e-installed-command.log, is not what the launch shape does; an install run from a worktree, which is where this fleet's coordinator session itself lives, writes a command naming a script that disappears when the worktree is cleaned, and nothing rejects or warns when the named interpreter is absent.\nFINDING tests/test_hook_installer.py:76 [P3] _hook_command() composes the merge cases' expected commands through installer.interpreter_path() and installer.hook_script_path(), so both sides of assertions such as the skip tuple at :391 move together and swapping either helper for another path leaves every merge case green; the independent pin at :197/:206 compares against INTERPRETER and COORDINATOR_HOOK resolved from the test file, so the snippet shape is net-caught, but the merge cases themselves cannot detect a path or interpreter change.\n",
+  "review_run_id": "r-20260925T164456737623-review-of-installer-runs-the-hook-with-reckons-python",
+  "reviewed_base_sha": "8f9ef4e3509dec4f96318cc4634addce4ea4ee06",
+  "reviewed_head_sha": "8bd3beb8138c725e47cf9311ae156a96e1aa751b",
+  "reviewed_run_id": "r-20260925T141024960946-installer-runs-the-hook-with-reckons-python",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T164456737623-review-of-installer-runs-the-hook-with-reckons-python/logs/review-gate-head.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T17:33:33.190522+00:00",
+  "total": 92
+}

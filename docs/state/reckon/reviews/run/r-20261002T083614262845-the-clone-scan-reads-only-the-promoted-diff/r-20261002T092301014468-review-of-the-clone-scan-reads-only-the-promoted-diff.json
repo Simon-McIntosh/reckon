@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "57dfae0345a5d8ecee9377da3706e8b1ea5dee3b",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-10-02T09:54:29.603Z",
+  "dispatched_at": "2026-10-02T09:23:18Z",
+  "findings": [
+    {
+      "file": "tests/test_the_clone_scan_reads_only_the_promoted_diff.py",
+      "line": "65",
+      "severity": "follow-on",
+      "text": "follow-on: every test shares the process-global in-memory cache (the fixture at :65 clears _CORPUS_CACHES only at setup), so none exercises the on-disk corpus.json a warm promotion in a fresh process reads; a lossy serialize/deserialize would pass the whole suite and silently change production matches."
+    },
+    {
+      "file": "reckon/clones.py",
+      "line": "344",
+      "severity": "follow-on",
+      "text": "follow-on: _store_corpus_cache is called outside the try in clone_matches and raises on any write failure, which promotion_clone_matches swallows into an \"unmeasured\" clone report, so a read-only cache directory newly disables the clone scan where the pre-change code had no writable-cache dependency."
+    }
+  ],
+  "head_log_revision": "76c09104d359ff4cd8f107532abeb61ec339c9e0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read against the parent revision 57dfae0345; one landed change (76c09104), two files changed, +294/-2, holding the digest cache and its four tests.",
+    "done_when": "the done-when names a matches-equal case, a second-call-parses-only-the-changed-file case, an executed negative control and a re-profile; the manifest records head 11 passed against a 7-passed base with zero added failures, the negative control red at clone-scan/negative-control.log, and the profile pair.",
+    "goal": "the node goal is \"A promotion's clone scan fingerprints only what the promoted diff touches, or reuses cached fingerprints\"; reckon/clones.py:298 clone_matches parses a changed file from its head bytes and reads every other corpus file from a digest-keyed cache via _cached_functions (clones.py:207), so the goal is met.",
+    "manifest": "read; it states 11 passed at head against a 7-passed base, records the negative control, and names clone-profile/head-cold.json and head-warm.json.",
+    "write_paths": "the declared scope is reckon/clones.py, tests/test_the_clone_scan_reads_only_the_promoted_diff.py, the evidence fragment and the figures dir; the landed change at 76c09104 touches exactly the first two and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the negative control (clone-scan/negative-control.log, EXIT=1) reinstates the cache bypass and reddens test_a_second_call_parses_only_the_changed_file, which the head arm passes; docked because the on-disk corpus.json round trip a warm promotion in a new process relies on (_load_corpus_cache clones.py:242, _store_corpus_cache clones.py:253) has no test.",
+    "evidence": "the gate tests/test_the_clone_scan_reads_only_the_promoted_diff.py:84 asserts the warm matches equal the cold ones and :97 counts parses to prove only the changed file is re-parsed, and the negative control reddens :97 (EXIT=1); docked because no test loads the cache through disk, so the on-disk corpus.json a warm promotion in a fresh process reads has no executed check.",
+    "fit": "the cache follows the module idiom and its new names (_CachedFunction, _cache_key, _CORPUS_CACHES) carry no banned label; docked because clones.py:298 clone_matches and _index now carry list[Any]/_CachedFunction where their annotations still say _Function.",
+    "goal_fidelity": "reckon/clones.py:333 parses only the changed file and clones.py:207 serves every other corpus file from the digest cache, and the profile shows functions_in falling from 868 cold to 1 warm.",
+    "scope_discipline": "the landed change at 76c09104 changes only reckon/clones.py and tests/test_the_clone_scan_reads_only_the_promoted_diff.py, both declared write paths, and carries nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"A promotion's clone scan fingerprints only what the promoted diff touches, or reuses cached fingerprints\"; reckon/clones.py:298 clone_matches parses a changed file from its head bytes and reads every other corpus file from a digest-keyed cache via _cached_functions (clones.py:207), so the goal is met.\nVERDICT done_when: the done-when names a matches-equal case, a second-call-parses-only-the-changed-file case, an executed negative control and a re-profile; the manifest records head 11 passed against a 7-passed base with zero added failures, the negative control red at clone-scan/negative-control.log, and the profile pair.\nVERDICT write_paths: the declared scope is reckon/clones.py, tests/test_the_clone_scan_reads_only_the_promoted_diff.py, the evidence fragment and the figures dir; the landed change at 76c09104 touches exactly the first two and nothing outside them.\nVERDICT manifest: read; it states 11 passed at head against a 7-passed base, records the negative control, and names clone-profile/head-cold.json and head-warm.json.\nVERDICT diff: read against the parent revision 57dfae0345; one landed change (76c09104), two files changed, +294/-2, holding the digest cache and its four tests.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/clones.py:333 parses only the changed file and clones.py:207 serves every other corpus file from the digest cache, and the profile shows functions_in falling from 868 cold to 1 warm.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate tests/test_the_clone_scan_reads_only_the_promoted_diff.py:84 asserts the warm matches equal the cold ones and :97 counts parses to prove only the changed file is re-parsed, and the negative control reddens :97 (EXIT=1); docked because no test loads the cache through disk, so the on-disk corpus.json a warm promotion in a fresh process reads has no executed check.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the landed change at 76c09104 changes only reckon/clones.py and tests/test_the_clone_scan_reads_only_the_promoted_diff.py, both declared write paths, and carries nothing the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control (clone-scan/negative-control.log, EXIT=1) reinstates the cache bypass and reddens test_a_second_call_parses_only_the_changed_file, which the head arm passes; docked because the on-disk corpus.json round trip a warm promotion in a new process relies on (_load_corpus_cache clones.py:242, _store_corpus_cache clones.py:253) has no test.\nSCORE fit: 18\nJUSTIFICATION fit: the cache follows the module idiom and its new names (_CachedFunction, _cache_key, _CORPUS_CACHES) carry no banned label; docked because clones.py:298 clone_matches and _index now carry list[Any]/_CachedFunction where their annotations still say _Function.\nFINDING tests/test_the_clone_scan_reads_only_the_promoted_diff.py:65 follow-on: every test shares the process-global in-memory cache (the fixture at :65 clears _CORPUS_CACHES only at setup), so none exercises the on-disk corpus.json a warm promotion in a fresh process reads; a lossy serialize/deserialize would pass the whole suite and silently change production matches.\nFINDING reckon/clones.py:344 follow-on: _store_corpus_cache is called outside the try in clone_matches and raises on any write failure, which promotion_clone_matches swallows into an \"unmeasured\" clone report, so a read-only cache directory newly disables the clone scan where the pre-change code had no writable-cache dependency.",
+  "review_run_id": "r-20261002T092301014468-review-of-the-clone-scan-reads-only-the-promoted-diff",
+  "reviewed_base_sha": "57dfae0345a5d8ecee9377da3706e8b1ea5dee3b",
+  "reviewed_head_sha": "76c09104d359ff4cd8f107532abeb61ec339c9e0",
+  "reviewed_run_id": "r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T09:45:07.076913+00:00",
+  "total": 90
+}

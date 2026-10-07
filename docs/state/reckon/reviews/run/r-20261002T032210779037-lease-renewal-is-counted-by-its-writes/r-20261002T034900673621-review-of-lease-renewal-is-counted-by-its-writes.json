@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3b883745b",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T03:56:28.904Z",
+  "dispatched_at": "2026-10-02T03:49:34Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html",
+      "line": "72",
+      "severity": "follow-on",
+      "text": "follow-on: the tightened count is not isolated by any control, and cannot be by throttling alone. The node's sweep (period/keep 2/1, 3/1, 3/2, 4/3, 5/4) shows every partial throttle fails BOTH arms at the thread.is_alive assertion (base line 110, head line 119), never at the count, because the lease's liveness already forces one write per half interval at the test's 1.5 s cadence, the very floor renewals >= 5 asserts. I confirmed this by reading runs.py:1257-1272 and recovery.py:8592-8607 and by the head arm re-run. A zero-write mutation (throttle every call) reddens the base arm too, at its advanced > fresh assertion, so it isolates neither arm's count. Decoupling liveness from the count (a scratch that refreshes lease_renewed_at outside the follower) is the only path to a clean isolation and is a larger change than this node's scope; the node reached the same conclusion and recorded it in 7e4066af6. Not a blocker: the count change is a correct semantic fix, it measures writes rather than non-None returns, even where its assertion is redundant with is_alive under this cadence."
+    }
+  ],
+  "head_log_revision": "363c96b38",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit. 363c96b38 is the test's counting change plus a mechanism comment; 05c81f326 adds the new fragment and a re-measured paragraph; 7e4066af6 replaces the negative control with a partial-throttle sweep. No test removed, no skip or xfail added",
+    "done_when": "the done-when asks the renewal case to count a renewal only when lease_renewed_at advances; the diff does exactly that and both arms pass 3/3 with zero added failures",
+    "goal": "the node's goal is that the renewal case count a renewal only on an observed write; met, verified by reading runs.py:1269-1272 and re-running the head arm green",
+    "manifest": "read in full; it names all three commits, the two arms as JSON with literal commands and real log paths, the negative-control log, and resolved evidence_inputs; consistent with the logs it cites",
+    "write_paths": "the diff 3b883745b..7e4066af6 lists exactly the test file and the two evidence fragments; reckon/ is unchanged and the worktree is unmodified at head"
+  },
+  "justifications": {
+    "durability": "committed in three conventional commits each with a body and no AI or plan reference; the count reads an observed value; the floor of 5 is sound because liveness forces one write per half interval; deducted for the gate's after_suite naming 363c96b38 rather than the reviewed head 7e4066af6, the commits between being docs-only",
+    "evidence": "both arms recorded with literal commands and real log paths, -P scratch tree, head arm re-run green by me, zero added failures derivable from the reviewed run's own arms; deducted because the negative control isolates nothing (every partial throttle fails both arms at is_alive, never at the count; a zero-write mutation also reddens the base arm), so no control shows the tightened count load-bearing, though the node documented this honestly in 7e4066af6",
+    "fit": "follows the file's helper and comment idiom, the comment states the mechanism rather than the task, no plan, ticket or author reference in the source change",
+    "goal_fidelity": "does exactly what the done-when names, verified by reading runs.py and re-running the head arm green; deducted one for the count conflating the follower's renewal writes with any writer of lease_renewed_at",
+    "scope_discipline": "every changed path lies inside the declared write paths, reckon/crew/runs.py identical between base and head, worktree unmodified at head"
+  },
+  "node": "review-of-lease-renewal-is-counted-by-its-writes",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20261002T032210779037-lease-renewal-is-counted-by-its-writes\n(plan a-crew-process-ends-with-its-owner, section s3; reviewed node lease-renewal-is-counted-by-its-writes)\nreviewed_base_sha: 3b883745b34d85fe612736519ded2a6ada178f25\nreviewed_head_sha: 7e4066af6058227ba9a6b18cd63b7fc5e7f049ce\n\nThe change is test-only. tests/test_producer_holds_a_lease.py:107-116 counts a lease renewal\nonly when runs.watch_lease_renewed_at advances between calls, replacing a count of\nruns.renew_producer_lease(...) is not None. reckon/ is unchanged across 3b883745b..7e4066af6\n(git diff --stat over reckon/ is empty), so the throttled path at reckon/crew/runs.py:1257-1272\nis real: renew_producer_lease returns the existing registration without writing lease_renewed_at\nwhen the previous write is within half a lease interval (runs.py:1269-1271), while\nlease_renewed_at moves only at the producer's seat-take (runs.py:2035) and on a landed renewal\n(runs.py:1272). The old count therefore accepted a no-op as a renewal; the new one requires an\nobserved advance. I read the source and re-ran the head arm myself.\n\nThe reviewed run's head moved after the first review, which read 05c81f326. Commit 7e4066af6\n(docs only) replaced the negative control and recorded a partial-throttle sweep in\ndocs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html.\nThe after_suite log names revision 363c96b38, not the head; the test file is identical between\n363c96b38 and 7e4066af6 (7e4066af6 touches only the two fragments), so the after-arm covers the\ntested content and the head's test behaviour is unchanged.\n\nWhat I measured myself, reading the reviewed worktree at head 7e4066af6 and never writing it:\n- Head arm re-run: PYTHONPATH=<worktree> python -m pytest -q tests/test_producer_holds_a_lease.py\n  -> 3 passed in 16.65 s, EXIT=0.\n- Every gate log read: base-arm.log 3 passed in 20.20 s EXIT=0 (revision 3b883745b, -P scratch tree),\n  head-arm.log 3 passed in 19.05 s EXIT=0 (revision 363c96b38), negative-control.log the throttle sweep.\n- Source mechanism read at runs.py:1213-1272 and 2035, recovery.py:8560-8665.\n\nVERDICT goal: met. The goal is that the renewal case count a renewal only when lease_renewed_at\nadvances; tests/test_producer_holds_a_lease.py:113 does exactly that and the head arm passes 3/3.\nVERDICT done_when: met. The case reads lease_renewed_at back after each renew_producer_lease call\nand increments only when the instant strictly advances; base and head both pass 3/3 with zero added\nfailures.\nVERDICT write_paths: clean. diff 3b883745b..7e4066af6 lists exactly the test file and two fragments;\nreckon/ is identical; the worktree is unmodified at head.\nVERDICT manifest: names all three commits, both arms as JSON with literal commands and real log paths,\nthe negative-control log and resolved evidence_inputs; internally consistent with the logs it cites.\nVERDICT diff: read commit by commit. 363c96b38 is the counting change plus a mechanism comment;\n05c81f326 adds the new fragment and a re-measured paragraph; 7e4066af6 replaces the negative control\nwith a partial-throttle sweep. No test removed, no skip or xfail added; the final write check\n(advanced > fresh) is kept.\nCALL_SITES: none\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the change does exactly what the done-when names, verified by reading\nruns.py (renew returns the existing record on throttle) and re-running the head arm green; the\ndeduction of one is for the count conflating the follower's renewal writes with any writer that\nadvances lease_renewed_at, of which the producer's seat-take is the only one and it precedes the loop.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms are recorded with literal commands and real log paths, the arms were\npinned with -P in a scratch tree, the head arm was re-run green by me, and zero added failures is\nderivable from the reviewed run's own baseline_suite and after_suite. Deducted because the negative\ncontrol isolates nothing: the node's own sweep shows every partial throttle fails BOTH arms at the\nthread.is_alive assertion, never at the count, and a zero-write mutation reddens the base arm at its\nadvanced > fresh guard as well, so no control shows the tightened count to be the load-bearing\nassertion. The node discovered this and recorded it honestly in 7e4066af6, which is why the deduction\nis moderate rather than severe.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path lies inside the declared write paths (the test file\nand the two evidence fragments), reckon/crew/runs.py is identical between base and head, and the\nworktree is unmodified at head with no held changes.\nSCORE durability: 18\nJUSTIFICATION durability: the change is committed in three conventional commits, each with a body and\nno AI or plan reference; the new count reads a value the test observes rather than a threshold that\nmoves with the code, and the floor of 5 is sound because liveness forces one write per half interval;\ndeducted for the gate's after_suite naming 363c96b38 rather than the reviewed head 7e4066af6 (the\ncommits between are docs-only, so the gate still covers the tested content).\nSCORE fit: 19\nJUSTIFICATION fit: the edit follows the file's existing helper and comment idiom, the comment states the\nmechanism (why a non-None return is not a write) rather than the task, and no plan, ticket or author\nreference appears in the source change.\n\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html:72 follow-on: the tightened count is not isolated by any control, and cannot be by throttling alone. The node's sweep (period/keep 2/1, 3/1, 3/2, 4/3, 5/4) shows every partial throttle fails BOTH arms at the thread.is_alive assertion (base line 110, head line 119), never at the count, because the lease's liveness already forces one write per half interval at the test's 1.5 s cadence \u2014 the very floor renewals >= 5 asserts. I confirmed this by reading runs.py:1257-1272 and recovery.py:8592-8607 and by the head arm re-run. A zero-write mutation (throttle every call) reddens the base arm too, at its advanced > fresh assertion, so it isolates neither arm's count. Decoupling liveness from the count (a scratch that refreshes lease_renewed_at outside the follower) is the only path to a clean isolation and is a larger change than this node's scope; the node reached the same conclusion and recorded it in 7e4066af6. Not a blocker: the count change is a correct semantic fix \u2014 it measures writes rather than non-None returns \u2014 even where its assertion is redundant with is_alive under this cadence.",
+  "review_run_id": "r-20261002T034900673621-review-of-lease-renewal-is-counted-by-its-writes",
+  "reviewed_base_sha": "3b883745b34d85fe612736519ded2a6ada178f25",
+  "reviewed_head_sha": "7e4066af6058227ba9a6b18cd63b7fc5e7f049ce",
+  "reviewed_run_id": "r-20261002T032210779037-lease-renewal-is-counted-by-its-writes",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.334254+00:00",
+  "total": 92
+}

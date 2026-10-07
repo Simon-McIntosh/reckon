@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d7b444ae02f09e17212fefb1696c71b09aace629",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:5252",
+    "reckon/crew/promotion.py:4015",
+    "reckon/crew/promotion.py:5663",
+    "reckon/crew/promotion.py:5820",
+    "reckon/ledger.py:1539"
+  ],
+  "completed_at": "2026-09-30T12:39:02.028Z",
+  "dispatched_at": "2026-09-30T12:26:48Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1670",
+      "text": "build_record now writes \"brief\", \"plan_link\" and \"unplanned_reason\" on every promoted row and none is declared in RECORD_FIELDS (reckon/ledger.py:97), so the repo's declared-schema guard fails at the reviewed head: tests/test_ledger_declares_the_review_tier.py::test_a_promoted_row_carrying_review_tier_has_no_undeclared_key reports \"promoted ledger rows carry undeclared keys: brief, plan_link, unplanned_reason\" (EXIT=1) where the same test passes at base d7b444ae (EXIT=0); the promoted row shape is what that declaration exists to keep reviewable, and the repair lies inside this node's own write path."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "5252",
+      "text": "no test drives the two new options: all four cases in tests/test_promotion_records_a_brief_runs_owner.py call crew.complete directly, so deleting the plan_link/unplanned_reason forward here leaves every added test green and the CLI surface \u00a74 adds is unguarded."
+    },
+    {
+      "file": "logs/head-suite.log",
+      "line": "1",
+      "text": "the head arm's log names revision 7000b361 while the reviewed head is d58b6cde, so the done_when's \"run after the last commit with a clean tree\" holds for a tree one docs commit behind the delivered one; the intervening commit touches only the landing fragment, which is outside the gate's six-file population, so the measurement still covers the code but names a revision that is not the one delivered."
+    }
+  ],
+  "head_log_revision": "7000b3612bbba0d876dc29fe65b7bf47d4345ec9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against d7b444ae; b0dc6d67 carries the guard, the two row fields, the CLI options and the four tests, 7000b361 adds the landing fragment and d58b6cde corrects one fragment figure, with no change the goal does not imply.",
+    "done_when": "the node's done_when names tests/test_promotion_records_a_brief_runs_owner.py with an investigate case, a refusal case naming both flags and one case per discharge, plus one base and one head log over six named test files; all six exist, the four cases assert exactly those behaviours over a synthesised temporary repository, and the manifest records both arms' results.",
+    "goal": "plan a-worker-can-take-a-brief \u00a74 asks promotion to land a brief run with plan null and its brief digest, to skip the impl-move guard, and to refuse an implement-role brief run naming neither --plan-link nor --unplanned-reason; reckon/crew/promotion.py:5001 adds that refusal (raise at :5028 names both flags), :5072-5075 adds the brief exemption ahead of the role check, and reckon/ledger.py:1659-1672 stores plan null with the brief block, so the goal as stated lands.",
+    "manifest": "read; status complete with commits b0dc6d67, 7000b361 and d58b6cde, its suite pair reconciles with the logs on disk (base d7b444ae 4 failed/178 passed EXIT=1, head 7000b361 182 passed EXIT=0), negative_control_log names a red log whose first line repeats the declared mutation and whose last line reads EXIT=1, and the reviewed worktree is clean at d58b6cde.",
+    "write_paths": "read the node's six declared paths; git diff d7b444ae..d58b6cde touches five of them (reckon/crew/promotion.py, reckon/cli.py, reckon/ledger.py, tests/test_promotion_records_a_brief_runs_owner.py, docs/evidence/fragments/a-worker-can-take-a-brief/promotion-records-a-brief-runs-owner.html) and nothing else, and the figure directory is untouched, which the contract's \"no named artifact\" rule allows."
+  },
+  "justifications": {
+    "durability": "the refusal guard is proven by the declared mutation (the refusal case fails at its pytest.raises, negative-control.log EXIT=1), but the change writes three row keys that reckon/ledger.py:97 RECORD_FIELDS does not declare, so tests/test_ledger_declares_the_review_tier.py:89 fails at the reviewed head where it passes at base.",
+    "evidence": "the arm logs name the revisions they ran at and the repository's own added_failures_from_gate_logs over them returns 0 added ids, but the head log measures 7000b361 while the delivered head is d58b6cde, so the done_when's \"after the last commit\" holds only for a tree one docs commit earlier.",
+    "fit": "the guard mirrors the neighbouring _require_impl_moved at reckon/crew/promotion.py:5036 and the tests use the synthesised-repository and live_run_waiver idiom tests/test_ledger.py already sets.",
+    "goal_fidelity": "reckon/crew/promotion.py:5663 calls _require_brief_owner before anything is written and reckon/ledger.py:1659 stores plan None with :1670 the brief sha256 for the brief carrier, which is exactly \u00a74's landing.",
+    "scope_discipline": "every path in the diff lies inside the manifest's declared write paths, and the only non-source file is the landing fragment the contract requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan a-worker-can-take-a-brief \u00a74 asks promotion to land a brief run with plan null and its brief digest, to skip the impl-move guard, and to refuse an implement-role brief run naming neither --plan-link nor --unplanned-reason; reckon/crew/promotion.py:5001 adds that refusal (raise at :5028 names both flags), :5072-5075 adds the brief exemption ahead of the role check, and reckon/ledger.py:1659-1672 stores plan null with the brief block, so the goal as stated lands.\nVERDICT done_when: the node's done_when names tests/test_promotion_records_a_brief_runs_owner.py with an investigate case, a refusal case naming both flags and one case per discharge, plus one base and one head log over six named test files; all six exist, the four cases assert exactly those behaviours over a synthesised temporary repository, and the manifest records both arms' results.\nVERDICT write_paths: read the node's six declared paths; git diff d7b444ae..d58b6cde touches five of them (reckon/crew/promotion.py, reckon/cli.py, reckon/ledger.py, tests/test_promotion_records_a_brief_runs_owner.py, docs/evidence/fragments/a-worker-can-take-a-brief/promotion-records-a-brief-runs-owner.html) and nothing else, and the figure directory is untouched, which the contract's \"no named artifact\" rule allows.\nVERDICT manifest: read; status complete with commits b0dc6d67, 7000b361 and d58b6cde, its suite pair reconciles with the logs on disk (base d7b444ae 4 failed/178 passed EXIT=1, head 7000b361 182 passed EXIT=0), negative_control_log names a red log whose first line repeats the declared mutation and whose last line reads EXIT=1, and the reviewed worktree is clean at d58b6cde.\nVERDICT diff: read commit by commit against d7b444ae; b0dc6d67 carries the guard, the two row fields, the CLI options and the four tests, 7000b361 adds the landing fragment and d58b6cde corrects one fragment figure, with no change the goal does not imply.\nCALL_SITES: reckon/cli.py:5252, reckon/crew/promotion.py:4015, reckon/crew/promotion.py:5663, reckon/crew/promotion.py:5820, reckon/ledger.py:1539\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:5663 calls _require_brief_owner before anything is written and reckon/ledger.py:1659 stores plan None with :1670 the brief sha256 for the brief carrier, which is exactly \u00a74's landing.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arm logs name the revisions they ran at and the repository's own added_failures_from_gate_logs over them returns 0 added ids, but the head log measures 7000b361 while the delivered head is d58b6cde, so the done_when's \"after the last commit\" holds only for a tree one docs commit earlier.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff lies inside the manifest's declared write paths, and the only non-source file is the landing fragment the contract requires.\nSCORE durability: 13\nJUSTIFICATION durability: the refusal guard is proven by the declared mutation (the refusal case fails at its pytest.raises, negative-control.log EXIT=1), but the change writes three row keys that reckon/ledger.py:97 RECORD_FIELDS does not declare, so tests/test_ledger_declares_the_review_tier.py:89 fails at the reviewed head where it passes at base.\nSCORE fit: 19\nJUSTIFICATION fit: the guard mirrors the neighbouring _require_impl_moved at reckon/crew/promotion.py:5036 and the tests use the synthesised-repository and live_run_waiver idiom tests/test_ledger.py already sets.\nFINDING reckon/ledger.py:1670 build_record now writes \"brief\", \"plan_link\" and \"unplanned_reason\" on every promoted row and none is declared in RECORD_FIELDS (reckon/ledger.py:97), so the repo's declared-schema guard fails at the reviewed head: tests/test_ledger_declares_the_review_tier.py::test_a_promoted_row_carrying_review_tier_has_no_undeclared_key reports \"promoted ledger rows carry undeclared keys: brief, plan_link, unplanned_reason\" (EXIT=1) where the same test passes at base d7b444ae (EXIT=0); the promoted row shape is what that declaration exists to keep reviewable, and the repair lies inside this node's own write path.\nFINDING reckon/cli.py:5252 no test drives the two new options: all four cases in tests/test_promotion_records_a_brief_runs_owner.py call crew.complete directly, so deleting the plan_link/unplanned_reason forward here leaves every added test green and the CLI surface \u00a74 adds is unguarded.\nFINDING logs/head-suite.log:1 the head arm's log names revision 7000b361 while the reviewed head is d58b6cde, so the done_when's \"run after the last commit with a clean tree\" holds for a tree one docs commit behind the delivered one; the intervening commit touches only the landing fragment, which is outside the gate's six-file population, so the measurement still covers the code but names a revision that is not the one delivered.\nreviewed_base_sha: d7b444ae02f09e17212fefb1696c71b09aace629\nreviewed_head_sha: d58b6cde24a0d7a7a96860766e5bc00da6639931",
+  "review_run_id": "r-20260930T122631739123-review-of-promotion-records-a-brief-runs-owner",
+  "reviewed_base_sha": "d7b444ae02f09e17212fefb1696c71b09aace629",
+  "reviewed_head_sha": "d58b6cde24a0d7a7a96860766e5bc00da6639931",
+  "reviewed_run_id": "r-20260930T121057414157-promotion-records-a-brief-runs-owner",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T12:37:47.635772+00:00",
+  "total": 86
+}

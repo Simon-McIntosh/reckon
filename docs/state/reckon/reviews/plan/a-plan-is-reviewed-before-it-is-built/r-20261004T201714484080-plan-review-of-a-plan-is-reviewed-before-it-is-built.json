@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T20:19:59.037Z",
+  "dispatched_at": "2026-10-04T20:17:30Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:709",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should state that the report grammar and its parser are extended in `reckon/crew/review.py` (one place holds the emitted form), instead of splitting grammar and parse across two modules that must now change together.",
+      "text": "`parse_review_report` re-implements the emitted-line review-report parser that `reckon/crew/review.py:331 parse_review` owns: both walk the report line by line, both match a `FINDING <item> <anchor>` line with a near-identical regex (`plan_review._FINDING_LINE_RE` vs `review._FIND_RE`), both build `item_verdicts`/`absent` from one rubric item set, and both return a findings list; the new parser even imports its item constants from `reckon.crew.review`, so a `RUBRIC`/`WOULD_CHANGE`/`REASON` emit form was added to the grammar review.py owns while the parser that reads it landed in a second module.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:272",
+      "id": "duplicate_owner-2",
+      "reason": "the two policies key on different identities (version+blob8 vs reviewed run+head sha) and the shared root bounds the drift, so naming the owner is a cleanup the plan can note rather than a design change that would alter an outcome.",
+      "text": "`plan_review_path`/`_target_path`/`_candidate_paths` re-implement the \"plain path, or a `.at-<blob>` sibling when one key is reviewed twice\" resolution that `reckon/crew/review.py:992 review_path` and `reckon/crew/review.py:1076 _partial_review_path` already own, giving two path-resolution policies that both write `reviews/<project>/<basename>[.at-<blob8>].json`; the module reuses `review_store_root` but forks the sibling-selection policy beside it.",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/review.py:268",
+      "id": "thin_wrapper-1",
+      "reason": "the wrapper is a three-line loader with no behavioural consequence, and the plan's substance (the rubric content and its trigger) is unaffected, so flagging it would not change what is built.",
+      "text": "`load_plan_review_prompt` and `load_plan_design_review_prompt` are one-line `_PATH.read_text()` forwards added beside the existing `load_review_prompt`, each hardcoding its own module-level path constant; the plan says the two rubric prompts are held as diffable files but does not say why the existing loader cannot take the path (or be parameterised), so the wrapper adds surface without depth.",
+      "type": "thin_wrapper",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "1e6099f7659ba1015bb6c74ef6e37afac3a72c58cc32c70d3672a0a9c8d421e7",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T201714484080-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "cc793e3e6df54c3546babf37bf1e8af509d168f8",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the new `reckon/crew/plan_review.py` hides a substantial body of behaviour (content fingerprint with two exclusion sets, the store path and blob-sibling policy, report parsing, sidecar writing, response recording, cross-plan decline recurrence) behind a small set of public functions, and the plan-review dispatch travels through the one shared composer rather than a parallel one.",
+    "duplicate_owner": "a finding \u2014 the plan adds a second review-report parser and a second blob-sibling path-selection policy rather than extending the owners of those mechanisms in `reckon/crew/review.py`.",
+    "reuse_search": "pass \u2014 the plan cites and extends existing machinery: it reuses the crew review store root (`reckon/crew/review.py:review_store_root`), the code-review report item sets (`reckon.crew.review`), the review-role predicate (`reckon/crew/recovery.py:_is_review_node`), the shared review composer (`reckon/crew/recovery.py:_review_dispatch_fields` branches on `subject == \"plan\"`), and the named `reckon/interface_counts.py` for the four interface figures; the design brief comment cites 39 machine-checked file/function references.",
+    "thin_wrapper": "a finding \u2014 two new prompt loaders are one-line forwards over a hardcoded path beside the existing loader, with no justification for not generalising the existing one."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.959612+00:00"
+}

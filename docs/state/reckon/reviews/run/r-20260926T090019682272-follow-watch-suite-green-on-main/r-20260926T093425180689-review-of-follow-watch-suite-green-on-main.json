@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T11:01:08.030Z",
+  "dispatched_at": "2026-09-26T09:34:35Z",
+  "findings": [
+    {
+      "file": "tests/test_follow_counts_its_session.py",
+      "line": "41",
+      "text": "the pattern's \\s+ between buckets demands a space the renderer supplies only by the following bucket's two-column padding, so a correct render whose blocked, unpromoted or queued count reaches two digits parses as no counter block at all: probed at revision 0ef7a946, counts (10,12,0,0) render as '10w12b 0u 0q' and the pattern matched nothing, where the base pattern's \\s* would have matched; a fixture with ten blocked runs would red looking like a renderer defect."
+    },
+    {
+      "file": "tests/test_follow_counts_its_session.py",
+      "line": "38",
+      "text": "the comment claims the block is matched whole so a bucket added later cannot slip past the prefix of an older count, but _COUNTERS is applied by unanchored re.search at line 122 and the pattern carries no trailing boundary, so a fifth cell appended to the block leaves the four-cell match intact and the new bucket unasserted; anchor the whole run or drop the claim."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T090019682272-follow-watch-suite-green-on-main/manifest.md",
+      "line": "20",
+      "text": "the tests entries for the head arm, the id-list arm and the base arm carry an unsubstituted placeholder in place of the command that ran, so the manifest's gate-command field names no runnable command and a reader must open the named log to recover it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 0391d7fa; the sole code-bearing subject is the counter parser rewrite in tests/test_follow_counts_its_session.py (a three-bucket dot-separated pattern to a four-bucket separator-free block), the rest is the evidence record, the plan landing record and one figure; no production file changed, so the assertions pin the renderer at reckon/crew/ticker.py:1103 rather than exercising a production change.",
+    "done_when": "the done_when asks for the eleven ids green at the worktree head, a per-id red-commit record, the four comparison files adding no failures against base 0391d7fa, base and head arms logged naming revision and command, and the declared negative control executed; I read each: base-eleven.log 3 failed/17 passed at 0391d7fa, head-eleven-committed.log 28 passed at 0ef7a946, companion-four.log 111 passed, negative-control.log whose first line repeats the declared string verbatim with the named case red, and the per-id table at docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html section s10-watch-suite-green-on-main.",
+    "goal": "read the node's goal (return the eleven red follow/watch tests red on main to green, deciding per id whether code or test is wrong, with the per-id red-commit record); at head 0ef7a946 the whole repair is the counter parser in tests/test_follow_counts_its_session.py:41, and I reproduced the five files holding the eleven ids green at that head myself.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T090019682272-follow-watch-suite-green-on-main/manifest.md; status complete, one commit, four changed paths, five test lines whose five named logs all resolve, negative_control_log a bare absolute path; but three of its five tests entries elide the command that ran into a placeholder (lines 20, 21 and 24), which the dispatch template forbids in that field.",
+    "write_paths": "the node declared nine paths (reckon/crew/recovery.py, five test files, the evidence record, the figures directory, the plan HTML); the diff touches four of them and nothing else, and reckon/crew/recovery.py is byte-identical to base so the one declared production file carries no change."
+  },
+  "justifications": {
+    "durability": "the rewritten parser at tests/test_follow_counts_its_session.py:41 requires whitespace the renderer emits only below two digits, so it fails on the renderer's own correct output once blocked, unpromoted or queued reaches ten.",
+    "evidence": "every gate the done_when names is on disk with its revision and result and I reproduced the head arm myself, but the placeholder at manifest.md:20 replaces the command in the one field that must carry it.",
+    "fit": "the file follows the repository's test idiom and naming, but the comment at tests/test_follow_counts_its_session.py:38 claims a whole-block match the unanchored search at line 122 does not deliver.",
+    "goal_fidelity": "tests/test_follow_counts_its_session.py:41 is the whole of the repair and the three counter ids are green at head 0ef7a946, which I reproduced with 28 passed.",
+    "scope_discipline": "all four changed paths sit inside the nine declared write paths and reckon/crew/recovery.py is byte-identical to base 0391d7fa."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node's goal (return the eleven red follow/watch tests red on main to green, deciding per id whether code or test is wrong, with the per-id red-commit record); at head 0ef7a946 the whole repair is the counter parser in tests/test_follow_counts_its_session.py:41, and I reproduced the five files holding the eleven ids green at that head myself.\nVERDICT done_when: the done_when asks for the eleven ids green at the worktree head, a per-id red-commit record, the four comparison files adding no failures against base 0391d7fa, base and head arms logged naming revision and command, and the declared negative control executed; I read each: base-eleven.log 3 failed/17 passed at 0391d7fa, head-eleven-committed.log 28 passed at 0ef7a946, companion-four.log 111 passed, negative-control.log whose first line repeats the declared string verbatim with the named case red, and the per-id table at docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html section s10-watch-suite-green-on-main.\nVERDICT write_paths: the node declared nine paths (reckon/crew/recovery.py, five test files, the evidence record, the figures directory, the plan HTML); the diff touches four of them and nothing else, and reckon/crew/recovery.py is byte-identical to base so the one declared production file carries no change.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T090019682272-follow-watch-suite-green-on-main/manifest.md; status complete, one commit, four changed paths, five test lines whose five named logs all resolve, negative_control_log a bare absolute path; but three of its five tests entries elide the command that ran into a placeholder (lines 20, 21 and 24), which the dispatch template forbids in that field.\nVERDICT diff: read commit by commit against base 0391d7fa; the sole code-bearing subject is the counter parser rewrite in tests/test_follow_counts_its_session.py (a three-bucket dot-separated pattern to a four-bucket separator-free block), the rest is the evidence record, the plan landing record and one figure; no production file changed, so the assertions pin the renderer at reckon/crew/ticker.py:1103 rather than exercising a production change.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_follow_counts_its_session.py:41 is the whole of the repair and the three counter ids are green at head 0ef7a946, which I reproduced with 28 passed.\nSCORE evidence: 17\nJUSTIFICATION evidence: every gate the done_when names is on disk with its revision and result and I reproduced the head arm myself, but the placeholder at manifest.md:20 replaces the command in the one field that must carry it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four changed paths sit inside the nine declared write paths and reckon/crew/recovery.py is byte-identical to base 0391d7fa.\nSCORE durability: 15\nJUSTIFICATION durability: the rewritten parser at tests/test_follow_counts_its_session.py:41 requires whitespace the renderer emits only below two digits, so it fails on the renderer's own correct output once blocked, unpromoted or queued reaches ten.\nSCORE fit: 17\nJUSTIFICATION fit: the file follows the repository's test idiom and naming, but the comment at tests/test_follow_counts_its_session.py:38 claims a whole-block match the unanchored search at line 122 does not deliver.\nFINDING tests/test_follow_counts_its_session.py:41 the pattern's \\s+ between buckets demands a space the renderer supplies only by the following bucket's two-column padding, so a correct render whose blocked, unpromoted or queued count reaches two digits parses as no counter block at all: probed at revision 0ef7a946, counts (10,12,0,0) render as '10w12b 0u 0q' and the pattern matched nothing, where the base pattern's \\s* would have matched; a fixture with ten blocked runs would red looking like a renderer defect.\nFINDING tests/test_follow_counts_its_session.py:38 the comment claims the block is matched whole so a bucket added later cannot slip past the prefix of an older count, but _COUNTERS is applied by unanchored re.search at line 122 and the pattern carries no trailing boundary, so a fifth cell appended to the block leaves the four-cell match intact and the new bucket unasserted; anchor the whole run or drop the claim.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T090019682272-follow-watch-suite-green-on-main/manifest.md:20 the tests entries for the head arm, the id-list arm and the base arm carry an unsubstituted placeholder in place of the command that ran, so the manifest's gate-command field names no runnable command and a reader must open the named log to recover it.\n",
+  "review_run_id": "r-20260926T093425180689-review-of-follow-watch-suite-green-on-main",
+  "reviewed_base_sha": "0391d7fa7f09bfcbc5e4e68e3a91854cbca27c84",
+  "reviewed_head_sha": "0ef7a9460a77d75b259f9ae315058bd8297ee60f",
+  "reviewed_run_id": "r-20260926T090019682272-follow-watch-suite-green-on-main",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T10:56:04.787604+00:00",
+  "total": 87
+}

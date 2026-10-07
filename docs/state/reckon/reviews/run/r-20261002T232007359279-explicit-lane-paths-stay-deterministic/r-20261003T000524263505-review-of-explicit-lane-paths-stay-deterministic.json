@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1aca1ea23b1fd8845c03abf3b3ae4d4424dfadfa",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:1987",
+    "reckon/cli.py:5432",
+    "reckon/cli.py:5530"
+  ],
+  "completed_at": "2026-10-03T00:16:03.699Z",
+  "dispatched_at": "2026-10-03T00:05:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T232007359279-explicit-lane-paths-stay-deterministic/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "the done_when requires every other plan_dispatch caller that names its own backend be listed in the manifest with how it resolves; the manifest names shadow and change_lane but writes down no grep enumeration, so a reader cannot see that the only other caller naming a backend is the CLI dispatch path, which is guarded by a refusal at reckon/cli.py:1531 rather than reached."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T232007359279-explicit-lane-paths-stay-deterministic/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "the done_when's named gate is the 13-file set at base and head; the recorded base arm runs only the two new cases, so the 13-file base side is unmeasured, though the zero-added conclusion still holds because the head arm reports zero failures."
+    }
+  ],
+  "head_log_revision": "1aca1ea23b1fd8845c03abf3b3ae4d4424dfadfa",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 88ffb8d84 against its parent 1aca1ea23: reckon/crew/dispatch.py gains four hunks (route=deterministic on shadow's dry-run plan_dispatch at :5163 and its real dispatch at :5190, on change_lane's plan_dispatch at :10656, and route/route_override recorded on the moved run at :10876), the test file adds the two cases, and the fragment html records the landing.",
+    "done_when": "the done_when names tests/test_routing_picker_key.py plus the 13-file gate at base and head with zero added failure ids; both new cases fail at base in logs/base-new-tests.log and the head arm records 94 passed EXIT=0, but the base arm covers only the two new cases and the required caller enumeration is absent from the manifest.",
+    "goal": "the node's goal is to keep dispatch paths that name their own backend deterministic under picker routing; shadow at reckon/crew/dispatch.py:5163/:5190 and change_lane at :10656 now pass route=deterministic to plan_dispatch, so both resolve through the backend they name.",
+    "manifest": "read; status complete, with base 1aca1ea23 (two new cases, exit 1) and head 1aca1ea23 working tree (94 passed, exit 0) named by log path, and the negative control named.",
+    "write_paths": "the declared write paths are reckon/crew/dispatch.py, tests/test_routing_picker_key.py, docs/evidence/fragments/one-typesafe-model-picker/explicit-lane-paths-stay-deterministic.html and a docs/figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_routing_picker_key.py:166 and :186 assert the resolved record's backend and route against the literals the test passed in, independent of the code under test, and the recorded negative control (logs/negative-control-shadow.log) reinstates the shadow picker route so the shadow case fails with exit 1.",
+    "evidence": "logs/base-new-tests.log records both new cases FAILED at 1aca1ea23 (exit 1) and logs/gate-head.log records 94 passed EXIT=0 with zero FAILED lines, so added_failure_count is 0; the manifest's base arm covers only the two new cases rather than the named 13-file set and the required caller enumeration is not written down.",
+    "fit": "the added lines follow the surrounding plan_dispatch call idiom and the module's comment voice in reckon/crew/dispatch.py, and the naming scan over the 85 added lines is clean with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:5163/:5190 (shadow) and :10656 (change_lane) each pass route=deterministic to plan_dispatch, so each resolves through the backend it names, and reckon/cli.py:1531 refuses a caller that names a backend under picker route so no other plan_dispatch caller reaches the guard.",
+    "scope_discipline": "the diff touches only the declared write paths; reckon/crew/dispatch.py gains 11 lines across four hunks and no unrelated line is modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep dispatch paths that name their own backend deterministic under picker routing; shadow at reckon/crew/dispatch.py:5163/:5190 and change_lane at :10656 now pass route=deterministic to plan_dispatch, so both resolve through the backend they name.\nVERDICT done_when: the done_when names tests/test_routing_picker_key.py plus the 13-file gate at base and head with zero added failure ids; both new cases fail at base in logs/base-new-tests.log and the head arm records 94 passed EXIT=0, but the base arm covers only the two new cases and the required caller enumeration is absent from the manifest.\nVERDICT write_paths: the declared write paths are reckon/crew/dispatch.py, tests/test_routing_picker_key.py, docs/evidence/fragments/one-typesafe-model-picker/explicit-lane-paths-stay-deterministic.html and a docs/figures directory; every path in the diff is inside them.\nVERDICT manifest: read; status complete, with base 1aca1ea23 (two new cases, exit 1) and head 1aca1ea23 working tree (94 passed, exit 0) named by log path, and the negative control named.\nVERDICT diff: read 88ffb8d84 against its parent 1aca1ea23: reckon/crew/dispatch.py gains four hunks (route=deterministic on shadow's dry-run plan_dispatch at :5163 and its real dispatch at :5190, on change_lane's plan_dispatch at :10656, and route/route_override recorded on the moved run at :10876), the test file adds the two cases, and the fragment html records the landing.\nCALL_SITES: reckon/cli.py:1987, reckon/cli.py:5432, reckon/cli.py:5530\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:5163/:5190 (shadow) and :10656 (change_lane) each pass route=deterministic to plan_dispatch, so each resolves through the backend it names, and reckon/cli.py:1531 refuses a caller that names a backend under picker route so no other plan_dispatch caller reaches the guard.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-new-tests.log records both new cases FAILED at 1aca1ea23 (exit 1) and logs/gate-head.log records 94 passed EXIT=0 with zero FAILED lines, so added_failure_count is 0; the manifest's base arm covers only the two new cases rather than the named 13-file set and the required caller enumeration is not written down.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only the declared write paths; reckon/crew/dispatch.py gains 11 lines across four hunks and no unrelated line is modified.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_routing_picker_key.py:166 and :186 assert the resolved record's backend and route against the literals the test passed in, independent of the code under test, and the recorded negative control (logs/negative-control-shadow.log) reinstates the shadow picker route so the shadow case fails with exit 1.\nSCORE fit: 18\nJUSTIFICATION fit: the added lines follow the surrounding plan_dispatch call idiom and the recorded route fallback matches the module's test-stub handling, and the naming scan over the 85 added lines is clean.\nFINDING manifest.md:20 follow-on: the done_when requires every other plan_dispatch caller that names its own backend to be listed in the manifest with how it resolves; the manifest names shadow and change_lane but records no grep enumeration, so a reader cannot see that the only other caller naming a backend is the CLI dispatch path, guarded by a refusal at reckon/cli.py:1531 rather than reached.\nFINDING manifest.md:16 follow-on: the done_when's named gate is the 13-file set at base and head; the recorded base arm runs only the two new cases, so the 13-file base side is unmeasured, though the zero-added conclusion holds because the head arm reports zero failures.\nreviewed_base_sha: 1aca1ea23b1fd8845c03abf3b3ae4d4424dfadfa\nreviewed_head_sha: 21bac19e4eb3b6a1dc44e528fd8282af63ee3239\n",
+  "review_run_id": "r-20261003T000524263505-review-of-explicit-lane-paths-stay-deterministic",
+  "reviewed_base_sha": "1aca1ea23b1fd8845c03abf3b3ae4d4424dfadfa",
+  "reviewed_head_sha": "21bac19e4eb3b6a1dc44e528fd8282af63ee3239",
+  "reviewed_run_id": "r-20261002T232007359279-explicit-lane-paths-stay-deterministic",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T00:13:10+00:00",
+  "total": 90
+}

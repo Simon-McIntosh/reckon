@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0 by id, measured with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own base and head gate logs (parity-before.log -> parity-after.log); the reviewed manifest's baseline_suite field is empty, so the store's read-path annotation reports this count unmeasured for this run",
+  "backend": "clive",
+  "base_log_revision": "de6129adb918b8c23c7956b1b9b7804c0c9b5f29",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:5580"
+  ],
+  "completed_at": "2026-10-04T03:35:18.112Z",
+  "dispatched_at": "2026-10-04T03:27:33Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T022122042106-a-widen-refuses-a-held-path/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite is empty while after_suite is populated, so the reviewed node's own done-when requirement that the two files be recorded as flat baseline_suite and after_suite records is unmet and the added-failure delta cannot be read from the manifest alone."
+    }
+  ],
+  "head_log_revision": "80aead7789f64c2336fae4cb57ac3c0d5604acd1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 556e5b6f; fc4b2c1a adds refuse_widen_scope_conflicts and calls it from crew_widen, 373c7bfd and de6129adb build the repo-backed free-path and held-path cases, and 80aead778 routes widening through dispatch's _raise_repository_scope_conflict with the widened run excluded from its own claims.",
+    "done_when": "the done_when names tests/test_fence_widening.py's two cases run over a temporary RECKON_HOME and repository with the two files recorded as flat baseline_suite and after_suite records; the manifest records after_suite (parity-after.log, 10 passed) but leaves baseline_suite empty, so the base arm survives only under tests/test_logs/artifacts and the run's separate base logs.",
+    "goal": "the node's goal is a durable, safe scope extension -- reckon crew widen adds a path no other live claim holds and it reaches the promoted ledger row, while a peer-held path is refused naming its holder with the widened run's pointer byte-identical; reckon/cli.py:5577-5581 routes newly added paths through dispatch admission.",
+    "manifest": "read; it carries the four commits, changed_paths, the after_suite flat record with its log_path, the negative_control_log path, and a checkpoint that defers the baseline and merged population arms to the coordinator.",
+    "write_paths": "the manifest declares reckon/cli.py, reckon/crew/dispatch.py, tests/test_fence_widening.py, an evidence fragment and a figures directory; the diff touches only the three code and test paths, all inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_fence_widening.py:292 asserts the refusal names the holder and that pointer_path(BLOCKED_RUN_ID).read_bytes() is unchanged, an independent read of the pointer file rather than the value the command returned.",
+    "evidence": "the head arm reproduces at 80aead778 (tests/test_fence_widening.py, 10 passed, EXIT=0) and the base arm is parity-before.log (1 failed, 1 passed), but the manifest's baseline_suite field at manifest.md:20 is empty, so the reviewed run's paired flat record is incomplete and the added-failure delta had to be re-derived from the run's own base and head logs.",
+    "fit": "refuse_widen_scope_conflicts (reckon/crew/dispatch.py:2826) reuses _raise_repository_scope_conflict and _repository_scope_claims in the module's own idiom and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/cli.py:5580 calls refuse_widen_scope_conflicts inside the locked pointer write, so a held added path raises before node[\"write_paths\"] is set and an admitted one is carried into the record promotion reads.",
+    "scope_discipline": "every path in the diff is inside the declared write paths and the change is only the widening check, its docstring, and the tests, with no unrelated edit."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a durable, safe scope extension -- reckon crew widen adds a path no other live claim holds and it reaches the promoted ledger row, while a peer-held path is refused naming its holder with the widened run's pointer byte-identical; reckon/cli.py:5577-5581 routes newly added paths through dispatch admission.\nVERDICT done_when: the done_when names tests/test_fence_widening.py's two cases run over a temporary RECKON_HOME and repository with the two files recorded as flat baseline_suite and after_suite records; the manifest records after_suite (parity-after.log, 10 passed) but leaves baseline_suite empty, so the base arm survives only under tests/test_logs/artifacts and the run's separate base logs.\nVERDICT write_paths: the manifest declares reckon/cli.py, reckon/crew/dispatch.py, tests/test_fence_widening.py, an evidence fragment and a figures directory; the diff touches only the three code and test paths, all inside the declared set.\nVERDICT manifest: read; it carries the four commits, changed_paths, the after_suite flat record with its log_path, the negative_control_log path, and a checkpoint that defers the baseline and merged population arms to the coordinator.\nVERDICT diff: read commit by commit against 556e5b6f; fc4b2c1a adds refuse_widen_scope_conflicts and calls it from crew_widen, 373c7bfd and de6129adb build the repo-backed free-path and held-path cases, and 80aead778 routes widening through dispatch's _raise_repository_scope_conflict with the widened run excluded from its own claims.\nCALL_SITES: reckon/cli.py:5580\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:5580 calls refuse_widen_scope_conflicts inside the locked pointer write, so a held added path raises before node[\"write_paths\"] is set and an admitted one is carried into the record promotion reads.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head arm reproduces at 80aead778 (tests/test_fence_widening.py, 10 passed, EXIT=0) and the base arm is parity-before.log (1 failed, 1 passed), but the manifest's baseline_suite field at manifest.md:20 is empty, so the reviewed run's paired flat record is incomplete and the added-failure delta had to be re-derived from the run's own base and head logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths and the change is only the widening check, its docstring, and the tests, with no unrelated edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_fence_widening.py:292 asserts the refusal names the holder and that pointer_path(BLOCKED_RUN_ID).read_bytes() is unchanged, an independent read of the pointer file rather than the value the command returned.\nSCORE fit: 18\nJUSTIFICATION fit: refuse_widen_scope_conflicts (reckon/crew/dispatch.py:2826) reuses _raise_repository_scope_conflict and _repository_scope_claims in the module's own idiom and introduces no name the repository naming rules forbid.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T022122042106-a-widen-refuses-a-held-path/manifest.md:20 follow-on: baseline_suite is empty while after_suite is populated, so the reviewed node's own done-when requirement that the two files be recorded as flat baseline_suite and after_suite records is unmet and the added-failure delta cannot be read from the manifest alone.",
+  "review_run_id": "r-20261004T032657663427-review-of-a-widen-refuses-a-held-path",
+  "reviewed_base_sha": "556e5b6f5e5dd6e2e92d4972f12edcb99c2bfd6c",
+  "reviewed_head_sha": "80aead7789f64c2336fae4cb57ac3c0d5604acd1",
+  "reviewed_run_id": "r-20261004T022122042106-a-widen-refuses-a-held-path",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T03:34:15.277865+00:00",
+  "total": 91
+}

@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_raise_repository_scope_conflict (the check dispatch() calls at dispatch.py:3700)",
+    "reckon/crew/dispatch.py:_live_conflict_rows (dry-run conflict report",
+    "dispatch.py:3032)",
+    "reckon/crew/runs.py:_raise_live_scope_conflict (exports-only facade",
+    "no production caller)"
+  ],
+  "completed_at": "2026-09-25T13:13:01.634Z",
+  "dispatched_at": "2026-09-25T12:03:37Z",
+  "findings": [
+    {
+      "file": "tests/test_shared_claims_on_declared_hot_files.py",
+      "line": "165",
+      "text": "the rewritten directory case asserts only the forward direction, a directory candidate against a live file claim, where the candidate is not in the list at all and the assertion passes whatever the second half of dispatch.py:1283 does; the reverse case, a listed-file candidate against a live directory claim, is the only configuration that reddens if candidate == claim.path is dropped, was asserted by the pre-change file, and is now asserted nowhere, so that invariant can regress silently (reviewer-probe.log case b shows in_list=True exact_match=False, result REFUSED)."
+    },
+    {
+      "file": "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+      "line": "841",
+      "text": "the anchor states the base-arm log path is named on the manifest while the manifest records the base-arm gate log as not produced under follow_ons, so the cumulative evidence record carries an unmet promise and the done_when's comparison clause has no receipt."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit; e99035f3 changes the two production modules, the shared list and the contract test, and c3474085 appends 70 lines to the evidence record and a landing section to the plan.",
+    "done_when": "the measure names a contract test on the real dispatch path, its four cases, the list extension and an evidence anchor; tests/test_shared_claims_on_declared_hot_files.py:131 dispatches through crew.dispatch and its five tests pass at head (reviewer gate log: 5 passed, EXIT=0), docs/state/reckon/shared-write-paths.json:27-44 names the four modules with reasons, and the base-arm clause has no artifact.",
+    "goal": "the goal is the shared-path exemption reaching the check a real dispatch raises from, with one claim check left; reckon/crew/dispatch.py:1269 reads the list and dispatch.py:1283 admits the exact named file, while reckon/crew/runs.py:825-855 turns _raise_live_scope_conflict into a delegate.",
+    "manifest": "read; it records commits e99035f3 and c3474085, a six-file gate at 55 passed in 72.10s, the negative-control log and driver, and it names the missing base-arm log under follow_ons rather than claiming it.",
+    "write_paths": "the declared paths are reckon/crew/dispatch.py, reckon/crew/runs.py, tests/test_shared_claims_on_declared_hot_files.py, docs/state/reckon/shared-write-paths.json, the evidence record, the figure topic and the plan file; every path in git diff 26b2f499..c3474085 lies inside them."
+  },
+  "justifications": {
+    "durability": "the listed-file co-claim, the unlisted refusal and the absent-list refusal redden under the declared mutation (logs/negative-control.log:3), but the exact-match half of the dispatch.py:1283 predicate has no discriminating assertion.",
+    "evidence": "the head gate is recorded and reproduces at head (reviewer-gate-contract-file.log: 5 passed, EXIT=0), but the base-arm clause of the done_when has no artifact, as the manifest's follow_ons concedes and the evidence anchor contradicts (docs/evidence/archive/the-local-lane-is-the-default-landed.html:841).",
+    "fit": "the fix follows the module's idiom with the list read once into shared_files at reckon/crew/dispatch.py:1225 and dispatch.py:1269, its comment states the mechanism, and no symbol or comment carries a plan or ticket identifier.",
+    "goal_fidelity": "the exemption is applied at reckon/crew/dispatch.py:1283 through the same list reader runs._shared_write_paths, and the declared negative control shows the refusal raised from that real dispatch path.",
+    "scope_discipline": "every changed path is declared, and the only excess is two formatter-only hunks at reckon/crew/runs.py:2891 and runs.py:2948 that ruff format produces on the staged file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is the shared-path exemption reaching the check a real dispatch raises from, with one claim check left; reckon/crew/dispatch.py:1269 reads the list and dispatch.py:1283 admits the exact named file, while reckon/crew/runs.py:825-855 turns _raise_live_scope_conflict into a delegate.\nVERDICT done_when: the measure names a contract test on the real dispatch path, its four cases, the list extension and an evidence anchor; tests/test_shared_claims_on_declared_hot_files.py:131 dispatches through crew.dispatch and its five tests pass at head (reviewer gate log: 5 passed, EXIT=0), docs/state/reckon/shared-write-paths.json:27-44 names the four modules with reasons, and the base-arm clause has no artifact.\nVERDICT write_paths: the declared paths are reckon/crew/dispatch.py, reckon/crew/runs.py, tests/test_shared_claims_on_declared_hot_files.py, docs/state/reckon/shared-write-paths.json, the evidence record, the figure topic and the plan file; every path in git diff 26b2f499..c3474085 lies inside them.\nVERDICT manifest: read; it records commits e99035f3 and c3474085, a six-file gate at 55 passed in 72.10s, the negative-control log and driver, and it names the missing base-arm log under follow_ons rather than claiming it.\nVERDICT diff: read commit by commit; e99035f3 changes the two production modules, the shared list and the contract test, and c3474085 appends 70 lines to the evidence record and a landing section to the plan.\nCALL_SITES: reckon/crew/dispatch.py:_raise_repository_scope_conflict (the check dispatch() calls at dispatch.py:3700), reckon/crew/dispatch.py:_live_conflict_rows (dry-run conflict report, dispatch.py:3032), reckon/crew/runs.py:_raise_live_scope_conflict (exports-only facade, no production caller)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the exemption is applied at reckon/crew/dispatch.py:1283 through the same list reader runs._shared_write_paths, and the declared negative control shows the refusal raised from that real dispatch path.\nSCORE evidence: 12\nJUSTIFICATION evidence: the head gate is recorded and reproduces at head (reviewer-gate-contract-file.log: 5 passed, EXIT=0), but the base-arm clause of the done_when has no artifact, as the manifest's follow_ons concedes and the evidence anchor contradicts (docs/evidence/archive/the-local-lane-is-the-default-landed.html:841).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is declared, and the only excess is two formatter-only hunks at reckon/crew/runs.py:2891 and runs.py:2948 that ruff format produces on the staged file.\nSCORE durability: 15\nJUSTIFICATION durability: the listed-file co-claim, the unlisted refusal and the absent-list refusal redden under the declared mutation (logs/negative-control.log:3), but the exact-match half of the dispatch.py:1283 predicate has no discriminating assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the fix follows the module's idiom with the list read once into shared_files at reckon/crew/dispatch.py:1225 and dispatch.py:1269, its comment states the mechanism, and no symbol or comment carries a plan or ticket identifier.\nFINDING tests/test_shared_claims_on_declared_hot_files.py:165 the rewritten directory case asserts only the forward direction, a directory candidate against a live file claim, where the candidate is not in the list at all and the assertion passes whatever the second half of dispatch.py:1283 does; the reverse case, a listed-file candidate against a live directory claim, is the only configuration that reddens if candidate == claim.path is dropped, was asserted by the pre-change file, and is now asserted nowhere, so that invariant can regress silently (reviewer-probe.log case b shows in_list=True exact_match=False, result REFUSED).\nFINDING docs/evidence/archive/the-local-lane-is-the-default-landed.html:841 the anchor states the base-arm log path is named on the manifest while the manifest records the base-arm gate log as not produced under follow_ons, so the cumulative evidence record carries an unmet promise and the done_when's comparison clause has no receipt.",
+  "review_run_id": "r-20260925T120325813331-review-of-shared-claims-reach-the-live-check",
+  "reviewed_base_sha": "26b2f49931ce651d49978e62a224dfd75e98dbeb",
+  "reviewed_head_sha": "c347408561c873febc4d30eb906023157d25b13b",
+  "reviewed_run_id": "r-20260925T111003388390-shared-claims-reach-the-live-check",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T12:59:13.859300+00:00",
+  "total": 82
+}

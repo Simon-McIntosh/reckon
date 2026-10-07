@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:51:56.200Z",
+  "dispatched_at": "2026-10-04T21:43:03Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/picker/lane_context.py:262",
+      "id": "duplicate_owner-1",
+      "reason": "the design should extend `capabilities.pick_input_cache_root` with a named subdirectory (or a shared `cache_root(name, override_env)`) so one resolution order and one isolation hook govern every picker cache, instead of a second env-var name (`RECKON_RUN_TIME_PROFILE_CACHE`) that the test-suite isolation must learn separately.",
+      "text": "`_profile_cache_root()` re-implements a four-level cache-root resolution (`RECKON_RUN_TIME_PROFILE_CACHE` \u2192 `RECKON_HOME/cache/run-time-profile` \u2192 `XDG_CACHE_HOME/reckon/run-time-profile` \u2192 `~/.cache/reckon/run-time-profile`) that already exists as `capabilities.pick_input_cache_root()` at reckon/capabilities.py:1143 (`RECKON_PICK_CACHE` \u2192 `RECKON_HOME/cache` \u2192 `XDG_CACHE_HOME/reckon` \u2192 `~/.cache/reckon`); the picker already depends on that owner through `capabilities.cached_pick_input` elsewhere, and the plan's own \u00a76 review traffic (picker-foreign-wait-bounded, and the open `f-otmp-review-follow-ons` cache-precedence item) is a string of defects caused by two cache resolutions drifting apart",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/picker/lane_context.py:496",
+      "id": "duplicate_owner-2",
+      "reason": "this is a within-call double read, not a design fork; extending `local_lane_load` to carry the admission and published-gate fields is a cleanup, not a change to what the picker decides.",
+      "text": "`local_lane()` calls `local_lane_load()` (line 490), which already reads and JSON-parses the published lane document at reckon/crew/run_time_profile.py:405, and then at line 496 reads and parses the same `local_lane_path()` document a second time to recover the `router_generation_gate` and admission blocks the first reader discards; the lane document is shared infrastructure whose single reader is `run_time_profile.local_lane_load`/`lane_document`",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e229b93b52c142b032d3a01d2cc2a365db1b30ebf96ffee6fa1cc367cdc34a95",
+  "plan_slug": "one-typesafe-model-picker",
+  "plan_version": 148,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214247775290-plan-review-of-one-typesafe-model-picker",
+  "reviewed_blob_sha": "3d183f862354eb17448ab3fb0576dfd944747353",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one function, `pick()` at reckon/crew/picker/__init__.py:47, hides the candidate census, the strict-Jinja state render, the Jev call, the distribution/confidence validation and the four-way route/hold/fallback/refuse outcome behind its single `Selection` return; the caller gets an auditable decision, not the snapshot, prompt and validation machinery behind it.",
+    "duplicate_owner": "a finding \u2014 the picker forks cache-root path resolution beside the existing owner.",
+    "reuse_search": "pass \u2014 the plan searched before proposing new machinery (\u00a74's picker-reuse-map mapped 28 base-revision functions and 2,060 ledger rows), and the shipped picker imports the existing gates rather than reimplementing them: reckon/crew/picker/snapshot.py:10-20 pulls `_dispatch_lane_gate` and `_lane_worker_allowance` from dispatch, `_competence_verdict`, `shared_verdict_inputs` and `_estimated_hours` from routing, `_review_excluded_backends` from recovery, and calls `resumption.probe_lane_availability`, `flight._probe_serving` and `budget.preflight`, so no eligibility, window or serving reader is duplicated by the new subsystem.",
+    "thin_wrapper": "pass \u2014 the picker is not a forward over existing routing: it adds a semantic judgment (Jev's typed Choice over offered candidates) that no existing mechanism supplied, and the wrapper is justified because the alternative \u2014 extending `routing.resolve_role` with a model call \u2014 would put a network judgment inside the pure configuration resolver. `picker/replay.py` and `picker/outcomes.py` carry their own measurement logic rather than relaying another module's output."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T02:21:05.339614+00:00"
+}

@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d934afc8caffcc2b1b56f0f4185a988ac470bd92",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:2621",
+    "reckon/mcp.py:4351",
+    "reckon/crew/routing.py:2676"
+  ],
+  "completed_at": "2026-10-06T14:31:22.372Z",
+  "dispatched_at": "2026-10-06T14:23:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T133511353757-the-surfaces-pass-the-plan/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's baseline_suite.command, echoed on logs/baseline-d934afc8c.log's own command line, carries a literal <base> placeholder in place of the scratch tree path, and the base log's header names neither the module under test as imported (module.__file__) nor the resolved working directory; the base arm therefore cannot be replayed or its resolution confirmed from the record alone, though its revision d934afc8c and result 113 passed EXIT=0 are stated."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "2625",
+      "severity": "follow-on",
+      "text": "follow-on: the answer verb imports the module-private reckon.mcp._stale_plan_review across the package boundary, so the stale-review message's single owner is reached through a private name; if two surfaces are meant to share it, making it public (or hoisting it beside the coverage predicate) would state that contract rather than imply it."
+    }
+  ],
+  "head_log_revision": "ac592068d02aed2e06a454058615fcab7ad31653",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit against base d934afc8c - 0012244e3 adds the store-before-read call and the plan-content argument to the answer verb and the MCP view plus a three-case test module; e2c29d448 lands the first fragment revision; 4b5e34a24 names the stale review when no stored review covers the plan; 5734e8958 records the stale-review reporting and the coverage control; ac592068d reads the stale review through the review module's own lookup; 39ee1c083 cites the final head. Nothing is removed and nothing lies outside the four declared paths.",
+    "done_when": "The section's measure holds at head: I re-ran the node's new module at the reviewed head (4 passed, EXIT=0) and the declared negative control (3 failed, 1 passed, EXIT=1), confirmed public_definitions 1481 at d934afc8c and 39ee1c083, and ran the shape greps - read_plan_review( has three for-plan call sites each passing the plan's content and one deliberate no-plan call inside _stale_plan_review; store_delivered_reviews is one definition in reckon/crew/plan_review.py called by the gate and by the answer verb; def _store_delivered_plan_review and def store_delivered_report are absent.",
+    "goal": "The node goal is met: reckon/cli.py:2619 calls plan_review.store_delivered_reviews(project, plan_slug) before the read at reckon/cli.py:2621, and both reckon/cli.py:2621 and reckon/mcp.py:4351 resolve the plan file through _store._resolve_html_file and pass it to read_plan_review, so answering a finding no longer depends on a prior build having stored the delivery and a plan covered section by section reads as reviewed on both surfaces.",
+    "manifest": "Read at the run's manifest.md; it declares status complete, six commits, the seven-module gate at 117 passed EXIT=0 (logs/gate-ac592068.log), a baseline arm at 113 passed EXIT=0 (logs/baseline-d934afc8c.log) and two negative controls whose logs end in a bare EXIT=1; its baseline_suite.command carries a literal <base> placeholder, so the base arm's command is not replayable as recorded.",
+    "write_paths": "git diff --stat d934afc8c..39ee1c083 is four files - reckon/cli.py, reckon/mcp.py, tests/test_the_surfaces_pass_the_plan.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-surfaces-pass-the-plan.html - 395 insertions against nine deletions, every one inside the node's declared write paths with no plan meta line and no shared index touched."
+  },
+  "justifications": {
+    "durability": "both halves are now guarded where an earlier review found the plan-content half unguarded - removing store_delivered_reviews reddens the delivery test and dropping plan= from both callers reddens the two coverage tests and the absent-covering test (I reproduced 3 failed 1 passed), on a self-contained two-review fixture with pinned mtimes; the deduction is the untested mcp path where the resolver raises and the view returns a crew_error rather than the stale-review note.",
+    "evidence": "strong - the gate is recorded (117 passed EXIT=0, logs/gate-ac592068.log) with a real base arm this time (113 passed EXIT=0, logs/baseline-d934afc8c.log), I reproduced the new module (4 passed) and both negative controls (1 failed 2 passed; 3 failed 1 passed, each ending EXIT=1), and public_definitions is 1481 at both revisions; the deduction is that the base arm's command carries a literal <base> placeholder and its header names neither the module under test as imported nor the resolved working directory, so the base arm is not fully replayable from the record.",
+    "fit": "the callers reuse the existing _resolve_html_file resolver the plan editor and promotion already use, the stale message is composed once, and the tests are named by behaviour with no plan, ticket or version label; the deduction is that the answer verb reaches the module-private reckon.mcp._stale_plan_review across the package boundary, so a private name is now a cross-package dependency.",
+    "goal_fidelity": "reckon/cli.py:2619 stores the delivery before the read at reckon/cli.py:2621, and both it and reckon/mcp.py:4351 select the review through the plan's content, which is the node goal stated exactly.",
+    "reuse": "the change extends the existing store step (store_delivered_reviews), reader (read_plan_review) and resolver (_resolve_html_file) rather than forking any, and read_plan_review keeps its name and its single owner of the coverage choice.",
+    "scope_discipline": "git diff --stat d934afc8c..39ee1c083 is four files and 395 insertions against nine deletions, every one inside the four declared write paths, with no plan meta line or shared index touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is met: reckon/cli.py:2619 calls plan_review.store_delivered_reviews(project, plan_slug) before the read at reckon/cli.py:2621, and both reckon/cli.py:2621 and reckon/mcp.py:4351 resolve the plan file through _store._resolve_html_file and pass it to read_plan_review, so answering a finding no longer depends on a prior build having stored the delivery and a plan covered section by section reads as reviewed on both surfaces.\nVERDICT done_when: The section's measure holds at head: I re-ran the node's new module at the reviewed head (4 passed, EXIT=0) and the declared negative control (3 failed, 1 passed, EXIT=1), confirmed public_definitions 1481 at d934afc8c and 39ee1c083, and ran the shape greps - read_plan_review( has three for-plan call sites each passing the plan's content and one deliberate no-plan call inside _stale_plan_review; store_delivered_reviews is one definition in reckon/crew/plan_review.py called by the gate and by the answer verb; def _store_delivered_plan_review and def store_delivered_report are absent.\nVERDICT write_paths: git diff --stat d934afc8c..39ee1c083 is four files - reckon/cli.py, reckon/mcp.py, tests/test_the_surfaces_pass_the_plan.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-surfaces-pass-the-plan.html - 395 insertions against nine deletions, every one inside the node's declared write paths with no plan meta line and no shared index touched.\nVERDICT manifest: Read at the run's manifest.md; it declares status complete, six commits, the seven-module gate at 117 passed EXIT=0 (logs/gate-ac592068.log), a baseline arm at 113 passed EXIT=0 (logs/baseline-d934afc8c.log) and two negative controls whose logs end in a bare EXIT=1; its baseline_suite.command carries a literal <base> placeholder, so the base arm's command is not replayable as recorded.\nVERDICT diff: Read commit by commit against base d934afc8c - 0012244e3 adds the store-before-read call and the plan-content argument to the answer verb and the MCP view plus a three-case test module; e2c29d448 lands the first fragment revision; 4b5e34a24 names the stale review when no stored review covers the plan; 5734e8958 records the stale-review reporting and the coverage control; ac592068d reads the stale review through the review module's own lookup; 39ee1c083 cites the final head. Nothing is removed and nothing lies outside the four declared paths.\nCALL_SITES: reckon/cli.py:2621, reckon/mcp.py:4351, reckon/crew/routing.py:2676\nREVIEWED_BASE_SHA: d934afc8caffcc2b1b56f0f4185a988ac470bd92\nREVIEWED_HEAD_SHA: 39ee1c08372d823d24279492ad435f81b54ea81a\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/cli.py:2619 stores the delivery before the read at reckon/cli.py:2621, and both it and reckon/mcp.py:4351 select the review through the plan's content, which is the node goal stated exactly.\nSCORE evidence: 19\nJUSTIFICATION evidence: strong - the gate is recorded (117 passed EXIT=0, logs/gate-ac592068.log) with a real base arm this time (113 passed EXIT=0, logs/baseline-d934afc8c.log), I reproduced the new module (4 passed) and both negative controls (1 failed 2 passed; 3 failed 1 passed, each ending EXIT=1), and public_definitions is 1481 at both revisions; the deduction is that the base arm's command carries a literal <base> placeholder and its header names neither the module under test as imported nor the resolved working directory, so the base arm is not fully replayable from the record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d934afc8c..39ee1c083 is four files and 395 insertions against nine deletions, every one inside the four declared write paths, with no plan meta line or shared index touched.\nSCORE durability: 19\nJUSTIFICATION durability: both halves are now guarded where an earlier review found the plan-content half unguarded - removing store_delivered_reviews reddens the delivery test and dropping plan= from both callers reddens the two coverage tests and the absent-covering test (I reproduced 3 failed 1 passed), on a self-contained two-review fixture with pinned mtimes; the deduction is the untested mcp path where the resolver raises and the view returns a crew_error rather than the stale-review note.\nSCORE fit: 19\nJUSTIFICATION fit: the callers reuse the existing _resolve_html_file resolver the plan editor and promotion already use, the stale message is composed once, and the tests are named by behaviour with no plan, ticket or version label; the deduction is that the answer verb reaches the module-private reckon.mcp._stale_plan_review across the package boundary, so a private name is now a cross-package dependency.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing store step (store_delivered_reviews), reader (read_plan_review) and resolver (_resolve_html_file) rather than forking any, and read_plan_review keeps its name and its single owner of the coverage choice.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T133511353757-the-surfaces-pass-the-plan/manifest.md:15 follow-on: the reviewed manifest's baseline_suite.command, echoed on logs/baseline-d934afc8c.log's own command line, carries a literal <base> placeholder in place of the scratch tree path, and the base log's header names neither the module under test as imported (module.__file__) nor the resolved working directory; the base arm therefore cannot be replayed or its resolution confirmed from the record alone, though its revision d934afc8c and result 113 passed EXIT=0 are stated.\nFINDING reckon/cli.py:2625 follow-on: the answer verb imports the module-private reckon.mcp._stale_plan_review across the package boundary, so the stale-review message's single owner is reached through a private name; if two surfaces are meant to share it, making it public (or hoisting it beside the coverage predicate) would state that contract rather than imply it.\n",
+  "review_run_id": "r-20261006T142331904424-review-of-the-surfaces-pass-the-plan",
+  "reviewed_base_sha": "d934afc8caffcc2b1b56f0f4185a988ac470bd92",
+  "reviewed_head_sha": "39ee1c08372d823d24279492ad435f81b54ea81a",
+  "reviewed_run_id": "r-20261006T133511353757-the-surfaces-pass-the-plan",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:29:51.761262+00:00",
+  "total": 117
+}

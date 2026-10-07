@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:4103"
+  ],
+  "completed_at": "2026-10-01T00:15:31.944Z",
+  "dispatched_at": "2026-10-01T00:05:43Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-review-is-sized-to-its-risk/suite-arms-use-the-armed-command",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared figures path was never produced, so the node's declared artifact set is incomplete; the change is a source guard and the evidence fragment carries the reproduction in text."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 31152b6c against base 60d25568; 3 files changed, +329/-1 \u2014 a _normalized_command helper and an arm-command check folded into _evaluate_suite_delta's existing missing-evidence refusal (promotion.py), a 252-line test file, and a 54-line evidence fragment.",
+    "done_when": "the done_when names tests/test_suite_arms_use_the_armed_command.py plus tests/test_gate_evidence.py and tests/test_an_unchanged_run_needs_no_suite_pair.py; the manifest records 32 passed exit 0 at 31152b6c and the reviewer re-ran those three files at 31152b6c for 32 passed exit 0.",
+    "goal": "the node's goal is to require both suite arms of an armed promotion to have been measured with the command the run was armed with; reckon/crew/promotion.py:4199-4203 compares each arm's command against suite_command after whitespace normalisation and refuses a mismatch.",
+    "manifest": "read; status complete, commit 31152b6c named, logs/gate.log (32 passed) and logs/negative_control.log (2 failed, 1 passed) recorded, and it states the run is unarmed so no baseline_suite/after_suite pair is carried.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, the new test file, an evidence fragment and a figures path; the diff touches the first three and no path outside them."
+  },
+  "justifications": {
+    "durability": "dropping the command comparison in a scratch copy reddens the two refusal cases (2 failed, 1 passed, EXIT=1) because the mismatched pair promotes, so tests/test_suite_arms_use_the_armed_command.py:191-195 names a condition under which it fails.",
+    "evidence": "the gate log header names revision 31152b6c and the reviewer re-ran the three named files at that head for 32 passed exit 0, but the reviewed manifest carries no baseline_suite/after_suite pair so its own record yields no added-failure derivation.",
+    "fit": "_normalized_command (promotion.py:4145) sits beside _evaluate_suite_delta and the mismatch rides the existing missing-evidence list that ledger.suite_observation_missing_fields produces, and the commit carries a substantive body with no plan label and no AI trailer.",
+    "goal_fidelity": "promotion.py:4199-4203 appends baseline_suite.command_matches_suite_command or after_suite.command_matches_suite_command for each arm whose normalised command differs from suite_command, so an armed promotion now refuses a pair that did not run the armed command.",
+    "scope_discipline": "the 60d25568..31152b6c diff changes only reckon/crew/promotion.py, tests/test_suite_arms_use_the_armed_command.py and the evidence fragment, all inside the declared write paths, with the declared figures path left unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to require both suite arms of an armed promotion to have been measured with the command the run was armed with; reckon/crew/promotion.py:4199-4203 compares each arm's command against suite_command after whitespace normalisation and refuses a mismatch.\nVERDICT done_when: the done_when names tests/test_suite_arms_use_the_armed_command.py plus tests/test_gate_evidence.py and tests/test_an_unchanged_run_needs_no_suite_pair.py; the manifest records 32 passed exit 0 at 31152b6c and the reviewer re-ran those three files at 31152b6c for 32 passed exit 0.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, the new test file, an evidence fragment and a figures path; the diff touches the first three and no path outside them.\nVERDICT manifest: read; status complete, commit 31152b6c named, logs/gate.log (32 passed) and logs/negative_control.log (2 failed, 1 passed) recorded, and it states the run is unarmed so no baseline_suite/after_suite pair is carried.\nVERDICT diff: read 31152b6c against base 60d25568; 3 files changed, +329/-1 \u2014 a _normalized_command helper and an arm-command check folded into _evaluate_suite_delta's existing missing-evidence refusal (promotion.py), a 252-line test file, and a 54-line evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:4103\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:4199-4203 appends baseline_suite.command_matches_suite_command or after_suite.command_matches_suite_command for each arm whose normalised command differs from suite_command, so an armed promotion now refuses a pair that did not run the armed command.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate log header names revision 31152b6c and the reviewer re-ran the three named files at that head for 32 passed exit 0, but the reviewed manifest carries no baseline_suite/after_suite pair so its own record yields no added-failure derivation.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the 60d25568..31152b6c diff changes only reckon/crew/promotion.py, tests/test_suite_arms_use_the_armed_command.py and the evidence fragment, all inside the declared write paths, with the declared figures path left unused.\nSCORE durability: 19\nJUSTIFICATION durability: dropping the command comparison in a scratch copy reddens the two refusal cases (2 failed, 1 passed, EXIT=1) because the mismatched pair promotes, so tests/test_suite_arms_use_the_armed_command.py:191-195 names a condition under which it fails.\nSCORE fit: 19\nJUSTIFICATION fit: _normalized_command (promotion.py:4145) sits beside _evaluate_suite_delta and the mismatch rides the existing missing-evidence list that ledger.suite_observation_missing_fields produces, and the commit carries a substantive body with no plan label and no AI trailer.\nFINDING docs/figures/a-review-is-sized-to-its-risk/suite-arms-use-the-armed-command:1 follow-on: the declared figures path was never produced, so the node's declared artifact set is incomplete; the change is a source guard and the evidence fragment carries the reproduction in text.",
+  "review_run_id": "r-20261001T000528475752-review-of-suite-arms-use-the-armed-command",
+  "reviewed_base_sha": "60d25568a2c2641596444e082f512d332999c84b",
+  "reviewed_head_sha": "31152b6cb5d31efd98c89711cb8e9891b292c2d1",
+  "reviewed_run_id": "r-20260930T235030939384-suite-arms-use-the-armed-command",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T00:14:00.587159+00:00",
+  "total": 95
+}

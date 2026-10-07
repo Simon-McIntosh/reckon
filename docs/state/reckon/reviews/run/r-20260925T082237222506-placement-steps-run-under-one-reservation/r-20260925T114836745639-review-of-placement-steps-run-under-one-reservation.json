@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:apply_backend_placement (line 4730",
+    "reservation_alive on the placing side)",
+    "reckon/crew/placement.py:ensure_reservation (line 274",
+    "the default probe on the holding side)",
+    "reckon/crew/runs.py:ensure_placement_reservation (line 2495)",
+    "reckon/cli.py:crew_placement (line 2643",
+    "the crew placement --ensure path)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T11:48:36.745639+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082237222506-placement-steps-run-under-one-reservation/arms-base.log",
+      "line": "3",
+      "text": "the base arm's module line names the arm's own tree as the reviewed worktree's reckon/__init__.py while that arm's PYTHONPATH (line 2) and cwd (line 5) name /tmp/steps-base-tree; the arm did import its own tree \u2014 its failure text carries /tmp/steps-base-tree/reckon/host_shims/srun, a path derived from that tree's reckon/nested_launch.py \u2014 so the header is wrong rather than the measurement, but the \"zero added failures\" claim rests on an arm whose own header names the head tree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against b453d763 \u2014 eaeef031 is the fix plus its five-case test file, b295d0cf is the landing record with its evidence section and figure (five files, +521/-15); the code change is the three-valued reservation_state()/reservation_alive() pair and both production callers inherit it.",
+    "done_when": "the named gate tests/test_placement_steps_under_reservation.py does assert the done-when \u2014 the manifest records 5 passed at the landed head and 2 failed / 3 passed on a base tree, and I re-ran the file at the reviewed head in my own export of that revision (recheck-gate.log pins module.__file__ and cwd to that tree) for 5 passed, while my own reversion of the changed line (reviewer-control.log) reddens test_two_workers_share_one_reservation and test_the_ensure_command_starts_nothing_when_the_query_cannot_be_asked \u2014 though the assertion that trips in that case is the first worker's, tests/test_placement_steps_under_reservation.py:185, not the second's as the done-when phrases it.",
+    "goal": "the diff implements the node goal \u2014 reckon/crew/placement.py:227 makes reservation_alive() release a published reservation only on an answer (\"is not False\"), so reckon/crew/dispatch.py:4730 sends a placed worker as an --overlap --jobid=<id> step inside one held reservation instead of minting one allocation per worker.",
+    "manifest": "read with its logs; the arms result it states (21 passed / 1 failed, one and the same id at both revisions) matches arms-base.log and arms-head.log, but arms-base.log:3 names a module outside the tree that arm ran in, so the base arm's tree has to be read from its PYTHONPATH line and its failure text rather than from its module line.",
+    "write_paths": "the two reviewed commits touch five paths and every one is inside the manifest's declared fence \u2014 reckon/crew/placement.py, tests/test_placement_steps_under_reservation.py, docs/plans/a-worker-is-charged-to-a-job.html, docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html, docs/figures/a-worker-is-charged-to-a-job/reservation-query-decides-the-launch.svg."
+  },
+  "justifications": {
+    "durability": "the case at tests/test_placement_steps_under_reservation.py:185 reddens on the reinstated defect and the holding case fails at its production ensure_reservation call (line 297), both against the fixture's own RESERVATION_ID rather than a value the test hands back through the code under test.",
+    "evidence": "the gate is re-runnable and I reproduced both sides of it (5 passed at the reviewed head, and the two cases the fix exists for red on the reinstated defect), but arms-base.log:3 names the wrong module, so the provenance of one recorded figure is weaker than its count suggests.",
+    "fit": "reservation_state() and reservation_alive() follow the module's existing (record, runner, probe) idiom at reckon/crew/placement.py:181-227, and their docstrings describe the mechanism with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/placement.py:227 answers \"is not False\" so an unanswerable query holds the reservation, which is the one behaviour the goal asks for, and reckon/crew/dispatch.py:4736 composes the shared step form that behaviour enables.",
+    "scope_discipline": "every path in the two commits is inside the manifest's declared fence, and the docs record is work the fence names rather than an unasked-for addition."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the diff implements the node goal \u2014 reckon/crew/placement.py:227 makes reservation_alive() release a published reservation only on an answer (\"is not False\"), so reckon/crew/dispatch.py:4730 sends a placed worker as an --overlap --jobid=<id> step inside one held reservation instead of minting one allocation per worker.\nVERDICT done_when: the named gate tests/test_placement_steps_under_reservation.py does assert the done-when \u2014 the manifest records 5 passed at the landed head and 2 failed / 3 passed on a base tree, and I re-ran the file at the reviewed head in my own export of that revision (recheck-gate.log pins module.__file__ and cwd to that tree) for 5 passed, while my own reversion of the changed line (reviewer-control.log) reddens test_two_workers_share_one_reservation and test_the_ensure_command_starts_nothing_when_the_query_cannot_be_asked \u2014 though the assertion that trips in that case is the first worker's, tests/test_placement_steps_under_reservation.py:185, not the second's as the done-when phrases it.\nVERDICT write_paths: the two reviewed commits touch five paths and every one is inside the manifest's declared fence \u2014 reckon/crew/placement.py, tests/test_placement_steps_under_reservation.py, docs/plans/a-worker-is-charged-to-a-job.html, docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html, docs/figures/a-worker-is-charged-to-a-job/reservation-query-decides-the-launch.svg.\nVERDICT manifest: read with its logs; the arms result it states (21 passed / 1 failed, one and the same id at both revisions) matches arms-base.log and arms-head.log, but arms-base.log:3 names a module outside the tree that arm ran in, so the base arm's tree has to be read from its PYTHONPATH line and its failure text rather than from its module line.\nVERDICT diff: read commit by commit against b453d763 \u2014 eaeef031 is the fix plus its five-case test file, b295d0cf is the landing record with its evidence section and figure (five files, +521/-15); the code change is the three-valued reservation_state()/reservation_alive() pair and both production callers inherit it.\nCALL_SITES: reckon/crew/dispatch.py:apply_backend_placement (line 4730, reservation_alive on the placing side), reckon/crew/placement.py:ensure_reservation (line 274, the default probe on the holding side), reckon/crew/runs.py:ensure_placement_reservation (line 2495), reckon/cli.py:crew_placement (line 2643, the crew placement --ensure path)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/placement.py:227 answers \"is not False\" so an unanswerable query holds the reservation, which is the one behaviour the goal asks for, and reckon/crew/dispatch.py:4736 composes the shared step form that behaviour enables.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is re-runnable and I reproduced both sides of it (5 passed at the reviewed head, and the two cases the fix exists for red on the reinstated defect), but arms-base.log:3 names the wrong module, so the provenance of one recorded figure is weaker than its count suggests.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two commits is inside the manifest's declared fence, and the docs record is work the fence names rather than an unasked-for addition.\nSCORE durability: 18\nJUSTIFICATION durability: the case at tests/test_placement_steps_under_reservation.py:185 reddens on the reinstated defect and the holding case fails at its production ensure_reservation call (line 297), both against the fixture's own RESERVATION_ID rather than a value the test hands back through the code under test.\nSCORE fit: 18\nJUSTIFICATION fit: reservation_state() and reservation_alive() follow the module's existing (record, runner, probe) idiom at reckon/crew/placement.py:181-227, and their docstrings describe the mechanism with no plan or ticket label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082237222506-placement-steps-run-under-one-reservation/arms-base.log:3 the base arm's module line names the arm's own tree as the reviewed worktree's reckon/__init__.py while that arm's PYTHONPATH (line 2) and cwd (line 5) name /tmp/steps-base-tree; the arm did import its own tree \u2014 its failure text carries /tmp/steps-base-tree/reckon/host_shims/srun, a path derived from that tree's reckon/nested_launch.py \u2014 so the header is wrong rather than the measurement, but the \"zero added failures\" claim rests on an arm whose own header names the head tree.\n",
+  "review_run_id": "r-20260925T114836745639-review-of-placement-steps-run-under-one-reservation",
+  "reviewed_base_sha": "b453d7632ec4d56392caba3b1efde4aa0475b23b",
+  "reviewed_head_sha": "b295d0cf16040e2d6eaba612200cf24b09ad53da",
+  "reviewed_run_id": "r-20260925T082237222506-placement-steps-run-under-one-reservation",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T12:48:50.924549+00:00",
+  "total": 90
+}

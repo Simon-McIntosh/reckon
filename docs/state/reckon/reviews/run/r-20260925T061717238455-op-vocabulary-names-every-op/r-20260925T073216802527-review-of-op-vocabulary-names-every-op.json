@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:752",
+    "reckon/mcp.py:1044",
+    "reckon/mcp.py:1094",
+    "reckon/mcp.py:1219",
+    "reckon/mcp.py:4474"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:32:16.802527+00:00",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "1313",
+      "text": "the entry at head is only \"{op:'insert_section', id, title, body}\", carrying no sentence on what the op does or where the section lands, so the dispatched done_when's placement clause is unmet at head and the assertions that guarded it were deleted in 3b3a048e, leaving the clause unguarded; the drop is documented in the plan landed note and the manifest, so it is a disclosed deviation rather than a hidden one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T061717238455-op-vocabulary-names-every-op/manifest.md",
+      "line": "14",
+      "text": "the figure 24621 recorded for the 158-char entry does not reconstruct under the recorded instrument: at the test's fixture path shape the head payload measures 24552, so the same entry serialises to 24674, and at budget-conflict.log's path shape to 24692; the endpoint claims it accompanies (head at or below budget, head below base 24562) are unaffected and both were verified."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 79a17c07 \u2014 3fc05501 adds the entry, the seven named views and a 41-line test; 23350901 is additive docs (163 insertions, zero deletions, no peer anchor displaced); 3b3a048e shortens the entry to its three keys, drops the placement clause together with its two assertions, and tightens seven pre-existing entries by wording alone with no op or named field lost; 7b1db1b1 revises only this node's own \u00a78 records.",
+    "done_when": "read the plan's three measures against the tree \u2014 tests/test_mcp_vocabulary_is_complete.py:20 holds _OP_VOCAB against _OP_DISPATCH and :35 holds the docstring against VIEW_NAMES, both asserted cross-source; I re-ran the budget test the change previously broke three times at head (3 green) and measured compact_size(schema)=24552 of 24576 at the test's fixture path shape (schema-size-probe.log); the mutation clause is receipted by negative-control.log, whose first line repeats the declared mutation verbatim and whose run header names head 3b3a048e (2 failed 1 passed, exit 1); lint is read as the manifest's delta claim, 18 findings at base and head with 0 added.",
+    "goal": "read the node goal (make _OP_VOCAB name every edit_plan op and the read_plan docstring name every view it accepts) against head 7b1db1b1: reckon/mcp.py:1313 carries the insert_section entry and the docstring at reckon/mcp.py:778-783 names all seven views of reckon/mcp_views.py:29's VIEW_NAMES, so both halves landed, but the placement sentence the dispatched done_when also names is absent at head, dropped in 3b3a048e and disclosed in the plan landed note.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T061717238455-op-vocabulary-names-every-op/manifest.md; its gate line (55 passed, exit 0) reproduces from review-gate.log (55 passed in 5.47s) and its negative-control note matches the red log, which now names 3b3a048e, the last commit that touched the tree it tests, closing the prior review's rev= finding, but its evidence_inputs intermediate figure of 24621 for the 158-char entry does not reconstruct under the recorded instrument (finding below).",
+    "write_paths": "read the five declared write paths against all four commits' file lists \u2014 3fc05501 and 3b3a048e touch reckon/mcp.py and tests/test_mcp_vocabulary_is_complete.py; 23350901 adds and 7b1db1b1 revises docs/plans/the-mcp-answers-within-its-ceiling.html, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html and docs/figures/the-mcp-answers-within-its-ceiling/vocabulary-coverage.svg \u2014 every changed path inside the declared set and none outside it, and the docs deletions lie inside this node's own section of the cumulative record."
+  },
+  "justifications": {
+    "durability": "removing the entry reddens tests/test_mcp_vocabulary_is_complete.py:20 and raises KeyError at :27 (negative-control.log), the docstring guard at :35 tests against the independent VIEW_NAMES table at reckon/mcp_views.py:29 which normalize_view enforces at :1319, but the placement assertions were deleted in 3b3a048e so nothing covers the sentence the done_when asked for.",
+    "evidence": "the gate reproduces at head (review-gate.log 55 passed; my three runs of tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers green) and compact_size(schema) measures 24552 of 24576 at the fixture's path shape, 10 bytes below the 24562 base, but the manifest's intermediate 24621 figure is not reproducible (finding below).",
+    "fit": "the entry sits among its peer strings at reckon/mcp.py:1313 and the naming scan over all 52 added source lines is clean, but it is the only one of the twelve entries with no behavioural prose, an asymmetry the 24 KiB budget forced.",
+    "goal_fidelity": "reckon/mcp.py:1313 gives insert_section its id/title/body keys and every accepted view is named at reckon/mcp.py:778-783, but the entry carries no sentence on what the op does or where the section lands, the one clause of the dispatched done_when left unmet and disclosed rather than hidden.",
+    "scope_discipline": "every path in the four commits lies inside the five declared write paths, the seven-entry tightening sits inside reckon/mcp.py where the exhausted schema budget forced it, and both docs revisions delete only this node's own \u00a78 text."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (make _OP_VOCAB name every edit_plan op and the read_plan docstring name every view it accepts) against head 7b1db1b1: reckon/mcp.py:1313 carries the insert_section entry and the docstring at reckon/mcp.py:778-783 names all seven views of reckon/mcp_views.py:29's VIEW_NAMES, so both halves landed, but the placement sentence the dispatched done_when also names is absent at head, dropped in 3b3a048e and disclosed in the plan landed note.\nVERDICT done_when: read the plan's three measures against the tree \u2014 tests/test_mcp_vocabulary_is_complete.py:20 holds _OP_VOCAB against _OP_DISPATCH and :35 holds the docstring against VIEW_NAMES, both asserted cross-source; I re-ran the budget test the change previously broke three times at head (3 green) and measured compact_size(schema)=24552 of 24576 at the test's fixture path shape (schema-size-probe.log); the mutation clause is receipted by negative-control.log, whose first line repeats the declared mutation verbatim and whose run header names head 3b3a048e (2 failed 1 passed, exit 1); lint is read as the manifest's delta claim, 18 findings at base and head with 0 added.\nVERDICT write_paths: read the five declared write paths against all four commits' file lists \u2014 3fc05501 and 3b3a048e touch reckon/mcp.py and tests/test_mcp_vocabulary_is_complete.py; 23350901 adds and 7b1db1b1 revises docs/plans/the-mcp-answers-within-its-ceiling.html, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html and docs/figures/the-mcp-answers-within-its-ceiling/vocabulary-coverage.svg \u2014 every changed path inside the declared set and none outside it, and the docs deletions lie inside this node's own section of the cumulative record.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T061717238455-op-vocabulary-names-every-op/manifest.md; its gate line (55 passed, exit 0) reproduces from review-gate.log (55 passed in 5.47s) and its negative-control note matches the red log, which now names 3b3a048e, the last commit that touched the tree it tests, closing the prior review's rev= finding, but its evidence_inputs intermediate figure of 24621 for the 158-char entry does not reconstruct under the recorded instrument (finding below).\nVERDICT diff: read commit by commit against 79a17c07 \u2014 3fc05501 adds the entry, the seven named views and a 41-line test; 23350901 is additive docs (163 insertions, zero deletions, no peer anchor displaced); 3b3a048e shortens the entry to its three keys, drops the placement clause together with its two assertions, and tightens seven pre-existing entries by wording alone with no op or named field lost; 7b1db1b1 revises only this node's own \u00a78 records.\nCALL_SITES: reckon/mcp.py:752, reckon/mcp.py:1044, reckon/mcp.py:1094, reckon/mcp.py:1219, reckon/mcp.py:4474\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1313 gives insert_section its id/title/body keys and every accepted view is named at reckon/mcp.py:778-783, but the entry carries no sentence on what the op does or where the section lands, the one clause of the dispatched done_when left unmet and disclosed rather than hidden.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate reproduces at head (review-gate.log 55 passed; my three runs of tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers green) and compact_size(schema) measures 24552 of 24576 at the fixture's path shape, 10 bytes below the 24562 base, but the manifest's intermediate 24621 figure is not reproducible (finding below).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the four commits lies inside the five declared write paths, the seven-entry tightening sits inside reckon/mcp.py where the exhausted schema budget forced it, and both docs revisions delete only this node's own \u00a78 text.\nSCORE durability: 17\nJUSTIFICATION durability: removing the entry reddens tests/test_mcp_vocabulary_is_complete.py:20 and raises KeyError at :27 (negative-control.log), the docstring guard at :35 tests against the independent VIEW_NAMES table at reckon/mcp_views.py:29 which normalize_view enforces at :1319, but the placement assertions were deleted in 3b3a048e so nothing covers the sentence the done_when asked for.\nSCORE fit: 17\nJUSTIFICATION fit: the entry sits among its peer strings at reckon/mcp.py:1313 and the naming scan over all 52 added source lines is clean, but it is the only one of the twelve entries with no behavioural prose, an asymmetry the 24 KiB budget forced.\nFINDING reckon/mcp.py:1313 the entry at head is only \"{op:'insert_section', id, title, body}\", carrying no sentence on what the op does or where the section lands, so the dispatched done_when's placement clause is unmet at head and the assertions that guarded it were deleted in 3b3a048e, leaving the clause unguarded; the drop is documented in the plan landed note and the manifest, so it is a disclosed deviation rather than a hidden one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T061717238455-op-vocabulary-names-every-op/manifest.md:14 the figure 24621 recorded for the 158-char entry does not reconstruct under the recorded instrument: at the test's fixture path shape the head payload measures 24552, so the same entry serialises to 24674, and at budget-conflict.log's path shape to 24692; the endpoint claims it accompanies (head at or below budget, head below base 24562) are unaffected and both were verified.",
+  "review_run_id": "r-20260925T073216802527-review-of-op-vocabulary-names-every-op",
+  "reviewed_base_sha": "79a17c075dd2be4c1d55fd521a331fde39c82742",
+  "reviewed_head_sha": "7b1db1b1fbb7a894d26b49cc71433983d0b1dce8",
+  "reviewed_run_id": "r-20260925T061717238455-op-vocabulary-names-every-op",
+  "reviewer": "review-of-op-vocabulary-names-every-op",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T08:19:10.401692+00:00",
+  "total": 86
+}

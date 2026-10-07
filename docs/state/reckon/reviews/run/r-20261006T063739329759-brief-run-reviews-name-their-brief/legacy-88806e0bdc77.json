@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py",
+    "reckon/crew/obligations.py"
+  ],
+  "completed_at": "2026-10-06T07:05:25.135Z",
+  "dispatched_at": "2026-10-06T06:38:07Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commits 54b1f300f and 7aa10bad1 against base bd6b700b7; recovery.py changes 15 lines (plan/section locals, the brief fallback and one return key) all inside scope, and no other source path changed.",
+    "done_when": "section 6's done-when names a test that composes the review of a brief-carried run and a dispatch dry run that validates it; tests/test_review_of_a_brief_run_names_its_brief.py adds test_the_composed_dispatch_dry_run_validates asserting refused is False and the validation ok, and the run's gate.log records the file green.",
+    "goal": "the node goal is to make the review of a run dispatched with --brief dispatchable by carrying the reviewed run's stored brief as its authority; the run-carried branch of _review_dispatch_fields now returns brief = node['brief_path'] or node['brief'] when the node names no plan and '' when it names one, and _review_dispatch_tokens already emits --brief for a non-empty brief.",
+    "manifest": "read; it records gate 192 passed EXIT=0 and negative control 3 failed EXIT=1, names both log paths, and records baseline_suite/after_suite as null, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "the declared scope is reckon/crew/recovery.py, the new test file and the evidence fragment; the diff touches exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared mutation (the run-carried branch no longer carries the brief) reddens exactly the three brief-carrying cases while the plan-carried case stays green (3 failed, 1 passed, EXIT=1), reproduced independently in a scratch extraction; each assertion names a condition under which it fails.",
+    "evidence": "the done-when's dry-run clause is measured by test_the_composed_dispatch_dry_run_validates and the gate.log records the file green; an independent scratch run of the file at head reproduced 4 passed, but the reviewed manifest names no baseline_suite/after_suite pair so the added-failure count is unmeasured rather than zero.",
+    "fit": "the fallback brief_path-or-brief matches the existing _brief_record idiom in reckon/crew/dispatch.py, and the change adds one return key beside the plan/section locals, so it follows the file's established shape.",
+    "goal_fidelity": "the run-carried branch returns the reviewed run's stored brief as the composed review's authority exactly when the node names no plan, and leaves a plan-carrying node's plan/section as authority, which is section 6's deliverable verbatim.",
+    "reuse": "the change extends the existing _review_dispatch_fields and _review_dispatch_tokens composition rather than adding a second dispatch path, and _review_dispatch_tokens already owned the --brief emission, so nothing is forked.",
+    "scope_discipline": "the diff touches reckon/crew/recovery.py, the new test file and the evidence fragment, all inside the manifest's declared write paths, and no other path changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the review of a run dispatched with --brief dispatchable by carrying the reviewed run's stored brief as its authority; the run-carried branch of _review_dispatch_fields now returns brief = node['brief_path'] or node['brief'] when the node names no plan and '' when it names one, and _review_dispatch_tokens already emits --brief for a non-empty brief.\nVERDICT done_when: section 6's done-when names a test that composes the review of a brief-carried run and a dispatch dry run that validates it; tests/test_review_of_a_brief_run_names_its_brief.py adds test_the_composed_dispatch_dry_run_validates asserting refused is False and the validation ok, and the run's gate.log records the file green.\nVERDICT write_paths: the declared scope is reckon/crew/recovery.py, the new test file and the evidence fragment; the diff touches exactly those three and nothing else.\nVERDICT manifest: read; it records gate 192 passed EXIT=0 and negative control 3 failed EXIT=1, names both log paths, and records baseline_suite/after_suite as null, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: read commits 54b1f300f and 7aa10bad1 against base bd6b700b7; recovery.py changes 15 lines (plan/section locals, the brief fallback and one return key) all inside scope, and no other source path changed.\nCALL_SITES: reckon/crew/recovery.py, reckon/crew/obligations.py\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the run-carried branch returns the reviewed run's stored brief as the composed review's authority exactly when the node names no plan, and leaves a plan-carrying node's plan/section as authority, which is section 6's deliverable verbatim.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done-when's dry-run clause is measured by test_the_composed_dispatch_dry_run_validates and the gate.log records the file green; an independent scratch run of the file at head reproduced 4 passed, but the reviewed manifest names no baseline_suite/after_suite pair so the added-failure count is unmeasured rather than zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches reckon/crew/recovery.py, the new test file and the evidence fragment, all inside the manifest's declared write paths, and no other path changed.\nSCORE durability: 19\nJUSTIFICATION durability: the declared mutation (the run-carried branch no longer carries the brief) reddens exactly the three brief-carrying cases while the plan-carried case stays green (3 failed, 1 passed, EXIT=1), reproduced independently in a scratch extraction; each assertion names a condition under which it fails.\nSCORE fit: 19\nJUSTIFICATION fit: the fallback brief_path-or-brief matches the existing _brief_record idiom in reckon/crew/dispatch.py, and the change adds one return key beside the plan/section locals, so it follows the file's established shape.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing _review_dispatch_fields and _review_dispatch_tokens composition rather than adding a second dispatch path, and _review_dispatch_tokens already owned the --brief emission, so nothing is forked.\n",
+  "review_run_id": "legacy-88806e0bdc77",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "bd6b700b7a3a01da285a5900667c71ecd2cf626e",
+  "reviewed_head_sha": "7aa10bad15893059e51bb74534de56386df8c813",
+  "reviewed_run_id": "r-20261006T063739329759-brief-run-reviews-name-their-brief",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:13:18.560639+00:00",
+  "total": 116
+}

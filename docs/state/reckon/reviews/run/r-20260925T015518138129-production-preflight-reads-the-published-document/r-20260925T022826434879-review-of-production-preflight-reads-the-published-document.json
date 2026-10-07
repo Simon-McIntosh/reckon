@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:965 (crew_preflight budget call)",
+    "reckon/mcp.py:3512 (mcp budget view)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T02:28:26.434879+00:00",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "1474",
+      "text": "a figure taken from the published document keeps the age the document baked at composition time, so the group clock's age_seconds understates the reading's age at read time (probe at dfebd2b1: reported 20.0 s against a true 3020.0 s, observed_at correct) and a reader cannot tell a stale-but-freshly-composed figure from a live one; the new production wiring makes this reachable, and the fix site (reckon/crew/paid_lanes.py document_windows) is outside this node's write paths."
+    },
+    {
+      "file": "reckon/budget.py",
+      "line": "1415",
+      "text": "the _published_windows docstring still says the document is taken only when nothing was injected, so an explicit reading always wins, which the merge at reckon/budget.py:1472-1475 now contradicts by preferring a fresh published figure over the caller's recorded reading."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "950",
+      "text": "the crew preflight docstring still says the pace is read from the same recorded evidence, though a fresh published reading now paces a group, so the command's user-facing contract is stale."
+    },
+    {
+      "file": "tests/test_preflight_reads_the_published_document.py",
+      "line": "6",
+      "text": "the module docstring carries changelog prose (That reading used to be the whole answer), which the repository's comment rules ban and which rots as the code moves."
+    },
+    {
+      "file": "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+      "line": "318",
+      "text": "the recorded lint figures (base 6/4/20, head 6/4/20) do not reproduce under the repository's pinned ruff 0.16.4, which measures 4/2/18 in the base scratch tree and 4/2/18 at dfebd2b1, so the sentence's load-bearing claim holds but its recorded figures cannot be re-derived from the trees."
+    },
+    {
+      "file": "tests/test_ledger.py",
+      "line": "2223",
+      "text": "this test drives the changed surface through mcp._crew view=budget but was not among the 16 files the gate ran, so the zero-added-failures claim does not cover a caller that reaches the merge."
+    },
+    {
+      "file": "tests/test_preflight_pace.py",
+      "line": "640",
+      "text": "this test drives the preflight command while redirecting only RECKON_HOME, and the new wiring resolves the published document through the real HOME (~/public/reckon/paid-lanes.json, absent on this machine today), so with a document covering any declared backend the group entry gains a source key and the exact key-set assertion fails."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 9645fd62; seven paths, +507/-17, the per-backend merge and source map at reckon/budget.py:1452-1479, the two call-site edits, four tests, one figure, and the archive and plan updates, with the defects named below.",
+    "done_when": "the gate's 16-file selection is recorded in test_logs head.log (278 passed EXIT=0) and base.log (274 passed EXIT=0) with the four named cases in tests/test_preflight_reads_the_published_document.py, which I re-ran at the head (4 passed EXIT=0), but the head log names revision 9645fd62 with uncommitted changes present rather than the landed dfebd2b1 and its population omits importers that reach the surface (see findings).",
+    "goal": "read the goal in the reviewed manifest and the landed merge at reckon/budget.py:1452-1479 with both production callers at reckon/cli.py:965 and reckon/mcp.py:3512; each backend is paced from a fresh published reading and otherwise from the caller's recorded window, and the report names the source that spoke.",
+    "manifest": "read; it states the gate, its two logs, its negative-control log and its measurement module, and measurement_module, measurement_cwd and negative_control_log all resolve on disk, but the head result is not tied to a resolvable revision and the recorded lint figures do not reproduce (see findings).",
+    "write_paths": "read the seven declared write paths in the manifest against the diff's seven changed paths; every changed path is inside the declared set, and the two deletions in docs/evidence/archive/the-local-lane-is-the-default-landed.html are only meta-line extensions, so the cumulative record is spliced rather than rewritten."
+  },
+  "justifications": {
+    "durability": "the declared negative control in negative-control.log reinstates the dropped fallback and the absent-document case fails on it, while no case exercises the read-time age of a document-sourced figure.",
+    "evidence": "test_logs head.log records revision 9645fd62 with uncommitted changes present rather than the landed head dfebd2b1, so the recorded pass is not re-derivable from the receipt.",
+    "fit": "reckon/budget.py:1442 reuses the module's own document read path and constants, but tests/test_preflight_reads_the_published_document.py:6 carries changelog prose the repository's comment rules forbid.",
+    "goal_fidelity": "reckon/budget.py:1472-1478 merges each backend from the document's fresh reading else the recorded window and records the source per backend, which is the goal's deliverable.",
+    "scope_discipline": "every changed path is inside the manifest's declared write paths, and docs/evidence/archive/the-local-lane-is-the-default-landed.html changed only its plan-commits and plan-artifacts meta lines before appending its section."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal in the reviewed manifest and the landed merge at reckon/budget.py:1452-1479 with both production callers at reckon/cli.py:965 and reckon/mcp.py:3512; each backend is paced from a fresh published reading and otherwise from the caller's recorded window, and the report names the source that spoke.\nVERDICT done_when: the gate's 16-file selection is recorded in test_logs head.log (278 passed EXIT=0) and base.log (274 passed EXIT=0) with the four named cases in tests/test_preflight_reads_the_published_document.py, which I re-ran at the head (4 passed EXIT=0), but the head log names revision 9645fd62 with uncommitted changes present rather than the landed dfebd2b1 and its population omits importers that reach the surface (see findings).\nVERDICT write_paths: read the seven declared write paths in the manifest against the diff's seven changed paths; every changed path is inside the declared set, and the two deletions in docs/evidence/archive/the-local-lane-is-the-default-landed.html are only meta-line extensions, so the cumulative record is spliced rather than rewritten.\nVERDICT manifest: read; it states the gate, its two logs, its negative-control log and its measurement module, and measurement_module, measurement_cwd and negative_control_log all resolve on disk, but the head result is not tied to a resolvable revision and the recorded lint figures do not reproduce (see findings).\nVERDICT diff: read commit by commit against base 9645fd62; seven paths, +507/-17, the per-backend merge and source map at reckon/budget.py:1452-1479, the two call-site edits, four tests, one figure, and the archive and plan updates, with the defects named below.\nCALL_SITES: reckon/cli.py:965 (crew_preflight budget call), reckon/mcp.py:3512 (mcp budget view)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/budget.py:1472-1478 merges each backend from the document's fresh reading else the recorded window and records the source per backend, which is the goal's deliverable.\nSCORE evidence: 15\nJUSTIFICATION evidence: test_logs head.log records revision 9645fd62 with uncommitted changes present rather than the landed head dfebd2b1, so the recorded pass is not re-derivable from the receipt.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the manifest's declared write paths, and docs/evidence/archive/the-local-lane-is-the-default-landed.html changed only its plan-commits and plan-artifacts meta lines before appending its section.\nSCORE durability: 17\nJUSTIFICATION durability: the declared negative control in negative-control.log reinstates the dropped fallback and the absent-document case fails on it, while no case exercises the read-time age of a document-sourced figure.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/budget.py:1442 reuses the module's own document read path and constants, but tests/test_preflight_reads_the_published_document.py:6 carries changelog prose the repository's comment rules forbid.\nFINDING reckon/budget.py:1474 a figure taken from the published document keeps the age the document baked at composition time, so the group clock's age_seconds understates the reading's age at read time (probe at dfebd2b1: reported 20.0 s against a true 3020.0 s, observed_at correct) and a reader cannot tell a stale-but-freshly-composed figure from a live one; the new production wiring makes this reachable, and the fix site (reckon/crew/paid_lanes.py document_windows) is outside this node's write paths.\nFINDING reckon/budget.py:1415 the _published_windows docstring still says the document is taken only when nothing was injected, so an explicit reading always wins, which the merge at reckon/budget.py:1472-1475 now contradicts by preferring a fresh published figure over the caller's recorded reading.\nFINDING reckon/cli.py:950 the crew preflight docstring still says the pace is read from the same recorded evidence, though a fresh published reading now paces a group, so the command's user-facing contract is stale.\nFINDING tests/test_preflight_reads_the_published_document.py:6 the module docstring carries changelog prose (That reading used to be the whole answer), which the repository's comment rules ban and which rots as the code moves.\nFINDING docs/evidence/archive/the-local-lane-is-the-default-landed.html:318 the recorded lint figures (base 6/4/20, head 6/4/20) do not reproduce under the repository's pinned ruff 0.16.4, which measures 4/2/18 in the base scratch tree and 4/2/18 at dfebd2b1, so the sentence's load-bearing claim holds but its recorded figures cannot be re-derived from the trees.\nFINDING tests/test_ledger.py:2223 this test drives the changed surface through mcp._crew view=budget but was not among the 16 files the gate ran, so the zero-added-failures claim does not cover a caller that reaches the merge.\nFINDING tests/test_preflight_pace.py:640 this test drives the preflight command while redirecting only RECKON_HOME, and the new wiring resolves the published document through the real HOME (~/public/reckon/paid-lanes.json, absent on this machine today), so with a document covering any declared backend the group entry gains a source key and the exact key-set assertion fails.\n",
+  "review_run_id": "r-20260925T022826434879-review-of-production-preflight-reads-the-published-document",
+  "reviewed_base_sha": "9645fd62101a595101006aaac16996b1c6ec9201",
+  "reviewed_head_sha": "dfebd2b191b2ee5208c2a2b5da30f6275bb1528b",
+  "reviewed_run_id": "r-20260925T015518138129-production-preflight-reads-the-published-document",
+  "reviewer": "review-of-production-preflight-reads-the-published-document",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T03:08:51.499945+00:00",
+  "total": 84
+}

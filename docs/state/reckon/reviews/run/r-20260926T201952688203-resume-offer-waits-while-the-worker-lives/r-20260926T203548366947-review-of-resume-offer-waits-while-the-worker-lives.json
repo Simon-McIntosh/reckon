@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:3384",
+    "reckon/mcp_views.py:1356",
+    "reckon/crew/query.py:166",
+    "reckon/crew/resumption.py:1113"
+  ],
+  "completed_at": "2026-09-26T21:30:10.385Z",
+  "dispatched_at": "2026-09-26T20:35:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3806",
+      "text": "the wait-met action tells the reader the recovery sweep lifts the run only once its process is observed to have ended, but the sweep's sole process guard refuses only a proven-live process (reckon/crew/resumption.py:596, with reckon/crew/runs.py:3466-3478 answering None for a record that names no process), so a run reading \"liveness unknown\" is lifted once its condition reports terminal with no observation of the end \u2014 the row overstates its hold in exactly the reading that cannot rule out a live worker."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits (e1e31482, 2ff48b2c) against base \u2014 one shared three-way process reading (reckon/crew/recovery.py:2845, composed at reckon/crew/recovery.py:3630), the wait-met arm split at recovery.py:3782, the classification gate at recovery.py:4263, the watch verdict at recovery.py:4947, plus the plan's landed block and figure.",
+    "done_when": "the done_when names the three rendered readings with the live case red at base; tests/test_resume_offer_needs_a_dead_process.py:152-223 asserts each of them, the manifest records the one-invocation gate (29 passed, exit 0 at 2ff48b2c) and the base arm (2 failed, 27 passed, exit 1 over the live and unproven cases), and both arms were reproduced here from fresh scratch trees.",
+    "goal": "read the goal \u2014 a resume offer is emitted only when the run's process is gone, and a live process renders as a wait on the named condition \u2014 against reckon/crew/recovery.py:3782-3808 at head, where the resume arm requires process_reading == \"process gone\" and both remaining met-wait readings render as waits that name their reading.",
+    "manifest": "read; it records the gate, the base arm, the declared mutation and negative-control.log, and each stated figure was reproduced from the archived logs rather than taken on the account.",
+    "write_paths": "git diff --name-only 9feaff92..2ff48b2c lists six paths \u2014 reckon/crew/recovery.py, tests/test_resume_offer_needs_a_dead_process.py, the plan HTML, the evidence page and two figure files \u2014 every one inside the five declared write paths."
+  },
+  "justifications": {
+    "durability": "removing the liveness gate reddens tests/test_resume_offer_needs_a_dead_process.py:168 as logs/negative-control.log shows and the three cases assert rendered output rather than passed-in values, but nothing guards the action text's sweep claim and it is already false for the unproven reading.",
+    "evidence": "the gate (29 passed, exit 0 at 2ff48b2c) and the base arm (2 failed, 27 passed, exit 1) are recorded in the run's logs/ and were independently reproduced; no arm measures the sweep claim the action text makes.",
+    "fit": "the shared helper and docstring at reckon/crew/recovery.py:2845 and its use at recovery.py:3630 follow the surrounding recovery.py idiom and introduce no name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/recovery.py:3785 holds the resume arm to \"process gone\" as the goal states, but the wait-met action composed at recovery.py:3805-3808 promises a sweep-side hold the sweep does not apply to an unproven reading.",
+    "scope_discipline": "the six paths in git diff --name-only 9feaff92..2ff48b2c all sit inside the declared write paths in the manifest, and the plan-version and plan-modified meta lines are untouched."
+  },
+  "node": "review-of-resume-offer-waits-while-the-worker-lives",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal \u2014 a resume offer is emitted only when the run's process is gone, and a live process renders as a wait on the named condition \u2014 against reckon/crew/recovery.py:3782-3808 at head, where the resume arm requires process_reading == \"process gone\" and both remaining met-wait readings render as waits that name their reading.\nVERDICT done_when: the done_when names the three rendered readings with the live case red at base; tests/test_resume_offer_needs_a_dead_process.py:152-223 asserts each of them, the manifest records the one-invocation gate (29 passed, exit 0 at 2ff48b2c) and the base arm (2 failed, 27 passed, exit 1 over the live and unproven cases), and both arms were reproduced here from fresh scratch trees.\nVERDICT write_paths: git diff --name-only 9feaff92..2ff48b2c lists six paths \u2014 reckon/crew/recovery.py, tests/test_resume_offer_needs_a_dead_process.py, the plan HTML, the evidence page and two figure files \u2014 every one inside the five declared write paths.\nVERDICT manifest: read; it records the gate, the base arm, the declared mutation and negative-control.log, and each stated figure was reproduced from the archived logs rather than taken on the account.\nVERDICT diff: read both commits (e1e31482, 2ff48b2c) against base \u2014 one shared three-way process reading (reckon/crew/recovery.py:2845, composed at reckon/crew/recovery.py:3630), the wait-met arm split at recovery.py:3782, the classification gate at recovery.py:4263, the watch verdict at recovery.py:4947, plus the plan's landed block and figure.\nCALL_SITES: reckon/cli.py:3384, reckon/mcp_views.py:1356, reckon/crew/query.py:166, reckon/crew/resumption.py:1113\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:3785 holds the resume arm to \"process gone\" as the goal states, but the wait-met action composed at recovery.py:3805-3808 promises a sweep-side hold the sweep does not apply to an unproven reading.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate (29 passed, exit 0 at 2ff48b2c) and the base arm (2 failed, 27 passed, exit 1) are recorded in the run's logs/ and were independently reproduced; no arm measures the sweep claim the action text makes.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the six paths in git diff --name-only 9feaff92..2ff48b2c all sit inside the declared write paths in the manifest, and the plan-version and plan-modified meta lines are untouched.\nSCORE durability: 16\nJUSTIFICATION durability: removing the liveness gate reddens tests/test_resume_offer_needs_a_dead_process.py:168 as logs/negative-control.log shows and the three cases assert rendered output rather than passed-in values, but nothing guards the action text's sweep claim and it is already false for the unproven reading.\nSCORE fit: 18\nJUSTIFICATION fit: the shared helper and docstring at reckon/crew/recovery.py:2845 and its use at recovery.py:3630 follow the surrounding recovery.py idiom and introduce no name the naming rules forbid.\nFINDING reckon/crew/recovery.py:3806 the wait-met action tells the reader the recovery sweep lifts the run only once its process is observed to have ended, but the sweep's sole process guard refuses only a proven-live process (reckon/crew/resumption.py:596, with reckon/crew/runs.py:3466-3478 answering None for a record that names no process), so a run reading \"liveness unknown\" is lifted once its condition reports terminal with no observation of the end \u2014 the row overstates its hold in exactly the reading that cannot rule out a live worker.",
+  "review_run_id": "r-20260926T203548366947-review-of-resume-offer-waits-while-the-worker-lives",
+  "reviewed_base_sha": "9feaff92e3452cab01f58b352bc35f995395083c",
+  "reviewed_head_sha": "2ff48b2c39629c7ff47205f262cce0aa3fff46ef",
+  "reviewed_run_id": "r-20260926T201952688203-resume-offer-waits-while-the-worker-lives",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T21:21:40.410145+00:00",
+  "total": 88
+}

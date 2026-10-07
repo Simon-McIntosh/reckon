@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3b883745b",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T03:42:23.484Z",
+  "dispatched_at": "2026-10-02T03:33:05Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control does not isolate the tightened count. Its declared mutation makes every renew_producer_lease call a throttled no-op, which also lapses the producer's lease, so test_a_renewed_producer_outlives_three_lease_intervals fails at line 119 (thread.is_alive) before the new renewals >= 5 assertion at line 122 is reached. Reproduced by me: the same throttle-only mutation against the BASE test fails at the identical assertion (logs/applied-control-old-test.log), so the mutation reddens old and new alike and shows nothing about the counting change. An isolating control that also holds the producer up (watch_ticker._lease_remaining reduced to None) reaches the count and fails at line 122 with assert 0 >= 5 (logs/isolating-control-new-test.log), which is the demonstration the node's own control omits. The claim quoted in the fragment (the old non-None count would have read six) is accurate about the renewals >= 5 assertion in isolation, but the control log it cites does not evidence it because the run never reaches that line."
+    }
+  ],
+  "head_log_revision": "363c96b38",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit. 363c96b38 is the test's counting change plus a mechanism",
+    "done_when": "the done-when asks the file to count by observed changes of lease_renewed_at",
+    "goal": "the node's goal is that the lease test count a renewal only when",
+    "manifest": "read in full; it names both commits, the two arms as JSON with literal commands",
+    "write_paths": "the diff 3b883745b..05c81f326 lists exactly the test file, the new fragment,"
+  },
+  "justifications": {
+    "durability": "the change is committed in two conventional commits and the evidence lives in",
+    "evidence": "both arms are recorded with literal commands and real log paths, the arms",
+    "fit": "the edit follows the file's existing helper and comment idiom, the comment states the",
+    "goal_fidelity": "the change does exactly what the done-when names, verified by reading",
+    "scope_discipline": "every changed path lies inside the declared write paths, reckon/crew/runs.py"
+  },
+  "node": "review-of-lease-renewal-is-counted-by-its-writes",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20261002T032210779037-lease-renewal-is-counted-by-its-writes\n(plan a-crew-process-ends-with-its-owner, section s3; reviewed node lease-renewal-is-counted-by-its-writes)\nreviewed_base_sha: 3b883745b34d85fe612736519ded2a6ada178f25\nreviewed_head_sha: 05c81f326d7542f5c286709019db0bb9cb3a0c1c\n\nThe change is test-only. tests/test_producer_holds_a_lease.py:96 counts a lease renewal\nonly when runs.watch_lease_renewed_at advances between calls, replacing a count of\nruns.renew_producer_lease(...) is not None. reckon/crew/runs.py is unchanged (diff\n3b883745b..05c81f326 over reckon/crew/runs.py is empty), so the throttled non-None return at\nruns.py:1270-1271 is real: on a throttled pass renew_producer_lease hands back the existing\nregistration without writing lease_renewed_at (set only at seat-take runs.py:2035 and on a\nlanded renewal runs.py:1272). The old count therefore accepted a no-op as a renewal; the new\none requires an observed advance. I read the source and re-ran the head arm.\n\nWhat I measured myself, in scratch trees under $TMPDIR (logs in this run's logs/), never in\nthe reviewed worktree:\n- The node's own negative control, reproduced: base tree 3b883745b with renew_producer_lease\n  reduced to a throttle-only body, run against the BASE test. It FAILS at\n  tests/test_producer_holds_a_lease.py:110 (thread.is_alive), exactly as the node's control\n  fails its head test at line 119. Both arms die on the producer's lapsed lease, before the\n  count assertion is reached. logs/applied-control-old-test.log.\n- An isolating control I added: the same throttle plus watch_ticker._lease_remaining reduced\n  to None so the producer stays up. Under it the head test fails at line 122\n  (assert 0 >= 5): the tightened count fires. logs/isolating-control-new-test.log.\n  The base test under the same control fails later, at line 115 (advanced > fresh).\n\nVERDICT goal: the node's goal is that the lease test count a renewal only when\nlease_renewed_at moved, so renewals >= 5 measures writes. tests/test_producer_holds_a_lease.py:111-115\nreads watch_lease_renewed_at after each renew_producer_lease call and increments only when\nthe instant strictly advances; the head arm passes 3/3. The goal is met.\nVERDICT done_when: the done-when asks the file to count by observed changes of lease_renewed_at\nrather than by a non-None return; the diff does exactly that, runs.py is untouched, and base and\nhead both pass 3/3 with zero added failures. Met.\nVERDICT write_paths: the diff 3b883745b..05c81f326 lists exactly the test file, the new fragment,\nand the re-measured producer-holds-a-lease fragment; all are inside the node's declared write\npaths, nothing under reckon/ differs, and the worktree is unmodified at head with no held changes.\nVERDICT manifest: read in full; it names both commits, the two arms as JSON with literal commands\nand real log paths, the negative-control log, and resolved evidence_inputs. It is internally\nconsistent with the logs it cites.\nVERDICT diff: read commit by commit. 363c96b38 is the test's counting change plus a mechanism\ncomment; 05c81f326 adds the new fragment and a re-measured paragraph to the existing fragment.\nNo test removed, no skip or xfail added, and the final write check (advanced > fresh) is kept.\nCALL_SITES: none\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the change does exactly what the done-when names, verified by reading\nruns.py (renew returns the existing record on throttle) and re-running the head arm green; the\ndeduction of one is for the count conflating the follower's renewal writes with any writer that\nadvances lease_renewed_at, of which the producer's seat-take is the only one and it precedes the loop.\nSCORE evidence: 15\nJUSTIFICATION evidence: both arms are recorded with literal commands and real log paths, the arms\nwere pinned with -P in scratch trees, and zero added failures is derivable from the reviewed run's\nown manifest; deducted because the node's negative control fails on the shared is_alive assertion\n(line 119) rather than on the tightened renewals >= 5 assertion, so it does not show the new\ncounting is load-bearing, and my isolating control was required to reach that assertion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path lies inside the declared write paths, reckon/crew/runs.py\nis identical between base and head, and the worktree is unmodified at head with no held changes.\nSCORE durability: 18\nJUSTIFICATION durability: the change is committed in two conventional commits and the evidence lives in\nthe fragment; the new count reads a value the test observes rather than a threshold that moves with the\ncode, and the floor of 5 is sound because only the first loop call can be throttled; deducted for the\nnew fragment lacking a trailing newline and for the control gap carried under evidence.\nSCORE fit: 19\nJUSTIFICATION fit: the edit follows the file's existing helper and comment idiom, the comment states the\nmechanism (why a non-None return is not a write) rather than the task, and no plan, ticket or author\nreference appears in the change.\n\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html:60 follow-on: the negative control does not isolate the tightened count. Its declared mutation makes every renew_producer_lease call a throttled no-op, which also lapses the producer's lease, so test_a_renewed_producer_outlives_three_lease_intervals fails at line 119 (thread.is_alive) before the new renewals >= 5 assertion at line 122 is reached. Reproduced by me: the same throttle-only mutation against the BASE test fails at the identical assertion (logs/applied-control-old-test.log), so the mutation reddens old and new alike and shows nothing about the counting change. An isolating control that also holds the producer up (watch_ticker._lease_remaining reduced to None) reaches the count and fails at line 122 with assert 0 >= 5 (logs/isolating-control-new-test.log), which is the demonstration the node's own control omits. The claim quoted in the fragment (the old non-None count would have read six) is accurate about the renewals >= 5 assertion in isolation, but the control log it cites does not evidence it because the run never reaches that line.",
+  "review_run_id": "r-20261002T033230658134-review-of-lease-renewal-is-counted-by-its-writes",
+  "reviewed_base_sha": "3b883745b34d85fe612736519ded2a6ada178f25",
+  "reviewed_head_sha": "05c81f326d7542f5c286709019db0bb9cb3a0c1c",
+  "reviewed_run_id": "r-20261002T032210779037-lease-renewal-is-counted-by-its-writes",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.328298+00:00",
+  "total": 91
+}

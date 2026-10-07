@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (implement role carries the suite fields as armed-only), so the added-failure count was not taken; recorded as unmeasured, not zero.",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T13:37:49.388Z",
+  "dispatched_at": "2026-10-01T13:29:04Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T125521658166-a-stop-inside-the-spawn-window-spawns-nothing/head-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's header names revision 4e5f0a870 (the node's base) though the fix was uncommitted when the gate ran at 15:24 \u2014 commit b8a3ccc landed at 15:26 \u2014 so the log does not name the revision it actually measured; a reader or a suite-delta replay keying on this line would attribute the 8-passed result to the base. My independent re-run at the reviewed head 3c175d9f3 reproduces 8 passed EXIT=0, so the result holds and only the header is under-stated."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T125521658166-a-stop-inside-the-spawn-window-spawns-nothing/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names no baseline_suite or after_suite arm (its role is implement, where the suite fields are armed-only), so this record's added-failure derivation is unmeasured \u2014 added_failure_count is null with a note, not zero; recorded so a reader does not read the null as a measurement."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "blocked read-to-fork window with a re-read under the mask and a finally-restored mask; worker mask cleared in preexec; two new tests and three instrument repairs.",
+    "done_when": "gate tests/test_stop_before_spawn_spawns_nothing.py + tests/test_every_attempt_is_supervised.py at head ends EXIT=0 (8 passed); two cases each red under an executed control; docstring carries the invariant.",
+    "goal": "close the spawn-window stop gap: the flag is re-read under a signal mask spanning the check and the fork, so a stop inside the window spawns no worker.",
+    "manifest": "reads complete, names both commits, records the gate and both controls; carries no suite arms, so the added-failure count is unmeasured by design of its role.",
+    "write_paths": "source changes confined to reckon/crew/dispatch.py and tests/test_stop_before_spawn_spawns_nothing.py; the fragment is a declared evidence path."
+  },
+  "justifications": {
+    "durability": "both new cases are failing-flips tests: deleting the stop re-check reddens case 1 (reproduced here and in the node's control), and recording a plain exit instead of the stop's reddens case 2 on signal_name == SIGTERM (node control), while the pre-existing pre-spawn-snapshot case still passes at head.",
+    "evidence": "the node's own gate log lacks a header tying it to the head (finding), so I re-ran the gate myself at the reviewed head in a scratch extraction: PYTHONPATH=$S python -m pytest -q tests/test_stop_before_spawn_spawns_nothing.py tests/test_every_attempt_is_supervised.py gave 8 passed in 28.99s EXIT=0 (module under test $S/reckon/__init__.py, cwd $S), and I falsified the fix independently by deleting the re-check from a scratch copy of dispatch.py, which reddens case 1 on 'a worker was spawned after a stop delivered between the stop read and the fork' (review-negative-control.log). The run's own negative-control.log reproduces both declared controls (remove-recheck fails case 1, plain-exit fails case 2, each EXIT=1).",
+    "fit": "the new symbols (_stop_is_requested, _record_launch_abandoned_before_spawn) and test helpers carry no plan, sprint, ticket or bug label, the comments and docstrings state the mechanism rather than the work item, and both commits carry a conventional subject with a body and no attribution trailer.",
+    "goal_fidelity": "all three residuals of f-adrwiw-stop-window land: SIGTERM and SIGHUP are blocked with signal.pthread_sigmask across the stop read and the fork, the stop is re-read under the mask by _stop_is_requested (which ORs the flag with signal.sigpending() & blocked, so a blocked stop is seen as pending), and the previous mask is restored in a finally (reckon/crew/dispatch.py:8287-8291); a group stop delivered after the spawn is asserted to be recorded as that stop's exit (test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit); and the module docstring states the invariant 'a stop delivered inside that window means no worker is ever spawned' in place of the sentence beginning 'It used to be ignored' (tests/test_stop_before_spawn_spawns_nothing.py:7-12).",
+    "scope_discipline": "commit b8a3ccc changes exactly reckon/crew/dispatch.py and tests/test_stop_before_spawn_spawns_nothing.py, and commit 3c175d9f3 changes only docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-stop-inside-the-spawn-window-spawns-nothing.html \u2014 all inside the declared write paths, the granted docs/figures directory left unused, and no path outside the fence touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: close the window between the supervisor's stop check and the worker spawn so a stop delivered inside it spawns no worker \u2014 the three residuals of followup f-adrwiw-stop-window (re-read the flag under the mask before the fork; test a post-spawn group stop's recorded exit; restate the docstring invariant).\nVERDICT done_when: SIGTERM/SIGHUP blocked across the stop read and the fork with the stop re-read under the mask and the mask restored after; two new cases in tests/test_stop_before_spawn_spawns_nothing.py, each red under a declared executed control; gate tests/test_stop_before_spawn_spawns_nothing.py + tests/test_every_attempt_is_supervised.py at head ending EXIT=0; only dispatch.py and the test file change in source. All land.\nVERDICT write_paths: b8a3ccc changes reckon/crew/dispatch.py and tests/test_stop_before_spawn_spawns_nothing.py; 3c175d9f3 adds only the node's evidence fragment; every path is inside the declared write scope.\nVERDICT manifest: status complete; commits b8a3ccc, 3c175d9f3; records the gate (8 passed EXIT=0), the two controls and their ids; no baseline_suite/after_suite arms (implement role), so the added-failure count is unmeasured.\nVERDICT diff: dispatch.py blocks the stop signals across the read-and-fork, re-reads the stop under the mask via _stop_is_requested, records a launch-failure exit.json when the stop won, and clears the inherited mask in the worker's preexec hook; the test file gains a sitecustomize-held read-to-fork case and a post-spawn group-stop case, plus three instrument repairs.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all three residuals of f-adrwiw-stop-window land: SIGTERM and SIGHUP are blocked with signal.pthread_sigmask across the stop read and the fork, the stop is re-read under the mask by _stop_is_requested (which ORs the flag with signal.sigpending() & blocked, so a blocked stop is seen as pending), and the previous mask is restored in a finally (reckon/crew/dispatch.py:8287-8291); a group stop delivered after the spawn is asserted to be recorded as that stop's exit (test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit); and the module docstring states the invariant 'a stop delivered inside that window means no worker is ever spawned' in place of the sentence beginning 'It used to be ignored' (tests/test_stop_before_spawn_spawns_nothing.py:7-12).\nSCORE evidence: 18\nJUSTIFICATION evidence: the node's own gate log lacks a header tying it to the head (finding), so I re-ran the gate myself at the reviewed head in a scratch extraction: PYTHONPATH=$S python -m pytest -q tests/test_stop_before_spawn_spawns_nothing.py tests/test_every_attempt_is_supervised.py gave 8 passed in 28.99s EXIT=0 (module under test $S/reckon/__init__.py, cwd $S), and I falsified the fix independently by deleting the re-check from a scratch copy of dispatch.py, which reddens case 1 on 'a worker was spawned after a stop delivered between the stop read and the fork' (review-negative-control.log). The run's own negative-control.log reproduces both declared controls (remove-recheck fails case 1, plain-exit fails case 2, each EXIT=1).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit b8a3ccc changes exactly reckon/crew/dispatch.py and tests/test_stop_before_spawn_spawns_nothing.py, and commit 3c175d9f3 changes only docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-stop-inside-the-spawn-window-spawns-nothing.html \u2014 all inside the declared write paths, the granted docs/figures directory left unused, and no path outside the fence touched.\nSCORE durability: 19\nJUSTIFICATION durability: both new cases are failing-flips tests: deleting the stop re-check reddens case 1 (reproduced here and in the node's control), and recording a plain exit instead of the stop's reddens case 2 on signal_name == SIGTERM (node control), while the pre-existing pre-spawn-snapshot case still passes at head.\nSCORE fit: 19\nJUSTIFICATION fit: the new symbols (_stop_is_requested, _record_launch_abandoned_before_spawn) and test helpers carry no plan, sprint, ticket or bug label, the comments and docstrings state the mechanism rather than the work item, and both commits carry a conventional subject with a body and no attribution trailer.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T125521658166-a-stop-inside-the-spawn-window-spawns-nothing/head-gate.log:1 follow-on: the gate log's header names revision 4e5f0a870 (the node's base) though the fix was uncommitted when the gate ran at 15:24 \u2014 commit b8a3ccc landed at 15:26 \u2014 so the log does not name the revision it actually measured; a reader or a suite-delta replay keying on this line would attribute the 8-passed result to the base. My independent re-run at the reviewed head 3c175d9f3 reproduces 8 passed EXIT=0, so the result holds and only the header is under-stated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T125521658166-a-stop-inside-the-spawn-window-spawns-nothing/manifest.md:1 follow-on: the reviewed manifest names no baseline_suite or after_suite arm (its role is implement, where the suite fields are armed-only), so this record's added-failure derivation is unmeasured \u2014 added_failure_count is null with a note, not zero; recorded so a reader does not read the null as a measurement.\n",
+  "review_run_id": "r-20261001T132847155320-review-of-a-stop-inside-the-spawn-window-spawns-nothing",
+  "reviewed_base_sha": "4e5f0a870c00a33a14f63b09ac5c450ca46a4683",
+  "reviewed_head_sha": "3c175d9f3b81698c0ab4560c16766ac104617308",
+  "reviewed_run_id": "r-20261001T125521658166-a-stop-inside-the-spawn-window-spawns-nothing",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.622495+00:00",
+  "total": 95
+}

@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest registers no baseline_suite and no after_suite gate log (both keys empty), so no added-failure count could be derived from them; the focused gate logs the run does carry (head-gate.log 12 passed EXIT=0, base-arm.log 1 failed EXIT=1, negative-control.log 1 failed EXIT=1) cover one test file rather than a suite, and none is a baseline/after suite pair.",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:2656 (_repository_tree_boundary_violations called from _require_repository_tree_boundary, reached from _complete_locked during crew.complete)"
+  ],
+  "completed_at": "2026-10-01T11:57:56.556Z",
+  "dispatched_at": "2026-10-01T11:51:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2538",
+      "severity": "follow-on",
+      "text": "follow-on: held_trees is built only from _live_worktree_claims(), so the peer exemption applies only to worktrees a live run currently holds; an uncommitted file under the completing run's grant that sits in a terminal or reclaimed peer worktree is still charged to the completing run. This is the residual of the same defect outside the in-flight case the node names, and it should be recorded rather than silently accepted."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2549",
+      "severity": "follow-on",
+      "text": "follow-on: _repository_scope_paths resolves a peer's declared path into a repository-relative root, and the exemption compares it against the repository-relative snapshot entries; a peer that declares an absolute path outside both its worktree and the repository is dropped by the helper, so a peer's file at such a path would stay charged. That matches how the completing run's own declaration is resolved, so the behaviour is consistent rather than a defect, but the boundary is worth a test."
+    },
+    {
+      "file": "tests/test_promotion_scope_counts_only_the_runs_commits.py",
+      "line": "628",
+      "severity": "follow-on",
+      "text": "follow-on: the new stray-edit case exercises only the unfenced full-scan path; the fenced boundary walk, whose roots are limited to the completing run's own worktree and the main checkout, never reaches a peer worktree, so the peer_grants lookup is dead on that path and the case does not cover it. The omission does not weaken this node's guard."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: _repository_tree_boundary_violations at promotion.py:2656, called by _require_repository_tree_boundary and reached from _complete_locked during crew.complete.",
+    "diff": "the diff a0d770a6..182a115a is 3 files and 193 insertions (reckon/crew/promotion.py +37, tests/test_promotion_scope_counts_only_the_runs_commits.py +105, the evidence fragment +53); its substantive content is the peer_grants resolution and the peer_roots exemption in the boundary walk plus the new stray-edit test case; both commit bodies carry a body and no attribution, plan label, ticket or version identifier.",
+    "done_when": "the done-when is that the boundary walk exempts a dirty path in a live peer's worktree only where that peer's own declaration covers it, pinned by a red/green pair; I reproduced the head gate at the committed head 182a115a in an isolated scratch copy (12 passed, EXIT=0) and reproduced the declared negative control by restoring the pre-narrowing exempt-every-peer-path skip, which reddens exactly the new case test_a_dirty_path_outside_the_holding_peer_grant_is_still_charged (1 failed, 11 deselected, EXIT=1, DID NOT RAISE CrewError).",
+    "goal": "the node goal is to narrow the peer exemption from the whole worktree to the paths the peer itself declares; promotion.py:2538-2552 builds peer_grants from each live peer's declared write paths through _repository_scope_paths (the same helper the completing run's own declaration reads), and promotion.py:2569/2605 exempts a changed path only where a peer root contains it, so a shared directory grant no longer refuses a peer's file while a stray path in a peer's worktree stays charged.",
+    "manifest": "the reviewed manifest at the run reports status complete and the two commits b48d66a0c and 182a115a; it registers no baseline_suite or after_suite (both keys empty) so the added-failure derivation reads unmeasured rather than zero, its head-gate.log header names revision b48d66a0c with the narrowed fix uncommitted rather than the committed head 182a115a, and its negative_control_log field is a bare path as the schema requires.",
+    "write_paths": "three paths changed (reckon/crew/promotion.py, tests/test_promotion_scope_counts_only_the_runs_commits.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-shared-grant-charges-only-its-holder.html); all three are inside the declared scope and no path outside it was touched."
+  },
+  "justifications": {
+    "durability": "the new case at tests/test_promotion_scope_counts_only_the_runs_commits.py:667 fails on a CrewError refusal raised by the boundary walk rather than on a value the test passed in, and in my own run restoring the pre-narrowing skip at promotion.py reddened exactly that case while the shared-grant case stayed green.",
+    "evidence": "the reviewed run's gate measures the done-when with a focused 12-test run (12 passed at head, EXIT=0) and a mutation arm (1 failed, EXIT=1), and I reproduced both independently at the committed head; the evidence is marked down because the reviewed manifest leaves baseline_suite and after_suite empty so the added-failure count is unmeasured, and head-gate.log names the base revision b48d66a0c because the gate ran with the narrowed fix uncommitted rather than at the committed head.",
+    "fit": "the peer grant is resolved through _repository_scope_paths, the same helper the completing run's own declaration reads, so the two sides cannot drift; the peer_roots exemption sits beside the neighbouring declared_roots and shared_files skips in the same loop, and the test and comments carry no plan label, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:2538-2552 and 2569/2605 narrow the exemption from the whole peer worktree to the paths that peer declares, exactly the node goal, and the single production caller at promotion.py:2656 reaches it.",
+    "scope_discipline": "git diff --stat a0d770a6..182a115a is 3 files and 193 insertions, all three inside the declared write paths, with the evidence fragment explicitly permitted by the landing contract; no path outside the scope was touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to narrow the peer exemption from the whole worktree to the paths the peer itself declares; promotion.py:2538-2552 builds peer_grants from each live peer's declared write paths through _repository_scope_paths (the same helper the completing run's own declaration reads), and promotion.py:2569/2605 exempts a changed path only where a peer root contains it, so a shared directory grant no longer refuses a peer's file while a stray path in a peer's worktree stays charged.\nVERDICT done_when: the done-when is that the boundary walk exempts a dirty path in a live peer's worktree only where that peer's own declaration covers it, pinned by a red/green pair; I reproduced the head gate at the committed head 182a115a in an isolated scratch copy (12 passed, EXIT=0) and reproduced the declared negative control by restoring the pre-narrowing exempt-every-peer-path skip, which reddens exactly the new case test_a_dirty_path_outside_the_holding_peer_grant_is_still_charged (1 failed, 11 deselected, EXIT=1, DID NOT RAISE CrewError).\nVERDICT write_paths: three paths changed (reckon/crew/promotion.py, tests/test_promotion_scope_counts_only_the_runs_commits.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-shared-grant-charges-only-its-holder.html); all three are inside the declared scope and no path outside it was touched.\nVERDICT manifest: the reviewed manifest at the run reports status complete and the two commits b48d66a0c and 182a115a; it registers no baseline_suite or after_suite (both keys empty) so the added-failure derivation reads unmeasured rather than zero, and its head-gate.log header names revision b48d66a0c with the narrowed fix uncommitted rather than the committed head 182a115a.\nVERDICT diff: the diff a0d770a6..182a115a is 3 files and 193 insertions, and its substantive content is the peer_grants resolution and peer_roots exemption in the boundary walk plus the new stray-edit test case; both commit bodies carry no attribution and no plan reference.\nCALL_SITES: reckon/crew/promotion.py:2656 (_repository_tree_boundary_violations called from _require_repository_tree_boundary, reached from _complete_locked during crew.complete)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2538-2552 and 2569/2605 narrow the exemption from the whole peer worktree to the paths that peer declares, exactly the node goal, and the single production caller at promotion.py:2656 reaches it.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed run's gate measures the done-when (12 passed at head, EXIT=0; red mutation arm 1 failed EXIT=1) and I reproduced both at the committed head, but the reviewed manifest leaves baseline_suite and after_suite empty so the added-failure count is unmeasured and head-gate.log names the base revision b48d66a0c rather than the committed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat a0d770a6..182a115a is 3 files and 193 insertions, all three inside the declared write paths, with the evidence fragment explicitly permitted by the landing contract.\nSCORE durability: 18\nJUSTIFICATION durability: the new case at tests/test_promotion_scope_counts_only_the_runs_commits.py:667 fails on a CrewError refusal from the boundary walk rather than a value the test passed in, and restoring the pre-narrowing skip at promotion.py reddened exactly that case while the shared-grant case stayed green.\nSCORE fit: 18\nJUSTIFICATION fit: the peer grant is resolved through _repository_scope_paths, the same helper the completing run's own declaration reads, so the two sides cannot drift, and the peer_roots exemption sits beside the neighbouring declared_roots and shared_files skips with no plan label or version identifier.\nFINDING reckon/crew/promotion.py:2538 follow-on: held_trees is built only from _live_worktree_claims(), so an uncommitted file under the completing run's grant in a terminal or reclaimed peer worktree is still charged to the completing run; the residual of the same defect outside the in-flight case, recorded rather than silently accepted.\nFINDING reckon/crew/promotion.py:2549 follow-on: a peer that declares an absolute path outside both its worktree and the repository is dropped by _repository_scope_paths, so a peer's file at such a path stays charged; consistent with how the completing run's own declaration resolves, but the boundary is untested.\nFINDING tests/test_promotion_scope_counts_only_the_runs_commits.py:628 follow-on: the new case exercises only the unfenced full-scan path; the fenced boundary walk never reaches a peer worktree, so the peer_grants lookup is dead on that path and the case does not cover it.\n",
+  "review_run_id": "r-20261001T115049718092-review-of-a-shared-grant-charges-only-its-holder",
+  "reviewed_base_sha": "a0d770a61d284beb150f3582993075299157affe",
+  "reviewed_head_sha": "182a115a35625dde574cf1578d412d78e3e9f51b",
+  "reviewed_run_id": "r-20261001T110746880717-a-shared-grant-charges-only-its-holder",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.571879+00:00",
+  "total": 91
+}

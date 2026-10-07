@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:752",
+    "reckon/mcp.py:1044",
+    "reckon/mcp.py:1094",
+    "reckon/mcp.py:1219",
+    "reckon/mcp.py:4474"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T06:40:12.577579+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T061717238455-op-vocabulary-names-every-op/negative-control.log",
+      "line": "2",
+      "text": "the rev= header names 79a17c07, but that revision cannot have produced this log \u2014 tests/test_mcp_vocabulary_is_complete.py is new in 3fc05501 and absent at 79a17c07 \u2014 so the red log names no tree a later reader can check, even though its substance is right: reinstating the same removal in a scratch copy of the head reddens the same two tests."
+    },
+    {
+      "file": "tests/test_mcp_views.py",
+      "line": "735",
+      "text": "the landed entry pushes the schema response past its 24 KiB budget, so this change turns that test red; one instrument measures base at 24520 bytes (56 under the ceiling) and head at 24700 (124 over), and the node reported this as a follow-on it could not repair inside its fence."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "781",
+      "text": "the docstring calls the section selector \"its positional ``section`` argument\" while the MCP tool schema passes every argument by name, so an agent reading it may look for a positional form the surface does not offer."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 79a17c07 \u2014 3fc05501 adds the vocabulary entry and the seven named views beside a new 41-line test, and 23350901 is additive only (163 insertions, zero deletions), so no peer anchor in the cumulative evidence record is displaced.",
+    "done_when": "read the plan's three measures against the tree \u2014 tests/test_mcp_vocabulary_is_complete.py holds _OP_VOCAB against _OP_DISPATCH (line 20) and the docstring against VIEW_NAMES (line 37); I re-ran the file at head (3 passed) and reinstated its mutation in a scratch copy (2 failed, 1 passed); ruff reports 18 findings in reckon/mcp.py at base and head with identical codes.",
+    "goal": "read the node's goal (make _OP_VOCAB name every edit_plan op and the read_plan docstring name every view it accepts) against the head tree: _OP_VOCAB now covers all ten keys of reckon/_store.py's _OP_DISPATCH (checked in-process with the module pinned to the reviewed worktree) and the docstring at reckon/mcp.py:778-783 names all seven reckon/mcp_views.py:29 VIEW_NAMES entries, so both halves of the goal landed.",
+    "manifest": "read; its gate line (3 passed, exit 0) re-ran green and its negative-control note matches the removal the red log shows, but the log it names carries rev=79a17c07, the base, for a tree that also contained the new test file.",
+    "write_paths": "read the manifest's five declared write paths against both commits' file lists: 3fc05501 changes reckon/mcp.py and adds tests/test_mcp_vocabulary_is_complete.py; 23350901 appends to docs/plans/the-mcp-answers-within-its-ceiling.html, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html and docs/figures/the-mcp-answers-within-its-ceiling/vocabulary-coverage.svg \u2014 every path inside the declared set and none outside it."
+  },
+  "justifications": {
+    "durability": "both guards are real \u2014 removing the entry reddens tests/test_mcp_vocabulary_is_complete.py:20 and :27, and dropping a view name from the docstring reddens :37 \u2014 but the entry test pins substrings, so it would still pass on an entry that named the keys in prose while the op ignored them.",
+    "evidence": "the named gate re-ran green at head (3 passed in 1.29s) and the lint pair reproduces 18 findings each side with identical codes, but the mutation log's rev= line at negative-control.log:2 names a revision at which its own test file does not exist.",
+    "fit": "the entry sits among its peer strings at reckon/mcp.py:1313 and the test imports the two source tables, matching the module tests around it; no plan, sprint or ticket identifier is introduced.",
+    "goal_fidelity": "reckon/mcp.py:1313 carries the entry and reckon/mcp.py:778 names every view, which is the goal exactly, though the placement clause is pinned as a copied phrase rather than against the boundary loop at reckon/_store.py:561.",
+    "scope_discipline": "both commits stay inside the five declared write paths, and the schema-budget failure this entry causes in tests/test_mcp_views.py was left unpatched and reported, which is what the fence required."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node's goal (make _OP_VOCAB name every edit_plan op and the read_plan docstring name every view it accepts) against the head tree: _OP_VOCAB now covers all ten keys of reckon/_store.py's _OP_DISPATCH (checked in-process with the module pinned to the reviewed worktree) and the docstring at reckon/mcp.py:778-783 names all seven reckon/mcp_views.py:29 VIEW_NAMES entries, so both halves of the goal landed.\nVERDICT done_when: read the plan's three measures against the tree \u2014 tests/test_mcp_vocabulary_is_complete.py holds _OP_VOCAB against _OP_DISPATCH (line 20) and the docstring against VIEW_NAMES (line 37); I re-ran the file at head (3 passed) and reinstated its mutation in a scratch copy (2 failed, 1 passed); ruff reports 18 findings in reckon/mcp.py at base and head with identical codes.\nVERDICT write_paths: read the manifest's five declared write paths against both commits' file lists: 3fc05501 changes reckon/mcp.py and adds tests/test_mcp_vocabulary_is_complete.py; 23350901 appends to docs/plans/the-mcp-answers-within-its-ceiling.html, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html and docs/figures/the-mcp-answers-within-its-ceiling/vocabulary-coverage.svg \u2014 every path inside the declared set and none outside it.\nVERDICT manifest: read; its gate line (3 passed, exit 0) re-ran green and its negative-control note matches the removal the red log shows, but the log it names carries rev=79a17c07, the base, for a tree that also contained the new test file.\nVERDICT diff: read commit by commit against 79a17c07 \u2014 3fc05501 adds the vocabulary entry and the seven named views beside a new 41-line test, and 23350901 is additive only (163 insertions, zero deletions), so no peer anchor in the cumulative evidence record is displaced.\nCALL_SITES: reckon/mcp.py:752, reckon/mcp.py:1044, reckon/mcp.py:1094, reckon/mcp.py:1219, reckon/mcp.py:4474\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1313 carries the entry and reckon/mcp.py:778 names every view, which is the goal exactly, though the placement clause is pinned as a copied phrase rather than against the boundary loop at reckon/_store.py:561.\nSCORE evidence: 16\nJUSTIFICATION evidence: the named gate re-ran green at head (3 passed in 1.29s) and the lint pair reproduces 18 findings each side with identical codes, but the mutation log's rev= line at negative-control.log:2 names a revision at which its own test file does not exist.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits stay inside the five declared write paths, and the schema-budget failure this entry causes in tests/test_mcp_views.py was left unpatched and reported, which is what the fence required.\nSCORE durability: 17\nJUSTIFICATION durability: both guards are real \u2014 removing the entry reddens tests/test_mcp_vocabulary_is_complete.py:20 and :27, and dropping a view name from the docstring reddens :37 \u2014 but the entry test pins substrings, so it would still pass on an entry that named the keys in prose while the op ignored them.\nSCORE fit: 19\nJUSTIFICATION fit: the entry sits among its peer strings at reckon/mcp.py:1313 and the test imports the two source tables, matching the module tests around it; no plan, sprint or ticket identifier is introduced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T061717238455-op-vocabulary-names-every-op/negative-control.log:2 the rev= header names 79a17c07, but that revision cannot have produced this log \u2014 tests/test_mcp_vocabulary_is_complete.py is new in 3fc05501 and absent at 79a17c07 \u2014 so the red log names no tree a later reader can check, even though its substance is right: reinstating the same removal in a scratch copy of the head reddens the same two tests.\nFINDING tests/test_mcp_views.py:735 the landed entry pushes the schema response past its 24 KiB budget, so this change turns that test red; one instrument measures base at 24520 bytes (56 under the ceiling) and head at 24700 (124 over), and the node reported this as a follow-on it could not repair inside its fence.\nFINDING reckon/mcp.py:781 the docstring calls the section selector \"its positional ``section`` argument\" while the MCP tool schema passes every argument by name, so an agent reading it may look for a positional form the surface does not offer.\n",
+  "review_run_id": "r-20260925T064012577579-review-of-op-vocabulary-names-every-op",
+  "reviewed_base_sha": "79a17c075dd2be4c1d55fd521a331fde39c82742",
+  "reviewed_head_sha": "233509014e3612960757c5679b2e2cbb66c6e1d8",
+  "reviewed_run_id": "r-20260925T061717238455-op-vocabulary-names-every-op",
+  "reviewer": "review-of-op-vocabulary-names-every-op",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T07:04:10.367695+00:00",
+  "total": 91
+}

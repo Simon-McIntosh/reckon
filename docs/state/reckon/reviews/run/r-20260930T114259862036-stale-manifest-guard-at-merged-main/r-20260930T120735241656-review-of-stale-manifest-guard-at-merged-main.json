@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3913",
+    "reckon/crew/promotion.py:3427",
+    "reckon/crew/recovery.py:4747"
+  ],
+  "completed_at": "2026-09-30T12:25:55.145Z",
+  "dispatched_at": "2026-09-30T12:07:50Z",
+  "findings": [
+    {
+      "file": "arm-base.log",
+      "line": "1",
+      "text": "the arm logs spell their header revision=<sha> (arm-head.log:1 likewise), a spelling the repository's own reader does not recognise: reckon/crew/review.py:507 matches revision followed by optional colon then whitespace, so annotate_review_of_run returns None for both log revisions and the stored review cannot tie its added-failure count to the commit each arm measured without opening the logs, which is the whole purpose the field exists for."
+    },
+    {
+      "file": "report.md",
+      "line": "8",
+      "text": "the answer is stated for the question at large while the measurement covers only files that call complete( in Python: six test files outside the 57-file population reach the same production entry point through reckon crew complete - tests/test_promotion_never_amends_its_commit.py:135, tests/test_promotion_stages_its_one_run_file.py:173, tests/test_gate_evidence.py:272, tests/test_cited_identifier_resolves.py:146, tests/test_crew_gate_log_agrees.py:117 and tests/test_a_short_commit_list_is_reported.py:318 - so \"0 added\" is not evidence about them, and the merge changes the promotion path those tests drive at reckon/crew/promotion.py:3913."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "there is no diff to read - the node landed no repository file, so its tree stands at 4663e8f47d835ce2452f37a79a107ef7ea4b52e1 with git log 4663e8f47..HEAD empty; the reviewable artifact is the measurement record itself, which is what prompt.txt:33's exact spec asks a test role to produce.",
+    "done_when": "prompt.txt:83-101 names a report that derives and lists the population, runs both arms with -n 8 in /tmp scratch trees, gives each log a first line naming revision, tree and module under test and a bare EXIT= terminator, prints the /tmp deletions, and records the pre-existing set in baseline_suite, the head result in after_suite and each added failure in failure_attribution; report.md:102-165 and the manifest carry each, and I verified the log headers, terminators and failure lines on disk.",
+    "goal": "prompt.txt:30 asks whether merge 7c77b7613 adds a failing test id over main 4663e8f47 across every test file that calls complete(); report.md:8 answers no over the population defined at report.md:21-24, and my own git grep at 7c77b7613 over tests/ returns the same 54 complete(-calling files, so the goal's question is answered for the population it names.",
+    "manifest": "read; baseline_suite and after_suite carry both commands, revisions, exit statuses and failure ids (3 pre-existing at each revision, 935 passed at base and 939 at head), and the digests it prints match the files on disk (arm-base.log sha256 43de5dd18e00e0bfa6a5b32eb3e34584d39a5c2d2723fbaca73aedb508f56842, arm-head.log sha256 8af040bbb0fc8d832de323aeb7833620f16c177699df9b18e725a601460f0baa).",
+    "write_paths": "prompt.txt:68 fences the node to the report directory alone; every artifact the manifest names is inside it, and the run's tree at 4663e8f47d835ce2452f37a79a107ef7ea4b52e1 shows no commit over that base and no modification, so nothing was written outside the fence."
+  },
+  "justifications": {
+    "durability": "the record's positive control is repeatable from the repository alone, which is what separates a measured zero from a zero the instrument could not have contradicted - I re-extracted both revisions and reproduced it (317 tests collected over the five merge-touched files at each revision, 321 with the merge's new file, and those four tests pass at head).",
+    "evidence": "the two gate logs named in the manifest's baseline_suite and after_suite exist, their own last lines read 3 failed, 935 passed and 3 failed, 939 passed, and reckon/crew/review.py:1044 added_failures_from_gate_logs over those two log texts returns 0 with no ids; the deduction is the two findings below.",
+    "fit": "the node's artifact names (report.md, arm-base.log, arm-head.log, collect-check.log, population-direct.txt, population-run.txt) carry no plan, sprint or ticket identifier, and its report follows the evidence idiom of the neighbouring reports under reports/reckon/.",
+    "goal_fidelity": "report.md:8 answers the question prompt.txt:30 puts, and the answer reproduced independently - I extracted both revisions and the merge's own four tests pass at head while the two arms' measured failure sets are identical.",
+    "scope_discipline": "every artifact lies inside the single path prompt.txt:68 grants, and the run's tree carries no commit and no modification over 4663e8f47d835ce2452f37a79a107ef7ea4b52e1, so nothing was landed beyond the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks whether merge 7c77b7613 adds a failing test id over main 4663e8f47 across every test file that calls complete(); report.md:8 answers no over the population defined at report.md:21-24, and my own git grep at 7c77b7613 over tests/ returns the same 54 complete(-calling files, so the goal's question is answered for the population it names.\nVERDICT done_when: prompt.txt:83-101 names a report that derives and lists the population, runs both arms with -n 8 in /tmp scratch trees, gives each log a first line naming revision, tree and module under test and a bare EXIT= terminator, prints the /tmp deletions, and records the pre-existing set in baseline_suite, the head result in after_suite and each added failure in failure_attribution; report.md:102-165 and the manifest carry each, and I verified the log headers, terminators and failure lines on disk.\nVERDICT write_paths: prompt.txt:68 fences the node to the report directory alone; every artifact the manifest names is inside it, and the run's tree at 4663e8f47d835ce2452f37a79a107ef7ea4b52e1 shows no commit over that base and no modification, so nothing was written outside the fence.\nVERDICT manifest: read; baseline_suite and after_suite carry both commands, revisions, exit statuses and failure ids (3 pre-existing at each revision, 935 passed at base and 939 at head), and the digests it prints match the files on disk (arm-base.log sha256 43de5dd18e00e0bfa6a5b32eb3e34584d39a5c2d2723fbaca73aedb508f56842, arm-head.log sha256 8af040bbb0fc8d832de323aeb7833620f16c177699df9b18e725a601460f0baa).\nVERDICT diff: there is no diff to read - the node landed no repository file, so its tree stands at 4663e8f47d835ce2452f37a79a107ef7ea4b52e1 with git log 4663e8f47..HEAD empty; the reviewable artifact is the measurement record itself, which is what prompt.txt:33's exact spec asks a test role to produce.\nCALL_SITES: reckon/crew/promotion.py:3913, reckon/crew/promotion.py:3427, reckon/crew/recovery.py:4747\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:8 answers the question prompt.txt:30 puts, and the answer reproduced independently - I extracted both revisions and the merge's own four tests pass at head while the two arms' measured failure sets are identical.\nSCORE evidence: 16\nJUSTIFICATION evidence: the two gate logs named in the manifest's baseline_suite and after_suite exist, their own last lines read 3 failed, 935 passed and 3 failed, 939 passed, and reckon/crew/review.py:1044 added_failures_from_gate_logs over those two log texts returns 0 with no ids; the deduction is the two findings below.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every artifact lies inside the single path prompt.txt:68 grants, and the run's tree carries no commit and no modification over 4663e8f47d835ce2452f37a79a107ef7ea4b52e1, so nothing was landed beyond the declared scope.\nSCORE durability: 17\nJUSTIFICATION durability: the record's positive control is repeatable from the repository alone, which is what separates a measured zero from a zero the instrument could not have contradicted - I re-extracted both revisions and reproduced it (317 tests collected over the five merge-touched files at each revision, 321 with the merge's new file, and those four tests pass at head).\nSCORE fit: 18\nJUSTIFICATION fit: the node's artifact names (report.md, arm-base.log, arm-head.log, collect-check.log, population-direct.txt, population-run.txt) carry no plan, sprint or ticket identifier, and its report follows the evidence idiom of the neighbouring reports under reports/reckon/.\nFINDING arm-base.log:1 the arm logs spell their header revision=<sha> (arm-head.log:1 likewise), a spelling the repository's own reader does not recognise: reckon/crew/review.py:507 matches revision followed by optional colon then whitespace, so annotate_review_of_run returns None for both log revisions and the stored review cannot tie its added-failure count to the commit each arm measured without opening the logs, which is the whole purpose the field exists for.\nFINDING report.md:8 the answer is stated for the question at large while the measurement covers only files that call complete( in Python: six test files outside the 57-file population reach the same production entry point through reckon crew complete - tests/test_promotion_never_amends_its_commit.py:135, tests/test_promotion_stages_its_one_run_file.py:173, tests/test_gate_evidence.py:272, tests/test_cited_identifier_resolves.py:146, tests/test_crew_gate_log_agrees.py:117 and tests/test_a_short_commit_list_is_reported.py:318 - so \"0 added\" is not evidence about them, and the merge changes the promotion path those tests drive at reckon/crew/promotion.py:3913.",
+  "review_run_id": "r-20260930T120735241656-review-of-stale-manifest-guard-at-merged-main",
+  "reviewed_base_sha": "4663e8f47d835ce2452f37a79a107ef7ea4b52e1",
+  "reviewed_head_sha": "4663e8f47d835ce2452f37a79a107ef7ea4b52e1",
+  "reviewed_run_id": "r-20260930T114259862036-stale-manifest-guard-at-merged-main",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T12:22:06.537965+00:00",
+  "total": 89
+}

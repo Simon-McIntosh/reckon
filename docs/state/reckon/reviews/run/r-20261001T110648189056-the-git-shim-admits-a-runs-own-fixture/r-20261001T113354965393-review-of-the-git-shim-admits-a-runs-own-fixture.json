@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/worker_git_shim.py:798 (_admits_scratch called from main and reached through the reckon/worker_shims/git shim on a crew worker's PATH)"
+  ],
+  "completed_at": "2026-10-01T11:45:00.491Z",
+  "dispatched_at": "2026-10-01T11:34:29Z",
+  "findings": [
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "573",
+      "severity": "follow-on",
+      "text": "follow-on: in the creating-verb branch the tail loop skips every token opening with '-', so an output-naming option carried in one token (for example --separate-git-dir=<path outside scratch>) is never resolved and a mutating init or clone could still name a git dir outside the scratch directory; the OS write fence and the PreToolUse guard still bound the write, so this narrows the branch's \"entirely inside\" claim rather than re-opening the run's worktree."
+    },
+    {
+      "file": "reckon/worker_git_shim.py",
+      "line": "575",
+      "severity": "follow-on",
+      "text": "follow-on: the same branch resolves every non-flag tail token as a path beneath the invocation directory, so a clone whose source is outside the scratch directory (a remote URL or an absolute path) is refused even though clone only reads it, which leaves the module docstring's \"a scratch clone\" case unserved; this is over-refusal in the safe direction, not a hole."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit; 7fd2757aa adds _admits_scratch, _probe_common_dir, _invocation_directory, _run_scratch_dir and the _CREATING_VERBS set to reckon/worker_git_shim.py and the scratch fixture plus three cases to tests/test_git_shim_checks_the_resolved_repo.py, and ce879833d adds the 27-line evidence fragment.",
+    "done_when": "the done-when names three cases in tests/test_git_shim_checks_the_resolved_repo.py plus a declared negative control reddening the linked-worktree case; the manifest records 176 passed EXIT=0 for that file at 7fd2757aa and a negative-control log ending EXIT=1 with exactly test_a_linked_worktree_under_scratch_with_a_foreign_common_dir_is_refused failing.",
+    "goal": "the node goal is to let a worker commit in a repository that lies wholly in its own scratch directory; reckon/worker_git_shim.py:798 calls _admits_scratch, which admits a mutating verb when the resolved git dir, the common dir and any work-tree top level all lie inside worker_scratch_dir(run_id) (reckon/worker_git_shim.py:538-586).",
+    "manifest": "read; it reports status complete, commits 7fd2757aa and ce879833d, the gate, and the negative_control_log path, but it records no baseline_suite and no after_suite, so the run's own added-failure difference is unmeasured rather than zero.",
+    "write_paths": "the manifest declares reckon/worker_git_shim.py, tests/test_git_shim_checks_the_resolved_repo.py, the evidence fragment and a figures directory; git diff --stat a0d770a6..ce879833d is 3 files and 408 insertions, every one inside those paths, and no figures directory was created."
+  },
+  "justifications": {
+    "durability": "the three cases at tests/test_git_shim_checks_the_resolved_repo.py:1048-1160 assert on the shim's returncode and on heads and refs read back with the real git, independent of any value the test passed in, and the declared mutation (admit on the work-tree top level alone) reddens the linked-worktree case.",
+    "evidence": "the gate is the named test file at head and I reproduced it (176 passed, EXIT=0, gate-verify.txt), and the negative-control log ends EXIT=1 reddening the linked-worktree case, but the manifest records no baseline_suite or after_suite so the run's own added-failure count is unmeasured.",
+    "fit": "reckon/worker_git_shim.py:471 and :502 mirror the neighbouring _probe and _within helpers, _run_scratch_dir at :522 reuses dispatch's worker_scratch_dir rather than a second spelling, and no symbol or comment carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/worker_git_shim.py:563-586 admits exactly the repository-wholly-inside-scratch case and returns _forward at line 809, which is the goal.",
+    "scope_discipline": "git diff --stat a0d770a6..ce879833d touches only reckon/worker_git_shim.py, tests/test_git_shim_checks_the_resolved_repo.py and the declared evidence fragment, all inside the manifest's write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to let a worker commit in a repository that lies wholly in its own scratch directory; reckon/worker_git_shim.py:798 calls _admits_scratch, which admits a mutating verb when the resolved git dir, the common dir and any work-tree top level all lie inside worker_scratch_dir(run_id) (reckon/worker_git_shim.py:538-586).\nVERDICT done_when: the done-when names three cases in tests/test_git_shim_checks_the_resolved_repo.py plus a declared negative control reddening the linked-worktree case; the manifest records 176 passed EXIT=0 for that file at 7fd2757aa and a negative-control log ending EXIT=1 with exactly test_a_linked_worktree_under_scratch_with_a_foreign_common_dir_is_refused failing.\nVERDICT write_paths: the manifest declares reckon/worker_git_shim.py, tests/test_git_shim_checks_the_resolved_repo.py, the evidence fragment and a figures directory; git diff --stat a0d770a6..ce879833d is 3 files and 408 insertions, every one inside those paths, and no figures directory was created.\nVERDICT manifest: read; it reports status complete, commits 7fd2757aa and ce879833d, the gate, and the negative_control_log path, but it records no baseline_suite and no after_suite, so the run's own added-failure difference is unmeasured rather than zero.\nVERDICT diff: read commit by commit; 7fd2757aa adds _admits_scratch, _probe_common_dir, _invocation_directory, _run_scratch_dir and the _CREATING_VERBS set to reckon/worker_git_shim.py and the scratch fixture plus three cases to tests/test_git_shim_checks_the_resolved_repo.py, and ce879833d adds the 27-line evidence fragment.\nCALL_SITES: reckon/worker_git_shim.py:798 (_admits_scratch called from main and reached through the reckon/worker_shims/git shim on a crew worker's PATH)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/worker_git_shim.py:563-586 admits exactly the repository-wholly-inside-scratch case and returns _forward at line 809, which is the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is the named test file at head and I reproduced it (176 passed, EXIT=0, gate-verify.txt), and the negative-control log ends EXIT=1 reddening the linked-worktree case, but the manifest records no baseline_suite or after_suite so the run's own added-failure count is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat a0d770a6..ce879833d touches only reckon/worker_git_shim.py, tests/test_git_shim_checks_the_resolved_repo.py and the declared evidence fragment, all inside the manifest's write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the three cases at tests/test_git_shim_checks_the_resolved_repo.py:1048-1160 assert on the shim's returncode and on heads and refs read back with the real git, independent of any value the test passed in, and the declared mutation (admit on the work-tree top level alone) reddens the linked-worktree case.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/worker_git_shim.py:471 and :502 mirror the neighbouring _probe and _within helpers, _run_scratch_dir at :522 reuses dispatch's worker_scratch_dir rather than a second spelling, and no symbol or comment carries a plan, ticket or version label.\nFINDING reckon/worker_git_shim.py:573 follow-on: in the creating-verb branch the tail loop skips every token opening with '-', so an output-naming option carried in one token (for example --separate-git-dir=<path outside scratch>) is never resolved and a mutating init or clone could still name a git dir outside the scratch directory; the OS write fence and the PreToolUse guard still bound the write, so this narrows the branch's \"entirely inside\" claim rather than re-opening the run's worktree.\nFINDING reckon/worker_git_shim.py:575 follow-on: the same branch resolves every non-flag tail token as a path beneath the invocation directory, so a clone whose source is outside the scratch directory (a remote URL or an absolute path) is refused even though clone only reads it, which leaves the module docstring's \"a scratch clone\" case unserved; this is over-refusal in the safe direction, not a hole.\n",
+  "review_run_id": "r-20261001T113354965393-review-of-the-git-shim-admits-a-runs-own-fixture",
+  "reviewed_base_sha": "a0d770a61d284beb150f3582993075299157affe",
+  "reviewed_head_sha": "ce879833d84c3d35cfd5ba293749503e1cae5c75",
+  "reviewed_run_id": "r-20261001T110648189056-the-git-shim-admits-a-runs-own-fixture",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T11:43:41.197980+00:00",
+  "total": 90
+}

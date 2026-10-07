@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:_edit_plan_tool",
+    "reckon/mcp.py:_patch_plan",
+    "reckon/_store.py:patch_plan"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T01:38:10.405731+00:00",
+  "findings": [
+    {
+      "file": "tests/test_edit_plan_section_writes.py",
+      "line": "155",
+      "text": "the insertion assertion pins the new h2 before <section data-reckon=\"gates\">, while the plan asks it to land before the first data-reckon region; in the run's own fixture that first region is the spliced data-reckon=\"section\" record for s1, so the gate's second bullet measures a different boundary than the measure states and no line of the record says the difference was deliberate."
+    },
+    {
+      "file": "tests/test_edit_plan_section_writes.py",
+      "line": "137",
+      "text": "the insertion test covers only the happy path; the four refusals that reckon/_store.py:558-566 implements, and that the landed evidence record presents as shipped behaviour, have no assertion, so a regression accepting a duplicate id or a nested h2 would leave the gate green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; 25845dc8 carries the production change (+142 lines in reckon/_store.py, +172 in the new test) and dfa424c3e appends the plan note (+26) and the cumulative evidence section (+60), the single deletion line being the replaced dict construction inside _store.py, so both cumulative records gain their anchored sections and lose nothing.",
+    "done_when": "the first bullet is asserted by tests/test_edit_plan_section_writes.py:95-109 (one key changes, both typed records preserved); the second is not asserted as written, because the plan asks the inserted section to land before the first data-reckon region while tests/test_edit_plan_section_writes.py:155 pins it before <section data-reckon=\"gates\">, and in the same fixture the first data-reckon region is the spliced data-reckon=\"section\" record for s1 at offset 593 against the insertion at 1326; the audit-doc half of that bullet is asserted at tests/test_edit_plan_section_writes.py:158 (CliRunner audit-doc, exit 0).",
+    "goal": "the goal is that edit_plan can write one section declaration and insert one authored section without replacing its neighbours, and both land -- the dotted branch at reckon/_store.py:1513 validates the id and the value, writes only the addressed key and moves a matching typed record's status with it, and reckon/_store.py:1987 with _insert_authored_section at reckon/_store.py:547 places a generated h2 block at the authored/state boundary; re-running the run's own fixture at the reviewed head, a set of section_declarations.s1 changed only s1 (result {'s1': 'deferred', 's2': 'implementable'}) and an insert_section landed at text offset 1326, before the gates region and after the last authored prose.",
+    "manifest": "read; it records 8 passed and 45 deselected over three test files with six log paths, the two base refusals, the declared mutation and a 14-to-14 lint delta; I opened final-head-gate.log (its header names revision dfa424c3e, the tree, the command and the imported module, and it ends \"8 passed, 45 deselected\"), negative-control.log whose first line repeats the declared mutation verbatim, and reproduction.log whose header names the base revision and shows both base refusals, and I re-ran the named test file from the reviewed tree (4 passed in 2.27s, EXIT=0).",
+    "write_paths": "the five declared paths are reckon/_store.py, tests/test_edit_plan_section_writes.py, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html, docs/figures/the-mcp-answers-within-its-ceiling and docs/plans/the-mcp-answers-within-its-ceiling.html; `git diff --name-only 0bd7a7c9..dfa424c3e` returns exactly those five, the figure as section-write-boundary.svg inside the declared figures directory."
+  },
+  "justifications": {
+    "durability": "tests/test_edit_plan_section_writes.py:103 fails if the dotted branch is removed (the run's own control shows the red at 25845dc8), but the four refusals implemented at reckon/_store.py:558-566 have no assertion.",
+    "evidence": "the gate re-ran green at the reviewed head and the base refusals are logged in reproduction.log, but tests/test_edit_plan_section_writes.py:155 asserts a boundary that is not the one the done_when names.",
+    "fit": "the new handler follows the _apply_* idiom and the OpError vocabulary at reckon/_store.py:1987, carries no plan label, version or attribution, and the transient-diagnostic channel is documented at reckon/_store.py:507.",
+    "goal_fidelity": "both operations land and behave as the node states at reckon/_store.py:1513 and reckon/_store.py:1987, with the boundary reading being a documented interpretation not stated in the plan.",
+    "scope_discipline": "all five paths in the diff are inside the five declared write paths, and the two cumulative records are appended to (443 insertions against one deletion inside the intended edit)."
+  },
+  "node": "review-of-edit-plan-writes-one-section",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260925T011144444203-edit-plan-writes-one-section, read at its landed head dfa424c3e against base 0bd7a7c9.\n\nVERDICT goal: the goal is that edit_plan can write one section declaration and insert one authored section without replacing its neighbours, and both land -- the dotted branch at reckon/_store.py:1513 validates the id and the value, writes only the addressed key and moves a matching typed record's status with it, and reckon/_store.py:1987 with _insert_authored_section at reckon/_store.py:547 places a generated h2 block at the authored/state boundary; re-running the run's own fixture at the reviewed head, a set of section_declarations.s1 changed only s1 (result {'s1': 'deferred', 's2': 'implementable'}) and an insert_section landed at text offset 1326, before the gates region and after the last authored prose.\nVERDICT done_when: the first bullet is asserted by tests/test_edit_plan_section_writes.py:95-109 (one key changes, both typed records preserved); the second is not asserted as written, because the plan asks the inserted section to land before the first data-reckon region while tests/test_edit_plan_section_writes.py:155 pins it before <section data-reckon=\"gates\">, and in the same fixture the first data-reckon region is the spliced data-reckon=\"section\" record for s1 at offset 593 against the insertion at 1326; the audit-doc half of that bullet is asserted at tests/test_edit_plan_section_writes.py:158 (CliRunner audit-doc, exit 0).\nVERDICT write_paths: the five declared paths are reckon/_store.py, tests/test_edit_plan_section_writes.py, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html, docs/figures/the-mcp-answers-within-its-ceiling and docs/plans/the-mcp-answers-within-its-ceiling.html; `git diff --name-only 0bd7a7c9..dfa424c3e` returns exactly those five, the figure as section-write-boundary.svg inside the declared figures directory.\nVERDICT manifest: read; it records 8 passed and 45 deselected over three test files with six log paths, the two base refusals, the declared mutation and a 14-to-14 lint delta; I opened final-head-gate.log (its header names revision dfa424c3e, the tree, the command and the imported module, and it ends \"8 passed, 45 deselected\"), negative-control.log whose first line repeats the declared mutation verbatim, and reproduction.log whose header names the base revision and shows both base refusals, and I re-ran the named test file from the reviewed tree (4 passed in 2.27s, EXIT=0).\nVERDICT diff: read commit by commit; 25845dc8 carries the production change (+142 lines in reckon/_store.py, +172 in the new test) and dfa424c3e appends the plan note (+26) and the cumulative evidence section (+60), the single deletion line being the replaced dict construction inside _store.py, so both cumulative records gain their anchored sections and lose nothing.\nCALL_SITES: reckon/mcp.py:_edit_plan_tool, reckon/mcp.py:_patch_plan, reckon/_store.py:patch_plan\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both operations land and behave as the node states at reckon/_store.py:1513 and reckon/_store.py:1987, with the boundary reading being a documented interpretation not stated in the plan.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate re-ran green at the reviewed head and the base refusals are logged in reproduction.log, but tests/test_edit_plan_section_writes.py:155 asserts a boundary that is not the one the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all five paths in the diff are inside the five declared write paths, and the two cumulative records are appended to (443 insertions against one deletion inside the intended edit).\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_edit_plan_section_writes.py:103 fails if the dotted branch is removed (the run's own control shows the red at 25845dc8), but the four refusals implemented at reckon/_store.py:558-566 have no assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the new handler follows the _apply_* idiom and the OpError vocabulary at reckon/_store.py:1987, carries no plan label, version or attribution, and the transient-diagnostic channel is documented at reckon/_store.py:507.\nFINDING tests/test_edit_plan_section_writes.py:155 the insertion assertion pins the new h2 before <section data-reckon=\"gates\">, while the plan asks it to land before the first data-reckon region; in the run's own fixture that first region is the spliced data-reckon=\"section\" record for s1, so the gate's second bullet measures a different boundary than the measure states and no line of the record says the difference was deliberate.\nFINDING tests/test_edit_plan_section_writes.py:137 the insertion test covers only the happy path; the four refusals that reckon/_store.py:558-566 implements, and that the landed evidence record presents as shipped behaviour, have no assertion, so a regression accepting a duplicate id or a nested h2 would leave the gate green.\n",
+  "review_run_id": "r-20260925T013810405731-review-of-edit-plan-writes-one-section",
+  "reviewed_base_sha": "0bd7a7c9667176b07d0d7912d07a1e8739581d03",
+  "reviewed_head_sha": "dfa424c3ee0c16eda3b2f001a2a8b5a8776cffe8",
+  "reviewed_run_id": "r-20260925T011144444203-edit-plan-writes-one-section",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T01:57:44.491865+00:00",
+  "total": 86
+}

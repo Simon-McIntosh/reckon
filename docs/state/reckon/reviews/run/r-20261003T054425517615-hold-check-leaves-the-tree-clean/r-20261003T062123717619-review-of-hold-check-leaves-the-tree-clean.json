@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/budget.py:1393",
+    "reckon/cli.py:1447",
+    "reckon/crew/routing.py:421"
+  ],
+  "completed_at": "2026-10-03T06:32:12.347Z",
+  "dispatched_at": "2026-10-03T06:21:51Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1357",
+      "severity": "follow-on",
+      "text": "while a merge is in progress the hold path leaves the aggregate dirty, exactly the section's symptom, and nothing re-commits it once the merge concludes, so that session still relies on a later one; the skip itself is argued and narrow."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "3117",
+      "severity": "follow-on",
+      "text": "the hold path has no equivalent of the roster's _refuse_dirty_roster_commit guard, so an aggregate already dirty from an unrelated writer is swept into the hold commit's subject."
+    }
+  ],
+  "head_log_revision": "d7e7d939b5110cc06760c768dfad896b9cd6ab00",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 9b66ff8a; d7e7d939b generalizes _commit_roster_write into _commit_state_write and calls it from the hold path, 8e775963b adds the evidence fragment.",
+    "done_when": "the section's done-when is \"commits what it rewrites\"; tests/test_hold_check_leaves_the_tree_clean.py:110 asserts git status --porcelain is empty after a close and that the committed run rows are unchanged.",
+    "goal": "the node goal is that a hold check commits the aggregate it rewrites; reckon/ledger.py:3117 commits the hold transition through _commit_state_write so the shared file is not left dirty.",
+    "manifest": "read; it records a 242-passed head arm, a 236-passed/6-failed base arm, and a negative control that reddens the new cases.",
+    "write_paths": "read the manifest's declared paths; the two commits touch only reckon/ledger.py, tests/test_hold_check_leaves_the_tree_clean.py and the docs fragment, all inside the declared paths."
+  },
+  "justifications": {
+    "durability": "removing the hold path's _commit_state_write call at reckon/ledger.py:3117 fails all three cases, reproduced independently; the status and run-row assertions read git state, not a value the test passed in.",
+    "evidence": "tests/test_hold_check_leaves_the_tree_clean.py passes at d7e7d939b and fails at 9b66ff8a in an independent extraction, matching the recorded base and head arms.",
+    "fit": "the change reuses the existing _commit_roster_write helper, renamed _commit_state_write, following the state-commit idiom beside reckon/ledger.py:1356.",
+    "goal_fidelity": "reckon/ledger.py:3117 commits the hold write under a subject naming the transition, satisfying the section's \"commits what it rewrites\", with the merge case an argued exception.",
+    "scope_discipline": "both commits stay inside the declared paths, though the generalized helper now also applies the merge skip to the roster commit at reckon/ledger.py:1357."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a hold check commits the aggregate it rewrites; reckon/ledger.py:3117 commits the hold transition through _commit_state_write so the shared file is not left dirty.\nVERDICT done_when: the section's done-when is \"commits what it rewrites\"; tests/test_hold_check_leaves_the_tree_clean.py:110 asserts git status --porcelain is empty after a close and that the committed run rows are unchanged.\nVERDICT write_paths: read the manifest's declared paths; the two commits touch only reckon/ledger.py, tests/test_hold_check_leaves_the_tree_clean.py and the docs fragment, all inside the declared paths.\nVERDICT manifest: read; it records a 242-passed head arm, a 236-passed/6-failed base arm, and a negative control that reddens the new cases.\nVERDICT diff: read commit by commit against 9b66ff8a; d7e7d939b generalizes _commit_roster_write into _commit_state_write and calls it from the hold path, 8e775963b adds the evidence fragment.\nCALL_SITES: reckon/budget.py:1393, reckon/cli.py:1447, reckon/crew/routing.py:421\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:3117 commits the hold write under a subject naming the transition, satisfying the section's \"commits what it rewrites\", with the merge case an argued exception.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_hold_check_leaves_the_tree_clean.py passes at d7e7d939b and fails at 9b66ff8a in an independent extraction, matching the recorded base and head arms.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: both commits stay inside the declared paths, though the generalized helper now also applies the merge skip to the roster commit at reckon/ledger.py:1357.\nSCORE durability: 19\nJUSTIFICATION durability: removing the hold path's _commit_state_write call at reckon/ledger.py:3117 fails all three cases, reproduced independently; the status and run-row assertions read git state, not a value the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the existing _commit_roster_write helper, renamed _commit_state_write, following the state-commit idiom beside reckon/ledger.py:1356.\nFINDING reckon/ledger.py:1357 follow-on: while a merge is in progress the hold path leaves the aggregate dirty, exactly the section's symptom, and nothing re-commits it once the merge concludes, so that session still relies on a later one; the skip itself is argued and narrow.\nFINDING reckon/ledger.py:3117 follow-on: the hold path has no equivalent of the roster's _refuse_dirty_roster_commit guard, so an aggregate already dirty from an unrelated writer is swept into the hold commit's subject.\nreviewed_base_sha: 9b66ff8a768e734c9e39da17f846cca1ca6c94d6\nreviewed_head_sha: 8e775963b2705461326253307f18744e62996ce8\n",
+  "review_run_id": "r-20261003T062123717619-review-of-hold-check-leaves-the-tree-clean",
+  "reviewed_base_sha": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "reviewed_head_sha": "8e775963b2705461326253307f18744e62996ce8",
+  "reviewed_run_id": "r-20261003T054425517615-hold-check-leaves-the-tree-clean",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T06:30:55.338329+00:00",
+  "total": 94
+}

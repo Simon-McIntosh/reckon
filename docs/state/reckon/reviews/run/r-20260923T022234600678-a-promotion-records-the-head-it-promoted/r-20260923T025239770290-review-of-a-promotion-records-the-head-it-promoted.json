@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:3791 promoted_revision = \"\" if shadow else _promoted_revision(tree",
+    "commit_list) inside _complete_locked",
+    "reached through crew.complete (the reckon crew complete entry point)",
+    "reckon/crew/promotion.py:3847 run[\"promoted_revision\"] = promoted_revision (the ledger row the promotion writes)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T02:52:39.770290+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/gate.log",
+      "line": "1",
+      "text": "the gate log's first line reads rev 25cccf9e41cafa90eae7fbc8466eb092a9a3888e, the base of the diff rather than the head 12888c17 the manifest's after_suite names and the run measured, so the single field that pins a gate to a revision disagrees with the manifest and a later reader comparing gates across repairs attributes this pass to a tree the change is not in."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "4060",
+      "text": "the sweep section \u00a72c requires has no production entry point: sweep_promoted_revisions at reckon/crew/promotion.py:4060 is reached by nothing but its own test, so a coordinator cannot invoke it without importing the module, and the plan's own claim that a promotion's false assertion is caught by a later sweep holds only once something can invoke it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 25cccf9e, 12888c17 adds the recording helper, its call site, the sweep and the five-assertion test file, and d11917d6 lands the plan comment and the cumulative evidence anchor, with no change outside the declared paths.",
+    "done_when": "every clause of the done-when is asserted in tests/test_promotion_landed_sweep.py \u2014 the recording at line 135, the never-merged ancestry report at line 151, the marker-absent-with-ancestry-passing case at line 166, the removed-marker case at line 189, and the healthy case at line 222 \u2014 and I ran those five against the reviewed head and reproduced 5 passed.",
+    "goal": "the node's goal is plan \u00a72c's done-when, that a promotion record the run's own head as the promoted revision and a later sweep assert both the ancestry and the content-marker halves, and the landed change adds _promoted_revision at reckon/crew/promotion.py:1046 recorded onto the row at line 3847 plus sweep_promoted_revisions at line 4060.",
+    "manifest": "the manifest is complete and self-locating, naming base 25cccf9e, head commits 12888c17 and d11917d6, the gate and base-failure logs, the negative control with its verbatim mutation line, and a follow-on naming the missing CLI wiring.",
+    "write_paths": "the declared paths are reckon/crew/promotion.py, tests/test_promotion_landed_sweep.py, docs/evidence/archive/scoring-should-stop-a-promotion-landed.html, docs/figures/scoring-should-stop-a-promotion and docs/plans/scoring-should-stop-a-promotion.html, and git diff --stat 25cccf9e..d11917d6 shows exactly those with 696 insertions and zero deletions."
+  },
+  "justifications": {
+    "durability": "the negative control at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/negative-control.log:3 mutates the recording site in a scratch copy of the fixed tree and tests/test_promotion_landed_sweep.py:135 and :151 both redden, so the recording lock names its failing condition rather than restating its own input, but the sweep body at promotion.py:4060 is exercised only by its own test since no production caller reaches it.",
+    "evidence": "the gate at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/gate.log:3 records 1 failed 71 passed with the single failure attributed to base in base-failure.log, and the negative control's first line repeats the declared mutation verbatim with the two predicted tests reddening, but the gate log's first line names the base revision 25cccf9e rather than the head 12888c17 the manifest's after_suite names and the run actually measured.",
+    "fit": "the additions follow the module's idiom \u2014 CrewError with a message naming the missing precondition at promotion.py:4102 and :4204, subprocess with capture_output and an explicit returncode split at promotion.py:4187 so an instrument fault raises rather than answering a verdict, and the test file isolates the review and mount stores through RECKON_HOME and a synthesised repository at tests/test_promotion_landed_sweep.py:48 rather than touching real state.",
+    "goal_fidelity": "the done-when's clauses are each asserted directly in tests/test_promotion_landed_sweep.py:135 for the recorded head and :151/:166/:189/:222 for the sweep's four outcomes, and I confirmed at reckon/crew/promotion.py:3791 that the recorded revision is resolved while the run tree is present and left absent for a shadow, but the sweep at line 4060 has no production caller, so the capability is reachable only by importing the module.",
+    "scope_discipline": "git diff --stat 25cccf9e..d11917d6 touches exactly the five declared write paths and two files inside the declared figure directory, all insert-only with zero deletions, and the plan diff appends a comment at docs/plans/scoring-should-stop-a-promotion.html:277 without touching the plan-version or plan-modified meta lines."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is plan \u00a72c's done-when, that a promotion record the run's own head as the promoted revision and a later sweep assert both the ancestry and the content-marker halves, and the landed change adds _promoted_revision at reckon/crew/promotion.py:1046 recorded onto the row at line 3847 plus sweep_promoted_revisions at line 4060.\nVERDICT done_when: every clause of the done-when is asserted in tests/test_promotion_landed_sweep.py \u2014 the recording at line 135, the never-merged ancestry report at line 151, the marker-absent-with-ancestry-passing case at line 166, the removed-marker case at line 189, and the healthy case at line 222 \u2014 and I ran those five against the reviewed head and reproduced 5 passed.\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py, tests/test_promotion_landed_sweep.py, docs/evidence/archive/scoring-should-stop-a-promotion-landed.html, docs/figures/scoring-should-stop-a-promotion and docs/plans/scoring-should-stop-a-promotion.html, and git diff --stat 25cccf9e..d11917d6 shows exactly those with 696 insertions and zero deletions.\nVERDICT manifest: the manifest is complete and self-locating, naming base 25cccf9e, head commits 12888c17 and d11917d6, the gate and base-failure logs, the negative control with its verbatim mutation line, and a follow-on naming the missing CLI wiring.\nVERDICT diff: read commit by commit against 25cccf9e, 12888c17 adds the recording helper, its call site, the sweep and the five-assertion test file, and d11917d6 lands the plan comment and the cumulative evidence anchor, with no change outside the declared paths.\nCALL_SITES: reckon/crew/promotion.py:3791 promoted_revision = \"\" if shadow else _promoted_revision(tree, commit_list) inside _complete_locked, reached through crew.complete (the reckon crew complete entry point), reckon/crew/promotion.py:3847 run[\"promoted_revision\"] = promoted_revision (the ledger row the promotion writes)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the done-when's clauses are each asserted directly in tests/test_promotion_landed_sweep.py:135 for the recorded head and :151/:166/:189/:222 for the sweep's four outcomes, and I confirmed at reckon/crew/promotion.py:3791 that the recorded revision is resolved while the run tree is present and left absent for a shadow, but the sweep at line 4060 has no production caller, so the capability is reachable only by importing the module.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/gate.log:3 records 1 failed 71 passed with the single failure attributed to base in base-failure.log, and the negative control's first line repeats the declared mutation verbatim with the two predicted tests reddening, but the gate log's first line names the base revision 25cccf9e rather than the head 12888c17 the manifest's after_suite names and the run actually measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 25cccf9e..d11917d6 touches exactly the five declared write paths and two files inside the declared figure directory, all insert-only with zero deletions, and the plan diff appends a comment at docs/plans/scoring-should-stop-a-promotion.html:277 without touching the plan-version or plan-modified meta lines.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/negative-control.log:3 mutates the recording site in a scratch copy of the fixed tree and tests/test_promotion_landed_sweep.py:135 and :151 both redden, so the recording lock names its failing condition rather than restating its own input, but the sweep body at promotion.py:4060 is exercised only by its own test since no production caller reaches it.\nSCORE fit: 19\nJUSTIFICATION fit: the additions follow the module's idiom \u2014 CrewError with a message naming the missing precondition at promotion.py:4102 and :4204, subprocess with capture_output and an explicit returncode split at promotion.py:4187 so an instrument fault raises rather than answering a verdict, and the test file isolates the review and mount stores through RECKON_HOME and a synthesised repository at tests/test_promotion_landed_sweep.py:48 rather than touching real state.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/gate.log:1 the gate log's first line reads rev 25cccf9e41cafa90eae7fbc8466eb092a9a3888e, the base of the diff rather than the head 12888c17 the manifest's after_suite names and the run measured, so the single field that pins a gate to a revision disagrees with the manifest and a later reader comparing gates across repairs attributes this pass to a tree the change is not in.\nFINDING reckon/crew/promotion.py:4060 the sweep section \u00a72c requires has no production entry point: sweep_promoted_revisions at reckon/crew/promotion.py:4060 is reached by nothing but its own test, so a coordinator cannot invoke it without importing the module, and the plan's own claim that a promotion's false assertion is caught by a later sweep holds only once something can invoke it.\nREVISION: d11917d6ee68a489393c5c2fb87f47530b4046ad",
+  "review_run_id": "r-20260923T025239770290-review-of-a-promotion-records-the-head-it-promoted",
+  "reviewed_base_sha": "25cccf9e41cafa90eae7fbc8466eb092a9a3888e",
+  "reviewed_head_sha": "d11917d6ee68a489393c5c2fb87f47530b4046ad",
+  "reviewed_run_id": "r-20260923T022234600678-a-promotion-records-the-head-it-promoted",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T03:00:34.290085+00:00",
+  "total": 92
+}

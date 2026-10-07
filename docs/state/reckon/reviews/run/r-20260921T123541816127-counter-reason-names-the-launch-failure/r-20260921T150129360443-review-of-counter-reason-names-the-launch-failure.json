@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/ticker.py:Ticker.render",
+    "reckon/crew/ticker.py:Ticker._reason",
+    "reckon/crew/recovery.py:_watch_transition"
+  ],
+  "commits_read": [
+    "3d927b8855406b37d93adeaf3a3b4b32729b60b6",
+    "3c913e4975b6747eece2cfec0a016403d3d215df"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T15:01:29.360443+00:00",
+  "evidence": {
+    "declared_mutation": "2 failed 3 passed, the two launch-naming cases alone",
+    "gate_file_scoped": "5 passed, exit 0, re-run by the reviewer against the landed tree",
+    "gate_population": "5 failed 288 passed at head against 5 failed 283 passed at base, failure ids identical",
+    "independent_probe": "### tree: LANDED (/home/ITER/.../counter-reason-names-the-launch-failure)\nmodule: /home/ITER/.../counter-reason-names-the-launch-failure/reckon/crew/ticker.py\nLAUNCH_FAULT constant: True\nmixed block present on launch row: True\nlaunch clause: \"resume: the launch for backend 'claude'\u2026\"\nblocked clause: \"! decide: the worker manifest reports\u2026\"\nblocked clause mentions launch: False\nno-cause row clause: \"resume: the launch failed before any turn and\u2026\"\n### tree: REVIEW BASE unfixed (/home/ITER/.../review-of-counter-reason-names-the-launch-failure)\nmodule: /home/ITER/.../review-of-counter-reason-names-the-launch-failure/reckon/crew/ticker.py\nLAUNCH_FAULT constant: False\nmixed block present on launch row: True\nlaunch clause: \"\" (the recorded defect: a blocked number explained by nothing)\nblocked clause: \"! decide: the worker manifest reports\u2026\"\n",
+    "independent_probe_method": "the same reading rendered through _fleet_counts and _watch_transition in both trees with the module path printed per tree, because the review worktree's cwd shadows PYTHONPATH on a bare interpreter",
+    "validation": "PYTHONPATH=<reviewed worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q <reviewed worktree>/tests/test_fleet_counter_launch_failure.py\n-> 5 passed in 0.61s, exit 0 (reviewer's own run against the landed tree)\ngit -C <reviewed worktree> status --porcelain -> empty; HEAD 3c913e49, so the declared mutation was reverted before the commit\n"
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/manifest.md",
+      "line": "22",
+      "text": "four log files were written into the main checkout's reports directory, so the node wrote outside its exclusive fence; disclosure keeps it readable and does not make the write one the fence allowed."
+    }
+  ],
+  "follow_ons": [
+    "the four control and gate logs for this run live under /home/ITER/mcintos/Code/reckon/reports/reckon/crew-runtime-positive-controls/counter-reason-names-the-launch-failure/, a plan report directory outside the node's fence; if that directory is meant to be a sanctioned destination the fence template should say so",
+    "tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set and tests/test_crew_ticker_layout.py::test_the_action_set_is_one_set_with_three_readers fail identically at base and at head on sets adjacent to this change, outside the node's granted paths; the node reported both rather than fixing outside its fence, which is the correct handling"
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against c748ca77; 3d927b88 changes only the state word the gate reads and adds the fallback clause plus the new cases, 3c913e49 appends the landing record and the evidence anchor and touches no plan-version or plan-modified meta line.",
+    "done_when": "the done_when asserts three halves plus the declared mutation; tests/test_fleet_counter_launch_failure.py asserts each half against the producer's own _fleet_counts and _watch_transition output rather than against a fixture, and negative_control.log records the declared mutation reddening the two naming cases alone.",
+    "goal": "the goal is the fleet counter's blocked-bucket reason clause naming a launch-failed run as an infrastructure fault with the four-cell block unchanged; reckon/crew/ticker.py delivers both halves, the gate in Ticker._reason now reading the whole state word and the fallback LAUNCH_FAULT_CLAUSE naming the fault for a record that carries none.",
+    "manifest": "read; it records the file-scoped gate as 5 passed and the wider population at 5 failed 288 passed against 5 failed 283 passed at base c748ca77 with identical failure ids, and the red control as 2 failed 3 passed.",
+    "write_paths": "the four declared paths are reckon/crew/ticker.py, tests/test_fleet_counter_launch_failure.py, docs/evidence/archive/crew-runtime-positive-controls-landed.html and docs/plans/crew-runtime-positive-controls.html; the two commits touch exactly those files, but four log files were also written under /home/ITER/mcintos/Code/reckon/reports/reckon/crew-runtime-positive-controls/counter-reason-names-the-launch-failure/ which is outside the fence, disclosed by the worker itself in its manifest."
+  },
+  "justifications": {
+    "durability": "the declared mutation -- restoring the pre-fix elided gate -- reddening 2 of the 5 cases at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/negative_control.log shows the change is pinned, and the same defect was reproduced independently through the unfixed tree; one point is held back because the four-cell and width half is pinned by literals that no declared mutation was demonstrated against.",
+    "evidence": "tests/test_fleet_counter_launch_failure.py asserts all three halves of the done_when and the results are recorded in gate.log, base-gate.log and the two control logs; one point is held back because the file-scoped green receipt lives in the control log rather than in a log the manifest names as the gate.",
+    "fit": "the two constants sit with the module's other constants behind a why-comment in the register the module already uses, the case names read as sentences like their neighbouring files, and no banned plan, ticket or version label appears in either file.",
+    "goal_fidelity": "reckon/crew/ticker.py:906 and reckon/crew/ticker.py:974 pass the whole entry state to the clause and name the fault when the record carries no cause, which is the goal's two halves in one place.",
+    "scope_discipline": "both commits stay inside the four declared paths, and three points are deducted for the four log files written under /home/ITER/mcintos/Code/reckon/reports/, a directory outside the fence that the manifest's own follow_ons line discloses rather than hides."
+  },
+  "node": "counter-reason-names-the-launch-failure",
+  "plan": "reckon:crew-runtime-positive-controls",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is the fleet counter's blocked-bucket reason clause naming a launch-failed run as an infrastructure fault with the four-cell block unchanged; reckon/crew/ticker.py delivers both halves, the gate in Ticker._reason now reading the whole state word and the fallback LAUNCH_FAULT_CLAUSE naming the fault for a record that carries none.\nVERDICT done_when: the done_when asserts three halves plus the declared mutation; tests/test_fleet_counter_launch_failure.py asserts each half against the producer's own _fleet_counts and _watch_transition output rather than against a fixture, and negative_control.log records the declared mutation reddening the two naming cases alone.\nVERDICT write_paths: the four declared paths are reckon/crew/ticker.py, tests/test_fleet_counter_launch_failure.py, docs/evidence/archive/crew-runtime-positive-controls-landed.html and docs/plans/crew-runtime-positive-controls.html; the two commits touch exactly those files, but four log files were also written under /home/ITER/mcintos/Code/reckon/reports/reckon/crew-runtime-positive-controls/counter-reason-names-the-launch-failure/ which is outside the fence, disclosed by the worker itself in its manifest.\nVERDICT manifest: read; it records the file-scoped gate as 5 passed and the wider population at 5 failed 288 passed against 5 failed 283 passed at base c748ca77 with identical failure ids, and the red control as 2 failed 3 passed.\nVERDICT diff: read both commits against c748ca77; 3d927b88 changes only the state word the gate reads and adds the fallback clause plus the new cases, 3c913e49 appends the landing record and the evidence anchor and touches no plan-version or plan-modified meta line.\nCALL_SITES: reckon/crew/ticker.py:Ticker.render, reckon/crew/ticker.py:Ticker._reason, reckon/crew/recovery.py:_watch_transition\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:906 and reckon/crew/ticker.py:974 pass the whole entry state to the clause and name the fault when the record carries no cause, which is the goal's two halves in one place.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_fleet_counter_launch_failure.py asserts all three halves of the done_when and the results are recorded in gate.log, base-gate.log and the two control logs; one point is held back because the file-scoped green receipt lives in the control log rather than in a log the manifest names as the gate.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: both commits stay inside the four declared paths, and three points are deducted for the four log files written under /home/ITER/mcintos/Code/reckon/reports/, a directory outside the fence that the manifest's own follow_ons line discloses rather than hides.\nSCORE durability: 19\nJUSTIFICATION durability: the declared mutation -- restoring the pre-fix elided gate -- reddening 2 of the 5 cases at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/negative_control.log shows the change is pinned, and the same defect was reproduced independently through the unfixed tree; one point is held back because the four-cell and width half is pinned by literals that no declared mutation was demonstrated against.\nSCORE fit: 20\nJUSTIFICATION fit: the two constants sit with the module's other constants behind a why-comment in the register the module already uses, the case names read as sentences like their neighbouring files, and no banned plan, ticket or version label appears in either file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/manifest.md:22 four log files were written into the main checkout's reports directory, so the node wrote outside its exclusive fence; disclosure keeps it readable and does not make the write one the fence allowed.\n",
+  "review_limitations": [
+    "the state cell still renders the state word elided to launch-fa\u2026 at reckon/crew/ticker.py, so a reader learns the fault from the clause rather than the state column; that elision predates this change and the section's decision keeps the block and the row width, so it is recorded rather than scored as a defect",
+    "the four-cell and same-width half of the done_when is pinned by literals and by STATS rather than by a mutation that was demonstrated to redden it",
+    "the reviewer's own probe of the no-launch-failed reading ended in a bad assertion of the reviewer's own making (a block literal that does not hold for a three-run reading), so that half rests on the node's case and on the blocked row of the mixed reading carrying no launch wording",
+    "s8 of the plan and the landed evidence page were read for the landing record's presence and for untouched meta lines, not re-reviewed line by line"
+  ],
+  "review_run_id": "r-20260921T150129360443-review-of-counter-reason-names-the-launch-failure",
+  "reviewed_base_sha": "c748ca77d9aeca99c36223a5c88a3c0940ae580c",
+  "reviewed_head_sha": "3c913e4975b6747eece2cfec0a016403d3d215df",
+  "reviewed_run_id": "r-20260921T123541816127-counter-reason-names-the-launch-failure",
+  "reviewer_run_id": "r-20260921T150129360443-review-of-counter-reason-names-the-launch-failure",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 17
+  },
+  "section": "s8",
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/manifest.md",
+  "source_manifest_sha256": "fb6e57a49d95aef62559154cbea84210955eb8246169af11622284c78db96770",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/counter-reason-names-the-launch-failure",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T15:54:55.477559+00:00",
+  "total": 95
+}

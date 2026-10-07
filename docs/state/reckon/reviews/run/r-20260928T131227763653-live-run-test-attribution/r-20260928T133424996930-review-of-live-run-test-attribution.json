@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/doccheck.py:run"
+  ],
+  "completed_at": "2026-09-28T14:07:31.485Z",
+  "dispatched_at": "2026-09-28T13:34:36Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/live-run-test-attribution/report.md",
+      "line": "36",
+      "text": "the command block presents one whole-file pytest invocation as what the driver ran in each arm, but the two single-test arms were invoked with an added -k test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word, as their logs' outcome lines (\"1 passed, 11 deselected\" at 132a7d4b, \"1 failed, 11 deselected\" at ddf4509f) require, so the selection that produced those two arms appears in neither the log argv line nor the report, and a reader re-running the recorded command at 132a7d4b gets twelve results rather than the recorded one."
+    },
+    {
+      "file": "docs/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed.html",
+      "line": "334",
+      "text": "the new section is headed 8, the number already used by the section at :284, so the cumulative record now carries two differently-titled 8 sections and the plan's two references to them (docs/plans/a-stalled-row-says-whether-the-worker-lives.html:441 to #s8 and :469 to #attribution) are distinguishable only by anchor, leaving a reader who follows the visible number unable to tell which section is meant without opening the href."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against e2fe95ed \u2014 one commit, no source file touched, and the red it records is pre-existing: I confirmed by re-running the named test on both sides of ddf4509f, and by checking that recovery.py is the only source file differing between af15a34b and 356928b3, by the same 11 lines of reason text the merge contributed.",
+    "done_when": "the done-when's per-revision command, exit status, failing ids read from pytest's own output, set difference and per-id file:line cause are all present in report.md:30-77 with four logs beside it whose first lines name revision and tree (checked four of four); I re-ran the named test myself at 132a7d4b (1 passed, 11 deselected, exit 0) and at ddf4509f (1 failed, 11 deselected, exit 1), matching report.md:87-90, and every cited line resolves (reckon/crew/recovery.py:5595, :5599, :5581-5582; tests/test_a_live_run_never_reads_dead.py:581 and :539-548) \u2014 but the recorded command for the two single-test arms (report.md:36-41) omits the selection that produced their outcome, so those two results are not reproducible from the record alone (finding 1).",
+    "goal": "the goal is to establish whether merge 92c39d90 introduced the failure of tests/test_a_live_run_never_reads_dead.py and to name each failing id's cause as file:line, and the report answers both \u2014 the merge did not, the set difference is empty \u2014 with the same answer carried into the landed record at docs/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed.html:333.",
+    "manifest": "read in full \u2014 status complete; commits name the measurement base e2fe95ed and the landing commit 9a7f1c86; baseline_suite (af15a34b, exit 1, completed) and after_suite (356928b3, exit 1, completed) each name their log; failure_attribution is empty and agrees with the measured empty set; its audit_note records the check-manifest repair that preceded the terminal status.",
+    "write_paths": "the reviewed manifest declares four write paths and the single landed commit 9a7f1c86 touches exactly the three in-repo ones, additive only (44/217/28 insertions, no deletions, plus a 131435-byte png), the plan change being one h3 block with neither plan-version nor plan-modified edited."
+  },
+  "justifications": {
+    "durability": "nothing executable guards the attribution's numbers because the change is docs-only and the node was fenced to docs paths, though reckon audit-doc runs over the landed archive as an instrument (OK, 0 errors) and the claims are pinned to revisions with four retained logs beside them.",
+    "evidence": "report.md:113-121 ties every arm to a retained log whose header names revision, tree, imported module and cwd, and the arms refuse to run when the module resolves outside their own tree, but the two single-test arms' recorded command (report.md:36-41) omits the -k selection that produced their \"11 deselected\" outcome (finding 1).",
+    "fit": "the record follows the archive idiom of its siblings (git-archive arms, retained logs, project-absolute figure src) but numbers its new section 8 at docs/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed.html:334, a number already used at :284 (finding 2).",
+    "goal_fidelity": "the goal's question is answered by measurement at both named revisions and the answer is carried into report.md:8-11 and docs/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed.html:333 with each cause cited to a line that resolves where it says.",
+    "scope_discipline": "git diff --name-status e2fe95ed 9a7f1c86 lists only the three in-repo declared write paths, all additive, and the report file at the declared out-of-repo path is the fourth."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to establish whether merge 92c39d90 introduced the failure of tests/test_a_live_run_never_reads_dead.py and to name each failing id's cause as file:line, and the report answers both \u2014 the merge did not, the set difference is empty \u2014 with the same answer carried into the landed record at docs/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed.html:333.\nVERDICT done_when: the done-when's per-revision command, exit status, failing ids read from pytest's own output, set difference and per-id file:line cause are all present in report.md:30-77 with four logs beside it whose first lines name revision and tree (checked four of four); I re-ran the named test myself at 132a7d4b (1 passed, 11 deselected, exit 0) and at ddf4509f (1 failed, 11 deselected, exit 1), matching report.md:87-90, and every cited line resolves (reckon/crew/recovery.py:5595, :5599, :5581-5582; tests/test_a_live_run_never_reads_dead.py:581 and :539-548) \u2014 but the recorded command for the two single-test arms (report.md:36-41) omits the selection that produced their outcome, so those two results are not reproducible from the record alone (finding 1).\nVERDICT write_paths: the reviewed manifest declares four write paths and the single landed commit 9a7f1c86 touches exactly the three in-repo ones, additive only (44/217/28 insertions, no deletions, plus a 131435-byte png), the plan change being one h3 block with neither plan-version nor plan-modified edited.\nVERDICT manifest: read in full \u2014 status complete; commits name the measurement base e2fe95ed and the landing commit 9a7f1c86; baseline_suite (af15a34b, exit 1, completed) and after_suite (356928b3, exit 1, completed) each name their log; failure_attribution is empty and agrees with the measured empty set; its audit_note records the check-manifest repair that preceded the terminal status.\nVERDICT diff: read commit by commit against e2fe95ed \u2014 one commit, no source file touched, and the red it records is pre-existing: I confirmed by re-running the named test on both sides of ddf4509f, and by checking that recovery.py is the only source file differing between af15a34b and 356928b3, by the same 11 lines of reason text the merge contributed.\nCALL_SITES: reckon/doccheck.py:run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the goal's question is answered by measurement at both named revisions and the answer is carried into report.md:8-11 and docs/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed.html:333 with each cause cited to a line that resolves where it says.\nSCORE evidence: 16\nJUSTIFICATION evidence: report.md:113-121 ties every arm to a retained log whose header names revision, tree, imported module and cwd, and the arms refuse to run when the module resolves outside their own tree, but the two single-test arms' recorded command (report.md:36-41) omits the -k selection that produced their \"11 deselected\" outcome (finding 1).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status e2fe95ed 9a7f1c86 lists only the three in-repo declared write paths, all additive, and the report file at the declared out-of-repo path is the fourth.\nSCORE durability: 14\nJUSTIFICATION durability: nothing executable guards the attribution's numbers because the change is docs-only and the node was fenced to docs paths, though reckon audit-doc runs over the landed archive as an instrument (OK, 0 errors) and the claims are pinned to revisions with four retained logs beside them.\nSCORE fit: 16\nJUSTIFICATION fit: the record follows the archive idiom of its siblings (git-archive arms, retained logs, project-absolute figure src) but numbers its new section 8 at docs/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed.html:334, a number already used at :284 (finding 2).\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/live-run-test-attribution/report.md:36 the command block presents one whole-file pytest invocation as what the driver ran in each arm, but the two single-test arms were invoked with an added -k test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word, as their logs' outcome lines (\"1 passed, 11 deselected\" at 132a7d4b, \"1 failed, 11 deselected\" at ddf4509f) require, so the selection that produced those two arms appears in neither the log argv line nor the report, and a reader re-running the recorded command at 132a7d4b gets twelve results rather than the recorded one.\nFINDING docs/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed.html:334 the new section is headed 8, the number already used by the section at :284, so the cumulative record now carries two differently-titled 8 sections and the plan's two references to them (docs/plans/a-stalled-row-says-whether-the-worker-lives.html:441 to #s8 and :469 to #attribution) are distinguishable only by anchor, leaving a reader who follows the visible number unable to tell which section is meant without opening the href.",
+  "review_run_id": "r-20260928T133424996930-review-of-live-run-test-attribution",
+  "reviewed_base_sha": "e2fe95ed416e1fb2b4eeae2a7be91b1d649a2df0",
+  "reviewed_head_sha": "9a7f1c86aa91b836b90885f215eca37a7fb4d7e1",
+  "reviewed_run_id": "r-20260928T131227763653-live-run-test-attribution",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T13:54:03.570501+00:00",
+  "total": 86
+}

@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:425 calls _held_worktrees from inside obligations()",
+    "reckon/mcp.py:4247 serves the obligations MCP view through obligations()",
+    "reckon/hooks/coordinator_obligations.py:476 is the per-turn hook that calls obligations_view()"
+  ],
+  "completed_at": "2026-10-01T19:12:52.553Z",
+  "dispatched_at": "2026-10-01T19:03:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "336",
+      "severity": "blocking",
+      "text": "blocking: the comment claims the last per-run match by dispatch stamp 'is the record the whole-ledger scan reaches last for a node that ran more than once', but ledger.load sorts the merged rows by completed_at (reckon/ledger.py:761) while _run_files returns files in filename (dispatch-stamp) order, so the two readers name different runs whenever a node run twice has its later dispatch complete first. Reproduced in my scratch probe (scratch/ordering_probe.log): one retained tree named by two per-run files for one node, r-...T100000000000 completing 11:00 and r-...T090000000000 completing 11:50 -- ledger.runs returns the 090000 run (last by completion) and _held_worktrees returns the 100000 run (last by stamp), so the held set diverges from the whole-ledger parity the done_when requires, and the item then names a different run_id, node, plan and age for the same tree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit over 64a56280..9e2114a4: 40d66ddc1 adds the resolver and the new test module, 0adc145f1 records the timing arms and 9e2114a4d records each arm's resolved module under test; 479 insertions over the three declared paths, the two later commits touching the evidence fragment only.",
+    "done_when": "the node's done_when names tests/test_held_worktrees_read_run_files.py plus every tests/ file calling _held_worktrees or obligations(); the manifest records both arms (base 2 failed/50 passed, head 1 failed/51 passed) and the new module holds the parity, never-called and fallback cases, but its parity case does not exercise the ordering the change depends on -- see the finding at obligations.py:336.",
+    "goal": "read at the reviewed head: obligations._held_worktrees (reckon/crew/obligations.py:285) now resolves each inspected tree from ledger._run_files per-run files selected by the node id the run id carries, falls back to ledger.runs only for a tree no per-run file names, and builds no index, which is what the section-4 item-3 goal asks for; the fallback is taken once per session for every unresolved tree.",
+    "manifest": "read at the run directory; it states each gate command with its log paths and result, the negative control and its note, and the evidence_inputs caveat that on the real fleet all 52 inspected trees still resolve through the fallback; I reloaded gate-base.log, gate-head.log and gate-negative-control.log and every figure in them reproduces.",
+    "write_paths": "the manifest grants four paths (reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py, one evidence fragment and one figure directory); the diff touches the first three and leaves the figure directory unused, and no path outside the grant is written."
+  },
+  "justifications": {
+    "durability": "tests/test_held_worktrees_read_run_files.py:226-238 patches ledger.runs and ledger.load to raise, proves the patch fires at :233-236, then asserts the held set -- a genuine never-called guard that gate-negative-control.log shows reddening under the declared mutation; the fallback and occupied-tree cases (:241, :279) are real too, but no case fails if the per-file candidate ordering regresses.",
+    "evidence": "the gate measures the done_when and every claim reproduces -- I re-ran tests/test_held_worktrees_read_run_files.py at the reviewed head and read 4 passed, EXIT=0 (scratch/review-new-test-module.log), and the negative control's EXIT=1 fails the same never-called id the head arm passes -- but the parity case in tests/test_held_worktrees_read_run_files.py:186-190 gives both runs of the double-run node one completion stamp, so it never exercises the ordering divergence my probe reproduces.",
+    "fit": "the helpers are named by what they do and their docstrings state the mechanism rather than the ticket, and the run-id stamp regex reuses the r-<stamp>-<node id> minting in reckon/crew/runs.py, so the change matches the surrounding idiom; the comment at reckon/crew/obligations.py:336 nonetheless states an equality the sort key does not provide.",
+    "goal_fidelity": "reckon/crew/obligations.py:326-343 reads the per-run files for the inspected trees and reckons/ledger.py:666 supplies _run_files, so the whole-ledger read is confined to trees no per-run file names -- but the derivation does not equal the whole-ledger one on every input, which is the goal's own measure (finding at obligations.py:336).",
+    "scope_discipline": "git diff --stat 64a56280..9e2114a4 touches exactly reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py and the evidence fragment, all inside the four paths the manifest declares, with nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read at the reviewed head: obligations._held_worktrees (reckon/crew/obligations.py:285) now resolves each inspected tree from ledger._run_files per-run files selected by the node id the run id carries, falls back to ledger.runs only for a tree no per-run file names, and builds no index, which is what the section-4 item-3 goal asks for; the fallback is taken once per session for every unresolved tree.\nVERDICT done_when: the node's done_when names tests/test_held_worktrees_read_run_files.py plus every tests/ file calling _held_worktrees or obligations(); the manifest records both arms (base 2 failed/50 passed, head 1 failed/51 passed) and the new module holds the parity, never-called and fallback cases, but its parity case does not exercise the ordering the change depends on -- see the finding at obligations.py:336.\nVERDICT write_paths: the manifest grants four paths (reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py, one evidence fragment and one figure directory); the diff touches the first three and leaves the figure directory unused, and no path outside the grant is written.\nVERDICT manifest: read at the run directory; it states each gate command with its log paths and result, the negative control and its note, and the evidence_inputs caveat that on the real fleet all 52 inspected trees still resolve through the fallback; I reloaded gate-base.log, gate-head.log and gate-negative-control.log and every figure in them reproduces.\nVERDICT diff: read commit by commit over 64a56280..9e2114a4: 40d66ddc1 adds the resolver and the new test module, 0adc145f1 records the timing arms and 9e2114a4d records each arm's resolved module under test; 479 insertions over the three declared paths, the two later commits touching the evidence fragment only.\nCALL_SITES: reckon/crew/obligations.py:425 calls _held_worktrees from inside obligations(), reckon/mcp.py:4247 serves the obligations MCP view through obligations(), reckon/hooks/coordinator_obligations.py:476 is the per-turn hook that calls obligations_view()\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:326-343 reads the per-run files for the inspected trees and reckons/ledger.py:666 supplies _run_files, so the whole-ledger read is confined to trees no per-run file names -- but the derivation does not equal the whole-ledger one on every input, which is the goal's own measure (finding at obligations.py:336).\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate measures the done_when and every claim reproduces -- I re-ran tests/test_held_worktrees_read_run_files.py at the reviewed head and read 4 passed, EXIT=0 (scratch/review-new-test-module.log), and the negative control's EXIT=1 fails the same never-called id the head arm passes -- but the parity case in tests/test_held_worktrees_read_run_files.py:186-190 gives both runs of the double-run node one completion stamp, so it never exercises the ordering divergence my probe reproduces.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 64a56280..9e2114a4 touches exactly reckon/crew/obligations.py, tests/test_held_worktrees_read_run_files.py and the evidence fragment, all inside the four paths the manifest declares, with nothing the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_held_worktrees_read_run_files.py:226-238 patches ledger.runs and ledger.load to raise, proves the patch fires at :233-236, then asserts the held set -- a genuine never-called guard that gate-negative-control.log shows reddening under the declared mutation; the fallback and occupied-tree cases (:241, :279) are real too, but no case fails if the per-file candidate ordering regresses.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers are named by what they do and their docstrings state the mechanism rather than the ticket, and the run-id stamp regex reuses the r-<stamp>-<node id> minting in reckon/crew/runs.py, so the change matches the surrounding idiom; the comment at reckon/crew/obligations.py:336 nonetheless states an equality the sort key does not provide.\nFINDING reckon/crew/obligations.py:336 blocking: the comment claims the last per-run match by dispatch stamp 'is the record the whole-ledger scan reaches last for a node that ran more than once', but ledger.load sorts the merged rows by completed_at (reckon/ledger.py:761) while _run_files returns files in filename (dispatch-stamp) order, so the two readers name different runs whenever a node run twice has its later dispatch complete first. Reproduced in my scratch probe (scratch/ordering_probe.log): one retained tree named by two per-run files for one node, r-...T100000000000 completing 11:00 and r-...T090000000000 completing 11:50 -- ledger.runs returns the 090000 run (last by completion) and _held_worktrees returns the 100000 run (last by stamp), so the held set diverges from the whole-ledger parity the done_when requires, and the item then names a different run_id, node, plan and age for the same tree.\n",
+  "review_run_id": "r-20261001T190330772578-review-of-held-worktrees-read-run-files",
+  "reviewed_base_sha": "64a56280f21a10d8312b04fc3441373d1207e857",
+  "reviewed_head_sha": "9e2114a4d4a8ef41a302f2642b9dad12794444b4",
+  "reviewed_run_id": "r-20261001T183044423847-held-worktrees-read-run-files",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T19:12:24.202604+00:00",
+  "total": 82
+}

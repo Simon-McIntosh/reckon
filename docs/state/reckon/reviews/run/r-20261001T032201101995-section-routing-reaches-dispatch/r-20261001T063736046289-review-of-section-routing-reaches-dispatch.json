@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/cli.py:crew_dispatch",
+    "reckon/crew/dispatch.py:plan_dispatch",
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/dispatch.py:shadow",
+    "reckon/crew/dispatch.py:change_lane",
+    "reckon/crew/promotion.py:_record_landing_comment",
+    "reckon/crew/promotion.py:_run_capability_risk"
+  ],
+  "completed_at": "2026-10-01T06:53:03.564Z",
+  "dispatched_at": "2026-10-01T06:37:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "409",
+      "severity": "follow-on",
+      "text": "follow-on: _dispatch_section_routing catches (CrewError, PlanVisibilityError, ResourceCollision, OSError, ValueError) and returns None, and plan_dispatch then falls back to role routing, so a genuinely malformed capability_raise rule or an unexpected record-parser failure silently disables the raise -- the dispatch record's section_routing reads None exactly as a node with no section does, and no signal distinguishes the two."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3616",
+      "severity": "follow-on",
+      "text": "follow-on: the wired raise steers no lane on this workstation today, because the live host flight.yaml declares no by_capability_class overlay, so a live dispatch resolves exactly what role routing resolved until a host layer declares one; the containment of this is that the gate's green is measured on fixtures that do declare the overlay, which I confirmed against ~/.config/reckon/flight.yaml."
+    },
+    {
+      "file": "tests/test_section_routing_reaches_dispatch.py",
+      "line": "300",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded baseline arm collected 149 tests (4 failed, 143 passed, 2 skipped) while the final head arm collects 151, so the manifest's baseline_suite predates the two guard cases added afterwards and does not evidence that test_a_dotted_anchor_is_reachable_from_every_spelling and test_a_dotted_anchor_is_visible_to_the_section_guard fail without the change; I re-ran the base revision with the final test file placed in the tree and both do fail there (6 failed, 143 passed, 2 skipped, EXIT=1, /tmp/rr-review-node/arm-base.log), so the added-failure conclusion of 0 is unaffected."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against base 33c5e761d; the change wires the raise into plan_dispatch, adds section_record_id/section_anchor/section_id_candidates in routing.py, deletes promotion.py's private _section_anchor, and normalises Optional[...] in the generator, with nothing outside the declared write paths.",
+    "done_when": "the done_when asks that a section at attempts 3 dispatch to the backend the raised class maps to in the test flight config with the summary naming the raise, and attempts 2 resolve unchanged; tests/test_section_routing_reaches_dispatch.py:180 asserts exactly that and the manifest records the gate at 149 passed, 2 skipped, which I reproduced.",
+    "goal": "the node goal is to land followup f-scci-section-routing-reaches-dispatch's three items -- wire resolve_section_routing into the production dispatch site, collapse the four record-identity derivations into one, and make scripts/regen_flight_schema.py emit UP045-free output; reckon/crew/dispatch.py:369 _dispatch_section_routing is the new production caller and reckon/crew/routing.py:201 section_record_id is the single derivation.",
+    "manifest": "read; it records the four-file gate at head (149 passed, 2 skipped, EXIT=0), the base arm (4 failed/143 passed/2 skipped), a negative control that reverts the dispatch-site call (3 failed, EXIT=1), and I derived the added-failure count as 0 from its two gate logs.",
+    "write_paths": "the manifest declares seven write paths plus the evidence-fragment directory; every path in the diff 33c5e761d..6f64b448a is one of them."
+  },
+  "justifications": {
+    "durability": "reverting the _dispatch_section_routing call at reckon/crew/dispatch.py:3616 reddens tests/test_section_routing_reaches_dispatch.py:180 (the run's own negative control, 3 failed, EXIT=1) and reverting routing.section_id_candidates reddens the guard case, so both the wiring and the single derivation have a guard that fires on the regression they prevent.",
+    "evidence": "the named gate measures the done_when in the test flight config and I reproduced it at the reviewed head (149 passed, 2 skipped, EXIT=0); regen reproduces both artifacts byte-for-byte and ruff UP045 reads 0 at head against 107 at base, but the recorded baseline arm collected 149 tests to the final head's 151, so it does not cover the two guard cases added after it was taken.",
+    "fit": "reckon/crew/routing.py:201 section_record_id and :218 section_anchor are named by mechanism and their comments explain the identity rule, though _dispatch_section_routing's broad except at dispatch.py:409 is wider than the visibility failure its docstring describes.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3616 calls _dispatch_section_routing from plan_dispatch's role-routing branch, so a section at attempts 3 resolves the raised lane (asserted at tests/test_section_routing_reaches_dispatch.py:180) and a node with no readable record resolves exactly as role routing did.",
+    "scope_discipline": "the diff 33c5e761d..6f64b448a touches exactly the seven declared write paths and the regenerated schema JSON is byte-identical, so it carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to land followup f-scci-section-routing-reaches-dispatch's three items -- wire resolve_section_routing into the production dispatch site, collapse the four record-identity derivations into one, and make scripts/regen_flight_schema.py emit UP045-free output; reckon/crew/dispatch.py:369 _dispatch_section_routing is the new production caller and reckon/crew/routing.py:201 section_record_id is the single derivation.\nVERDICT done_when: the done_when asks that a section at attempts 3 dispatch to the backend the raised class maps to in the test flight config with the summary naming the raise, and attempts 2 resolve unchanged; tests/test_section_routing_reaches_dispatch.py:180 asserts exactly that and the manifest records the gate at 149 passed, 2 skipped, which I reproduced.\nVERDICT write_paths: the manifest declares seven write paths plus the evidence-fragment directory; every path in the diff 33c5e761d..6f64b448a is one of them.\nVERDICT manifest: read; it records the four-file gate at head (149 passed, 2 skipped, EXIT=0), the base arm (4 failed/143 passed/2 skipped), a negative control that reverts the dispatch-site call (3 failed, EXIT=1), and I derived the added-failure count as 0 from its two gate logs.\nVERDICT diff: read commit by commit against base 33c5e761d; the change wires the raise into plan_dispatch, adds section_record_id/section_anchor/section_id_candidates in routing.py, deletes promotion.py's private _section_anchor, and normalises Optional[...] in the generator, with nothing outside the declared write paths.\nCALL_SITES: reckon/cli.py:crew_dispatch, reckon/crew/dispatch.py:plan_dispatch, reckon/crew/dispatch.py:dispatch, reckon/crew/dispatch.py:shadow, reckon/crew/dispatch.py:change_lane, reckon/crew/promotion.py:_record_landing_comment, reckon/crew/promotion.py:_run_capability_risk\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3616 calls _dispatch_section_routing from plan_dispatch's role-routing branch, so a section at attempts 3 resolves the raised lane (asserted at tests/test_section_routing_reaches_dispatch.py:180) and a node with no readable record resolves exactly as role routing did.\nSCORE evidence: 18\nJUSTIFICATION evidence: the named gate measures the done_when in the test flight config and I reproduced it at the reviewed head (149 passed, 2 skipped, EXIT=0); regen reproduces both artifacts byte-for-byte and ruff UP045 reads 0 at head against 107 at base, but the recorded baseline arm collected 149 tests to the final head's 151, so it does not cover the two guard cases added after it was taken.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 33c5e761d..6f64b448a touches exactly the seven declared write paths and the regenerated schema JSON is byte-identical, so it carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the _dispatch_section_routing call at reckon/crew/dispatch.py:3616 reddens tests/test_section_routing_reaches_dispatch.py:180 (the run's own negative control, 3 failed, EXIT=1) and reverting routing.section_id_candidates reddens the guard case, so both the wiring and the single derivation have a guard that fires on the regression they prevent.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:201 section_record_id and :218 section_anchor are named by mechanism and their comments explain the identity rule, though _dispatch_section_routing's broad except at dispatch.py:409 is wider than the visibility failure its docstring describes.\nFINDING reckon/crew/dispatch.py:409 follow-on: _dispatch_section_routing catches (CrewError, PlanVisibilityError, ResourceCollision, OSError, ValueError) and returns None, and plan_dispatch then falls back to role routing, so a genuinely malformed capability_raise rule or an unexpected record-parser failure silently disables the raise -- the dispatch record's section_routing reads None exactly as a node with no section does, and no signal distinguishes the two.\nFINDING reckon/crew/dispatch.py:3616 follow-on: the wired raise steers no lane on this workstation today, because the live host flight.yaml declares no by_capability_class overlay, so a live dispatch resolves exactly what role routing resolved until a host layer declares one; the containment of this is that the gate's green is measured on fixtures that do declare the overlay, which I confirmed against ~/.config/reckon/flight.yaml.\nFINDING tests/test_section_routing_reaches_dispatch.py:300 follow-on: the recorded baseline arm collected 149 tests (4 failed, 143 passed, 2 skipped) while the final head arm collects 151, so the manifest's baseline_suite predates the two guard cases added afterwards and does not evidence that test_a_dotted_anchor_is_reachable_from_every_spelling and test_a_dotted_anchor_is_visible_to_the_section_guard fail without the change; I re-ran the base revision with the final test file placed in the tree and both do fail there (6 failed, 143 passed, 2 skipped, EXIT=1, /tmp/rr-review-node/arm-base.log), so the added-failure conclusion of 0 is unaffected.\n",
+  "review_run_id": "r-20261001T063736046289-review-of-section-routing-reaches-dispatch",
+  "reviewed_base_sha": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "reviewed_head_sha": "6f64b448af265ad38b62af3fad33498078f16a6c",
+  "reviewed_run_id": "r-20261001T032201101995-section-routing-reaches-dispatch",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T063736046289-review-of-section-routing-reaches-dispatch",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.135119+00:00",
+  "total": 94
+}

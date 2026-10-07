@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:3958 (_complete_locked)",
+    "reckon/cli.py:3951 (crew_complete)"
+  ],
+  "completed_at": "2026-09-25T18:22:50.039Z",
+  "dispatched_at": "2026-09-25T17:58:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "147",
+      "text": "skipping every cited merge makes a citation list of merges alone measure zero paths, so a run whose content landed inside a merge is charged nothing and that hole is silent now that the merge-attribution refusal is gone."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "172",
+      "text": "added and removed are now summed over the cited commits rather than read from one span diff, so a multi-commit run's recorded changed_lines counts churn the previous measurement netted out, changing a fleet-wide metric beyond the merge case."
+    },
+    {
+      "file": "tests/test_promotion_scope_counts_only_the_runs_commits.py",
+      "line": "163",
+      "text": "assert stored[\"commits\"] == cited compares the record against the same list the test passed in, an echo of its own input rather than an independent expectation, so it guards nothing about the change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read a20c11dc against 971d4889 commit by commit \u2014 one commit replacing _cumulative_diff with _committed_scope, deleting the merge-attribution refusal, adding the new test file, the plan \u00a71 aside and the evidence anchor.",
+    "done_when": "the done_when names the synthesised merged-main count, the sibling out-of-fence refusal, the zero-added-failures cohort and the declared mutation; the manifest records 174 passed at base / the new file 2 failed at base (2 passed fixed) / 176 passed after, and I read those logs on disk.",
+    "goal": "read the dispatch goal (promotion must measure a run's scope from the paths its own cited commits change, not a tree diff spanning main) against reckon/crew/promotion.py:130; the landed _committed_scope diffs each cited non-merge commit against its own parent and unions the paths, and the merged-main case refused at base (repro-at-base-971d4889.log) lands with its own two files counted.",
+    "manifest": "read; status complete, the changed_paths list matches the diff, the tests field names the cohort commands and their results, negative_control_log names a log whose first line repeats the declared mutation verbatim, and the checkpoint states the worker could not commit so the coordinator committed a20c11dc from its tree.",
+    "write_paths": "read the dispatch fence (reckon/crew/promotion.py, tests/test_promotion_scope_counts_only_the_runs_commits.py, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html, docs/figures/the-ledger-is-one-file-per-run, docs/plans/the-ledger-is-one-file-per-run.html); the diff changes four of them and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens both new cases (negative-control-restore-tree-diff.log, merged-main first, refused for peer.txt), so the guard fires; the echo assertion at tests/test_promotion_scope_counts_only_the_runs_commits.py:163 leaves the score short of full.",
+    "evidence": "the done-when's checks are recorded in logs on disk and the tested worktree is byte-identical to a20c11dc (git diff against the commit is empty), so the after-arm's 971d4889+uncommitted-fix header does not weaken it.",
+    "fit": "_committed_scope at reckon/crew/promotion.py:130 keeps the _CumulativeDiff return and subprocess.run(check=False) idiom of the function it replaces and reuses _merge_revisions.",
+    "goal_fidelity": "the per-commit parent diffs at reckon/crew/promotion.py:146-181 charge a merged-main run only its own paths, which is what the goal states and what the base repro refused.",
+    "scope_discipline": "every path in the diff is inside the declared fence (reckon/crew/promotion.py:130, tests/test_promotion_scope_counts_only_the_runs_commits.py, docs/plans/the-ledger-is-one-file-per-run.html:181), and the untouched declared figures directory is explained in the aside's boundary paragraph."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the dispatch goal (promotion must measure a run's scope from the paths its own cited commits change, not a tree diff spanning main) against reckon/crew/promotion.py:130; the landed _committed_scope diffs each cited non-merge commit against its own parent and unions the paths, and the merged-main case refused at base (repro-at-base-971d4889.log) lands with its own two files counted.\nVERDICT done_when: the done_when names the synthesised merged-main count, the sibling out-of-fence refusal, the zero-added-failures cohort and the declared mutation; the manifest records 174 passed at base / the new file 2 failed at base (2 passed fixed) / 176 passed after, and I read those logs on disk.\nVERDICT write_paths: read the dispatch fence (reckon/crew/promotion.py, tests/test_promotion_scope_counts_only_the_runs_commits.py, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html, docs/figures/the-ledger-is-one-file-per-run, docs/plans/the-ledger-is-one-file-per-run.html); the diff changes four of them and nothing else.\nVERDICT manifest: read; status complete, the changed_paths list matches the diff, the tests field names the cohort commands and their results, negative_control_log names a log whose first line repeats the declared mutation verbatim, and the checkpoint states the worker could not commit so the coordinator committed a20c11dc from its tree.\nVERDICT diff: read a20c11dc against 971d4889 commit by commit \u2014 one commit replacing _cumulative_diff with _committed_scope, deleting the merge-attribution refusal, adding the new test file, the plan \u00a71 aside and the evidence anchor.\nCALL_SITES: reckon/crew/promotion.py:3958 (_complete_locked), reckon/cli.py:3951 (crew_complete)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the per-commit parent diffs at reckon/crew/promotion.py:146-181 charge a merged-main run only its own paths, which is what the goal states and what the base repro refused.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done-when's checks are recorded in logs on disk and the tested worktree is byte-identical to a20c11dc (git diff against the commit is empty), so the after-arm's 971d4889+uncommitted-fix header does not weaken it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared fence (reckon/crew/promotion.py:130, tests/test_promotion_scope_counts_only_the_runs_commits.py, docs/plans/the-ledger-is-one-file-per-run.html:181), and the untouched declared figures directory is explained in the aside's boundary paragraph.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation reddens both new cases (negative-control-restore-tree-diff.log, merged-main first, refused for peer.txt), so the guard fires; the echo assertion at tests/test_promotion_scope_counts_only_the_runs_commits.py:163 leaves the score short of full.\nSCORE fit: 19\nJUSTIFICATION fit: _committed_scope at reckon/crew/promotion.py:130 keeps the _CumulativeDiff return and subprocess.run(check=False) idiom of the function it replaces and reuses _merge_revisions.\nFINDING reckon/crew/promotion.py:147 skipping every cited merge makes a citation list of merges alone measure zero paths, so a run whose content landed inside a merge is charged nothing and that hole is silent now that the merge-attribution refusal is gone.\nFINDING reckon/crew/promotion.py:172 added and removed are now summed over the cited commits rather than read from one span diff, so a multi-commit run's recorded changed_lines counts churn the previous measurement netted out, changing a fleet-wide metric beyond the merge case.\nFINDING tests/test_promotion_scope_counts_only_the_runs_commits.py:163 assert stored[\"commits\"] == cited compares the record against the same list the test passed in, an echo of its own input rather than an independent expectation, so it guards nothing about the change.",
+  "review_run_id": "r-20260925T175838878803-review-of-promotion-scope-counts-only-the-runs-commits",
+  "reviewed_base_sha": "971d48891984a43af7cfb2fee75962df1f92f6b1",
+  "reviewed_head_sha": "a20c11dc4fb2e719d504a390e6f33aa36d9b3854",
+  "reviewed_run_id": "r-20260925T164939356407-promotion-scope-counts-only-the-runs-commits",
+  "reviewer_node": "review-of-promotion-scope-counts-only-the-runs-commits",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T18:16:36.079159+00:00",
+  "total": 92
+}
