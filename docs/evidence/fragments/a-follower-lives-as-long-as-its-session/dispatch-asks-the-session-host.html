@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
+  <meta name="plan-evidence-for" content="a-follower-lives-as-long-as-its-session">
+  <title>Dispatch asks the session host before it refuses | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="dispatch-asks-the-session-host-landing">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>Dispatch asks the session host before it refuses</h2>
+        <p class="lead">A dispatch from a Claude Code session that is not attached now writes one JSON request line to the session host's node-local FIFO and waits, for at most <code>WATCHER_LOAD_BOUND_SECONDS</code>, for the host to attach the session. The payload's <code>delivery</code> field reads <code>host</code> when the host took it and <code>monitor</code> otherwise; a host-delivered session carries no arming line. Without a host &mdash; no FIFO, or a FIFO with no reader &mdash; the refusal text is unchanged.</p>
+      </header>
+      <ul>
+        <li>The host FIFO resolves to <code>&lt;runtime&gt;/reckon-session-host/&lt;CLAUDE_PID&gt;-&lt;start&gt;.fifo</code>, where <code>&lt;runtime&gt;</code> is <code>$XDG_RUNTIME_DIR</code>, else <code>/run/user/&lt;uid&gt;</code>, else <code>$TMPDIR</code>, and <code>&lt;start&gt;</code> is field 22 of <code>/proc/&lt;pid&gt;/stat</code>. The request uses <code>_write_fleet_request</code> with a deadline already in the past, so a FIFO with no reader falls back at once rather than waiting.</li>
+        <li>Gate: <code>tests/test_dispatch_session_host.py</code>, two cases:
+          <ul>
+            <li><code>test_dispatch_asks_the_session_host_and_is_admitted_by_it</code> &mdash; a stub reader holding the FIFO confirms the JSON line names project and session, and the dispatch is admitted with <code>delivery == "host"</code> and an empty <code>arming_line</code>.</li>
+            <li><code>test_dispatch_without_a_host_reader_falls_back_to_the_monitor_refusal</code> &mdash; the same dispatch with a FIFO that holds no reader is refused with text identical to a no-FIFO control, and the refusal carries <code>delivery == "monitor"</code>.</li>
+          </ul>
+        </li>
+        <li>Gate log <code>gate-head.log</code>: 2 passed, <code>EXIT=0</code>. Negative control <code>gate-negative.log</code>: skipping the host request makes <code>test_dispatch_asks_the_session_host_and_is_admitted_by_it</code> raise <code>_FollowerAdmissionUnmet</code>, <code>EXIT=1</code>.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
