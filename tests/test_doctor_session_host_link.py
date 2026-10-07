@@ -197,6 +197,10 @@ def _run_doctor(
 
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
     monkeypatch.setenv("RECKON_HOME", str(docs_server))
+    # The link check resolves the personal skills directory from the
+    # environment variable; point it at this case's temporary tree so the
+    # operator's real ~/.claude/skills is neither read nor reported on.
+    monkeypatch.setenv(cli_module.CLAUDE_SKILLS_DIR_ENV, str(skills_dir))
     monkeypatch.setattr(cli_module, "_reckon_checkout", lambda: main_checkout)
     monkeypatch.setattr(cli_module, "_project_environment_drift", lambda: (None, []))
     # No real Claude CLI runs during the suite; the plugin-validate leg is
@@ -313,13 +317,27 @@ def test_claude_plugin_validate_is_skipped_without_the_cli(
 # ── sync: links the main checkout, refuses from a worktree ───────────────────
 
 
-def _run_sync(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, checkout: Path):
+def _run_sync(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    checkout: Path,
+    *,
+    skills_dir: Path | None = None,
+):
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     docs = tmp_path / "project" / "docs"
     docs.mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
     monkeypatch.setenv("RECKON_HOME", str(home / "docs-server"))
+    # The link resolves the personal skills directory from the environment
+    # variable. Point it at the caller's directory when given — the autouse
+    # fixture's temporary one, or the fake home's default — so no sync run
+    # reaches the operator's real ~/.claude/skills.
+    monkeypatch.setenv(
+        cli_module.CLAUDE_SKILLS_DIR_ENV,
+        str(skills_dir if skills_dir is not None else home / ".claude" / "skills"),
+    )
     monkeypatch.setattr(cli_module, "_reckon_checkout", lambda: checkout)
     return (
         CliRunner().invoke(
@@ -361,3 +379,28 @@ def test_sync_refuses_to_link_from_a_worktree(
     assert "refused" in result.output
     assert "worker worktree" in result.output
     assert not (home / ".claude" / "skills" / PLUGIN_NAME).exists()
+
+
+def test_sync_links_into_the_override_and_elsewhere_nothing(
+    tmp_path: Path,
+    main_checkout: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    isolated_claude_skills_dir: Path,
+):
+    """A sync run links under RECKON_CLAUDE_SKILLS_DIR, not the default home.
+
+    The autouse fixture points the override at a per-test temporary directory,
+    so the link must land there. The patched home's default ``.claude/skills``
+    must stay uncreated, which proves the run resolved the override rather than
+    ``~/.claude/skills`` — and never touches the operator's real directory,
+    which this test does not read.
+    """
+    result = _run_sync(
+        tmp_path, monkeypatch, main_checkout, skills_dir=isolated_claude_skills_dir
+    )[0]
+    assert result.exit_code == 0, result.output
+
+    dest = isolated_claude_skills_dir / PLUGIN_NAME
+    assert dest.is_symlink()
+    assert dest.resolve() == (main_checkout / "plugins" / "crew-host").resolve()
+    assert not (tmp_path / "home" / ".claude" / "skills").exists()

@@ -142,6 +142,26 @@ def _in_linked_worktree(path: Path) -> bool:
     return Path(toplevel).resolve() != main
 
 
+# The personal skills directory the sync link and the doctor link check share.
+# An operator or a test may point it elsewhere with this environment variable so
+# a run never touches the real ``~/.claude/skills``; the Claude Code personal
+# scope is the default.
+CLAUDE_SKILLS_DIR_ENV = "RECKON_CLAUDE_SKILLS_DIR"
+
+
+def _personal_skills_dir() -> Path:
+    """The personal skills directory the session-host link resolves in.
+
+    ``RECKON_CLAUDE_SKILLS_DIR`` overrides it when set, so a test or an
+    operator can keep the link away from the real ``~/.claude/skills``; the
+    Claude Code personal scope is the default.
+    """
+    override = os.environ.get(CLAUDE_SKILLS_DIR_ENV)
+    if override:
+        return Path(override).expanduser()
+    return Path.home() / ".claude" / "skills"
+
+
 def crew_host_link_state(skills_dir: Path, checkout: Path) -> CrewHostLink:
     """Report the state of the session-host plugin link.
 
@@ -244,7 +264,7 @@ def _sync_crew_host_plugin() -> None:
         click.echo(f"  session-host plugin: not built under {source} — skipped")
         return
 
-    skills_dir = Path.home() / ".claude" / "skills"
+    skills_dir = _personal_skills_dir()
     action = link_crew_host_plugin(source, skills_dir)
     click.echo(
         f"  session-host plugin: {action} {skills_dir / CREW_HOST_PLUGIN_NAME} → {source}"
@@ -8229,7 +8249,8 @@ def doctor():
     """Verify reckon installation health.
 
     Checks:
-    - Skills installed at ~/.claude/skills/reckon-*/
+    - Skills installed in the personal skills directory (``~/.claude/skills``
+      unless ``RECKON_CLAUDE_SKILLS_DIR`` names another)
     - mounts.json reachable (default: ~/docs-server/mounts.json)
     - Every mounted project directory exists
     - Reckon MCP registration present in Claude Code, Claude Desktop or Codex config
@@ -8246,7 +8267,7 @@ def doctor():
         for path in _skills_source().iterdir()
         if path.is_dir() and (path / "SKILL.md").is_file()
     )
-    skills_dir = Path.home() / ".claude" / "skills"
+    skills_dir = _personal_skills_dir()
 
     click.echo("reckon doctor\n")
 
@@ -8263,7 +8284,7 @@ def doctor():
     # ── Session-host plugin check ────────────────────────────────────────────
     click.echo("\nSession host plugin")
     plugin_checkout = _main_checkout(_reckon_checkout())
-    link = crew_host_link_state(skills_dir, plugin_checkout)
+    link = crew_host_link_state(_personal_skills_dir(), plugin_checkout)
     if link.state == CREW_HOST_VALID:
         message = _claude_plugin_validate(link.dest)
         if message:
