@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-moves-to-a-new-node-landed">
+  <meta name="plan-title" content="The Fleet Moves To A New Node — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Fleet Moves To A New Node: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-fleet-moves-to-a-new-node">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Fleet Moves To A New Node — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Fleet Moves To A New Node — landed record</h1>
+  <p>Closure synthesis for The Fleet Moves To A New Node: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s14">
+    <h2>§14 — one producer per project across hosts</h2>
+    <p>Run <code>r-20261007T112749535190-the-producer-seat-holds-across-hosts</code> landed on main through <code>979afe927</code>. A project's producer seat is a renewable <code>HostLease</code> on shared storage, held beside the node-local flock. A dispatch on another host defers to a fresh lease and never unwatches a producer it cannot see. A stale lease is taken over. A lease held on this host is judged by the local seat, so a producer that dies here reads dead at once. The producer renews its lease during idle polls and stops with <code>seat-lost</code> when another host owns the seat. <code>unwatch</code>'s wait for a seat that is never released ends in a refusal naming the holder.</p><p>The first merged-stack measure found eight failures the change added: a dead same-host producer read alive while its lease stayed fresh. The repair judges same-host holders by the local seat. At the four-way stack (standby, its lease assertion, this change and the launch-path gate) the whole suite added no failure attributable to this change, and the eight ids pass. Reviews 107 and 109 of 120. Two follow-ons are accepted: a state read can clear a dead same-host lease, as <code>project_watch_visibility</code> already reconciles registrations on read, and the gate logs carry no machine-readable base arm.</p>
+  </section>
+
+</main>
+</body>
+</html>
