@@ -23,9 +23,9 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="236">
+<meta name="plan-version" content="237">
 <meta name="plan-modified" content="2026-10-07">
-<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -241,6 +241,48 @@
     <h2 id="s27">§27 — A review attempt that launches nothing leaves nothing on disk</h2>
 <section data-reckon="section" data-id="s27" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links="a-plan-is-reviewed-before-it-is-built#s25"></section></header>
   <p class="landed-summary">Landed in <code>reckon/crew/recovery.py</code> (merge 58486f425): a plan-review dispatch that launches nothing removes the run directory it composed, through one exit in the composing caller, never removes a directory that existed before the call, and reports a failed removal under <code>discard_error</code>. The one-time cleanup ran on 2026-10-07 under the lead's authority, restricted to directories untouched for more than a day: 1,123 report-less attempt directories removed (161.7 MB) across five projects, 507 younger ones kept, and the count holding a <code>report.md</code> equal before and after. <a href="s27">full record</a></p>
+</section>
+
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s28">§28 — Every surface hands its reader a review command the verb accepts</h2>
+<section data-reckon="section" data-id="s28" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed in <code>494df0b11</code>: one <code>review_invocation</code> composer serves the edit tool, the stale-review hint and both gate refusals, and the D23 remedy names <code>reckon crew review-plan</code>; a test runs a real write's invocation through the CLI, and six changed assertions fail against the previous code. <a href="s28">full record</a></p>
+</section>
+
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s29">§29 — A plan carries one design review before it is built</h2>
+<section data-reckon="section" data-id="s29" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed in <code>e27626931</code>: the gate requires one stored design review at any version and holds its findings to the answered rule; no plan with stored reviews was newly refused, since all 49 carried a design review. <a href="s29">full record</a></p>
+</section>
+
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s30">§30 — A Jev judge decides whether a change needs a new review</h2>
+<section data-reckon="section" data-id="s30" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed in <code>b5cbe0785</code> (plan coverage) and <code>bde5df0a7</code> (run review): a live probe judged a done-when gaining a negative control 0.92 and a typo fix 0.06; mutation controls silence the judge, ignore its verdict and drop the clean-review guard, each failing its own case. <a href="s30">full record</a></p>
+</section>
+
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s31">§31 — A later review reads what changed, not the whole plan</h2>
+<section data-reckon="section" data-id="s31" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed in <code>8c5dc05ea</code> and <code>1ef94f85e</code>: <code>plan_review.review_scope</code> composes the scope into the brief, quoting each answered finding in at most 280 characters; a first review, or one asked for when nothing is uncovered, still reads the whole plan; composing without the scope fails the scoped case. <a href="s31">full record</a></p>
+</section>
+
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s32">§32 — The skills name one content review at write time and one design review per plan</h2>
+<section data-reckon="section" data-id="s32" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed in <code>13dfca725</code>: the authoring skills drop the dispatch read-back for one content review with its answer commands, and the build skill's contract now requires --rubric, --answer, --acted and --declined in its command reference. <a href="s32">full record</a></p>
+</section>
+
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s33">§33 — A plan review names no lane and routes like every review</h2>
+<section data-reckon="section" data-id="s33" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed in merge <code>b60037c33</code>: an unnamed plan review takes the shared review lane plan, holding as awaiting-lane when the local lane withholds; against the previous code the new case lands on the excluded metered default. <a href="s33">full record</a></p>
 </section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
