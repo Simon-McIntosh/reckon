@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/review.py:2784 read_review",
+    "reckon/crew/obligations.py:768 sub-floor duty reader",
+    "reckon/crew/review.py:3055 record_dimension_disposition",
+    "reckon/crew/recovery.py:1918 carry-forward",
+    "reckon/cli.py:6006",
+    "reckon/cli.py:6145",
+    "reckon/crew/reports.py:1302"
+  ],
+  "completed_at": "2026-10-07T14:22:01.780Z",
+  "dispatched_at": "2026-10-07T14:08:36Z",
+  "findings": [
+    {
+      "file": "tests/test_review_record_reads_answers_from_every_copy.py",
+      "line": "217",
+      "severity": "follow-on",
+      "text": "follow-on: the two cases assert only dimension_dispositions, so the merge of responses and response_events \u2014 two of the three fields the section requires \u2014 has no assertion; removing the responses and response_events assignments from _merge_record_answers leaves both cases green (2 passed EXIT=0), so a regression dropping those merges would pass the node's whole gate."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "2391",
+      "severity": "follow-on",
+      "text": "follow-on: _staging_copies_of_record reads review_store_root() with no base_dir, while stored_record and record_dimension_disposition still thread base_dir through, so a stored_record(project, run, base_dir=X) caller selects from X but merges its answers from the default store, and record_dimension_disposition writes the merged record back to the X file \u2014 with a non-default base_dir this copies another store's answers into X. No production caller passes base_dir today, so the path is test-only."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest declares no baseline_suite or after_suite arm (its test_logs name the head gate and the negative control only), so the store's added-failure derivation reads unmeasured (null) rather than a measured zero; recording the two arms would let a later reader derive the delta this one-arm evidence cannot."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read the single commit a9e9d322 against base c1a13efa; it adds _record_with_merged_answers (+87 lines) to reckon/crew/review.py and wraps the four stored_record return paths in it, adds the two-case test module (260 lines) and one evidence fragment, and changes nothing else.",
+    "done_when": "the done-when names two tests \u2014 a disposition written to the plain staging file, its head-keyed sibling re-written without it, read back through stored_record at that head, and the same scenario shown to retire the sub-floor duty through the obligations reader; tests/test_review_record_reads_answers_from_every_copy.py:217 and :242 carry exactly those, and I re-ran the declared three-file gate at head a9e9d322 in a scratch extraction (scratch tree rvw-a9e9d322): 8 passed EXIT=0.",
+    "goal": "the node implements \u00a712 of the plan \u2014 stored_record, and every reader that selects a run-review record through it, returns the selected record with dimension_dispositions, responses and response_events merged from every copy of the review run, staging and committed, with the selection rule unchanged; reckon/crew/review.py:2363 (_record_with_merged_answers) is wrapped around all four stored_record return paths and merges through the existing _merge_record_answers, _staging_copies_of_record and _committed_record_at helpers, so the goal is met.",
+    "manifest": "read; status complete, commit a9e9d322, tests line 8 passed EXIT=0, test_logs naming gate-head.log, negative-control.log and gate-wide.log (52 passed EXIT=0), negative_control_log naming the red log (2 failed EXIT=1); baseline_suite and after_suite are both absent.",
+    "write_paths": "the reviewed manifest declares reckon/crew/review.py, tests/test_review_record_reads_answers_from_every_copy.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-review-record-is-read-with-every-copys-answers.html and the matching figures directory; git diff --stat c1a13efa a9e9d322 lists exactly those three files, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the two cases are real falsifiers for dimension_dispositions (reproduced: returning the selected record unmerged reddens both, EXIT=1), but they assert nothing about responses or response_events \u2014 two of the three fields the section requires \u2014 and deleting those two assignments from _merge_record_answers leaves both cases green (2 passed EXIT=0).",
+    "evidence": "I reproduced both arms of the declared gate at head a9e9d322 in a scratch extraction \u2014 head 8 passed EXIT=0, and the declared mutation (return the selected record unmerged) gives 2 failed EXIT=1 on exactly tests/test_review_record_reads_answers_from_every_copy.py:217 and :242 \u2014 but the reviewed manifest declares no baseline_suite/after_suite arm, so the store's added-failure derivation is unmeasured (null) rather than a measured zero.",
+    "fit": "the added name (_record_with_merged_answers) describes the mechanism, no version, plan, sprint or ticket identifier appears in the diff, and the helper sits beside _select_stored_record and _committed_record_at at reckon/crew/review.py:2363 in the module's own style.",
+    "goal_fidelity": "reckon/crew/review.py:2363 wraps all four stored_record return paths in _record_with_merged_answers, which merges the staging copies and the committed record of the same review run so the selected record carries every copy's dimension_dispositions, responses and response_events, and the selection itself is unchanged.",
+    "reuse": "the reader reuses the existing owners (_merge_record_answers, _staging_copies_of_record, _committed_record_at) rather than forking a merge, and it is 19 rather than 20 because it re-assembles the same merge-source list (selected, staging copies, committed last) that store_committed_review already builds at reckon/crew/review.py:2218-2231.",
+    "scope_discipline": "git diff --stat c1a13efa a9e9d322 lists exactly reckon/crew/review.py, tests/test_review_record_reads_answers_from_every_copy.py and the evidence fragment, all inside the manifest's declared write paths, with no plan or index state touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node implements \u00a712 of the plan \u2014 stored_record, and every reader that selects a run-review record through it, returns the selected record with dimension_dispositions, responses and response_events merged from every copy of the review run, staging and committed, with the selection rule unchanged; reckon/crew/review.py:2363 (_record_with_merged_answers) is wrapped around all four stored_record return paths and merges through the existing _merge_record_answers, _staging_copies_of_record and _committed_record_at helpers, so the goal is met.\nVERDICT done_when: the done-when names two tests \u2014 a disposition written to the plain staging file, its head-keyed sibling re-written without it, read back through stored_record at that head, and the same scenario shown to retire the sub-floor duty through the obligations reader; tests/test_review_record_reads_answers_from_every_copy.py:217 and :242 carry exactly those, and I re-ran the declared three-file gate at head a9e9d322 in a scratch extraction (scratch tree rvw-a9e9d322): 8 passed EXIT=0.\nVERDICT write_paths: the reviewed manifest declares reckon/crew/review.py, tests/test_review_record_reads_answers_from_every_copy.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-review-record-is-read-with-every-copys-answers.html and the matching figures directory; git diff --stat c1a13efa a9e9d322 lists exactly those three files, all inside the declared scope.\nVERDICT manifest: read; status complete, commit a9e9d322, tests line 8 passed EXIT=0, test_logs naming gate-head.log, negative-control.log and gate-wide.log (52 passed EXIT=0), negative_control_log naming the red log (2 failed EXIT=1); baseline_suite and after_suite are both absent.\nVERDICT diff: read the single commit a9e9d322 against base c1a13efa; it adds _record_with_merged_answers (+87 lines) to reckon/crew/review.py and wraps the four stored_record return paths in it, adds the two-case test module (260 lines) and one evidence fragment, and changes nothing else.\nCALL_SITES: reckon/crew/review.py:2784 read_review, reckon/crew/obligations.py:768 sub-floor duty reader, reckon/crew/review.py:3055 record_dimension_disposition, reckon/crew/recovery.py:1918 carry-forward, reckon/cli.py:6006, reckon/cli.py:6145, reckon/crew/reports.py:1302\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2363 wraps all four stored_record return paths in _record_with_merged_answers, which merges the staging copies and the committed record of the same review run so the selected record carries every copy's dimension_dispositions, responses and response_events, and the selection itself is unchanged.\nSCORE evidence: 19\nJUSTIFICATION evidence: I reproduced both arms of the declared gate at head a9e9d322 in a scratch extraction \u2014 head 8 passed EXIT=0, and the declared mutation (return the selected record unmerged) gives 2 failed EXIT=1 on exactly tests/test_review_record_reads_answers_from_every_copy.py:217 and :242 \u2014 but the reviewed manifest declares no baseline_suite/after_suite arm, so the store's added-failure derivation is unmeasured (null) rather than a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c1a13efa a9e9d322 lists exactly reckon/crew/review.py, tests/test_review_record_reads_answers_from_every_copy.py and the evidence fragment, all inside the manifest's declared write paths, with no plan or index state touched.\nSCORE durability: 16\nJUSTIFICATION durability: the two cases are real falsifiers for dimension_dispositions (reproduced: returning the selected record unmerged reddens both, EXIT=1), but they assert nothing about responses or response_events \u2014 two of the three fields the section requires \u2014 and deleting those two assignments from _merge_record_answers leaves both cases green (2 passed EXIT=0).\nSCORE fit: 19\nJUSTIFICATION fit: the added name (_record_with_merged_answers) describes the mechanism, no version, plan, sprint or ticket identifier appears in the diff, and the helper sits beside _select_stored_record and _committed_record_at at reckon/crew/review.py:2363 in the module's own style.\nSCORE reuse: 19\nJUSTIFICATION reuse: the reader reuses the existing owners (_merge_record_answers, _staging_copies_of_record, _committed_record_at) rather than forking a merge, and it is 19 rather than 20 because it re-assembles the same merge-source list (selected, staging copies, committed last) that store_committed_review already builds at reckon/crew/review.py:2218-2231.\nFINDING tests/test_review_record_reads_answers_from_every_copy.py:217 follow-on: the two cases assert only dimension_dispositions, so the merge of responses and response_events \u2014 two of the three fields the section requires \u2014 has no assertion; removing the responses and response_events assignments from _merge_record_answers leaves both cases green (2 passed EXIT=0), so a regression dropping those merges would pass the node's whole gate.\nFINDING reckon/crew/review.py:2391 follow-on: _staging_copies_of_record reads review_store_root() with no base_dir, while stored_record and record_dimension_disposition still thread base_dir through, so a stored_record(project, run, base_dir=X) caller selects from X but merges its answers from the default store, and record_dimension_disposition writes the merged record back to the X file \u2014 with a non-default base_dir this copies another store's answers into X. No production caller passes base_dir today, so the path is test-only.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers/manifest.md:1 follow-on: the reviewed manifest declares no baseline_suite or after_suite arm (its test_logs name the head gate and the negative control only), so the store's added-failure derivation reads unmeasured (null) rather than a measured zero; recording the two arms would let a later reader derive the delta this one-arm evidence cannot.\n",
+  "review_run_id": "r-20261007T140756819299-review-of-a-review-record-is-read-with-every-copys-answers",
+  "reviewed_base_sha": "c1a13efa51e855b09f3140a1967597a2476490bc",
+  "reviewed_head_sha": "a9e9d32260b17570b49e75fda6550482e353a8ed",
+  "reviewed_run_id": "r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T14:19:25.255343+00:00",
+  "total": 113
+}
