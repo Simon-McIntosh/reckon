@@ -349,12 +349,12 @@ double-deliver, so do not open one: confirm `session_attached`, not merely
 producer liveness, and let the host's delivery stand.
 
 **Where no session host delivers the follower, arm it yourself** — a Codex
-session, a Claude session without the plugin, and a `-p` session, in which the
-host starts no plugin monitors. Arm the payload's `attach_line` —
+session, a Claude session without the plugin, and a `-p` session, in which
+Claude Code starts no plugin monitors. Arm the payload's `attach_line` —
 `reckon crew follow --project P --session S` through the host's per-line
 primitive named in `references/orchestrator-harness/<harness>.md` — and re-arm
 when that primitive ends. The follower produces lines, not an exit; a shell must
-never be used as a wake-up. The fallback lifetime is `--lifetime 29m`, except in
+never be used as a wake-up. The Monitor fallback's lifetime is `--lifetime 29m`, except in
 a `-p` session, where the primitive is ended at ten minutes and it is
 `--lifetime 9m`.
 

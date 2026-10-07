@@ -818,7 +818,7 @@ and the dispatch payload's `watch.delivery` reads `host`: the follower is held
 for the life of the session and **nothing re-arms it**. Do not open a monitor
 beside a host-delivered follower; a second arming double-delivers. The Monitor
 primitive is the fallback for the sessions a host does not deliver — a Codex
-session, a session without the plugin, and a `-p` session, in which the host
+session, a session without the plugin, and a `-p` session, in which Claude Code
 starts no plugin monitors — and only there does the arm-and-re-arm discipline
 below apply. The host-specific lifetimes (`--lifetime 29m`, and `--lifetime 9m`
 in a `-p` session) are named in `references/orchestrator-harness/<harness>.md`.
