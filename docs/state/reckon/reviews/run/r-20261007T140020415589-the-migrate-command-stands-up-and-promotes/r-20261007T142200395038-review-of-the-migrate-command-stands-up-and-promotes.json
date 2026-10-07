@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate arms. The reviewed manifest's baseline_suite and after_suite fields are both empty, so no same-command base arm is recorded. The head arm the manifest names (migration-final-gate.log, revision 32b9874064bc70c1470c82e8a412802bd05682a0) reports 148 passed, EXIT=0, with no FAILED or ERROR id, so the added-failure set, head failing ids minus base failing ids, is empty whatever the base: added_failure_count 0, added_failure_ids [].",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:790 (fleet_node_migrate -> fleet_migrate.migrate)",
+    "reckon/crew/fleet_supervisor.py:1315 (handle_line `ready` verb reached from the FIFO loop at fleet_supervisor.py:1459)",
+    "reckon/crew/fleet_migrate.py:652 (__main__ `request` entry reached by the srun step built at fleet_migrate.py:362)"
+  ],
+  "completed_at": "2026-10-07T14:31:36.673Z",
+  "dispatched_at": "2026-10-07T14:22:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "10031",
+      "severity": "follow-on",
+      "text": "follow-on: the added fleet_migrate._local_request duplicates the capability dispatch._write_fleet_request already owns - the same os.open(fifo, O_WRONLY|O_NONBLOCK) retry-until-deadline loop, write and close for the supervisor request FIFO - so the repository now carries two writers and two names for one FIFO (dispatch.FLEET_FIFO_NAME and fleet_supervisor.REQUEST_FIFO_NAME, both \"requests\"). The addition extends the owner only by tolerating ENOENT while the FIFO has no reader yet; extracting one shared writer, or having _local_request call the dispatch owner, would remove the fork."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit against 8eccdcd3a; 13c902590 adds the supervisor `ready` response, 3f72ea363 adds the stand-up/promote steps, 32b987406 refreshes the readiness token and preserves the promotion snapshots across a retry.",
+    "done_when": "The done-when names the named 8-file pytest gate; the manifest records that exact command at the head revision with 148 passed EXIT=0 (migration-final-gate.log), and tests/test_fleet_migrate_stand_up.py covers the dry-run, resume, --session refusal and injected-callable requirements it names.",
+    "goal": "The node goal is to carry `reckon fleet-node migrate` through its stand-up and promote steps on a standby fleet supervisor; reckon/crew/fleet_migrate.py:525-643 adds exactly those two steps (standby hold, different-node wait, structured readiness, in-job step; then reservation replacement, supervisor promote, before/after records).",
+    "manifest": "Read; it states the 8-file gate passed 148 tests at 32b987406 with its log, names the same-node negative-control log, and leaves baseline_suite/after_suite empty.",
+    "write_paths": "Read the node's declared grants; every path in the diff (reckon/crew/fleet_migrate.py, reckon/crew/fleet_supervisor.py, tests/test_fleet_migrate_stand_up.py, tests/fleet_supervisor_requests.py, tests/test_fleet_supervisor_standby.py, tests/test_standby_promotion_claims_leases.py) is inside them, and reckon/cli.py and the docs/figures paths are untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_migrate_stand_up.py:140 reddens when the same-node refusal is removed (confirmed in migration-final-negative-control.log), and the retry guards at test_fleet_migrate_stand_up.py:163,203 fail if the fresh-token or preserved-snapshot logic is reverted.",
+    "evidence": "the gate the manifest records at 32b987406 is the 8-file command the done-when names, 148 passed EXIT=0, and tests/test_fleet_migrate_stand_up.py asserts each behavioural clause; the manifest's baseline_suite/after_suite arms are empty so the run records no delta of its own.",
+    "fit": "fleet_migrate.py:448-456 follows the module's injected-callable idiom and adds no name the naming rules forbid (checked the diff for plan/version/ticket labels: none).",
+    "goal_fidelity": "reckon/crew/fleet_migrate.py:525-643 implements stand-up and promote against the standby supervisor exactly as the goal and \u00a78 name, printing the fleet and reservation records before and after.",
+    "reuse": "fleet_migrate.py:375 _local_request re-implements reckon/crew/dispatch.py:10031 _write_fleet_request (deadline-bounded non-blocking FIFO write) rather than extending that owner.",
+    "scope_discipline": "every changed file is inside the declared grants in the manifest and the goal does not imply the untouched cli.py or docs paths, so the diff carries nothing extra."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to carry `reckon fleet-node migrate` through its stand-up and promote steps on a standby fleet supervisor; reckon/crew/fleet_migrate.py:525-643 adds exactly those two steps (standby hold, different-node wait, structured readiness, in-job step; then reservation replacement, supervisor promote, before/after records).\nVERDICT done_when: The done-when names the named 8-file pytest gate; the manifest records that exact command at the head revision with 148 passed EXIT=0 (migration-final-gate.log), and tests/test_fleet_migrate_stand_up.py covers the dry-run, resume, --session refusal and injected-callable requirements it names.\nVERDICT write_paths: Read the node's declared grants; every path in the diff (reckon/crew/fleet_migrate.py, reckon/crew/fleet_supervisor.py, tests/test_fleet_migrate_stand_up.py, tests/fleet_supervisor_requests.py, tests/test_fleet_supervisor_standby.py, tests/test_standby_promotion_claims_leases.py) is inside them, and reckon/cli.py and the docs/figures paths are untouched.\nVERDICT manifest: Read; it states the 8-file gate passed 148 tests at 32b987406 with its log, names the same-node negative-control log, and leaves baseline_suite/after_suite empty.\nVERDICT diff: Read commit by commit against 8eccdcd3a; 13c902590 adds the supervisor `ready` response, 3f72ea363 adds the stand-up/promote steps, 32b987406 refreshes the readiness token and preserves the promotion snapshots across a retry.\nCALL_SITES: reckon/cli.py:790 (fleet_node_migrate -> fleet_migrate.migrate), reckon/crew/fleet_supervisor.py:1315 (handle_line `ready` verb reached from the FIFO loop at fleet_supervisor.py:1459), reckon/crew/fleet_migrate.py:652 (__main__ `request` entry reached by the srun step built at fleet_migrate.py:362)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_migrate.py:525-643 implements stand-up and promote against the standby supervisor exactly as the goal and \u00a78 name, printing the fleet and reservation records before and after.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate the manifest records at 32b987406 is the 8-file command the done-when names, 148 passed EXIT=0, and tests/test_fleet_migrate_stand_up.py asserts each behavioural clause; the manifest's baseline_suite/after_suite arms are empty so the run records no delta of its own.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed file is inside the declared grants in the manifest and the goal does not imply the untouched cli.py or docs paths, so the diff carries nothing extra.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_fleet_migrate_stand_up.py:140 reddens when the same-node refusal is removed (confirmed in migration-final-negative-control.log), and the retry guards at test_fleet_migrate_stand_up.py:163,203 fail if the fresh-token or preserved-snapshot logic is reverted.\nSCORE fit: 16\nJUSTIFICATION fit: fleet_migrate.py:448-456 follows the module's injected-callable idiom and adds no name the naming rules forbid (checked the diff for plan/version/ticket labels: none).\nSCORE reuse: 8\nJUSTIFICATION reuse: fleet_migrate.py:375 _local_request re-implements reckon/crew/dispatch.py:10031 _write_fleet_request (deadline-bounded non-blocking FIFO write) rather than extending that owner.\nFINDING reckon/crew/dispatch.py:10031 follow-on: the added fleet_migrate._local_request duplicates the capability dispatch._write_fleet_request already owns - the same os.open(fifo, O_WRONLY|O_NONBLOCK) retry-until-deadline loop, write and close for the supervisor request FIFO - so the repository now carries two writers and two names for one FIFO (dispatch.FLEET_FIFO_NAME and fleet_supervisor.REQUEST_FIFO_NAME, both \"requests\"). The addition extends the owner only by tolerating ENOENT while the FIFO has no reader yet; extracting one shared writer, or having _local_request call the dispatch owner, would remove the fork.",
+  "review_run_id": "r-20261007T142200395038-review-of-the-migrate-command-stands-up-and-promotes",
+  "reviewed_base_sha": "8eccdcd3a319fbc730e6fa1215a1515269459c15",
+  "reviewed_head_sha": "32b9874064bc70c1470c82e8a412802bd05682a0",
+  "reviewed_run_id": "r-20261007T140020415589-the-migrate-command-stands-up-and-promotes",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:00:00.392278+00:00",
+  "total": 94
+}
