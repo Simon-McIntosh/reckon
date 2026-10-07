@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T17:09:41.053Z",
+  "dispatched_at": "2026-10-07T17:02:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "reasoning-1",
+      "reason": "a node following the plan literally cannot satisfy cases 1 and 4 within its declared write scope, so the plan must name the obligation's producing function and the surface that reports it and widen the write scope to reach them.",
+      "text": "\u00a714 requires a coordinator-visible \"malformed obligation\" (done-when cases 1 and 4: \"the record is reported as malformed\", \"the malformed obligation still standing\") yet scopes its single node to `reckon/crew/repair.py` and `reckon/crew/review.py` and names no caller or reader for it: the reflex's all-claimless path returns early in `recovery.py` with reason \"the stored review carries no finding, so composes no repair\" \u2014 before `compose_repair_for_run`, whose return `recovery.py` does pass through \u2014 and the surfaces that make such a duty visible (the obligations derivation in `obligations.py` and the audit in `reports.py`) are derived outside those two files, so no in-scope code path raises or reports the obligation",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bbede2d7dcdceff213de5f030214101105f3adaba394d160eefc5e638b9b284e",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 121,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261007T170220742609-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "c793b0f5b3774d24b06e3cd25d1572b13858700a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the census directories resolve and the three cited claimless files exist exactly as quoted: `r-20260921T053443850077-scrape-fixture.at-23efa1f10e2a.json` and imas-ambix's committed `.../run/r-20260921T053443850077-scrape-fixture/r-20260921T120750480911-review-of-the-delegated-peeling.json` both hold `[{\"F\": 1}, {\"F\": 2}, {\"F\": 3}]`, and `docs/state/reckon/reviews/run/r-20261007T051112533789-a-reviews-lifecycle-is-derived/legacy-a75fc466a5cf.json` holds `{\"file\": \"reckon/crew/review_lifecycle\"}`; the \"24 real findings written as bare strings or under `detail` and `title`\" figure reproduces (21 bare-string findings plus 3 detail-keyed findings).",
+    "done_when": "pass \u2014 the node names a measurable negative control (\"The first case fails when the predicate accepts a mapping with no claim field\"), and case 2 is genuinely red on current code (`repair.review_findings` skips a bare string at repair.py:125 and reads only `text` at repair.py:131). The first and fourth cases' \"reported as malformed\" leg rests on the obligation surface flagged under reasoning.",
+    "evidence_paths": "pass \u2014 the done-when's tests live in the repository test tree and name no session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the described symbols carry no plan label, stage name, ticket number or version tag, and no changelog prose.",
+    "reasoning": "a finding \u2014 the malformed obligation \u00a714 requires is asserted but has neither a named producer nor a reader inside the node's declared write scope.",
+    "single_goal": "pass \u2014 one node, one rule: a finding that states no claim is not a finding, delivered as the `review.py` predicate plus its use in `repair.review_findings` and the malformed-record rule.",
+    "wiring": "pass \u2014 s14 declares no live dependency (`data-links=\"\"`, the plan's convention throughout) and its build relationship is carried by followup f-erkc-015, which dispatches it beside \u00a713's node (3) on the disjoint scopes `scripts/import_host_reviews.py` vs `repair.py`/`review.py`; the \u00a712 and \u00a713-promotion work it rests on has landed."
+  },
+  "section_digests": {
+    "_document": "65ca1da17a46bbd1e01ba270ed9d874cbe6db92066a9a933a0162b43bfe321bc",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "4e45c5a7861b9a62c39cd39f8b587b83eadb1985c0cc364c8a9ca47a9173f90a",
+    "s14": "35f254da6f7c5a0f5163785d386545272b2125e224dd8b0e0547858d2fdaea66",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T17:10:59.730319+00:00"
+}
