@@ -778,11 +778,23 @@ def _composed_review_lane(
     """
     if record.get("subject") == "plan":
         resolved = _resolved_review_config(project, config)
+        local = str(resolved.get("local_backend") or "")
         if record.get("local"):
-            return ["--local", "--backend", str(resolved.get("local_backend") or "")]
-        backend = (resolved.get("roles", {}).get("review") or {}).get("backend")
-        backend = backend or resolved.get("default_backend")
-        return ["--backend", str(backend)] if backend else []
+            return ["--local", "--backend", local]
+        # A plan review that names no lane takes the review lanes every review
+        # takes, the project's declared review backend first: excluded and
+        # in-harness backends never appear, so it stays off a metered lane, and
+        # a saturated local lane with nothing ahead of it holds the review.
+        declared = (resolved.get("roles", {}).get("review") or {}).get("backend")
+        eligible, withheld = _review_lane_plan(
+            resolved, owning_backend=str(declared or "")
+        )
+        if withheld is not None:
+            return None
+        chosen = eligible[0] if eligible else local
+        if chosen == local:
+            return ["--local", "--backend", local]
+        return ["--backend", chosen]
     owning_backend = str(record.get("backend") or "").strip()
     try:
         resolved = _resolved_review_config(project, config)
@@ -2642,6 +2654,20 @@ def _dispatch_composed_review(
 
     if record.get("subject") == "plan":
         lane = _composed_review_lane(project, record, resolved)
+        if lane is None:
+            reason = _no_lane_reason(run_id, resolved, kind="review")
+            _record_review_dispatch(
+                dispatch_subject,
+                status="awaiting-lane",
+                reason=reason,
+                reviewed_head=fields["head"],
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "awaiting_lane": True,
+                "reason": reason,
+            }
         on_local_lane = "--local" in lane
         backend = lane[-1] if lane else str(resolved.get("default_backend") or "")
     else:

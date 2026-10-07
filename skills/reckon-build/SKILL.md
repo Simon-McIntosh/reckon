@@ -91,7 +91,7 @@ dispatch gate refuses an implementation node until one exists, at any version,
 with every finding answered. Compose it once per plan:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --rubric design --session <session> --local
+reckon crew review-plan --project <project> --plan <slug> --rubric design --session <session>
 ```
 
 Read it back with `crew(project, view="plan-review", plan=<slug>)`. The reuse

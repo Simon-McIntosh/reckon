@@ -634,12 +634,12 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 A new plan is written by you and executed by others, and nothing between those
 two moments checks that what you wrote says what you meant. Release it only
 after a second reader has read it. When the authoring session's last write is
-done, compose one content review on the local lane — the rubber-duck read for
+done, compose one content review — the rubber-duck read for
 wiring, measurable done-whens with negative controls, single goals, durable
 evidence paths, resolving anchors, naming and reasoning:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session> --local
+reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session>
 ```
 
 It runs read-only, stores its findings against the plan's content, and its
@@ -671,7 +671,7 @@ before any build is dispatched, with your session in place of the invocation's
 `<session>`:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session> --local
+reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session>
 ```
 
 The tool composes no review itself; the author decides when the session's
