@@ -381,36 +381,20 @@ def test_sync_refuses_to_link_from_a_worktree(
     assert not (home / ".claude" / "skills" / PLUGIN_NAME).exists()
 
 
-def _entry_signature(link: Path) -> tuple[bool, str | None]:
-    """An entry's presence and the target it names, read without following it.
-
-    ``os.readlink`` rather than ``resolve`` so a symlink that dangles still
-    reports the target it names; a real file or directory reports presence with
-    no target. The pair is compared before and after a run to show the entry was
-    not touched, whatever it happened to be.
-    """
-    if link.is_symlink():
-        return True, os.readlink(link)
-    return link.exists(), None
-
-
-def test_sync_leaves_the_real_skills_directory_untouched(
+def test_sync_links_into_the_override_and_elsewhere_nothing(
     tmp_path: Path,
     main_checkout: Path,
     monkeypatch: pytest.MonkeyPatch,
     isolated_claude_skills_dir: Path,
 ):
-    """A sync run links into the test's temporary directory, not the real one.
+    """A sync run links under RECKON_CLAUDE_SKILLS_DIR, not the default home.
 
-    The autouse fixture points ``RECKON_CLAUDE_SKILLS_DIR`` at a per-test
-    temporary directory, so the link lands there. The operator's own
-    ``~/.claude/skills/reckon-crew-host`` entry must be exactly as it was —
-    present or absent, and naming the target it named — because a test that
-    repointed it would corrupt the user-level link every session loads.
+    The autouse fixture points the override at a per-test temporary directory,
+    so the link must land there. The patched home's default ``.claude/skills``
+    must stay uncreated, which proves the run resolved the override rather than
+    ``~/.claude/skills`` — and never touches the operator's real directory,
+    which this test does not read.
     """
-    real = Path.home() / ".claude" / "skills" / PLUGIN_NAME
-    before = _entry_signature(real)
-
     result = _run_sync(
         tmp_path, monkeypatch, main_checkout, skills_dir=isolated_claude_skills_dir
     )[0]
@@ -419,4 +403,4 @@ def test_sync_leaves_the_real_skills_directory_untouched(
     dest = isolated_claude_skills_dir / PLUGIN_NAME
     assert dest.is_symlink()
     assert dest.resolve() == (main_checkout / "plugins" / "crew-host").resolve()
-    assert _entry_signature(real) == before
+    assert not (tmp_path / "home" / ".claude" / "skills").exists()

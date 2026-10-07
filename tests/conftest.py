@@ -1062,12 +1062,29 @@ def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
 # directory, so a run under test never leaves its own tree.
 CLAUDE_SKILLS_DIR_ENV = "RECKON_CLAUDE_SKILLS_DIR"
 
+# Modules that resolve the personal skills directory for themselves by patching
+# ``Path.home``: their doctor runs already read a fixture home, so pointing the
+# override at a shared per-test directory would send the skills-presence check
+# somewhere other than the tree the module built. They keep the resolver's
+# ``Path.home`` fallback, which for them is the fixture home — still away from
+# the operator's real directory.
+_SKILLS_DIR_SELF_ISOLATED_MODULES = frozenset({"test_doctor"})
+
 
 @pytest.fixture(autouse=True)
-def isolated_claude_skills_dir(tmp_path, monkeypatch):
-    """No test's sync or doctor reads or writes the real ~/.claude/skills."""
-    skills = tmp_path / "claude-skills"
-    skills.mkdir()
+def isolated_claude_skills_dir(request, tmp_path_factory, monkeypatch):
+    """No test's sync or doctor reads or writes the real ~/.claude/skills.
+
+    The directory is made under the session's base temp tree rather than the
+    test's own ``tmp_path``: a fixture that added an entry to ``tmp_path`` would
+    change what a test listing or comparing that directory sees. A module in
+    ``_SKILLS_DIR_SELF_ISOLATED_MODULES`` supplies its own isolation and keeps
+    the fallback.
+    """
+    module = getattr(getattr(request.node, "module", None), "__name__", "")
+    if module.rsplit(".", 1)[-1] in _SKILLS_DIR_SELF_ISOLATED_MODULES:
+        return None
+    skills = tmp_path_factory.mktemp("claude-skills")
     monkeypatch.setenv(CLAUDE_SKILLS_DIR_ENV, str(skills))
     return skills
 
