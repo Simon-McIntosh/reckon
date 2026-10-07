@@ -291,6 +291,14 @@ class HostHarness:
     def stdout_text(self) -> str:
         return self.stdout.read_text(encoding="utf-8") if self.stdout.exists() else ""
 
+    def record_path(self) -> Path:
+        """The census record the host writes, named for the owner it was given."""
+        return self.state_dir / f"{self.owner.pid}-{self.owner.start_time}.json"
+
+    def record(self) -> dict:
+        """The census record the host last wrote, read back from disk."""
+        return json.loads(self.record_path().read_text(encoding="utf-8"))
+
 
 @pytest.fixture()
 def host(tmp_path: Path):
@@ -613,3 +621,41 @@ def test_the_crew_host_verb_reads_a_fifo_descriptor_and_a_pre_read_request(
             owner.end()
     finally:
         os.close(descriptor)
+
+
+def test_the_record_names_the_owner_that_ended(host: HostHarness) -> None:
+    """The final record carries the owner-ended reason and the stop time.
+
+    The host re-checks its owner once per idle tick, so it stops within one poll
+    interval of the owner's exit. The owner's death is bracketed by a clock read
+    either side of ``end()``; the recorded stop time must fall no later than one
+    poll after the later read. The base code writes none of these fields, so this
+    test fails on the base -- that failure is the negative control.
+    """
+    host.request("alpha", "sess")
+    _wait_for(
+        lambda: len(host.child_pids()) >= 1, timeout=START_BOUND, description="a child"
+    )
+    before = time.time()
+    host.owner.end()
+    after = time.time()
+    assert host.process is not None
+    host.process.wait(timeout=STOP_BOUND)
+    record = host.record()
+    assert record["stop_reason"] == "owner ended", record
+    assert record["stopped_at"] >= before, record
+    assert record["stopped_at"] <= after + float(POLL_SECONDS) + 0.5, record
+
+
+def test_the_record_names_a_signal(host: HostHarness) -> None:
+    """A signalled host records that it was signalled, not that its owner ended."""
+    host.request("alpha", "sess")
+    _wait_for(
+        lambda: len(host.child_pids()) >= 1, timeout=START_BOUND, description="a child"
+    )
+    assert host.process is not None
+    host.process.send_signal(signal.SIGTERM)
+    host.process.wait(timeout=STOP_BOUND)
+    record = host.record()
+    assert record["stop_reason"] == "signalled", record
+    assert record["stopped_at"] >= 0, record
