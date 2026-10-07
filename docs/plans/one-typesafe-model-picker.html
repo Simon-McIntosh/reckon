@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-local-lane-is-the-default">
-  <meta name="plan-informs" content="a-window-paces-the-lane,the-local-lane-is-the-default">
+  <meta name="plan-informs" content="a-window-paces-the-lane,the-local-lane-is-the-default,advise-the-lane-never-force-it">
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="185">
+<meta name="plan-version" content="187">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -41,6 +41,7 @@
       </tbody>
     </table>
     <p>The lead's direction (2026-10-02): one lane per provider (claude, clive, codex), and a router that picks both the <strong>family and the model</strong> for every dispatch and handles the whole choice. The orchestrator does not pick. It may write a free-form comment, which the router passes on to the model making the judgment. That model is <strong>Jev</strong>, TypeSafe's flagship and first System One model, which returns typed answers with probabilities rather than generated text. Code keeps every hard constraint; Jev supplies the semantic judgment of which family and model fit the node. This is a significant redesign. The typesafe-ai skill and the live TypeSafe docs guide it; the skill was installed on 2026-10-02 as a Claude Code plugin and is invoked as <code>/typesafe:typesafe-ai</code>. The router is prototyped and dogfooded on reckon's own dispatches before it becomes anyone's default (§6).</p>
+    <p><strong>Narrowed since (2026-10-06 and 2026-10-07).</strong> The lead's later rulings, recorded as decisions <code>local-is-authoritative</code> and <code>picker-chooses-the-lane</code>, narrow <code>selection-authority</code>. Jev chooses the lane and model for every dispatch that names no lane, and the coordinator's comment is context for that choice. A coordinator may still name a lane with <code>--local</code> or <code>--backend</code> when the run must go there. A named lane is authoritative, and Jev's choice is then recorded as a shadow for comparison. "Never by naming a lane" in <code>selection-authority</code> holds only for dispatches that name none.</p>
     <p>It overlaps <code>the-local-lane-is-the-default</code> (route by backend and model, local by default), <code>a-window-paces-the-lane</code> and <code>advise-the-lane-never-force-it</code>. This plan is sequenced after the first and is meant to absorb the routing parts of all three, which the design section reconciles explicitly.</p>
 
     <section class="section-landed">
@@ -608,7 +609,7 @@
     <div class="r-comment-body"><p>independent review of watch-observer-is-host-aware scored 120/120 across goal_fidelity, evidence, scope_discipline, durability, fit and reuse (each 20); the landed 10-line change at reckon/crew/runs.py:3194 makes watch_observer_alive return None for a registration naming a foreign host, its gate (tests/test_watch_observer_is_host_aware.py plus 37 importing files) records 442 passed EXIT=0 head against 438 EXIT=0 base with 0 added failures, and its declared negative control reddens the two foreign-host tests at EXIT=1; no blocking or follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T101111060064-review-of-dispatch-context-estimate-is-one-figure" data-who="reckon-build" data-when="2026-10-07T10:25:14.580Z">
-    <div class="r-comment-body"><p>independent review of r-20261007T092514974343-dispatch-context-estimate-is-one-figure stored to both scope paths as a parsed record: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 19, durability 18, fit 19, reuse 19; total 111), reviewed_base_sha 8c1fe22f02881a3c6deae6470df18b1776971021 and reviewed_head_sha 63976acbaa544b743471a3b021cff9c8b44cac8c recorded, added_failure_count 0 with no added ids derived from the reviewed run&#x27;s gate-base.log (195 passed EXIT=0) and gate-head.log (196 passed EXIT=0); two follow-on findings, no blocking finding.</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261007T092514974343-dispatch-context-estimate-is-one-figure stored to both scope paths as a parsed record: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 19, durability 18, fit 19, reuse 19; total 111), reviewed_base_sha 8c1fe22f02881a3c6deae6470df18b1776971021 and reviewed_head_sha 63976acbaa544b743471a3b021cff9c8b44cac8c recorded, added_failure_count 0 with no added ids derived from the reviewed run's gate-base.log (195 passed EXIT=0) and gate-head.log (196 passed EXIT=0); two follow-on findings, no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
