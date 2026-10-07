@@ -25,7 +25,7 @@
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -82,7 +82,8 @@
         <tr><td>Does reckon count its output as delivering?</td>
           <td>Yes: stdout is a socket, which <code>delivery_mode_of</code> classifies as <code>stream</code>.</td></tr>
         <tr><td>Does it outlive the Monitor tool's 30-minute cap?</td>
-          <td>Pending: heartbeats at 10, 20, 31 and 40 minutes, then a deliberate exit at 45.</td></tr>
+          <td>Yes: armed at 04:20:21 and still alive at its 31-minute heartbeat, past the 30-minute cap that ends
+            a Monitor-tool watch.</td></tr>
         <tr><td>What happens in other sessions?</td>
           <td>It armed in two peer sessions that ran <code>/reckon-create</code>; in each, the probe printed one line and exited.</td></tr>
       </tbody>
@@ -105,8 +106,11 @@
         costs nothing on GPFS;</li>
       <li>blocks reading the FIFO with a 60-second timeout, so a request is handled as soon as it arrives and
         the owner's liveness is re-checked on each timeout; it prints nothing;</li>
-      <li>on the first request, replaces itself with <code>reckon crew host</code> (same pid and same stdout) and
-        hands it that request. It finds the checkout by resolving the entry-point script's own path with
+      <li>on the first request, replaces itself with <code>reckon crew host</code> (same pid and same stdout). It
+        never parses a request: it opens the FIFO once, read-write, reads exactly one line (bash reads a pipe a
+        byte at a time, so it takes no more), and passes that line and the open descriptor to
+        <code>reckon crew host</code>, which is the protocol's only reader. The descriptor stays open across the
+        exec, so a request written in between waits in the pipe rather than being lost. It finds the checkout by resolving the entry-point script's own path with
         <code>readlink -f</code> and taking the directory that contains <code>plugins/crew-host/bin/crew-host</code>,
         then runs that checkout's <code>.venv/bin/reckon</code>, never a bare <code>reckon</code> from
         <code>PATH</code>;</li>
@@ -123,23 +127,29 @@
       for that session and no output in its pane, and that process exits within a minute of the session ending.</p>
 
     <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§4 — <code>reckon crew host</code> supervises the session's followers</h2>
-    <p><strong>Deliverable.</strong> A <code>crew host</code> command that, once exec'd by the entry point, reads one
-      JSON request per line from the FIFO. Each request names a project, a session, and optionally observed sessions
-      and a theme. For each request it runs <code>reckon crew follow --project P --session S</code>, with the request's
-      <code>--observe-session</code> and <code>--theme</code> flags and no <code>--lifetime</code>, under these rules:</p>
+    <p><strong>Deliverable.</strong> A <code>crew host</code> command, hidden from help because only the entry
+      point runs it, that reads one JSON request per line from the FIFO descriptor it inherits. Each request names
+      a project and a session. For each request it runs <code>reckon crew follow --project P --session S</code>
+      with no <code>--lifetime</code>, under the rules below.</p>
+    <p><strong>Prior art.</strong> <code>reckon/crew/fleet_supervisor.py</code> already serves a request FIFO
+      and supervises children. It is not the owner here, for three reasons. It runs once per SLURM allocation,
+      not once per Claude Code session, and does not exist on a login node. It starts each service as its own
+      session leader with its output logged, whereas a follower must end with its session and write to that
+      session's stdout. And a follower's lines reach the pane only when the follower descends from the plugin
+      monitor that holds that stdout. The session host reuses its parts instead:
+      <code>fleet_supervisor.next_backoff</code> for restarts, and <code>dispatch._write_fleet_request</code> for
+      the client write in §5.</p>
     <ul>
       <li><strong>Output.</strong> Children inherit the host's stdout, so their lines reach the pane exactly as the
         follower prints them and their registrations read as delivering. Child stderr goes to
         <code>~/.cache/reckon/session-host/&lt;claude-pid&gt;-&lt;start&gt;.log</code> on the shared home, where a
         later session can read it, and never to the pane. The session host itself writes nothing to stdout, at
         start, on a request, or on a restart.</li>
-      <li><strong>One child per project and session.</strong> A request is identified by its project and session. A
-        request for a project and session already followed, naming no observed session the running child lacks,
-        changes nothing and writes nothing. A request that adds observed sessions restarts that child with the
-        union of observed sessions, and the follower's own replay covers the restart. The theme is taken from the
-        first request for that project and session; later themes are ignored.</li>
-      <li><strong>Restarts.</strong> A child that exits while its owner lives is restarted with backoff from 1 to 60
-        seconds. The session host does not start or restart its own child for a project and session while a
+      <li><strong>One child per project and session.</strong> A request for a project and session already followed
+        changes nothing and writes nothing. A request carries no observed sessions: observing another session's
+        runs stays on today's Monitor path.</li>
+      <li><strong>Restarts.</strong> A child that exits while its owner lives is restarted on the schedule
+        <code>fleet_supervisor.next_backoff</code> already applies to declared services. The session host does not start or restart its own child for a project and session while a
         live follower it did not start holds that registration, so it never contends with a coordinator who armed
         one by hand. It never stops a child it already runs because another follower appeared.</li>
       <li><strong>The session host never exits on its own,</strong> because Claude Code would not restart it. It ends
@@ -159,16 +169,17 @@
       <code>_ensure_watch_producer</code> and <code>_watcher_delivery_admission</code>: when the launch kind is
       <code>cli</code>, a session is named, that session is not attached, and the calling Claude process (resolved
       the way <code>_coordinator_runtime</code> already resolves it) has a live session host, dispatch writes a request to
-      its FIFO and waits, for at most <code>WATCHER_LOAD_BOUND_SECONDS</code> (the bound
-      <code>_ensure_watch_producer</code> already uses), until the session reads as attached. A session host is live
-      when its FIFO has a reader, which a non-blocking open for writing tests without waiting. Then it
+      its FIFO through <code>_write_fleet_request</code> with no wait, so a FIFO without a reader means no session
+      host and falls back at once; that function's error text names the FIFO rather than the fleet. It then waits,
+      for at most <code>WATCHER_LOAD_BOUND_SECONDS</code> (the bound <code>_ensure_watch_producer</code> already
+      uses), until the session reads as attached. Then it
       reads the watch state again and admits as it does today. Without a session host, or when it does not attach the
       session within the bound, dispatch behaves exactly as it does now, with the attach line and the refusal. The
       dispatch payload gains a <code>delivery</code> field: <code>"host"</code> when the session host attached the
       session, <code>"monitor"</code> otherwise. When it reads <code>"host"</code>, the payload carries no arming
-      instruction. A
-      <code>reckon crew host request</code> subcommand sends the same request by hand, which is how a coordinator adds
-      an observed session.</p>
+      instruction. This plan adds two surfaces, the hidden <code>crew host</code> verb and the payload's
+      <code>delivery</code> field, and retires none: the Monitor path stays the fallback for Codex sessions,
+      <code>-p</code> sessions and sessions without the plugin.</p>
     <p><strong>Done when</strong> a test with a stub host shows a dispatch from an unattached session admitted with
       <code>delivery: "host"</code> and no refusal, and the same dispatch with no host still refused with the same
       refusal text as before this change.</p>
