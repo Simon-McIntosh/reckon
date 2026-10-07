@@ -1,0 +1,99 @@
+<article class="landed-report" data-run-id="r-20261007T165102990163-picker-helpers-have-one-owner" data-node="picker-helpers-have-one-owner" id="picker-helpers-have-one-owner">
+<h3>Each duplicated picker helper and the profile cache have one owner</h3>
+<p>Design review found picker helpers copied across modules and a hand-rolled
+run-time-profile cache beside the shared one. Both are now single-owner: the
+helpers live once in <code>reckon/crew/run_time_profile.py</code> and are
+imported everywhere else, and the profile cache is served by
+<code>reckon.capabilities</code>. No rendered picker figure changed.</p>
+
+<h4 id="picker-helpers-have-one-owner-what-landed">What landed</h4>
+<ul>
+<li><strong>One owner per helper.</strong>
+<code>run_time_profile._size_class</code> owns the budget/token size
+classification; <code>lane_context._bucket</code>, a byte-for-byte duplicate,
+is gone, and <code>lane_context._size_of</code> now delegates to
+<code>_size_class</code> by handing it a one-field row. <code>_number</code>
+and <code>_percentile</code> are defined once in
+<code>run_time_profile</code> and imported by <code>picker/outcomes.py</code>
+and <code>picker/lane_context.py</code>; the local copies and their
+<code>import math</code> are deleted. <code>_number</code> preserves the input's
+own type — an <code>int</code> stays an <code>int</code> and a
+<code>float</code> stays a <code>float</code> — while rejecting
+<code>bool</code>, non-numeric and non-finite values. Merging the three copies
+without this also merged their return types, and the picker state then rendered
+an integer wall-second figure as <code>300.0</code> where the base rendered
+<code>300</code>; the type-preserving form restores the base's bytes.</li>
+<li><strong>The profile cache routes through
+<code>capabilities.cached_pick_input</code>.</strong> The hand-rolled reader,
+writer, schema marker and key (<code>_read_persisted_profile</code>,
+<code>_write_persisted_profile</code>, <code>_profile_key</code>,
+<code>_stat_stamp</code>, <code>_profile_cache_path</code>,
+<code>_PROFILE_FILE_SCHEMA</code>) are deleted. <code>lane_context</code> now
+calls a new shared entry point,
+<code>capabilities.cached_pick_input_rekeyed</code>, which owns the schema
+marker, the atomic write and the corrupt-entry handling, and which re-keys after
+the build so a profile built while the ledger was still settling is not cached.
+The on-disk name is preserved (<code>run-time-profile/&lt;project&gt;.json</code>).
+The file name is checked against the ledger's safe-identifier pattern before it
+is formed, so a project string never forms a cache path unchecked; an unsafe id
+is read without caching rather than raising on a pick, which is what the base's
+guarded reader and writer did (they raised deep and caught <code>ValueError</code>
+at the cache boundary).</li>
+<li><strong>The lane document is read once.</strong> <code>local_lane_load()</code>
+now returns the parsed document it read, and <code>lane_context.local_lane()</code>
+reuses that value instead of reading it a second time.</li>
+</ul>
+
+<h4 id="picker-helpers-have-one-owner-checks">Checks that could have failed</h4>
+<p><code>tests/test_picker_helpers_have_one_owner.py</code> holds four
+tests:</p>
+<ul>
+<li>A <strong>positive control</strong> asserting each behaviour has exactly one
+definition in <code>run_time_profile.py</code> — without it, a scan that finds
+nothing would read the same whether the helpers were merged or simply renamed
+away.</li>
+<li>A <strong>one-owner scan</strong> asserting no module under
+<code>reckon/crew/picker/</code> defines an owned helper name
+(<code>_bucket</code>, <code>_number</code>, <code>_percentile</code>).</li>
+<li>A <strong>before/after render check</strong>: the bytes
+<code>state.jinja</code> rendered at the base revision for one frozen fixture
+(integer wall-second figures included) are committed as <code>GOLDEN_STATE</code>,
+and the head must reproduce them exactly. The bytes were produced by running the
+base tree's own code over the same fixture through <code>render_base_state.py</code>,
+never transcribed by hand. This replaced an earlier test that rendered the new
+code twice — a check that rendered the code twice moves with the code it is
+meant to hold still. It was confirmed to fail against a float-returning
+<code>_number</code> (<code>p90_s":500.0</code> against the base's
+<code>500</code>) before the type-preserving owner landed; log
+<code>before-fix-render.log</code>.</li>
+<li>An <strong>unsafe-name guard</strong> asserting a project id that is not a
+safe cache file name never forms a cache path: the profile is read without being
+cached, and no file is written under the cache root.</li>
+</ul>
+<p><strong>Gate.</strong> Every <code>test_picker*.py</code>,
+<code>test_run_time_profile*.py</code>, <code>test_jev_weighs_context.py</code>,
+and every file importing <code>reckon.capabilities</code>,
+<code>lane_context</code> or <code>run_time_profile</code>, run with
+<code>-n 8</code>. Base revision <code>4e2f6823c</code> (26 files, the new test
+does not exist at base): <strong>369 passed, EXIT=0</strong> (146.08&nbsp;s).
+Head <code>b637ec547</code> (27 files): <strong>373 passed, EXIT=0</strong>
+(114.02&nbsp;s). Delta is +4, the new tests, with no added failure.</p>
+<p><strong>Declared negative control</strong> — re-add a local
+<code>_bucket</code> definition in <code>lane_context.py</code> at the head
+<code>b637ec547</code> — produced <code>EXIT=1</code>, <code>1 failed, 3
+passed</code> at
+<code>tests/test_picker_helpers_have_one_owner.py::test_no_second_definition_of_an_owned_helper_under_picker</code>,
+reporting <code>{'reckon/crew/picker/lane_context.py': ['_bucket']}</code>, while
+the unmutated head passes that test. Log: <code>gate-negative-control.log</code>.</p>
+
+<h4 id="picker-helpers-have-one-owner-deviation">One declared deviation from the spec</h4>
+<p>The spec listed <code>_ledger_stamp</code> among the symbols to delete. It is
+<strong>retained</strong> (beside <code>_PROFILE_CACHE</code> and
+<code>_profile_cache_root</code>) because three test files named by this node's
+own gate, and outside this node's write scope, pin them:
+<code>tests/test_picker_foreign_wait_is_bounded.py</code> and
+<code>tests/test_one_cache_cascade_serves_every_kind.py</code>. The shared
+cache takes a caller-computed freshness key, so a stamp accessor is legitimately
+the caller's responsibility; what was deleted is the hand-rolled reader, writer,
+schema and key, so the cache mechanism itself has one owner.</p>
+</article>
