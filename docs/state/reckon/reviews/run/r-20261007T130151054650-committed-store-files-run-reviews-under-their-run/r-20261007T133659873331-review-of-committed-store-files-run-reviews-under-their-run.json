@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:8765",
+    "scripts/import_host_reviews.py:355",
+    "scripts/import_host_reviews.py:532"
+  ],
+  "completed_at": "2026-10-07T13:47:52.478Z",
+  "dispatched_at": "2026-10-07T13:37:36Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 20d7e67a4; 4943a03b5 reorders the routing and adds the two-case test, da3832d22 merges origin/main keeping both the routing and the answer merge, 4de691464 updates the fragment's figures, and d9adb6d90 reindents only the docstring body (git diff -w empty).",
+    "done_when": "the done-when names a test storing a run review carrying its run's plan_slug and a null plan_version, found in the run tree under the reviewed run's directory at the review run's file name and failing when the plan branch is tested first again; tests/test_committed_store_files_run_reviews_under_their_run.py:66 asserts the path is .../run/<reviewed-run-id>/<review-run-id>.json, :68 asserts the plan tree was not written, and negative_control.log records 1 failed, EXIT=1 with the plan-first order restored.",
+    "goal": "the node's goal is to make store_committed_review file a body naming a reviewed run under that run's directory in the run tree whatever plan_slug it carries; at head d9adb6d90 reckon/crew/review.py:2192 tests reviewed_run_id before plan_slug and calls review_path, which resolves run/<reviewed-run-id>/<review-run-id>.json.",
+    "manifest": "read; status complete, commits 4943a03b5, da3832d22, 4de691464 and d9adb6d90, tests line recording 21 passed EXIT=0 at HEAD d9adb6d90, negative_control_log naming the red log, and baseline_suite/after_suite both null.",
+    "write_paths": "the manifest declares reckon/crew/review.py, tests/test_committed_store_files_run_reviews_under_their_run.py, the section's evidence fragment, and a figures directory; the run's own commits touch only the first three, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_committed_store_files_run_reviews_under_their_run.py:66 and :68 fail when the plan branch is tested first again, which negative_control.log reproduces (1 failed, EXIT=1).",
+    "evidence": "the gate the done-when names ran four files at HEAD d9adb6d90 recording 21 passed EXIT=0 (gate.log) and the declared negative control reddens the routing test at EXIT=1 (negative_control.log), but the reviewed manifest names no baseline_suite/after_suite arm so the added-failure count is unmeasured.",
+    "fit": "reckon/crew/review.py:2192 tests the reviewed run first, matching names_a_review_subject at review.py:1278 and the host import's classifier at scripts/import_host_reviews.py:119, the repository's existing idiom.",
+    "goal_fidelity": "reckon/crew/review.py:2192 routes any body naming reviewed_run_id to review_path under run/<reviewed-run-id>/, so a run review of a plan-carried run lands where the section requires.",
+    "reuse": "the change reuses review_path and plan_review_path at reckon/crew/review.py:2192-2205 rather than adding a path builder; a search of reckon/crew found those two as the only run and plan review path owners.",
+    "scope_discipline": "the run's commits change only reckon/crew/review.py, tests/test_committed_store_files_run_reviews_under_their_run.py and the section's evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make store_committed_review file a body naming a reviewed run under that run's directory in the run tree whatever plan_slug it carries; at head d9adb6d90 reckon/crew/review.py:2192 tests reviewed_run_id before plan_slug and calls review_path, which resolves run/<reviewed-run-id>/<review-run-id>.json.\nVERDICT done_when: the done-when names a test storing a run review carrying its run's plan_slug and a null plan_version, found in the run tree under the reviewed run's directory at the review run's file name and failing when the plan branch is tested first again; tests/test_committed_store_files_run_reviews_under_their_run.py:66 asserts the path is .../run/<reviewed-run-id>/<review-run-id>.json, :68 asserts the plan tree was not written, and negative_control.log records 1 failed, EXIT=1 with the plan-first order restored.\nVERDICT write_paths: the manifest declares reckon/crew/review.py, tests/test_committed_store_files_run_reviews_under_their_run.py, the section's evidence fragment, and a figures directory; the run's own commits touch only the first three, all inside the declared scope.\nVERDICT manifest: read; status complete, commits 4943a03b5, da3832d22, 4de691464 and d9adb6d90, tests line recording 21 passed EXIT=0 at HEAD d9adb6d90, negative_control_log naming the red log, and baseline_suite/after_suite both null.\nVERDICT diff: read commit by commit against base 20d7e67a4; 4943a03b5 reorders the routing and adds the two-case test, da3832d22 merges origin/main keeping both the routing and the answer merge, 4de691464 updates the fragment's figures, and d9adb6d90 reindents only the docstring body (git diff -w empty).\nCALL_SITES: reckon/crew/promotion.py:8765, scripts/import_host_reviews.py:355, scripts/import_host_reviews.py:532\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2192 routes any body naming reviewed_run_id to review_path under run/<reviewed-run-id>/, so a run review of a plan-carried run lands where the section requires.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate the done-when names ran four files at HEAD d9adb6d90 recording 21 passed EXIT=0 (gate.log) and the declared negative control reddens the routing test at EXIT=1 (negative_control.log), but the reviewed manifest names no baseline_suite/after_suite arm so the added-failure count is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the run's commits change only reckon/crew/review.py, tests/test_committed_store_files_run_reviews_under_their_run.py and the section's evidence fragment, all inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_committed_store_files_run_reviews_under_their_run.py:66 and :68 fail when the plan branch is tested first again, which negative_control.log reproduces (1 failed, EXIT=1).\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review.py:2192 tests the reviewed run first, matching names_a_review_subject at review.py:1278 and the host import's classifier at scripts/import_host_reviews.py:119, the repository's existing idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses review_path and plan_review_path at reckon/crew/review.py:2192-2205 rather than adding a path builder; a search of reckon/crew found those two as the only run and plan review path owners.\n",
+  "review_run_id": "r-20261007T133659873331-review-of-committed-store-files-run-reviews-under-their-run",
+  "reviewed_base_sha": "20d7e67a434bf055c2e2bc3027b76ced8e4fd93c",
+  "reviewed_head_sha": "d9adb6d902cb7cad55d259e1b1d9b2d6adbb9c2c",
+  "reviewed_run_id": "r-20261007T130151054650-committed-store-files-run-reviews-under-their-run",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T13:48:18.134411+00:00",
+  "total": 119
+}
