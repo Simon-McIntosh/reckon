@@ -1076,6 +1076,86 @@ def newest_design_review(
     )
 
 
+# The answered findings a scoped review is shown, newest first. Enough for the
+# reviewer to see what was already raised about the units it is asked to read,
+# bounded so a plan with a long review history does not crowd the brief.
+SCOPE_ANSWERED_FINDINGS = 20
+
+
+def review_scope(
+    project: str,
+    plan_slug: str,
+    *,
+    plan: Mapping[str, Any] | str | Path,
+    rubric: str,
+    base_dir: str | Path | None = None,
+) -> str:
+    """The scope a review of a plan is given, as a paragraph of its brief.
+
+    A plan's first review under a rubric reads the whole plan, so the scope is
+    empty. A later one reads what the earlier reviews no longer cover — the
+    units the coverage predicate reports uncovered, each with its measured
+    change — and is shown the findings already answered, newest first, so it
+    neither re-reads settled content nor raises a finding a second time. A
+    review composed when nothing is uncovered also reads the whole plan, since
+    its author asked for one.
+    """
+    design = rubric == DESIGN_RUBRIC
+    prior = [
+        record
+        for record in list_plan_reviews(project, base_dir=base_dir)
+        if record.get("plan_slug") == plan_slug and is_design_review(record) == design
+    ]
+    if not prior:
+        return ""
+    _records, uncovered, changes = review_coverage(
+        project, plan_slug, plan=plan, base_dir=base_dir
+    )
+    if not uncovered:
+        return ""
+    units = []
+    for unit in sorted(uncovered):
+        share = changes.get(unit)
+        units.append(
+            f"{unit} (changed)"
+            if share is None
+            else f"{unit} ({round(share * 100)}% of its words changed)"
+        )
+    answered = []
+    for record in sorted(
+        prior, key=lambda item: int(item.get("plan_version") or 0), reverse=True
+    ):
+        responses = record.get("responses") or {}
+        for finding in record.get("findings") or ():
+            if not isinstance(finding, Mapping):
+                continue
+            response = responses.get(str(finding.get("id")))
+            if not isinstance(response, Mapping):
+                continue
+            reason = str(response.get("reason") or "").strip()
+            answered.append(
+                f"- {finding.get('id')} [{finding.get('anchor') or 'plan'}] "
+                f"{str(finding.get('text') or '').strip()} -> "
+                f"{response.get('action')}{': ' + reason if reason else ''}"
+            )
+    lines = [
+        (
+            f"Scope: an earlier {rubric} review of this plan read it before these "
+            f"units changed: {', '.join(units)}. Review those units. Read the rest "
+            "for context only: it is unchanged since a review read it, or its "
+            "change was judged not to need one. Raise a finding outside these "
+            "units only when it would change the plan."
+        ),
+    ]
+    if answered:
+        lines.append(
+            "Findings earlier reviews raised and how they were answered; do not "
+            "raise one again unless the plan has since changed what it describes:"
+        )
+        lines.extend(answered[:SCOPE_ANSWERED_FINDINGS])
+    return "\n".join(lines) + "\n"
+
+
 def finding_ids(record: Mapping[str, Any]) -> list[str]:
     """Return the ids of the findings a review record carries, in order.
 

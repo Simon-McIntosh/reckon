@@ -463,7 +463,7 @@ def _review_owed_fields(
     dispatcher to refuse the build. ``review_owed`` lists each uncovered unit
     with the measured change the predicate computes where one exists, and is an
     empty list when nothing is owed; ``review_invocation`` is the one-line
-    command that composes a review of exactly those units. The tool composes no
+    command that composes a review scoped to exactly those units. The tool composes no
     review itself — the author decides when a session's authoring is finished —
     so a burst of edits earns one review and no review is attributed to a
     session that did not ask for it.

@@ -557,6 +557,9 @@ def _review_dispatch_fields(
             "Write RUBRIC and FINDING lines to the report path. Review the snapshot "
             "so the report describes the content named by its sidecar.\n"
         )
+        scope = plan_review.review_scope(project, slug, plan=path, rubric=rubric)
+        if scope:
+            brief_text += "\n" + scope
         if rubric == "design":
             from reckon.velocity import current_week_interface_counts
 
