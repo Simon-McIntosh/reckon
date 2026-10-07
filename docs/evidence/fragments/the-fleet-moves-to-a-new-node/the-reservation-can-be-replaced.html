@@ -22,19 +22,21 @@
   <h2>The reservation can be replaced</h2>
   <p>The automatic ensure replaces the published record only when its own job has left the queue, so a
     fleet could not be pointed at a new allocation while the old one still ran. <code>reckon crew
-    placement</code> gains <code>--replace JOB</code>, which names the target job explicitly, reads its
-    state, owner and shape from the scheduler in one <code>squeue</code> query, and refuses a job that is
-    pending, that belongs to another user, or that the scheduler does not know — each with its own
-    message and with the record left untouched. On success it publishes the record naming the new job,
+    placement</code> gains <code>--replace JOB</code>, which names the target job explicitly, reads the
+    target's state and owner from the scheduler, composes the fleet node's own allocation-shape reader
+    for its size, and refuses a job that is pending, that belongs to another user, or that the scheduler
+    does not know — each with its own message and with the record left untouched. On success it publishes the record naming the new job,
     records the job it replaced beside it, and prints both ids. Steps already running in the replaced
     job are untouched: only the record later dispatches and resumes read changes, so a dispatch composed
     after the replacement places its worker under the new job id
     (<code>--overlap --jobid=&lt;new&gt;</code>) and never the old one.</p>
   <p>The focused gate — <code>tests/test_crew_placement_reservation.py</code> together with
-    <code>tests/test_ensure_holds_one_reservation.py</code> — is green at 19 passed, exit 0. A declared
+    <code>tests/test_ensure_holds_one_reservation.py</code> — is green at 20 passed, exit 0. A declared
     negative control that makes the replacement accept a pending job turns the pending-job case red:
     <code>test_replacement_refuses_a_pending_job</code> fails with <code>DID NOT RAISE CrewError</code>
-    while the head arm passes it.</p>
+    while the head arm passes it. This cluster's unknown-job answer
+    (<code>slurm_load_jobs error: Invalid job id specified</code>) is recognised as a job the scheduler
+    does not carry, kept apart from a scheduler that could not be asked at all.</p>
 </article>
 </body>
 </html>
