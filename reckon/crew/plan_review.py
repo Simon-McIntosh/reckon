@@ -1831,21 +1831,34 @@ def delivered_reports(
     return found
 
 
-def _store_delivered_report(
-    sidecar: Mapping[str, Any],
-    *,
-    base_dir: str | Path | None = None,
-) -> Path:
-    """Parse the report a sidecar names and store its record, returning the path.
+def report_carries_review_lines(text: str) -> bool:
+    """Whether a report's text carries a RUBRIC or FINDING line.
+
+    A delivered review's report emits one line per rubric item and one per
+    finding. A report directory with a report file that carries neither was
+    composed and never delivered — a snapshot and a sidecar with no reviewer
+    output beside them — so it is not a review and is neither imported nor
+    counted.
+    """
+    return any(
+        _review_store._PLAN_RUBRIC_LINE_RE.match(line)
+        or _review_store._PLAN_FINDING_LINE_RE.match(line)
+        for line in _review_store._review_text_lines(text)
+    )
+
+
+def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
+    """Build the store record a delivered review's sidecar and report describe.
 
     The sidecar supplies the plan identity, the reviewed blob sha and the
     content fingerprint; the report named by ``report_path`` supplies the
-    rubric's verdicts and findings. The record carries an empty ``responses``,
-    so its findings arrive unanswered and the gate refuses until each is
-    answered. ``review_run_id`` is the report directory's name, which is what
-    makes a re-read of the same delivered report idempotent. The write goes
-    through :func:`store_plan_review`, so it is atomic and keyed the same way
-    every stored review is.
+    rubric's verdicts and findings through :func:`parse_review_report`. The
+    record carries an empty ``responses``, so its findings arrive unanswered and
+    the gate refuses until each is answered. ``review_run_id`` is the report
+    directory's name, which is what makes a re-read of the same delivered report
+    idempotent. A report with no ``RUBRIC`` or ``FINDING`` line raises, so a
+    composed-but-undelivered directory is refused here rather than stored as an
+    empty review.
     """
     report_path = Path(str(sidecar.get("report_path") or ""))
     if not report_path.is_file():
@@ -1853,11 +1866,15 @@ def _store_delivered_report(
     plan_version = sidecar.get("plan_version")
     if plan_version is None:
         raise ValueError("delivered review sidecar is missing plan_version")
+    text = report_path.read_text(encoding="utf-8", errors="replace")
+    if not report_carries_review_lines(text):
+        raise ValueError(
+            f"delivered review report {report_path} carries no RUBRIC or "
+            "FINDING line, so it is not a review"
+        )
     rubric = str(sidecar.get("rubric") or "").strip()
-    parsed = parse_review_report(
-        report_path.read_text(encoding="utf-8", errors="replace"), rubric=rubric
-    )
-    record = {
+    parsed = parse_review_report(text, rubric=rubric)
+    return {
         "project": str(sidecar.get("project") or "").strip(),
         "plan_slug": str(sidecar.get("plan_slug") or "").strip(),
         "plan_version": int(plan_version),
@@ -1872,7 +1889,21 @@ def _store_delivered_report(
         "rubric_items": parsed["rubric_items"],
         "absent_items": parsed["absent_items"],
     }
-    return store_plan_review(record, base_dir=base_dir)
+
+
+def _store_delivered_report(
+    sidecar: Mapping[str, Any],
+    *,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Parse the report a sidecar names and store its record, returning the path.
+
+    The record is built by :func:`delivered_report_record`, so the staging store
+    and the commit importer build one record from one reader. The write goes
+    through :func:`store_plan_review`, so it is atomic and keyed the same way
+    every stored review is.
+    """
+    return store_plan_review(delivered_report_record(sidecar), base_dir=base_dir)
 
 
 def store_delivered_reviews(

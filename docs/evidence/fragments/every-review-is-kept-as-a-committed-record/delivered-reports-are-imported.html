@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="Delivered reports are imported">
+  <meta name="plan-summary" content="The host review import now also imports every delivered plan-review report that no committed record carries, keyed by the report directory's run id; a report it cannot build is listed and counted as refused and its reason is recorded on its sidecar.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>Delivered reports are imported | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Delivered reports are imported</h1>
+
+    <section id="delivered-reports-are-imported-anchor">
+      <h2>What changed</h2>
+      <p><code>scripts/import_host_reviews.py</code> now imports, beside the host
+        staging records it already committed, every delivered plan-review report
+        that no committed record carries. It enumerates plans from the report
+        root (<code>reports_dir()/&lt;project&gt;/plan-review/&lt;slug&gt;/</code>)
+        and reads each plan's report directories through
+        <code>plan_review.delivered_reports</code>, so it never walks for a
+        <code>report.md</code> by hand. A report is carried when a record's
+        <code>review_run_id</code> equals the report directory's name, or when
+        the record's <code>(plan_slug, plan_fingerprint, rubric)</code> equals
+        the sidecar's; a carried report is skipped, so a second write pass
+        imports zero. Each unrecorded report is committed through
+        <code>review.store_committed_review</code>, keyed by the report
+        directory's run id, landing at
+        <code>docs/state/&lt;project&gt;/reviews/plan/&lt;slug&gt;/&lt;run-id&gt;.json</code>.
+        The dry run lists each such report by path and prints a per-project count
+        line: <code>delivered reports without a record: N, refused: M</code>.</p>
+      <p><code>reckon/crew/plan_review.py</code>: the record a sidecar and its
+        report describe is factored out of <code>_store_delivered_report</code>
+        into <code>delivered_report_record</code>, so the staging store and the
+        commit importer build one record through one parser; a
+        <code>report_carries_review_lines</code> predicate recognises a review as
+        a report whose text carries a <code>RUBRIC</code> or <code>FINDING</code>
+        line. A directory whose report carries neither is a composed-but-never-
+        delivered artefact, not a review, so it is neither imported nor counted.</p>
+      <p><strong>Refusals are visible.</strong> A report that is a review but
+        whose record cannot be built — an unknown rubric, a missing
+        <code>plan_version</code> — is listed as
+        <code>refused&nbsp;&lt;path&gt;&nbsp;&lt;reason&gt;</code>, counted
+        separately in the per-project line, and its reason is written onto its
+        own sidecar under <code>store_error</code> through
+        <code>plan_review._record_store_error</code>, the same way the staging
+        store records a refusal. A report whose import or store is refused keeps
+        the reason beside it; a report the store commits has any stale
+        <code>store_error</code> cleared, so the file never contradicts the
+        record beside it.</p>
+    </section>
+
+    <section id="delivered-reports-are-imported-gate">
+      <h2>Gate</h2>
+      <p><code>tests/test_import_host_reviews.py</code>,
+        <code>tests/test_plan_review_store.py</code> and
+        <code>tests/test_plan_review_rounds_keep_their_own_file.py</code> ran in
+        the foreground: <strong>24 passed, EXIT=0</strong>. Three new cases drive
+        the change: an unrecorded delivered report is imported once and a
+        composed-but-undelivered directory is not; a report carried by run id or
+        by content is not re-imported; and a report that cannot be parsed is
+        listed and counted as refused with its reason recorded on its sidecar.
+        A second write pass prints <code>delivered imported: 0</code>.</p>
+    </section>
+
+    <section id="delivered-reports-are-imported-negative-control">
+      <h2>Negative control</h2>
+      <p>Two mutations were applied and their logs kept. First, skipping report
+        directories when gathering records — the candidate loop iterating an
+        empty slug list — turns
+        <code>test_delivered_report_with_no_record_is_imported_once</code> and
+        <code>test_delivered_report_that_cannot_be_built_is_refused_and_recorded</code>
+        red (2 failed, 22 passed, EXIT=1): no report is gathered, so none is
+        imported and none is refused. Second, swallowing the build error instead
+        of refusing — the <code>except</code> clause dropping the refusal —
+        turns <code>test_delivered_report_that_cannot_be_built_is_refused_and_recorded</code>
+        red (1 failed, 23 passed, EXIT=1): the unbuildable report is neither
+        listed nor counted, which is the follow-on this node closes.</p>
+    </section>
+  </main>
+</body>
+</html>
