@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:sync",
+    "reckon/cli.py:doctor"
+  ],
+  "completed_at": "2026-10-07T03:39:29.434Z",
+  "dispatched_at": "2026-10-07T03:21:36Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "113",
+      "severity": "follow-on",
+      "text": "follow-on: _main_checkout duplicates reckon/crew/node.py:1340 repository_identity \u2014 the same git rev-parse --path-format=absolute --git-common-dir resolution with the same \".git\"-parent fallback and the same return-itself default; cli.py already imports from reckon.crew.node, so it could call the owner instead of re-deriving it. The section cited the hooks installer's worktree refusal but not this owner."
+    },
+    {
+      "file": "tests/test_doctor_session_host_link.py",
+      "line": "199",
+      "severity": "follow-on",
+      "text": "follow-on: every doctor test stubs _claude_plugin_validate to return None, so doctor's invalid-plugin arm (if message: at reckon/cli.py:8183, which sets ok=False) and _claude_plugin_validate itself are never exercised; a regression in the validation path would not be caught by any test the node added."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 9e3cbe6a; one commit d988a0d60, four files, +631/-5, every line the node's own authorship (no merge absorption in this range).",
+    "done_when": "the section's done-when has three clauses; the gate tests/test_doctor_session_host_link.py asserts \"sync run twice leaves exactly one link\" (test_sync_links_the_plugin_once) and \"doctor flags a link that points into a worktree\" (test_doctor_flags_a_worktree_link) as 12 passed EXIT=0, but the third clause \"claude plugin list shows reckon-crew-host@skills-dir as loaded\" is external and is not exercised.",
+    "goal": "the plan section's four clauses are all implemented \u2014 reckon sync links the main checkout's plugins/crew-host into ~/.claude/skills/reckon-crew-host idempotently and refuses from a worker worktree (_sync_crew_host_plugin reckon/cli.py:232, link_crew_host_plugin reckon/cli.py:205), and reckon doctor reports the link as missing/dangling/worktree/valid (crew_host_link_state reckon/cli.py:152, wired at reckon/cli.py:8180).",
+    "manifest": "read; status complete, commit d988a0d60, changed_paths and commits populated, baseline_suite/after_suite null (single-arm node, so the added-failure count is unmeasured rather than zero), negative_control_log names a log whose last line is EXIT=1 with two failing ids the head arm does not fail.",
+    "write_paths": "the diff is four files (reckon/cli.py, skills/reckon-sync/SKILL.md, tests/test_doctor_session_host_link.py and the evidence fragment), all inside the declared write paths; the declared docs/figures/a-follower-lives-as-long-as-its-session/sync-links-the-session-host-plugin directory was not emitted."
+  },
+  "justifications": {
+    "durability": "disabling the worktree branch reddens exactly test_state_worktree_when_the_link_names_a_worker_worktree and test_doctor_flags_a_worktree_link (2 failed, EXIT=1), so the worktree guard is falsified and covered; the doctor invalid-plugin branch has no such test (see the finding).",
+    "evidence": "the gate (tests/test_doctor_session_host_link.py) asserts two of the three done-when clauses as 12 passed EXIT=0, but the claude plugin list clause is unexercised and the plugin-validate leg is stubbed at tests/test_doctor_session_host_link.py:199, so one clause is claimed rather than shown.",
+    "fit": "the helpers follow cli.py's existing idiom (a module-level constant block and a NamedTuple with a mechanism docstring, reckon/cli.py:88-150) and carry no version, plan or ticket labels.",
+    "goal_fidelity": "crew_host_link_state (reckon/cli.py:152) and _sync_crew_host_plugin (reckon/cli.py:232) implement exactly the link, the worktree refusal and the doctor report the section names.",
+    "reuse": "_main_checkout (reckon/cli.py:113) re-implements the main-checkout resolution the repository already owns at reckon/crew/node.py:1340 (repository_identity).",
+    "scope_discipline": "the four changed paths (reckon/cli.py, skills/reckon-sync/SKILL.md, tests/test_doctor_session_host_link.py, docs/evidence/fragments/.../sync-links-the-session-host-plugin.html) are all declared; the declared figures directory is unemitted (under-delivery, not a breach)."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan section's four clauses are all implemented \u2014 reckon sync links the main checkout's plugins/crew-host into ~/.claude/skills/reckon-crew-host idempotently and refuses from a worker worktree (_sync_crew_host_plugin reckon/cli.py:232, link_crew_host_plugin reckon/cli.py:205), and reckon doctor reports the link as missing/dangling/worktree/valid (crew_host_link_state reckon/cli.py:152, wired at reckon/cli.py:8180).\nVERDICT done_when: the section's done-when has three clauses; the gate tests/test_doctor_session_host_link.py asserts \"sync run twice leaves exactly one link\" (test_sync_links_the_plugin_once) and \"doctor flags a link that points into a worktree\" (test_doctor_flags_a_worktree_link) as 12 passed EXIT=0, but the third clause \"claude plugin list shows reckon-crew-host@skills-dir as loaded\" is external and is not exercised.\nVERDICT write_paths: the diff is four files (reckon/cli.py, skills/reckon-sync/SKILL.md, tests/test_doctor_session_host_link.py and the evidence fragment), all inside the declared write paths; the declared docs/figures/a-follower-lives-as-long-as-its-session/sync-links-the-session-host-plugin directory was not emitted.\nVERDICT manifest: read; status complete, commit d988a0d60, changed_paths and commits populated, baseline_suite/after_suite null (single-arm node, so the added-failure count is unmeasured rather than zero), negative_control_log names a log whose last line is EXIT=1 with two failing ids the head arm does not fail.\nVERDICT diff: read commit by commit against base 9e3cbe6a; one commit d988a0d60, four files, +631/-5, every line the node's own authorship (no merge absorption in this range).\nCALL_SITES: reckon/cli.py:sync, reckon/cli.py:doctor\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: crew_host_link_state (reckon/cli.py:152) and _sync_crew_host_plugin (reckon/cli.py:232) implement exactly the link, the worktree refusal and the doctor report the section names.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate (tests/test_doctor_session_host_link.py) asserts two of the three done-when clauses as 12 passed EXIT=0, but the claude plugin list clause is unexercised and the plugin-validate leg is stubbed at tests/test_doctor_session_host_link.py:199, so one clause is claimed rather than shown.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four changed paths (reckon/cli.py, skills/reckon-sync/SKILL.md, tests/test_doctor_session_host_link.py, docs/evidence/fragments/.../sync-links-the-session-host-plugin.html) are all declared; the declared figures directory is unemitted (under-delivery, not a breach).\nSCORE durability: 18\nJUSTIFICATION durability: disabling the worktree branch reddens exactly test_state_worktree_when_the_link_names_a_worker_worktree and test_doctor_flags_a_worktree_link (2 failed, EXIT=1), so the worktree guard is falsified and covered; the doctor invalid-plugin branch has no such test (see the finding).\nSCORE fit: 19\nJUSTIFICATION fit: the helpers follow cli.py's existing idiom (a module-level constant block and a NamedTuple with a mechanism docstring, reckon/cli.py:88-150) and carry no version, plan or ticket labels.\nSCORE reuse: 15\nJUSTIFICATION reuse: _main_checkout (reckon/cli.py:113) re-implements the main-checkout resolution the repository already owns at reckon/crew/node.py:1340 (repository_identity).\nFINDING reckon/cli.py:113 follow-on: _main_checkout duplicates reckon/crew/node.py:1340 repository_identity \u2014 the same git rev-parse --path-format=absolute --git-common-dir resolution with the same \".git\"-parent fallback and the same return-itself default; cli.py already imports from reckon.crew.node, so it could call the owner instead of re-deriving it. The section cited the hooks installer's worktree refusal but not this owner.\nFINDING tests/test_doctor_session_host_link.py:199 follow-on: every doctor test stubs _claude_plugin_validate to return None, so doctor's invalid-plugin arm (if message: at reckon/cli.py:8183, which sets ok=False) and _claude_plugin_validate itself are never exercised; a regression in the validation path would not be caught by any test the node added.",
+  "review_run_id": "r-20261007T032109520794-review-of-sync-links-the-session-host-plugin",
+  "reviewed_base_sha": "9e3cbe6a280ba6ba9da8425f34604eaa12ad7370",
+  "reviewed_head_sha": "d988a0d609e9dd15c38af5fc0af2348f0b39422c",
+  "reviewed_run_id": "r-20261007T025719296337-sync-links-the-session-host-plugin",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T03:36:10.972818+00:00",
+  "total": 105
+}
