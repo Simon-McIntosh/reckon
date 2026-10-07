@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 
 import pytest
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Comment, Tag
 
 from reckon import _plan_html, mcp_views
 from reckon._plan_html import RECKON_ATTRIBUTE, machinery_kind
@@ -30,27 +30,14 @@ from reckon.mcp_views import ResourceSelector
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# Plans whose committed markup the raw-slice reader and the DOM reference parse
-# differently. Each entry states the divergence; the set is frozen and asserted
-# below so it cannot grow without a reviewer seeing it.
-EXEMPT_PLANS: dict[str, str] = {
-    "docs/plans/the-mcp-answers-within-its-ceiling.html": (
-        "prose carries a bare '<' before a word; the DOM parser reads it as the "
-        "start of a tag and the raw parser reads it as text"
-    ),
-    "docs/plans/fleet-monitor-legibility.html": (
-        "two level-two headings share the id 's7'; the raw-slice reader keys both "
-        "extents to that one identity while the DOM walk reads the first only"
-    ),
-    "docs/plans/orchestrator-crew-pattern-studies.html": (
-        "an HTML comment sits inside a section body; the DOM walk surfaces its "
-        "text and the raw reader strips the comment like any other tag"
-    ),
-}
-
 
 def _normalise(text: str) -> str:
     return " ".join(text.split())
+
+
+def _drop_comments(scope: Tag) -> None:
+    for node in scope.find_all(string=lambda text: isinstance(text, Comment)):
+        node.extract()
 
 
 def _reference_search_text(html_text: str) -> str:
@@ -64,6 +51,7 @@ def _reference_search_text(html_text: str) -> str:
     """
     soup = BeautifulSoup(html_text or "", "html.parser")
     scope = soup.body or soup
+    _drop_comments(scope)
     for element in scope.select("script, style"):
         element.decompose()
     for element in list(scope.select(f"[{RECKON_ATTRIBUTE}]")):
@@ -118,6 +106,7 @@ def _reference_section_text(source: str, heading) -> str:
     fragments = [_reference_heading_html(rendered_heading)]
     body_source = source[slice(*heading.body_span)]
     body = BeautifulSoup(body_source, "html.parser")
+    _drop_comments(body)
     for element in body.select(f"section[{RECKON_ATTRIBUTE}]"):
         if machinery_kind(element.attrs) is not None:
             element.decompose()
@@ -127,26 +116,14 @@ def _reference_section_text(source: str, heading) -> str:
     return " ".join(BeautifulSoup("\n".join(fragments), "html.parser").stripped_strings)
 
 
-def test_the_exempt_plan_list_holds_exactly_the_named_parser_divergences():
-    assert set(EXEMPT_PLANS) == {
-        "docs/plans/the-mcp-answers-within-its-ceiling.html",
-        "docs/plans/fleet-monitor-legibility.html",
-        "docs/plans/orchestrator-crew-pattern-studies.html",
-    }
-
-
 def test_surfaces_reproduce_their_reference_outputs_on_every_plan(plans):
     """The search text and every section text must match the retired algorithms.
 
     A plan edit changes the plan and the reference alike, so no stored snapshot
-    is involved. Any plan whose surface cannot be reproduced is named; a plan
-    whose committed markup the two parsers read differently is exempt, and the
-    exemption list is asserted above.
+    is involved. Any plan whose surface cannot be reproduced is named.
     """
     differing: list[str] = []
     for path, source in plans:
-        if str(path) in EXEMPT_PLANS:
-            continue
         if _normalise(mcp_views.authored_plan_text(source)) != _normalise(
             _reference_search_text(source)
         ):
