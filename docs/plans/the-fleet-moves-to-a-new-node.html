@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -554,6 +554,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20261008-rehearsal-decisions" data-who="Simon McIntosh" data-when="2026-10-08T00:00:00Z">
     <div class="r-comment-body"><p>Two decisions on the rehearsal. First, the migrate command cannot cut a session back onto its own node, because stand-up refuses the old node and cutover needs a promoted one. So a same-node rehearsal path is added to the command, and the probe is rehearsed on the current node before any allocation is held. Second, the new allocation (26 cores, 96 GB) is held in standby only after that rehearsal passes, so it does not sit idle while the tooling is unproven.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261007T221835125178-review-of-the-migrate-command-rehearses-on-its-own-node" data-who="reckon-build" data-when="2026-10-07T22:26:46.498Z">
+    <div class="r-comment-body"><p>review of r-20261007T220318112148 stored at .config/reckon/crew/reviews/reckon/r-20261007T220318112148-the-migrate-command-rehearses-on-its-own-node.at-cd64ae5a4704cc36375efd4b88da995446285d61.json; scores durability 16, evidence 17, fit 18, goal_fidelity 18, reuse 19, scope_discipline 20 (total 108); no blocking findings, two follow-on (tab-order clause has no independent guard; after_suite names the 6-test arm and baseline_suite is empty).</p></div>
 </div>
 </section>
 </main>

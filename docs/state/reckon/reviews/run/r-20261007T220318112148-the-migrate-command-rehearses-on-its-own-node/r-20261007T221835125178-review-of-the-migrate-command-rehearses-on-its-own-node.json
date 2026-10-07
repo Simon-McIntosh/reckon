@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:796",
+    "reckon/crew/fleet_migrate.py:1159",
+    "reckon/crew/fleet_migrate.py:1163",
+    "reckon/crew/fleet_migrate.py:1165"
+  ],
+  "completed_at": "2026-10-07T22:26:46.498Z",
+  "dispatched_at": "2026-10-07T22:18:59Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_migrate_rehearsal.py",
+      "line": "153",
+      "severity": "follow-on",
+      "text": "follow-on: the tab-order assertion compares ledger[\"verification\"][\"tabs\"] against the same [\"conversation\",\"shell\"] list the injected census and inspect both supply, and no test drives mismatched tabs with matched panes, so removing the check_tabs condition at reckon/crew/fleet_migrate.py:643 leaves the suite green while the \"same tab names in the same order\" clause stops being checked."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T220318112148-the-migrate-command-rehearses-on-its-own-node/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite is empty and after_suite names the 6-test head arm rather than the named 58-test gate, so the record's added-failure count derives as unmeasured and the delta against a base cannot be read from the manifest."
+    }
+  ],
+  "head_log_revision": "cd64ae5a4704cc36375efd4b88da995446285d61",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 0a760f2ab; the feature commit adds _rehearse and factors the cutover pane check into a shared _verified_session, and the docs commit adds the evidence fragment.",
+    "done_when": "the fence names tests/test_fleet_migrate_rehearsal.py and a gate over five files exiting 0; the manifest records 58 passed, EXIT=0, and I reproduced 58 passed, EXIT=0 in a scratch tree at cd64ae5a with the module resolving from that tree.",
+    "goal": "the node goal is \"give the migrate command a rehearsal that cuts one probe session back onto the node it runs on\"; reckon/cli.py:788 fleet_node_migrate adds the --rehearse flag and reckon/crew/fleet_migrate.py:653 _rehearse runs the census, layout, end, start and verify cycle for one probe- session against a rehearsals ledger.",
+    "manifest": "read; it records the 58-test gate, the 6-test head arm, and the declared prefix mutation (1 failed, EXIT=1), naming the logs; its baseline_suite line is empty and its after_suite names the 6-test arm rather than the named gate.",
+    "write_paths": "read the manifest's declared paths; ea66a6010 and cd64ae5a touch exactly reckon/cli.py, reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_rehearsal.py and the evidence fragment, every one inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the mutation, removing the probe- prefix guard at reckon/crew/fleet_migrate.py:666, reddens tests/test_fleet_migrate_rehearsal.py:161, but the tab-order clause has no independent guard, so the check at reckon/crew/fleet_migrate.py:643 can be dropped without any test failing.",
+    "evidence": "the 58-test gate is recorded in the manifest's tests field and its log and I reproduced EXIT=0 in a scratch tree, but manifest.md:22 after_suite cites the 6-test arm and manifest.md:21 baseline_suite is empty, so the record's added-failure derivation reads unmeasured.",
+    "fit": "reckon/crew/fleet_migrate.py:615 _verified_session follows the module's injected-callable idiom and no added name or comment carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/fleet_migrate.py:653 _rehearse implements the same-node census/layout/end/start/verify cycle and refuses a name that does not start with probe-, matching the node goal; the operational two-tab probe is deferred to the coordinator in the manifest's follow_ons.",
+    "reuse": "_rehearse reuses build_census, render_layout, _end_local_session and _local_request, and the shared pane check _verified_session replaces the cutover loop rather than duplicating it; a search over reckon/crew for an existing rehearsal owner found none.",
+    "scope_discipline": "the two commits touch only reckon/cli.py, reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_rehearsal.py and the evidence fragment, every one a declared path, and the change adds no capability the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"give the migrate command a rehearsal that cuts one probe session back onto the node it runs on\"; reckon/cli.py:788 fleet_node_migrate adds the --rehearse flag and reckon/crew/fleet_migrate.py:653 _rehearse runs the census, layout, end, start and verify cycle for one probe- session against a rehearsals ledger.\nVERDICT done_when: the fence names tests/test_fleet_migrate_rehearsal.py and a gate over five files exiting 0; the manifest records 58 passed, EXIT=0, and I reproduced 58 passed, EXIT=0 in a scratch tree at cd64ae5a with the module resolving from that tree.\nVERDICT write_paths: read the manifest's declared paths; ea66a6010 and cd64ae5a touch exactly reckon/cli.py, reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_rehearsal.py and the evidence fragment, every one inside them.\nVERDICT manifest: read; it records the 58-test gate, the 6-test head arm, and the declared prefix mutation (1 failed, EXIT=1), naming the logs; its baseline_suite line is empty and its after_suite names the 6-test arm rather than the named gate.\nVERDICT diff: read both commits against base 0a760f2ab; the feature commit adds _rehearse and factors the cutover pane check into a shared _verified_session, and the docs commit adds the evidence fragment.\nCALL_SITES: reckon/cli.py:796, reckon/crew/fleet_migrate.py:1159, reckon/crew/fleet_migrate.py:1163, reckon/crew/fleet_migrate.py:1165\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_migrate.py:653 _rehearse implements the same-node census/layout/end/start/verify cycle and refuses a name that does not start with probe-, matching the node goal; the operational two-tab probe is deferred to the coordinator in the manifest's follow_ons.\nSCORE evidence: 17\nJUSTIFICATION evidence: the 58-test gate is recorded in the manifest's tests field and its log and I reproduced EXIT=0 in a scratch tree, but manifest.md:22 after_suite cites the 6-test arm and manifest.md:21 baseline_suite is empty, so the record's added-failure derivation reads unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/cli.py, reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_rehearsal.py and the evidence fragment, every one a declared path, and the change adds no capability the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: reinstating the mutation, removing the probe- prefix guard at reckon/crew/fleet_migrate.py:666, reddens tests/test_fleet_migrate_rehearsal.py:161, but the tab-order clause has no independent guard, so the check at reckon/crew/fleet_migrate.py:643 can be dropped without any test failing.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/fleet_migrate.py:615 _verified_session follows the module's injected-callable idiom and no added name or comment carries a plan, stage or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: _rehearse reuses build_census, render_layout, _end_local_session and _local_request, and the shared pane check _verified_session replaces the cutover loop rather than duplicating it; a search over reckon/crew for an existing rehearsal owner found none.\nFINDING tests/test_fleet_migrate_rehearsal.py:153 follow-on: the tab-order assertion compares ledger[\"verification\"][\"tabs\"] against the same [\"conversation\",\"shell\"] list the injected census and inspect both supply, and no test drives mismatched tabs with matched panes, so removing the check_tabs condition at reckon/crew/fleet_migrate.py:643 leaves the suite green while the \"same tab names in the same order\" clause stops being checked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T220318112148-the-migrate-command-rehearses-on-its-own-node/manifest.md:21 follow-on: baseline_suite is empty and after_suite names the 6-test head arm rather than the named 58-test gate, so the record's added-failure count derives as unmeasured and the delta against a base cannot be read from the manifest.",
+  "review_run_id": "r-20261007T221835125178-review-of-the-migrate-command-rehearses-on-its-own-node",
+  "reviewed_base_sha": "0a760f2abdcbf1b136caa4480b16333e8a4dac54",
+  "reviewed_head_sha": "cd64ae5a4704cc36375efd4b88da995446285d61",
+  "reviewed_run_id": "r-20261007T220318112148-the-migrate-command-rehearses-on-its-own-node",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T22:34:00.928063+00:00",
+  "total": 108
+}
