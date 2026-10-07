@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="191">
+<meta name="plan-version" content="192">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -616,6 +616,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T092514974343-dispatch-context-estimate-is-one-figure" data-who="reckon-build" data-when="2026-10-07T10:10:16.556Z">
     <div class="r-comment-body"><p>dispatch_picker_selection now takes a dispatch authority and resolves the same one when a caller does not hold it, threads it into both the request-level estimate and picker.pick() so a dispatcher-granted landing fragment is exempt once, and the main dispatch() call site passes the authority it already resolved — measured on a real dispatch_picker_selection call, the request figure and every offered candidate block read one number, 51535 tokens with the authority against 53821 without it.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T161113210177-pick-latency-census" data-who="reckon-build" data-when="2026-10-07T16:46:08.781Z">
+    <div class="r-comment-body"><p>Measured each stage of one production pick out of process against reckon&#x27;s live state: cold arm five fresh processes (whole pick median 1,042 ms, max 1,066 ms) and warm arm five picks in one process (median 1,296 ms); the in-bound stage that exhausts the 5 s bound is snapshot.candidates with a 6.2 s contended maximum and a 13.6 s earlier one, and the negative control (2 s injected into lane_context.build in the scratch copy) moves that stage to 2,076 ms and the pick to 3,055 ms median, proving attribution.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
