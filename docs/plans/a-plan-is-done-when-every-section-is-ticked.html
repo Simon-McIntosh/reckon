@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -79,21 +79,28 @@
       review. §8 owns it.</p>
 
     <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§3 — The plan read carries its todo list</h2>
-    <p><strong>Deliverable.</strong> A plan's typed read (<code>read_plan</code>, <code>view</code> summary and
-      detail) carries a <code>todos</code> list derived in Python. It has one entry per authored section, in document
-      order, each with the section id, its heading text, the in-page link <code>#&lt;id&gt;</code>, and its
-      declaration. A ticked entry also carries its closing record: the section comment whose id is
-      <code>c-close-&lt;id&gt;</code>, which the landing beat writes in the same call as the tick (§7). The record is
-      selected by that id, never by recency. Promotion appends its own section comments under the same author, so
-      the newest comment is often a review or <code>landing:</code> line written after the close. Nothing new is
-      stored: the list is derived from the headings, the declarations and that one comment.</p>
+    <p><strong>Deliverable.</strong> One derivation in <code>reckon/_plan_html.py</code>, called from
+      <code>parse_plan</code> so both readers carry it. One reader is the typed read (<code>read_plan</code> summary
+      and detail, through <code>reckon/mcp_views.py</code>); the other is the plan payload the SPA fetches from
+      <code>reckon/serve.py</code>'s <code>/plan/&lt;project&gt;/&lt;slug&gt;</code>. It yields a <code>todos</code> list
+      with one entry per authored section, in document order: the section id, its heading text, the in-page link
+      <code>#&lt;id&gt;</code>, and its declaration. A ticked entry also carries its closing record: the section comment
+      whose id is <code>c-close-&lt;id&gt;</code>, which the landing beat writes in the same call as the tick (§7).
+      It is selected by that id, never by recency, because promotion appends its own section comments after the
+      close. The same module gains the one predicate the later guards read, next to
+      <code>derive_impl_from_sections</code>: the sections still open, meaning declared <code>implementable</code> or
+      <code>deferred</code>. The list is a separate read-only field rather than more fields on <code>sections</code>.
+      <code>sections</code> holds the stored, schema-validated typed records that round-trip into the HTML, and
+      narrative sections have none. Nothing new is stored.</p>
     <p><strong>Done when</strong> a test reads a fixture plan with three sections (one done with a
       <code>c-close-</code> comment followed by a later promotion comment, one implementable, one deferred) and finds
       three entries in document order with those states, the done entry carrying the <code>c-close-</code> comment
       rather than the later one. It fails on the current code, which has no <code>todos</code> field. A second test
       ticks a section through <code>set section_declarations.&lt;id&gt;</code> and finds the plan's review
       fingerprint unchanged. That already holds today, so its negative control is a declared mutation: digest with
-      <code>keep_declarations=True</code>, so the declarations enter the fingerprint, and the test must fail.</p>
+      <code>keep_declarations=True</code>, so the declarations enter the fingerprint, and the test must fail. A
+      third test reads the open-section predicate on the first fixture and finds the implementable and deferred
+      sections.</p>
 
     <h2 id="s4" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§4 — The SPA shows the todo list at the top of the plan</h2>
     <p><strong>Deliverable.</strong> The plan view renders the <code>todos</code> field from §3 above the first
@@ -106,7 +113,9 @@
     <h2 id="s5" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§5 — Every section has a todo item</h2>
     <p><strong>Deliverable.</strong> <code>reckon audit-doc</code> reports <code>section-without-todo</code> for an
       authored section heading with no declaration, and <code>todo-without-section</code> for a declaration naming no
-      heading. A plan write that would leave either is refused by <code>edit_plan</code>. The census comes first:
+      heading. A plan write that would leave either is refused by widening <code>_require_new_section_contracts</code>
+      in <code>reckon/_store.py</code>, the existing guard on authored headings, rather than by a new check beside
+      it. The census comes first:
       count the live plans that would fail today, and state the count in the evidence, because closing this guard
       turns every existing gap into a refusal at that plan's next write.</p>
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
@@ -117,7 +126,9 @@
     <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§6 — A plan reaches done only when every todo is ticked</h2>
     <p><strong>Deliverable.</strong> A write that sets a plan's status to <code>shipped</code> or <code>done</code> is
       refused while any declaration is <code>implementable</code> or <code>deferred</code>, and the refusal names those
-      sections. A deferred section is not ticked (decision below), so a plan holding one stays open; §9 keeps that
+      sections. It reads §3's open-section predicate and sits with the existing terminal-status guards in
+      <code>reckon/_store.py</code> (<code>validate_landing_patch</code> and the terminal check in
+      <code>apply_ops</code>), not on a new path. A deferred section is not ticked (decision below), so a plan holding one stays open; §9 keeps that
       from blocking work that does not depend on the deferred section. The census comes first here too: count the
       plans already at a terminal status with an implementable or deferred declaration, and state the count.</p>
     <p><strong>Done when</strong> the census is recorded with its count. A test sets a plan with one implementable
@@ -130,7 +141,8 @@
       reference and <code>skills/reckon-edit/SKILL.md</code> becomes three ops: <code>append_evidence</code>, a
       <code>set</code> of the section's declaration to <code>done</code>, and a closing comment with the id
       <code>c-close-&lt;section&gt;</code> carrying the result and a link to the evidence, all in one call.
-      <code>collapse_section</code> stays available but no skill uses it, and the section body stays as authored. The
+      <code>collapse_section</code> stays available until §8 retires it, but no skill uses it, and the section body
+      stays as authored. The
       two docstrings in <code>reckon/crew/review_lifecycle.py</code> that describe a landed plan as collapsed are
       reworded to the declaration, which is what that code already reads.</p>
     <p><strong>Done when</strong> the skill-contract test applies each skill's documented landing examples to a
@@ -142,15 +154,17 @@
     <p><strong>Deliverable.</strong> Once no stored plan review depends on it, remove the pre-collapse form from
       <code>plan_review._fingerprint_forms</code>. A change to the fingerprint's shape makes every plan owe a review at
       its next build, so this section starts with a census of the stored review sidecars. It runs only when that
-      census shows the change orphans no review, or orphans a number the lead accepts. Deferred until §7 has landed
-      and the plan-review session's open edits to <code>reckon/crew/plan_review.py</code> have merged.</p>
+      census shows the change orphans no review, or orphans a number the lead accepts. The same section then retires
+      the <code>collapse_section</code> op, which no skill uses after §7; plans already collapsed keep their cards.
+      Deferred until §7 has landed and the plan-review session's open edits to
+      <code>reckon/crew/plan_review.py</code> have merged.</p>
     <p><strong>Done when</strong> the sidecar census is recorded, the form is removed, and a test shows a plan whose
       collapsed card is unchanged keeps its review. The display path in <code>reckon/mcp_views.py</code>, which reads
       landed cards for plans already collapsed, is left unchanged.</p>
 
     <h2 id="s9">§9 — A deferred section blocks only the work that names it</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> Under §6 a plan holding a deferred section stays open, so a dependency that waits for the whole plan to reach <code>done</code> would wait for ever. The roadmap's readiness judges a dependency by the sections it needs. In <code>reckon/roadmap.py</code>, a whole-plan dependency on a plan (<code>plan-depends-on: other</code>) is satisfied when that plan is complete, or when none of its sections is left <code>implementable</code>: every section is done or deferred. A section dependency (<code>other#sN</code>) is satisfied when that section's declaration is <code>done</code>, as well as by the existing completed-plan and passed-gate routes, and never while the section is deferred or implementable. Today <code>_section_satisfied</code> reads no declaration at all, so a ticked section satisfies nothing until its plan is complete or its gates have passed.</p>
+<p><strong>Deliverable.</strong> Under §6 a plan holding a deferred section stays open, so a dependency that waits for the whole plan to reach <code>done</code> would wait for ever. The roadmap's readiness judges a dependency by the sections it needs. In <code>reckon/roadmap.py</code>, a whole-plan dependency on a plan (<code>plan-depends-on: other</code>) is satisfied when that plan is complete, or when none of its sections is left <code>implementable</code>: every section is done or deferred, read through §3's open-section predicate. A section dependency (<code>other#sN</code>) is satisfied when that section's declaration is <code>done</code>, as well as by the existing completed-plan and passed-gate routes, and never while the section is deferred or implementable. Today <code>_section_satisfied</code> reads no declaration at all, so a ticked section satisfies nothing until its plan is complete or its gates have passed.</p>
 <p><strong>Done when</strong> tests on a fixture project find the following, with plan A having §1 done, §2 deferred and status active. A plan depending on A is ready. A plan depending on <code>A#s1</code> is ready. A plan depending on <code>A#s2</code> is blocked, and the blocker names <code>A#s2</code>. A plan depending on a plan that still has an implementable section is blocked as today. The first two fail on the current code, which waits for A to be complete; that is their negative control.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -176,9 +190,15 @@
     <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
     <p class="r-fu-outcome">superseded: the deferred decision is locked and adds §9; the build order is restated in the next followup</p>
     </article>
-<article class="r-fu" data-id="f-tick-002" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-08T06:00:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tick-002" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-08T06:00:00Z" data-recommends-skill="" data-resolved-at="2026-10-07T22:45:00+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Derive, show and enforce the todo list</h4>
     <div class="r-fu-body"><p>Wave one runs in parallel: §3 derives the list in the plan read, §6 adds the terminal guard in <code>reckon/_store.py</code>, and §9 makes roadmap readiness section-aware. Wave two: §5 adds the coverage control, after §6 releases <code>reckon/_store.py</code>; §4 renders the list and §7 changes the landing beat, both after §3. §8 stays deferred.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
+    <p class="r-fu-outcome">superseded: the design review gave §3 the shared open-section predicate, so §6 and §9 now follow §3</p>
+    </article>
+<article class="r-fu" data-id="f-tick-003" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-08T06:20:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Derive the list first, then show and enforce it</h4>
+    <div class="r-fu-body"><p>Wave one: §3 alone. It derives the list in <code>parse_plan</code> and owns the open-section predicate. Wave two, in parallel and each reading §3's output: §4 renders the list, §6 adds the terminal guard in <code>reckon/_store.py</code>, §7 changes the landing beat, and §9 makes roadmap readiness section-aware. Wave three: §5 widens <code>_require_new_section_contracts</code> once §6 releases <code>reckon/_store.py</code>. §8 stays deferred.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
     </article>
 </section>
