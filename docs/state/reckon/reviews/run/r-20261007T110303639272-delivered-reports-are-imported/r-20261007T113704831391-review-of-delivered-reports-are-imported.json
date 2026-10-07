@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "scripts/import_host_reviews.py:main",
+    "reckon/crew/plan_review.py:store_delivered_reviews"
+  ],
+  "completed_at": "2026-10-07T11:51:01.777Z",
+  "dispatched_at": "2026-10-07T11:37:42Z",
+  "findings": [
+    {
+      "file": "scripts/import_host_reviews.py",
+      "line": "441",
+      "severity": "follow-on",
+      "text": "follow-on: _report_is_review swallows OSError and returns False, so a report file that exists but cannot be read \u2014 a permissions error, or a report that vanishes between the directory scan and the read \u2014 is skipped silently: it is neither listed as refused, nor counted, nor refused with a recorded store_error, which is the same class of silent drop this node set out to close."
+    },
+    {
+      "file": "scripts/import_host_reviews.py",
+      "line": "476",
+      "severity": "follow-on",
+      "text": "follow-on: _delivered_report_candidates reads every candidate report twice, once in _report_is_review and again inside delivered_report_record, so the \"carries no RUBRIC or FINDING line\" refusal branch in delivered_report_record is unreachable from this caller and each report is read twice per pass."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "the gained commit is b2edd1e75..27cfbda29 \u2014 it adds a _report_is_review predicate, splits _delivered_report_candidates into (candidates, refused), prints and counts refused reports, records their reason on the sidecar through plan_review._record_store_error, clears a stale reason on a committed report through _clear_store_error, and fills the evidence fragment; 3 files, 173 insertions, 26 deletions.",
+    "done_when": "the run's done-when for this node is the import's dry run lists refused reports, the import imports every unrecorded report, and a second pass imports zero; scripts/import_host_reviews.py _print_delivered prints \"delivered reports without a record: N, refused: M\" and one refused line per unbuildable report, and _import_delivered records each refusal on its sidecar and returns the refused count, so the named behaviour is delivered and the independent gate re-run at head confirms it.",
+    "goal": "the gained commit closes both follow-ons the earlier review of this run raised \u2014 a delivered report that is a review but whose record cannot be built is now listed as refused with its path and reason, counted separately in the per-project line, and its reason is written to its own sidecar under store_error; and the evidence fragment that was an empty anchor now records what changed, the gate and the negative controls.",
+    "manifest": "the reviewed manifest reads complete; it names the two commits, the gate command with its result (24 passed, EXIT=0), the negative-control log and a second kept negative-control log; it names no baseline_suite or after_suite arm, so no added-failure count is derivable from the reviewed run's own gate-log fields.",
+    "write_paths": "the gained commit changes scripts/import_host_reviews.py, tests/test_import_host_reviews.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/delivered-reports-are-imported.html, all inside the reviewed node's declared write paths; no path outside the declaration is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_import_host_reviews.py:609 test_delivered_report_that_cannot_be_built_is_refused_and_recorded fails when the refusal is swallowed, so the guard the node adds is falsifiable; the stale-store_error clearing path (_clear_store_error) has no direct test, so that half is not pinned.",
+    "evidence": "I re-ran the gate at head 27cfbda29 myself \u2014 24 passed, EXIT=0 \u2014 and the kept negative-control-refusal-swallowed.log shows the new refusal test red (1 failed, 23 passed, EXIT=1); but the gate log header names rev b2edd1e75 while its 24-test result belongs to 27cfbda29 (the earlier commit's tree carries one fewer test), so a reader cannot tie the passing result to the commit it measured.",
+    "fit": "the new helpers follow the module's private-helper idiom and carry no plan label, version or ticket reference, but the script reaches into plan_review._record_store_error and _clear_store_error, single-underscore helpers owned by another module, rather than through a public seam.",
+    "goal_fidelity": "the two prior follow-ons are both closed at scripts/import_host_reviews.py:476-486 (a build failure is refused and listed rather than dropped), :519/529 (the reason is written to the sidecar) and in the fragment, which now states what changed, the gate and both negative controls.",
+    "reuse": "the importer builds its record through the shared delivered_report_record and reuses report_carries_review_lines, _record_store_error and _clear_store_error, so the parser and the refusal writer each have one owner shared with the staging store.",
+    "scope_discipline": "the diff touches only the three declared paths of the reviewed node, and the change stays inside the node's own import script, its test file and its evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commit closes both follow-ons the earlier review of this run raised \u2014 a delivered report that is a review but whose record cannot be built is now listed as refused with its path and reason, counted separately in the per-project line, and its reason is written to its own sidecar under store_error; and the evidence fragment that was an empty anchor now records what changed, the gate and the negative controls.\nVERDICT done_when: the run's done-when for this node is the import's dry run lists refused reports, the import imports every unrecorded report, and a second pass imports zero; scripts/import_host_reviews.py _print_delivered prints \"delivered reports without a record: N, refused: M\" and one refused line per unbuildable report, and _import_delivered records each refusal on its sidecar and returns the refused count, so the named behaviour is delivered and the independent gate re-run at head confirms it.\nVERDICT write_paths: the gained commit changes scripts/import_host_reviews.py, tests/test_import_host_reviews.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/delivered-reports-are-imported.html, all inside the reviewed node's declared write paths; no path outside the declaration is touched.\nVERDICT manifest: the reviewed manifest reads complete; it names the two commits, the gate command with its result (24 passed, EXIT=0), the negative-control log and a second kept negative-control log; it names no baseline_suite or after_suite arm, so no added-failure count is derivable from the reviewed run's own gate-log fields.\nVERDICT diff: the gained commit is b2edd1e75..27cfbda29 \u2014 it adds a _report_is_review predicate, splits _delivered_report_candidates into (candidates, refused), prints and counts refused reports, records their reason on the sidecar through plan_review._record_store_error, clears a stale reason on a committed report through _clear_store_error, and fills the evidence fragment; 3 files, 173 insertions, 26 deletions.\nCALL_SITES: scripts/import_host_reviews.py:main, reckon/crew/plan_review.py:store_delivered_reviews\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the two prior follow-ons are both closed at scripts/import_host_reviews.py:476-486 (a build failure is refused and listed rather than dropped), :519/529 (the reason is written to the sidecar) and in the fragment, which now states what changed, the gate and both negative controls.\nSCORE evidence: 17\nJUSTIFICATION evidence: I re-ran the gate at head 27cfbda29 myself \u2014 24 passed, EXIT=0 \u2014 and the kept negative-control-refusal-swallowed.log shows the new refusal test red (1 failed, 23 passed, EXIT=1); but the gate log header names rev b2edd1e75 while its 24-test result belongs to 27cfbda29 (the earlier commit's tree carries one fewer test), so a reader cannot tie the passing result to the commit it measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only the three declared paths of the reviewed node, and the change stays inside the node's own import script, its test file and its evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_import_host_reviews.py:609 test_delivered_report_that_cannot_be_built_is_refused_and_recorded fails when the refusal is swallowed, so the guard the node adds is falsifiable; the stale-store_error clearing path (_clear_store_error) has no direct test, so that half is not pinned.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow the module's private-helper idiom and carry no plan label, version or ticket reference, but the script reaches into plan_review._record_store_error and _clear_store_error, single-underscore helpers owned by another module, rather than through a public seam.\nSCORE reuse: 19\nJUSTIFICATION reuse: the importer builds its record through the shared delivered_report_record and reuses report_carries_review_lines, _record_store_error and _clear_store_error, so the parser and the refusal writer each have one owner shared with the staging store.\nFINDING scripts/import_host_reviews.py:441 follow-on: _report_is_review swallows OSError and returns False, so a report file that exists but cannot be read \u2014 a permissions error, or a report that vanishes between the directory scan and the read \u2014 is skipped silently: it is neither listed as refused, nor counted, nor refused with a recorded store_error, which is the same class of silent drop this node set out to close.\nFINDING scripts/import_host_reviews.py:476 follow-on: _delivered_report_candidates reads every candidate report twice, once in _report_is_review and again inside delivered_report_record, so the \"carries no RUBRIC or FINDING line\" refusal branch in delivered_report_record is unreachable from this caller and each report is read twice per pass.\nreviewed_base_sha: b2edd1e752b2c574888e8115651d656357894dc1\nreviewed_head_sha: 27cfbda29956138d6cf1c56b6ac449b7ad526ec7\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T110303639272-delivered-reports-are-imported.json",
+  "review_run_id": "r-20261007T113704831391-review-of-delivered-reports-are-imported",
+  "reviewed_base_sha": "b2edd1e752b2c574888e8115651d656357894dc1",
+  "reviewed_head_sha": "27cfbda29956138d6cf1c56b6ac449b7ad526ec7",
+  "reviewed_run_id": "r-20261007T110303639272-delivered-reports-are-imported",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:47:19.403276+00:00",
+  "total": 110
+}
