@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.87">
-<meta name="plan-version" content="103">
+<meta name="plan-version" content="104">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -456,7 +456,10 @@
     <div class="r-comment-body"><p>stored an independent review for r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers at base c1a13efa / head a9e9d322, 113/120 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 16, fit 19, reuse 19), three follow-on findings (responses/response_events merge unguarded by the node's tests; base_dir-blind merge source; reviewed manifest names no suite arms so added failures read unmeasured).</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers" data-who="reckon-build" data-when="2026-10-07T14:31:32.052Z">
-    <div class="r-comment-body"><p>stored_record now returns the copy it selects for a head carrying the dimension_dispositions, responses and response_events held by every copy of the same review run (staging and committed), selection unchanged and nothing written on read; _staging_copies_of_record takes an optional base_dir so a read resolved from a named store merges that store&#x27;s copies only, stored_record passing its own base_dir through; new test file drives a disposition, a response and a response event written to the plain staging file and read back through the head-keyed sibling via stored_record and via the obligations reader, plus a case holding the merge to the named store — gate 9 passed EXIT=0, declared negative control (a) 3 failed EXIT=1 and narrower control (b) 2 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>stored_record now returns the copy it selects for a head carrying the dimension_dispositions, responses and response_events held by every copy of the same review run (staging and committed), selection unchanged and nothing written on read; _staging_copies_of_record takes an optional base_dir so a read resolved from a named store merges that store's copies only, stored_record passing its own base_dir through; new test file drives a disposition, a response and a response event written to the plain staging file and read back through the head-keyed sibling via stored_record and via the obligations reader, plus a case holding the merge to the named store — gate 9 passed EXIT=0, declared negative control (a) 3 failed EXIT=1 and narrower control (b) 2 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261007T143230259969-review-of-a-review-record-is-read-with-every-copys-answers" data-who="reckon-build" data-when="2026-10-07T14:44:13.577Z">
+    <div class="r-comment-body"><p>stored an independent review of r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers at base c1a13efa / head 2cf84885, 115/120 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 19); the rework at 2cf84885 now asserts and guards responses and response_events and threads base_dir through the merge source, resolving two follow-ons from the prior review at a9e9d322; three follow-ons remain (the reviewed manifest names no baseline_suite/after_suite arm so added failures read unmeasured; gate-head.log&#x27;s header names a9e9d322 while the head revision is 2cf84885; stored_records_for_run enumerates a run&#x27;s staging rounds raw).</p></div>
 </div>
 </section>
 </main>
