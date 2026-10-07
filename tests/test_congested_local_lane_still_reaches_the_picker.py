@@ -32,6 +32,7 @@ def test_congested_local_lane_routing(dispatch_repo, tmp_path, monkeypatch, choi
     )
     config = copy.deepcopy(base.CONFIG)
     config["backends"]["alpha"].pop("budget_check")
+    config["backends"]["beta"]["budget_check"] = True
     config["backends"]["alpha"]["lane_document"] = str(lane)
     config["local_backend"] = "alpha"
     config["routing"] = {"picker": "route"}
