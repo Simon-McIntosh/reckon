@@ -1,0 +1,789 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "103594b7642a82938452b1a1d4b26c3a10c54e74",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 7432396,
+      "input_tokens_cumulative": 7432396,
+      "output_tokens": 42505,
+      "output_tokens_cumulative": 42505,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 416,
+    "files": 3,
+    "removed": 33
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 1866,
+        "name": "_clock",
+        "path": "reckon/budget.py"
+      },
+      "run_function": {
+        "line": 94,
+        "name": "pick",
+        "path": "reckon/crew/picker/__init__.py"
+      },
+      "window_line": 113
+    },
+    {
+      "existing_function": {
+        "line": 1946,
+        "name": "_unknown_allowance",
+        "path": "reckon/budget.py"
+      },
+      "run_function": {
+        "line": 94,
+        "name": "pick",
+        "path": "reckon/crew/picker/__init__.py"
+      },
+      "window_line": 113
+    },
+    {
+      "existing_function": {
+        "line": 2486,
+        "name": "_group_bar",
+        "path": "reckon/budget.py"
+      },
+      "run_function": {
+        "line": 94,
+        "name": "pick",
+        "path": "reckon/crew/picker/__init__.py"
+      },
+      "window_line": 113
+    },
+    {
+      "existing_function": {
+        "line": 22,
+        "name": "render",
+        "path": "tests/test_picker_holds.py"
+      },
+      "run_function": {
+        "line": 36,
+        "name": "_node",
+        "path": "tests/test_pick_records_its_stage_times.py"
+      },
+      "window_line": 38
+    },
+    {
+      "existing_function": {
+        "line": 29,
+        "name": "_node",
+        "path": "tests/test_picker_pick_within_bound.py"
+      },
+      "run_function": {
+        "line": 36,
+        "name": "_node",
+        "path": "tests/test_pick_records_its_stage_times.py"
+      },
+      "window_line": 36
+    },
+    {
+      "existing_function": {
+        "line": 279,
+        "name": "test_picker_inputs_and_rendered_state_equal_full_build",
+        "path": "tests/test_dispatch_speed.py"
+      },
+      "run_function": {
+        "line": 59,
+        "name": "_candidate",
+        "path": "tests/test_pick_records_its_stage_times.py"
+      },
+      "window_line": 66
+    },
+    {
+      "existing_function": {
+        "line": 140,
+        "name": "_candidate",
+        "path": "tests/test_picker_helpers_have_one_owner.py"
+      },
+      "run_function": {
+        "line": 59,
+        "name": "_candidate",
+        "path": "tests/test_pick_records_its_stage_times.py"
+      },
+      "window_line": 66
+    },
+    {
+      "existing_function": {
+        "line": 79,
+        "name": "_candidate",
+        "path": "tests/test_picker_return_time.py"
+      },
+      "run_function": {
+        "line": 59,
+        "name": "_candidate",
+        "path": "tests/test_pick_records_its_stage_times.py"
+      },
+      "window_line": 66
+    },
+    {
+      "existing_function": {
+        "line": 105,
+        "name": "answer",
+        "path": "tests/test_picker_latency.py"
+      },
+      "run_function": {
+        "line": 78,
+        "name": "_answer",
+        "path": "tests/test_pick_records_its_stage_times.py"
+      },
+      "window_line": 79
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "7500c95a2097fa9ca4f5b365af7eb99ae5d914e3",
+    "9015e6242b7d2ad7555d11e0fc2c24cceef36255"
+  ],
+  "completed_at": "2026-10-07T18:25:25.575Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-07T18:13:37Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -p",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_pick_records_its_stage_times.py tests/test_picker.py tests/test_pick_candidates_one_pass.py tests/test_picker_helpers_have_one_owner.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T181259042051-pick-records-its-stage-times/gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "one-typesafe-model-picker",
+    "reason": "no-impl-recorded-at-dispatch",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-07T19:03:11.399215+00:00",
+    "horizon_seconds": 3000,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-07T18:13:11Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 29,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 1,
+    "headroom": 15,
+    "mean_context": 80000,
+    "observed_at": "2026-10-07T18:12:42Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 29,
+      "aggregate_tokens_per_second": 8.531,
+      "detail": "",
+      "mean_tokens_per_second": 42.656,
+      "observed_at": "2026-10-07T18:12:42Z",
+      "runs": 0.2,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-07T18:25:25.575Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T181259042051-pick-records-its-stage-times/manifest.md",
+  "member": "disposable-r-20261007T181259042051-pick-records-its-stage-times",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_pick_records_its_stage_times.py::test_a_pick_past_the_bound_records_when_it_completes"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_pick_records_its_stage_times.py::test_a_pick_past_the_bound_records_when_it_completes"
+    ],
+    "declaration": "stop writing the line from a pick that finishes after the bound; the late-pick test must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T181259042051-pick-records-its-stage-times/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T181259042051-pick-records-its-stage-times/negative-control.log",
+    "test_paths": [
+      "tests/test_pick_records_its_stage_times.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "pick-records-its-stage-times",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1078,
+          "cached_input_tokens": 620169,
+          "input_tokens": 621249,
+          "output_tokens": 1647,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 622896,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "2d0412cd-9d81-48d8-9d5c-32537d1c4e2b",
+      "session_id": "s25-picker"
+    },
+    "done_when": "Make every production pick record where its time went, so a pick that hits the 5 s bound can be attributed. Today a timed-out pick records only fallback_reason timeout. For example, runs r-20261007T180232994727-a-stopped-host-names-its-reason and r-20261007T180051854323-review-of-picker-helpers-have-one-owner timed out after the one-pass fix landed, while two other picks finished in about 650 ms. The pick-latency census (~/.config/reckon/crew/reports/reckon/pick-latency-census/report.md) measured the stages offline only.\n\n1. In reckon/crew/picker/__init__.py, pick() times each stage it runs: the candidates snapshot, the estimated-context figure, prompt rendering (state and questions), and the Jev request (connect plus response). It appends one JSON line per pick to a pick-timings log under the crew home. Each line carries the request's node id, session and a start timestamp, each stage's milliseconds, the outcome, and whether the pick finished within the bound. Resolve the log path the way the crew home's other logs resolve, so a test's RECKON_HOME isolation covers it.\n2. A pick that finishes after dispatch has given up still writes its line when it completes. The daemon thread keeps running, so its stages stay attributable.\n3. A failure to write the log never fails or slows the pick. Use a bounded, best-effort append.\n4. Tests in tests/test_pick_records_its_stage_times.py:\n   - a pick with a stub Jev client writes one line with every stage present;\n   - a deliberately slow stub stage beyond the bound still produces a line once it completes, marked as past the bound;\n   - an unwritable log path leaves the pick's result unchanged;\n   - the real crew home is untouched under RECKON_HOME isolation.\n\nDo not edit reckon/crew/dispatch.py or reckon/cli.py; they are on hold for a module split. Do not edit reckon/crew/picker/lane_context.py, snapshot.py, types.py, prompts.py or templates/; a lane-and-model run owns them next. Gate: tests/test_pick_records_its_stage_times.py, every tests/test_picker*.py, tests/test_pick_candidates_one_pass.py and tests/test_jev_weighs_context.py. Run with the main checkout's .venv/bin/python -m pytest -p no:cacheprovider -n 8 in the FOREGROUND, with one log each for base and head under the run directory, each ending in an EXIT line, judged by delta. Write the evidence fragment docs/evidence/fragments/one-typesafe-model-picker/pick-records-its-stage-times.html.",
+    "estimated_hours": 1.5,
+    "goal": "Every production pick records its per-stage times, including a pick that finishes after the bound",
+    "id": "pick-records-its-stage-times",
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-07T18:13:11Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 29,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 1,
+      "headroom": 15,
+      "mean_context": 80000,
+      "observed_at": "2026-10-07T18:12:42Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 29,
+        "aggregate_tokens_per_second": 8.531,
+        "detail": "",
+        "mean_tokens_per_second": 42.656,
+        "observed_at": "2026-10-07T18:12:42Z",
+        "runs": 0.2,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T181259042051-pick-records-its-stage-times/manifest.md",
+    "negative_control": "stop writing the line from a pick that finishes after the bound; the late-pick test must fail",
+    "plan": "one-typesafe-model-picker",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§6",
+    "spec_level": "exact",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/picker/__init__.py",
+      "tests/test_pick_records_its_stage_times.py",
+      "docs/evidence/fragments/one-typesafe-model-picker/pick-records-its-stage-times.html",
+      "docs/figures/one-typesafe-model-picker/pick-records-its-stage-times"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 2202060.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "pick-records-its-stage-times",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-07T18:13:20.645694+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.87,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 387.441,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 490.491,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": 474739.05755,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 52070,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_age_s": 474739.05755,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 52070,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_age_s": 474739.05755,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 52070,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 1,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "context": {
+          "estimated_tokens": 52070,
+          "headroom_pct": 77.4,
+          "peak_utilisation_p50_pct": 35.8,
+          "peak_utilisation_p90_pct": 82.6,
+          "peak_utilisation_runs": 960,
+          "window_tokens": 230144
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 18,
+          "not-run": 17,
+          "passed": 638,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": 98
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": 47.68155,
+        "budget_reason": null,
+        "burn_multiple": 1.2956577221847931,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 52070,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.459727840856482,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 5,
+          "not-run": 0,
+          "passed": 35,
+          "unknown": 0
+        },
+        "pace_allowance": 0.08489896530274471,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 10.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_age_s": 47.68155,
+        "budget_reason": null,
+        "burn_multiple": 1.2956577221847931,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 52070,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.459727840856482,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 10,
+          "unknown": 0
+        },
+        "pace_allowance": 0.08489896530274471,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 10.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_age_s": 47.68155,
+        "budget_reason": null,
+        "burn_multiple": 1.2956577221847931,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 52070,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.459727840856482,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.08489896530274471,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 10.0,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0,
+      "claude-haiku": 0,
+      "claude-opus": 0,
+      "clive": 0.89,
+      "codex": 0.06,
+      "codex-astra": 0.03,
+      "codex-luna": 0,
+      "hold": 0.02
+    },
+    "rendered_token_estimate": 2104,
+    "usage": {
+      "cost": 0.00020727,
+      "input_tokens": 4935,
+      "output_tokens": 89
+    }
+  },
+  "plan": "one-typesafe-model-picker",
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "9015e6242b7d2ad7555d11e0fc2c24cceef36255",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "103594b7642a82938452b1a1d4b26c3a10c54e74",
+    "reviewed_head_sha": "9015e6242b7d2ad7555d11e0fc2c24cceef36255",
+    "scores": {
+      "durability": 20,
+      "evidence": 18,
+      "fit": 19,
+      "goal_fidelity": 18,
+      "reuse": 16,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 111
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "picker",
+  "run_id": "r-20261007T181259042051-pick-records-its-stage-times",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§6",
+  "session": "s25-picker",
+  "session_harness": "claude",
+  "session_id": "f29baf12-8189-43c9-8f1d-4f1b9500f6d2",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 7432396,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 697.335,
+    "generated_tokens": 42505,
+    "generation_seconds": 514.783,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 67.1,
+    "machine_seconds": 182.552,
+    "peak_input_tokens": 154515,
+    "tokens_per_second": 82.57,
+    "wall_tokens_per_second": 60.95
+  },
+  "time_budget": "50m",
+  "tool_steps": 66.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 708,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-07T18:25:29Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-07T18:13:43Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261007T181259042051-pick-records-its-stage-times",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 8093,
+    "worker_pid": 1138321
+  },
+  "worker_seconds": 680,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
