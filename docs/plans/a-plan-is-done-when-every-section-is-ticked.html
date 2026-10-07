@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -79,10 +79,13 @@
       review. §8 owns it.</p>
 
     <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§3 — The plan read carries its todo list</h2>
-    <p><strong>Deliverable.</strong> One derivation in <code>reckon/_plan_html.py</code>, called from
-      <code>parse_plan</code> so both readers carry it. One reader is the typed read (<code>read_plan</code> summary
-      and detail, through <code>reckon/mcp_views.py</code>); the other is the plan payload the SPA fetches from
-      <code>reckon/serve.py</code>'s <code>/plan/&lt;project&gt;/&lt;slug&gt;</code>. It yields a <code>todos</code> list
+    <p><strong>Deliverable.</strong> One derivation function in <code>reckon/_plan_html.py</code>, called by both
+      readers at their own boundary. One reader is the typed read (<code>read_plan</code> summary and detail), which
+      reaches the plan through <code>_store.read_plan</code> and <code>read_state_and_text_file</code>, never
+      <code>parse_plan</code>, and is rendered by <code>reckon/mcp_views.py</code>. The other is the plan payload the
+      SPA fetches from <code>reckon/serve.py</code>'s <code>/plan/&lt;project&gt;/&lt;slug&gt;</code>, which builds
+      on <code>parse_plan</code>. Each reader holds the plan text, which the headings need, and passes it to the one
+      function. It yields a <code>todos</code> list
       with one entry per authored section, in document order: the section id, its heading text, the in-page link
       <code>#&lt;id&gt;</code>, and its declaration. A ticked entry also carries its closing record: the section comment
       whose id is <code>c-close-&lt;id&gt;</code>, which the landing beat writes in the same call as the tick (§7).
@@ -113,9 +116,12 @@
     <h2 id="s5" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§5 — Every section has a todo item</h2>
     <p><strong>Deliverable.</strong> <code>reckon audit-doc</code> reports <code>section-without-todo</code> for an
       authored section heading with no declaration, and <code>todo-without-section</code> for a declaration naming no
-      heading. A plan write that would leave either is refused by widening <code>_require_new_section_contracts</code>
-      in <code>reckon/_store.py</code>, the existing guard on authored headings, rather than by a new check beside
-      it. The census comes first:
+      heading. A plan write that would leave either is refused by widening
+      <code>_require_heading_for_section_records</code> in <code>reckon/_store.py</code>, which
+      <code>_write_state_locked</code> already runs on every plan write in both text and state mode, to cover the
+      declarations in both directions. <code>_require_new_section_contracts</code> is not the owner: it runs only on
+      the text-replace path and only for newly added headings, so it cannot see a declaration a structured write
+      leaves without a heading. The census comes first:
       count the live plans that would fail today, and state the count in the evidence, because closing this guard
       turns every existing gap into a refusal at that plan's next write.</p>
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
