@@ -1,0 +1,34 @@
+layout {
+    cwd "/home/ITER/mcintos/Code/nova"
+    tab name="plan" hide_floating_panes=true {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane contents_file="initial_contents_1"
+    }
+    tab name="S22" focus=true hide_floating_panes=true {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane command="fleet-claude" focus=true {
+            args "--resume" "8e9e8ed7-4297-47b5-977e-2bb9277844d6"
+            start_suspended true
+        }
+    }
+    tab name="S21" hide_floating_panes=true {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane command="fleet-claude" {
+            args "--session-id" "184d1501-2f1d-4fba-893c-8c871d612764"
+            start_suspended true
+        }
+    }
+    new_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane cwd="/home/ITER/mcintos/Code/nova"
+    }
+}
+

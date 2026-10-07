@@ -55,6 +55,7 @@ import os
 import pty
 import re
 import resource
+import select
 import shutil
 import signal
 import socket
@@ -87,6 +88,16 @@ SUPERVISOR_STDERR_NAME = "supervisor.stderr.log"
 START_LOG_NAME = "zellij-start.log"
 
 START_MODE = "start"
+
+# The request loop reads its FIFO with a bounded wait rather than a blocking
+# read, so the sweep for exited children runs on its own interval instead of
+# only when a request happens to arrive. Requests are rare and the loop's whole
+# life is a read, so a child that exits while the FIFO is idle would otherwise
+# stay defunct until the next request arrives. The interval is short enough that
+# an exited child is collected within a second of its own exit, and it costs one
+# wakeup per interval.
+REQUEST_WAIT_SECONDS = 0.5
+REQUEST_READ_BYTES = 65536
 
 # A session created with ``--create-background`` applies its layout with no
 # client's size to lay it out in, and zellij 0.45 sizes each tab from the
@@ -1261,9 +1272,10 @@ def _reap_finished_children() -> None:
 
     The spawned supervisor is this batch step's child and exits once the run it
     holds is over; without this the reader, whose whole life is a read loop,
-    would hold one process-table slot per completed run. It is called between
-    requests and never during a synchronous child wait, so it cannot race the
-    session copy's own collection.
+    would hold one process-table slot per completed run. It is called on the
+    reader's own interval, so a child that exits while the FIFO is idle is
+    collected without a request arriving to prompt it. It never runs during a
+    synchronous child wait, so it cannot race the session copy's own collection.
     """
     while True:
         try:
@@ -1272,6 +1284,21 @@ def _reap_finished_children() -> None:
             return
         if pid == 0:
             return
+
+
+def readable_within(descriptor: int, timeout: float) -> bool:
+    """Whether the descriptor has a line ready within the bound.
+
+    The request loop waits here instead of in a blocking read, so the interval
+    on which it can collect an exited child is bounded even when no request
+    arrives. A descriptor the wait cannot watch reads as not ready, so a
+    failure to wait is never mistaken for a request.
+    """
+    try:
+        ready, _, _ = select.select([descriptor], [], [], timeout)
+    except (OSError, ValueError):
+        return False
+    return bool(ready)
 
 
 def serve(
@@ -1311,22 +1338,34 @@ def serve(
         daemon=True,
     ).start()
     # Opening read-write holds a write end open, so a read between requests
-    # blocks for the next line instead of seeing end-of-file.
+    # blocks for the next line instead of seeing end-of-file. The wait for that
+    # line is bounded rather than blocking: the loop wakes on its own interval
+    # so an exited child is collected without a request arriving, and reads
+    # whichever whole lines the wakeup delivered.
     descriptor = os.open(fifo, os.O_RDWR)
     try:
-        with os.fdopen(descriptor, "r", encoding="utf-8", errors="replace") as stream:
-            while True:
-                _reap_finished_children()
-                line = stream.readline()
-                if not line:
+        pending = b""
+        while True:
+            _reap_finished_children()
+            if not readable_within(descriptor, REQUEST_WAIT_SECONDS):
+                continue
+            chunk = os.read(descriptor, REQUEST_READ_BYTES)
+            if not chunk:
+                continue
+            pending += chunk
+            while b"\n" in pending:
+                raw, pending = pending.split(b"\n", 1)
+                line = raw.decode("utf-8", "replace")
+                if handle_line(line, runtime, environ, exec_, services):
                     continue
-                if not handle_line(line, runtime, environ, exec_, services):
-                    break
+                return 0
     finally:
         # The reader's end is the stop path for everything it started: a stop
         # request, and an exception escaping the loop, both stop the declared
         # services here. A reload never reaches this, because exec replaces the
         # image without unwinding, so the services it adopted keep running.
+        with suppress(OSError):
+            os.close(descriptor)
         stopping.set()
         services.stop_all()
     return 0
