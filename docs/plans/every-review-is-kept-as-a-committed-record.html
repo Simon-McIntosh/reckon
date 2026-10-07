@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.7">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -293,6 +293,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20261007-time-less-kept" data-who="reckon-build" data-when="2026-10-07T06:05:09Z">
     <div class="r-comment-body"><p>Node <code>a-review-without-times-is-still-kept</code> landed on main (commit 8948df23a): a legacy review whose times resolve from no source is committed with <code>times_source: unknown</code> instead of being refused. On reckon's live host store it imports 1,650 records with 0 refused, 23 of them unknown; the affected tests show 0 added failures. Reviewed 112/120. Its follow-on, an unreachable refusal branch in <code>resolve_record_times</code>, is queued as <code>the-review-store-keeps-no-unreachable-refusal</code>. The reckon, imas-ambix and imas-efit imports resumed on it.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261007T062215954650-the-review-store-keeps-no-unreachable-refusal" data-who="reckon-build" data-when="2026-10-07T06:55:16.669Z">
+    <div class="r-comment-body"><p>reckon:every-review-is-kept-as-a-committed-record §5 — removed the unreachable refusal in resolve_record_times; a record whose times resolve from no source is committed times_source unknown with empty dispatched_at/completed_at; both docstrings corrected; a new case holds the unknown commit for a run record with no dispatch stamp under an id encoding no instant, and the companion committed-root case now asserts the same; gate 30 passed EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T053609428174-review-of-raw-review-reports-are-pruned-once-committed" data-who="reckon-build" data-when="2026-10-07T05:52:43.509Z">
     <div class="r-comment-body"><p>review of r-20261007T050757595641-raw-review-reports-are-pruned-once-committed scored at C5: goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116), reviewed base 5f53ef9de head 5c1d172fe, one follow-on (the gc pass ignores run_id); the reviewed node's gate and its negative control both reproduce.</p></div>
