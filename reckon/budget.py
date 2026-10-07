@@ -1823,6 +1823,7 @@ CLOCK_SEVEN_DAY = "seven_day"
 # the payload, since the first admits nothing and the second admits everything.
 OBSERVED = "observed"
 UNKNOWN = "unknown"
+NOT_PUBLISHED = "not_published"
 
 # Where one backend's pace figures came from. The published document speaks when
 # it carries a fresh reading for that backend; otherwise the caller's own
@@ -1858,9 +1859,13 @@ def _clock(reading: window_reading.WindowReading, period: str) -> dict[str, Any]
     """
     figure = reading.figure(period)
     if figure is None:
+        reported = set(reading.reported_periods)
+        reported.update(item.period for item in reading.figures)
         return {
             "period": period,
-            "state": UNKNOWN,
+            "state": (
+                NOT_PUBLISHED if reading.known and period not in reported else UNKNOWN
+            ),
             "utilisation": None,
             "age_seconds": None,
             "observed_at": None,
@@ -2897,7 +2902,10 @@ def pace_row(
         if item["group"] == group
     )
     clocks = dict(entry["clocks"])
-    if clocks[CLOCK_FIVE_HOUR]["state"] != OBSERVED:
+    if (
+        clocks[CLOCK_FIVE_HOUR]["state"] != OBSERVED
+        and clocks[CLOCK_SEVEN_DAY]["state"] != OBSERVED
+    ):
         allowance = entry["allowance"]
         if allowance.get("state") == OBSERVED:
             observed = _parse_stamp(allowance.get("observed_at"))
@@ -3243,10 +3251,12 @@ def _rollout_reading(
             reason="the session's rollout receipt carried no keyed quotas"
         )
     figures: list[window_reading.WindowFigure] = []
+    reported_periods: list[str] = []
     for minutes, row in sorted(readings.items()):
         clock = _reported_window_clock(minutes)
         if clock is None:
             continue
+        reported_periods.append(clock)
         used = getattr(row, "used_percent", None)
         if isinstance(used, bool) or not isinstance(used, (int, float)):
             continue
@@ -3266,6 +3276,7 @@ def _rollout_reading(
         )
     return window_reading.WindowReading(
         figures=tuple(figures),
+        reported_periods=tuple(reported_periods),
         observed_at=observed_at,
         age_seconds=(moment - observed_at).total_seconds(),
     )
@@ -3288,17 +3299,15 @@ def _rate_limits_reading(
             continue
         minutes = row.get("window_minutes")
         used = row.get("used_percent")
-        if (
-            isinstance(minutes, bool)
-            or not isinstance(minutes, int)
-            or minutes <= 0
-            or isinstance(used, bool)
-            or not isinstance(used, (int, float))
-        ):
+        if isinstance(minutes, bool) or not isinstance(minutes, int) or minutes <= 0:
             continue
         readings[minutes] = rollout_module.QuotaReading(
             window_minutes=minutes,
-            used_percent=used,
+            used_percent=(
+                used
+                if isinstance(used, (int, float)) and not isinstance(used, bool)
+                else rollout_module.Unmeasured.NO_RATE_LIMIT_VALUE
+            ),
             resets_at=row.get(
                 "resets_at", rollout_module.Unmeasured.NO_RATE_LIMIT_VALUE
             ),
@@ -3326,6 +3335,7 @@ def _receipt_reading(
     windows = receipt.get("quota_windows")
     fallback = _parse_stamp(receipt.get("observed_at"))
     figures: list[window_reading.WindowFigure] = []
+    reported_periods: list[str] = []
     for row in windows if isinstance(windows, list) else ():
         if not isinstance(row, Mapping):
             continue
@@ -3337,6 +3347,7 @@ def _receipt_reading(
         )
         if period is None:
             continue
+        reported_periods.append(period)
         used = row.get("used_percent")
         if isinstance(used, bool) or not isinstance(used, (int, float)):
             continue
@@ -3360,6 +3371,7 @@ def _receipt_reading(
     newest = max(figure.observed_at for figure in figures)
     return window_reading.WindowReading(
         figures=tuple(figures),
+        reported_periods=tuple(reported_periods),
         observed_at=newest,
         age_seconds=(moment - newest).total_seconds(),
     )

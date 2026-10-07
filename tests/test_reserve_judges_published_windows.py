@@ -115,3 +115,31 @@ def test_rollout_reports_a_failed_period_as_published() -> None:
     assert reading.reported_periods == ("five_hour", "seven_day")
     assert budget._clock(reading, "five_hour")["state"] == "unknown"
     assert budget._clock(reading, "seven_day")["state"] == "observed"
+
+
+def test_stream_reports_a_malformed_period_as_published() -> None:
+    reading = window_reading.read_windows(
+        [
+            {
+                "type": "rate_limit_event",
+                "timestamp": MOMENT.isoformat(),
+                "rate_limit_info": {
+                    "unifiedWindows": {
+                        "five_hour": {"utilization": "bad"},
+                        "seven_day": {"utilization": 0.01},
+                    }
+                },
+            }
+        ],
+        now=MOMENT,
+    )
+    clocks = {
+        period: budget._clock(reading, period) for period in ("five_hour", "seven_day")
+    }
+
+    assert reading.reported_periods == ("five_hour", "seven_day")
+    assert clocks["five_hour"]["state"] == "unknown"
+    assert (
+        reserve.admit_windows(BLOCK, role="implement", clocks=clocks)["admitted"]
+        is False
+    )
