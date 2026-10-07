@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session-landed">
+  <meta name="plan-title" content="A Follower Lives As Long As Its Session — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Follower Lives As Long As Its Session: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-follower-lives-as-long-as-its-session">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Follower Lives As Long As Its Session — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Follower Lives As Long As Its Session — landed record</h1>
+  <p>Closure synthesis for A Follower Lives As Long As Its Session: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s8">
+    <h2>§8 — live proof of session-host delivery</h2>
+    <p>Measured in one live coordinator session (Claude process 42863, start tick 602565274) on
+2026-10-07, after <code>/reload-plugins</code> loaded <code>reckon-crew-host@skills-dir</code>.</p>
+<table>
+  <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>The host waits silently</td><td>entry point pid 3576745 idle under the Claude process,
+      FIFO <code>42863-602565274.fifo</code> present, no pane output</td></tr>
+    <tr><td>Dispatch with no Monitor call</td><td>at 09:16:37 the census node dispatched with
+      <code>delivery: host</code>, <code>session_attached: true</code> and an empty arming line; the
+      entry point became <code>reckon crew host</code> under the same pid and started one
+      <code>crew follow --project reckon --session follower-host</code> (pid 3611733)</td></tr>
+    <tr><td>Rows in the pane, ticker only</td><td>every later transition arrived as a notification
+      labelled <code>reckon crew</code>, carrying the ticker line and nothing else</td></tr>
+    <tr><td>More than 60 minutes, no re-arm</td><td>a row at 10:22:30, 66 minutes after the first
+      dispatch; the host and its follower were still delivering at 2 h 24 min (11:38), across an
+      in-place reload of the follower's code</td></tr>
+    <tr><td>No orphaned host</td><td>census run: <code>hosts=2 live_owner=2 dead_owner=0 fifos=2
+      stale_fifos=0</code>, with a negative control that classifies a fabricated dead-owner FIFO as
+      dead</td></tr>
+    <tr><td>Link</td><td><code>reckon doctor</code> reports
+      <code>reckon-crew-host → plugins/crew-host</code> valid; the link is user-level, so every
+      repository's sessions load it</td></tr>
+  </tbody>
+</table>
+<p>Two findings came out of the live proof and were repaired before this record: the default
+<code>monitors/monitors.json</code> must be a bare array (it passed <code>claude plugin validate</code>
+yet failed to load), and dispatch now reports <code>delivery: host</code> for a session its host
+already attached. <code>/proc/&lt;pid&gt;/environ</code> is unreadable for the host processes, which
+inherit Claude's non-dumpable flag, so ownership is read from the host's <code>--owner-pid</code>
+argument, its FIFO name and its parent chain. The session-end check, that no
+<code>crew host</code> or <code>crew follow</code> process for owner 42863 survives the session, is
+still to be read after this session ends.</p>
+  </section>
+
+</main>
+</body>
+</html>

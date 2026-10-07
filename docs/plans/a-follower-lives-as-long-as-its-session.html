@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -134,6 +134,17 @@
       <code>crew host</code> or <code>crew follow</code> process whose environment names the session's
       <code>CLAUDE_PID</code>, read from <code>/proc</code> rather than from the session host's record, one minute
       after it ends; and <code>reckon doctor</code> clean for the link in every mounted project.</p>
+
+    <h2 id="s9">§9 — The session host removes its FIFO when it ends</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> When <code>reckon crew host</code> stops, because its owner ended or
+it was signalled, it removes the FIFO it was handed. The entry point removes the FIFO only when its
+owner ends before the first request; once it has become <code>reckon crew host</code>, nothing does,
+so every session that dispatched leaves one stale FIFO in the runtime directory. The host derives the
+path from its owner pair and the same runtime-directory order the entry point uses.</p>
+<p><strong>Done when</strong> a test in <code>tests/test_session_host.py</code> starts the host on a
+FIFO named for a fake owner, ends the owner, and finds the FIFO gone, and the session-host census
+reports <code>stale_fifos=0</code> after a session that dispatched has ended.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
