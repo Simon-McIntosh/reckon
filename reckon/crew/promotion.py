@@ -3575,6 +3575,12 @@ def _record_landing_comment(
     same run-derived comment id, in its own committed plan — nothing is
     appended, so promotion leaves the plan file untouched and the merge that
     brings the worker's record in does not collide on the duplicate id.
+
+    The append is also where a plan's first landing moves it out of ``draft``
+    or ``pending``: that status flip rides in the same versioned write, so a
+    plan that was never started stops reading as unstarted the moment work
+    lands on it. ``status`` is a metadata scalar, so the flip never re-stales
+    a design review.
     """
     landing = str(landing).strip()
     narrative = str(narrative).strip()
@@ -3595,10 +3601,18 @@ def _record_landing_comment(
             comment_id=comment_id,
         )
     )
+    # A plan's status is set by hand, so nothing moves it when work starts. The
+    # first landing is the moment work has demonstrably begun, and this append
+    # is already a versioned read-modify-write of the plan, so the flip rides in
+    # the same write rather than costing a second one. Only a plan that still
+    # reads ``draft`` or ``pending`` moves; every other status — ``active``,
+    # ``blocked``, the terminal states — is authored and left alone.
+    in_progress_states = frozenset({"draft", "pending"})
     for _attempt in range(4):
         state, version = _store.read_plan(project, plan, root, artifact_type="plan")
         if not state or state.get("type") != "plan":
             return {"recorded": False, "reason": "plan_unavailable"}
+        started = str(state.get("status") or "").strip().lower() in in_progress_states
         comments = {
             key: list(items) for key, items in (state.get("comments") or {}).items()
         }
@@ -3653,11 +3667,14 @@ def _record_landing_comment(
                 "body": desired_body,
             }
         )
+        payload: dict[str, Any] = {**state, "comments": comments}
+        if started:
+            payload["status"] = "in-progress"
         try:
             _store.write_plan(
                 project,
                 plan,
-                {**state, "comments": comments},
+                payload,
                 version,
                 root,
                 artifact_type="plan",
@@ -3669,6 +3686,7 @@ def _record_landing_comment(
             "comment_id": comment_id,
             "section": anchor,
             "already_recorded": False,
+            "status": payload.get("status"),
         }
     raise CrewError(
         f"could not record landing comment for plan {plan!r}: "
