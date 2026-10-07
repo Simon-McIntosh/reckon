@@ -29,6 +29,14 @@ class MigrationError(RuntimeError):
     """A migration checkpoint cannot safely advance."""
 
 
+class SessionVerificationError(MigrationError):
+    """A resumed session did not match its recorded layout and process census."""
+
+    def __init__(self, message: str, observed: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.observed = observed
+
+
 _TAB = re.compile(r'^\s*tab name="([^"]+)"')
 _CWD = re.compile(r'\bcwd(?:=| )"([^"]+)"')
 _PANE = re.compile(r"^\s*pane(?:\s|\{|$)")
@@ -165,14 +173,16 @@ def _local_observation(
     state: Path,
     claude_sessions: Path,
     transcript_root: Path,
+    session: str | None = None,
     process_root: Path = Path("/proc"),
     invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> dict[str, Any]:
     """Read the old node's zellij and Claude records without changing them."""
     names = [
         name
-        for name, _exited in _listed_sessions(invoke=invoke, check=True)
-        if name.endswith("-fleet")
+        for name, exited in _listed_sessions(invoke=invoke, check=True)
+        if (session is not None and name == session and not exited)
+        or (session is None and name.endswith("-fleet"))
     ]
     if not names:
         raise MigrationError(
@@ -200,12 +210,13 @@ def _local_observation(
     }
 
 
-def collect_local() -> dict[str, Any]:
+def collect_local(session: str | None = None) -> dict[str, Any]:
     """Entry point run as a scheduler step on the old fleet node."""
     return _local_observation(
         state=state_directory(),
         claude_sessions=Path.home() / ".claude" / "sessions",
         transcript_root=Path.home() / ".claude" / "projects",
+        session=session,
     )
 
 
@@ -422,16 +433,21 @@ def _active_sessions(
     ]
 
 
-def _end_local_session(name: str) -> dict[str, Any]:
+def _end_local_session(
+    name: str,
+    *,
+    run_step: Callable[[list[str]], subprocess.CompletedProcess[str]] = _run_step,
+    active_sessions: Callable[[], list[str]] = _active_sessions,
+) -> dict[str, Any]:
     """End a named old-node server and confirm it left the active list."""
-    before = _active_sessions()
+    before = active_sessions()
     if name in before:
-        result = _run_step(["zellij", "kill-session", name])
+        result = run_step(["zellij", "kill-session", name])
         if result.returncode:
             raise MigrationError(
                 f"zellij refused to end {name}: {result.stderr.strip()}"
             )
-    if name in _active_sessions():
+    if name in active_sessions():
         raise MigrationError(f"zellij session {name} remains on the old node")
     return {"session": name, "ended": True, "was_running": name in before}
 
@@ -495,7 +511,12 @@ def _local_session_processes(
                     "command": process.get("command"),
                 }
             )
-    return {"session": name, "node": node, "panes": panes}
+    return {
+        "session": name,
+        "node": node,
+        "tabs": [tab["name"] for tab in tabs],
+        "panes": panes,
+    }
 
 
 def _inspect_remote_session(job: Mapping[str, str], name: str) -> dict[str, Any]:
@@ -599,10 +620,165 @@ def _wait_for_record(
     raise MigrationError(f"{description} was not recorded within thirty seconds")
 
 
+def _verified_session(
+    name: str,
+    recorded: Mapping[str, Any],
+    node: str,
+    inspect: Callable[[], dict[str, Any]],
+    pause: Callable[[float], None],
+    *,
+    check_tabs: bool = False,
+) -> dict[str, Any]:
+    expected_tabs = [tab["name"] for tab in recorded["tabs"]]
+    expected = [
+        (tab["name"], pane["conversation"], pane["cwd"])
+        for tab in recorded["tabs"]
+        for pane in tab["panes"]
+        if pane.get("conversation")
+    ]
+    for _ in range(30):
+        actual = inspect()
+        observed = [
+            (pane.get("tab"), pane.get("conversation"), pane.get("cwd"))
+            for pane in actual.get("panes", [])
+            if pane.get("pid") and pane.get("command")
+        ]
+        if (
+            actual.get("session") == name
+            and actual.get("node") == node
+            and observed == expected
+            and len(actual.get("panes", [])) == len(expected)
+            and (not check_tabs or actual.get("tabs") == expected_tabs)
+        ):
+            return actual
+        pause(2)
+    if check_tabs and actual.get("tabs") != expected_tabs:
+        raise SessionVerificationError(
+            f"{name} tab order mismatch: expected {expected_tabs}, "
+            f"observed {actual.get('tabs')}",
+            actual,
+        )
+    raise SessionVerificationError(
+        f"{name} did not show {len(expected)} recorded Claude panes and tab order "
+        f"on {node}: {json.dumps(actual, sort_keys=True)}",
+        actual,
+    )
+
+
+def _rehearse(
+    *,
+    name: str | None,
+    dry_run: bool,
+    state: Path,
+    layouts_dir: Path,
+    observation: Callable[[], dict[str, Any]],
+    run_step: Callable[[list[str]], subprocess.CompletedProcess[str]],
+    send_supervisor: Callable[[Mapping[str, str], str], None],
+    inspect_session: Callable[[Mapping[str, str], str], dict[str, Any]],
+    pause: Callable[[float], None],
+    hostname: Callable[[], str],
+) -> str:
+    if not name or not re.fullmatch(r"probe-[A-Za-z0-9._-]+", name):
+        raise MigrationError("rehearsal requires a session name starting with probe-")
+    path = state / "migration" / "rehearsals" / name / "ledger.json"
+    ledger = json.loads(path.read_text()) if path.is_file() else None
+    step = "census" if ledger is None else ledger["next_step"]
+    layout_name = f"rehearse-{name}"
+    descriptions = {
+        "census": f"census: read only {name} and its live Claude panes",
+        "layout": f"layout: write {layout_name}.kdl",
+        "end": f"end: stop {name} on this node",
+        "start": f"start: request this node's supervisor to start {name} from {layout_name}.kdl",
+        "verify": f"verify: check {name} tab order and live Claude conversation ids",
+        "done": f"rehearsal complete for {name} in {path}",
+    }
+    if step not in descriptions:
+        raise MigrationError(f"unknown rehearsal step: {step}")
+    if dry_run or step == "done":
+        return descriptions[step]
+    if step == "census":
+        source = observation()
+        if name not in source.get("layouts", {}):
+            raise MigrationError(f"{name} is absent from the local session census")
+        source = {**source, "layouts": {name: source["layouts"][name]}}
+        census = build_census(source)
+        recorded = census["sessions"][0]
+        if len(recorded["tabs"]) != 2 or not any(
+            pane.get("conversation")
+            for tab in recorded["tabs"]
+            for pane in tab["panes"]
+        ):
+            raise MigrationError(f"{name} needs two tabs and a live Claude pane")
+        ledger = {
+            "session": name,
+            "node": hostname().split(".")[0],
+            "started_at": datetime.now(UTC).isoformat(),
+            "completed": ["census"],
+            "next_step": "layout",
+            "census": census,
+        }
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(ledger, indent=2) + "\n")
+        return f"Recorded {name} in {path}; next step: layout"
+    assert ledger is not None
+    if step == "layout":
+        layouts_dir.mkdir(parents=True, exist_ok=True)
+        layout = layouts_dir / f"{layout_name}.kdl"
+        layout.write_text(render_layout(ledger["census"]["sessions"][0]))
+        ledger["layout"] = str(layout)
+        next_step = "end"
+    elif step == "end":
+        if not Path(ledger["layout"]).is_file():
+            raise MigrationError(f"rehearsal layout is missing: {ledger['layout']}")
+
+        def local_sessions() -> list[str]:
+            return _active_sessions(invoke=lambda argv, **_options: run_step(argv))
+
+        ledger["old_end"] = _end_local_session(
+            name, run_step=run_step, active_sessions=local_sessions
+        )
+        next_step = "start"
+    elif step == "start":
+        if not Path(ledger["layout"]).is_file():
+            raise MigrationError(f"rehearsal layout is missing: {ledger['layout']}")
+        request = f"session {name} {layout_name}"
+        send_supervisor({"jobid": "local"}, request)
+        ledger["start_request"] = request
+        next_step = "verify"
+    else:
+        recorded = ledger["census"]["sessions"][0]
+        try:
+            actual = _verified_session(
+                name,
+                recorded,
+                ledger["node"],
+                lambda: inspect_session({"jobid": "local"}, name),
+                pause,
+                check_tabs=True,
+            )
+        except SessionVerificationError as exc:
+            ledger["verification_failure"] = {
+                "reason": str(exc),
+                "expected_tabs": [tab["name"] for tab in recorded["tabs"]],
+                "observed_tabs": exc.observed.get("tabs"),
+                "at": datetime.now(UTC).isoformat(),
+            }
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
+            raise
+        ledger.pop("verification_failure", None)
+        ledger["verification"] = actual
+        next_step = "done"
+    ledger["completed"].append(step)
+    ledger["next_step"] = next_step
+    path.write_text(json.dumps(ledger, indent=2) + "\n")
+    return f"Rehearsal {step} complete for {name} in {path}; next step: {next_step}"
+
+
 def migrate(
     *,
     dry_run: bool = False,
     session: str | None = None,
+    rehearse: bool = False,
     confirm: bool = False,
     state: Path | None = None,
     layouts_dir: Path | None = None,
@@ -621,6 +797,7 @@ def migrate(
     list_worker_steps: Callable[[str], list[str]] = _worker_steps,
     cancel_job: Callable[[str], subprocess.CompletedProcess[str]] = _cancel_job,
     pause: Callable[[float], None] = time.sleep,
+    hostname: Callable[[], str] = socket.gethostname,
 ) -> str:
     """Perform exactly one migration checkpoint, resuming from its ledger."""
     state = state or state_directory()
@@ -629,6 +806,34 @@ def migrate(
         or Path(os.environ.get("ZELLIJ_CONFIG_DIR", Path.home() / ".config" / "zellij"))
         / "layouts"
     )
+    if rehearse:
+        local_observation = (
+            (lambda: collect_local(session))
+            if observation is _remote_observation
+            else observation
+        )
+        local_supervisor = (
+            (lambda _job, line: _local_request(line))
+            if send_supervisor is _send_supervisor
+            else send_supervisor
+        )
+        local_inspection = (
+            (lambda _job, name: _local_session_processes(name))
+            if inspect_session is _inspect_remote_session
+            else inspect_session
+        )
+        return _rehearse(
+            name=session,
+            dry_run=dry_run,
+            state=state,
+            layouts_dir=layouts_dir,
+            observation=local_observation,
+            run_step=run_step,
+            send_supervisor=local_supervisor,
+            inspect_session=local_inspection,
+            pause=pause,
+            hostname=hostname,
+        )
     path = _latest_ledger(state)
     ledger = json.loads(path.read_text()) if path else None
     step = "census" if ledger is None else ledger["next_step"]
@@ -878,34 +1083,21 @@ def migrate(
             outcome["old_end"] = ended
             path.write_text(json.dumps(ledger, indent=2) + "\n")
         send_supervisor(new_job, f"session {session} migrate-{session}")
-        expected = [
-            (tab["name"], pane["conversation"], pane["cwd"])
-            for item in ledger["census"]["sessions"]
-            if item["name"] == session
-            for tab in item["tabs"]
+        recorded = next(
+            item for item in ledger["census"]["sessions"] if item["name"] == session
+        )
+        actual = _verified_session(
+            session,
+            recorded,
+            ledger["stand_up"]["node"],
+            lambda: inspect_session(new_job, session),
+            pause,
+        )
+        expected_count = sum(
+            bool(pane.get("conversation"))
+            for tab in recorded["tabs"]
             for pane in tab["panes"]
-            if pane.get("conversation")
-        ]
-        for _ in range(30):
-            actual = inspect_session(new_job, session)
-            observed = [
-                (pane.get("tab"), pane.get("conversation"), pane.get("cwd"))
-                for pane in actual.get("panes", [])
-                if pane.get("pid") and pane.get("command")
-            ]
-            if (
-                actual.get("session") == session
-                and actual.get("node") == ledger["stand_up"]["node"]
-                and observed == expected
-                and len(actual.get("panes", [])) == len(expected)
-            ):
-                break
-            pause(2)
-        else:
-            raise MigrationError(
-                f"{session} did not show {len(expected)} recorded Claude panes "
-                f"on {ledger['stand_up']['node']}: {json.dumps(actual, sort_keys=True)}"
-            )
+        )
         outcome.update(
             {
                 "status": "complete",
@@ -923,7 +1115,7 @@ def migrate(
             ledger["next_step"] = "retire"
         path.write_text(json.dumps(ledger, indent=2) + "\n")
         return (
-            f"Cut over {session}: {len(expected)} Claude panes with recorded "
+            f"Cut over {session}: {expected_count} Claude panes with recorded "
             f"conversation ids on {actual['node']}; next step: {ledger['next_step']}"
         )
     if step == "retire":
