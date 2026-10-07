@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:5287"
+  ],
+  "completed_at": "2026-10-03T00:22:40.915Z",
+  "dispatched_at": "2026-10-03T00:09:46Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit (33ca858c8 fix, 7f8ea873a style, e4f53c46d docs) against base 9fe5d8204; the change adds the completed requirement to both arms and reads the head ids from the manifest's after_suite.",
+    "done_when": "the done-when names a test in tests/test_passed_verdict_needs_exit_zero.py that fails at the base for an interrupted baseline arm; base_arm.log records that exact case failing (1 failed, 352 passed, EXIT=1).",
+    "goal": "the node's goal is to make the red-base exemption hold only when both suite arms record completed: true; reckon/crew/promotion.py:1207 `_zero_added_against_a_red_base` now returns False unless `completed is True` on both `baseline_suite` and `after_suite`.",
+    "manifest": "read; it records the base arm red at exactly the new case, the head arm green, and the negative control reddening that same case.",
+    "write_paths": "read the manifest's four declared paths; the diff touches promotion.py, the named test file and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "negative_control.log shows that removing the completed check makes the new case promote and fail (1 failed, 5 passed), so the test reddens on the regression it guards.",
+    "evidence": "base_arm.log shows the named case failing at 9fe5d8204 (1 failed, 352 passed, EXIT=1) and head_arm2.log shows 353 passed EXIT=0 over the same 19-file population.",
+    "fit": "`_arm_failure_ids` at reckon/crew/promotion.py:1190 mirrors the `completed is True` literal and canonical_node_id reading of the neighbouring `_baseline_suite_failure_ids`/`_head_suite_failure_ids` readers, though its body duplicates those two.",
+    "goal_fidelity": "reckon/crew/promotion.py:1229-1233 refuses the exemption unless both `baseline_suite` and `after_suite` record `completed is True`, which is exactly the goal.",
+    "scope_discipline": "the diff touches only reckon/crew/promotion.py, tests/test_passed_verdict_needs_exit_zero.py and the evidence fragment, all within the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the red-base exemption hold only when both suite arms record completed: true; reckon/crew/promotion.py:1207 `_zero_added_against_a_red_base` now returns False unless `completed is True` on both `baseline_suite` and `after_suite`.\nVERDICT done_when: the done-when names a test in tests/test_passed_verdict_needs_exit_zero.py that fails at the base for an interrupted baseline arm; base_arm.log records that exact case failing (1 failed, 352 passed, EXIT=1).\nVERDICT write_paths: read the manifest's four declared paths; the diff touches promotion.py, the named test file and the evidence fragment, all inside them.\nVERDICT manifest: read; it records the base arm red at exactly the new case, the head arm green, and the negative control reddening that same case.\nVERDICT diff: read commit by commit (33ca858c8 fix, 7f8ea873a style, e4f53c46d docs) against base 9fe5d8204; the change adds the completed requirement to both arms and reads the head ids from the manifest's after_suite.\nCALL_SITES: reckon/crew/promotion.py:5287\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1229-1233 refuses the exemption unless both `baseline_suite` and `after_suite` record `completed is True`, which is exactly the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: base_arm.log shows the named case failing at 9fe5d8204 (1 failed, 352 passed, EXIT=1) and head_arm2.log shows 353 passed EXIT=0 over the same 19-file population.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/promotion.py, tests/test_passed_verdict_needs_exit_zero.py and the evidence fragment, all within the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative_control.log shows that removing the completed check makes the new case promote and fail (1 failed, 5 passed), so the test reddens on the regression it guards.\nSCORE fit: 18\nJUSTIFICATION fit: `_arm_failure_ids` at reckon/crew/promotion.py:1190 mirrors the `completed is True` literal and canonical_node_id reading of the neighbouring `_baseline_suite_failure_ids`/`_head_suite_failure_ids` readers, though its body duplicates those two.\n",
+  "review_run_id": "r-20261003T000909162595-review-of-red-base-exemption-needs-completed-arms",
+  "reviewed_base_sha": "9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd",
+  "reviewed_head_sha": "e4f53c46db8028d87376229b5a0e5bfada7edc29",
+  "reviewed_run_id": "r-20261002T225040192210-red-base-exemption-needs-completed-arms",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T000909162595-review-of-red-base-exemption-needs-completed-arms",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T00:17:47.090561+00:00",
+  "total": 93
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:_ticker_grid",
+    "reckon/crew/recovery.py:_PLAIN"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T15:58:20.968215+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "658",
+      "text": "the config resolution passes no project, so the project layer that dispatch reads at reckon/crew/runs.py:2229 and reckon/crew/recovery.py:466 is unread while each row's alias is frozen at dispatch from the project-aware config through _stamp_agent_display at reckon/crew/dispatch.py:1689, and the docstring at reckon/crew/ticker.py:643-645 claims all four dispatch layers are read; logs/receipt-project-layer.log measures the divergence directly, a project layer declaring project-alias-v1 resolving to ('project-alias-v1',) through resolve(project_path=...) while declared_model_aliases() returns () and the width falls back to the ten-column default, and project is in scope at the construction site reckon/cli.py:2279."
+    },
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "785",
+      "text": "the expected cell start is derived from ticker_module.MODEL, the ten-column default, while the rendered width now comes from the resolved config, so the assertion holds only where the flight config declares no alias and not in the configuration the change exists to serve \u2014 evidenced by this file's own log for this finding at tests/test_crew_ticker.py:784 failing in logs/receipt-ambient-config.log under a config declaring dsv4.1-flash."
+    },
+    {
+      "file": "tests/test_crew_ticker_layout.py",
+      "line": "800",
+      "text": "the cut and the column arithmetic are computed from ticker_module.MODEL rather than grid.model_width, the width the grid being rendered with actually uses; the same shape appears at tests/test_crew_ticker_layout.py:710 and tests/test_crew_ticker_layout.py:716, and logs/receipt-layout-ambient.log measures 10 failures in this file under a declaring config, 1 of them pre-existing, so 9 are config-dependent and this test is one."
+    },
+    {
+      "file": "tests/test_crew_ticker_layout.py",
+      "line": "1143",
+      "text": "the pre-existing _spend_columns prefix is built from ticker_module.MODEL, which the change makes reachable: while the model cell was always MODEL wide the prefix was correct, and a config-declared alias now shifts the six tests that read their columns from it, as logs/receipt-layout-ambient.log shows."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 12155ff8; 5fe605cf touches only the three fenced source and test paths \u2014 the two new helpers, the width wiring, the elided cell, three reversed assertions and the new sizing test \u2014 and 2f8d9045 adds only the landing record, the cumulative evidence anchor, the figure script and its PNG.",
+    "done_when": "the done_when names the two fenced ticker test files with added failures 0 against the base revision and a recorded red control; the manifest states base \"1 failed, 91 passed\" and head \"1 failed, 92 passed\", logs/baseline.log and logs/after.log each open with their own revision header and command, and re-running that gate in the reviewed tree at 2f8d9045 reproduces \"1 failed, 92 passed\" with the single failure being the pre-existing test_the_action_set_is_one_set_with_three_readers.",
+    "goal": "the goal asks that the follower row's model cell be sized from the longest alias the resolved flight config declares and that an unconfigured model id be cut with an ellipsis; reckon/crew/ticker.py:831 sets Ticker.model_width from model_cell_width(declared_model_aliases()) and the render at reckon/crew/ticker.py:947 elides the model cell, a declaring host layer drives the width to 12 in logs/receipt-config-liveness.log, but the resolution at reckon/crew/ticker.py:658 passes no project, so the project layer the wording implies is not read.",
+    "manifest": "read at the run directory; it records status complete, both counts with their logs, the declared control repeated verbatim on the red log's first line with the module restored afterwards and its sha1 checked against the pre-control backup, and the one failure present at the base revision recorded as a follow-on rather than repaired.",
+    "write_paths": "the declared fence is reckon/crew/ticker.py, tests/test_crew_ticker.py, tests/test_crew_ticker_layout.py, docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html, docs/figures/a-monitor-row-reads-at-a-glance and docs/plans/a-monitor-row-reads-at-a-glance.html; all seven paths in git diff --name-status 12155ff8..2f8d9045 lie inside it, and the two landing sections sit beside sections 2 and 7 in the cumulative record without displacing them."
+  },
+  "justifications": {
+    "durability": "the new test at tests/test_crew_ticker_layout.py:943 pins grid.model_width and fails under the declared mutation, but the three reversed assertions compute the grid from ticker_module.MODEL rather than the width the grid renders with, and logs/receipt-layout-ambient.log measures 9 config-dependent failures in that file alone.",
+    "evidence": "logs/baseline.log and logs/after.log open with their own revision header and command and my re-run in the reviewed tree reproduces \"1 failed, 92 passed\", but the suite's RECKON_HOME isolation at tests/conftest.py:112 means the recorded green could not have shown the nine-test divergence a declaring config produces (logs/receipt-layout-ambient.log).",
+    "fit": "the two helpers sit at reckon/crew/ticker.py:638 and reckon/crew/ticker.py:673 in the module's own register and carry no plan or ticket identifier, though the docstring at reckon/crew/ticker.py:643 claims the four dispatch layers while the code reads three.",
+    "goal_fidelity": "the sizing and the ellipsis cut are live at reckon/crew/ticker.py:831 and reckon/crew/ticker.py:947 and a declaring host layer yields width 12 in logs/receipt-config-liveness.log, but reckon/crew/ticker.py:658 resolves with no project argument, so a project-declared alias cannot size the cell the goal describes.",
+    "scope_discipline": "every one of the seven paths in git diff --name-status 12155ff8..2f8d9045 lies inside the manifest's declared write paths, with the model_aliases parameter at reckon/crew/ticker.py:823 the only surface no caller in the tree reaches."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that the follower row's model cell be sized from the longest alias the resolved flight config declares and that an unconfigured model id be cut with an ellipsis; reckon/crew/ticker.py:831 sets Ticker.model_width from model_cell_width(declared_model_aliases()) and the render at reckon/crew/ticker.py:947 elides the model cell, a declaring host layer drives the width to 12 in logs/receipt-config-liveness.log, but the resolution at reckon/crew/ticker.py:658 passes no project, so the project layer the wording implies is not read.\nVERDICT done_when: the done_when names the two fenced ticker test files with added failures 0 against the base revision and a recorded red control; the manifest states base \"1 failed, 91 passed\" and head \"1 failed, 92 passed\", logs/baseline.log and logs/after.log each open with their own revision header and command, and re-running that gate in the reviewed tree at 2f8d9045 reproduces \"1 failed, 92 passed\" with the single failure being the pre-existing test_the_action_set_is_one_set_with_three_readers.\nVERDICT write_paths: the declared fence is reckon/crew/ticker.py, tests/test_crew_ticker.py, tests/test_crew_ticker_layout.py, docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html, docs/figures/a-monitor-row-reads-at-a-glance and docs/plans/a-monitor-row-reads-at-a-glance.html; all seven paths in git diff --name-status 12155ff8..2f8d9045 lie inside it, and the two landing sections sit beside sections 2 and 7 in the cumulative record without displacing them.\nVERDICT manifest: read at the run directory; it records status complete, both counts with their logs, the declared control repeated verbatim on the red log's first line with the module restored afterwards and its sha1 checked against the pre-control backup, and the one failure present at the base revision recorded as a follow-on rather than repaired.\nVERDICT diff: read commit by commit against base 12155ff8; 5fe605cf touches only the three fenced source and test paths \u2014 the two new helpers, the width wiring, the elided cell, three reversed assertions and the new sizing test \u2014 and 2f8d9045 adds only the landing record, the cumulative evidence anchor, the figure script and its PNG.\nCALL_SITES: reckon/cli.py:_ticker_grid, reckon/crew/recovery.py:_PLAIN\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the sizing and the ellipsis cut are live at reckon/crew/ticker.py:831 and reckon/crew/ticker.py:947 and a declaring host layer yields width 12 in logs/receipt-config-liveness.log, but reckon/crew/ticker.py:658 resolves with no project argument, so a project-declared alias cannot size the cell the goal describes.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/baseline.log and logs/after.log open with their own revision header and command and my re-run in the reviewed tree reproduces \"1 failed, 92 passed\", but the suite's RECKON_HOME isolation at tests/conftest.py:112 means the recorded green could not have shown the nine-test divergence a declaring config produces (logs/receipt-layout-ambient.log).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every one of the seven paths in git diff --name-status 12155ff8..2f8d9045 lies inside the manifest's declared write paths, with the model_aliases parameter at reckon/crew/ticker.py:823 the only surface no caller in the tree reaches.\nSCORE durability: 15\nJUSTIFICATION durability: the new test at tests/test_crew_ticker_layout.py:943 pins grid.model_width and fails under the declared mutation, but the three reversed assertions compute the grid from ticker_module.MODEL rather than the width the grid renders with, and logs/receipt-layout-ambient.log measures 9 config-dependent failures in that file alone.\nSCORE fit: 17\nJUSTIFICATION fit: the two helpers sit at reckon/crew/ticker.py:638 and reckon/crew/ticker.py:673 in the module's own register and carry no plan or ticket identifier, though the docstring at reckon/crew/ticker.py:643 claims the four dispatch layers while the code reads three.\nFINDING reckon/crew/ticker.py:658 the config resolution passes no project, so the project layer that dispatch reads at reckon/crew/runs.py:2229 and reckon/crew/recovery.py:466 is unread while each row's alias is frozen at dispatch from the project-aware config through _stamp_agent_display at reckon/crew/dispatch.py:1689, and the docstring at reckon/crew/ticker.py:643-645 claims all four dispatch layers are read; logs/receipt-project-layer.log measures the divergence directly, a project layer declaring project-alias-v1 resolving to ('project-alias-v1',) through resolve(project_path=...) while declared_model_aliases() returns () and the width falls back to the ten-column default, and project is in scope at the construction site reckon/cli.py:2279.\nFINDING tests/test_crew_ticker.py:785 the expected cell start is derived from ticker_module.MODEL, the ten-column default, while the rendered width now comes from the resolved config, so the assertion holds only where the flight config declares no alias and not in the configuration the change exists to serve \u2014 evidenced by this file's own log for this finding at tests/test_crew_ticker.py:784 failing in logs/receipt-ambient-config.log under a config declaring dsv4.1-flash.\nFINDING tests/test_crew_ticker_layout.py:800 the cut and the column arithmetic are computed from ticker_module.MODEL rather than grid.model_width, the width the grid being rendered with actually uses; the same shape appears at tests/test_crew_ticker_layout.py:710 and tests/test_crew_ticker_layout.py:716, and logs/receipt-layout-ambient.log measures 10 failures in this file under a declaring config, 1 of them pre-existing, so 9 are config-dependent and this test is one.\nFINDING tests/test_crew_ticker_layout.py:1143 the pre-existing _spend_columns prefix is built from ticker_module.MODEL, which the change makes reachable: while the model cell was always MODEL wide the prefix was correct, and a config-declared alias now shifts the six tests that read their columns from it, as logs/receipt-layout-ambient.log shows.",
+  "review_run_id": "r-20260923T155820968215-review-of-model-cell-fits-every-alias",
+  "reviewed_base_sha": "12155ff893445e4c43c9a210f7a2f01cd0f3f783",
+  "reviewed_head_sha": "2f8d9045b72bc23e0e9e723c64654b8bc02a1718",
+  "reviewed_run_id": "r-20260923T131053762821-model-cell-fits-every-alias",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T17:21:10.076515+00:00",
+  "total": 81
+}

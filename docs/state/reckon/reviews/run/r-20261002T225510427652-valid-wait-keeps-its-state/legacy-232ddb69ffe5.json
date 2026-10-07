@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew_recovery.py::test_cli_follow_streams_each_event_as_one_json_document"
+  ],
+  "added_failures_note": "unmeasured-no; derived by the review reader from the reviewed run's own gate-base.log: the base arm printed ids under a base/ prefix so the pre-existing follow-stream test reads as added",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:4867"
+  ],
+  "completed_at": "2026-10-03T00:29:22.416Z",
+  "dispatched_at": "2026-10-02T22:56:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "1567",
+      "severity": "follow-on",
+      "text": "follow-on: the change repairs audit_manifest, which only crew check-manifest consumes (reckon/cli.py:4867), not the classifier the done-when preamble names \u2014 recovery.classify_pointer reads the wait through _manifest_wait directly and already returned waiting at base, so this change does not itself restore the automatic resume the preamble describes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T225510427652-valid-wait-keeps-its-state/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm was invoked without a working directory the review reader reconciles (no env -C; the manifest's single measurement_cwd names the head tree), so its log spells ids with a base/ prefix; the fleet's added-failure reader therefore reports one added failure id (the pre-existing follow-stream test) and caps any stored review of this run at total 5, while promotion reads zero from the manifest's own failure_ids."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "three commits against base 9fe5d8204 \u2014 the audit wait branch at reports.py:1567, the new test file, and the evidence fragment; nothing outside the declared scope.",
+    "done_when": "the done-when names tests/test_valid_wait_keeps_its_state.py; the manifest records the base arm (1 failed, 1 passed, gate-base-supplement.log), the head arm (2 passed, gate-head-focused.log) and a negative control (negative-control.log EXIT=1).",
+    "goal": "the node's goal is that a valid wait reads waiting with its manifest audit finding attached; reckon/crew/reports.py:1567 keeps a waiting manifest's state on an honoured declaration while attaching the gate-log finding.",
+    "manifest": "read; it records every arm's log path, its completed flag, its failure ids, the negative control and the follow-on for the pre-existing follow-stream failure.",
+    "write_paths": "the manifest declares reckon/crew/runs.py, reckon/crew/reports.py, tests/test_valid_wait_keeps_its_state.py, the evidence fragment and the figures directory; the diff touches reports.py, the test and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "the negative control restores the unconditional status finding and tests/test_valid_wait_keeps_its_state.py:152 fails (negative-control.log, EXIT=1), and the malformed case at tests/test_valid_wait_keeps_its_state.py:157 guards the relaxation.",
+    "evidence": "the base arm fails the valid-wait case (gate-base-supplement.log, 1 failed 1 passed) and the head arm passes it (gate-head-focused.log, 2 passed), but the full base arm in gate-base.log ran a pre-final copy of the test and the fleet's added-failure reader derives one added id from the base log's base-prefixed ids.",
+    "fit": "reports.py:1516 imports recovery._manifest_wait inside the function rather than duplicating the wait grammar, matching the cycle-avoiding local-import idiom recovery.py:35 forces.",
+    "goal_fidelity": "reports.py:1567 routes a waiting manifest through _wait_declaration_refusal (reports.py:1502) so an honoured declaration keeps its state and the gate-log finding at reports.py:1121 is attached beside it.",
+    "scope_discipline": "every changed path (reckon/crew/reports.py, tests/test_valid_wait_keeps_its_state.py, docs/evidence/fragments/crew-observability-truth/valid-wait-keeps-its-state.html) is inside the declared write paths; commit cf50f544c also carries an unrelated re.I-to-re.IGNORECASE edit at reports.py:968 on an untouched line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a valid wait reads waiting with its manifest audit finding attached; reckon/crew/reports.py:1567 keeps a waiting manifest's state on an honoured declaration while attaching the gate-log finding.\nVERDICT done_when: the done-when names tests/test_valid_wait_keeps_its_state.py; the manifest records the base arm (1 failed, 1 passed, gate-base-supplement.log), the head arm (2 passed, gate-head-focused.log) and a negative control (negative-control.log EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/runs.py, reckon/crew/reports.py, tests/test_valid_wait_keeps_its_state.py, the evidence fragment and the figures directory; the diff touches reports.py, the test and the fragment, all inside them.\nVERDICT manifest: read; it records every arm's log path, its completed flag, its failure ids, the negative control and the follow-on for the pre-existing follow-stream failure.\nVERDICT diff: three commits against base 9fe5d8204 \u2014 the audit wait branch at reports.py:1567, the new test file, and the evidence fragment; nothing outside the declared scope.\nCALL_SITES: reckon/cli.py:4867\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reports.py:1567 routes a waiting manifest through _wait_declaration_refusal (reports.py:1502) so an honoured declaration keeps its state and the gate-log finding at reports.py:1121 is attached beside it.\nSCORE evidence: 15\nJUSTIFICATION evidence: the base arm fails the valid-wait case (gate-base-supplement.log, 1 failed 1 passed) and the head arm passes it (gate-head-focused.log, 2 passed), but the full base arm in gate-base.log ran a pre-final copy of the test and the fleet's added-failure reader derives one added id from the base log's base-prefixed ids.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path (reckon/crew/reports.py, tests/test_valid_wait_keeps_its_state.py, docs/evidence/fragments/crew-observability-truth/valid-wait-keeps-its-state.html) is inside the declared write paths; commit cf50f544c also carries an unrelated re.I-to-re.IGNORECASE edit at reports.py:968 on an untouched line.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control restores the unconditional status finding and tests/test_valid_wait_keeps_its_state.py:152 fails (negative-control.log, EXIT=1), and the malformed case at tests/test_valid_wait_keeps_its_state.py:157 guards the relaxation.\nSCORE fit: 18\nJUSTIFICATION fit: reports.py:1516 imports recovery._manifest_wait inside the function rather than duplicating the wait grammar, matching the cycle-avoiding local-import idiom recovery.py:35 forces.\nFINDING reckon/crew/reports.py:1567 follow-on: the change repairs audit_manifest, which only crew check-manifest consumes (reckon/cli.py:4867), not the classifier the done-when preamble names \u2014 recovery.classify_pointer reads the wait through _manifest_wait directly and already returned waiting at base, so this change does not itself restore the automatic resume the preamble describes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T225510427652-valid-wait-keeps-its-state/manifest.md:20 follow-on: the base arm was invoked without a working directory the review reader reconciles (no env -C; the manifest's single measurement_cwd names the head tree), so its log spells ids with a base/ prefix; the fleet's added-failure reader therefore reports one added failure id (the pre-existing follow-stream test) and caps any stored review of this run at total 5, while promotion reads zero from the manifest's own failure_ids.\n",
+  "review_run_id": "legacy-232ddb69ffe5",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd",
+  "reviewed_head_sha": "814fe8f516610f713160a6b9fa4d824d63c0cb0b",
+  "reviewed_run_id": "r-20261002T225510427652-valid-wait-keeps-its-state",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T00:39:33.205034+00:00",
+  "total": 86
+}

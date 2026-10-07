@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "added_failures_source": {
+    "note": "reviewed manifest names no baseline_suite/after_suite field; count derived unmeasured",
+    "reviewed_run_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195433561538-repair-carries-the-suite-pair/manifest.md"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:2267"
+  ],
+  "completed_at": "2026-09-30T20:27:10.793Z",
+  "dispatched_at": "2026-09-30T20:14:56Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195433561538-repair-carries-the-suite-pair/manifest.md",
+      "line": "15",
+      "text": "the reviewed manifest names no baseline_suite or after_suite field (only test_logs and artifacts), although its dispatch template carried those armed-only fields and the node holds a test file, so reckon.crew.review.annotate_review_of_run derives added_failure_count as unmeasured and no review of this run can carry a count derived against the reviewed run's own suite \u2014 the reconciliation this repair exists to enable."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1769",
+      "text": "_reviewed_run_suite_command catches bare Exception around flight.review_suite, so the FlightConfigError that flight.review_suite (flight.py:669) raises by design for a present-but-malformed review.suite block is swallowed and the repair silently proceeds with no inherited suite, converting a refusal into a silent absence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read git show 6f17d5c4b against base 84b6364f \u2014 three files, 138 insertions and 1 deletion; recovery.py adds _reviewed_run_suite_command at 1748 and _config_carrying_suite at 1776 and switches the launch to config=repair_config at 2045, the test file adds two cases at 331 and 367, and the evidence fragment is new; no unrelated edits.",
+    "done_when": "the reviewed done_when names tests/test_repair_skips_out_of_repo_findings.py gaining a case through the stubbed dispatch that asserts the composed repair carries the reviewed run's suite command; the manifest records the focused run, and this review re-ran the same two files in a scratch tree at the reviewed base (18 passed) and at the reviewed head (20 passed), with the declared negative control (drop the suite command from the repair dispatch) reddening both new assertions on KeyError 'gates' (2 failed, EXIT=1).",
+    "goal": "the node's goal is that a repair composed for a review round inherits the reviewed run's recorded suite command so the repair's live pointer records a non-null suite_command; reckon/crew/recovery.py:2037-2039 derives it with _reviewed_run_suite_command and _config_carrying_suite and passes config=repair_config into dispatch_module.dispatch at recovery.py:2045, and reckon/crew/dispatch.py:4906 records str(config[\"gates\"].get(\"suite_command\") or \"\").strip() or None onto the run pointer, so the derived command reaches the exact key dispatch stamps and the goal is met.",
+    "manifest": "read; it names the commit, the two helper mechanisms, the two new cases, the negative control and the gate result, but it names no baseline_suite or after_suite field, so the review read path (reckon/crew/review.py:1201 annotate_review_of_run, keyed on those two fields) reports the added-failure count unmeasured rather than zero \u2014 recorded below as a finding.",
+    "write_paths": "the manifest declares four paths \u2014 reckon/crew/recovery.py, tests/test_repair_skips_out_of_repo_findings.py, a docs evidence fragment and a figures directory; git show --stat 6f17d5c4b touches the first, the second and the fragment, all inside the grant, and it does not touch reckon/crew/dispatch.py, which the manifest names as peer-owned."
+  },
+  "justifications": {
+    "durability": "the two new cases assert the composed call's config.gates.suite_command against an independently supplied value and both redden when the pre-fix launch is reinstated (config=resolved has no gates block), so a regression is caught; minus one because the assertion reads the stubbed dispatch config rather than the pointer dispatch stamps, so the final recording step is asserted only indirectly.",
+    "evidence": "the focused gate is recorded in the manifest and independently reproduced here (base arm 18 passed, head arm 20 passed, negative control 2 failed at recovery.py:359/395), but the reviewed manifest.md:15 names no baseline_suite/after_suite so review.py:1086 derives added_failure_count unmeasured rather than zero.",
+    "fit": "_reviewed_run_suite_command and _config_carrying_suite at recovery.py:1748 and recovery.py:1776 are named by mechanism with no plan or version token, follow the surrounding helper idiom, and re-use flight.review_suite (flight.py:669); minus two because the blanket except at recovery.py:1769 converts flight.review_suite's refuse-by-name contract for a malformed review.suite block into a silent empty command.",
+    "goal_fidelity": "the derived command rides config.gates.suite_command into the launch at recovery.py:2037, the exact key dispatch.py:4906 reads to stamp the pointer, and the two new cases assert that key directly, so a repair's recorded suite_command is non-null by construction.",
+    "scope_discipline": "git show --stat 6f17d5c4b is three files, all inside the manifest's declared write paths, with no plan, index or peer-owned dispatch.py edit."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 84b6364f162c8a4a04b430f191db7fe34a610e76\nreviewed_head_sha: 6f17d5c4b5b46c1b9d3b8090d56343c10442818f\nVERDICT goal: the node's goal is that a repair composed for a review round inherits the reviewed run's recorded suite command so the repair's live pointer records a non-null suite_command; reckon/crew/recovery.py:2037-2039 derives it with _reviewed_run_suite_command and _config_carrying_suite and passes config=repair_config into dispatch_module.dispatch at recovery.py:2045, and reckon/crew/dispatch.py:4906 records str(config[\"gates\"].get(\"suite_command\") or \"\").strip() or None onto the run pointer, so the derived command reaches the exact key dispatch stamps and the goal is met.\nVERDICT done_when: the reviewed done_when names tests/test_repair_skips_out_of_repo_findings.py gaining a case through the stubbed dispatch that asserts the composed repair carries the reviewed run's suite command; the manifest records the focused run, and this review re-ran the same two files in a scratch tree at the reviewed base (18 passed) and at the reviewed head (20 passed), with the declared negative control (drop the suite command from the repair dispatch) reddening both new assertions on KeyError 'gates' (2 failed, EXIT=1).\nVERDICT write_paths: the manifest declares four paths \u2014 reckon/crew/recovery.py, tests/test_repair_skips_out_of_repo_findings.py, a docs evidence fragment and a figures directory; git show --stat 6f17d5c4b touches the first, the second and the fragment, all inside the grant, and it does not touch reckon/crew/dispatch.py, which the manifest names as peer-owned.\nVERDICT manifest: read; it names the commit, the two helper mechanisms, the two new cases, the negative control and the gate result, but it names no baseline_suite or after_suite field, so the review read path (reckon/crew/review.py:1201 annotate_review_of_run, keyed on those two fields) reports the added-failure count unmeasured rather than zero \u2014 recorded below as a finding.\nVERDICT diff: read git show 6f17d5c4b against base 84b6364f \u2014 three files, 138 insertions and 1 deletion; recovery.py adds _reviewed_run_suite_command at 1748 and _config_carrying_suite at 1776 and switches the launch to config=repair_config at 2045, the test file adds two cases at 331 and 367, and the evidence fragment is new; no unrelated edits.\nCALL_SITES: reckon/crew/recovery.py:2267\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the derived command rides config.gates.suite_command into the launch at recovery.py:2037, the exact key dispatch.py:4906 reads to stamp the pointer, and the two new cases assert that key directly, so a repair's recorded suite_command is non-null by construction.\nSCORE evidence: 16\nJUSTIFICATION evidence: the focused gate is recorded in the manifest and independently reproduced here (base arm 18 passed, head arm 20 passed, negative control 2 failed at recovery.py:359/395), but the reviewed manifest.md:15 names no baseline_suite/after_suite so review.py:1086 derives added_failure_count unmeasured rather than zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 6f17d5c4b is three files, all inside the manifest's declared write paths, with no plan, index or peer-owned dispatch.py edit.\nSCORE durability: 19\nJUSTIFICATION durability: the two new cases assert the composed call's config.gates.suite_command against an independently supplied value and both redden when the pre-fix launch is reinstated (config=resolved has no gates block), so a regression is caught; minus one because the assertion reads the stubbed dispatch config rather than the pointer dispatch stamps, so the final recording step is asserted only indirectly.\nSCORE fit: 18\nJUSTIFICATION fit: _reviewed_run_suite_command and _config_carrying_suite at recovery.py:1748 and recovery.py:1776 are named by mechanism with no plan or version token, follow the surrounding helper idiom, and re-use flight.review_suite (flight.py:669); minus two because the blanket except at recovery.py:1769 converts flight.review_suite's refuse-by-name contract for a malformed review.suite block into a silent empty command.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195433561538-repair-carries-the-suite-pair/manifest.md:15 the reviewed manifest names no baseline_suite or after_suite field (only test_logs and artifacts), although its dispatch template carried those armed-only fields and the node holds a test file, so reckon.crew.review.annotate_review_of_run derives added_failure_count as unmeasured and no review of this run can carry a count derived against the reviewed run's own suite \u2014 the reconciliation this repair exists to enable.\nFINDING reckon/crew/recovery.py:1769 _reviewed_run_suite_command catches bare Exception around flight.review_suite, so the FlightConfigError that flight.review_suite (flight.py:669) raises by design for a present-but-malformed review.suite block is swallowed and the repair silently proceeds with no inherited suite, converting a refusal into a silent absence.",
+  "review_run_id": "r-20260930T201435209219-review-of-repair-carries-the-suite-pair",
+  "reviewed_base_sha": "84b6364f162c8a4a04b430f191db7fe34a610e76",
+  "reviewed_head_sha": "6f17d5c4b5b46c1b9d3b8090d56343c10442818f",
+  "reviewed_run_id": "r-20260930T195433561538-repair-carries-the-suite-pair",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260930T201435209219-review-of-repair-carries-the-suite-pair",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T20:25:58.441169+00:00",
+  "total": 93
+}

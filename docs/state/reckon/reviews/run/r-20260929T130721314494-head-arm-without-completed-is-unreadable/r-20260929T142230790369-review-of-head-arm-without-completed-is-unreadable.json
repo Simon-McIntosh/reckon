@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absent_arm_control": "a missing arm returns (None, []) \u2014 unmeasured, not zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130721314494-head-arm-without-completed-is-unreadable/logs/head_arm.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130721314494-head-arm-without-completed-is-unreadable/logs/base_arm.log",
+    "count_derivation": "set difference of pytest FAILED/ERROR node ids over the reviewed manifest's own baseline_suite and after_suite gate logs, computed with review.added_failures_from_gate_logs; derivation log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable/logs/added-failures.out",
+    "pair_note": "the base arm's two failing ids are the node's own new refusal cases and the head arm adds none, so the pair reads as a clean delta and the base arm's red is the provenance check for the fix",
+    "pair_usable_as_suite_delta": true,
+    "positive_control": {
+      "count": 1,
+      "ids": [
+        "tests/test_reviewer_positive_control.py::test_the_instrument_sees_a_failure"
+      ],
+      "mutation": "append one FAILED line to a copy of the head log text in memory"
+    }
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_require_declared_negative_control",
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-09-29T14:58:58.298Z",
+  "dispatched_at": "2026-09-29T14:22:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "5046",
+      "text": "the baseline arm still reads a key-less or null `completed` mapping as complete, so the goal's \"both arms\" clause is unmet; a scratch probe making it strict reddens tests/test_control_gate_checks_facts.py::test_a_control_that_adds_no_failure_to_the_baseline_is_refused (1 failed, 17 passed, EXIT=1) and moves the fallback toward admitting controls, so a node holding that fixture must make the key mandatory there."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 64d8c18e: b4d154e1 turns the completion test at promotion.py:5088 from `is False` into `is not True` and adds the three cases, f45cf754 adds the 38-line evidence fragment, and 3817cdf5 corrects the fragment's log citation from line 5 to line 6.",
+    "done_when": "the done-when names the three completion cases in tests/test_control_is_compared_with_the_head_arm.py (lines 229, 247, 265) plus the seven-file gate population and both arms recorded under baseline_suite/after_suite; my re-run in my own scratch tree reproduces head 54 passed EXIT=0 at 3817cdf5 and base 2 failed, 52 passed EXIT=1 at 64d8c18e, the two failures being exactly the new refusal cases.",
+    "goal": "the goal is that a head arm which omits or nulls `completed` decides no negative control; reckon/crew/promotion.py:5088 now asks `observation.get(\"completed\") is not True`, so a key-less or null `after_suite` reads as unreadable and the baseline comparison decides at promotion.py:5197, but the goal sentence's \"on both arms\" clause is unmet because the baseline reader at promotion.py:5046 is unchanged.",
+    "manifest": "read; it reports complete at 3817cdf5, names both arm logs and the negative control, and discloses the unmet baseline clause in its blockers and follow_ons, but its ruff figures do not reproduce \u2014 the project config reports 12 findings on the changed paths at each arm (the manifest says 10 at head against 14 at base) and `ruff format --check` flags reckon/crew/promotion.py at both arms (the manifest says none) \u2014 while its substantive claim holds, since the finding lists are identical and all nine format hunks are outside the changed region.",
+    "write_paths": "the manifest declares four paths and the diff's three files (reckon/crew/promotion.py, tests/test_control_is_compared_with_the_head_arm.py, docs/evidence/fragments/crew-runtime-positive-controls/head-arm-without-completed-is-unreadable.html) all sit inside them, the figures directory being declared but unused."
+  },
+  "justifications": {
+    "durability": "the refusal cases at tests/test_control_is_compared_with_the_head_arm.py:229 and :247 redden both at the base tree and under my own restored `is False` mutation (2 failed, 9 passed, EXIT=1), and :265 pins the admission path so an always-unreadable reader would redden.",
+    "evidence": "my scratch-tree re-runs reproduce both arms exactly (head 54 passed, EXIT=0 at 3817cdf5; base 2 failed, 52 passed, EXIT=1 at 64d8c18e with the three cases copied in) and my derivation of the added pair through reckon/crew/review.py gives 0 added with a positive control of 1 and an absent arm unmeasured, but the manifest's ruff figures do not reproduce although its no-finding-added conclusion does.",
+    "fit": "the predicate at promotion.py:5088 asks completion the way reckon/ledger.py:256 and reckon/crew/reports.py:988 ask it, the docstring states the rule, and ruff adds no finding on the changed paths.",
+    "goal_fidelity": "the headline rule lands at reckon/crew/promotion.py:5088 and the fallback works, but the goal's \"on both arms\" clause is unmet at promotion.py:5046, where a key-less or null baseline still reads as complete; the manifest discloses it.",
+    "scope_discipline": "all three files in the node's commits lie inside its four declared write paths and no plan, peer or out-of-scope path was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a head arm which omits or nulls `completed` decides no negative control; reckon/crew/promotion.py:5088 now asks `observation.get(\"completed\") is not True`, so a key-less or null `after_suite` reads as unreadable and the baseline comparison decides at promotion.py:5197, but the goal sentence's \"on both arms\" clause is unmet because the baseline reader at promotion.py:5046 is unchanged.\nVERDICT done_when: the done-when names the three completion cases in tests/test_control_is_compared_with_the_head_arm.py (lines 229, 247, 265) plus the seven-file gate population and both arms recorded under baseline_suite/after_suite; my re-run in my own scratch tree reproduces head 54 passed EXIT=0 at 3817cdf5 and base 2 failed, 52 passed EXIT=1 at 64d8c18e, the two failures being exactly the new refusal cases.\nVERDICT write_paths: the manifest declares four paths and the diff's three files (reckon/crew/promotion.py, tests/test_control_is_compared_with_the_head_arm.py, docs/evidence/fragments/crew-runtime-positive-controls/head-arm-without-completed-is-unreadable.html) all sit inside them, the figures directory being declared but unused.\nVERDICT manifest: read; it reports complete at 3817cdf5, names both arm logs and the negative control, and discloses the unmet baseline clause in its blockers and follow_ons, but its ruff figures do not reproduce \u2014 the project config reports 12 findings on the changed paths at each arm (the manifest says 10 at head against 14 at base) and `ruff format --check` flags reckon/crew/promotion.py at both arms (the manifest says none) \u2014 while its substantive claim holds, since the finding lists are identical and all nine format hunks are outside the changed region.\nVERDICT diff: read commit by commit against 64d8c18e: b4d154e1 turns the completion test at promotion.py:5088 from `is False` into `is not True` and adds the three cases, f45cf754 adds the 38-line evidence fragment, and 3817cdf5 corrects the fragment's log citation from line 5 to line 6.\nCALL_SITES: reckon/crew/promotion.py:_require_declared_negative_control, reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the headline rule lands at reckon/crew/promotion.py:5088 and the fallback works, but the goal's \"on both arms\" clause is unmet at promotion.py:5046, where a key-less or null baseline still reads as complete; the manifest discloses it.\nSCORE evidence: 18\nJUSTIFICATION evidence: my scratch-tree re-runs reproduce both arms exactly (head 54 passed, EXIT=0 at 3817cdf5; base 2 failed, 52 passed, EXIT=1 at 64d8c18e with the three cases copied in) and my derivation of the added pair through reckon/crew/review.py gives 0 added with a positive control of 1 and an absent arm unmeasured, but the manifest's ruff figures do not reproduce although its no-finding-added conclusion does.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three files in the node's commits lie inside its four declared write paths and no plan, peer or out-of-scope path was written.\nSCORE durability: 19\nJUSTIFICATION durability: the refusal cases at tests/test_control_is_compared_with_the_head_arm.py:229 and :247 redden both at the base tree and under my own restored `is False` mutation (2 failed, 9 passed, EXIT=1), and :265 pins the admission path so an always-unreadable reader would redden.\nSCORE fit: 20\nJUSTIFICATION fit: the predicate at promotion.py:5088 asks completion the way reckon/ledger.py:256 and reckon/crew/reports.py:988 ask it, the docstring states the rule, and ruff adds no finding on the changed paths.\nFINDING reckon/crew/promotion.py:5046 the baseline arm still reads a key-less or null `completed` mapping as complete, so the goal's \"both arms\" clause is unmet; a scratch probe making it strict reddens tests/test_control_gate_checks_facts.py::test_a_control_that_adds_no_failure_to_the_baseline_is_refused (1 failed, 17 passed, EXIT=1) and moves the fallback toward admitting controls, so a node holding that fixture must make the key mandatory there.\n",
+  "review_run_id": "r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable",
+  "reviewed_base_sha": "64d8c18eb828de80fb6a1a48ed10833100ed15ed",
+  "reviewed_head_sha": "3817cdf508a5a332f0cc5dc34656073463abf717",
+  "reviewed_run_id": "r-20260929T130721314494-head-arm-without-completed-is-unreadable",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable",
+  "reviewer_verification_logs": {
+    "base_arm": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable/logs/reviewer-base_arm.log",
+    "baseline_strictness_probe": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable/logs/reviewer-baseline-strictness-probe.log",
+    "derivation": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable/logs/added-failures.out",
+    "head_arm": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable/logs/reviewer-head_arm.log",
+    "mutation": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable/logs/reviewer-mutation.log"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T14:52:08.518119+00:00",
+  "total": 94
+}

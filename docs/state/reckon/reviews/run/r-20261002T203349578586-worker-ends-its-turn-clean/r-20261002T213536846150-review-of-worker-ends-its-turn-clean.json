@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/install.py:_command_group",
+    "reckon/crew/promotion.py:_require_worker_stopped_before_promotion"
+  ],
+  "completed_at": "2026-10-02T21:47:08.193Z",
+  "dispatched_at": "2026-10-02T21:36:08Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/worker_stop.py",
+      "line": "422",
+      "severity": "follow-on",
+      "text": "follow-on: the capped dirty stop path is untested; nothing exercises _write_terminal_record with keep_status and withheld together, so a regression that dropped the withheld uncommitted_paths line at the cap would redden no case."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203349578586-worker-ends-its-turn-clean/manifest.md",
+      "line": "31",
+      "severity": "follow-on",
+      "text": "follow-on: the suite records key their log as `log` and their failure count as `result`, where review.annotate_review_of_run reads `log_path` (review.py:_LOG_PATH_KEY), so the production added-failure derivation reads this run's count as unmeasured; the count is 0 and the logs derive it directly."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against the base; 2f8af560 adds the worktree-cleanliness refusal to the stop hook and the five fixtures, 1c786567 adds only the docs fragment, and no case is deleted.",
+    "done_when": "the done_when names tests/test_worker_ends_its_turn_clean.py covering a clean end, a dirty end refused, a blocked end naming its paths, and the provisioning exemption; the manifest records the gate run at 25 passed and the four-case negative control red.",
+    "goal": "the node's goal is to refuse a worker's turn end while its worktree holds uncommitted changes; reckon/hooks/worker_stop.py:399-412 resolves the run's worktree, lists its uncommitted paths and refuses the stop.",
+    "manifest": "read; it records base 20 passed at 50b92333 and head 25 passed at 2f8af560 with EXIT=0 and the four-case negative control, but its suite records key the log as `log`, not the contract's `log_path`.",
+    "write_paths": "read the manifest's six declared write paths; the diff adds only reckon/hooks/worker_stop.py, tests/test_worker_ends_its_turn_clean.py and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "removing the cleanliness check leaves the four dirty-end cases failing (negative-control.log, 4 failed EXIT=1), so the guard is falsified in place, but no case exercises the capped-stop branch at reckon/hooks/worker_stop.py:422-427.",
+    "evidence": "gate-base.log records 20 passed at 50b92333 and gate-head.log records 25 passed at 2f8af560, each log naming its revision, command and module.__file__, and negative-control.log records the declared mutation reddening the four dirty cases.",
+    "fit": "the new helpers follow the module's lazy-import and subprocess idioms beside reckon/hooks/worker_stop.py:141-164, the names are descriptive with no plan or ticket label, and ruff check and ruff format --check are clean on both changed Python paths.",
+    "goal_fidelity": "reckon/hooks/worker_stop.py:406-412 computes unclean from the worktree's uncommitted paths and refuses unless the manifest is terminal-and-clean or blocked/failed-and-fully-named, exactly the four endings the done_when lists.",
+    "scope_discipline": "git diff --numstat 50b92333..1c786567 touches only reckon/hooks/worker_stop.py (255/59), tests/test_worker_ends_its_turn_clean.py (177/0) and the evidence fragment (35/0), every path inside the manifest's declared scope, with no plan meta line edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a worker's turn end while its worktree holds uncommitted changes; reckon/hooks/worker_stop.py:399-412 resolves the run's worktree, lists its uncommitted paths and refuses the stop.\nVERDICT done_when: the done_when names tests/test_worker_ends_its_turn_clean.py covering a clean end, a dirty end refused, a blocked end naming its paths, and the provisioning exemption; the manifest records the gate run at 25 passed and the four-case negative control red.\nVERDICT write_paths: read the manifest's six declared write paths; the diff adds only reckon/hooks/worker_stop.py, tests/test_worker_ends_its_turn_clean.py and the evidence fragment, all inside them.\nVERDICT manifest: read; it records base 20 passed at 50b92333 and head 25 passed at 2f8af560 with EXIT=0 and the four-case negative control, but its suite records key the log as `log`, not the contract's `log_path`.\nVERDICT diff: read commit by commit against the base; 2f8af560 adds the worktree-cleanliness refusal to the stop hook and the five fixtures, 1c786567 adds only the docs fragment, and no case is deleted.\nCALL_SITES: reckon/hooks/install.py:_command_group, reckon/crew/promotion.py:_require_worker_stopped_before_promotion\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/worker_stop.py:406-412 computes unclean from the worktree's uncommitted paths and refuses unless the manifest is terminal-and-clean or blocked/failed-and-fully-named, exactly the four endings the done_when lists.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log records 20 passed at 50b92333 and gate-head.log records 25 passed at 2f8af560, each log naming its revision, command and module.__file__, and negative-control.log records the declared mutation reddening the four dirty cases.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --numstat 50b92333..1c786567 touches only reckon/hooks/worker_stop.py (255/59), tests/test_worker_ends_its_turn_clean.py (177/0) and the evidence fragment (35/0), every path inside the manifest's declared scope, with no plan meta line edited.\nSCORE durability: 17\nJUSTIFICATION durability: removing the cleanliness check leaves the four dirty-end cases failing (negative-control.log, 4 failed EXIT=1), so the guard is falsified in place, but no case exercises the capped-stop branch at reckon/hooks/worker_stop.py:422-427.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers follow the module's lazy-import and subprocess idioms beside reckon/hooks/worker_stop.py:141-164, the names are descriptive with no plan or ticket label, and ruff check and ruff format --check are clean on both changed Python paths.\nFINDING reckon/hooks/worker_stop.py:422 follow-on: the capped dirty stop path is untested; nothing exercises _write_terminal_record with keep_status and withheld together, so a regression that dropped the withheld uncommitted_paths line at the cap would redden no case.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203349578586-worker-ends-its-turn-clean/manifest.md:31 follow-on: the suite records key their log as `log` and their failure count as `result`, where review.annotate_review_of_run reads `log_path` (review.py:_LOG_PATH_KEY), so the production added-failure derivation reads this run's count as unmeasured; the count is 0 and the logs derive it directly.",
+  "review_run_id": "r-20261002T213536846150-review-of-worker-ends-its-turn-clean",
+  "reviewed_base_sha": "50b92333897d973bf2193d66231f896620e30b2f",
+  "reviewed_head_sha": "1c78656754239ee3af0bcf71e52ab9b2d54211f9",
+  "reviewed_run_id": "r-20261002T203349578586-worker-ends-its-turn-clean",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T213536846150-review-of-worker-ends-its-turn-clean",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T21:45:40.164972+00:00",
+  "total": 92
+}

@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated"
+  ],
+  "added_failures_note": "1 added failure against base, retired by name in the reviewed manifest as a non-reproducing supervisor-test flake outside this node's write scope",
+  "base_log_revision": "6a04552fd",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_release_run_workspace",
+    "reckon/crew/promotion.py:_release_after_promotion",
+    "reckon/crew/promotion.py:_remove_discarded_worktree"
+  ],
+  "completed_at": "2026-10-04T13:51:45.681Z",
+  "dispatched_at": "2026-10-04T13:44:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "6218",
+      "severity": "follow-on",
+      "text": "follow-on: _cited_absolute_paths treats every absolute path token in the manifest as an owned arm, so a directory the manifest merely mentions under the temp root - in prose or an example command rather than as a test arm - is a removal candidate; the protections (repository, worktree, run directory, live-run citations) bound the reach, but the done_when reaches only what the manifest cites 'as a test arm, basetemp or control tree'."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "6526",
+      "severity": "follow-on",
+      "text": "follow-on: remove_cited_arms runs inside _release_run_workspace, which _release_after_promotion also calls for blocked and failed gates with release_worktree=False, so a blocked run's cited arms are removed although the done_when scopes the clearing to a run whose gate passed; the cited logs are copied first, so the log evidence survives."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/a-passing-run-clears-every-arm-it-cited.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence fragment carries no figure although the node declared a figures directory, and a small diagram of the removal reach (temp-root bound, protections, live-run citations) would communicate the bounded removal the text describes in prose."
+    }
+  ],
+  "head_log_revision": "5b21b59c5118089d430d01f3fb7f6e4756a5f3b3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from base 6a04552fd to head 675ef337; four commits touching three files (reckon/crew/promotion.py +207, the test file +177, the fragment +41), all inside the declared write paths.",
+    "done_when": "the brief's measure is the focused test plus the promotion-import population adding no failure against base; the manifest records tests/test_a_passing_run_clears_its_arms.py 1 passed EXIT=0 plus the population 497 passed EXIT=0 at base against 1 failed 496 passed EXIT=1 at head.",
+    "goal": "the node goal is to make promotion of a passing run remove every directory outside the repository and the run directory that its manifest cites as a test arm, basetemp or control tree; reckon/crew/promotion.py:6254 remove_cited_arms does exactly that, bounded to the node-local temp root and reporting every kept path with its reason.",
+    "manifest": "read; it reports the focused test green, the negative control red at base, and both population arms, naming every log on disk and reconciling each count with the log it cites.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, tests/test_a_passing_run_clears_its_arms.py, the evidence fragment and the figures directory; the diff touches the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_passing_run_clears_its_arms.py:152 assert not base_arm.exists() reddens when the removal is reverted, shown by logs/negative-control-arms-remain-at-base.log (1 failed, EXIT=1) at base 6a04552fd.",
+    "evidence": "tests/test_a_passing_run_clears_its_arms.py asserts removal, log survival, the live-run keep and the outside-root keep, but the population arm adds one failure at head (logs/gate-head-promotion-import-population.log) against none at base, so the done_when's 'adds no failure' is attributed as a non-reproducing flake rather than demonstrated.",
+    "fit": "the change reuses reckon/crew/dispatch.py:8252 worker_scratch_root and reckon/crew/dispatch.py:8275 tree_size_bytes and extends the existing release path at reckon/crew/promotion.py:6526, with mechanism-named symbols and no banned label.",
+    "goal_fidelity": "reckon/crew/promotion.py:6254 remove_cited_arms removes each cited directory under the node-local temp root after copying its cited logs into the run directory, and records removals, keeps and copied logs on the release mapping.",
+    "scope_discipline": "the diff 6a04552fd..675ef337 touches only reckon/crew/promotion.py, tests/test_a_passing_run_clears_its_arms.py and the node's own evidence fragment, every path inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make promotion of a passing run remove every directory outside the repository and the run directory that its manifest cites as a test arm, basetemp or control tree; reckon/crew/promotion.py:6254 remove_cited_arms does exactly that, bounded to the node-local temp root and reporting every kept path with its reason.\nVERDICT done_when: the brief's measure is the focused test plus the promotion-import population adding no failure against base; the manifest records tests/test_a_passing_run_clears_its_arms.py 1 passed EXIT=0 plus the population 497 passed EXIT=0 at base against 1 failed 496 passed EXIT=1 at head.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, tests/test_a_passing_run_clears_its_arms.py, the evidence fragment and the figures directory; the diff touches the first three and nothing outside them.\nVERDICT manifest: read; it reports the focused test green, the negative control red at base, and both population arms, naming every log on disk and reconciling each count with the log it cites.\nVERDICT diff: read commit by commit from base 6a04552fd to head 675ef337; four commits touching three files (reckon/crew/promotion.py +207, the test file +177, the fragment +41), all inside the declared write paths.\nCALL_SITES: reckon/crew/promotion.py:_release_run_workspace, reckon/crew/promotion.py:_release_after_promotion, reckon/crew/promotion.py:_remove_discarded_worktree\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:6254 remove_cited_arms removes each cited directory under the node-local temp root after copying its cited logs into the run directory, and records removals, keeps and copied logs on the release mapping.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_passing_run_clears_its_arms.py asserts removal, log survival, the live-run keep and the outside-root keep, but the population arm adds one failure at head (logs/gate-head-promotion-import-population.log) against none at base, so the done_when's 'adds no failure' is attributed as a non-reproducing flake rather than demonstrated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 6a04552fd..675ef337 touches only reckon/crew/promotion.py, tests/test_a_passing_run_clears_its_arms.py and the node's own evidence fragment, every path inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_passing_run_clears_its_arms.py:152 assert not base_arm.exists() reddens when the removal is reverted, shown by logs/negative-control-arms-remain-at-base.log (1 failed, EXIT=1) at base 6a04552fd.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses reckon/crew/dispatch.py:8252 worker_scratch_root and reckon/crew/dispatch.py:8275 tree_size_bytes and extends the existing release path at reckon/crew/promotion.py:6526, with mechanism-named symbols and no banned label.\nFINDING reckon/crew/promotion.py:6218 follow-on: _cited_absolute_paths treats every absolute path token in the manifest as an owned arm, so a directory the manifest merely mentions under the temp root - in prose or an example command rather than as a test arm - is a removal candidate; the protections (repository, worktree, run directory, live-run citations) bound the reach, but the done_when reaches only what the manifest cites 'as a test arm, basetemp or control tree'.\nFINDING reckon/crew/promotion.py:6526 follow-on: remove_cited_arms runs inside _release_run_workspace, which _release_after_promotion also calls for blocked and failed gates with release_worktree=False, so a blocked run's cited arms are removed although the done_when scopes the clearing to a run whose gate passed; the cited logs are copied first, so the log evidence survives.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/a-passing-run-clears-every-arm-it-cited.html:1 follow-on: the evidence fragment carries no figure although the node declared a figures directory, and a small diagram of the removal reach (temp-root bound, protections, live-run citations) would communicate the bounded removal the text describes in prose.",
+  "review_run_id": "r-20261004T134433137439-review-of-a-passing-run-clears-every-arm-it-cited",
+  "reviewed_base_sha": "6a04552fda5ac51df83f38b37a13ca2658236f79",
+  "reviewed_head_sha": "675ef337f6fefaba954d607f39e774a4b5651787",
+  "reviewed_run_id": "r-20261004T124204915477-a-passing-run-clears-every-arm-it-cited",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T134433137439-review-of-a-passing-run-clears-every-arm-it-cited",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T13:50:18.480043+00:00",
+  "total": 93
+}

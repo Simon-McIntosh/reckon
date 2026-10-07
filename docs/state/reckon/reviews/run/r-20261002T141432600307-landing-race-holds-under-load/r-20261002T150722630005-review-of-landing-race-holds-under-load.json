@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (ba2c17c79, base-arm.log) exit 0 / 16 passed with failure_ids [], after_suite (4318f8bb3, head-arm.log) exit 0 / 17 passed with failure_ids []; the single added test is the new broken-rendezvous case, so added failures = 0.",
+  "base_log_revision": "ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/_store.py:1471"
+  ],
+  "completed_at": "2026-10-02T15:12:33.805Z",
+  "dispatched_at": "2026-10-02T15:07:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/plan-writes-are-not-fenced/landing-race-holds-under-load.html",
+      "line": "3,10",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment (and the test module docstring) say the meeting sits 'after each writer's own read and version check, before either takes the lock', but _store._write_state acquires the per-file lock at _store.py:1193 and the version check runs inside _write_state_locked under that lock, so the meeting is before the version check, not after it. The race is still real (both writers reach the meeting; the lock then decides which proceeds and which meets the conflict/merge path), so this is a claim-accuracy defect in the prose, not a functional one. The placement precision does not affect the node's done-when."
+    },
+    {
+      "file": "tests/test_landing_write_races_every_writer.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the 20-run log (.../r-20261002T141432600307-.../twenty-runs.log) header line records 'revision ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf' (the base) while every one of its 20 runs reports '17 passed', which is the head test file's count (base-arm reports 16). A reader taking the header at face value would conclude the base revision passed 20/20. The substance is not in doubt -- the reviewer independently ran the head cohort three times at -n 8, all 17 passed, EXIT=0 -- but the log's own revision line should name 4318f8bb3."
+    }
+  ],
+  "head_log_revision": "4318f8bb3ceeaed0a233ec6b8c24e1ae824505d2",
+  "item_aggregate": 90,
+  "item_verdicts": {
+    "call_sites": "one production call site: _store._write_state is called only at reckon/_store.py:1471, a bare module-global call, so the test's monkeypatch of _store._write_state intercepts the writers' writes; the rigged-miss case passing at head proves the interception (meet is actually invoked).",
+    "diff": "one commit 4318f8bb3 against base ba2c17c79: two files, 169 insertions / 43 deletions, both inside the declared write paths (tests/test_landing_write_races_every_writer.py, the evidence fragment). Test-only change plus its evidence fragment.",
+    "done_when": "(1) broken rendezvous fails loudly: Rendezvous.meet raises RendezvousMissedError naming the absent thread after the window closes, and _race_case converts it to a failing AssertionError; (2) the new case test_a_broken_rendezvous_fails_the_case_rather_than_passing_it rigs a deliberate miss and requires that failure; (3) 20 consecutive -n 8 runs of the landing-write cohort logged, 20/20 exit 0, 17 passed each. All three met.",
+    "goal": "goal is 'the landing race test holds under parallel load' (plan \u00a78): the two-writer race must be coordinated so a broken rendezvous fails loudly rather than running the writers unraced. Delivered.",
+    "manifest": "read; status complete. baseline_suite and after_suite both carried as JSON with revision, command, exit_status 0, completed true, failure_count 0, failure_ids [], log_path present, so added failures derive from the reviewed run's own logs. negative_control_log is a bare path to a red log naming the rigged-miss case as the sole failing id. measurement_module/measurement_cwd name the base scratch tree.",
+    "write_paths": "read the node's declared fence; the diff touches exactly the declared paths (the test file and the fragment) and adds no file outside them. docs/figures/... was declared but not needed."
+  },
+  "justifications": {
+    "durability": "the new guard is falsified by the declared mutation: restoring the suppressed wait (Rendezvous.meet returning silently) turns the rigged-miss case red, 1 failed / 6 passed, EXIT=1, and that id is absent from both arms. The instrument reads synthesised fixture state and meets before the lock, so both threads genuinely arrive (17 tests in ~5-6 s leaves far under the 30 s window). 20 consecutive -n 8 runs green. Deducted for the docstring/fragment claim that the meeting is after the version check when it is before it -- the guard is correct but the stated placement is not.",
+    "evidence": "strong: the defect is reproduced before repair (base barrier times out at 2.03 s, break suppressed, case_passes=True), the head gate reproduces independently (reviewer ran the 3-file cohort three times at -n 8, 17 passed, EXIT=0 each), the negative control is valid and the mutation's failing id is absent from both arms, and no failure was added (base 16 / head 17, delta = the one new test). Deducted because the pre-repair reproduction is quoted from an unnamed probe with no log artifact in test_logs, and the 20-run log's revision header names the base sha while its runs demonstrably executed the head test file.",
+    "fit": "Rendezvous / RendezvousMissedError / _race_case / meet are mechanism-named with no plan, sprint or ticket identifier; the change reuses the existing monkeypatch seam and test structure rather than adding a parallel fixture and rewrites the shared parametrised case into a helper without changing its assertions.",
+    "goal_fidelity": "\u00a78's done-when is fully met: the broken rendezvous now fails the case loudly (RendezvousMissedError -> AssertionError), the new case makes a break happen and requires failure, and 20 consecutive -n 8 cohort runs are logged at 20/20 exit 0. Deducted one point for the 20-run log naming the base revision in its header.",
+    "scope_discipline": "the diff ba2c17c79..4318f8bb3 touches exactly the two declared paths -- tests/test_landing_write_races_every_writer.py and the evidence fragment -- with no file outside the fence and no edit to production code or a concurrent node's paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'the landing race test holds under parallel load' (plan \u00a78); commit 4318f8bb3 moves the two-writer meeting from a threading.Barrier(2) inside _plan_html.write_state -- where the plan's per-file lock means the second writer waits on the lock, so the barrier timed out on every run and contextlib.suppress swallowed the break -- to _store._write_state, before either writer takes the lock, where both can arrive; a thread absent when the window closes raises RendezvousMissedError naming it and _race_case converts that to a failing AssertionError. Delivered.\nVERDICT done_when: 'the threads are coordinated so that a broken rendezvous fails the case loudly' -- met by Rendezvous.meet + RendezvousMissedError; 'A case whose rendezvous is made to break fails rather than passes' -- met by test_a_broken_rendezvous_fails_the_case_rather_than_passing_it, which passes at head and goes red under the declared mutation; 'the file passes 20 consecutive runs at -n 8 alongside the rest of the plan-write tests, with each run's result logged' -- met, twenty-runs.log records 20/20 exit 0, 17 passed each.\nVERDICT write_paths: read the node's declared fence; the diff ba2c17c79..4318f8bb3 touches exactly the two declared paths (tests/test_landing_write_races_every_writer.py and docs/evidence/fragments/plan-writes-are-not-fenced/landing-race-holds-under-load.html), no file outside them.\nVERDICT manifest: read; status complete; both arms carried as full JSON (baseline ba2c17c79 exit 0 / 16 passed, after 4318f8bb3 exit 0 / 17 passed, failure_ids [] each); negative_control_log is a bare path to a red log whose sole failing id is the rigged-miss case.\nVERDICT diff: one commit, two files, test-only plus its evidence fragment; 267-line test diff replaces the suppressed barrier with a condition-variable Rendezvous, threads names the writers, threads a rendezvous argument through _race, factors the parametrised case into _race_case, and adds the deliberate-miss case.\nCALL_SITES: reckon/_store.py:1471\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all three \u00a78 done-when clauses are met and independently reproduced (reviewer ran the head cohort three times at -n 8, 17 passed, EXIT=0); one point deducted because the 20-run log's header names the base revision ba2c17c79 while its runs are the head file's 17-test cohort.\nSCORE evidence: 16\nJUSTIFICATION evidence: the base defect is reproduced (barrier timed out at 2.03 s, break suppressed, case_passes=True), the head gate reproduces independently (3x, 17 passed), the negative control is valid (suppressed wait restored -> rigged-miss case red, 1 failed / 6 passed, EXIT=1, id absent from both arms), and no failure is added (base 16 / head 17, delta = the one new test); deducted because the pre-repair reproduction is quoted from an unnamed probe with no log in test_logs and the 20-run log's revision line is wrong.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the two declared paths, no production code, no concurrent node's files.\nSCORE durability: 17\nJUSTIFICATION durability: the new guard is falsified by the declared mutation (the rigged-miss case is the sole red id) and the instrument reads synthesised fixture state; the meeting now sits where both threads can reach it, so the case exercises a real race; deducted because the test docstring and the fragment claim the meeting is 'after each writer's own read and version check' when _write_state acquires the lock first and the check runs under it.\nSCORE fit: 19\nJUSTIFICATION fit: Rendezvous, RendezvousMissedError, _race_case and meet are mechanism-named with no plan, sprint or ticket identifier; the change reuses the existing monkeypatch seam and keeps the parametrised case's assertions intact.\nFINDING docs/evidence/fragments/plan-writes-are-not-fenced/landing-race-holds-under-load.html:3 follow-on: the fragment and test docstring place the meeting 'after each writer's own read and version check, before either takes the lock', but _store._write_state takes the lock at _store.py:1193 and the version check runs inside _write_state_locked under it, so the meeting precedes the check. The race is still real and the done-when is unaffected; the prose placement is what is wrong.\nFINDING tests/test_landing_write_races_every_writer.py:1 follow-on: the 20-run log header names revision ba2c17c79 (base) while all 20 runs report 17 passed, the head file's count (base-arm is 16); a reader trusting the header would read a base 20/20. Substance is confirmed independently.\nreviewed_base_sha: ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf\nreviewed_head_sha: 4318f8bb3ceeaed0a233ec6b8c24e1ae824505d2\n",
+  "review_run_id": "r-20261002T150722630005-review-of-landing-race-holds-under-load",
+  "reviewed_base_sha": "ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf",
+  "reviewed_head_sha": "4318f8bb3ceeaed0a233ec6b8c24e1ae824505d2",
+  "reviewed_run_id": "r-20261002T141432600307-landing-race-holds-under-load",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T150722630005-review-of-landing-race-holds-under-load",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T15:24:00.000000+00:00",
+  "total": 90
+}

@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:4384",
+    "reckon/mcp.py:4324",
+    "reckon/cli.py:479"
+  ],
+  "closes_prior_findings": {
+    "gate-revision-mismatch": {
+      "by": [
+        "42a1fa78"
+      ],
+      "closed": true,
+      "evidence": "the evidence record row and the plan row both now read 8 passed, exit 0 (fe554df8), which is the revision gate-deadlines.log names in its header; my own re-run at 42a1fa78 from the reviewed tree gives 8 passed, exit 0, and the manifest's after_suite revision 42a1fa78 matches surface-head-10.log."
+    },
+    "landing-stat-on-the-loop": {
+      "by": [
+        "aaa888a5",
+        "fe554df8",
+        "42a1fa78"
+      ],
+      "closed": true,
+      "evidence": "aaa888a5 moves the landing poll and the baseline stat onto the worker thread and bounds the check with its own deadline; fe554df8 orders the case's assertions so a relapse fails on the concurrency property; 42a1fa78 writes the repair into the record. Rechecked at the head by this node: probe_landing_off_loop.py shows a 0.300 s wake with landed None, and the same instrument sees the defect when the inline stat is put back (2.500 s, landed False)."
+    }
+  },
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T08:08:24.647780+00:00",
+  "findings": [
+    {
+      "file": "tests/test_mcp_reads_have_deadlines.py",
+      "line": "231",
+      "text": "the baseline stat that aaa888a5 moved onto the worker thread is unasserted: hoisting it back into the coroutine in memory (the pre-fix arrangement, un-deadlined before the timer starts) leaves all 8 tests passing, so a revert of that half is invisible. Reachability is indirect rather than live -- the shipped registration passes path_hint, so the direct-path branch is reached only by direct _run_under_deadline callers, and the hinted branch's baseline stat already ran on the worker thread before this commit -- which is why this is a missing guard rather than an open hole."
+    },
+    {
+      "file": ".config/reckon/crew/runs/r-20260924T072549272376-mcp-reads-have-deadlines/manifest.md",
+      "line": "1",
+      "text": "the SDK finding section 5 asks the manifest to record is not in the manifest: it appears only as a test name inside the artifacts list and inside the negative-control note, while the finding itself sits in the evidence record and the plan's landing div. The prior review reported this and the repair delta did not address it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read aaa888a5, fe554df8 and 42a1fa78 in full against aeeb8bac -- the landing poll becomes synchronous and bounded by wait_for over asyncio.to_thread with a limit of grace plus 0.5 s, reporting None past it; the baseline stat leaves the coroutine for the worker thread's _work behind the _UNSET sentinel; fe554df8 moves the entry-time assertion ahead of the landed-state ones; 42a1fa78 repoints both gate rows to fe554df8 and records the finding and its repair.",
+    "done_when": "read tests/test_mcp_reads_have_deadlines.py at the head (349 lines, 8 tests) clause by clause and re-ran it from the reviewed tree myself (8 passed, exit 0); the blocked read is bounded at its parameterised deadline, the concurrent read enters while it is blocked, both write landed directions are asserted, the stalled-landing case asserts the entry-time property first, the SDK premise is measured against a bare FastMCP, and the declared mutation (6 of 8 red) plus the review-requested one (that case alone red at 3.20 s) are logged.",
+    "goal": "read section 5's goal and done-when against the repaired tree, then measured it myself: with both the write body and the landing stat stalled, a 0.3 s sleep issued 0.1 s past the write's deadline resumed at 0.300 s with all fingerprint calls on worker threads and none on MainThread, and the timed-out write answered landed: null with a message stating the landed state could not be determined, so the write lane holds under the exact case the section exists for.",
+    "manifest": "read the reviewed manifest and every log it names; its gate line (8 passed at fe554df8), after_suite revision (42a1fa78, matching the header surface-head-10.log carries), both negative controls and its surface delta all match their logs, but the SDK finding section 5 asks the manifest to record is still stated only in the evidence record and the plan's landing div, not in the manifest, which the prior review raised and this delta leaves open.",
+    "write_paths": "the delta a695d425..42a1fa78 touches exactly the six declared paths -- reckon/mcp.py +272/-7, reckon/_mcp_tools.py +65/-0, tests/test_mcp_reads_have_deadlines.py +349/-0, the two docs files +150/-0 together, and the figure -- and no plan-version or plan-modified meta line is edited."
+  },
+  "justifications": {
+    "durability": "the landing stat now has a case that fails when the defect returns (negative-control-landing-on-loop.log: 1 failed, 7 passed on the entry-time assertion), but hoisting the baseline stat back into the coroutine in memory leaves all 8 tests green, so that half of aaa888a5 has no regression guard.",
+    "evidence": "both log defects the prior review named are repaired -- gate-deadlines.log now opens with revision=fe554df8, its tree and its command (8 passed, exit 0), and the manifest's after_suite revision 42a1fa78 is the revision surface-head-10.log names -- leaving only the SDK finding, still outside the manifest.",
+    "fit": "the added lines in reckon/mcp.py:174-283, reckon/_mcp_tools.py:103-160 and tests/test_mcp_reads_have_deadlines.py:231-304 carry no plan label, phase id, version suffix or author attribution, and name the mechanism (_landing_state, _bounded_landing, LANDING_STAT_MARGIN_SECONDS, _UNSET).",
+    "goal_fidelity": "reckon/mcp.py:267-283 bounds the landing check off the loop and reckon/mcp.py:308-317 moves the baseline stat to the worker thread; my probe at the head shows a 0.300 s wake with landed: null past the deadline, and the old arrangement reproduced in memory wakes at 2.500 s with landed: false, the wrong answer the fix exists to prevent.",
+    "scope_discipline": "git diff --name-only across the whole delta returns exactly the six declared paths, each repair commit stays inside them, and 0 lines are deleted in the three docs files."
+  },
+  "prior_review": {
+    "findings": [
+      "reckon/mcp.py:241 the landing check calls _file_fingerprint (os.stat) from the coroutine on the event loop",
+      "docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html:51 the gate row named d026717e while the plan and manifest named 744deae5"
+    ],
+    "review_run_id": "r-20260924T074932805443-review-of-mcp-reads-have-deadlines",
+    "reviewed_head_sha": "aeeb8baccf786cad3aa18ed0cd56c0b441ea72f0",
+    "total": 92
+  },
+  "project": "reckon",
+  "raw_text": "Review of r-20260924T072549272376-mcp-reads-have-deadlines at its repaired head\n42a1fa780830a02ccaf984af21729091502cf124, rechecking the delta from the reviewed\naeeb8baccf786cad3aa18ed0cd56c0b441ea72f0 (aaa888a5, fe554df8, 42a1fa78).\n\nVERDICT goal: read section 5's goal and done-when against the repaired tree, then measured it myself: with both the write body and the landing stat stalled, a 0.3 s sleep issued 0.1 s past the write's deadline resumed at 0.300 s with all fingerprint calls on worker threads and none on MainThread, and the timed-out write answered landed: null with a message stating the landed state could not be determined, so the write lane holds under the exact case the section exists for.\nVERDICT done_when: read tests/test_mcp_reads_have_deadlines.py at the head (349 lines, 8 tests) clause by clause and re-ran it from the reviewed tree myself (8 passed, exit 0); the blocked read is bounded at its parameterised deadline, the concurrent read enters while it is blocked, both write landed directions are asserted, the stalled-landing case asserts the entry-time property first, the SDK premise is measured against a bare FastMCP, and the declared mutation (6 of 8 red) plus the review-requested one (that case alone red at 3.20 s) are logged.\nVERDICT write_paths: the delta a695d425..42a1fa78 touches exactly the six declared paths -- reckon/mcp.py +272/-7, reckon/_mcp_tools.py +65/-0, tests/test_mcp_reads_have_deadlines.py +349/-0, the two docs files +150/-0 together, and the figure -- and no plan-version or plan-modified meta line is edited.\nVERDICT manifest: read the reviewed manifest and every log it names; its gate line (8 passed at fe554df8), after_suite revision (42a1fa78, matching the header surface-head-10.log carries), both negative controls and its surface delta all match their logs, but the SDK finding section 5 asks the manifest to record is still stated only in the evidence record and the plan's landing div, not in the manifest, which the prior review raised and this delta leaves open.\nVERDICT diff: read aaa888a5, fe554df8 and 42a1fa78 in full against aeeb8bac -- the landing poll becomes synchronous and bounded by wait_for over asyncio.to_thread with a limit of grace plus 0.5 s, reporting None past it; the baseline stat leaves the coroutine for the worker thread's _work behind the _UNSET sentinel; fe554df8 moves the entry-time assertion ahead of the landed-state ones; 42a1fa78 repoints both gate rows to fe554df8 and records the finding and its repair.\nCALL_SITES: reckon/mcp.py:4384, reckon/mcp.py:4324, reckon/cli.py:479\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp.py:267-283 bounds the landing check off the loop and reckon/mcp.py:308-317 moves the baseline stat to the worker thread; my probe at the head shows a 0.300 s wake with landed: null past the deadline, and the old arrangement reproduced in memory wakes at 2.500 s with landed: false, the wrong answer the fix exists to prevent.\nSCORE evidence: 19\nJUSTIFICATION evidence: both log defects the prior review named are repaired -- gate-deadlines.log now opens with revision=fe554df8, its tree and its command (8 passed, exit 0), and the manifest's after_suite revision 42a1fa78 is the revision surface-head-10.log names -- leaving only the SDK finding, still outside the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only across the whole delta returns exactly the six declared paths, each repair commit stays inside them, and 0 lines are deleted in the three docs files.\nSCORE durability: 19\nJUSTIFICATION durability: the landing stat now has a case that fails when the defect returns (negative-control-landing-on-loop.log: 1 failed, 7 passed on the entry-time assertion), but hoisting the baseline stat back into the coroutine in memory leaves all 8 tests green, so that half of aaa888a5 has no regression guard.\nSCORE fit: 20\nJUSTIFICATION fit: the added lines in reckon/mcp.py:174-283, reckon/_mcp_tools.py:103-160 and tests/test_mcp_reads_have_deadlines.py:231-304 carry no plan label, phase id, version suffix or author attribution, and name the mechanism (_landing_state, _bounded_landing, LANDING_STAT_MARGIN_SECONDS, _UNSET).\nFINDING tests/test_mcp_reads_have_deadlines.py:231 the baseline stat that aaa888a5 moved onto the worker thread is unasserted: hoisting it back into the coroutine in memory (the pre-fix arrangement, un-deadlined before the timer starts) leaves all 8 tests passing, so a revert of that half is invisible. Reachability is indirect rather than live -- the shipped registration passes path_hint, so the direct-path branch is reached only by direct _run_under_deadline callers, and the hinted branch's baseline stat already ran on the worker thread before this commit -- which is why this is a missing guard rather than an open hole.\nFINDING .config/reckon/crew/runs/r-20260924T072549272376-mcp-reads-have-deadlines/manifest.md:1 the SDK finding section 5 asks the manifest to record is not in the manifest: it appears only as a test name inside the artifacts list and inside the negative-control note, while the finding itself sits in the evidence record and the plan's landing div. The prior review reported this and the repair delta did not address it.\n",
+  "review_run_id": "r-20260924T080824647780-rereview-of-mcp-reads-have-deadlines",
+  "reviewed_base_sha": "a695d4255dd9ba18b988fda9707d424f03771767",
+  "reviewed_head_sha": "42a1fa780830a02ccaf984af21729091502cf124",
+  "reviewed_run_id": "r-20260924T072549272376-mcp-reads-have-deadlines",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T08:23:01.657558+00:00",
+  "total": 98
+}

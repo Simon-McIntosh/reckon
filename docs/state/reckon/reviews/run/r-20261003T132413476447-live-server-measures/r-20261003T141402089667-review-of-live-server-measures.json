@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T14:20:47.152Z",
+  "dispatched_at": "2026-10-03T14:14:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html",
+      "line": "116",
+      "severity": "follow-on",
+      "text": "follow-on: measure 1's 3 s gate cannot be met by the shipped instrument \u2014 appearance->working is 22.3-44.9 s because the phase reads idle until the run's stream file exists (reckon/serve.py:737-743), and response time alone is 6.5-7.7 s; the fragment names this, so it is a finding on the plan's gate rather than on the node."
+    },
+    {
+      "file": "docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html",
+      "line": "243",
+      "severity": "follow-on",
+      "text": "follow-on: the sprint route renders but reports \"No sprint.\" for S25 although docs/sprints/S25.html exists on the served checkout; the cause is left unestablished against a server 12 files behind disk, and the plan half of measure 3 is fully working."
+    },
+    {
+      "file": "docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html",
+      "line": "210",
+      "severity": "follow-on",
+      "text": "follow-on: measure 1b confirms only one of three runs inside 3 s (the fsri row at <=0.40 s); the other two are bounded at 3.81 s and 5.21 s by the ~2 s poll cadence and ~6 s responses, so the done half is instrument-limited rather than confirmed."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 6cb144965a9ef611ed638b099ee833ec025e619b \u2014 5d9613c45469654dd0c64224d0d5d4b92187a001 adds the two PNG figures and 4eaec5eae3b67a7fb7a70a83abaf9d7b46278dec adds the 301-line evidence fragment; no source, test or plan file is touched.",
+    "done_when": "the done-when requires each measure recorded against the restarted server with its latencies, the ss output and the figures under docs/figures/; the fragment carries measure 1's appearance->working latencies (22.3-44.9 s), measure 1b's done bounds (<=0.40/3.81/5.21 s), measure 2's single :8765 listener, both figures under docs/figures/the-restarted-server-meets-its-shipped-measures/live-server-measures/, and names measure 1's failure with its mechanism.",
+    "goal": "the node's goal was to record \u00a71's four in-flight measures against the restarted reckon.service on 98dci4-srv-1006; docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html records all four, each reading pass or a named finding, and states the served process (MainPID 331604, started 09:18:06Z, NRestarts=0).",
+    "manifest": "read; status complete, changed_paths lists the three files, negative_control_log names crew-poll.jsonl whose every row names a run id present under ~/.config/reckon/crew/live at the sampled instant with the re-read MainPID, and baseline_suite/after_suite are n/a because no suite was run by this measurement node.",
+    "write_paths": "the manifest declares the figures directory, the evidence fragment, and the live-server-measures figures subdirectory; the diff's three changed paths are exactly those and the reviewed worktree is clean at 4eaec5eae3b67a7fb7a70a83abaf9d7b46278dec."
+  },
+  "justifications": {
+    "durability": "the deliverable is a committed evidence fragment with re-checkable raw logs under the run directory, but as a point-in-time measurement it carries no test that fails if the observation regresses, which is inherent to a measurement node.",
+    "evidence": "the ss captures (ss-watcher-2.txt holds the single :8765 line owned by pid 331604), the link check (links3.out: plan text_len 60511, band true), the sprint check (sprint_check.out reads \"No sprint.\"), and the poll rows (rows.out) reproduce the fragment's claims, and the phase-derivation cause is verified at reckon/serve.py:737-743; the deduction is that measure 1b confirms only one of its three runs inside 3 s.",
+    "fit": "docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html follows the evidence layout (reckon-type=evidence, plan-evidence-for, plan-verifies, evidence-verdict meta) and embeds both figures with project-absolute src (/reckon/figures/...) as the figures rule requires.",
+    "goal_fidelity": "docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html records all four \u00a71 measures (1, 1b, 2, 3, 4) against MainPID 331604 and correctly records measure 1 as a failure with its cause rather than as a pass.",
+    "scope_discipline": "git diff --name-only 6cb144965a9..4eaec5eae returns exactly the three declared write paths, the worktree is clean, and no code, plan or shared state is modified."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal was to record \u00a71's four in-flight measures against the restarted reckon.service on 98dci4-srv-1006; docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html records all four, each reading pass or a named finding, and states the served process (MainPID 331604, started 09:18:06Z, NRestarts=0).\nVERDICT done_when: the done-when requires each measure recorded against the restarted server with its latencies, the ss output and the figures under docs/figures/; the fragment carries measure 1's appearance->working latencies (22.3-44.9 s), measure 1b's done bounds (<=0.40/3.81/5.21 s), measure 2's single :8765 listener, both figures under docs/figures/the-restarted-server-meets-its-shipped-measures/live-server-measures/, and names measure 1's failure with its mechanism.\nVERDICT write_paths: the manifest declares the figures directory, the evidence fragment, and the live-server-measures figures subdirectory; the diff's three changed paths are exactly those and the reviewed worktree is clean at 4eaec5eae3b67a7fb7a70a83abaf9d7b46278dec.\nVERDICT manifest: read; status complete, changed_paths lists the three files, negative_control_log names crew-poll.jsonl whose every row names a run id present under ~/.config/reckon/crew/live at the sampled instant with the re-read MainPID, and baseline_suite/after_suite are n/a because no suite was run by this measurement node.\nVERDICT diff: read commit by commit against base 6cb144965a9ef611ed638b099ee833ec025e619b \u2014 5d9613c45469654dd0c64224d0d5d4b92187a001 adds the two PNG figures and 4eaec5eae3b67a7fb7a70a83abaf9d7b46278dec adds the 301-line evidence fragment; no source, test or plan file is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html records all four \u00a71 measures (1, 1b, 2, 3, 4) against MainPID 331604 and correctly records measure 1 as a failure with its cause rather than as a pass.\nSCORE evidence: 18\nJUSTIFICATION evidence: the ss captures (ss-watcher-2.txt holds the single :8765 line owned by pid 331604), the link check (links3.out: plan text_len 60511, band true), the sprint check (sprint_check.out reads \"No sprint.\"), and the poll rows (rows.out) reproduce the fragment's claims, and the phase-derivation cause is verified at reckon/serve.py:737-743; the deduction is that measure 1b confirms only one of its three runs inside 3 s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 6cb144965a9..4eaec5eae returns exactly the three declared write paths, the worktree is clean, and no code, plan or shared state is modified.\nSCORE durability: 17\nJUSTIFICATION durability: the deliverable is a committed evidence fragment with re-checkable raw logs under the run directory, but as a point-in-time measurement it carries no test that fails if the observation regresses, which is inherent to a measurement node.\nSCORE fit: 19\nJUSTIFICATION fit: docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html follows the evidence layout (reckon-type=evidence, plan-evidence-for, plan-verifies, evidence-verdict meta) and embeds both figures with project-absolute src (/reckon/figures/...) as the figures rule requires.\nFINDING docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html:116 follow-on: measure 1's 3 s gate cannot be met by the shipped instrument \u2014 appearance->working is 22.3-44.9 s because the phase reads idle until the run's stream file exists (reckon/serve.py:737-743), and response time alone is 6.5-7.7 s; the fragment names this, so it is a finding on the plan's gate rather than on the node.\nFINDING docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html:243 follow-on: the sprint route renders but reports \"No sprint.\" for S25 although docs/sprints/S25.html exists on the served checkout; the cause is left unestablished against a server 12 files behind disk, and the plan half of measure 3 is fully working.\nFINDING docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html:210 follow-on: measure 1b confirms only one of three runs inside 3 s (the fsri row at <=0.40 s); the other two are bounded at 3.81 s and 5.21 s by the ~2 s poll cadence and ~6 s responses, so the done half is instrument-limited rather than confirmed.\n",
+  "review_run_id": "r-20261003T141402089667-review-of-live-server-measures",
+  "reviewed_base_sha": "6cb144965a9ef611ed638b099ee833ec025e619b",
+  "reviewed_head_sha": "4eaec5eae3b67a7fb7a70a83abaf9d7b46278dec",
+  "reviewed_run_id": "r-20261003T132413476447-live-server-measures",
+  "reviewer_run_id": "r-20261003T141402089667-review-of-live-server-measures",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T14:18:43.451421+00:00",
+  "total": 93
+}

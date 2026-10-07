@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused",
+    "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch"
+  ],
+  "completed_at": "2026-10-04T08:46:58.985Z",
+  "dispatched_at": "2026-10-04T08:40:55Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_orphan.py",
+      "line": "190",
+      "severity": "follow-on",
+      "text": "the population gate recorded this test and tests/test_dispatch_returns_without_worker.py:1326 as added failures the reviewed manifest does not retire by name, so reckon/crew/review.py:1177 caps the review total at 5 on read; a focused head re-run of both passes (focused-head-rerun.log, 2 passed in 10.50s), showing they are contention artifacts of the -n 8 population arm rather than consequences of the change, but the reviewed run recorded neither that re-run nor an attribution for the ids under failure_attribution, so the artifact claim is the reviewer's, not the node's."
+    },
+    {
+      "file": "docs/_shared/flight.schema.json",
+      "line": "220",
+      "severity": "follow-on",
+      "text": "this generated artifact was regenerated outside the node's declared write paths; the write is necessary because tests/test_flight.py:146 asserts docs/_shared/flight.schema.json regenerates byte-identically from reckon/schema/flight.yaml and test_flight.py imports reckon._flight_schema, so leaving it stale would red the node's own declared gate, and the manifest discloses the breach for the coordinator's acceptance."
+    }
+  ],
+  "justifications": {
+    "durability": "all seven cases in tests/test_orchestrator_lane_fence.py fail against base 657e199ba (negative-control-base.log, 7 failed, EXIT=1), and test_removing_the_declaration_stops_the_fence_firing asserts state not-declared plus an empty warning list on the same node and lane with only the declaration removed -- an independent null control that reddens if the fence fires without reading the declaration.",
+    "evidence": "the gate and its result are recorded -- after_suite over the importing population 2 failed/1941 passed (gate-population-head.log) and negative-control-base.log 7 failed at EXIT=1 -- but the done-when's population clause is unmet by two added failures the reviewed manifest does not retire by name and leaves unattributed, and the base arm was narrowed to three files rather than the full population, so the delta is not a clean whole-population comparison.",
+    "fit": "the new symbols (ORCHESTRATOR_LANE_DECLARATION_KEY, ORCHESTRATOR_LANE_STOP_SEVERITY, _dispatch_orchestrator_lane_stop) are named by mechanism with no plan label, the flight.yaml slot mirrors its siblings, and the record-reaches-the-pointer wiring at dispatch.py:7163 follows the lane_gate pattern at dispatch.py:7158.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4370-4478 composes the stop in plan_dispatch resolution, reading ORCHESTRATOR_LANE_DECLARATION_KEY from the resolved backend and naming the lane, why it is fenced and a discharge, with dispatch.py:5554 adding the warning line and dispatch.py:7163 recording the stop on the run pointer -- the section's declare-then-stop mechanism plus section 4's warn-and-record; docked because the goal's own done-when population clause is recorded unmet (2 failed at head).",
+    "scope_discipline": "git diff --name-only 657e199ba..d918a461a is six files; five are declared (reckon/schema/flight.yaml, reckon/_flight_schema.py, reckon/crew/dispatch.py, tests/test_orchestrator_lane_fence.py, the evidence fragment), and docs/_shared/flight.schema.json is a generated artifact written outside the fence, required because tests/test_flight.py:146 round-trips it against the schema and sits in the declared gate population, disclosed in the manifest at evidence_inputs."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to let a backend declare in flight config that it serves orchestrators and to make a crew dispatch to a declaring lane stop before anything is written, naming the lane, why and the discharge, warning-and-recording per section 4; reckon/crew/dispatch.py:4370 _dispatch_orchestrator_lane_stop composes exactly that in plan_dispatch before the launch claim and worktree.\nVERDICT done_when: the measure names four behavioural cases plus 'the importing population adds no failure against base'; tests/test_orchestrator_lane_fence.py covers declaring-stops / undeclared-launches / declaration-removed-stops-firing / nothing-written-before-the-stop, but the population clause is unmet -- the after_suite records 2 failed, 1941 passed, EXIT=1.\nVERDICT write_paths: the manifest declares six paths; git diff --name-only 657e199ba..d918a461a lists six files, five inside the fence plus the generated docs/_shared/flight.schema.json written outside it.\nVERDICT manifest: read; it records the gate results (head population 2 failed/1941 passed, narrowed base 9 passed/1 error, new file alone 7 passed, negative control 7 failed) and discloses the out-of-scope generated write under evidence_inputs.\nVERDICT diff: read commit by commit against 657e199ba -- 7a0934467 is the fence (schema slot, generated model and JSON schema, the stop helper plus warning and pointer wiring, seven tests) and d918a461a is the evidence fragment, with no product change beyond the described stop.\nCALL_SITES: reckon/cli.py:2029, reckon/crew/dispatch.py:5963, reckon/crew/dispatch.py:6502, reckon/crew/dispatch.py:6676, reckon/crew/dispatch.py:11880\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4370-4478 composes the stop in plan_dispatch resolution, reading ORCHESTRATOR_LANE_DECLARATION_KEY from the resolved backend and naming the lane, why it is fenced and a discharge, with dispatch.py:5554 adding the warning line and dispatch.py:7163 recording the stop on the run pointer -- the section's declare-then-stop mechanism plus section 4's warn-and-record; docked because the goal's own done-when population clause is recorded unmet (2 failed at head).\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and its result are recorded -- after_suite over the importing population 2 failed/1941 passed (gate-population-head.log) and negative-control-base.log 7 failed at EXIT=1 -- but the done-when's population clause is unmet by two added failures the reviewed manifest does not retire by name and leaves unattributed, and the base arm was narrowed to three files rather than the full population, so the delta is not a clean whole-population comparison.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: git diff --name-only 657e199ba..d918a461a is six files; five are declared (reckon/schema/flight.yaml, reckon/_flight_schema.py, reckon/crew/dispatch.py, tests/test_orchestrator_lane_fence.py, the evidence fragment), and docs/_shared/flight.schema.json is a generated artifact written outside the fence, required because tests/test_flight.py:146 round-trips it against the schema and sits in the declared gate population, disclosed in the manifest at evidence_inputs.\nSCORE durability: 19\nJUSTIFICATION durability: all seven cases in tests/test_orchestrator_lane_fence.py fail against base 657e199ba (negative-control-base.log, 7 failed, EXIT=1), and test_removing_the_declaration_stops_the_fence_firing asserts state not-declared plus an empty warning list on the same node and lane with only the declaration removed -- an independent null control that reddens if the fence fires without reading the declaration.\nSCORE fit: 19\nJUSTIFICATION fit: the new symbols (ORCHESTRATOR_LANE_DECLARATION_KEY, ORCHESTRATOR_LANE_STOP_SEVERITY, _dispatch_orchestrator_lane_stop) are named by mechanism with no plan label, the flight.yaml slot mirrors its siblings, and the record-reaches-the-pointer wiring at dispatch.py:7163 follows the lane_gate pattern at dispatch.py:7158.\nFINDING tests/test_crew_orphan.py:190 follow-on: the population gate recorded this test and tests/test_dispatch_returns_without_worker.py:1326 as added failures the reviewed manifest does not retire by name, so reckon/crew/review.py:1177 caps the review total at 5 on read; a focused head re-run of both passes (focused-head-rerun.log, 2 passed in 10.50s), showing they are contention artifacts of the -n 8 population arm rather than consequences of the change, but the reviewed run recorded neither that re-run nor an attribution for the ids under failure_attribution, so the artifact claim is the reviewer's, not the node's.\nFINDING docs/_shared/flight.schema.json:220 follow-on: this generated artifact was regenerated outside the node's declared write paths; the write is necessary because tests/test_flight.py:146 asserts docs/_shared/flight.schema.json regenerates byte-identically from reckon/schema/flight.yaml and test_flight.py imports reckon._flight_schema, so leaving it stale would red the node's own declared gate, and the manifest discloses the breach for the coordinator's acceptance.",
+  "review_run_id": "r-20261004T084041291138-review-of-an-orchestrator-lane-is-declared-and-fenced",
+  "reviewed_base_sha": "657e199ba75b7bcdfc67cadfd37592cecc68a19c",
+  "reviewed_head_sha": "d918a461ab82301ed2cee0dbed57d279dd9cee99",
+  "reviewed_run_id": "r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T084041291138-review-of-an-orchestrator-lane-is-declared-and-fenced",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T08:45:53+00:00",
+  "total": 87
+}

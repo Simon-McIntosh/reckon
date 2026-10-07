@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T14:08:04.628Z",
+  "dispatched_at": "2026-09-26T12:05:03Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html",
+      "line": "375",
+      "text": "the landed record says \"the same seven findings as the base arm\" while its own receipts (logs/audit-doc.log and logs/audit-doc-base-arm.log) list five \u2014 one pre-long-line info on the record and four section-without-contract warnings on the plan \u2014 and an independent re-run of both arms also reports five, so the record's checkable claim disagrees with the receipt it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103219167861-review-recognition-figure-as-text/manifest.md",
+      "line": "12",
+      "text": "the manifest's tests field repeats the seven-findings miscount, and its artifacts field carries it again at line 18, so a reader auditing the run against its logs finds a figure its log contradicts."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against the base; 06bcb65ae4a894c7660126a6536f11e84d8e5e28 replaces the figure with the two lists in record and plan and deletes the 70-line SVG, b6d7b28ee836963be7a9338fe4acb7f53b1532e0 adds the receipts paragraph, 30 insertions and 79 deletions, nothing outside the goal.",
+    "done_when": "the done_when asks for the two lists carrying the figure's content, the SVG deleted and referenced nowhere, and audit-doc passing on record and plan; check-content-parity.py:136-193 asserts all three with controls and I reproduced each part independently.",
+    "goal": "the goal is the review-recognition figure carried into the evidence record as two HTML ordered lists with the SVG deleted; docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:348-361 carries the two three-item lists where the figure stood, and the SVG is absent from b6d7b28e.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103219167861-review-recognition-figure-as-text/manifest.md; it records the two commits, the gate with its base arm and the parity numbers, but its tests and artifacts fields state \"seven findings\" where its own logs list five.",
+    "write_paths": "the declared scope is the evidence record, docs/figures/an-orchestrator-cannot-forget-its-obligations and the plan HTML; git diff --name-only 9fafad1fde793b9a0d5bc7ac60114f445359d202..b6d7b28ee836963be7a9338fe4acb7f53b1532e0 lists exactly those three files and the worktree is clean."
+  },
+  "justifications": {
+    "durability": "no repository-resident test fails if this change regresses \u2014 check-content-parity.py lives in the run directory, and re-running audit-doc on a scratch copy with the deleted figure's <img> reinserted exits 0 with the same findings.",
+    "evidence": "the receipts are real and independently reproduced (content parity 12/12 with a section control reporting 12/12 missing, filename 4 hits at 9fafad1f against 1 at b6d7b28e, audit-doc exit 0 on both arms), but docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:375 claims \"the same seven findings\" where the receipts show five.",
+    "fit": "the new lists and prose at docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:348-361 follow the section's existing landing-record idiom and introduce no name the repository rules forbid.",
+    "goal_fidelity": "docs/plans/an-orchestrator-cannot-forget-its-obligations.html:72-84 mirrors the same two lists and retires the plan landing's own figure reference, so both pages the followup names carry the content as text.",
+    "scope_discipline": "every path in both commits is one of the three declared write paths, and the plan landing edit is required because the plan carried its own copy of the figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is the review-recognition figure carried into the evidence record as two HTML ordered lists with the SVG deleted; docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:348-361 carries the two three-item lists where the figure stood, and the SVG is absent from b6d7b28e.\nVERDICT done_when: the done_when asks for the two lists carrying the figure's content, the SVG deleted and referenced nowhere, and audit-doc passing on record and plan; check-content-parity.py:136-193 asserts all three with controls and I reproduced each part independently.\nVERDICT write_paths: the declared scope is the evidence record, docs/figures/an-orchestrator-cannot-forget-its-obligations and the plan HTML; git diff --name-only 9fafad1fde793b9a0d5bc7ac60114f445359d202..b6d7b28ee836963be7a9338fe4acb7f53b1532e0 lists exactly those three files and the worktree is clean.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103219167861-review-recognition-figure-as-text/manifest.md; it records the two commits, the gate with its base arm and the parity numbers, but its tests and artifacts fields state \"seven findings\" where its own logs list five.\nVERDICT diff: read both commits against the base; 06bcb65ae4a894c7660126a6536f11e84d8e5e28 replaces the figure with the two lists in record and plan and deletes the 70-line SVG, b6d7b28ee836963be7a9338fe4acb7f53b1532e0 adds the receipts paragraph, 30 insertions and 79 deletions, nothing outside the goal.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/plans/an-orchestrator-cannot-forget-its-obligations.html:72-84 mirrors the same two lists and retires the plan landing's own figure reference, so both pages the followup names carry the content as text.\nSCORE evidence: 16\nJUSTIFICATION evidence: the receipts are real and independently reproduced (content parity 12/12 with a section control reporting 12/12 missing, filename 4 hits at 9fafad1f against 1 at b6d7b28e, audit-doc exit 0 on both arms), but docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:375 claims \"the same seven findings\" where the receipts show five.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in both commits is one of the three declared write paths, and the plan landing edit is required because the plan carried its own copy of the figure.\nSCORE durability: 10\nJUSTIFICATION durability: no repository-resident test fails if this change regresses \u2014 check-content-parity.py lives in the run directory, and re-running audit-doc on a scratch copy with the deleted figure's <img> reinserted exits 0 with the same findings.\nSCORE fit: 19\nJUSTIFICATION fit: the new lists and prose at docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:348-361 follow the section's existing landing-record idiom and introduce no name the repository rules forbid.\nFINDING docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:375 the landed record says \"the same seven findings as the base arm\" while its own receipts (logs/audit-doc.log and logs/audit-doc-base-arm.log) list five \u2014 one pre-long-line info on the record and four section-without-contract warnings on the plan \u2014 and an independent re-run of both arms also reports five, so the record's checkable claim disagrees with the receipt it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103219167861-review-recognition-figure-as-text/manifest.md:12 the manifest's tests field repeats the seven-findings miscount, and its artifacts field carries it again at line 18, so a reader auditing the run against its logs finds a figure its log contradicts.",
+  "review_run_id": "r-20260926T120443698666-review-of-review-recognition-figure-as-text",
+  "reviewed_base_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_head_sha": "b6d7b28ee836963be7a9338fe4acb7f53b1532e0",
+  "reviewed_run_id": "r-20260926T103219167861-review-recognition-figure-as-text",
+  "role": "review",
+  "scores": {
+    "durability": 10,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T13:05:16.159554+00:00",
+  "total": 85
+}

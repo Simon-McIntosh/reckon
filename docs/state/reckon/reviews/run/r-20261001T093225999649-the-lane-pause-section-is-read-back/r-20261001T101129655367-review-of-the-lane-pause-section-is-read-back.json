@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run is a read-only investigate node whose manifest declares neither baseline_suite nor after_suite, so there are no gate logs to difference; the added-failure count is a state never measured, not a measured zero, matching review.annotate_added_failures.",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T10:17:33.905Z",
+  "dispatched_at": "2026-10-01T10:11:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-1c/the-lane-pause-section-is-read-back/report.md",
+      "line": "124",
+      "severity": "follow-on",
+      "text": "follow-on: edit 1 pins the flight config's gate_document to the resolved absolute path observed live (/work/projects/imas_gpu/agents/control/router-gate.json), a manual copy of a value the router derives through resolve_gate_path (explicit path, then AMBIX_ROUTER_GATE_PATH, then site control, then the lane-document sibling); if the router is later launched with an explicit path or the env var, the declared gate_document would name a file the router does not honour, re-introducing the very drift K1 reports."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-1c/the-lane-pause-section-is-read-back/report.md",
+      "line": "89",
+      "severity": "follow-on",
+      "text": "follow-on: the report notes the rule's unreadable row names four triggers while done-when B5 drives three, but leaves it \"a range to widen or leave as-is\" and none of the five edits resolves it, so an implementing node may ship a test that does not drive the permission-error and valid-JSON-not-an-object triggers while section 9's done-when says it drives every row of the rule."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node is read-only and records no commits; its worktree HEAD equals its base ea69eb30 with a clean status, so there is no diff against a base, and the deliverable is the report file outside any repository.",
+    "done_when": "this is a read-back (investigate) node whose measure is the report itself rather than a test suite, and report.md is the deliverable; I independently reproduced its four contradictions at base ea69eb30 and imas-ambix main 9b0145fb, so the read-back's claims are checkable.",
+    "goal": "the node's goal is to read back plan section 9 \"A dispatch holds while the lane is paused\" and report its state at base ea69eb30; report.md delivers exactly that, locating the five named anchors, reading the gate-file contract against imas-ambix main, naming four contradictions, and returning a hold verdict with five edits.",
+    "manifest": "read; it declares status complete, names report.md as the sole deliverable, records the read-only fence over /home/ITER/mcintos/Code, and lists the four contradictions and the section-9 dependency check.",
+    "write_paths": "the node's only declared write path is reports/reckon/s21-1c/the-lane-pause-section-is-read-back/report.md; the tree-snapshot records its own worktree at ea69eb30 with an empty status digest and no status entries, and report.md is the only file it wrote."
+  },
+  "justifications": {
+    "durability": "there is no code change and so no assertion that fails on regression, which is inherent to a read-back node; what stands in its place is the reproducibility of the findings, and this reviewer reproduced all four contradictions independently, but nothing reddens if section 9's quoted path silently drifts again.",
+    "evidence": "report.md:62-68 and :100-104 cite the router resolver (router.py:398-430) and the live lane.json config_path, and this reviewer independently confirmed router_generation_gate.config_path=/work/projects/imas_gpu/agents/control/router-gate.json with the public path section 9 names absent.",
+    "fit": "report.md follows the read-back idiom with per-claim path-and-line citations and a ranked verdict, and introduces no plan label, ticket, version name or author attribution in any citation.",
+    "goal_fidelity": "report.md:9-16 locates dispatch_review_for_run at recovery.py:1544, _review_dispatch_argv at recovery.py:476, _dispatch_lane_reading at dispatch.py:3363, local_resolved at dispatch.py:3902 and lane_document at flight.yaml:332, each of which this reviewer confirmed at ea69eb30.",
+    "scope_discipline": "report.md:5-7 states the read-only scope and the tree-snapshot's empty status digest for the reviewed worktree confirms it; report.md is the only path the node wrote."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read back plan section 9 \"A dispatch holds while the lane is paused\" and report its state at base ea69eb30; report.md delivers exactly that, locating the five named anchors, reading the gate-file contract against imas-ambix main, naming four contradictions, and returning a hold verdict with five edits.\nVERDICT done_when: this is a read-back (investigate) node whose measure is the report itself rather than a test suite, and report.md is the deliverable; I independently reproduced its four contradictions at base ea69eb30 and imas-ambix main 9b0145fb, so the read-back's claims are checkable.\nVERDICT write_paths: the node's only declared write path is reports/reckon/s21-1c/the-lane-pause-section-is-read-back/report.md; the tree-snapshot records its own worktree at ea69eb30 with an empty status digest and no status entries, and report.md is the only file it wrote.\nVERDICT manifest: read; it declares status complete, names report.md as the sole deliverable, records the read-only fence over /home/ITER/mcintos/Code, and lists the four contradictions and the section-9 dependency check.\nVERDICT diff: the node is read-only and records no commits; its worktree HEAD equals its base ea69eb30 with a clean status, so there is no diff against a base, and the deliverable is the report file outside any repository.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:9-16 locates dispatch_review_for_run at recovery.py:1544, _review_dispatch_argv at recovery.py:476, _dispatch_lane_reading at dispatch.py:3363, local_resolved at dispatch.py:3902 and lane_document at flight.yaml:332, each of which this reviewer confirmed at ea69eb30.\nSCORE evidence: 17\nJUSTIFICATION evidence: report.md:62-68 and :100-104 cite the router resolver (router.py:398-430) and the live lane.json config_path, and this reviewer independently confirmed router_generation_gate.config_path=/work/projects/imas_gpu/agents/control/router-gate.json with the public path section 9 names absent.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: report.md:5-7 states the read-only scope and the tree-snapshot's empty status digest for the reviewed worktree confirms it; report.md is the only path the node wrote.\nSCORE durability: 16\nJUSTIFICATION durability: there is no code change and so no assertion that fails on regression, which is inherent to a read-back node; what stands in its place is the reproducibility of the findings, and this reviewer reproduced all four contradictions independently, but nothing reddens if section 9's quoted path silently drifts again.\nSCORE fit: 18\nJUSTIFICATION fit: report.md follows the read-back idiom with per-claim path-and-line citations and a ranked verdict, and introduces no plan label, ticket, version name or author attribution in any citation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-1c/the-lane-pause-section-is-read-back/report.md:124 follow-on: edit 1 pins the flight config's gate_document to the resolved absolute path observed live (/work/projects/imas_gpu/agents/control/router-gate.json), a manual copy of a value the router derives through resolve_gate_path (explicit path, then AMBIX_ROUTER_GATE_PATH, then site control, then the lane-document sibling); if the router is later launched with an explicit path or the env var, the declared gate_document would name a file the router does not honour, re-introducing the very drift K1 reports.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-1c/the-lane-pause-section-is-read-back/report.md:89 follow-on: the report notes the rule's unreadable row names four triggers while done-when B5 drives three, but leaves it \"a range to widen or leave as-is\" and none of the five edits resolves it, so an implementing node may ship a test that does not drive the permission-error and valid-JSON-not-an-object triggers while section 9's done-when says it drives every row of the rule.\n",
+  "review_run_id": "r-20261001T101129655367-review-of-the-lane-pause-section-is-read-back",
+  "reviewed_base_sha": "ea69eb30fa3a983e4ddafb1e62208847049196a5",
+  "reviewed_head_sha": "ea69eb30fa3a983e4ddafb1e62208847049196a5",
+  "reviewed_run_id": "r-20261001T093225999649-the-lane-pause-section-is-read-back",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.508195+00:00",
+  "total": 88
+}

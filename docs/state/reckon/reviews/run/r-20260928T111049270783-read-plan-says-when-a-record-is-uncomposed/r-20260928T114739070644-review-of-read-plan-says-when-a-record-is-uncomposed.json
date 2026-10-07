@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_derivation": "derived by this review from the two arm logs the reviewed run's own baseline_suite and after_suite observations name, /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/logs/base-arm-20260928T114016Z.log (20 passed, EXIT=0, no failing ids) and head-arm-20260928T114528Z.log (23 passed, EXIT=0, no failing ids), through the store's own added_failures_from_gate_logs: count 0, ids []. Positive control in logs/added-failures-derivation.log: the same extractor over the run's red negative-control log as the head arm finds its 1 failing id (tests/test_read_plan_composes_the_record.py::test_a_composition_failure_reaches_the_read_plan_response), so the empty result is measured rather than blind. The store's read-time annotation reports this run unmeasured because the reviewed manifest's baseline_suite/after_suite lines hold prose rather than JSON with log_path, the fourth finding of this review.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:_read_plan_view (line 1486)",
+    "reckon/mcp.py:read_plan tool registration (line 4868)"
+  ],
+  "completed_at": "2026-09-28T12:15:29.092Z",
+  "dispatched_at": "2026-09-28T11:47:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-landing-record-never-conflicts-landed.html",
+      "line": "52",
+      "text": "the evidence line cites logs/head-arm-20260928T114150Z.log, which does not exist in the run's logs directory (the head-arm log present is head-arm-20260928T114528Z.log, the one the run's own manifest names), so a reader verifying the head arm finds nothing at the cited path."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "1608",
+      "text": "the new section_not_applicable refusal for a record read with a section argument is untested: removing those four lines leaves the record served whole and nothing reddens, while the plan and the archive record both present the refusal as delivered behaviour."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "987",
+      "text": "the read_plan tool description, published to callers because _deadline_tool copies the wrapped function's docstring (reckon/mcp.py:369,396), still says view='section' returns one authored h2 section and refuses with section_not_found, while an evidence record now reads whole and refuses a section argument with section_not_applicable, so the public contract for the view this node changed describes the old behaviour."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/manifest.md",
+      "line": "19",
+      "text": "baseline_suite and after_suite hold prose rather than the armed JSON the manifest block reserves, so the store's read-time derivation takes the sentence as a log path and annotate_review_of_run reports the run unmeasured, and this review's derived count survives only in this record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit: 153a2cfd adds _record_text_response with its section_not_applicable refusal, the evidence branch in resource_view, the three end-to-end cases, the landing paragraphs in the plan and the archive record, and the view-dispatch figure.",
+    "done_when": "the done_when asks for an uncomposed record read through the public tool path to return the record's own bytes with a response-level warning naming the record and the error, with end-to-end cases at exit 0 and logged arm pairs; the head arm logs/head-arm-20260928T114528Z.log records 23 passed EXIT=0 at 153a2cfd and the base arm logs/base-arm-20260928T114016Z.log 20 passed EXIT=0 at 176a9ab6, and the three new cases in tests/test_read_plan_composes_the_record.py (lines 323, 340, 363) drive _read_plan_tool rather than _append_read_warning.",
+    "goal": "the node's goal is to deliver read_plan's composition-failure warning on the response a caller receives; _record_text_response (reckon/mcp_views.py:1589) with the type dispatch at reckon/mcp_views.py:2500 serves a cumulative evidence record whole at the section view, so the warning _typed_resource_text_and_warning returns (reckon/mcp.py:1146) reaches a caller's response through _read_plan_view (reckon/mcp.py:1486) and _append_read_warning (reckon/mcp.py:1502), which the three new cases drive through _read_plan_tool.",
+    "manifest": "read; it reports commit 153a2cfd, both arm logs and the negative-control log, and discloses the reckon/mcp_views.py overlap with the concurrent section-edge-stays-off-plan-blocking node under follow_ons, but its baseline_suite (line 19) and after_suite (line 20) lines hold prose rather than the armed JSON the manifest block reserves, so the store's own reader takes the sentence as a log path and reports the run unmeasured.",
+    "write_paths": "the manifest declares five changed paths; git diff --name-status 176a9ab6..153a2cfd lists exactly those five, reckon/mcp_views.py, tests/test_read_plan_composes_the_record.py, the plan HTML, the archive record and the new figure, with reckon/mcp.py, which the fence also granted, byte-identical to the base."
+  },
+  "justifications": {
+    "durability": "each added case fails on a revert of what it guards, the composed case because the base path refuses a non-plan selector (reckon/mcp_views.py:2499) and the fallback case observed red under the declared mutation (KeyError: 'warnings'), but the new section_not_applicable refusal (reckon/mcp_views.py:1608) has no case, so deleting it would fail nothing.",
+    "evidence": "both arms are logged with revision, cwd and reckon.__file__ and exit 0 with no failing ids, and this review re-derived the added-failure delta from those two logs with a positive control over the run's red log (logs/added-failures-derivation.log), but the archive record cites a head-arm log that does not exist and the manifest's prose suite lines leave the store's reader unable to reach either log.",
+    "fit": "the helper sits beside the section helpers and returns the same section payload shape as _section_response (reckon/mcp_views.py:1732), and it carries no plan, sprint or version identifier, with the deduction for the read_plan description (reckon/mcp.py:987) left describing the pre-change section view.",
+    "goal_fidelity": "the section view is now a record's text view and the warning reaches the response, but the published read_plan description (reckon/mcp.py:987) still promises one authored h2 section and a section_not_found refusal, silent about the whole-record read and its section_not_applicable refusal.",
+    "scope_discipline": "every path in git diff --name-status 176a9ab6..153a2cfd is inside the manifest's five declared paths, the archive-record edit appends one section without deleting a line, and no plan-version or plan-modified meta line appears in the docs diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to deliver read_plan's composition-failure warning on the response a caller receives; _record_text_response (reckon/mcp_views.py:1589) with the type dispatch at reckon/mcp_views.py:2500 serves a cumulative evidence record whole at the section view, so the warning _typed_resource_text_and_warning returns (reckon/mcp.py:1146) reaches a caller's response through _read_plan_view (reckon/mcp.py:1486) and _append_read_warning (reckon/mcp.py:1502), which the three new cases drive through _read_plan_tool.\nVERDICT done_when: the done_when asks for an uncomposed record read through the public tool path to return the record's own bytes with a response-level warning naming the record and the error, with end-to-end cases at exit 0 and logged arm pairs; the head arm logs/head-arm-20260928T114528Z.log records 23 passed EXIT=0 at 153a2cfd and the base arm logs/base-arm-20260928T114016Z.log 20 passed EXIT=0 at 176a9ab6, and the three new cases in tests/test_read_plan_composes_the_record.py (lines 323, 340, 363) drive _read_plan_tool rather than _append_read_warning.\nVERDICT write_paths: the manifest declares five changed paths; git diff --name-status 176a9ab6..153a2cfd lists exactly those five, reckon/mcp_views.py, tests/test_read_plan_composes_the_record.py, the plan HTML, the archive record and the new figure, with reckon/mcp.py, which the fence also granted, byte-identical to the base.\nVERDICT manifest: read; it reports commit 153a2cfd, both arm logs and the negative-control log, and discloses the reckon/mcp_views.py overlap with the concurrent section-edge-stays-off-plan-blocking node under follow_ons, but its baseline_suite (line 19) and after_suite (line 20) lines hold prose rather than the armed JSON the manifest block reserves, so the store's own reader takes the sentence as a log path and reports the run unmeasured.\nVERDICT diff: read commit by commit: 153a2cfd adds _record_text_response with its section_not_applicable refusal, the evidence branch in resource_view, the three end-to-end cases, the landing paragraphs in the plan and the archive record, and the view-dispatch figure.\nCALL_SITES: reckon/mcp.py:_read_plan_view (line 1486), reckon/mcp.py:read_plan tool registration (line 4868)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the section view is now a record's text view and the warning reaches the response, but the published read_plan description (reckon/mcp.py:987) still promises one authored h2 section and a section_not_found refusal, silent about the whole-record read and its section_not_applicable refusal.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arms are logged with revision, cwd and reckon.__file__ and exit 0 with no failing ids, and this review re-derived the added-failure delta from those two logs with a positive control over the run's red log (logs/added-failures-derivation.log), but the archive record cites a head-arm log that does not exist and the manifest's prose suite lines leave the store's reader unable to reach either log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-status 176a9ab6..153a2cfd is inside the manifest's five declared paths, the archive-record edit appends one section without deleting a line, and no plan-version or plan-modified meta line appears in the docs diff.\nSCORE durability: 18\nJUSTIFICATION durability: each added case fails on a revert of what it guards, the composed case because the base path refuses a non-plan selector (reckon/mcp_views.py:2499) and the fallback case observed red under the declared mutation (KeyError: 'warnings'), but the new section_not_applicable refusal (reckon/mcp_views.py:1608) has no case, so deleting it would fail nothing.\nSCORE fit: 18\nJUSTIFICATION fit: the helper sits beside the section helpers and returns the same section payload shape as _section_response (reckon/mcp_views.py:1732), and it carries no plan, sprint or version identifier, with the deduction for the read_plan description (reckon/mcp.py:987) left describing the pre-change section view.\nFINDING docs/evidence/archive/a-landing-record-never-conflicts-landed.html:52 the evidence line cites logs/head-arm-20260928T114150Z.log, which does not exist in the run's logs directory (the head-arm log present is head-arm-20260928T114528Z.log, the one the run's own manifest names), so a reader verifying the head arm finds nothing at the cited path.\nFINDING reckon/mcp_views.py:1608 the new section_not_applicable refusal for a record read with a section argument is untested: removing those four lines leaves the record served whole and nothing reddens, while the plan and the archive record both present the refusal as delivered behaviour.\nFINDING reckon/mcp.py:987 the read_plan tool description, published to callers because _deadline_tool copies the wrapped function's docstring (reckon/mcp.py:369,396), still says view='section' returns one authored h2 section and refuses with section_not_found, while an evidence record now reads whole and refuses a section argument with section_not_applicable, so the public contract for the view this node changed describes the old behaviour.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/manifest.md:19 baseline_suite and after_suite hold prose rather than the armed JSON the manifest block reserves, so the store's read-time derivation takes the sentence as a log path and annotate_review_of_run reports the run unmeasured, and this review's derived count survives only in this record.\n",
+  "review_run_id": "r-20260928T114739070644-review-of-read-plan-says-when-a-record-is-uncomposed",
+  "reviewed_base_sha": "176a9ab6121055f83244efc767a0bd6bdb84df38",
+  "reviewed_head_sha": "153a2cfdebc72dae0793a346049587ab51931106",
+  "reviewed_run_id": "r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed",
+  "reviewer": "review-of-read-plan-says-when-a-record-is-uncomposed",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T12:02:57.482845+00:00",
+  "total": 92
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "cae445f40f91086bee4ee0f7a65a5f9ae2406264",
+  "completed_at": "2026-10-01T06:50:47.791Z",
+  "dispatched_at": "2026-10-01T06:40:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "698",
+      "severity": "follow-on",
+      "text": "follow-on: _placed_worker_can_hold_memory asks the liveness reader with the pointer's pid only, while the pointer also records pid_start_time and the recovery path elsewhere compares the live process's start time against it to rule out pid reuse (reckon/crew/recovery.py:4958). A pid the kernel has since recycled by an unrelated process therefore reads alive and holds a seat. The direction is fail-safe and matches the classifier's own reader, so it is a follow-on rather than a defect, but a long-lived fleet on a shared workstation can accumulate a seat held by a stranger's pid."
+    },
+    {
+      "file": "tests/test_the_roster_counts_live_placed_workers.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node's cases are homogeneous \u2014 every pointer in each case is either placed or unplaced. The plan section's done-when also asks for the roster refusal asserted over a single population holding both placed and unplaced runs on one backend, which the node's own FENCE-EVIDENCE narrows away; that assertion is the section's and belongs to the merged-head or integration node the node's fence names as a separate dispatch."
+    }
+  ],
+  "head_log_revision": "e5dd7d58de65450f615d782e2737f34c0195b535",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites reach the roster count: reckon/crew/dispatch.py:523 (_refuse_over_reservation_roster) calls placement.occupying_the_reservation and :524 passes the count to reservation_roster_refusal; placement.reservation_roster_refusal itself is the cap check.",
+    "diff": "read commit by commit against cae445f40f; 44bf2df07 changes placement.py (+93/-0) and dispatch.py (+4/-1) and adds the test file, eaf47da3f reorders one test case, e5dd7d58d adds the evidence fragment \u2014 four paths, all inside the declared scope.",
+    "done_when": "the node's FENCE-EVIDENCE names four cases; the test file carries them plus a past-window and a phase-independence case (6 total). The focused file passes 6/6 at head, the two population arms are 65 passed/3 failed at base and 71 passed/3 failed at head with the same 3 pre-existing ids, and the negative control reddens the exited-worker case.",
+    "goal": "make the reservation roster count only placed runs whose worker can still hold memory, so a finished-but-unpromoted run, a blocked run awaiting resume and a run waiting on an external condition hold no seat; reckon/crew/placement.py occupying_the_reservation and _placed_worker_can_hold_memory carry it, and the cap of 25 is unchanged.",
+    "manifest": "read; status complete, three commits 44bf2df07/eaf47da3f/e5dd7d58, base and after suites both recorded as completed JSON with 3 and 3 failures, one negative-control log ending EXIT=1 on the declared case, and no blocker.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/placement.py, reckon/crew/dispatch.py, tests/test_the_roster_counts_live_placed_workers.py, the evidence fragment); every path in the diff is inside them and the reviewed worktree at e5dd7d58 is clean."
+  },
+  "justifications": {
+    "durability": "tests/test_the_roster_counts_live_placed_workers.py pins the rule at its boundaries \u2014 26 exited of 30 placed (four seats, dispatch admitted), 25 live refused naming the cap, a placed run still inside its launch window holding a seat, and one past it holding none \u2014 and the declared negative control reddens the exited-worker case at the roster refusal, so the guard is shown to fire rather than merely to pass.",
+    "evidence": "the run's own gate logs are present, completed and consistent: roster-population-base.log at cae445f40f reports '3 failed, 65 passed' and roster-population-head.log at e5dd7d58 reports '3 failed, 71 passed', both naming the identical three ids, so review.annotate_review_of_run derives added_failure_count 0. I reproduced the focused file independently against the reviewed tree's own placement.py (6 passed) and re-applied the declared mutation in a scratch copy, which reddens the exited-worker case with '30 workers already occupy the placement reservation's roster, whose cap is 25'.",
+    "fit": "the change adds two private helpers (_placed_worker_can_hold_memory, _still_launching) and an alive/now seam on the public count function; it reuses recovery._attempt_started_seconds, recovery.LAUNCH_WINDOW_SECONDS and runs.process_alive rather than reimplementing them, the docstrings state the rule and its fail-safe direction, and the diff introduces no plan label, version suffix or ticket reference.",
+    "goal_fidelity": "occupying_the_reservation returns a placed pointer only when its recorded pid answers alive or, with no pid yet, its current attempt is inside recovery.LAUNCH_WINDOW_SECONDS, so a placed run whose worker exited holds no seat whatever its manifest says and the cap of 25 is unchanged \u2014 the node's goal, implemented at placement.py:663-681 and stated in the refusal docstring at dispatch.py:508.",
+    "scope_discipline": "git diff cae445f40f..e5dd7d58 names only reckon/crew/placement.py, reckon/crew/dispatch.py (the roster-refusal docstring), tests/test_the_roster_counts_live_placed_workers.py and the evidence fragment, every one inside the manifest's declared write paths; the reviewed worktree is clean at e5dd7d58."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: make the reservation roster count only placed runs whose worker can still hold memory, so a finished-but-unpromoted run, a blocked run awaiting resume and a run waiting on an external condition hold no seat; reckon/crew/placement.py occupying_the_reservation and _placed_worker_can_hold_memory carry it, and the cap of 25 is unchanged.\nVERDICT done_when: the node's FENCE-EVIDENCE names four cases; the test file carries them plus a past-window and a phase-independence case (6 total). The focused file passes 6/6 at head, the two population arms are 65 passed/3 failed at base and 71 passed/3 failed at head with the same 3 pre-existing ids, and the negative control reddens the exited-worker case.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/placement.py, reckon/crew/dispatch.py, tests/test_the_roster_counts_live_placed_workers.py, the evidence fragment); every path in the diff is inside them and the reviewed worktree at e5dd7d58 is clean.\nVERDICT manifest: read; status complete, three commits 44bf2df07/eaf47da3f/e5dd7d58, base and after suites both recorded as completed JSON with 3 and 3 failures, one negative-control log ending EXIT=1 on the declared case, and no blocker.\nVERDICT diff: read commit by commit against cae445f40f; 44bf2df07 changes placement.py (+93/-0) and dispatch.py (+4/-1) and adds the test file, eaf47da3f reorders one test case, e5dd7d58d adds the evidence fragment \u2014 four paths, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:523 (_refuse_over_reservation_roster) calls placement.occupying_the_reservation; reckon/crew/dispatch.py:524 passes the count to placement.reservation_roster_refusal, the cap check.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: occupying_the_reservation returns a placed pointer only when its recorded pid answers alive or, with no pid yet, its current attempt is inside recovery.LAUNCH_WINDOW_SECONDS, so a placed run whose worker exited holds no seat whatever its manifest says and the cap of 25 is unchanged \u2014 the node's goal, implemented at placement.py:663-681 and stated in the refusal docstring at dispatch.py:508.\nSCORE evidence: 18\nJUSTIFICATION evidence: the run's own gate logs are present, completed and consistent: roster-population-base.log at cae445f40f reports '3 failed, 65 passed' and roster-population-head.log at e5dd7d58 reports '3 failed, 71 passed', both naming the identical three ids, so review.annotate_review_of_run derives added_failure_count 0. I reproduced the focused file independently against the reviewed tree's own placement.py (6 passed) and re-applied the declared mutation in a scratch copy, which reddens the exited-worker case with '30 workers already occupy the placement reservation's roster, whose cap is 25'.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff cae445f40f..e5dd7d58 names only reckon/crew/placement.py, reckon/crew/dispatch.py (the roster-refusal docstring), tests/test_the_roster_counts_live_placed_workers.py and the evidence fragment, every one inside the manifest's declared write paths; the reviewed worktree is clean at e5dd7d58.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_roster_counts_live_placed_workers.py pins the rule at its boundaries \u2014 26 exited of 30 placed (four seats, dispatch admitted), 25 live refused naming the cap, a placed run still inside its launch window holding a seat, and one past it holding none \u2014 and the declared negative control reddens the exited-worker case at the roster refusal, so the guard is shown to fire rather than merely to pass.\nSCORE fit: 18\nJUSTIFICATION fit: the change adds two private helpers (_placed_worker_can_hold_memory, _still_launching) and an alive/now seam on the public count function; it reuses recovery._attempt_started_seconds, recovery.LAUNCH_WINDOW_SECONDS and runs.process_alive rather than reimplementing them, the docstrings state the rule and its fail-safe direction, and the diff introduces no plan label, version suffix or ticket reference.\nFINDING reckon/crew/placement.py:698 follow-on: _placed_worker_can_hold_memory asks the liveness reader with the pointer's pid only, while the pointer also records pid_start_time and the recovery path elsewhere compares the live process's start time against it to rule out pid reuse (reckon/crew/recovery.py:4958). A pid the kernel has since recycled by an unrelated process therefore reads alive and holds a seat. The direction is fail-safe and matches the classifier's own reader, so it is a follow-on rather than a defect, but a long-lived fleet on a shared workstation can accumulate a seat held by a stranger's pid.\nFINDING tests/test_the_roster_counts_live_placed_workers.py:1 follow-on: the node's cases are homogeneous \u2014 every pointer in each case is either placed or unplaced. The plan section's done-when also asks for the roster refusal asserted over a single population holding both placed and unplaced runs on one backend, which the node's own FENCE-EVIDENCE narrows away; that assertion is the section's and belongs to the merged-head or integration node the node's fence names as a separate dispatch.",
+  "review_run_id": "r-20261001T064007610406-review-of-the-roster-counts-live-placed-workers",
+  "reviewed_base_sha": "cae445f40f91086bee4ee0f7a65a5f9ae2406264",
+  "reviewed_head_sha": "e5dd7d58de65450f615d782e2737f34c0195b535",
+  "reviewed_run_id": "r-20261001T061450657495-the-roster-counts-live-placed-workers",
+  "reviewer_run_id": "r-20261001T064007610406-review-of-the-roster-counts-live-placed-workers",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T06:49:00.000000+00:00",
+  "total": 93
+}

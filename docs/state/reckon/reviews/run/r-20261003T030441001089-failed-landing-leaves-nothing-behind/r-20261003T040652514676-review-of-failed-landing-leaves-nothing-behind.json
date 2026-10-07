@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived by the reviewer from the reviewed run's own base and head gate logs, named in its manifest under test_logs. base arm gate/base-arm-2.log: '2 failed, 64 passed in 69.72s' EXIT=1, failure_ids [tests/test_failed_landing_leaves_nothing_behind.py::test_a_refused_landing_commit_leaves_nothing_behind, tests/test_failed_landing_leaves_nothing_behind.py::test_a_staged_created_path_is_never_left_without_its_file]. head arm gate/head-arm-3.log: '66 passed in 62.63s' EXIT=0, no failure ids. Added = head minus base = none, so added_failure_count is 0 and added_failure_ids is empty. The manifest's baseline_suite/after_suite fields are prose and name no log_path, so the read-time annotation in reckon/crew/review.py cannot re-derive this and would report it unmeasured.",
+  "base_log_revision": "4efd4fdeae367f7f5c5931a24d41e674136c0c54",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion.py:7968",
+    "reckon/crew/promotion.py:7482",
+    "reckon/crew/promotion.py:2180",
+    "reckon/crew/promotion.py:4014",
+    "reckon/crew/promotion.py:4038",
+    "reckon/crew/promotion.py:6221",
+    "reckon/crew/promotion.py:6246"
+  ],
+  "completed_at": "2026-10-03T04:14:28.944Z",
+  "dispatched_at": "2026-10-03T04:07:33Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030441001089-failed-landing-leaves-nothing-behind/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest writes baseline_suite and after_suite as prose rather than the contract's JSON object naming a log_path, so annotate_review_of_run cannot resolve the arm logs and a read of the record yields added_failure_count null (unmeasured) although test_logs names both logs."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3939",
+      "severity": "follow-on",
+      "text": "follow-on: _discard_run_store_row issues raw DELETE statements against run_store's runs and run_details tables because run_store exposes no public removal API, so a schema change in that module silently breaks the row removal this guard relies on."
+    },
+    {
+      "file": "docs/plans/crew-runtime-positive-controls.html",
+      "line": "1222",
+      "severity": "follow-on",
+      "text": "follow-on: the plan's section 39 text still carries the plan-file clause the coordinator's ruling withdrew, so the plan and the landed design disagree; only the plan owner may correct it."
+    },
+    {
+      "file": "tests/test_failed_landing_leaves_nothing_behind.py",
+      "line": "126",
+      "severity": "follow-on",
+      "text": "follow-on: no gate log in the reviewed evidence names the reviewed head b32e2df \u2014 the arm ran at the code commit 1b68a6b79 \u2014 so the full head arm's coverage of the final reviewed revision rests on the reviewer's own re-run of the guard file, not on the recorded arm."
+    }
+  ],
+  "head_log_revision": "1b68a6b79d92966566589eb901e8379c09b9edc3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read all five commits against 4efd4fde. Net change: promotion.py gains _restore_one_landing_write, _path_has_a_staged_change and _discard_run_store_row, the store_row_written parameter and its two call sites in _commit_landing_writes, and the _complete_locked wiring; the new guard test file, evidence fragment and figure are added. Two intermediate commits (5c17c07f4, superseded, and 00abd9ad8) are on the branch but their behaviour is subsumed by the net head; nothing outside the declared paths changed.",
+    "done_when": "Section 39's done-when \u2014 a test holds an index lock across a promotion in a temporary repository and RECKON_HOME, asserts nothing is staged, no store row remains, and a second promotion after the lock clears succeeds \u2014 is exactly what tests/test_failed_landing_leaves_nothing_behind.py:126 test_a_refused_landing_commit_leaves_nothing_behind does, with a second test covering the created-path rollback. The reviewer re-ran that file at the reviewed head b32e2df in a git-archive extraction: 2 passed in 14.72s, EXIT=0; the same file against the base tree reproduced both defects, 2 failed, EXIT=1.",
+    "goal": "The node goal \u2014 a refused landing commit leaves nothing staged and no store row \u2014 is met. reckon/crew/promotion.py:3778 _restore_one_landing_write drops a HEAD-absent path's index entry with `git rm --cached` and only then, once _path_has_a_staged_change (:3811) confirms the entry is gone, unlinks the file; and _discard_run_store_row (:3939) removes the run row the attempt's own append inserted, wired at :4014 and :4038 from _commit_landing_writes, which _complete_locked calls at :7968 with store_row_written set only when this attempt's append wrote the row.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030441001089-failed-landing-leaves-nothing-behind/manifest.md. Status complete; negative_control_log is a bare path; both gate logs are named under test_logs and their EXIT lines match the arms. Its baseline_suite and after_suite fields are written as prose rather than the contract's JSON object naming a log_path, so the read-time annotation cannot resolve the arm logs; see the finding.",
+    "write_paths": "Four paths were declared (reckon/crew/promotion.py, tests/test_failed_landing_leaves_nothing_behind.py, docs/evidence/fragments/crew-runtime-positive-controls/failed-landing-leaves-nothing-behind.html, docs/figures/crew-runtime-positive-controls/failed-landing-leaves-nothing-behind/rollback-halves.svg). All four changed against 4efd4fde \u2014 promotion.py, the 211-line test file, the 124-line evidence fragment and the 43-line figure \u2014 and no plan or shared index was touched."
+  },
+  "justifications": {
+    "durability": "Each added assertion compares against an independent source \u2014 git index state and filesystem existence \u2014 and each negative control reinstates a distinct regression (gate/negative-control-index.log, gate/negative-control-store.log) that reddens the matching id, EXIT=1.",
+    "evidence": "The base arm reproduces both defects (2 failed, 64 passed, EXIT=1) and the head arm is green (66 passed, EXIT=0) with two negative controls each reddening a distinct id; deducted one because the head arm ran at the code commit 1b68a6b79 and no gate log names the reviewed head b32e2df.",
+    "fit": "The helpers follow the module's mechanism-naming idiom and carry no plan or ticket identifier; deducted one because _discard_run_store_row (promotion.py:3939) writes raw DELETE statements against run_store's private tables because run_store exposes no removal API.",
+    "goal_fidelity": "promotion.py:3802 gates the unlink on _path_has_a_staged_change and :4014/:4038 remove the inserted store row, so a refused landing leaves neither residue the goal names.",
+    "scope_discipline": "Every path in the base..head diff is inside the four declared write paths and no plan, sprint or shared index file was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal \u2014 a refused landing commit leaves nothing staged and no store row \u2014 is met. reckon/crew/promotion.py:3778 _restore_one_landing_write drops a HEAD-absent path's index entry with `git rm --cached` and only then, once _path_has_a_staged_change (:3811) confirms the entry is gone, unlinks the file; and _discard_run_store_row (:3939) removes the run row the attempt's own append inserted, wired at :4014 and :4038 from _commit_landing_writes, which _complete_locked calls at :7968 with store_row_written set only when this attempt's append wrote the row.\nVERDICT done_when: Section 39's done-when \u2014 a test holds an index lock across a promotion in a temporary repository and RECKON_HOME, asserts nothing is staged, no store row remains, and a second promotion after the lock clears succeeds \u2014 is exactly what tests/test_failed_landing_leaves_nothing_behind.py:126 test_a_refused_landing_commit_leaves_nothing_behind does, with a second test covering the created-path rollback. The reviewer re-ran that file at the reviewed head b32e2df in a git-archive extraction: 2 passed in 14.72s, EXIT=0; the same file against the base tree reproduced both defects, 2 failed, EXIT=1.\nVERDICT write_paths: Four paths were declared (reckon/crew/promotion.py, tests/test_failed_landing_leaves_nothing_behind.py, docs/evidence/fragments/crew-runtime-positive-controls/failed-landing-leaves-nothing-behind.html, docs/figures/crew-runtime-positive-controls/failed-landing-leaves-nothing-behind/rollback-halves.svg). All four changed against 4efd4fde \u2014 promotion.py, the 211-line test file, the 124-line evidence fragment and the 43-line figure \u2014 and no plan or shared index was touched.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030441001089-failed-landing-leaves-nothing-behind/manifest.md. Status complete; negative_control_log is a bare path; both gate logs are named under test_logs and their EXIT lines match the arms. Its baseline_suite and after_suite fields are written as prose rather than the contract's JSON object naming a log_path, so the read-time annotation cannot resolve the arm logs; see the finding.\nVERDICT diff: Read all five commits against 4efd4fde. Net change: promotion.py gains _restore_one_landing_write, _path_has_a_staged_change and _discard_run_store_row, the store_row_written parameter and its two call sites in _commit_landing_writes, and the _complete_locked wiring; the new guard test file, evidence fragment and figure are added. Two intermediate commits (5c17c07f4, superseded, and 00abd9ad8) are on the branch but their behaviour is subsumed by the net head; nothing outside the declared paths changed.\nCALL_SITES: reckon/crew/promotion.py:7968, reckon/crew/promotion.py:7482, reckon/crew/promotion.py:2180, reckon/crew/promotion.py:4014, reckon/crew/promotion.py:4038, reckon/crew/promotion.py:6221, reckon/crew/promotion.py:6246\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:3802 gates the unlink on _path_has_a_staged_change and :4014/:4038 remove the inserted store row, so a refused landing leaves neither residue the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: The base arm reproduces both defects (2 failed, 64 passed, EXIT=1) and the head arm is green (66 passed, EXIT=0) with two negative controls each reddening a distinct id; deducted one because the head arm ran at the code commit 1b68a6b79 and no gate log names the reviewed head b32e2df.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the base..head diff is inside the four declared write paths and no plan, sprint or shared index file was touched.\nSCORE durability: 20\nJUSTIFICATION durability: Each added assertion compares against an independent source \u2014 git index state and filesystem existence \u2014 and each negative control reinstates a distinct regression (gate/negative-control-index.log, gate/negative-control-store.log) that reddens the matching id, EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: The helpers follow the module's mechanism-naming idiom and carry no plan or ticket identifier; deducted one because _discard_run_store_row (promotion.py:3939) writes raw DELETE statements against run_store's private tables because run_store exposes no removal API.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030441001089-failed-landing-leaves-nothing-behind/manifest.md:1 follow-on: the reviewed manifest writes baseline_suite and after_suite as prose rather than the contract's JSON object naming a log_path, so annotate_review_of_run cannot resolve the arm logs and a read of the record yields added_failure_count null (unmeasured) although test_logs names both logs.\nFINDING reckon/crew/promotion.py:3939 follow-on: _discard_run_store_row issues raw DELETE statements against run_store's runs and run_details tables because run_store exposes no public removal API, so a schema change in that module silently breaks the row removal this guard relies on.\nFINDING docs/plans/crew-runtime-positive-controls.html:1222 follow-on: the plan's section 39 text still carries the plan-file clause the coordinator's ruling withdrew, so the plan and the landed design disagree; only the plan owner may correct it.\nFINDING tests/test_failed_landing_leaves_nothing_behind.py:126 follow-on: no gate log in the reviewed evidence names the reviewed head b32e2df \u2014 the arm ran at the code commit 1b68a6b79 \u2014 so the full head arm's coverage of the final reviewed revision rests on the reviewer's own re-run of the guard file, not on the recorded arm.",
+  "review_run_id": "r-20261003T040652514676-review-of-failed-landing-leaves-nothing-behind",
+  "reviewed_base_sha": "4efd4fdeae367f7f5c5931a24d41e674136c0c54",
+  "reviewed_head_sha": "b32e2df094832f8be64fa4a361428e6119594982",
+  "reviewed_run_id": "r-20261003T030441001089-failed-landing-leaves-nothing-behind",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T040652514676-review-of-failed-landing-leaves-nothing-behind",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T04:15:00+00:00",
+  "total": 98
+}

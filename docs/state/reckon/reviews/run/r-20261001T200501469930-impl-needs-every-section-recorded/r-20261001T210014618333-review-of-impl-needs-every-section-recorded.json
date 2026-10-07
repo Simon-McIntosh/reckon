@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/impl-needs-every-section-recorded /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/r-20261001T200501469930-impl-needs-every-section-recorded/bt-head tests/test_a_raise_failure_is_visible.py tests/test_after_edge_reaches_every_reader.py tests/test_audit.py tests/test_build.py tests/test_directory_claim_asks_first.py tests/test_dispatch_launch_is_not_its_own_conflict.py tests/test_dispatch_reads_derivations_cheaply.py tests/test_dispatch_result_matches_launch.py tests/test_edit_plan.py tests/test_edit_plan_append_evidence.py tests/test_edit_plan_collapse_section.py tests/test_edit_plan_section_writes.py tests/test_executable_remainder.py tests/test_impl_is_computed.py tests/test_impl_needs_every_section_recorded.py tests/test_north_star_write.py tests/test_one_of_two_racing_reviews_survives.py tests/test_parse_plan_memo.py tests/test_pending_plan_limit.py tests/test_plan_review_gate.py tests/test_plan_review_store.py tests/test_project_state_cache.py tests/test_promotion_requires_impl_move.py tests/test_provenance.py tests/test_read_plan_section_view.py tests/test_record_attaches_to_existing_section.py tests/test_refused_dispatch_leaves_no_pointer.py tests/test_schema.py tests/test_scope_refusal_names_its_claimant.py tests/test_section_attempts_capability.py tests/test_section_contract_is_refused.py tests/test_section_record_round_trips.py tests/test_section_routing_reaches_dispatch.py tests/test_skill_contracts.py tests/test_spa_rendered_semantics.py tests/test_sprint_push_keeps_both_active.py tests/test_sprint_summary_lists_pending.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight",
+      "tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_made_before_the_preflight"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T200501469930-impl-needs-every-section-recorded/logs/head-suite.log",
+    "revision": "bffbfb273af36169229f3972157916f79067a25f"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/impl-needs-every-section-recorded /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/r-20261001T200501469930-impl-needs-every-section-recorded/bt-base tests/test_a_raise_failure_is_visible.py tests/test_after_edge_reaches_every_reader.py tests/test_audit.py tests/test_build.py tests/test_directory_claim_asks_first.py tests/test_dispatch_launch_is_not_its_own_conflict.py tests/test_dispatch_reads_derivations_cheaply.py tests/test_dispatch_result_matches_launch.py tests/test_edit_plan.py tests/test_edit_plan_append_evidence.py tests/test_edit_plan_collapse_section.py tests/test_edit_plan_section_writes.py tests/test_executable_remainder.py tests/test_impl_is_computed.py tests/test_north_star_write.py tests/test_one_of_two_racing_reviews_survives.py tests/test_parse_plan_memo.py tests/test_pending_plan_limit.py tests/test_plan_review_gate.py tests/test_plan_review_store.py tests/test_project_state_cache.py tests/test_promotion_requires_impl_move.py tests/test_provenance.py tests/test_read_plan_section_view.py tests/test_record_attaches_to_existing_section.py tests/test_refused_dispatch_leaves_no_pointer.py tests/test_schema.py tests/test_scope_refusal_names_its_claimant.py tests/test_section_attempts_capability.py tests/test_section_contract_is_refused.py tests/test_section_record_round_trips.py tests/test_section_routing_reaches_dispatch.py tests/test_skill_contracts.py tests/test_spa_rendered_semantics.py tests/test_sprint_push_keeps_both_active.py tests/test_sprint_summary_lists_pending.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight",
+      "tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_made_before_the_preflight"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T200501469930-impl-needs-every-section-recorded/logs/base-suite.log",
+    "revision": "1a80ecf9c8c32f1b78b398af70245fe78ec0c5e9"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T21:35:26.760Z",
+  "dispatched_at": "2026-10-01T21:00:42Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/section-contract-and-computed-impl/impl-needs-every-section-recorded.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "the fragment states the population as 145 plans over /home/ITER/mcintos/Code/reckon/docs/plans; read at the reviewed head the directory holds 146 reckon-type=plan files today and 148 were tracked at the reviewed base 1a80ecf9, so the concrete figure does not reproduce -- a moving population count in an evidence document, though the load-bearing six-row table reproduces exactly."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "two production callers of derive_impl_from_sections exist in reckon/_plan_html.py (read_state at :524 and _parse_meta_uncached at :1481), both now pass section_declarations; no other caller in reckon/ or tests/.",
+    "diff": "read 1a80ecf9..42a79ca4 file by file; reckon/_plan_html.py gains 21 lines (declarations parameter, the guard returning None on an undeclared record, both callers threading section_declarations), tests/test_impl_needs_every_section_recorded.py is 86 new lines over three read paths, docs/evidence/fragments/section-contract-and-computed-impl/impl-needs-every-section-recorded.html is 77 new lines; 104 insertions, 3 deletions in the source+test commit.",
+    "done_when": "tests/test_impl_needs_every_section_recorded.py:62 builds a plan with three done sections declared and no records plus one implementable record and asserts the authored 0.57 on read_state (:66), parse_plan (:68) and parse_meta (:70); :74 asserts the all-records plan derives 9/15; the negative control drops the coverage check and the partial case reads 0.0, EXIT=1.",
+    "goal": "section 8's rule is implemented at reckon/_plan_html.py:317-333; both callers pass declarations (read_state :524, _parse_meta_uncached :1481-1483); the six named plans read their authored impl again, reproduced independently at head.",
+    "manifest": "read run-dir manifest.md; it arms baseline_suite (2 failed 2380 passed 13 skipped EXIT=1, revision 1a80ecf9) and after_suite (2 failed 2386 passed 13 skipped EXIT=1, revision bffbfb273) with full literal commands, names the negative control EXIT=1, and stores measurement_module and measurement_cwd.",
+    "write_paths": "the node declares reckon/_plan_html.py, tests/test_impl_needs_every_section_recorded.py, the evidence fragment and a figures directory; the diff touches the first three and not the figures directory, which the done-when does not require."
+  },
+  "justifications": {
+    "durability": "with the coverage check dropped the partial-coverage case reads 0.0 and the test reddens (negative control, EXIT=1); the fully-covered case asserts the derived 9/15 on read_state, parse_plan and parse_meta.",
+    "evidence": "the head file passes 2 of 2 at 42a79ca4; I independently reproduced the six-plan authored-figure table against the real docs tree with the head module, and reproduced the negative control in a scratch copy under TMPDIR.",
+    "fit": "the docstring states the mechanism, the status comparison reuses the function's existing string vocabulary, the test module name is a descriptive node slug, and both callers are threaded in the surrounding read-path idiom.",
+    "goal_fidelity": "section 8's rule is implemented at reckon/_plan_html.py:317-333 and both callers pass declarations; the six named plans read their authored figures again at head, reproduced independently.",
+    "scope_discipline": "git diff 1a80ecf9..42a79ca4 touches only reckon/_plan_html.py, tests/test_impl_needs_every_section_recorded.py and the declared evidence fragment."
+  },
+  "manifest_note": "the reviewed manifest armed baseline_suite and after_suite; the added-failure count was derived from those two gate logs by this reviewer via reckon.crew.review.added_failures_from_gate_logs and reads 0 with the same two pre-existing ids on both arms.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 8 asks that derive_impl_from_sections in reckon/_plan_html.py take the plan's section declarations and return None -- keeping the authored plan-impl -- whenever a declared done or implementable section carries no record; reckon/_plan_html.py:317 adds the declarations parameter and returns None at :327-333 when a declared done/implementable section id is absent from the recorded set, and both callers pass declarations (read_state at reckon/_plan_html.py:524, _parse_meta_uncached at :1481-1483).\nVERDICT done_when: the done-when asks for a test building a plan with three done sections declared and no records plus one implementable record, asserting the read impl is the authored meta value; tests/test_impl_needs_every_section_recorded.py:62 is that test, it asserts the authored 0.57 on read_state (:66), parse_plan (:68) and parse_meta (:70); tests/test_impl_needs_every_section_recorded.py:74 asserts the all-records plan derives 9/15; the negative control drops the coverage check and the partial case then reads 0.0 (EXIT=1).\nVERDICT write_paths: the node declares reckon/_plan_html.py, tests/test_impl_needs_every_section_recorded.py, docs/evidence/fragments/section-contract-and-computed-impl/impl-needs-every-section-recorded.html and a figures directory; git diff --stat 1a80ecf9..bffbfb273 touches the first two (21 and 86 lines, 104 insertions, 3 deletions) and 42a79ca4 adds the fragment (77 insertions); the figures directory is not created and the done-when names no figure.\nVERDICT manifest: the reviewed manifest.md records the head gate 2 failed 2386 passed 13 skipped EXIT=1, the base gate 2 failed 2380 passed 13 skipped EXIT=1, both EXIT=1 with the same two pre-existing ids; it arms baseline_suite and after_suite with full literal commands, names the negative control (EXIT=1) and the six-plan derivation, and stores measurement_module/measurement_cwd.\nVERDICT diff: read 1a80ecf9..bffbfb273 file by file; the source change is 21 lines in reckon/_plan_html.py -- the signature gains declarations=None, the guard builds the recorded-id set and returns None on an undeclared record, and both callers thread section_declarations through; the new test is 86 lines over three read paths.\nVERDICT call_sites: two production callers of derive_impl_from_sections exist in reckon/_plan_html.py (read_state and _parse_meta_uncached) and both now pass declarations; no other caller exists in reckon/ or tests/.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the guard is exactly section 8's rule; I reproduced the six named plans reading their authored figures again at head over the real docs tree (crew-observability-truth 0.57, scoring-should-stop-a-promotion 0.98, dependency-edge-semantics 0.97, a-review-dies-where-nobody-is-looking 0.88, the-ledger-is-one-file-per-run 0.5, crew-runtime-positive-controls 1.0, all impl_source authored).\nSCORE evidence: 18\nJUSTIFICATION evidence: the head file passes 2 of 2 at 42a79ca4; I reproduced the six-plan table independently against the head module, and reproduced the negative control in a scratch copy under TMPDIR (coverage check removed; the partial-coverage case reads 0.0, 1 failed 1 passed).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 1a80ecf9..42a79ca4 touches only the three declared paths, no product surface beyond the one function it names.\nSCORE durability: 19\nJUSTIFICATION durability: the guard is pinned by two tests that fail when it is removed -- the negative control shows the partial case reading 0.0 with the coverage check dropped, and the fully-covered case asserts the derived 9/15 on all three read paths.\nSCORE fit: 18\nJUSTIFICATION fit: the docstring states the mechanism, the classification comparison reuses the existing status string vocabulary, the test module name is a descriptive node slug with no plan or stage label, and both callers are threaded in the same idiom as the surrounding read paths.\nFINDING docs/evidence/fragments/section-contract-and-computed-impl/impl-needs-every-section-recorded.html:24 the fragment states the population as 145 plans over /home/ITER/mcintos/Code/reckon/docs/plans; read at the reviewed head the directory holds 146 reckon-type=plan files today and 148 were tracked at the reviewed base 1a80ecf9, so the concrete figure does not reproduce -- a moving population count in an evidence document, though the load-bearing six-row table reproduces exactly.\n",
+  "review_run_id": "r-20261001T210014618333-review-of-impl-needs-every-section-recorded",
+  "reviewed_base_sha": "1a80ecf9c8c32f1b78b398af70245fe78ec0c5e9",
+  "reviewed_head_sha": "42a79ca4368e2a6d380bb1ab882cb333f6d68944",
+  "reviewed_run_id": "r-20261001T200501469930-impl-needs-every-section-recorded",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T210014618333-review-of-impl-needs-every-section-recorded",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T21:21:59.140111+00:00",
+  "total": 94
+}

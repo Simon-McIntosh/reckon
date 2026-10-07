@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8652b7e11875d6e48f9a2419dce4402c603ea8d4",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:fleet_transitions",
+    "reckon/crew/ticker.py:_bucket_of",
+    "reckon/cli.py:_needs_you_runs"
+  ],
+  "completed_at": "2026-10-02T02:36:28.768Z",
+  "dispatched_at": "2026-10-02T02:25:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8072",
+      "severity": "follow-on",
+      "text": "follow-on: the `recorded is None` return precedes the discard check, so a departure whose snapshot names no project and whose run directory holds a discard marker now reads departed instead of the discarded the base revision returned, dropping the deliberate-discard evidence exactly when the ledger cannot be resolved; no test covers a discard marker with an unresolvable ledger, and the manifest's \"discarded from a discard marker\" holds only when a project is named."
+    }
+  ],
+  "head_log_revision": "6b7a054075d341f8cdb92ea53a5f08de13e24f8d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 6b7a0540 against base 8652b7e1; it adds the departed short-circuit to _departure_word, adds departed to STATE_HUE in both themes and to FLEET_UNPROMOTED_STATES, strengthens the resolved-ledger case to assert \"withdrawn\", and renames the unresolvable case to assert \"departed\".",
+    "done_when": "the done-when requires departed when no ledger resolves, promoted only from a recorded row, discarded from a discard marker and withdrawn from a resolved ledger with no row, the ticker and fleet buckets each carry the word, the renamed test asserts it, and the four named modules show zero added failures.",
+    "goal": "the goal is that a departure with no ledger evidence reads departed, a word promising neither promotion nor withdrawal; reckon/crew/recovery.py:8072 adds `if recorded is None: return \"departed\"` ahead of the discard and withdrawn returns and tests/test_a_live_run_never_reads_dead.py:585 asserts it.",
+    "manifest": "read; it reports head-arm.log 62 passed EXIT=0 and base-arm.log 61 passed/1 failed EXIT=1, names the declared negative control and its failure text, and discloses under follow_ons the one out-of-scope test it reddens and the unclaimed WATCH_* lines in reckon/crew/runs.py.",
+    "write_paths": "the manifest declares six paths and `git diff --numstat 8652b7e1 6b7a0540` lists exactly four changed files (reckon/crew/recovery.py, reckon/crew/ticker.py, tests/test_a_live_run_never_reads_dead.py and the evidence fragment), every one inside the fence, with tests/test_fleet_counter_coverage.py correctly declared-but-untouched."
+  },
+  "justifications": {
+    "durability": "the assertion at tests/test_a_live_run_never_reads_dead.py:585 compares the call's return against the literal word rather than a value the test supplied, and the negative control proves it reddens when the departed branch is removed.",
+    "evidence": "every done-when clause is recorded in logs/base-arm.log and logs/head-arm.log, the added-failure set difference over the two arms is empty, and the declared negative control (logs/negative-control.log, EXIT=1) shows the renamed case failing when the branch is removed.",
+    "fit": "the short-circuit follows the module's own precedence idiom and the comment voice of reckon/crew/recovery.py:7911-7917, and no plan label or ticket identifier appears in any staged path or symbol.",
+    "goal_fidelity": "reckon/crew/recovery.py:8072 returns departed exactly when `recorded is None`, the goal's no-ledger-evidence condition, and tests/test_a_live_run_never_reads_dead.py:585 asserts the returned word.",
+    "scope_discipline": "`git diff --numstat 8652b7e1 6b7a0540` lists four files, each under a declared write path, and the change touches no product source the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a departure with no ledger evidence reads departed, a word promising neither promotion nor withdrawal; reckon/crew/recovery.py:8072 adds `if recorded is None: return \"departed\"` ahead of the discard and withdrawn returns and tests/test_a_live_run_never_reads_dead.py:585 asserts it.\nVERDICT done_when: the done-when requires departed when no ledger resolves, promoted only from a recorded row, discarded from a discard marker and withdrawn from a resolved ledger with no row, the ticker and fleet buckets each carry the word, the renamed test asserts it, and the four named modules show zero added failures.\nVERDICT write_paths: the manifest declares six paths and `git diff --numstat 8652b7e1 6b7a0540` lists exactly four changed files (reckon/crew/recovery.py, reckon/crew/ticker.py, tests/test_a_live_run_never_reads_dead.py and the evidence fragment), every one inside the fence, with tests/test_fleet_counter_coverage.py correctly declared-but-untouched.\nVERDICT manifest: read; it reports head-arm.log 62 passed EXIT=0 and base-arm.log 61 passed/1 failed EXIT=1, names the declared negative control and its failure text, and discloses under follow_ons the one out-of-scope test it reddens and the unclaimed WATCH_* lines in reckon/crew/runs.py.\nVERDICT diff: read commit 6b7a0540 against base 8652b7e1; it adds the departed short-circuit to _departure_word, adds departed to STATE_HUE in both themes and to FLEET_UNPROMOTED_STATES, strengthens the resolved-ledger case to assert \"withdrawn\", and renames the unresolvable case to assert \"departed\".\nCALL_SITES: reckon/crew/recovery.py:fleet_transitions, reckon/crew/ticker.py:_bucket_of, reckon/cli.py:_needs_you_runs\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:8072 returns departed exactly when `recorded is None`, the goal's no-ledger-evidence condition, and tests/test_a_live_run_never_reads_dead.py:585 asserts the returned word.\nSCORE evidence: 19\nJUSTIFICATION evidence: every done-when clause is recorded in logs/base-arm.log and logs/head-arm.log, the added-failure set difference over the two arms is empty, and the declared negative control (logs/negative-control.log, EXIT=1) shows the renamed case failing when the branch is removed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --numstat 8652b7e1 6b7a0540` lists four files, each under a declared write path, and the change touches no product source the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the assertion at tests/test_a_live_run_never_reads_dead.py:585 compares the call's return against the literal word rather than a value the test supplied, and the negative control proves it reddens when the departed branch is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the short-circuit follows the module's own precedence idiom and the comment voice of reckon/crew/recovery.py:7911-7917, and no plan label or ticket identifier appears in any staged path or symbol.\nFINDING reckon/crew/recovery.py:8072 follow-on: the `recorded is None` return precedes the discard check, so a departure whose snapshot names no project and whose run directory holds a discard marker now reads departed instead of the discarded the base revision returned, dropping the deliberate-discard evidence exactly when the ledger cannot be resolved; no test covers a discard marker with an unresolvable ledger, and the manifest's \"discarded from a discard marker\" holds only when a project is named.",
+  "review_run_id": "r-20261002T022516263918-review-of-an-unknown-departure-reads-departed",
+  "reviewed_base_sha": "8652b7e11875d6e48f9a2419dce4402c603ea8d4",
+  "reviewed_head_sha": "6b7a054075d341f8cdb92ea53a5f08de13e24f8d",
+  "reviewed_run_id": "r-20261002T021115444941-an-unknown-departure-reads-departed",
+  "reviewer": {
+    "backend": "local",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T022516263918-review-of-an-unknown-departure-reads-departed",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.285725+00:00",
+  "total": 97
+}

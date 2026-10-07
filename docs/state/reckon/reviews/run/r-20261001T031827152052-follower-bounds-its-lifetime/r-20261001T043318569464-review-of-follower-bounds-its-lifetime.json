@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs: base (gate-base.log, 33c5e761) reports 3 FAILED, head (gate-head.log, 9ac0530) reports none, so the head adds no failing node id",
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:3560",
+    "reckon/crew/dispatch.py:5023"
+  ],
+  "completed_at": "2026-10-01T05:02:36.835Z",
+  "dispatched_at": "2026-10-01T04:33:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1159",
+      "severity": "follow-on",
+      "text": "follow-on: the earliest return in _watcher_delivery_admission, `if launch_kind != \"cli\":` admits a non-cli launch before any follower condition is judged, and with the base's ungated `raise WatcherRequired` at reckon/crew/dispatch.py:4909 removed, an in-harness launch with watch_required=True and no live producer (the state dispatch() still reaches through _ensure_watch_producer) is now admitted where the base refused it; the change is undisclosed in the manifest and no test covers it."
+    },
+    {
+      "file": "tests/test_follower_bounds_its_lifetime.py",
+      "line": "432",
+      "severity": "follow-on",
+      "text": "follow-on: the reload assertion is green at both base and head in this arm (the base arm's three failures exclude it), so the deadline fix's only named guard does not fail when the behaviour it guards is absent; and the child-environment case's post-reload half asserts over the probe dump only if the replacement image runs its sweep before the deadline, so its coverage of the checkpoint hand-over is timing-dependent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; ad8cbac bounds the poll and rewrites admission, 5b7312b adds the test module, 9ac0530 formats and drops an unused import, beb1985 records the fragment.",
+    "done_when": "the four cases are in tests/test_follower_bounds_its_lifetime.py; the manifest's head arm at 9ac0530 records 42 passed EXIT=0 and the base arm at 33c5e761 records 3 failed, 39 passed EXIT=1, both logged on disk, and the declared negative control is red.",
+    "goal": "the node lands four items of the follower hand-off in one change; reckon/cli.py:2852 bounds a sweep poll by the arming deadline, reckon/cli.py:3497 fixes that deadline once at the arming, reckon/cli.py:3512 drops the arming variable from the follower's own environment, and reckon/crew/dispatch.py:1030 names every unmet follower condition in one refusal.",
+    "manifest": "read; status complete, four commits listed, baseline_suite and after_suite both carry completed true with on-disk logs, and negative_control_log is the bare path to the red log.",
+    "write_paths": "the manifest declares reckon/cli.py, reckon/crew/dispatch.py, the new test module and the evidence fragment; the base..head diff touches exactly those four paths and no other."
+  },
+  "justifications": {
+    "durability": "three of the four cases redden at base (the manifest's base arm names exactly test_a_poll_that_outlives_the_deadline_is_abandoned, test_no_child_of_an_armed_follower_carries_the_hand_off_variables and test_a_refusal_names_every_unmet_follower_condition_and_the_one_command), but the reload case is green at base too, so it does not discriminate the deadline fix it is recorded to guard.",
+    "evidence": "both arms are recorded with their own logs \u2014 head 42 passed EXIT=0 at 9ac0530 and base 3 failed, 39 passed EXIT=1 at 33c5e761 \u2014 and the base failures are exactly the three discriminating ids, so the gate asserts the done_when and the result is in the record rather than claimed.",
+    "fit": "the change follows the surrounding idiom of reckon/cli.py and reckon/crew/dispatch.py, its log lines describe the measured mechanism with no plan or ticket identifiers, and the new names read by what they do.",
+    "goal_fidelity": "all four hand-off items are implemented and observable at this head \u2014 reckon/cli.py:2850 runs the sweep on a thread joined for the remaining lifetime, reckons/cli.py:3497 carries one absolute deadline across a reload, reckon/cli.py:3512 pops WATCH_ARMING_ENV, and reckon/crew/dispatch.py:1030 lists every unmet condition.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, but reckon/crew/dispatch.py:1159 now returns None for a non-cli launch before any follower condition is judged, so the removed ungated watcher_live refusal (base reckon/crew/dispatch.py:4909) makes an in-harness launch newly admitted without a live producer, which the goal did not call for."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 33c5e761d89f0b824441d24c5a980ba2725631f7\nreviewed_head_sha: beb1985120c88825083fb7908f5fd4ed3a83d233\nVERDICT goal: the node lands four items of the follower hand-off in one change; reckon/cli.py:2852 bounds a sweep poll by the arming deadline, reckon/cli.py:3497 fixes that deadline once at the arming, reckon/cli.py:3512 drops the arming variable from the follower's own environment, and reckon/crew/dispatch.py:1030 names every unmet follower condition in one refusal.\nVERDICT done_when: the four cases are in tests/test_follower_bounds_its_lifetime.py; the manifest's head arm at 9ac0530 records 42 passed EXIT=0 and the base arm at 33c5e761 records 3 failed, 39 passed EXIT=1, both logged on disk, and the declared negative control is red.\nVERDICT write_paths: the manifest declares reckon/cli.py, reckon/crew/dispatch.py, the new test module and the evidence fragment; the base..head diff touches exactly those four paths and no other.\nVERDICT manifest: read; status complete, four commits listed, baseline_suite and after_suite both carry completed true with on-disk logs, and negative_control_log is the bare path to the red log.\nVERDICT diff: read commit by commit; ad8cbac bounds the poll and rewrites admission, 5b7312b adds the test module, 9ac0530 formats and drops an unused import, beb1985 records the fragment.\nCALL_SITES: reckon/cli.py:3560, reckon/crew/dispatch.py:5023\nSCORE goal_fidelity: 18\nSCORE evidence: 17\nSCORE scope_discipline: 15\nSCORE durability: 14\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: all four hand-off items are implemented and observable at this head \u2014 reckon/cli.py:2850 runs the sweep on a thread joined for the remaining lifetime, reckons/cli.py:3497 carries one absolute deadline across a reload, reckon/cli.py:3512 pops WATCH_ARMING_ENV, and reckon/crew/dispatch.py:1030 lists every unmet condition.\nJUSTIFICATION evidence: both arms are recorded with their own logs \u2014 head 42 passed EXIT=0 at 9ac0530 and base 3 failed, 39 passed EXIT=1 at 33c5e761 \u2014 and the base failures are exactly the three discriminating ids, so the gate asserts the done_when and the result is in the record rather than claimed.\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, but reckon/crew/dispatch.py:1159 now returns None for a non-cli launch before any follower condition is judged, so the removed ungated watcher_live refusal (base reckon/crew/dispatch.py:4909) makes an in-harness launch newly admitted without a live producer, which the goal did not call for.\nJUSTIFICATION durability: three of the four cases redden at base (the manifest's base arm names exactly test_a_poll_that_outlives_the_deadline_is_abandoned, test_no_child_of_an_armed_follower_carries_the_hand_off_variables and test_a_refusal_names_every_unmet_follower_condition_and_the_one_command), but the reload case is green at base too, so it does not discriminate the deadline fix it is recorded to guard.\nJUSTIFICATION fit: the change follows the surrounding idiom of reckon/cli.py and reckon/crew/dispatch.py, its log lines describe the measured mechanism with no plan or ticket identifiers, and the new names read by what they do.\nFINDING reckon/crew/dispatch.py:1159 follow-on: the earliest return in _watcher_delivery_admission, `if launch_kind != \"cli\":` admits a non-cli launch before any follower condition is judged, and with the base's ungated `raise WatcherRequired` at reckon/crew/dispatch.py:4909 removed, an in-harness launch with watch_required=True and no live producer (the state dispatch() still reaches through _ensure_watch_producer) is now admitted where the base refused it; the change is undisclosed in the manifest and no test covers it.\nFINDING tests/test_follower_bounds_its_lifetime.py:432 follow-on: the reload assertion is green at both base and head in this arm (the base arm's three failures exclude it), so the deadline fix's only named guard does not fail when the behaviour it guards is absent; and the child-environment case's post-reload half asserts over the probe dump only if the replacement image runs its sweep before the deadline, so its coverage of the checkpoint hand-over is timing-dependent.\n",
+  "review_run_id": "r-20261001T043318569464-review-of-follower-bounds-its-lifetime",
+  "reviewed_base_sha": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "reviewed_head_sha": "beb1985120c88825083fb7908f5fd4ed3a83d233",
+  "reviewed_run_id": "r-20261001T031827152052-follower-bounds-its-lifetime",
+  "reviewer_run_id": "r-20261001T043318569464-review-of-follower-bounds-its-lifetime",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.112717+00:00",
+  "total": 82
+}

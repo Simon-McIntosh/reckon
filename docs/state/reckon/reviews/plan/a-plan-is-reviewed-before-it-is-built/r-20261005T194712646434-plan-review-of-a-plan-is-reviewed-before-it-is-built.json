@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T19:52:18.634Z",
+  "dispatched_at": "2026-10-05T19:47:32Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:817",
+      "id": "duplicate_owner-1",
+      "reason": "the author must either exempt `_insert_authored_section` and the two contract readers by site (and widen the rule's enumerated forms to match, since a rule blind to `select_one` and string heading finds would pass with a second walk alive \u2014 the exact undercount the section says it exists to prevent) or narrow the \"nothing in `_store.py`\" done-when, and one of those is required before the \u00a717 gate can pass.",
+      "text": "`_insert_authored_section` calls `body_soup.find(\"h2\")` (817) to reject a nested heading and spells an inline `<section\\b[^>]*>` regex beside `_SECTION_OPEN_RE` (825); the section-contract readers call `find_all(\"h2\", id=True)` on synthesized fragments (`_require_section_contract` at 1791 and `_require_new_section_contracts` at 1817/1820). None of these is among the thirteen names \u00a717 moves to `_plan_html.py` and none is listed as an exemption, yet \u00a717 states \"every heading walk in the package is rewritten to call the reader\" and its done-when demands the heading-walk rule report nothing in `_store.py`. Two of these (817, 819/825) walk a caller-supplied body fragment rather than the plan document, and two (1791, 1817/1820) walk a synthesized before/after HTML, so they cannot call a document-level `plan_headings` \u2014 they are structural-validity checks, not section locators \u2014 but the design names neither the exemption nor the rewrite for them. It also shows the rule's method list is under-specified: it enumerates `find_all`, `find` and `select`, while the tree additionally uses `select_one` and string `html_text.find(\"</h2>\")` (925, 955) forms the rule does not name.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c56b97403136102fc1434318e3d940db9ba57367894d008bbdfb831d441dceec",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 121,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T194712646434-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "5f6896911462ba5dda28b3b11f56c1f280fb40a1",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the complexity lands behind one private `_StructuredSectionSpanParser` projected by `plan_headings`, one module-private `_section_digests`, and one coverage predicate that is a join over the existing `list_plan_reviews` and the outstanding-sections reader rather than a new walk.",
+    "duplicate_owner": "a finding \u2014 `reckon/_store.py` retains heading walks the \u00a717 design does not name among its thirteen moved helpers or its exemptions, so its done-when requiring the heading-walk rule to report \"nothing in `reckon/_store.py`\" cannot hold.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 names one added public definition (`strip_tags`), \u00a717 two (`plan_headings` plus the machinery predicate) with `landed_section_ids` a re-homed same-name move, and \u00a718 one (the classification predicate), each stating in its own text why nothing can be retired; no section adds to cli_options, mcp_views or refusal_families (\u00a716 explicitly reuses the plan-review-missing family).",
+    "reuse_search": "pass \u2014 the design (\u00a716\u2013\u00a718) cites the existing machinery it extends, and its own censuses reproduce exactly at the head I measured: `grep -rn '\"data-reckon\"' reckon/` = 14 lines across 5 files (`_plan_html.py` 4, `_store.py` 3, `mcp_views.py` 5, `plan_review.py` 1, `doccheck.py` 1), `grep -rn 'section-landed' reckon/` = 5 non-docstring sites, `grep -rn 'c-run-' reckon/` = the two named owners, and `grep -rn '== \"implementable\"' reckon/` = the six named lines.",
+    "thin_wrapper": "pass \u2014 `strip_tags` (reckon/_plan_html.py, over the existing `_TAG_RE`), `plan_headings` and the machinery-element predicate each name a distinct consumer that crosses a package boundary, and `structured_section_spans` and `landed_section_ids` are re-expressed rather than forked."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.775841+00:00"
+}

@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 8,
+  "added_failure_ids": [
+    "tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field",
+    "tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session",
+    "tests/test_dispatch_declares_the_run_it_repairs.py::test_an_unreadable_ledger_refuses_with_the_ledger_reason",
+    "tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set",
+    "tests/test_landing_contract_and_gate_agree.py::test_every_default_role_agrees_with_the_promotion_gate",
+    "tests/test_picker_return_time.py::test_lane_document_is_read",
+    "tests/test_producer_takes_new_code.py::test_the_follow_json_surface_carries_the_stale_producer",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:reserve-without-five-hour-window]"
+  ],
+  "added_failures_source": "Derived from the reviewed run's own gate logs as the node requires. baseline_suite log (revision ca630c06e894d95111a8627b11d02a023aa270dd): 17 failing ids. after_suite log suite-at-head-attempt4.log (revision a08a2baae993a98d6b7172b403a103110bb1e012): 12 failing ids. Set difference head-minus-base = 8 ids, independently recomputed with reckon.crew.review.added_failures_from_gate_logs and by hand: the 5 added deterministic ids the fragment counts, plus 3 load-only ids absent from the baseline (producer_takes_new_code, landing_contract_and_gate_agree, crew_ephemeral_members). The two landing_write_races parametrisations are NOT added: they appear in the baseline's own failing set.",
+  "completed_at": "2026-10-02T22:48:25.032Z",
+  "dispatched_at": "2026-10-02T22:39:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html",
+      "line": "103",
+      "severity": "follow-on",
+      "text": "follow-on: the three load-only head failures that are genuinely absent from the baseline (tests/test_producer_takes_new_code.py::test_the_follow_json_surface_carries_the_stale_producer, tests/test_landing_contract_and_gate_agree.py::test_every_default_role_agrees_with_the_promotion_gate, tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session) receive no candidate-commit attribution and are excluded from the measure by its deterministic-only definition, so a picker or dispatch cause among them would leave the measure of 3 understating the picker-contact added failures."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site can reach a static evidence fragment; the change is documentation only",
+    "diff": "read the diff a08a2baa..91cfcbe3 (one path): the new fragment records the whole-suite command, the 12 failing ids, the solo re-run table, the closing-head classification, the five added deterministic ids with candidates, and the measure; no product source or test file changed.",
+    "done_when": "the done-when's command, one logged run with its EXIT line, every failing id, the deterministic/load-only split and the baseline classification are all present in docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html; suite-at-head-attempt4.log ends EXIT=1 with the summary '12 failed, 10268 passed, 76 skipped, 59 warnings in 1740.83s' and solo-rerun.log holds 12 one-test processes reading 7 failed / 5 passed.",
+    "goal": "the node's goal is to measure the whole suite at head against the 2026-10-02 baseline, and docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html does exactly that: one whole-suite run at a08a2baae, every failing id, a solo re-run separating deterministic from load-only, a classification against suite-closing.json, a candidate commit per added deterministic id, and the measure 3.",
+    "manifest": "read; status complete, commits 91cfcbe3c, baseline_suite revision ca630c06 with 17 failing ids and after_suite revision a08a2baae with 12, both completed with EXIT=1, and a per-id failure_attribution naming candidates.",
+    "write_paths": "the one commit 91cfcbe3c touches only the declared fragment path docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html (+135 lines); the granted figure path docs/figures/one-typesafe-model-picker/suite-at-head is unused and correctly so, because the done-when names no figure artifact."
+  },
+  "justifications": {
+    "durability": "the node is documentation-only and adds no test, so no assertion fails if the fragment's numbers drift; its claims are nonetheless reproducible from persisted artifacts, and I independently recomputed the head/baseline failing sets and the added-failure set difference (8 ids) from the two gate logs, but nothing guards the fragment automatically.",
+    "evidence": "suite-at-head-attempt4.log's own summary line reads '12 failed, 10268 passed, 76 skipped, 59 warnings in 1740.83s' and it ends 'EXIT=1' at revision a08a2baae with no ENOSPC, and the baseline record suite-closing.json at ca630c06 carries the 17 failing ids the manifest's baseline_suite names; the numbers are recorded in logs, not merely claimed.",
+    "fit": "docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html follows the landed-report <article class=\"landed-report\"> convention of the sibling fragments and names no plan label, sprint id or version suffix in its text or in the commit subject/body.",
+    "goal_fidelity": "the fragment records the whole-suite run at a08a2baae with 12 failing ids, re-runs each alone (solo-rerun.log, 7 deterministic / 5 load-only), classifies the 7 deterministic against the closing-head set (suite-closing.json, 14 deterministic + 3 load-only) as 2 pre-existing / 5 added, and closes with the measure 3, which I reconciled against both gate logs.",
+    "scope_discipline": "the single commit 91cfcbe3c adds exactly the declared fragment docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html (+135) and nothing else, and the granted figure path is unused because the done-when names no figure."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: a08a2baae993a98d6b7172b403a103110bb1e012\nreviewed_head_sha: 91cfcbe3c77c572f307ac340d642f2af83bf58d2\nVERDICT goal: the node's goal is to measure the whole suite at head against the 2026-10-02 baseline, and docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html does exactly that: one whole-suite run at a08a2baae, every failing id, a solo re-run separating deterministic from load-only, a classification against suite-closing.json, a candidate commit per added deterministic id, and the measure 3.\nVERDICT done_when: the done-when's command, one logged run with its EXIT line, every failing id, the deterministic/load-only split and the baseline classification are all present in docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html; suite-at-head-attempt4.log ends EXIT=1 with the summary '12 failed, 10268 passed, 76 skipped, 59 warnings in 1740.83s' and solo-rerun.log holds 12 one-test processes reading 7 failed / 5 passed.\nVERDICT write_paths: the one commit 91cfcbe3c touches only the declared fragment path docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html (+135 lines); the granted figure path docs/figures/one-typesafe-model-picker/suite-at-head is unused and correctly so, because the done-when names no figure artifact.\nVERDICT manifest: read; status complete, commits 91cfcbe3c, baseline_suite revision ca630c06 with 17 failing ids and after_suite revision a08a2baae with 12, both completed with EXIT=1, and a per-id failure_attribution naming candidates.\nVERDICT diff: read the diff a08a2baa..91cfcbe3 (one path): the new fragment records the whole-suite command, the 12 failing ids, the solo re-run table, the closing-head classification, the five added deterministic ids with candidates, and the measure; no product source or test file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the fragment records the whole-suite run at a08a2baae with 12 failing ids, re-runs each alone (solo-rerun.log, 7 deterministic / 5 load-only), classifies the 7 deterministic against the closing-head set (suite-closing.json, 14 deterministic + 3 load-only) as 2 pre-existing / 5 added, and closes with the measure 3, which I reconciled against both gate logs.\nSCORE evidence: 19\nJUSTIFICATION evidence: suite-at-head-attempt4.log's own summary line reads '12 failed, 10268 passed, 76 skipped, 59 warnings in 1740.83s' and it ends 'EXIT=1' at revision a08a2baae with no ENOSPC, and the baseline record suite-closing.json at ca630c06 carries the 17 failing ids the manifest's baseline_suite names; the numbers are recorded in logs, not merely claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single commit 91cfcbe3c adds exactly the declared fragment docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html (+135) and nothing else, and the granted figure path is unused because the done-when names no figure.\nSCORE durability: 15\nJUSTIFICATION durability: the node is documentation-only and adds no test, so no assertion fails if the fragment's numbers drift; its claims are nonetheless reproducible from persisted artifacts, and I independently recomputed the head/baseline failing sets and the added-failure set difference (8 ids) from the two gate logs, but nothing guards the fragment automatically.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html follows the landed-report <article class=\"landed-report\"> convention of the sibling fragments and names no plan label, sprint id or version suffix in its text or in the commit subject/body.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/suite-at-head.html:103 follow-on: the three load-only head failures that are genuinely absent from the baseline (tests/test_producer_takes_new_code.py::test_the_follow_json_surface_carries_the_stale_producer, tests/test_landing_contract_and_gate_agree.py::test_every_default_role_agrees_with_the_promotion_gate, tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session) receive no candidate-commit attribution and are excluded from the measure by its deterministic-only definition, so a picker or dispatch cause among them would leave the measure of 3 understating the picker-contact added failures.\n",
+  "review_run_id": "r-20261002T223930102231-review-of-suite-at-head",
+  "reviewed_base_sha": "a08a2baae993a98d6b7172b403a103110bb1e012",
+  "reviewed_head_sha": "91cfcbe3c77c572f307ac340d642f2af83bf58d2",
+  "reviewed_run_id": "r-20261002T202015024095-suite-at-head",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T22:45:55.807613+00:00",
+  "total": 90
+}

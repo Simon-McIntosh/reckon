@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7132e05199f30edcb626f9b7530d7452e86f5e58",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:4165 _evaluate_suite_delta (the new unchanged branch)",
+    "reckon/crew/promotion.py:585 _manifest_declares_no_change",
+    "reckon/crew/promotion.py:612 _worktree_unchanged_since_base",
+    "reckon/ledger.py:3181 summary suite_deltas tally"
+  ],
+  "completed_at": "2026-09-30T23:30:37.091Z",
+  "dispatched_at": "2026-09-30T22:57:59Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T225738040125-review-of-an-unchanged-run-needs-no-suite-pair/gate-unchanged-run.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's gate log records its command with a literal `<venv>` placeholder in place of the interpreter path, so the header names a command that was never run and a reader cannot reproduce the arm from the log."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "612",
+      "severity": "follow-on",
+      "text": "follow-on: _worktree_unchanged_since_base returns True (vacuous) when the worktree is gone and reads only `git diff --name-only HEAD`, so neither untracked deliverables nor a reclaimed worktree are seen; an armed run that declared no changed path but left untracked files, or whose worktree was reclaimed, is exempted without a full worktree proof."
+    }
+  ],
+  "head_log_revision": "ba7c0c749ed18a9681a281213f8f169d558bb69a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit ba7c0c7 against base 7132e05; 99 added lines in promotion.py (_manifest_declares_no_change, _worktree_unchanged_since_base, _run_changed_nothing, and the unchanged branch in _evaluate_suite_delta), one line in ledger.py, 224 lines of new test, one line in tests/test_ledger.py, and a 59-line evidence fragment.",
+    "done_when": "the done-when names the unchanged exemption plus the two refusals (head moved past base; empty manifest contradicted by a moved worktree) as tests; all three pass at ba7c0c7 and the exemption case reddens without the guard (negative control EXIT=1).",
+    "goal": "promotion._evaluate_suite_delta now returns a suite_delta of status \"unchanged\" for an armed run whose fresh manifest declares no changed path and no commit beyond the base over a worktree still sitting on that base, so an unchanged run promotes without a baseline/after suite pair; tests/test_an_unchanged_run_needs_no_suite_pair.py drives the exemption and the two refusals, all green at the reviewed head.",
+    "manifest": "read at the run directory; status complete, commit ba7c0c74 named, three logs named, the negative-control path and its declared string recorded, and both arm logs on disk; the manifest names no baseline_suite/after_suite pair, so this review ran the two arms itself and derived the added-failure pair through the store's own reader.",
+    "write_paths": "the diff touches five paths; four are inside the declared fence (reckon/crew/promotion.py, reckon/ledger.py, the new test file, the evidence fragment) and tests/test_ledger.py is outside it, disclosed in the manifest's follow_ons as a one-line tally assertion the required ledger key change broke."
+  },
+  "justifications": {
+    "durability": "the exemption and both refusals are driven by tests that redden without the guard (negative control), and the tests build a real git repository and read the worktree rather than comparing a value against the input the test passed in; held back because the worktree-gone and untracked-file edges are neither tested nor named.",
+    "evidence": "the run records a gate (3 passed), a second focused gate (1 passed), and a negative control whose first line repeats the declared mutation verbatim and whose last line is EXIT=1 with the expected missing-suite refusal; docked because the gate log's own command line carries a literal `<venv>` placeholder rather than the interpreter path, so the recorded command is not the literal command that ran, and because the run names no baseline_suite/after_suite pair so its added-failure count is unmeasured from its own record (this review supplied the pair).",
+    "fit": "the three helpers follow the module's existing read-then-verify style with mechanism docstrings, the commit body states the why without plan or ticket identifiers or attribution, and the ledger tally gains the new key beside its siblings.",
+    "goal_fidelity": "the goal is met at the changed revision: an armed run whose manifest declares no change over a worktree still on its base returns suite_delta status unchanged with the suite_command and an empty added_failure_ids, and both refusal paths still refuse with missing baseline_suite, after_suite; held back one point because the worktree half is vacuous when the worktree is gone, so the exemption can be granted on the manifest claim alone.",
+    "scope_discipline": "four of the five changed paths are inside the declared fence and the fifth (tests/test_ledger.py) is a one-line tally assertion the required ledger key change broke; it is outside the fence but is disclosed in the manifest and touches no concurrent node, so the discipline is good but not perfect."
+  },
+  "node": "review-of-an-unchanged-run-needs-no-suite-pair",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: promotion._evaluate_suite_delta now returns a suite_delta of status \"unchanged\" for an armed run whose fresh manifest declares no changed path and no commit beyond the base over a worktree still sitting on that base, so an unchanged run promotes without a baseline/after suite pair; tests/test_an_unchanged_run_needs_no_suite_pair.py drives the exemption and the two refusals, all green at the reviewed head.\nVERDICT done_when: the done-when names the unchanged exemption plus the two refusals (head moved past base; empty manifest contradicted by a moved worktree) as tests; all three pass at ba7c0c7 and the exemption case reddens without the guard (negative control EXIT=1).\nVERDICT write_paths: the diff touches five paths; four are inside the declared fence (reckon/crew/promotion.py, reckon/ledger.py, the new test file, the evidence fragment) and tests/test_ledger.py is outside it, disclosed in the manifest's follow_ons as a one-line tally assertion the required ledger key change broke.\nVERDICT manifest: read at the run directory; status complete, commit ba7c0c74 named, three logs named, the negative-control path and its declared string recorded, and both arm logs on disk; the manifest names no baseline_suite/after_suite pair, so this review ran the two arms itself and derived the added-failure pair through the store's own reader.\nVERDICT diff: read commit ba7c0c7 against base 7132e05; 99 added lines in promotion.py (_manifest_declares_no_change, _worktree_unchanged_since_base, _run_changed_nothing, and the unchanged branch in _evaluate_suite_delta), one line in ledger.py, 224 lines of new test, one line in tests/test_ledger.py, and a 59-line evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:4165 _evaluate_suite_delta (the new unchanged branch), reckon/crew/promotion.py:585 _manifest_declares_no_change, reckon/crew/promotion.py:612 _worktree_unchanged_since_base, reckon/ledger.py:3181 summary suite_deltas tally\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is met at the changed revision: an armed run whose manifest declares no change over a worktree still on its base returns suite_delta status unchanged with the suite_command and an empty added_failure_ids, and both refusal paths still refuse with missing baseline_suite, after_suite; held back one point because the worktree half is vacuous when the worktree is gone, so the exemption can be granted on the manifest claim alone.\nSCORE evidence: 17\nJUSTIFICATION evidence: the run records a gate (3 passed), a second focused gate (1 passed), and a negative control whose first line repeats the declared mutation verbatim and whose last line is EXIT=1 with the expected missing-suite refusal; docked because the gate log's own command line carries a literal `<venv>` placeholder rather than the interpreter path, so the recorded command is not the literal command that ran, and because the run names no baseline_suite/after_suite pair so its added-failure count is unmeasured from its own record (this review supplied the pair).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: four of the five changed paths are inside the declared fence and the fifth (tests/test_ledger.py) is a one-line tally assertion the required ledger key change broke; it is outside the fence but is disclosed in the manifest and touches no concurrent node, so the discipline is good but not perfect.\nSCORE durability: 18\nJUSTIFICATION durability: the exemption and both refusals are driven by tests that redden without the guard (negative control), and the tests build a real git repository and read the worktree rather than comparing a value against the input the test passed in; held back because the worktree-gone and untracked-file edges are neither tested nor named.\nSCORE fit: 19\nJUSTIFICATION fit: the three helpers follow the module's existing read-then-verify style with mechanism docstrings, the commit body states the why without plan or ticket identifiers or attribution, and the ledger tally gains the new key beside its siblings.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T225738040125-review-of-an-unchanged-run-needs-no-suite-pair/gate-unchanged-run.log:3 follow-on: the reviewed run's gate log records its command with a literal `<venv>` placeholder in place of the interpreter path, so the header names a command that was never run and a reader cannot reproduce the arm from the log.\nFINDING reckon/crew/promotion.py:612 follow-on: _worktree_unchanged_since_base returns True (vacuous) when the worktree is gone and reads only `git diff --name-only HEAD`, so neither untracked deliverables nor a reclaimed worktree are seen; an armed run that declared no changed path but left untracked files, or whose worktree was reclaimed, is exempted without a full worktree proof.",
+  "review_run_id": "r-20260930T225738040125-review-of-an-unchanged-run-needs-no-suite-pair",
+  "reviewed_base_sha": "7132e05199f30edcb626f9b7530d7452e86f5e58",
+  "reviewed_head_sha": "ba7c0c749ed18a9681a281213f8f169d558bb69a",
+  "reviewed_run_id": "r-20260930T224423399297-an-unchanged-run-needs-no-suite-pair",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:03.878127+00:00",
+  "total": 91
+}

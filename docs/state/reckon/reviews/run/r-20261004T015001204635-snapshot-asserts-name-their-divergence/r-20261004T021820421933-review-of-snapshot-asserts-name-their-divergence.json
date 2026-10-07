@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [
+    "goal",
+    "done_when",
+    "write_paths",
+    "manifest",
+    "diff",
+    "call_sites"
+  ],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "fd25b13b1a5cfcb3e01cb0ad6a3b4ce5b1d00c95",
+  "completed_at": "2026-10-04T02:24:51.038Z",
+  "dispatched_at": "2026-10-04T02:18:45Z",
+  "findings": [
+    {
+      "file": "tests/test_obligations_snapshot_is_published.py",
+      "line": "607",
+      "severity": "follow-on",
+      "text": "follow-on: only the in-cadence republish assertion is falsified by the declared negative control -- logs/negative-control.log reddens test_a_file_change_and_the_floor_tick_each_republish by emptying the _SWEEPS entry. The second self-diagnosing assertion, the 30 s started.wait timeout in test_a_slow_sweep_does_not_hold_the_next_transition, never has its _divergence_report() message produced, so one of the two diagnostics the node delivered is unshown to fire. The report helper is shared and the risk is low, but the guard's own message on the wait path is unexercised."
+    }
+  ],
+  "head_log_revision": "858e8f561e6d9205f56da5f8a0adcfb0cd2f1334",
+  "item_aggregate": null,
+  "item_verdicts": {},
+  "justifications": {
+    "durability": "the change is test-only, so no product behaviour turns on it. The diagnostic degrades rather than raising: _sweep_memory_row reads _SWEEPS through getattr(..., {}) and renders 'absent' for a missing entry, the identity size guards on isinstance(identity, dict), _divergence_report falls back to '?' for a module without __file__ and tolerates a None sys.modules entry, and the message is evaluated only when the assertion fails. The one coupling is to private names (_SWEEPS, _config_home()), which a rename would break; that is acceptable in the file that owns the test, and it would fail loudly as an AttributeError rather than pass silently.",
+    "evidence": "a differential arm exists. The declared negative control (logs/negative-control.log, first line naming revision fd25b13b1, tree, module-as-imported and command) mutates the delivered file by one three-line pop of the _SWEEPS entry before the +5 s sweep and fails exactly test_a_file_change_and_the_floor_tick_each_republish, EXIT=1, the message carrying '_SWEEPS entry for the key before the call: absent' and the key path; the same id passes alone at the head bytes (logs/head-single.log, EXIT=0). I re-ran the whole file at the reviewed head 2b82b33ae in the reviewed worktree: 12 passed, EXIT=0, and independently reconstructed the negative control (head file plus the same pop) to get 1 failed, EXIT=1, naming the absent entry and the key. The load gate is flat and structured: baseline_suite (file sha256 d0bc21a2, revision fd25b13b1) and after_suite (file sha256 632f03d4 at 858e8f561) each loop 30 times under pytest -n 8 beside 8 cpu spinners with 0 failures, per-loop headers naming each arm's imported module path and resolution cwd.",
+    "fit": "both commits are conventional with bodies, carry no plan/sprint/ticket identifiers and no AI attribution; the change adds no import (os, sys, threading, Any and timedelta were already imported) and reuses the file's existing module-level obligation_snapshot instance and PROJECT constant. The helpers' docstrings state the mechanism -- which memory each reading names, and why the consulted row is read before the call -- rather than a ticket. The evidence fragment follows the repository's docs/evidence/fragments shape and declares plan-verifies #s20.",
+    "goal_fidelity": "the node's goal is to make both republish assertions in tests/test_obligations_snapshot_is_published.py self-diagnosing, the next step \u00a720 records after the load investigation cleared the fixture; the diff does exactly that. test_a_file_change_and_the_floor_tick_each_republish now captures the consulted _SWEEPS row before the +5 s sweep and renders _divergence_report(consulted=...) on failure, and the slow-sweep case renders _divergence_report() at the started.wait failure; the message names the cache key, the entry or its absence, the sys.modules instance, the resolved RECKON_HOME and the live thread names -- the five readings \u00a720's next-node note enumerated. No assertion is weakened and the message is evaluated only on failure. One deduction: the wait-timeout path's own message is not exercised.",
+    "scope_discipline": "the diff fd25b13b1..2b82b33ae touches exactly the two declared write paths: tests/test_obligations_snapshot_is_published.py (+67/-2 at 858e8f561) and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/snapshot-asserts-name-their-divergence.html (+29 at 2b82b33ae). No product source changed: the manifest's own evidence_inputs states reckon/crew/obligation_snapshot.py was not modified, and the test reads _SWEEPS, _config_home() and snapshot_dir() directly rather than adding an accessor. The reviewed worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node's goal is to make both republish assertions in tests/test_obligations_snapshot_is_published.py self-diagnosing, the next step \u00a720 records after the load investigation cleared the fixture; the diff does exactly that. test_a_file_change_and_the_floor_tick_each_republish now captures the consulted _SWEEPS row before the +5 s sweep and renders _divergence_report(consulted=...) on failure, and the slow-sweep case renders _divergence_report() at the started.wait failure; the message names the cache key, the entry or its absence, the sys.modules instance, the resolved RECKON_HOME and the live thread names -- the five readings \u00a720's next-node note enumerated. No assertion is weakened and the message is evaluated only on failure. One deduction: the wait-timeout path's own message is not exercised.\nSCORE evidence: 19\nJUSTIFICATION evidence: a differential arm exists. The declared negative control (logs/negative-control.log, first line naming revision fd25b13b1, tree, module-as-imported and command) mutates the delivered file by one three-line pop of the _SWEEPS entry before the +5 s sweep and fails exactly test_a_file_change_and_the_floor_tick_each_republish, EXIT=1, the message carrying '_SWEEPS entry for the key before the call: absent' and the key path; the same id passes alone at the head bytes (logs/head-single.log, EXIT=0). I re-ran the whole file at the reviewed head 2b82b33ae in the reviewed worktree: 12 passed, EXIT=0, and independently reconstructed the negative control (head file plus the same pop) to get 1 failed, EXIT=1, naming the absent entry and the key. The load gate is flat and structured: baseline_suite (file sha256 d0bc21a2, revision fd25b13b1) and after_suite (file sha256 632f03d4 at 858e8f561) each loop 30 times under pytest -n 8 beside 8 cpu spinners with 0 failures, per-loop headers naming each arm's imported module path and resolution cwd.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff fd25b13b1..2b82b33ae touches exactly the two declared write paths: tests/test_obligations_snapshot_is_published.py (+67/-2 at 858e8f561) and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/snapshot-asserts-name-their-divergence.html (+29 at 2b82b33ae). No product source changed: the manifest's own evidence_inputs states reckon/crew/obligation_snapshot.py was not modified, and the test reads _SWEEPS, _config_home() and snapshot_dir() directly rather than adding an accessor. The reviewed worktree is clean at head.\nSCORE durability: 19\nJUSTIFICATION durability: the change is test-only, so no product behaviour turns on it. The diagnostic degrades rather than raising: _sweep_memory_row reads _SWEEPS through getattr(..., {}) and renders 'absent' for a missing entry, the identity size guards on isinstance(identity, dict), _divergence_report falls back to '?' for a module without __file__ and tolerates a None sys.modules entry, and the message is evaluated only when the assertion fails. The one coupling is to private names (_SWEEPS, _config_home()), which a rename would break; that is acceptable in the file that owns the test, and it would fail loudly as an AttributeError rather than pass silently.\nSCORE fit: 19\nJUSTIFICATION fit: both commits are conventional with bodies, carry no plan/sprint/ticket identifiers and no AI attribution; the change adds no import (os, sys, threading, Any and timedelta were already imported) and reuses the file's existing module-level obligation_snapshot instance and PROJECT constant. The helpers' docstrings state the mechanism -- which memory each reading names, and why the consulted row is read before the call -- rather than a ticket. The evidence fragment follows the repository's docs/evidence/fragments shape and declares plan-verifies #s20.\nFINDING tests/test_obligations_snapshot_is_published.py:607 follow-on: only the in-cadence republish assertion is falsified by the declared negative control -- logs/negative-control.log reddens test_a_file_change_and_the_floor_tick_each_republish by emptying the _SWEEPS entry. The second self-diagnosing assertion, the 30 s started.wait timeout in test_a_slow_sweep_does_not_hold_the_next_transition, never has its _divergence_report() message produced, so one of the two diagnostics the node delivered is unshown to fire. The report helper is shared and the risk is low, but the guard's own message on the wait path is unexercised.\nreviewed_base_sha: fd25b13b1a5cfcb3e01cb0ad6a3b4ce5b1d00c95\nreviewed_head_sha: 2b82b33ae543fee3c5457b659cccde7a8e3d3f55",
+  "review_run_id": "r-20261004T021820421933-review-of-snapshot-asserts-name-their-divergence",
+  "reviewed_base_sha": "fd25b13b1a5cfcb3e01cb0ad6a3b4ce5b1d00c95",
+  "reviewed_head_sha": "2b82b33ae543fee3c5457b659cccde7a8e3d3f55",
+  "reviewed_run_id": "r-20261004T015001204635-snapshot-asserts-name-their-divergence",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T021820421933-review-of-snapshot-asserts-name-their-divergence",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T02:22:40.322594+00:00",
+  "total": 96
+}

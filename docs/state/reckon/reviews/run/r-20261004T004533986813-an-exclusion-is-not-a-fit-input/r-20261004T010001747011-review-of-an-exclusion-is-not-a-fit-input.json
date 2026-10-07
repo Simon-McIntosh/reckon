@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-04T01:08:42.730Z",
+  "dispatched_at": "2026-10-04T01:00:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2966",
+      "severity": "follow-on",
+      "text": "the exclusion cue is tested against the whole clause, so a single clause that both declares one input and excludes another drops the declared input with it: an independent probe of _declared_input_files at head reads the one-clause brief `Declare package/a.py as an input and avoid package/b.py` to [] where base 626dcd594 read both paths, so a genuinely declared read is under-charged whenever the exclusion shares its clause. The node's named negative (a dedicated declaration clause, `Treat package/large.py as a declared input`) is unaffected and still charges 57,148, so this is a narrower edge than the measure's control, not a failure of it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T004533986813-an-exclusion-is-not-a-fit-input/manifest.md",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "the artifacts line cites `logs/repro-exclusion-base.log` and `logs/repro-exclusion-fixed.log` as on-disk reproduction records, but neither file exists under the run directory: `find` over the run directory and the reviewed worktree returns nothing for repro-exclusion*, so the two citations cannot be opened by a later reader. The reproduction itself is sound and re-derivable from the committed tests and the census fixture, so the defect is the citation, not the evidence."
+    }
+  ],
+  "justifications": {
+    "durability": "removing only the two-line cue guard from a scratch copy of head 068b3dbbe reverts the behaviour to base: an independent probe then reads `Exclude package/large.py from declared inputs` as [\"package/large.py\"] (head reads []), so the guard is load-bearing and the three new cases in tests/test_context_estimate_excludes_granted_paths.py fail if it is dropped; the reviewed run also logged a source-side control (logs/negative-control-cue-removed.log, 1 failed / 8 passed, EXIT=1) and a wording control (logs/negative-control-wording.log, same figures).",
+    "evidence": "baseline_suite and after_suite are both readable and completed, each exit_status 0 with failure_count 0, so added_failure_count is a measured 0 rather than an unmeasured null; the new zero-charge tests assert the excluded file's real size (>200,000 bytes) so a zero reads as a refusal rather than a missing file, and the declaration test is the positive control that the same file is charged at 57,145 tokens. The dock is the manifest's artifacts line naming two reproduction logs that are absent from disk, an unopenable citation.",
+    "fit": "_EXCLUSION_CUE sits beside the existing _NAMED_REPOSITORY_FILE regex with a comment stating why the negated clause is a non-declaration, and the guard is one skip inside the clause loop that already gates on the input/declar keywords, so the change is minimal and in the module's own idiom. The dock is that the cue is applied to the whole clause rather than to the named path, so a clause mixing a declaration with an exclusion suppresses the declaration too.",
+    "goal_fidelity": "the plan's measure holds: an independent probe of _declared_input_files at base 626dcd594 reads the census counterexample `Exclude package/large.py from declared inputs` as [\"package/large.py\"] (charged) and at head 068b3dbbe reads it as [] (uncharged), while `Treat package/large.py as a declared input` still reads [\"package/large.py\"] at both; the reviewed gate reproduces 9 passed at head against the base arm's 6. The dock is the clause-wide over-suppression named in the first finding.",
+    "scope_discipline": "the diff 626dcd594..068b3dbbe touches exactly the declared write paths reckon/crew/routing.py (14 changed lines), tests/test_context_estimate_excludes_granted_paths.py (82), and docs/evidence/fragments/crew-observability-truth/an-exclusion-is-not-a-fit-input.html (51), 145 insertions and 2 deletions with no edit to the plan-version or plan-modified meta lines and no touch of a concurrent node's paths."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the plan's measure holds: an independent probe of _declared_input_files at base 626dcd594 reads the census counterexample `Exclude package/large.py from declared inputs` as [\"package/large.py\"] (charged) and at head 068b3dbbe reads it as [] (uncharged), while `Treat package/large.py as a declared input` still reads [\"package/large.py\"] at both; the reviewed gate reproduces 9 passed at head against the base arm's 6. The dock is the clause-wide over-suppression named in the first finding.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline_suite and after_suite are both readable and completed, each exit_status 0 with failure_count 0, so added_failure_count is a measured 0 rather than an unmeasured null; the new zero-charge tests assert the excluded file's real size (>200,000 bytes) so a zero reads as a refusal rather than a missing file, and the declaration test is the positive control that the same file is charged at 57,145 tokens. The dock is the manifest's artifacts line naming two reproduction logs that are absent from disk, an unopenable citation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 626dcd594..068b3dbbe touches exactly the declared write paths reckon/crew/routing.py (14 changed lines), tests/test_context_estimate_excludes_granted_paths.py (82), and docs/evidence/fragments/crew-observability-truth/an-exclusion-is-not-a-fit-input.html (51), 145 insertions and 2 deletions with no edit to the plan-version or plan-modified meta lines and no touch of a concurrent node's paths.\nSCORE durability: 19\nJUSTIFICATION durability: removing only the two-line cue guard from a scratch copy of head 068b3dbbe reverts the behaviour to base: an independent probe then reads `Exclude package/large.py from declared inputs` as [\"package/large.py\"] (head reads []), so the guard is load-bearing and the three new cases in tests/test_context_estimate_excludes_granted_paths.py fail if it is dropped; the reviewed run also logged a source-side control (logs/negative-control-cue-removed.log, 1 failed / 8 passed, EXIT=1) and a wording control (logs/negative-control-wording.log, same figures).\nSCORE fit: 18\nJUSTIFICATION fit: _EXCLUSION_CUE sits beside the existing _NAMED_REPOSITORY_FILE regex with a comment stating why the negated clause is a non-declaration, and the guard is one skip inside the clause loop that already gates on the input/declar keywords, so the change is minimal and in the module's own idiom. The dock is that the cue is applied to the whole clause rather than to the named path, so a clause mixing a declaration with an exclusion suppresses the declaration too.\nFINDING reckon/crew/routing.py:2966 the exclusion cue is tested against the whole clause, so a single clause that both declares one input and excludes another drops the declared input with it: an independent probe of _declared_input_files at head reads the one-clause brief `Declare package/a.py as an input and avoid package/b.py` to [] where base 626dcd594 read both paths, so a genuinely declared read is under-charged whenever the exclusion shares its clause. The node's named negative (a dedicated declaration clause, `Treat package/large.py as a declared input`) is unaffected and still charges 57,148, so this is a narrower edge than the measure's control, not a failure of it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T004533986813-an-exclusion-is-not-a-fit-input/manifest.md:23 the artifacts line cites `logs/repro-exclusion-base.log` and `logs/repro-exclusion-fixed.log` as on-disk reproduction records, but neither file exists under the run directory: `find` over the run directory and the reviewed worktree returns nothing for repro-exclusion*, so the two citations cannot be opened by a later reader. The reproduction itself is sound and re-derivable from the committed tests and the census fixture, so the defect is the citation, not the evidence.\n",
+  "review_run_id": "r-20261004T010001747011-review-of-an-exclusion-is-not-a-fit-input",
+  "reviewed_base_sha": "626dcd594e3415de3e9788417c6256f3bf6135be",
+  "reviewed_head_sha": "068b3dbbe332c844c272949ccd4c4a21809bfbf8",
+  "reviewed_run_id": "r-20261004T004533986813-an-exclusion-is-not-a-fit-input",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T010001747011-review-of-an-exclusion-is-not-a-fit-input",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T01:06:26.751005+00:00",
+  "total": 92
+}

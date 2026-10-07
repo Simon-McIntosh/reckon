@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T20:27:27.020Z",
+  "dispatched_at": "2026-10-05T20:20:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s17",
+      "id": "interface_budget-1",
+      "reason": "the author must state whether the heading-record type is public (fixing the count and the done-when to three) or private (a `_HeadingRecord`), because the section's measure pins a figure the accounting as written cannot guarantee.",
+      "text": "\u00a717's interface accounting (\"two public definitions are added on `reckon/_plan_html.py`, `plan_headings` ... and the machinery-element predicate\") omits the heading record type: `plan_headings` \"yields a named record per heading ... so callers ... bind by name and not by tuple position\", and a module-level non-underscore record class is itself counted by `interface_counts.definitions` (it counts `ast.ClassDef`, not only functions), which would make \u00a717's growth three, not two, and fail its own done-when asserting `public_definitions` \"exactly two higher than at the base\"",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e6ab96f53e573c1d1cd406406f0b1d7a2949b156b4de0105dcf680418a057f8e",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 127,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T202034465517-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "cc811d8ad093413ab0e21b0d602680c5f7c8e59d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 hides the whole raw-text parser behind the private `_StructuredSectionSpanParser` and exposes only three public entry points (`plan_headings`, `structured_section_spans`, the machinery-element predicate); \u00a716 hides the section-keyed digest and the join to the review store behind the module-private `_section_digests` and one coverage predicate; \u00a718 collapses six inline spellings of one rule into one public predicate.",
+    "duplicate_owner": "pass \u2014 the plan is a consolidation: \u00a717 names `_store.py` and `mcp_views.py` as the owners of the heading walks it converges on one reader, \u00a718 names `plan_review.RUN_COMMENT_PREFIX` as the owner of `c-run-` (deleting promotion's `_LANDING_COMMENT_PREFIX`) and `reckon/_schema.py` as the owner of the declaration map; no re-implementation of placement, path resolution, scheduler queries or a state reader is proposed.",
+    "interface_budget": "a finding \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716/\u00a717/\u00a718 each state why nothing public can be retired (they extend, they do not add a family), but \u00a717's accounting claims its addition is exactly two public definitions while the heading reader it adds yields \"a named record per heading\".",
+    "reuse_search": "pass \u2014 \u00a717 extends the existing raw-text `_StructuredSectionSpanParser` in `reckon/_plan_html.py` (generalising it and re-homing the store's heading helpers) rather than adding a scanner, and \u00a716 reuses `_plan_html._TAG_RE`/`count_open_decisions` and `_fingerprint_forms` rather than inventing a second tag-stripper or digest; every owner it cites resolves (the 14-line/5-file `\"data-reckon\"` census, the 5-line `section-landed` census, the `c-run-` prefix in `plan_review.RUN_COMMENT_PREFIX` + `promotion._LANDING_COMMENT_PREFIX` + promotion's minting site, and the six `== \"implementable\"` readers all reproduce with `grep` in the worktree).",
+    "thin_wrapper": "pass \u2014 the only narrow addition is `strip_tags` on `reckon/_plan_html.py` (a public exposure of the existing `_TAG_RE` across the crew package boundary, per the plan's stated house rule rather than a second expression), and the moved `landed_section_ids` is re-homed, not doubled."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.767695+00:00"
+}

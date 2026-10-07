@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e23f6cc6394ee00789a68cd8f17377650c9de6f2",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/install.py:151",
+    "reckon/hooks/coordinator_obligations.py:664"
+  ],
+  "completed_at": "2026-10-02T15:03:08.698Z",
+  "dispatched_at": "2026-10-02T14:49:26Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "612",
+      "severity": "follow-on",
+      "text": "follow-on: the eight-line comment explaining why an empty list clears the digest is duplicated almost verbatim at :639 in _stop, so the shared rationale has two copies that can drift."
+    },
+    {
+      "file": "tests/test_obligations_hook_reads_the_snapshot.py",
+      "line": "343",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_fresh_snapshot_is_formatted_as_todays_output compares the injected text against format_checklist of a payload the test itself derived moments before, so it would pass whether the hook read the snapshot or re-derived the same list; the snapshot-not-derive property rests on :234 and :364, not on this case."
+    },
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": "348",
+      "severity": "follow-on",
+      "text": "follow-on: this file is not in the node's fence and its change (a _publish_snapshot call per prompt drive) is a real behavioural edit to eleven existing cases, recorded only as a scope extension in the manifest rather than a declared write path."
+    }
+  ],
+  "head_log_revision": "bf6ffd2dc",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit (d31eaab81, 740e5c63, bf6ffd2dc) against e23f6cc6; 814 insertions across the two source files, the legacy hook test, the new test file and the evidence fragment, and no file outside that set.",
+    "done_when": "the done-when names an explicit measure; the manifest records both gate arms (base 2 failed / 92 passed at e23f6cc6, head 2 failed / 97 passed at bf6ffd2dc, the same two pre-existing tests/test_skill_contracts.py ids), the new five-case file at 5 passed, the negative control's 4-failed/1-passed red log, and 20 hook timings whose second-slowest is 112.7 ms against the 250 ms target.",
+    "goal": "the node's goal is that the prompt hook reads the session's published snapshot instead of deriving obligations; reckon/hooks/coordinator_obligations.py:572 _prompt reads the snapshot, classifies its freshness and formats it, and reaches no derivation module.",
+    "manifest": "read; status complete, baseline_suite and after_suite both carry completed true with the matching two-id failure sets, and the landing line states the gate figure and the 112.7 ms timing.",
+    "write_paths": "the manifest's declared paths cover reckon/hooks/coordinator_obligations.py, reckon/crew/obligation_snapshot.py and tests/test_obligations_hook_reads_the_snapshot.py; the one extra file in the diff, tests/test_coordinator_obligations_hook.py, is recorded in evidence_inputs as a received scope extension and is absent from the fence list in the manifest's orientation_write_paths."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_hook_reads_the_snapshot.py:234 reddens when the derivation is reintroduced (negative-control-bf6ffd2dc-mutated.log:4 failed/1 passed) and :364 forbids the live blocked run appearing, so a snapshot read is distinguished from a derive.",
+    "evidence": "the gate the done-when names ran at both arms (base-gate-e23f6cc6-final.log:2 failed/92 passed, head-gate-bf6ffd2dc.log:2 failed/97 passed) and the negative control log records 4 failed/1 passed with EXIT=1.",
+    "fit": "the new helpers follow the module's idiom and introduce no plan label, but the empty-list digest rationale is duplicated verbatim at reckon/hooks/coordinator_obligations.py:612 and :639.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:572 _prompt reads the snapshot through the file-path-loaded module, applies the lane rewrite and the digest unchanged, and never writes the snapshot, which is exactly the goal.",
+    "scope_discipline": "every path in the diff is a declared write path except tests/test_coordinator_obligations_hook.py, which the manifest records as a received extension, and the stop path was correctly left as on main."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the prompt hook reads the session's published snapshot instead of deriving obligations; reckon/hooks/coordinator_obligations.py:572 _prompt reads the snapshot, classifies its freshness and formats it, and reaches no derivation module.\nVERDICT done_when: the done-when names an explicit measure; the manifest records both gate arms (base 2 failed / 92 passed at e23f6cc6, head 2 failed / 97 passed at bf6ffd2dc, the same two pre-existing tests/test_skill_contracts.py ids), the new five-case file at 5 passed, the negative control's 4-failed/1-passed red log, and 20 hook timings whose second-slowest is 112.7 ms against the 250 ms target.\nVERDICT write_paths: the manifest's declared paths cover reckon/hooks/coordinator_obligations.py, reckon/crew/obligation_snapshot.py and tests/test_obligations_hook_reads_the_snapshot.py; the one extra file in the diff, tests/test_coordinator_obligations_hook.py, is recorded in evidence_inputs as a received scope extension and is absent from the fence list in the manifest's orientation_write_paths.\nVERDICT manifest: read; status complete, baseline_suite and after_suite both carry completed true with the matching two-id failure sets, and the landing line states the gate figure and the 112.7 ms timing.\nVERDICT diff: read commit by commit (d31eaab81, 740e5c63, bf6ffd2dc) against e23f6cc6; 814 insertions across the two source files, the legacy hook test, the new test file and the evidence fragment, and no file outside that set.\nCALL_SITES: reckon/hooks/install.py:151, reckon/hooks/coordinator_obligations.py:664\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:572 _prompt reads the snapshot through the file-path-loaded module, applies the lane rewrite and the digest unchanged, and never writes the snapshot, which is exactly the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate the done-when names ran at both arms (base-gate-e23f6cc6-final.log:2 failed/92 passed, head-gate-bf6ffd2dc.log:2 failed/97 passed) and the negative control log records 4 failed/1 passed with EXIT=1.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is a declared write path except tests/test_coordinator_obligations_hook.py, which the manifest records as a received extension, and the stop path was correctly left as on main.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_obligations_hook_reads_the_snapshot.py:234 reddens when the derivation is reintroduced (negative-control-bf6ffd2dc-mutated.log:4 failed/1 passed) and :364 forbids the live blocked run appearing, so a snapshot read is distinguished from a derive.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers follow the module's idiom and introduce no plan label, but the empty-list digest rationale is duplicated verbatim at reckon/hooks/coordinator_obligations.py:612 and :639.\nFINDING reckon/hooks/coordinator_obligations.py:612 follow-on: the eight-line comment explaining why an empty list clears the digest is duplicated almost verbatim at :639 in _stop, so the shared rationale has two copies that can drift.\nFINDING tests/test_obligations_hook_reads_the_snapshot.py:343 follow-on: test_a_fresh_snapshot_is_formatted_as_todays_output compares the injected text against format_checklist of a payload the test itself derived moments before, so it would pass whether the hook read the snapshot or re-derived the same list; the snapshot-not-derive property rests on :234 and :364, not on this case.\nFINDING tests/test_coordinator_obligations_hook.py:348 follow-on: this file is not in the node's fence and its change (a _publish_snapshot call per prompt drive) is a real behavioural edit to eleven existing cases, recorded only as a scope extension in the manifest rather than a declared write path.\n",
+  "review_run_id": "r-20261002T144858404264-review-of-hook-reads-the-snapshot",
+  "reviewed_base_sha": "e23f6cc6394ee00789a68cd8f17377650c9de6f2",
+  "reviewed_head_sha": "bf6ffd2dc0415970eb3c736990fd789bf5799e0d",
+  "reviewed_run_id": "r-20261002T125957426768-hook-reads-the-snapshot",
+  "reviewer": {
+    "backend": "sonnet",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T14:58:37.677005+00:00",
+  "total": 93
+}

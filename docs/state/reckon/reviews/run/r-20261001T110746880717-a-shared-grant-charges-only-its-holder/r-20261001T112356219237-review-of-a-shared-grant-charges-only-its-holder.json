@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:2634 (_repository_tree_boundary_violations called from crew.complete)"
+  ],
+  "completed_at": "2026-10-01T11:40:52.849Z",
+  "dispatched_at": "2026-10-01T11:24:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2532",
+      "severity": "follow-on",
+      "text": "follow-on: held_by_a_peer exempts only worktrees a live run currently holds, so a terminal or abandoned peer worktree still carrying an uncommitted file under the completing run's grant is still charged to the completing run; that is the residual of the same defect outside the in-flight case this followup names, and it should be recorded rather than silently accepted."
+    },
+    {
+      "file": "tests/test_promotion_scope_counts_only_the_runs_commits.py",
+      "line": "576",
+      "severity": "follow-on",
+      "text": "follow-on: the case exercises only the unfenced full-scan path, so the fenced boundary walk (roots limited to the run's own worktree and the main checkout) is not covered by it; that path is already narrower, so the omission does not weaken this node's guard."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "the diff a0d770a6..b48d66a is 3 files and 114 insertions, and its substantive content is the 15-line boundary-walk skip in reckon/crew/promotion.py plus the new test case; the commit body carries no attribution and no plan reference.",
+    "done_when": "the done-when is that tests/test_promotion_scope_counts_only_the_runs_commits.py gains a two-unfenced-run shared-directory-grant case that is red at base and green at head with the declared negative control; I reproduced the case red at the base revision (a0d770a6) in a scratch tree (1 failed, EXIT=1, refusal naming docs/figures/fixture/sketch.svg in peer worktree first-tree) and green at head b48d66a (11 passed, EXIT=0), and my own inverse mutation removing the peer skip reddens exactly that case.",
+    "goal": "the node goal is to charge an uncommitted file under a shared grant only to the run whose worktree holds it; the landed change reads the worktrees currently held by live runs in reckon/crew/promotion.py:2532 (held_by_a_peer) and skips them in the boundary walk at promotion.py:2551, so a peer's in-flight file under a shared directory grant is no longer charged to the completing run.",
+    "manifest": "the manifest at the reviewed run reports status complete, the four rev-parse/suite keys and the b48d66a commit; it registers no baseline_suite or after_suite gate log, so the added-failure derivation reads unmeasured rather than zero, and its head-gate.log header names the base revision because the gate ran with the fix uncommitted.",
+    "write_paths": "three paths changed (reckon/crew/promotion.py, tests/test_promotion_scope_counts_only_the_runs_commits.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-shared-grant-charges-only-its-holder.html); all three are inside the declared scope and no path outside it was touched."
+  },
+  "justifications": {
+    "durability": "the case at tests/test_promotion_scope_counts_only_the_runs_commits.py:576 fails on a CrewError refusal from the boundary walk rather than on a value the test passed in, and removing the held_by_a_peer skip at promotion.py:2551 reddens exactly that case in my own run.",
+    "evidence": "the gate measures the done-when (11 passed at head, 1 failed at base, EXIT=0/1) and is recorded under the run directory, but the reviewed manifest leaves baseline_suite and after_suite empty so the added-failure count is unmeasured and head-gate.log names the base revision a0d770a6 rather than the commit b48d66a.",
+    "fit": "the new skip in reckon/crew/promotion.py:2551 mirrors the neighbouring shared_files and terminal_shadows skips in the same loop, and the test and comments carry no plan label, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:2532-2553 now attributes a dirty path to the run whose worktree holds it, exactly the node goal, and the single production caller at promotion.py:2634 reaches it.",
+    "scope_discipline": "git diff --stat a0d770a6..b48d66a is 3 files and 114 insertions, all three inside the declared write paths, with the evidence fragment explicitly permitted by the landing contract."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to charge an uncommitted file under a shared grant only to the run whose worktree holds it; the landed change reads the worktrees currently held by live runs in reckon/crew/promotion.py:2532 (held_by_a_peer) and skips them in the boundary walk at promotion.py:2551, so a peer's in-flight file under a shared directory grant is no longer charged to the completing run.\nVERDICT done_when: the done-when is that tests/test_promotion_scope_counts_only_the_runs_commits.py gains a two-unfenced-run shared-directory-grant case that is red at base and green at head with the declared negative control; I reproduced the case red at the base revision (a0d770a6) in a scratch tree (1 failed, EXIT=1, refusal naming docs/figures/fixture/sketch.svg in peer worktree first-tree) and green at head b48d66a (11 passed, EXIT=0), and my own inverse mutation removing the peer skip reddens exactly that case.\nVERDICT write_paths: three paths changed (reckon/crew/promotion.py, tests/test_promotion_scope_counts_only_the_runs_commits.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-shared-grant-charges-only-its-holder.html); all three are inside the declared scope and no path outside it was touched.\nVERDICT manifest: the manifest at the reviewed run reports status complete, the four rev-parse/suite keys and the b48d66a commit; it registers no baseline_suite or after_suite gate log, so the added-failure derivation reads unmeasured rather than zero, and its head-gate.log header names the base revision because the gate ran with the fix uncommitted.\nVERDICT diff: the diff a0d770a6..b48d66a is 3 files and 114 insertions, and its substantive content is the 15-line boundary-walk skip in reckon/crew/promotion.py plus the new test case; the commit body carries no attribution and no plan reference.\nCALL_SITES: reckon/crew/promotion.py:2634 (_repository_tree_boundary_violations called from crew.complete)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2532-2553 now attributes a dirty path to the run whose worktree holds it, exactly the node goal, and the single production caller at promotion.py:2634 reaches it.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate measures the done-when (11 passed at head, 1 failed at base, EXIT=0/1) and is recorded under the run directory, but the reviewed manifest leaves baseline_suite and after_suite empty so the added-failure count is unmeasured and head-gate.log names the base revision a0d770a6 rather than the commit b48d66a.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat a0d770a6..b48d66a is 3 files and 114 insertions, all three inside the declared write paths, with the evidence fragment explicitly permitted by the landing contract.\nSCORE durability: 18\nJUSTIFICATION durability: the case at tests/test_promotion_scope_counts_only_the_runs_commits.py:576 fails on a CrewError refusal from the boundary walk rather than on a value the test passed in, and removing the held_by_a_peer skip at promotion.py:2551 reddens exactly that case in my own run.\nSCORE fit: 18\nJUSTIFICATION fit: the new skip in reckon/crew/promotion.py:2551 mirrors the neighbouring shared_files and terminal_shadows skips in the same loop, and the test and comments carry no plan label, ticket or version identifier.\nFINDING reckon/crew/promotion.py:2532 follow-on: held_by_a_peer exempts only worktrees a live run currently holds, so a terminal or abandoned peer worktree still carrying an uncommitted file under the completing run's grant is still charged to the completing run; that is the residual of the same defect outside the in-flight case this followup names, and it should be recorded rather than silently accepted.\nFINDING tests/test_promotion_scope_counts_only_the_runs_commits.py:576 follow-on: the case exercises only the unfenced full-scan path, so the fenced boundary walk (roots limited to the run's own worktree and the main checkout) is not covered by it; that path is already narrower, so the omission does not weaken this node's guard.\n",
+  "review_run_id": "r-20261001T112356219237-review-of-a-shared-grant-charges-only-its-holder",
+  "reviewed_base_sha": "a0d770a61d284beb150f3582993075299157affe",
+  "reviewed_head_sha": "b48d66a0c696596713af7c47b36d981936376bcb",
+  "reviewed_run_id": "r-20261001T110746880717-a-shared-grant-charges-only-its-holder",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.583476+00:00",
+  "total": 91
+}

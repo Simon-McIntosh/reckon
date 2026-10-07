@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T182841880426-a-live-worker-never-reads-gone-after-its-first-commit/logs/base-arm.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T182841880426-a-live-worker-never-reads-gone-after-its-first-commit/logs/head-arm.log"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T19:17:41.749Z",
+  "dispatched_at": "2026-09-30T19:02:22Z",
+  "findings": [
+    {
+      "file": "tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py",
+      "line": "173",
+      "text": "the red arm named in the manifest was run against a superseded revision of this test, not the committed one: logs/parent-arm.log:63 fails at line 169 while the committed assertion sits at line 173, so the parent-arm log is not a receipt for the landed test."
+    },
+    {
+      "file": "logs/base-arm.log",
+      "line": "607",
+      "text": "the base arm executed the newly added test (its fork DeprecationWarning is emitted from tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:48), so the arm labelled revision e7eca9f03 ran the head worktree and its identical 12 failed / 1264 passed against the head arm is not a base-versus-head comparison."
+    },
+    {
+      "file": "logs/base-arm.log",
+      "line": "678",
+      "text": "the base arm's final line reads EXIT=0 while its own summary two lines above reports 12 failed, so a reader that takes the last line as the arm's status reads a passing arm; the true pytest exit EXIT=1 sits on line 677."
+    },
+    {
+      "file": "logs/base-arm.log",
+      "line": "4",
+      "text": "the base arm's recorded command carries the placeholder <110 recovery importers> instead of the literal command, so the log cannot be reproduced and its labelled revision cannot be checked against what it ran."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base e7eca9f0361b661cc4a435b3a39015497a795688; 87461900 adds one file, 176 insertions and no deletions, all inside the declared scope, and no product source changes.",
+    "done_when": "the done_when names base and head arms over the recovery-importing tests plus a negative control; the manifest records tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py at 1 passed and both arms at 12 failed / 1264 passed, but the base arm's own log shows it ran the head worktree.",
+    "goal": "the node's goal is to prove by test that a run whose recorded pid is alive never emits a process-gone transition after its first commit; the new test tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:126 drives a live child pid across one commit past the base and asserts exactly that, passing at base with no repair to recovery.py.",
+    "manifest": "read; it reports the new test passing at base e7eca9f03, failing at the parent of 7bcd27ac0, bases and heads at 12 failed / 1264 passed, and a red negative control, and it names every log path on disk.",
+    "write_paths": "the manifest declares four paths; the diff touches only tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py, and gate logs fall under the run directory, never the repository."
+  },
+  "justifications": {
+    "durability": "the declared negative control reddens the committed test at tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:142, and the parent arm reddens it pre-fix, so the assertions fail under the very regression they guard.",
+    "evidence": "the gate implements the done_when's arm and control structure, but logs/base-arm.log:607 shows the base arm executed the newly added test, so the base arm ran the head worktree and its equality with the head arm is a run compared to itself.",
+    "fit": "the test follows the surrounding pytest idiom with a tmp_path fixture at tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:38, and the commit subject names the mechanism with no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:126 proves the goal and correctly concludes no recovery.py repair is needed, verified by the parent arm failing at c1c1f7e9.",
+    "scope_discipline": "the diff 87461900 touches exactly one declared write path with 176 insertions and no deletions, and writes neither the evidence fragment nor a figure as the done-when directs."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to prove by test that a run whose recorded pid is alive never emits a process-gone transition after its first commit; the new test tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:126 drives a live child pid across one commit past the base and asserts exactly that, passing at base with no repair to recovery.py.\nVERDICT done_when: the done_when names base and head arms over the recovery-importing tests plus a negative control; the manifest records tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py at 1 passed and both arms at 12 failed / 1264 passed, but the base arm's own log shows it ran the head worktree.\nVERDICT write_paths: the manifest declares four paths; the diff touches only tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py, and gate logs fall under the run directory, never the repository.\nVERDICT manifest: read; it reports the new test passing at base e7eca9f03, failing at the parent of 7bcd27ac0, bases and heads at 12 failed / 1264 passed, and a red negative control, and it names every log path on disk.\nVERDICT diff: read commit by commit against base e7eca9f0361b661cc4a435b3a39015497a795688; 87461900 adds one file, 176 insertions and no deletions, all inside the declared scope, and no product source changes.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:126 proves the goal and correctly concludes no recovery.py repair is needed, verified by the parent arm failing at c1c1f7e9.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate implements the done_when's arm and control structure, but logs/base-arm.log:607 shows the base arm executed the newly added test, so the base arm ran the head worktree and its equality with the head arm is a run compared to itself.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 87461900 touches exactly one declared write path with 176 insertions and no deletions, and writes neither the evidence fragment nor a figure as the done-when directs.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control reddens the committed test at tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:142, and the parent arm reddens it pre-fix, so the assertions fail under the very regression they guard.\nSCORE fit: 19\nJUSTIFICATION fit: the test follows the surrounding pytest idiom with a tmp_path fixture at tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:38, and the commit subject names the mechanism with no plan or ticket identifier.\nFINDING tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:173 the red arm named in the manifest was run against a superseded revision of this test, not the committed one: logs/parent-arm.log:63 fails at line 169 while the committed assertion sits at line 173, so the parent-arm log is not a receipt for the landed test.\nFINDING logs/base-arm.log:607 the base arm executed the newly added test (its fork DeprecationWarning is emitted from tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py:48), so the arm labelled revision e7eca9f03 ran the head worktree and its identical 12 failed / 1264 passed against the head arm is not a base-versus-head comparison.\nFINDING logs/base-arm.log:678 the base arm's final line reads EXIT=0 while its own summary two lines above reports 12 failed, so a reader that takes the last line as the arm's status reads a passing arm; the true pytest exit EXIT=1 sits on line 677.\nFINDING logs/base-arm.log:4 the base arm's recorded command carries the placeholder <110 recovery importers> instead of the literal command, so the log cannot be reproduced and its labelled revision cannot be checked against what it ran.",
+  "review_run_id": "r-20260930T190204517766-review-of-a-live-worker-never-reads-gone-after-its-first-commit",
+  "reviewed_base_sha": "e7eca9f0361b661cc4a435b3a39015497a795688",
+  "reviewed_head_sha": "87461900ea8e28b67bedaed334ded39c6e944bcc",
+  "reviewed_run_id": "r-20260930T182841880426-a-live-worker-never-reads-gone-after-its-first-commit",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260930T190204517766-review-of-a-live-worker-never-reads-gone-after-its-first-commit",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T19:14:31.314303+00:00",
+  "total": 91
+}

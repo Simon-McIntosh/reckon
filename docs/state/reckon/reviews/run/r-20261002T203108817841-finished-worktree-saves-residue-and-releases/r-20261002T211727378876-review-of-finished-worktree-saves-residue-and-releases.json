@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/routing.py:887 _save_and_release_worktree",
+    "reckon/crew/routing.py:831 _residue_run_record",
+    "reckon/crew/routing.py:867 _residue_digests",
+    "reckon/crew/routing.py:1186 garbage_collect dirty-integrated branch"
+  ],
+  "completed_at": "2026-10-02T21:29:21.790Z",
+  "dispatched_at": "2026-10-02T21:18:12Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read the four commits against base 50b92333; the change adds the (dirty-integrated) classification gated on reachable and the current residue-release call path, extracts _save_and_release_worktree, adds the class digest comparison, and extends RECLAIMABLE_CLASSES; the promotion dirty-audit path is deliberately left unchanged at 89bf8e96c so promotion keeps withholding until gc --apply runs.",
+    "done_when": "proven at both ends independently: I ran the head arm myself in the reviewed worktree at 5328fa62 (reviewer-head-check.log, 57 passed, EXIT=0), reproducing the run's own head-gate-verified.log (57 passed, EXIT=0); the run's base arm ran to its summary line (baseline-gate-final.log, 50 passed, EXIT=0) and its negative control reddens the round-trip assertion when the save is skipped (negative-control-verified.log, 1 failed, EXIT=1).",
+    "goal": "the node goal is that release of a worktree whose commits are integrated into the integration head saves its residue before removing it and never needs a force authorisation; reckon/crew/routing.py:887 now writes the tracked diff as a verified patch and untracked files as a tar, classifies every dirty path, protects a live-claimed tree, and removes the worktree without --force at routing.py:1050.",
+    "manifest": "read; records the residue mechanism, both arms complete with named log paths, the skip-save control, and the run directory attribution; final commit 5328fa6230c00f1cb83e290545d2881d902a7fc3 over 28e9932e3, d85e07a28, 89bf8e96c.",
+    "write_paths": "the node declared four paths and the diff 50b92333..5328fa62 lists exactly those four: reckon/crew/routing.py (+258/-4), tests/test_crew_gc.py (+44/-16), tests/test_finished_worktree_saves_residue.py (+145 new), tests/test_gc_covers_run_directory_trees.py (+9/-8); no plan, sprint or shared index file is touched."
+  },
+  "justifications": {
+    "durability": "each class is exercised by name in a temporary repository (subsumed, superseded, unique), plus a live-claimed tree left untouched (test_live_claim_leaves_dirty_tree_untouched), an equal change in another saved residue read as subsumed, run-owned residue landing under the run directory, harness scratch preserved before an integrated tree is released, and the reclaimable-set invariant updated; the negative control confirms an added test regresses when the guard is removed. One robustness limit noted, not a \u00a73 defect: a CrewError raised mid-save propagates out of garbage_collect and aborts the whole --apply batch, which matters for the \u00a74 sweep over 30 trees but not for this node's gate.",
+    "evidence": "the two arms ran to their summary lines (base 50 passed EXIT=0, head 57 passed EXIT=0) and I independently re-ran the head arm at 5328fa62 to 57 passed EXIT=0 in the reviewed worktree; the negative control is a real falsification, not a red herring: with the save skipped the parametrized unique case fails its patch round-trip (negative-control-verified.log, test_integrated_dirty_tree_saves_residue_and_releases[unique], 1 failed, EXIT=1), the same case that the head arm passes inside its 57, so the guarded behaviour is shown to fire.",
+    "fit": "the change reuses the module's own idioms (_git, _tree_state, CrewError, _live_worktree_claims, runs_dir) and extends RECLAIMABLE_CLASSES and WITHHELD_REASONS untouched so the report and the removal branch cannot drift; the new class is threaded through counts and the allowed-class set; ruff reports no new finding in the changed ranges. A defensive reachable-but-dirty branch in garbage_collect is effectively unreachable given the classification ordering, and _residue_run_record matches on three loose keys, both minor.",
+    "goal_fidelity": "every clause of \u00a73 is present and reachable: routing.py:887 saves the tracked diff with git diff HEAD --binary and untracked files with git ls-files --others, verifies the saved patch with git apply --cached --check against a scratch index read-tree'd at the worktree HEAD (routing.py:1030), verifies the tar members against the source bytes before removing, classifies each dirty path subsumed (content equals the integration head, or an equal digest saved by another release), superseded (path changed on the integration head since the base), or unique, writes classification.json beside the patch, appends any unique residue to residue_report at routing.py:1201, and removes with a plain git worktree remove (no force) after the save; a live-claimed tree is refused at routing.py:896 and re-checked in the apply loop, so nothing is discarded unsaved.",
+    "scope_discipline": "git diff --numstat 50b92333..5328fa62 lists only the four declared paths and the worktree is clean at head; the promotion change from an earlier attempt was reverted (89bf8e96c keeps promotion's dirty audit unchanged), so no out-of-scope or shared-state files are touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: release of an integrated worktree saves its residue and removes it without a force; routing.py:887 writes the tracked diff as a verified patch and untracked files as a tar, classifies each dirty path, protects a live-claimed tree, and removes without --force.\nVERDICT done_when: I independently re-ran the head arm at 5328fa62 (reviewer-head-check.log, 57 passed, EXIT=0); the run's base arm read 50 passed EXIT=0 (baseline-gate-final.log) and the skip-save control reddens the round-trip assertion (negative-control-verified.log, 1 failed, EXIT=1).\nVERDICT write_paths: the diff 50b92333..5328fa62 lists exactly the four declared paths; no shared state touched.\nVERDICT manifest: read; both arms complete with named logs, control recorded, final commit 5328fa62.\nVERDICT diff: read the four commits; adds the dirty-integrated class and residue release, leaves promotion's dirty audit unchanged.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every \u00a73 clause is present and reachable: save patch+tar, verify patch applies to HEAD, classify subsumed/superseded/unique, write classification.json, list unique residue, refuse a live claim, remove without force.\nSCORE evidence: 20\nJUSTIFICATION evidence: both arms ran to their summary lines and I independently reproduced the head arm to 57 passed EXIT=0; the negative control is a real falsification of a case the head passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat lists only the four declared paths and the promotion change was reverted.\nSCORE durability: 19\nJUSTIFICATION durability: each class, the live-claim protection, run-dir routing, harness scratch preservation and the reclaimable-set invariant are exercised by name; a mid-save CrewError aborts the whole --apply batch, which matters for the later sweep.\nSCORE fit: 19\nJUSTIFICATION fit: reuses the module idioms and extends RECLAIMABLE_CLASSES without touching WITHHELD_REASONS; a defensive unreachable branch and a loose run-record match are the only blemishes.",
+  "review_run_id": "r-20261002T211727378876-review-of-finished-worktree-saves-residue-and-releases",
+  "reviewed_base_sha": "50b92333897d973bf2193d66231f896620e30b2f",
+  "reviewed_head_sha": "5328fa6230c00f1cb83e290545d2881d902a7fc3",
+  "reviewed_run_id": "r-20261002T203108817841-finished-worktree-saves-residue-and-releases",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.411968+00:00",
+  "total": 98
+}

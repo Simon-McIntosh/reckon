@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:638",
+    "reckon/crew/resumption.py:1185",
+    "reckon/crew/recovery.py:2524"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T11:17:05.361482+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "245",
+      "text": "the retypeable command still appends --local while the executed dispatch now selects at reckon/crew/recovery.py:550-551, so the scoring row's displayed action at line 2524 re-dispatches onto the local lane for a run whose attempt on it was recorded \u2014 the drift between a displayed and an executed composition that the docstring at lines 180-183 exists to prevent."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "509",
+      "text": "the selection reads only the recorded previous attempt, so a first composition still takes the local lane whatever its lane document reports of running against concurrent_requests, which is the first condition the section's Done when requires to be asserted and the condition the section was raised for."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "572",
+      "text": "a CrewError refusal records the backend it targeted, and _failed_review_backend at line 369 reads any recorded backend as a lane that dropped the review, so a scope, member or context-fit refusal demotes a lane that never dropped anything and moves the next attempt to another backend on that basis."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against aa267565; 7cb989af changes reckon/crew/recovery.py alone, aed7e8ab adds the plan record, the cumulative evidence anchor and the figure, and nothing in the diff falls outside the goal or the declared scope.",
+    "done_when": "the fence measure is base against after over the same two files, and the manifest states 4 failed/22 passed at base and 26 passed after; both logs are on disk and tests/test_review_reflex_selects_a_backend.py is the four selection assertions, but the section's Done when also asks for a lane whose running meets its concurrent_requests to be offered and no test offers one.",
+    "goal": "the node's goal is that the reflex selects the backend it dispatches to instead of asserting the local one and never recomposes onto a lane that just dropped the same review; reckon/crew/recovery.py:507-528 derives the backend from the run's recorded attempt and drops that lane from the candidates, and tests/test_review_reflex_selects_a_backend.py drives both halves.",
+    "manifest": "read; it records the gate command with its after and base counts, the negative control with the mutation it declares, and two follow-ons that name the headroom fallback and the --local display as not done.",
+    "write_paths": "read the manifest's five declared paths; every path in the diff is inside them, and both docs diffs are insertions only (45 and 11 lines, zero deletions, git diff --numstat aa267565..aed7e8ab)."
+  },
+  "justifications": {
+    "durability": "the declared mutation in negative-control.log \u2014 emptying the recorded previous lane \u2014 reddens three of the four new tests, and the assertions compare against config constants (LOCAL_BACKEND, OTHER_BACKEND) rather than a value the test handed the code.",
+    "evidence": "the manifest's counts agree with the logs it names \u2014 gate-base.log shows 4 failed, 22 passed, and gate-after-head.log shows 26 passed at revision aed7e8ab \u2014 and negative-control.log reddens 3 of 4 on the mutation it declares verbatim.",
+    "fit": "the new helpers follow the module's composition style and carry the reason for the selection in their docstrings (reckon/crew/recovery.py:383), and the new test file reports no findings under the project's ruff.",
+    "goal_fidelity": "reckon/crew/recovery.py:502-528 selects among the configured backends and demotes the lane a recorded attempt used instead of passing local=True, which is the goal; the first choice is still the local lane with no signal but a prior failure.",
+    "scope_discipline": "every path in git diff --numstat aa267565..aed7e8ab is one of the manifest's five declared write paths, and the evidence anchor and the plan record are appended, not rewritten."
+  },
+  "project": "reckon",
+  "raw_text": "REVISION: aed7e8ab1729322ab706212ff1308a877a6c8ea0\n\nVERDICT goal: the node's goal is that the reflex selects the backend it dispatches to instead of asserting the local one and never recomposes onto a lane that just dropped the same review; reckon/crew/recovery.py:507-528 derives the backend from the run's recorded attempt and drops that lane from the candidates, and tests/test_review_reflex_selects_a_backend.py drives both halves.\nVERDICT done_when: the fence measure is base against after over the same two files, and the manifest states 4 failed/22 passed at base and 26 passed after; both logs are on disk and tests/test_review_reflex_selects_a_backend.py is the four selection assertions, but the section's Done when also asks for a lane whose running meets its concurrent_requests to be offered and no test offers one.\nVERDICT write_paths: read the manifest's five declared paths; every path in the diff is inside them, and both docs diffs are insertions only (45 and 11 lines, zero deletions, git diff --numstat aa267565..aed7e8ab).\nVERDICT manifest: read; it records the gate command with its after and base counts, the negative control with the mutation it declares, and two follow-ons that name the headroom fallback and the --local display as not done.\nVERDICT diff: read commit by commit against aa267565; 7cb989af changes reckon/crew/recovery.py alone, aed7e8ab adds the plan record, the cumulative evidence anchor and the figure, and nothing in the diff falls outside the goal or the declared scope.\nCALL_SITES: reckon/crew/recovery.py:638, reckon/crew/resumption.py:1185, reckon/crew/recovery.py:2524\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:502-528 selects among the configured backends and demotes the lane a recorded attempt used instead of passing local=True, which is the goal; the first choice is still the local lane with no signal but a prior failure.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's counts agree with the logs it names \u2014 gate-base.log shows 4 failed, 22 passed, and gate-after-head.log shows 26 passed at revision aed7e8ab \u2014 and negative-control.log reddens 3 of 4 on the mutation it declares verbatim.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff --numstat aa267565..aed7e8ab is one of the manifest's five declared write paths, and the evidence anchor and the plan record are appended, not rewritten.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation in negative-control.log \u2014 emptying the recorded previous lane \u2014 reddens three of the four new tests, and the assertions compare against config constants (LOCAL_BACKEND, OTHER_BACKEND) rather than a value the test handed the code.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow the module's composition style and carry the reason for the selection in their docstrings (reckon/crew/recovery.py:383), and the new test file reports no findings under the project's ruff.\nFINDING reckon/crew/recovery.py:245 the retypeable command still appends --local while the executed dispatch now selects at reckon/crew/recovery.py:550-551, so the scoring row's displayed action at line 2524 re-dispatches onto the local lane for a run whose attempt on it was recorded \u2014 the drift between a displayed and an executed composition that the docstring at lines 180-183 exists to prevent.\nFINDING reckon/crew/recovery.py:509 the selection reads only the recorded previous attempt, so a first composition still takes the local lane whatever its lane document reports of running against concurrent_requests, which is the first condition the section's Done when requires to be asserted and the condition the section was raised for.\nFINDING reckon/crew/recovery.py:572 a CrewError refusal records the backend it targeted, and _failed_review_backend at line 369 reads any recorded backend as a lane that dropped the review, so a scope, member or context-fit refusal demotes a lane that never dropped anything and moves the next attempt to another backend on that basis.",
+  "review_run_id": "r-20260922T111705361482-rv-the-reflex-selects-a-backend-rather-than-asserting-one",
+  "reviewed_revision": "aed7e8ab1729322ab706212ff1308a877a6c8ea0",
+  "reviewed_run_id": "r-20260922T102812527148-the-reflex-selects-a-backend-rather-than-asserting-one",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T11:34:06.773746+00:00",
+  "total": 88
+}

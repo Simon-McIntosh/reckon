@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "67b520f31d3cab88b24d942732a8b2e8e39c4c61",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion.py:2621",
+    "reckon/crew/promotion.py:2661",
+    "reckon/crew/promotion.py:2674",
+    "reckon/crew/promotion.py:2772",
+    "reckon/crew/promotion.py:2798",
+    "tests/test_integrated_companion_path_is_accepted.py:106",
+    "tests/test_integrated_companion_path_is_accepted.py:149"
+  ],
+  "completed_at": "2026-10-03T02:33:21.554Z",
+  "dispatched_at": "2026-10-03T02:19:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2661",
+      "severity": "follow-on",
+      "text": "follow-on: the admission requires every cited commit that changed the path to be strictly behind HEAD, so a cited commit equal to the head (fast-forward merge, or a commit made on the branch head) and a squash/rebase integration whose commit is not an ancestor still refuse on a live claim; recorded by the worker under follow_ons and pinned by test_refused_promotion_leaves_the_worktree.py."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2632",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring calls the first-parent diff instrument _committed_scope charges the path change to, but _committed_scope skips merge commits unless every cited commit is a run merge, while _path_change_reaches_integration_head iterates them all; a cited merge commit that touched the companion path can make the two readings disagree."
+    },
+    {
+      "file": "tests/test_integrated_companion_path_is_accepted.py",
+      "line": "106",
+      "severity": "follow-on",
+      "text": "follow-on: the integrated case asserts the peer pointers are byte-for-byte unchanged, which is exactly the plan clause, and the head arm passes it; no defect, noted only that the assertion is the sole evidence the peer pointer is never written."
+    }
+  ],
+  "head_log_revision": "f0f8cf8f2f2708287152b9415aaf1981de93dce1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read all three commits end to end; 1afe400c9 is the fix plus its two-case test, f0f8cf8f2 the evidence anchor, 704756b8 re-cites the head arm at the delivered revision so the log and the cited revision agree. No churn, no unrelated files, no plan or sprint edit.",
+    "done_when": "all six clauses of plan section s36 hold. The integrated case is accepted under two live peer claims with the peer pointers asserted byte-for-byte untouched (tests/test_integrated_companion_path_is_accepted.py:106); the acceptance carries already_integrated true and both peer_claims by run id and path (test asserts scope_acceptances exactly, :130-140); the unintegrated case is still refused with the claim named and the ledger empty (:149); the fixture builds a temporary repository and RECKON_HOME; the negative control drops the reachability check and reddens exactly the not-integrated case.",
+    "goal": "the node admits a companion --accept-path whose change by the run is already behind the integration head, even while a live peer run claims the path; reckon/crew/promotion.py:2621 _path_change_reaches_integration_head is the admission predicate, consulted at promotion.py:2772 and recorded at promotion.py:2794-2801.",
+    "manifest": "read at the run directory; status complete, three commits (1afe400c9, f0f8cf8f2, 704756b8), baseline_suite and after_suite well-formed JSON with absolute log paths and literal commands, measurement_module and measurement_cwd recorded, negative_control_log a bare path with a one-line note.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, tests/test_integrated_companion_path_is_accepted.py and the evidence fragment; the base..head delta changes exactly those three and nothing else (promotion.py +96, test +181, evidence fragment +34), worktree clean at the delivered head."
+  },
+  "justifications": {
+    "durability": "both directions are pinned by tests and the negative control is load-bearing, reproduced here; the acceptance records already_integrated and peer_claims durably in the ledger row; deducted two for the strictness gap above and because _path_change_reaches_integration_head walks every cited commit including merges, where _committed_scope (which produced the outside set it guards) skips merges unless all cited commits are merges.",
+    "evidence": "base, head and negative-control logs are on disk with exact commands, log paths and per-arm revisions; the manifest JSON matches its logs; I independently reproduced all three arms (head 2 passed EXIT=0, base 1 failed/1 passed EXIT=1, control 1 failed/1 passed EXIT=1 with the not-integrated test failing DID NOT RAISE); deducted one because the delivered gate head is the code commit f0f8cf8f2 rather than the final worktree head 704756b8, which the worker re-ran and re-cited but left external to the head arm.",
+    "fit": "reuses the existing claim loop and _revision_is_ancestor helper, adds one predicate and one test file and one evidence anchor, conventional commits with bodies, no plan or ticket identifiers in code, names or comments; deducted one because the docstring calls the predicate the instrument _committed_scope charges the run by while the two differ on merge commits.",
+    "goal_fidelity": "every done_when clause holds and I reproduced both cases plus the control independently; deducted two because the reachability reading is strictly-behind, so a cited commit that IS the integration head (fast-forward merge, or a commit made directly on the branch head) and a squash/rebase integration still refuse on a live claim - a gap the worker recorded under follow_ons and which the existing refusal test pins.",
+    "scope_discipline": "only the three declared paths changed, no product code outside promotion.py, no plan or shared index touched, no churn, ruff check and format deltas identical at base and head, worktree clean at the delivered head."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node admits a companion --accept-path whose change by the run is already behind the integration head, even while a live peer run claims the path; reckon/crew/promotion.py:2621 _path_change_reaches_integration_head is the admission predicate, consulted at promotion.py:2772 and recorded at promotion.py:2794-2801.\nVERDICT done_when: all six clauses of plan section s36 hold. The integrated case is accepted under two live peer claims with the peer pointers asserted byte-for-byte untouched (tests/test_integrated_companion_path_is_accepted.py:106); the acceptance carries already_integrated true and both peer_claims by run id and path (test asserts scope_acceptances exactly, :130-140); the unintegrated case is still refused with the claim named and the ledger empty (:149); the fixture builds a temporary repository and RECKON_HOME; the negative control drops the reachability check and reddens exactly the not-integrated case.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, tests/test_integrated_companion_path_is_accepted.py and the evidence fragment; the base..head delta changes exactly those three and nothing else (promotion.py +96, test +181, evidence fragment +34), worktree clean at the delivered head.\nVERDICT manifest: read at the run directory; status complete, three commits (1afe400c9, f0f8cf8f2, 704756b8), baseline_suite and after_suite well-formed JSON with absolute log paths and literal commands, measurement_module and measurement_cwd recorded, negative_control_log a bare path with a one-line note.\nVERDICT diff: read all three commits end to end; 1afe400c9 is the fix plus its two-case test, f0f8cf8f2 the evidence anchor, 704756b8 re-cites the head arm at the delivered revision so the log and the cited revision agree. No churn, no unrelated files, no plan or sprint edit.\nCALL_SITES: reckon/crew/promotion.py:2621, reckon/crew/promotion.py:2661, reckon/crew/promotion.py:2674, reckon/crew/promotion.py:2772, reckon/crew/promotion.py:2798, tests/test_integrated_companion_path_is_accepted.py:106, tests/test_integrated_companion_path_is_accepted.py:149\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every done_when clause holds and I reproduced both cases plus the control independently; deducted two because the reachability reading is strictly-behind, so a cited commit that IS the integration head (fast-forward merge, or a commit made directly on the branch head) and a squash/rebase integration still refuse on a live claim - a gap the worker recorded under follow_ons and which the existing refusal test pins.\nSCORE evidence: 19\nJUSTIFICATION evidence: base, head and negative-control logs are on disk with exact commands, log paths and per-arm revisions; the manifest JSON matches its logs; I independently reproduced all three arms (head 2 passed EXIT=0, base 1 failed/1 passed EXIT=1, control 1 failed/1 passed EXIT=1 with the not-integrated test failing DID NOT RAISE); deducted one because the delivered gate head is the code commit f0f8cf8f2 rather than the final worktree head 704756b8, which the worker re-ran and re-cited but left external to the head arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only the three declared paths changed, no product code outside promotion.py, no plan or shared index touched, no churn, ruff check and format deltas identical at base and head, worktree clean at the delivered head.\nSCORE durability: 18\nJUSTIFICATION durability: both directions are pinned by tests and the negative control is load-bearing, reproduced here; the acceptance records already_integrated and peer_claims durably in the ledger row; deducted two for the strictness gap above and because _path_change_reaches_integration_head walks every cited commit including merges, where _committed_scope (which produced the outside set it guards) skips merges unless all cited commits are merges.\nSCORE fit: 19\nJUSTIFICATION fit: reuses the existing claim loop and _revision_is_ancestor helper, adds one predicate and one test file and one evidence anchor, conventional commits with bodies, no plan or ticket identifiers in code, names or comments; deducted one because the docstring calls the predicate the instrument _committed_scope charges the run by while the two differ on merge commits.\nFINDING reckon/crew/promotion.py:2661 follow-on: the admission requires every cited commit that changed the path to be strictly behind HEAD, so a cited commit equal to the head (fast-forward merge, or a commit made on the branch head) and a squash/rebase integration whose commit is not an ancestor still refuse on a live claim; recorded by the worker under follow_ons and pinned by test_refused_promotion_leaves_the_worktree.py.\nFINDING reckon/crew/promotion.py:2632 follow-on: the docstring calls the first-parent diff instrument _committed_scope charges the path change to, but _committed_scope skips merge commits unless every cited commit is a run merge, while _path_change_reaches_integration_head iterates them all; a cited merge commit that touched the companion path can make the two readings disagree.\nFINDING tests/test_integrated_companion_path_is_accepted.py:106 follow-on: the integrated case asserts the peer pointers are byte-for-byte unchanged, which is exactly the plan clause, and the head arm passes it; no defect, noted only that the assertion is the sole evidence the peer pointer is never written.\n",
+  "review_run_id": "r-20261003T021831126997-review-of-integrated-companion-path-is-accepted",
+  "reviewed_base_sha": "67b520f31d3cab88b24d942732a8b2e8e39c4c61",
+  "reviewed_head_sha": "704756b87e80128d339b5b23925108b4aa7b2ff6",
+  "reviewed_run_id": "r-20261003T013806462596-integrated-companion-path-is-accepted",
+  "reviewer": "review-of-integrated-companion-path-is-accepted",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.794561+00:00",
+  "total": 94
+}

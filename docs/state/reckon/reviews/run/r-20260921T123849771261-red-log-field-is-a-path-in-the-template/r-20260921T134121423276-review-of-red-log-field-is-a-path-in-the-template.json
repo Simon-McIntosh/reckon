@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "commits_read": [
+    "f90531e7d2c146f49bff542d7935249471f0bf85",
+    "ffd616c128d8018bcd294e591fb80ca3884aea77"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T13:41:21.423276+00:00",
+  "findings": [
+    {
+      "file": "tests/test_negative_control_log_is_a_path.py",
+      "line": "4",
+      "text": "the docstring states four workers wrote the field \"four ways\" while its enumeration lists three distinct shapes and drops the \"twice\" that reconciles the count, so a reader who never opens the plan cannot match the count to the shapes it names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123849771261-red-log-field-is-a-path-in-the-template/manifest.md",
+      "line": "9",
+      "text": "the recorded gate command embeds the literal placeholder <worktree> instead of the path it actually ran in, so the record of the gate cannot be re-run as written and reads as a template rather than a receipt."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against the base; f90531e7 changes two template lines and adds the test file, ffd616c1 appends the section's landing record and the archive section, and the plan's version and modified meta lines are untouched.",
+    "done_when": "the done_when names the compose_prompt cases in tests/test_negative_control_log_is_a_path.py plus a red log whose first line repeats the declaration verbatim; the four cases enter through compose_prompt (tests/test_negative_control_log_is_a_path.py:73-95) and I reproduced the declared mutation on a scratch copy of the fixed tree at head \u2014 1 failed, 3 passed, the same single case the recorded log shows.",
+    "goal": "the goal asks the emitted manifest template to state that negative_control_log is a path alone and to give commentary a negative_control_note line; rendering compose_prompt at the reviewed head (reckon/crew/prompts.py:264-265) prints exactly those two lines, so the goal is met.",
+    "manifest": "read; it names both commits, a focused gate of 58 passed exit 0 with a durable log under the run directory, the red-log value as the path alone, and the promotion-side reading half as a follow-on; only its recorded gate command carries a defect (see the second finding).",
+    "write_paths": "the manifest declares four write paths (reckon/crew/prompts.py, tests/test_negative_control_log_is_a_path.py and the two docs files under the section's archive and plan); the two commits touch only those, so the diff is inside the fence."
+  },
+  "justifications": {
+    "durability": "removing the note line reddens tests/test_negative_control_log_is_a_path.py:83 while the other three cases pin the path-alone phrase, the absence of the inviting description, and the surviving first-line convention.",
+    "evidence": "the recorded red log's first line repeats the declared mutation verbatim and my independent re-run of that mutation on a scratch copy of the fixed tree reddens only tests/test_negative_control_log_is_a_path.py:83 (1 failed, 3 passed), matching it, but focused-gate.log:2 carries no revision or command stamp.",
+    "fit": "template text inside reckon/crew/prompts.py plus a capability-named test module in the same idiom, and the tolerant manifest reader at reckon/crew/reports.py:291 keeps the new key rather than refusing it.",
+    "goal_fidelity": "the rendered template at head carries the path-alone statement and the note line beside it at reckon/crew/prompts.py:264-265, which is the whole of what the goal asks for.",
+    "scope_discipline": "both commits together change only the four declared write paths, and the plan carries a pure three-line insertion with its meta lines untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260921T123849771261-red-log-field-is-a-path-in-the-template (reckon, \u00a711 of the crew-runtime-positive-controls plan). Read: the node record on the live pointer, the run manifest, both commits against base 26d6df25680ac385446f9db0c86f339ddb57fece, the focused gate log, the red log, and an independent render and mutation re-run at the reviewed head ffd616c128d8018bcd294e591fb80ca3884aea77.\n\nVERDICT goal: the goal asks the emitted manifest template to state that negative_control_log is a path alone and to give commentary a negative_control_note line; rendering compose_prompt at the reviewed head (reckon/crew/prompts.py:264-265) prints exactly those two lines, so the goal is met.\nVERDICT done_when: the done_when names the compose_prompt cases in tests/test_negative_control_log_is_a_path.py plus a red log whose first line repeats the declaration verbatim; the four cases enter through compose_prompt (tests/test_negative_control_log_is_a_path.py:73-95) and I reproduced the declared mutation on a scratch copy of the fixed tree at head \u2014 1 failed, 3 passed, the same single case the recorded log shows.\nVERDICT write_paths: the manifest declares four write paths (reckon/crew/prompts.py, tests/test_negative_control_log_is_a_path.py and the two docs files under the section's archive and plan); the two commits touch only those, so the diff is inside the fence.\nVERDICT manifest: read; it names both commits, a focused gate of 58 passed exit 0 with a durable log under the run directory, the red-log value as the path alone, and the promotion-side reading half as a follow-on; only its recorded gate command carries a defect (see the second finding).\nVERDICT diff: read commit by commit against the base; f90531e7 changes two template lines and adds the test file, ffd616c1 appends the section's landing record and the archive section, and the plan's version and modified meta lines are untouched.\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the rendered template at head carries the path-alone statement and the note line beside it at reckon/crew/prompts.py:264-265, which is the whole of what the goal asks for.\nSCORE evidence: 19\nJUSTIFICATION evidence: the recorded red log's first line repeats the declared mutation verbatim and my independent re-run of that mutation on a scratch copy of the fixed tree reddens only tests/test_negative_control_log_is_a_path.py:83 (1 failed, 3 passed), matching it, but focused-gate.log:2 carries no revision or command stamp.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits together change only the four declared write paths, and the plan carries a pure three-line insertion with its meta lines untouched.\nSCORE durability: 20\nJUSTIFICATION durability: removing the note line reddens tests/test_negative_control_log_is_a_path.py:83 while the other three cases pin the path-alone phrase, the absence of the inviting description, and the surviving first-line convention.\nSCORE fit: 19\nJUSTIFICATION fit: template text inside reckon/crew/prompts.py plus a capability-named test module in the same idiom, and the tolerant manifest reader at reckon/crew/reports.py:291 keeps the new key rather than refusing it.\n\nFINDING tests/test_negative_control_log_is_a_path.py:4 the docstring states four workers wrote the field \"four ways\" while its enumeration lists three distinct shapes and drops the \"twice\" that reconciles the count, so a reader who never opens the plan cannot match the count to the shapes it names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123849771261-red-log-field-is-a-path-in-the-template/manifest.md:9 the recorded gate command embeds the literal placeholder <worktree> instead of the path it actually ran in, so the record of the gate cannot be re-run as written and reads as a template rather than a receipt.",
+  "review_run_id": "r-20260921T134121423276-review-of-red-log-field-is-a-path-in-the-template",
+  "reviewed_base_sha": "26d6df25680ac385446f9db0c86f339ddb57fece",
+  "reviewed_head_sha": "ffd616c128d8018bcd294e591fb80ca3884aea77",
+  "reviewed_run_id": "r-20260921T123849771261-red-log-field-is-a-path-in-the-template",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T14:54:10.154313+00:00",
+  "total": 98
+}

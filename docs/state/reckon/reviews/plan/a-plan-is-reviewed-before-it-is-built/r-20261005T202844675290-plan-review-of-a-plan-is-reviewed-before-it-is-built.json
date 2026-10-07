@@ -1,0 +1,24 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T20:34:39.717Z",
+  "dispatched_at": "2026-10-05T20:29:04Z",
+  "findings": [],
+  "plan_fingerprint": "855b200be19885abccce09e8b08f5257ffb1550c17b988b5cedad7e152f828bd",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 128,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T202844675290-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "214e9188fe790f14b74dbce4b03872d22f2ea4a5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 hides the one raw-text `_StructuredSectionSpanParser` pass behind the public `plan_headings` reader and the `structured_section_spans` projection, and \u00a716 hides the section\u2192digest mapping behind the private `_section_digests`; each added callable is smaller than the walk it replaces, and no new module is proposed.",
+    "duplicate_owner": "pass \u2014 the design is a consolidation naming each owner it extends: `section_record_id`/`section_id_candidates` hoist into `_plan_html.py`, `landed_section_ids` re-homes from `_store.py`, the four `== \"implementable\"` readers call one schema predicate, and \u00a718 reduces the `c-run-` literal to `plan_review.RUN_COMMENT_PREFIX`.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; only public_definitions grows (+4 across \u00a716/\u00a717/\u00a718) and each section states in its own text why nothing public can be retired (the public readers `structured_section_spans` and `landed_section_ids` keep callers outside the module), with \u00a716's refusal reusing the existing plan-review-missing family.",
+    "reuse_search": "pass \u2014 the plan cites, and the reviewer confirmed, every existing mechanism it extends (`_StructuredSectionSpanParser`/`_TAG_RE`, `_store`'s section helpers and `landed_section_ids`, `routing.section_record_id`, `_schema.plan_executable_remainder`, `roadmap.implementable_sections`, `interface_counts.read_trees`, `plan_review.plan_fingerprint`/`_fingerprint_forms`); every cited anchor resolves and no proposed reader lacks a named prior art.",
+    "thin_wrapper": "pass \u2014 \u00a716 justifies `strip_tags` as exposing `_plan_html.py`'s existing `_TAG_RE` across the package boundary rather than adding a second expression, and \u00a717 justifies the machinery-element predicate over the existing `data-reckon` spellings."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T20:35:37.084665+00:00"
+}

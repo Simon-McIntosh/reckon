@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 18,
+  "call_sites": [
+    "reckon/cli.py:2693",
+    "reckon/flight.py:1428",
+    "reckon/mcp_views.py:1131",
+    "reckon/crew/directory.py:70",
+    "reckon/crew/recovery.py:958",
+    "reckon/crew/recovery.py:1180",
+    "reckon/crew/recovery.py:4165",
+    "reckon/crew/recovery.py:4326",
+    "reckon/crew/recovery.py:5106",
+    "reckon/crew/recovery.py:5188",
+    "reckon/crew/promotion.py:2566",
+    "reckon/crew/promotion.py:3200",
+    "reckon/crew/query.py:122",
+    "reckon/crew/query.py:166",
+    "reckon/crew/query.py:211",
+    "reckon/crew/resumption.py:1112",
+    "reckon/crew/runs.py:908",
+    "reckon/crew/runs.py:2573"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T05:40:18.044496+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 18 production call site(s)",
+    "diff": "read commit by commit against base 2bf6587b; 2e2704be adds the exit-record reader, the classifier wiring and eight tests, ffc3775d adds the 61-file delta population beside the logs, and a683aaac is a single hunk in the launch-failed arm's else-branch that names the recorded end only where one exists and says so otherwise, with its red/green logs, the archive splice and the plan line. The fix changes no signature or return shape, so no call site needs a change.",
+    "done_when": "the done_when names tests/test_recovery_reads_the_exit_record.py driving observe over run directories in a temporary config home; I re-ran it from the reviewed tree at the reviewed head and read 9 passed, exit 0 (gate_focused.log), and re-ran the same file over the prior source (reckon/crew/recovery.py from ffc3775d, everything else at the head) and read 1 failed, 8 passed, the failure being exactly test_a_launch_failed_pointer_with_nothing_recorded_still_classifies with AttributeError at recovery.py:3727 inside _exit_record_end_phrase recovery.py:2898.",
+    "goal": "the node's goal is to classify a finished worker from its recorded exit, and at this head the shape the earlier review found classifies instead of raising: my probe drives the launch-failed pointer with no failure entry and no record through the reviewed tree's own observe-and-classify harness and reads launch-failed with exit_record null and detail 'the launch for backend fixture-lane ended without a recorded exit before writing any stream record (...); no model was reached', where the same pointer over the prior source raised AttributeError (probe_three_trees.log). The recorded shapes are unchanged: a recorded launch failure still names its end (probe B, 'exited with code 1').",
+    "manifest": "read at the reviewed head; it carries three commits with a body each, the three-case gate, the declared control with its scratch-tree log (4 failed, 4 passed), both delta arms with their failure-id sets (base 2 failed of 922, repaired head 922 passed), the review repair recorded with its red and green logs, and status complete.",
+    "write_paths": "the node declared five write paths (reckon/crew/recovery.py, tests/test_recovery_reads_the_exit_record.py, docs/plans/worker-death-is-recorded.html, docs/evidence/archive/worker-death-is-recorded-landed.html, docs/figures/worker-death-is-recorded); all twelve paths in the base-to-head diff lie inside them, and the cumulative evidence archive is a pure splice, 73 insertions and 0 deletions across base..head."
+  },
+  "justifications": {
+    "durability": "the repaired shape carries a permanent test that is demonstrably the discriminator, since reverting only the guard turns exactly that case red and leaves the other eight green, so the crash cannot return unnoticed; the caveat is that the guarded state's production reachability is not demonstrated by a writer, because the one production writer sets the phase and its failure entry in a single pointer mutation (dispatch.py:4380-4388), making the guard a tolerance for shared pointer state rather than a state today's launcher is shown to produce alone.",
+    "evidence": "both directions of the repair were reproduced independently from git objects rather than read from the node's own logs (head tree 9 passed; head tests over the prior source fail exactly the ninth case with AttributeError at recovery.py:3727), and the delta gate's 61-file population is exactly re-derivable from the base revision's own tests/ once the dynamic import_module('reckon.crew.recovery') in test_crew_surface_parity.py is included; the head delta log names its revision, tree, module and cwd.",
+    "fit": "the guard follows the module's mapping-in and None-out style, its phrase sits beside _exit_record_end_phrase's own 'ended with no wait status recorded', and the comment states the mechanism without a plan label, a ticket reference or a version suffix; all ended_exit reads in the arm are guarded (3727, 3757) and the sibling reader resumption.py:635 guards the same class of shape.",
+    "goal_fidelity": "the earlier finding's shape now classifies rather than raising (probe A: launch-failed, exit_record null, 'ended without a recorded exit before writing any stream record'), the recorded shapes still name their end (probe B unchanged from the prior head: 'exited with code 1'), and the classifier still reads the record only where the process table has not answered alive; the residual gap, that a foreign stored liveness claim outranks the record, is the declared observe-fold follow-on and not this node's reader.",
+    "scope_discipline": "all twelve paths in the base-to-head diff lie inside the node's five declared write paths and the fix commit touches nothing else; one point is withheld because the after-guard delta log's header names uncommitted working-tree edits rather than the commit that landed the same content, which I verified is the same single hunk."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to classify a finished worker from its recorded exit, and at this head the shape the earlier review found classifies instead of raising: my probe drives the launch-failed pointer with no failure entry and no record through the reviewed tree's own observe-and-classify harness and reads launch-failed with exit_record null and detail 'the launch for backend fixture-lane ended without a recorded exit before writing any stream record (...); no model was reached', where the same pointer over the prior source raised AttributeError (probe_three_trees.log). The recorded shapes are unchanged: a recorded launch failure still names its end (probe B, 'exited with code 1').\nVERDICT done_when: the done_when names tests/test_recovery_reads_the_exit_record.py driving observe over run directories in a temporary config home; I re-ran it from the reviewed tree at the reviewed head and read 9 passed, exit 0 (gate_focused.log), and re-ran the same file over the prior source (reckon/crew/recovery.py from ffc3775d, everything else at the head) and read 1 failed, 8 passed, the failure being exactly test_a_launch_failed_pointer_with_nothing_recorded_still_classifies with AttributeError at recovery.py:3727 inside _exit_record_end_phrase recovery.py:2898.\nVERDICT write_paths: the node declared five write paths (reckon/crew/recovery.py, tests/test_recovery_reads_the_exit_record.py, docs/plans/worker-death-is-recorded.html, docs/evidence/archive/worker-death-is-recorded-landed.html, docs/figures/worker-death-is-recorded); all twelve paths in the base-to-head diff lie inside them, and the cumulative evidence archive is a pure splice, 73 insertions and 0 deletions across base..head.\nVERDICT manifest: read at the reviewed head; it carries three commits with a body each, the three-case gate, the declared control with its scratch-tree log (4 failed, 4 passed), both delta arms with their failure-id sets (base 2 failed of 922, repaired head 922 passed), the review repair recorded with its red and green logs, and status complete.\nVERDICT diff: read commit by commit against base 2bf6587b; 2e2704be adds the exit-record reader, the classifier wiring and eight tests, ffc3775d adds the 61-file delta population beside the logs, and a683aaac is a single hunk in the launch-failed arm's else-branch that names the recorded end only where one exists and says so otherwise, with its red/green logs, the archive splice and the plan line. The fix changes no signature or return shape, so no call site needs a change.\nCALL_SITES: reckon/cli.py:2693, reckon/flight.py:1428, reckon/mcp_views.py:1131, reckon/crew/directory.py:70, reckon/crew/recovery.py:958, reckon/crew/recovery.py:1180, reckon/crew/recovery.py:4165, reckon/crew/recovery.py:4326, reckon/crew/recovery.py:5106, reckon/crew/recovery.py:5188, reckon/crew/promotion.py:2566, reckon/crew/promotion.py:3200, reckon/crew/query.py:122, reckon/crew/query.py:166, reckon/crew/query.py:211, reckon/crew/resumption.py:1112, reckon/crew/runs.py:908, reckon/crew/runs.py:2573\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the earlier finding's shape now classifies rather than raising (probe A: launch-failed, exit_record null, 'ended without a recorded exit before writing any stream record'), the recorded shapes still name their end (probe B unchanged from the prior head: 'exited with code 1'), and the classifier still reads the record only where the process table has not answered alive; the residual gap, that a foreign stored liveness claim outranks the record, is the declared observe-fold follow-on and not this node's reader.\nSCORE evidence: 19\nJUSTIFICATION evidence: both directions of the repair were reproduced independently from git objects rather than read from the node's own logs (head tree 9 passed; head tests over the prior source fail exactly the ninth case with AttributeError at recovery.py:3727), and the delta gate's 61-file population is exactly re-derivable from the base revision's own tests/ once the dynamic import_module('reckon.crew.recovery') in test_crew_surface_parity.py is included; the head delta log names its revision, tree, module and cwd.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all twelve paths in the base-to-head diff lie inside the node's five declared write paths and the fix commit touches nothing else; one point is withheld because the after-guard delta log's header names uncommitted working-tree edits rather than the commit that landed the same content, which I verified is the same single hunk.\nSCORE durability: 18\nJUSTIFICATION durability: the repaired shape carries a permanent test that is demonstrably the discriminator, since reverting only the guard turns exactly that case red and leaves the other eight green, so the crash cannot return unnoticed; the caveat is that the guarded state's production reachability is not demonstrated by a writer, because the one production writer sets the phase and its failure entry in a single pointer mutation (dispatch.py:4380-4388), making the guard a tolerance for shared pointer state rather than a state today's launcher is shown to produce alone.\nSCORE fit: 18\nJUSTIFICATION fit: the guard follows the module's mapping-in and None-out style, its phrase sits beside _exit_record_end_phrase's own 'ended with no wait status recorded', and the comment states the mechanism without a plan label, a ticket reference or a version suffix; all ended_exit reads in the arm are guarded (3727, 3757) and the sibling reader resumption.py:635 guards the same class of shape.",
+  "review_run_id": "r-20260925T054018044496-rereview-of-recovery-reads-the-exit-record",
+  "reviewed_base_sha": "2bf6587bebc9b23363b3ef7e4a1be3c025c584d3",
+  "reviewed_head_sha": "a683aaacd0849d16c49592dbe05ee3a7664d991d",
+  "reviewed_run_id": "r-20260925T043805585389-recovery-reads-the-exit-record",
+  "reviewer": "rereview-of-recovery-reads-the-exit-record",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T05:55:42.725798+00:00",
+  "total": 92
+}

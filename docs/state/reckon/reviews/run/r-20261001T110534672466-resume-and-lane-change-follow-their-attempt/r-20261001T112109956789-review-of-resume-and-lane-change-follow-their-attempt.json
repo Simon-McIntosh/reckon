@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run recorded one gate arm, head-gate.log (3 passed, 0 failed, EXIT=0 at c77ddc12a), and a negative-control arm; it declares no baseline_suite, and its target test file is authored by the change (added in c77ddc12a), so 0 is the after arm's own failure count rather than a suite delta and the change's effect on the pre-existing suite is unmeasured. This reviewer reproduced the after arm at cbd5d61ea (3 passed, EXIT=0) and the negative control in a scratch tree (3 failed, EXIT=1).",
+  "backend": "clive",
+  "base_log_revision": "a0d770a61d284beb150f3582993075299157affe",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:4975 (change_lane)",
+    "reckon/cli.py:4985 (crew_module.resume_plan)",
+    "reckon/cli.py:5073 (change_lane)",
+    "reckon/mcp.py:4580 (crew_module.resume_plan)",
+    "reckon/crew/resumption.py:769 (resume_plan)"
+  ],
+  "completed_at": "2026-10-01T11:31:53.655Z",
+  "dispatched_at": "2026-10-01T11:21:33Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T110534672466-resume-and-lane-change-follow-their-attempt/manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed node is armed (its write paths include tests/test_resume_and_lane_change_follow_their_own_attempt.py) but its manifest records neither baseline_suite nor after_suite, so its gate result is carried only in the prose tests: line rather than the structured keys the template defines. The substance is present and independently reproduced (head-gate.log 3 passed EXIT=0, negative-control.log 3 failed EXIT=1), so this is a bookkeeping follow-on for the coordinator, not a defect in the reviewed change."
+    }
+  ],
+  "head_log_revision": "cbd5d61ea6ff573a4525afce18e7233add340db5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "5 production call sites: reckon/cli.py:4975, :4985 and :5073, reckon/mcp.py:4580, and reckon/crew/resumption.py:769; both changed functions are on live launch paths rather than test-only helpers.",
+    "diff": "read a0d770a6..cbd5d61ea (three files, 408 insertions, 10 deletions): reckon/crew/dispatch.py passes run_dir(run_id) as the fence run_directory in resume_plan (:8843) and directory (= run_dir(run_id), :9185) in change_lane (:9235), where both previously passed Path(manifest_path).parent, and each sets current[\"fenced\"] = _plan_composed_the_fence(...) after _carry_fence_unprotected (:8873, :9383); the FENCE_WORKERS comment now names _request_lane_availability (resumption.py:219, fence=False at :251) as the one deliberately unfenced launch; no remaining Path(manifest_path).parent call exists in dispatch.py.",
+    "done_when": "the three declared properties hold and I reproduced them: the gate at cbd5d61ea reads 3 passed, EXIT=0; the declared mutation (revert both run_directory assignments to Path(manifest_path).parent and drop both fenced assignments) reddens all three cases, 3 failed, EXIT=1; and the FENCE_WORKERS comment now names the lane-availability probe.",
+    "goal": "the node goal is that a resumed or lane-changed run follows the fence of the attempt it launches -- binding run_dir(run_id) as the primary dispatch does and recording fenced from the composed argv; the landed change does both, bringing resume_plan and change_lane to parity with the primary dispatch at dispatch.py:5606.",
+    "manifest": "read; status complete, names the gate command with its 3-passed result, carries head-gate.log and negative-control.log as test_logs and an evidence fragment; it is armed (a test file is in its write paths) but omits the baseline_suite and after_suite keys, so its gate result is recorded in prose only.",
+    "write_paths": "the manifest declares dispatch.py, the new test file, the evidence fragment and a figures directory; the two commits c77ddc12a and cbd5d61ea change exactly reckon/crew/dispatch.py, tests/test_resume_and_lane_change_follow_their_own_attempt.py and docs/evidence/fragments/a-worker-cannot-write-your-home/resume-and-lane-change-follow-their-attempt.html, all inside that scope, and the worktree is clean at cbd5d61ea."
+  },
+  "justifications": {
+    "durability": "the three cases redden exactly when the behaviour they name is removed -- reverting run_directory to the manifest parent reddens cases 1 and 2, and dropping the fenced assignments reddens case 3 (independently reproduced, 3 failed, EXIT=1) -- so the tests guard the regression rather than a value under test, and the FENCE_WORKERS comment records the deliberate exemption so a later reader does not re-close it.",
+    "evidence": "the after arm re-ran green for me at cbd5d61ea (3 passed, EXIT=0, worktree clean afterwards) and the declared negative control reproduces in a scratch tree (3 failed, EXIT=1), so the guard is shown to fire; the shortfall is that the reviewed manifest, though armed, names no baseline_suite and no structured after_suite, so the delta is carried in prose rather than the defined keys.",
+    "fit": "the change follows the existing idiom -- identical fence argument and fenced assignment to the primary dispatch, comments that state the mechanism (the pointer's flag describes the attempt that just launched) -- and introduces no plan label, ticket, version name or author attribution in code, comments, filenames or commit messages.",
+    "goal_fidelity": "all three done-when clauses are met at their named paths: the resumed argv binds run_dir(run_id) and the manifest's directory, the lane-changed argv binds both, and a CLI run lane-changed to an in-harness backend reads fenced false with fence_unprotected_paths removed (_carry_fence_unprotected pops the key when the fence did not compose).",
+    "scope_discipline": "git diff --stat a0d770a6..cbd5d61ea lists three files, all inside the node's declared write paths, the worktree is clean at cbd5d61ea with no untracked entries, and both commits carry a conventional subject with a body and no attribution or plan label."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a resumed or lane-changed run follows the fence of the attempt it launches -- binding run_dir(run_id) as the primary dispatch does and recording fenced from the composed argv; the landed change does both, bringing resume_plan and change_lane to parity with the primary dispatch at dispatch.py:5606.\nVERDICT done_when: the three declared properties hold and I reproduced them: the gate at cbd5d61ea reads 3 passed, EXIT=0; the declared mutation (revert both run_directory assignments to Path(manifest_path).parent and drop both fenced assignments) reddens all three cases, 3 failed, EXIT=1; and the FENCE_WORKERS comment now names the lane-availability probe.\nVERDICT write_paths: the manifest declares dispatch.py, the new test file, the evidence fragment and a figures directory; the two commits c77ddc12a and cbd5d61ea change exactly reckon/crew/dispatch.py, tests/test_resume_and_lane_change_follow_their_own_attempt.py and docs/evidence/fragments/a-worker-cannot-write-your-home/resume-and-lane-change-follow-their-attempt.html, all inside that scope, and the worktree is clean at cbd5d61ea.\nVERDICT manifest: read; status complete, names the gate command with its 3-passed result, carries head-gate.log and negative-control.log as test_logs and an evidence fragment; it is armed (a test file is in its write paths) but omits the baseline_suite and after_suite keys, so its gate result is recorded in prose only.\nVERDICT diff: read a0d770a6..cbd5d61ea (three files, 408 insertions, 10 deletions): reckon/crew/dispatch.py passes run_dir(run_id) as the fence run_directory in resume_plan (:8843) and directory in change_lane (:9235), where both previously passed Path(manifest_path).parent, and each sets current[\"fenced\"] = _plan_composed_the_fence(...) after _carry_fence_unprotected (:8873, :9383); the FENCE_WORKERS comment now names _request_lane_availability (resumption.py:219, fence=False at :251) as the one deliberately unfenced launch.\nCALL_SITES: 5 production call sites (cli.py:4975, :4985, :5073; mcp.py:4580; resumption.py:769)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all three done-when clauses are met at their named paths: the resumed argv binds run_dir(run_id) and the manifest's directory, the lane-changed argv binds both, and a CLI run lane-changed to an in-harness backend reads fenced false with fence_unprotected_paths removed (_carry_fence_unprotected pops the key when the fence did not compose).\nSCORE evidence: 17\nJUSTIFICATION evidence: the after arm re-ran green for me at cbd5d61ea (3 passed, EXIT=0, worktree clean afterwards) and the declared negative control reproduces in a scratch tree (3 failed, EXIT=1), so the guard is shown to fire; the shortfall is that the reviewed manifest, though armed, names no baseline_suite and no structured after_suite, so the delta is carried in prose rather than the defined keys.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a0d770a6..cbd5d61ea lists three files, all inside the node's declared write paths, the worktree is clean at cbd5d61ea with no untracked entries, and both commits carry a conventional subject with a body and no attribution or plan label.\nSCORE durability: 19\nJUSTIFICATION durability: the three cases redden exactly when the behaviour they name is removed -- reverting run_directory to the manifest parent reddens cases 1 and 2, and dropping the fenced assignments reddens case 3 (independently reproduced, 3 failed, EXIT=1) -- so the tests guard the regression rather than a value under test.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the existing idiom -- identical fence argument and fenced assignment to the primary dispatch, comments that state the mechanism -- and introduces no plan label, ticket, version name or author attribution in code, comments, filenames or commit messages.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T110534672466-resume-and-lane-change-follow-their-attempt/manifest.md:10 follow-on: the reviewed node is armed (its write paths include tests/test_resume_and_lane_change_follow_their_own_attempt.py) but its manifest records neither baseline_suite nor after_suite, so its gate result is carried only in the prose tests: line rather than the structured keys the template defines. The substance is present and independently reproduced (head-gate.log 3 passed EXIT=0, negative-control.log 3 failed EXIT=1), so this is a bookkeeping follow-on for the coordinator, not a defect in the reviewed change.\n",
+  "review_run_id": "r-20261001T112109956789-review-of-resume-and-lane-change-follow-their-attempt",
+  "reviewed_base_sha": "a0d770a61d284beb150f3582993075299157affe",
+  "reviewed_head_sha": "cbd5d61ea6ff573a4525afce18e7233add340db5",
+  "reviewed_run_id": "r-20261001T110534672466-resume-and-lane-change-follow-their-attempt",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T11:28:00+00:00",
+  "total": 94
+}

@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:2661 crew_list (fields backing R1/R2 at cli.py:2711-2715)",
+    "reckon/cli.py:3547 recover",
+    "reckon/crew/lane_document.py:168 read_lane_document",
+    "reckon/mcp.py:3507 crew lanes view",
+    "reckon/serve.py:532 _crew_rows (the /crew payload R8 reads)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T12:38:35.850215+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md",
+      "line": "125",
+      "text": "R8's thin interface is priced on work that is not done: \"it already computes them for crew list, cli.py:2716-2745\" holds for the budget verdict (cli.py:2723-2732 emits budget_seconds, budget_overrun, ceiling_overrun) but not for gates -- gates_total, gates_done and current_gate occur nowhere in reckon/ at 93c28dba and only in docs/ui/crew.jsx, so a reader acting on the remedy finds the gate half unstarted rather than merely unsurfaced."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md",
+      "line": "123",
+      "text": "R8 cites the binding rule as docs/AGENTS.md *The SPA renders; it does not derive*, but at 93c28dba that sentence lives only at AGENTS.md:147 (the repository root file) and docs/AGENTS.md contains no such rule, so a reader sent to the cited path finds nothing -- and the root AGENTS.md is not inside the scope the report declares at report.md:8-9."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md",
+      "line": "142",
+      "text": "the I7 absence control does not reproduce: a literal grep for flight.yaml across the declared scope (all seven skills, ~/.agents/AGENTS.md, the AGENTS.md files, docs/ui) returns zero hits, and docs/AGENTS.md:87 -- named as the one prose hit -- is a config-home sentence that never mentions the file. The absence conclusion holds and a positive control does exist inside the package at reckon/flight.py:8, but the control as recorded names a line that does not carry the searched string."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md",
+      "line": "38",
+      "text": "three cited ranges exclude the lines they name: cli.py:2716-2745 is cited for the four fields that sit at cli.py:2711-2715 (report.md:38, :49, :125), reckon-sync/SKILL.md:287 is cited for a mounts.json write whose inline python3 runs at :289 with json.dump at :295 (report.md:58), and sprint-orchestration.md:306 is cited for a script whose name is at :304 (report.md:96). Each lands in the right function or section, so this is citation drift rather than a wrong location, and it is the size of error a reader following a line reference still feels."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "there is no commit to read -- the change is the 176-line report at .config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md; I read it in full and verified every file:line citation it makes against 93c28dba -- worktree_fleet.py:71-92 and :125-179 with pointer_is_running :156-168 and live_worktree_claims :171-179, ~/.agents/AGENTS.md:593 :648 :671 :964 :1143, mcp.py:3507, cli.py:2767 and :2996, crew.jsx:181-235 and :331, shell.jsx:205 -- all exact, while three ranges are off by 2-5 lines, one remedy clause prices work that is not done, and one rule is attributed to the wrong file (FINDINGs below).",
+    "done_when": "the fence's measure (prompt.txt:52) asks for rows carrying consumer/internal/need/already-answered/thin-interface plus a ranked five inside a named four-part scope; the report has all of these (rows report.md:31-126, ranking :145-166) with three checked-absent classes at :128-143, and I reproduced the I6 and I4/I5 controls exactly at 93c28dba while the I7 control does not reproduce (FINDING below).",
+    "goal": "the node's goal is \"find where consumers of reckon must know reckon internals, and name the thin interface that would replace each\" (prompt.txt:25), and the report does it: eight consumer rows at report.md:31-126 each give the consumer (file:line), the internal, the need, the existing CLI/MCP answer by name, and a thin interface, with the ranked top five at report.md:145-166.",
+    "manifest": "read .config/reckon/crew/runs/r-20260924T122925465818-s19-internals-consumers-survey/manifest.md; status complete, artifacts naming the report (present, 176 lines), tests recorded as no gate command for an investigation node, which is the right shape for a prose deliverable whose gate is its coverage; its evidence_inputs and follow_ons match what the report says.",
+    "write_paths": "the source was fenced to the report store directory alone (prompt.txt:36); the reviewed worktree at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/s19-internals-consumers-survey is at 93c28dba with an empty git status --porcelain and no commit above 93c28dba, so no repository path was touched and the manifest's changed_paths empty list is true."
+  },
+  "justifications": {
+    "durability": "nothing re-derives this report's claims, so a citation that rots or a remedy priced on absent code fails nothing -- all four findings below were invisible to the node's own coverage-only gate.",
+    "evidence": "the citations verify at 93c28dba nearly line-for-line (worktree_fleet.py:125-179, AGENTS.md:1143, mcp.py:3507, cli.py:2767), but the I7 absence control at report.md:142-143 does not reproduce and three cited ranges exclude the lines they name.",
+    "fit": "the report uses the dispatch's own vocabulary, cites paths rather than symbols, and invents no source symbol, though its scope line at report.md:8-9 names a reckon/AGENTS.md that does not exist at the reviewed revision.",
+    "goal_fidelity": "report.md:31-126 carries all five fields per row and names an existing answer for seven of eight, but report.md:125 prices R8's remedy on a Python computation that does not exist and report.md:123 attributes a binding rule to a file that does not carry it.",
+    "scope_discipline": "the reviewed worktree is clean at 93c28dba with no commit above it and the only artifact is the 176-line report under the fenced store path, so the read-only fence held."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"find where consumers of reckon must know reckon internals, and name the thin interface that would replace each\" (prompt.txt:25), and the report does it: eight consumer rows at report.md:31-126 each give the consumer (file:line), the internal, the need, the existing CLI/MCP answer by name, and a thin interface, with the ranked top five at report.md:145-166.\nVERDICT done_when: the fence's measure (prompt.txt:52) asks for rows carrying consumer/internal/need/already-answered/thin-interface plus a ranked five inside a named four-part scope; the report has all of these (rows report.md:31-126, ranking :145-166) with three checked-absent classes at :128-143, and I reproduced the I6 and I4/I5 controls exactly at 93c28dba while the I7 control does not reproduce (FINDING below).\nVERDICT write_paths: the source was fenced to the report store directory alone (prompt.txt:36); the reviewed worktree at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/s19-internals-consumers-survey is at 93c28dba with an empty git status --porcelain and no commit above 93c28dba, so no repository path was touched and the manifest's changed_paths empty list is true.\nVERDICT manifest: read .config/reckon/crew/runs/r-20260924T122925465818-s19-internals-consumers-survey/manifest.md; status complete, artifacts naming the report (present, 176 lines), tests recorded as no gate command for an investigation node, which is the right shape for a prose deliverable whose gate is its coverage; its evidence_inputs and follow_ons match what the report says.\nVERDICT diff: there is no commit to read -- the change is the 176-line report at .config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md; I read it in full and verified every file:line citation it makes against 93c28dba -- worktree_fleet.py:71-92 and :125-179 with pointer_is_running :156-168 and live_worktree_claims :171-179, ~/.agents/AGENTS.md:593 :648 :671 :964 :1143, mcp.py:3507, cli.py:2767 and :2996, crew.jsx:181-235 and :331, shell.jsx:205 -- all exact, while three ranges are off by 2-5 lines, one remedy clause prices work that is not done, and one rule is attributed to the wrong file (FINDINGs below).\nCALL_SITES: reckon/cli.py:2661 crew_list (fields backing R1/R2 at cli.py:2711-2715), reckon/cli.py:3547 recover, reckon/crew/lane_document.py:168 read_lane_document, reckon/mcp.py:3507 crew lanes view, reckon/serve.py:532 _crew_rows (the /crew payload R8 reads)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: report.md:31-126 carries all five fields per row and names an existing answer for seven of eight, but report.md:125 prices R8's remedy on a Python computation that does not exist and report.md:123 attributes a binding rule to a file that does not carry it.\nSCORE evidence: 15\nJUSTIFICATION evidence: the citations verify at 93c28dba nearly line-for-line (worktree_fleet.py:125-179, AGENTS.md:1143, mcp.py:3507, cli.py:2767), but the I7 absence control at report.md:142-143 does not reproduce and three cited ranges exclude the lines they name.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at 93c28dba with no commit above it and the only artifact is the 176-line report under the fenced store path, so the read-only fence held.\nSCORE durability: 13\nJUSTIFICATION durability: nothing re-derives this report's claims, so a citation that rots or a remedy priced on absent code fails nothing -- all four findings below were invisible to the node's own coverage-only gate.\nSCORE fit: 18\nJUSTIFICATION fit: the report uses the dispatch's own vocabulary, cites paths rather than symbols, and invents no source symbol, though its scope line at report.md:8-9 names a reckon/AGENTS.md that does not exist at the reviewed revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md:125 R8's thin interface is priced on work that is not done: \"it already computes them for crew list, cli.py:2716-2745\" holds for the budget verdict (cli.py:2723-2732 emits budget_seconds, budget_overrun, ceiling_overrun) but not for gates -- gates_total, gates_done and current_gate occur nowhere in reckon/ at 93c28dba and only in docs/ui/crew.jsx, so a reader acting on the remedy finds the gate half unstarted rather than merely unsurfaced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md:123 R8 cites the binding rule as docs/AGENTS.md *The SPA renders; it does not derive*, but at 93c28dba that sentence lives only at AGENTS.md:147 (the repository root file) and docs/AGENTS.md contains no such rule, so a reader sent to the cited path finds nothing -- and the root AGENTS.md is not inside the scope the report declares at report.md:8-9.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md:142 the I7 absence control does not reproduce: a literal grep for flight.yaml across the declared scope (all seven skills, ~/.agents/AGENTS.md, the AGENTS.md files, docs/ui) returns zero hits, and docs/AGENTS.md:87 -- named as the one prose hit -- is a config-home sentence that never mentions the file. The absence conclusion holds and a positive control does exist inside the package at reckon/flight.py:8, but the control as recorded names a line that does not carry the searched string.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/s19-internals-consumers-survey/report.md:38 three cited ranges exclude the lines they name: cli.py:2716-2745 is cited for the four fields that sit at cli.py:2711-2715 (report.md:38, :49, :125), reckon-sync/SKILL.md:287 is cited for a mounts.json write whose inline python3 runs at :289 with json.dump at :295 (report.md:58), and sprint-orchestration.md:306 is cited for a script whose name is at :304 (report.md:96). Each lands in the right function or section, so this is citation drift rather than a wrong location, and it is the size of error a reader following a line reference still feels.",
+  "review_run_id": "r-20260924T123835850215-review-of-s19-internals-consumers-survey",
+  "reviewed_base_sha": "93c28dba37afca8e86eef06563961c1bc7f2a600",
+  "reviewed_head_sha": "93c28dba37afca8e86eef06563961c1bc7f2a600",
+  "reviewed_run_id": "r-20260924T122925465818-s19-internals-consumers-survey",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T12:50:27.229531+00:00",
+  "total": 83
+}

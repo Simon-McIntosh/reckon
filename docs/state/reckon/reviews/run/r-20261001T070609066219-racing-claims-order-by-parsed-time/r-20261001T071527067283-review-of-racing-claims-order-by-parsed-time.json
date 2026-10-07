@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2106",
+    "reckon/crew/dispatch.py:5117",
+    "reckon/crew/dispatch.py:5603"
+  ],
+  "completed_at": "2026-10-01T07:27:22.390Z",
+  "dispatched_at": "2026-10-01T07:15:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2049",
+      "severity": "follow-on",
+      "text": "follow-on: the helper's docstring states \"the same instant is written ``...T04:00:00Z`` by one caller and ``...T04:00:00.500000+00:00`` by another\", but those two spellings name moments half a second apart, not the same instant; the node's own evidence fragment states the same example correctly (\"name moments half a second apart but sort the wrong way round\"), so the docstring contradicts both the mechanism and the fragment and could lead a reader to think sub-second precision is the hazard rather than the spelling."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "886",
+      "severity": "follow-on",
+      "text": "follow-on: the third entry to `_raise_repository_scope_conflict`, the `_raise_live_scope_conflict` facade, builds its claims with the default empty registered_at and launched=False and passes neither own_run_id nor own_registered_at, so the parsed-time ordering never applies at that seam and a race through it still withdraws the pair; pre-existing and carried from the prior review, and nothing in reckon/ or tests/ calls the facade today."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2061",
+      "severity": "follow-on",
+      "text": "follow-on: the ordering still compares wall-clock registration moments, so it fixes the spelling hazard this node targeted but not clock skew \u2014 a later arrival from a host whose clock runs behind still ranks as the earlier one, and the run-id tie-break settles only exactly-equal instants."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2025",
+      "severity": "follow-on",
+      "text": "follow-on: the rule remains first-wins with no fallback, so if the registered-first dispatch withdraws later for an unrelated reason (a budget hold, a backend ceiling, a crash) after the later dispatch already refused on ordering, the paths are left with no worker; the state this node removes is removed only while the winner survives its own launch."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T070609066219-racing-claims-order-by-parsed-time/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest names no baseline_suite and no after_suite, only gate.log and negative-control.log, so the added-failure count derives as unmeasured rather than zero and the record cannot be reconciled against a base arm at a stated revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read against base 29560d96; dispatch.py replaces the raw-string compare with parse_utc of both stamps plus a None guard and gains the mixed-spelling rationale in its docstring; the test file adds the two worst-input cases; the fragment records the change, its measure and its negative control. No other production line changes.",
+    "done_when": "the node is an implement role with no authored done-when; its manifest's landing states the parsed-time ordering, the run-id tie-break and the inconclusive-stamp rule, and tests/test_one_of_two_racing_reviews_survives.py drives both against worst inputs \u2014 the mixed-spelling pair in both directions and an unparseable stamp on either side.",
+    "goal": "the node's goal is to make the racing-claim order compare parsed registration times rather than raw timestamp strings; at head 598f4dc0 `_peer_claim_is_a_later_racing_arrival` (reckon/crew/dispatch.py:2025) reads both registration stamps through `reckon._timestamps.parse_utc` (imported at dispatch.py:30) and returns `(peer_instant, claim.run_id) > (own_instant, own_run_id)`, so the ordering is by parsed moment with the run id settling equal instants, and a stamp that does not parse returns False so the peer claim stays binding exactly as an absent timestamp does \u2014 which is the goal.",
+    "manifest": "read the reviewed manifest; status complete, commits 277f357a464f7793d12e2f9656f7aa78c09c653b and 598f4dc058678545946d6dc60cdc634d78287b95 over base 29560d96, gate.log (6 passed, EXIT=0) and negative-control.log (2 failed/4 passed, EXIT=1); the manifest names no baseline_suite and no after_suite, so the added-failure count derives as unmeasured rather than zero.",
+    "write_paths": "the manifest's orientation names reckon/crew/dispatch.py, tests/test_one_of_two_racing_reviews_survives.py and the evidence fragment; the two commits 277f357a and 598f4dc0 change exactly those three (+17/-4 dispatch.py, +48 the test file, +38 the fragment) and the reviewed worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "the guards are real and independent \u2014 the tests drive the ordering against its worst inputs (a mixed-spelling pair the old string compare ordered wrongly in both directions, and an unparseable stamp on either side) and my own restored-string mutation reddens exactly the two new cases while the four pre-existing ones pass \u2014 so the guard fails when the protection is removed; residual gaps carried from the prior review remain outside this node's narrow goal: the ordering still trusts wall-clock registration stamps, so a clock skew between two dispatchers still ranks a later arrival as the earlier one, and the rule stays first-wins with no fallback.",
+    "evidence": "I re-ran the node's gate independently in a scratch extraction of head 598f4dc0 `PYTHONPATH=<scratch> python -m pytest -q tests/test_one_of_two_racing_reviews_survives.py tests/test_crew_dispatch_guard.py` -> 20 passed, EXIT=0 (reviewer-head-arm.log) and reproduced the declared mutation myself, restoring the raw-string comparison and observing 2 failed / 4 passed, EXIT=1 with exactly test_mixed_spelling_registration_times_order_by_the_parsed_moment and test_a_registration_time_that_does_not_parse_is_inconclusive red (reviewer-negative-control.log); the reviewed manifest names no baseline_suite/after_suite so the added-failure count derives as unmeasured, not zero.",
+    "fit": "the new code is mechanism-named and label-free, the commit subjects are conventional with bodies stating the mechanism, and no plan, phase, ticket or version label appears anywhere in the change; the docstring's example sentence is the one imprecision (see the finding at dispatch.py:2049), so fit is one below full.",
+    "goal_fidelity": "every clause of the goal is present in the diff: both stamps are parsed through reckon._timestamps.parse_utc (dispatch.py:30 import, :2058-2061 use), the tuple compare puts the parsed instant first and the run id second so equal instants fall to the run id, and a None from either parse returns False so the peer stays binding; I reconstructed the antisymmetry by hand and both production call sites (dispatch.py:5117 and :5603) thread own_run_id and own_registered_at.",
+    "scope_discipline": "the two commits change exactly the three declared paths and nothing else, all three inside the orientation's orientation_write_paths, and the reviewed worktree is clean at head; no path outside the fence is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-racing-claims-order-by-parsed-time",
+  "project": "reckon",
+  "raw_text": "REVIEWED_BASE_SHA: 29560d96633faf84024d625290af205f97125fa1\nREVIEWED_HEAD_SHA: 598f4dc058678545946d6dc60cdc634d78287b95\nVERDICT goal: the node's goal is to make the racing-claim order compare parsed registration times rather than raw timestamp strings; at head 598f4dc0 `_peer_claim_is_a_later_racing_arrival` (reckon/crew/dispatch.py:2025) reads both registration stamps through `reckon._timestamps.parse_utc` (imported at dispatch.py:30) and returns `(peer_instant, claim.run_id) > (own_instant, own_run_id)`, so the ordering is by parsed moment with the run id settling equal instants, and a stamp that does not parse returns False so the peer claim stays binding exactly as an absent timestamp does \u2014 which is the goal.\nVERDICT done_when: the node is an implement role with no authored done-when; its manifest's landing states the parsed-time ordering, the run-id tie-break and the inconclusive-stamp rule, and tests/test_one_of_two_racing_reviews_survives.py drives both against worst inputs \u2014 the mixed-spelling pair in both directions and an unparseable stamp on either side.\nVERDICT write_paths: the manifest's orientation names reckon/crew/dispatch.py, tests/test_one_of_two_racing_reviews_survives.py and the evidence fragment; the two commits 277f357a and 598f4dc0 change exactly those three (+17/-4 dispatch.py, +48 the test file, +38 the fragment) and the reviewed worktree is clean at head.\nVERDICT manifest: read the reviewed manifest; status complete, commits 277f357a464f7793d12e2f9656f7aa78c09c653b and 598f4dc058678545946d6dc60cdc634d78287b95 over base 29560d96, gate.log (6 passed, EXIT=0) and negative-control.log (2 failed/4 passed, EXIT=1); the manifest names no baseline_suite and no after_suite, so the added-failure count derives as unmeasured rather than zero.\nVERDICT diff: read against base 29560d96; dispatch.py replaces the raw-string compare with parse_utc of both stamps plus a None guard and gains the mixed-spelling rationale in its docstring; the test file adds the two worst-input cases; the fragment records the change, its measure and its negative control. No other production line changes.\nCALL_SITES: reckon/crew/dispatch.py:2106, reckon/crew/dispatch.py:5117, reckon/crew/dispatch.py:5603\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every clause of the goal is present in the diff: both stamps are parsed through reckon._timestamps.parse_utc (dispatch.py:30 import, :2058-2061 use), the tuple compare puts the parsed instant first and the run id second so equal instants fall to the run id, and a None from either parse returns False so the peer stays binding; I reconstructed the antisymmetry by hand and both production call sites (dispatch.py:5117 and :5603) thread own_run_id and own_registered_at.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran the node's gate independently in a scratch extraction of head 598f4dc0 `PYTHONPATH=<scratch> python -m pytest -q tests/test_one_of_two_racing_reviews_survives.py tests/test_crew_dispatch_guard.py` -> 20 passed, EXIT=0 (reviewer-head-arm.log) and reproduced the declared mutation myself, restoring the raw-string comparison and observing 2 failed / 4 passed, EXIT=1 with exactly test_mixed_spelling_registration_times_order_by_the_parsed_moment and test_a_registration_time_that_does_not_parse_is_inconclusive red (reviewer-negative-control.log); the reviewed manifest names no baseline_suite/after_suite so the added-failure count derives as unmeasured, not zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change exactly the three declared paths and nothing else, all three inside the orientation's orientation_write_paths, and the reviewed worktree is clean at head; no path outside the fence is touched.\nSCORE durability: 19\nJUSTIFICATION durability: the guards are real and independent \u2014 the tests drive the ordering against its worst inputs (a mixed-spelling pair the old string compare ordered wrongly in both directions, and an unparseable stamp on either side) and my own restored-string mutation reddens exactly the two new cases while the four pre-existing ones pass \u2014 so the guard fails when the protection is removed; residual gaps carried from the prior review remain outside this node's narrow goal: the ordering still trusts wall-clock registration stamps, so a clock skew between two dispatchers still ranks a later arrival as the earlier one, and the rule stays first-wins with no fallback.\nSCORE fit: 19\nJUSTIFICATION fit: the new code is mechanism-named and label-free, the commit subjects are conventional with bodies stating the mechanism, and no plan, phase, ticket or version label appears anywhere in the change; the docstring's example sentence is the one imprecision (see the finding at dispatch.py:2049), so fit is one below full.\nFINDING reckon/crew/dispatch.py:2049 follow-on: the helper's docstring states \"the same instant is written ``...T04:00:00Z`` by one caller and ``...T04:00:00.500000+00:00`` by another\", but those two spellings name moments half a second apart, not the same instant; the node's own evidence fragment states the same example correctly (\"name moments half a second apart but sort the wrong way round\"), so the docstring contradicts both the mechanism and the fragment and could lead a reader to think sub-second precision is the hazard rather than the spelling.\nFINDING reckon/crew/runs.py:886 follow-on: the third entry to `_raise_repository_scope_conflict`, the `_raise_live_scope_conflict` facade, builds its claims with the default empty registered_at and launched=False and passes neither own_run_id nor own_registered_at, so the parsed-time ordering never applies at that seam and a race through it still withdraws the pair; pre-existing and carried from the prior review, and nothing in reckon/ or tests/ calls the facade today.\nFINDING reckon/crew/dispatch.py:2061 follow-on: the ordering still compares wall-clock registration moments, so it fixes the spelling hazard this node targeted but not clock skew \u2014 a later arrival from a host whose clock runs behind still ranks as the earlier one, and the run-id tie-break settles only exactly-equal instants.\nFINDING reckon/crew/dispatch.py:2025 follow-on: the rule remains first-wins with no fallback, so if the registered-first dispatch withdraws later for an unrelated reason (a budget hold, a backend ceiling, a crash) after the later dispatch already refused on ordering, the paths are left with no worker; the state this node removes is removed only while the winner survives its own launch.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T070609066219-racing-claims-order-by-parsed-time/manifest.md:14 follow-on: the manifest names no baseline_suite and no after_suite, only gate.log and negative-control.log, so the added-failure count derives as unmeasured rather than zero and the record cannot be reconciled against a base arm at a stated revision.\n",
+  "review_run_id": "r-20261001T071527067283-review-of-racing-claims-order-by-parsed-time",
+  "reviewed_base_sha": "29560d96633faf84024d625290af205f97125fa1",
+  "reviewed_head_sha": "598f4dc058678545946d6dc60cdc634d78287b95",
+  "reviewed_run_id": "r-20261001T070609066219-racing-claims-order-by-parsed-time",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T07:25:34.451712+00:00",
+  "total": 96
+}

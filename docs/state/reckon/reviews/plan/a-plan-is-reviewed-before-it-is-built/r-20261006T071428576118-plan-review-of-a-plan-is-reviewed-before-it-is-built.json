@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T07:20:40.138Z",
+  "dispatched_at": "2026-10-06T07:14:54Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:479",
+      "id": "duplicate_owner-1",
+      "reason": "naming whether the new comparator extends `_longest_contiguous_word_span`'s module or is genuinely a new one is what keeps the package's one-tokeniser rule from becoming a two-comparator rule, and it fixes the node's write scope.",
+      "text": "\u00a722 introduces its own edit-share comparison (a word-level sequence matcher, \"private to the review module\") while the package already owns a word-level comparison over the same `_normalised_words` tokeniser, `_longest_contiguous_word_span` at dispatch.py:479 (called only by `_done_when_plan_overlap_warning`, dispatch.py:490), so two comparators over one tokeniser come to live in two modules (reckon/crew/plan_review.py and reckon/crew/dispatch.py); the section names where the tokeniser lives but not where the comparison lives, so the node's write scope and the package rule it applies are unstated. Census of word-comparison sites over `_normalised_words`: exactly one today (dispatch.py:479-496); \u00a722 makes it two.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s22",
+      "id": "reuse_search-1",
+      "reason": "a node told to follow \"the path \u00a77 built\" may add a fourth single-key carve-out beside the existing set-aside and validator rather than widen the one pattern, and the differing value shapes (integer vs closed-interval float) are exactly where a copied single-key check accepts the wrong type.",
+      "text": "\u00a722 declares `review.plan_change_threshold`, 0.30, in `reckon/schema/flight-defaults.yaml` and says it is \"the path \u00a77 built for `review.plan_settle_seconds`\", but names only the accessor consolidation; the path it points at is three separate single-key sites \u2014 the schema set-aside that drops the key before the review schema's forbid-extra check (reckon/flight.py:322), the `validate_layer` check that a declared key is a non-negative integer (reckon/flight.py:863-867), and the accessor (reckon/flight.py:684) \u2014 and the threshold is a float in [0,1] where settle is a non-negative integer, so each of the three must be widened, not merely pointed at. The section does not enumerate the two sites it does not name.",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e8a27880f6077373d020c7f6bb24ad7f2bd1a164f444be014ed1839904c7045c",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 182,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T071428576118-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "d7f58bafda4ecea3d66c3851318edad6ba678b3d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 concentrates span-finding, body extent and boundary resolution behind one `section_prose` reader plus the existing `_section_digests`, and deletes `_AuthoredProseParser`; the change is a net reduction (public_definitions 1481 \u2192 1481 across the second node), which is the direction the rubric asks for.",
+    "duplicate_owner": "a finding \u2014 \u00a722's prose measure needs the reviewed snapshot's per-unit text, which \u00a721's coverage predicate does not hand out, so the snapshot is located and read a second time outside \u00a721's \"one owner\"; and \u00a722 adds a second word-level comparator over the one tokeniser `dispatch._normalised_words` without naming the owner of the existing comparator.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; all four open sections name, in their own text, what they retire or merge or why the family stays level (\u00a716: stripper public\u2192private for `section_prose`; \u00a721: no public definition added or retired; \u00a722: `plan_review_settings` added, `plan_review_settle_seconds` retired; \u00a723: `store_delivered_reviews` added, `store_delivered_report` private, private loop retired).",
+    "reuse_search": "pass \u2014 the open sections (\u00a716 second node, \u00a721, \u00a722, \u00a723) each cite the existing mechanism they extend and I opened every one: `_plan_html._TAG_RE` and `count_open_decisions` (reckon/_plan_html.py:1876-1909), `structured_section_spans` (reckon/_plan_html.py:415, callers reckon/_store.py:827,1466), `_prose_slices` (reckon/crew/plan_review.py:148), `section_record_id`/`section_id_candidates`, `roadmap.implementable_sections`, `list_plan_reviews`, `review_report_directory` (reckon/crew/plan_review.py:791), and `dispatch._normalised_words` (reckon/crew/dispatch.py:289) all exist as described.",
+    "thin_wrapper": "pass \u2014 the two accessors that could be thin layers are replacements rather than additions: \u00a722 retires `plan_review_settle_seconds` (reckon/flight.py:684) for `plan_review_settings`, and \u00a723 retires the public store loop's second copy by hoisting it, each naming what it retires in the section text."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "26ca19409dda668832f554406818ad8b98561beb0262bc1b48b017f4fd98efe7",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "f2849c3493f957459b8b3f4d726d09a8e4f3328eb245a3a643cade4b8f16b4cf",
+    "s22": "38ddaacacd7feb0a9daede36b04806cff4c45fe2a098eb041adebc96e1f6af6a",
+    "s23": "36f4cce8c95f9d8d1a023837f0c57f9d3b931f8138d4ac59029232bb31778768",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:22:13.017599+00:00"
+}

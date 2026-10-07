@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run declares baseline_suite and after_suite 'not run' (a read-only audit forbidden to run a suite), so no gate log exists to derive an added-failure count from; null is recorded, not zero.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T06:39:25.622Z",
+  "dispatched_at": "2026-10-03T06:31:41Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/moved-sections-already-landed.html",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "the goal scoped the population to sections whose declaration is still implementable (43 by the footer scan), but the report broadens the table to 50 rows by adding the 5 done-declared moved sections and 2 plan-lead rows; each add is labelled per row and no implementable section is missed, so this is a scope note, not a defect."
+    },
+    {
+      "file": "r-20261003T055306768573-moved-sections-already-landed/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "the machine-readable population (moved.json) exists only under node-local /tmp scratch and dies with the allocation; the report's 50 rows are self-contained, but the scan that produced them is not re-runnable from the durable artifact alone."
+    },
+    {
+      "file": "docs/plans/section-contract-and-computed-impl.html",
+      "line": "111",
+      "severity": "follow-on",
+      "text": "\u00a711 is held at partly because the landing commits were not pinned within the audit's budget, not because the work is shown incomplete; a later node should pin the commits or record the gap explicitly."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 0 production call site(s)",
+    "diff": "read-only run \u2014 no commit beyond base d02c16aac and 'git status --porcelain' empty, so there is no repository diff; the deliverable is the report outside the worktree.",
+    "done_when": "the done-when asks for a valid HTML fragment, one row per section with (plan, section, verdict, evidence) and a count of each verdict, plus a positive control; the report carries all four columns, the counts (13/18/19) match the rows, and the two control sections read met.",
+    "goal": "the node goal is to classify each section moved from a followup as met/partly/open at main with the commits that meet it; the report's 50-row table does this and I independently reproduced the population and sampled verdicts.",
+    "manifest": "read; it records status: complete, baseline_suite and after_suite 'not run' (suite execution forbidden by the dispatch), and no commits.",
+    "write_paths": "read the manifest's declared paths; the single declared path is the report HTML, the worktree is clean with no commit, and no plan or source file was edited."
+  },
+  "justifications": {
+    "durability": "the declared positive control (a-worker-is-charged-to-a-job \u00a78 and crew-observability-truth \u00a730 must both read met) is a falsifiable self-check and I reproduced both as met (8be6a8afd/tests/test_stalled_row_names_liveness.py; af224ba73/tests/test_working_reads_working_at_once.py); docked for the ephemeral /tmp population list and for \u00a711 being held at partly on budget rather than evidence.",
+    "evidence": "sampled met rows resolve to real commits whose named tests exist (f676418dd/tests/test_directory_claim_asks_first.py, 4cfc76a42/tests/test_session_resumes_only_commits_its_own_task.py resolves, d4b581742/tests/test_flight_portfolio.py), and I reproduced the negative claims for open rows (0 add_milestone in reckon/mcp.py; 0 reload in reckon/serve.py; 0 \"raw_text\" in docs/state/reckon/crew.json); the report's stated counts (50 rows = 13 met/18 partly/19 open) match the file exactly.",
+    "fit": "the deliverable is a valid HTML fragment (50 <tr> rows, one per section, plus verdict counts) written to the reports directory named by the dispatch, matching the report genre and using the plan's own terminology; no plan or source file was touched.",
+    "goal_fidelity": "the report table carries one row per candidate section, each with a met/partly/open verdict and its evidence; I reproduced the population scan (48 exact 'Moved from followup' footer hits across docs/plans/*.html) and the run classified all of them, so the goal \u2014 classify each moved section at main \u2014 is met.",
+    "scope_discipline": "the audit worktree sits at d02c16aac with 'git status --porcelain' empty and no commit beyond its base, and its only declared write path is the report HTML, so it edited no plan and no source file \u2014 full compliance with the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to classify each section moved from a followup as met/partly/open at main with the commits that meet it; the report's 50-row table does this and I independently reproduced the population and sampled verdicts.\nVERDICT done_when: the done-when asks for a valid HTML fragment, one row per section with (plan, section, verdict, evidence) and a count of each verdict, plus a positive control; the report carries all four columns, the counts (13/18/19) match the rows, and the two control sections read met.\nVERDICT write_paths: read the manifest's declared paths; the single declared path is the report HTML, the worktree is clean with no commit, and no plan or source file was edited.\nVERDICT manifest: read; it records status: complete, baseline_suite and after_suite 'not run' (suite execution forbidden by the dispatch), and no commits.\nVERDICT diff: read-only run \u2014 no commit beyond base d02c16aac and 'git status --porcelain' empty, so there is no repository diff; the deliverable is the report outside the worktree.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the report table carries one row per candidate section, each with a met/partly/open verdict and its evidence; I reproduced the population scan (48 exact 'Moved from followup' footer hits across docs/plans/*.html) and the run classified all of them, so the goal \u2014 classify each moved section at main \u2014 is met.\nSCORE evidence: 19\nJUSTIFICATION evidence: sampled met rows resolve to real commits whose named tests exist (f676418dd/tests/test_directory_claim_asks_first.py, 4cfc76a42/tests/test_session_resumes_only_its_own_task.py, d4b581742/tests/test_flight_portfolio.py), and I reproduced the negative claims for open rows (0 add_milestone in reckon/mcp.py; 0 reload in reckon/serve.py; 0 \"raw_text\" in docs/state/reckon/crew.json); the report's stated counts (50 rows = 13 met/18 partly/19 open) match the file exactly.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the audit worktree sits at d02c16aac with 'git status --porcelain' empty and no commit beyond its base, and its only declared write path is the report HTML, so it edited no plan and no source file \u2014 full compliance with the fence.\nSCORE durability: 18\nJUSTIFICATION durability: the declared positive control (a-worker-is-charged-to-a-job \u00a78 and crew-observability-truth \u00a730 must both read met) is a falsifiable self-check and I reproduced both as met (8be6a8afd/tests/test_stalled_row_names_liveness.py; af224ba73/tests/test_working_reads_working_at_once.py); docked for the ephemeral /tmp population list and for \u00a711 being held at partly on budget rather than evidence.\nSCORE fit: 19\nJUSTIFICATION fit: the deliverable is a valid HTML fragment (50 <tr> rows, one per section, plus verdict counts) written to the reports directory named by the dispatch, matching the report genre and using the plan's own terminology; no plan or source file was touched.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/moved-sections-already-landed.html:3 follow-on: the goal scoped the population to sections whose declaration is still implementable (43 by the footer scan), but the report broadens the table to 50 rows by adding the 5 done-declared moved sections and 2 plan-lead rows; each add is labelled per row and no implementable section is missed, so this is a scope note, not a defect.\nFINDING r-20261003T055306768573-moved-sections-already-landed/manifest.md:20 follow-on: the machine-readable population (moved.json) exists only under node-local /tmp scratch and dies with the allocation; the report's 50 rows are self-contained, but the scan that produced them is not re-runnable from the durable artifact alone.\nFINDING docs/plans/section-contract-and-computed-impl.html:111 follow-on: \u00a711 is held at partly because the landing commits were not pinned within the audit's budget, not because the work is shown incomplete; a later node should pin the commits or record the gap explicitly.\nreviewed_base_sha: d02c16aace5869723cb1598e778c4fa226d6cf52\nreviewed_head_sha: d02c16aace5869723cb1598e778c4fa226d6cf52\n",
+  "review_run_id": "r-20261003T063118314714-review-of-moved-sections-already-landed",
+  "reviewed_base_sha": "d02c16aace5869723cb1598e778c4fa226d6cf52",
+  "reviewed_head_sha": "d02c16aace5869723cb1598e778c4fa226d6cf52",
+  "reviewed_run_id": "r-20261003T055306768573-moved-sections-already-landed",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T06:36:28.797669+00:00",
+  "total": 95
+}

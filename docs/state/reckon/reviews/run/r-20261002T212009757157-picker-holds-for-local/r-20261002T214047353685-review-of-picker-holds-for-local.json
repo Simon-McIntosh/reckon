@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite carries one failing id (tests/test_picker_return_time.py::test_lane_document_is_read) and its after_suite carries none over the seven-file picker gate, so the head arm adds zero failure ids and repairs the base failure; reproduced here independently \u2014 a scratch extraction of the base revision at /tmp/review-picker-base-k4RVE5 fails test_lane_document_is_read with assert None == 4, and the head arm at 18a7850026 (source identical to the measured head eb7a72c5) gives 96 passed in the reviewer's own run.",
+  "base_log_revision": "5b5a14a12ffb462fe177213d2a669eb1c1294e89",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/prompts.py:48",
+    "reckon/crew/picker/__init__.py:84",
+    "reckon/crew/picker/__init__.py:117"
+  ],
+  "completed_at": "2026-10-02T21:52:17.052Z",
+  "dispatched_at": "2026-10-02T21:41:47Z",
+  "findings": [],
+  "head_log_revision": "eb7a72c54bcecfe5691e0b6757823abdff2204e6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the changed local_lane is reached through lane_context.build, rendered by reckon/crew/picker/prompts.py:48 from the state render at reckon/crew/picker/__init__.py:84, and the questions.jinja wording is rendered at reckon/crew/picker/__init__.py:117; the private _dispatch_lane_gate import is an established pattern already used by reckon/crew/picker/snapshot.py:14.",
+    "diff": "read commit by commit against 5b5a14a1; three commits, all conventional with bodies, no AI attribution and no plan/ticket identifiers in source, tests or fragment. A fourth-commit check shows eb7a72c5..18a7850026 touches only the evidence fragment (61 insertions), so the delivered head changes neither source nor tests from the measured head.",
+    "done_when": "all five bullets of the reviewed prompt's evidence fence: (1) local_lane carries admission and expected_wait_s, the wait being the median of matching historical wall-time medians for the live local worker shapes and null when unknown; (2) both template texts state the sliding scale, routine/deferrable work holds while hard/high-risk/urgent work may take the metered lane, with no numeric threshold; (3) the evidence fragment records two live cached-only picks with action, backend, probabilities and confidence and names its unknown metered pressure; (4) tests pin the new state fields and the template wording, and every tests/test_picker*.py passes at head with zero added failure ids; (5) tests/test_picker_return_time.py::test_lane_document_is_read passes again with an observed_seconds-carrying fixture so the production observed-window guard is exercised, and it fails at base as recorded.",
+    "goal": "plan section 10 makes lane pressure Jev's judgment; this node gives the rendered routing state the local lane's admission (admitting/full/paused/unavailable) and an expected wait, and teaches both the route instructions and the hold criterion the lead's sliding-scale hold language without a numeric threshold.",
+    "manifest": "read; it declares base 1 failed/82 passed and head 96 passed over the picker gate, a real red negative control, measurement_module and measurement_cwd for the scratch base arm, and a clean committed delivery at 18a7850026.",
+    "write_paths": "diff 5b5a14a1..18a7850026 touches exactly five paths \u2014 reckon/crew/picker/lane_context.py, reckon/crew/picker/templates/questions.jinja, tests/test_picker_holds.py, tests/test_picker_return_time.py and the evidence fragment \u2014 all inside the declared fence, with no plan, index or sprint mutation."
+  },
+  "justifications": {
+    "durability": "the guards fire when the guarded thing is made to happen: removing the rendered admission state turns nine state-field tests red (KeyError: admission) with none of those ids failing at head, and the state tests assert all four admission branches plus the stale, missing, filtered and paused document shapes in both directions. The return-time regression is repaired by supplying the observed_seconds a real lane document carries while the production observed-window guard in run_time_profile.local_lane_load is left untouched, so the guard is exercised rather than relaxed.",
+    "evidence": "independently reproduced: the head arm gives 96 passed (reviewer's own run, 76.91s) and a scratch extraction of the base revision at /tmp/review-picker-base-k4RVE5 fails test_lane_document_is_read with assert None == 4, so added_failure_count is 0 by construction and by measurement. The declared negative control is a real red receipt (EXIT=1, 9 failed/4 passed, every failing id absent from the head arm). The fragment reconciles with both gate logs and states its own limits, including that cached metered pressure was unknown so the two picks are not a measured-pressure comparison. One point withheld only because the live picks rest on a fixture-paused lane and cached availability rather than a live metered-pressure reading.",
+    "fit": "module conventions hold: unknown facts stay null rather than zero, the admission and expected-wait helpers sit beside the existing return-time derivation in lane_context.py, the reuse of _dispatch_lane_gate and _group_rows matches the codebase's established cross-module private imports, the template edit is plain mechanism text, and scoped ruff check and ruff format --check both pass on the changed Python paths. No plan, sprint or ticket identifier appears in source, tests or the fragment beyond the required plan-verifies meta tag.",
+    "goal_fidelity": "every behaviour the fence names is present and enforced: local_lane returns admission across all four states with the paused and unavailable branches taking precedence over full, expected_wait_s is the median of per-live-worker shape medians and null when unmeasured, and both the route instructions and the hold criterion carry the sliding-scale routine-holds/hard-routes wording with no numeric threshold. One point withheld: the fence words the wait as 'the median wall time of the local runs now live', while the implementation medians the per-worker historical shape medians \u2014 a defensible reading of in-progress runs and documented honestly in the fragment, but not literally a single pooled median of the live runs.",
+    "scope_discipline": "the diff 5b5a14a1..18a7850026 is confined to the declared source, template, test and evidence-fragment paths; the shared plan, index and sprint state are unmutated, the evidence-only commit separates the receipt from the measured head, and the reviewed worktree reports a clean committed tree."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 10 makes lane pressure Jev's judgment; this node adds local_lane.admission (admitting/full/paused/unavailable) and expected_wait_s to the rendered state and teaches both the route instructions and the hold criterion the lead's sliding-scale hold language without a numeric threshold.\nVERDICT done_when: all five bullets hold: admission and expected wait render, the wait is the median of matching historical wall-time medians for the live local worker shapes and null when unknown; both template texts state the sliding scale; the evidence fragment records two live cached-only picks with action/backend/probabilities/confidence; the state and wording are pinned by tests with zero added failure ids; test_lane_document_is_read passes at head and fails at base as recorded.\nVERDICT write_paths: diff 5b5a14a1..18a7850026 touches exactly five declared paths with no plan/index/sprint mutation.\nVERDICT manifest: read; base 1 failed/82 passed, head 96 passed, a real negative control, scratch measurement_module and measurement_cwd, clean committed delivery at 18a7850026.\nVERDICT diff: three commits against 5b5a14a1, all conventional with bodies and no AI attribution; eb7a72c5..18a7850026 is fragment-only.\nCALL_SITES: reckon/crew/picker/prompts.py:48, reckon/crew/picker/__init__.py:84, reckon/crew/picker/__init__.py:117\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every fence behaviour is present and enforced; one point withheld because the wait is a median of per-worker shape medians rather than a single pooled median of the live runs, though the fragment documents the actual meaning.\nSCORE evidence: 19\nJUSTIFICATION evidence: head reproduced at 96 passed and the base failure reproduced as assert None == 4 in a scratch extraction; the negative control is a real red receipt with 9 failures absent from head; one point withheld because the picks rest on a fixture-paused lane and cached availability, not a live metered reading.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is confined to the declared paths, the evidence commit is separated from the measured head, no shared state changed and the tree is clean.\nSCORE durability: 19\nJUSTIFICATION durability: removing admission reddens nine tests absent from head; the state tests cover all four branches and the missing/stale/filtered/paused shapes; the return-time repair exercises the untouched production observed-window guard rather than relaxing it.\nSCORE fit: 19\nJUSTIFICATION fit: module conventions and null-not-zero semantics are kept, ruff check and format pass on the changed paths, and no plan or ticket identifier appears in source or tests.\nreviewed_base_sha: 5b5a14a12ffb462fe177213d2a669eb1c1294e89\nreviewed_head_sha: 18a78500263d52e9fa77739a46f9ec93d4253d64",
+  "review_run_id": "r-20261002T214047353685-review-of-picker-holds-for-local",
+  "reviewed_base_sha": "5b5a14a12ffb462fe177213d2a669eb1c1294e89",
+  "reviewed_head_sha": "18a78500263d52e9fa77739a46f9ec93d4253d64",
+  "reviewed_run_id": "r-20261002T212009757157-picker-holds-for-local",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T214047353685-review-of-picker-holds-for-local",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T21:52:00.000000+00:00",
+  "total": 96
+}

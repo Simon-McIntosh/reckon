@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_follow_rearm_continues.py::test_a_pipe_rearm_draws_the_fleet_and_no_burst",
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_with_nothing_new_draws_the_fleet",
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_delivers_only_the_transitions_written_while_away",
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted"
+  ],
+  "base_log_revision": "b43e66dcc6feaea162db68c012a2e868e7efd60f",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:3988",
+    "reckon/cli.py:4730",
+    "reckon/cli.py:4746",
+    "reckon/cli.py:4336",
+    "reckon/crew/ticker.py:1034",
+    "reckon/crew/runs.py:read_delivered"
+  ],
+  "completed_at": "2026-10-04T00:45:01.247Z",
+  "dispatched_at": "2026-10-04T00:39:37Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "3988",
+      "severity": "follow-on",
+      "text": "the record branch is keyed by session, not by pane-ness, so a non-TTY (pipe) re-arm that holds a record now draws only the header and the moved runs and no fleet row when nothing moved; the four after-suite failures (tests/test_follow_rearm_continues.py::test_a_pipe_rearm_draws_the_fleet_and_no_burst and three cases in tests/test_follower_rearm_shows_nothing_twice.py) are exactly this \u2014 they pin the superseded 'a pipe re-arm draws one row per live run' contract. \u00a74 does not carve out pipes, so the change is faithful to the text, but a pipe consumer that did not retain the earlier arming's output now has no way to see the unchanged fleet on a re-arm. The node declares these under follow_ons and its write grant excludes those files, so the coordinator must land a rewrite of those four cases before merging or main stays red."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "4730",
+      "severity": "follow-on",
+      "text": "note_delivered is called on the json branch for every emitted row, including rows the human path suppresses via _row_is_stale_inventory, while the human branch calls it only for rows that survive that filter. The record is one per session, not per output mode, so a session first armed with --json then armed as a human pane can have the record name a state (for example completed_unpromoted) that only the json consumer saw, and the human re-attach then draws nothing for that run because the recorded state equals the current one \u2014 hiding a run the human reader was never shown."
+    }
+  ],
+  "head_log_revision": "1d08e629a25b90dd958206138b27999d276b8477",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit-by-commit \u2014 runs.py adds the delivered-state sidecar; ticker.py adds HIDDEN_AT_ATTACH and hidden_at_attach beside an unchanged settled_at_attach; cli.py adds the re-attach header, _follow_gap_rows and the delivered_states carry-forward, and repoints _row_is_stale_inventory at hidden_at_attach.",
+    "done_when": "tests/test_follow_replays_the_gap.py passes 3 of 3 at head 1d08e629a (my independent run: 3 passed in 9.69s, EXIT=0) covering the header-first/moved-once/unchanged-absent case and the unnamed-run-dispatched case; the declared negative control at negative-control.log fails 2 of 3 with EXIT=1 under the base revision's settled_at_attach filter.",
+    "goal": "the delta persists each session's last delivered state per run in a follower_dir sidecar, replays only the runs whose classifier state moved under one re-attach header, and narrows the human-path suppressed set to the settled states that ask the reader for nothing \u2014 matching \u00a74's persisted record, header-first replay, dispatched fallback and widened filter.",
+    "manifest": "read at orientation \u2014 status complete, commits [1d08e629a], baseline_suite revision b43e66dcc6 (0 failed, completed true) and after_suite revision 1d08e629a (4 failed, completed true) with the four failure ids named; the run's exit.json records exit_code 0 and phase complete, and its own review record was absent, so this is the first review.",
+    "write_paths": "git show --stat 1d08e629a returns exactly the four declared paths (reckon/cli.py, reckon/crew/runs.py, reckon/crew/ticker.py, tests/test_follow_replays_the_gap.py), 536 insertions and 23 deletions, and no others."
+  },
+  "justifications": {
+    "durability": "The mechanism is built to last: the record write is atomic and fsynced (write_json_atomically), read_delivered treats an absent, unreadable or older-shaped record as no record rather than trusting a partial one, and the record is carried forward across armings so one moved run cannot evict the others from the diff (the third focused test pins this, per the worker's own account of a bug it caught before commit). The deduction is that the change lands with four existing tests red \u2014 the widened filter and the diff replay replace the 'a re-arm draws one row per live run' contract those tests pin \u2014 so the suite the node leaves behind no longer describes the contract it shipped, and main stays red until the follow-on rewrite lands. That is declared and out of the node's write grant, but it is real durability debt the merge inherits. The unbounded record (entries for runs whose pointer has gone) is a smaller, declared follow-on.",
+    "evidence": "The done-when test exists and passes. I re-ran tests/test_follow_replays_the_gap.py at head 1d08e629a in a scratch cwd with bytecode writes disabled: 3 passed in 9.69s, EXIT=0. The two cases the done-when names are present and specific \u2014 test_a_reattach_replays_only_the_runs_that_moved asserts the header is line 0, the moved run is named exactly once as working \u2192 unpromoted with the arrow, and the unmoved run draws nothing; test_a_run_the_record_does_not_name_is_replayed_from_dispatched asserts an unnamed live run replays dispatched \u2192 working. The negative control is real and logged: negative-control.log restores the base revision's ticker_module.settled_at_attach into _row_is_stale_inventory and the focused file reads F.F, 2 failed 1 passed, EXIT=1, with test_a_reattach_replays_only_the_runs_that_moved failing on 'the moved run is drawn exactly once' \u2014 the suppression the section exists to remove. The base and after suite arms are both present and honest: baseline-suite.log header reads revision b43e66dcc6 (351 passed, 1 skipped, EXIT=0) and after-suite.log reads revision 1d08e629a (350 passed, 4 failed, 1 skipped, EXIT=1), with all four after-suite failure ids named in the manifest. The one point off is that the focused file does not itself exercise the widened filter's other two states (failed, abandoned) or the promoted run that must stay suppressed, so the 'keep promoted suppressed' half of the clause has no direct test.",
+    "fit": "The code sits with its neighbours and speaks the repository's voice: delivered_path mirrors follower_lock_path's readable-digest naming, read_delivered/write_delivered follow the sibling reader/writer shape in runs.py, hidden_at_attach sits beside settled_at_attach in ticker.py and names the mechanism rather than the plan, and every new docstring explains why rather than which section asked. No plan, sprint or ticket identifiers leak into source, symbols or comments. The deduction is the pipe question \u2014 routing a non-TTY re-arm through a session-keyed pane record is a behavioural change the section does not state, and it is the reason test_a_pipe_rearm_draws_the_fleet_and_no_burst and its three siblings go red \u2014 plus a minor asymmetry: the json path records every emitted row while the human path records only rows that survive the stale filter, so a session armed json then human can have its record hide a run the human reader was never shown.",
+    "goal_fidelity": "The delta implements \u00a74 clause for clause. reckon/crew/runs.py adds a delivered-state sidecar (delivered_path/read_delivered/write_delivered) under follower_dir, named for the session like its sibling follower_lock_path (<readable>-<digest>.delivered.json), written atomically and outside the flocked registration file, and absent on any version/project/session shape mismatch \u2014 so follower_state does not expose it and a write never contends with the registration lock. reckon/cli.py:3988 reads it only on the first pass of a fresh arming and, when present, yields a FOLLOWER_REATTACH_EVENT header first (cli.py:3911-4031, _follow_reattach_line) naming live runs found, runs changed and the record's own local clock, then draws only the runs whose classifier state differs from the record as transitions from the recorded state (_follow_gap_rows, cli.py:3968-4010), replaying a run the record does not name from dispatched. _row_is_stale_inventory now delegates to ticker.hidden_at_attach, which is SETTLED_STATES minus completed_unpromoted/failed/abandoned, while SETTLED_STATES and settled_at_attach keep their values \u2014 exactly the three pinned readings. The one point off is the pipe case: the record is keyed by session, not by pane-ness, so a non-TTY re-arm now also replays the diff and draws no fleet row when nothing moved, which the section neither carves out nor discusses.",
+    "scope_discipline": "git show --stat 1d08e629a touches exactly the four declared write paths \u2014 reckon/cli.py, reckon/crew/runs.py, reckon/crew/ticker.py, tests/test_follow_replays_the_gap.py \u2014 536 insertions and 23 deletions, no others. The reviewed worktree is clean and its HEAD is 1d08e629a; no uncommitted work and no stray files. The evidence fragment path under the write scope was correctly left unused, since the done-when names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The delta implements \u00a74 clause for clause. reckon/crew/runs.py adds a delivered-state sidecar (delivered_path/read_delivered/write_delivered) under follower_dir, named for the session like its sibling follower_lock_path, written atomically and outside the flocked registration file, and absent on any version/project/session shape mismatch. reckon/cli.py:3988 reads it only on the first pass of a fresh arming and, when present, yields a FOLLOWER_REATTACH_EVENT header first naming live runs found, runs changed and the record's own local clock, then draws only the runs whose classifier state differs from the record as transitions from the recorded state, replaying a run the record does not name from dispatched. _row_is_stale_inventory now delegates to ticker.hidden_at_attach (SETTLED_STATES minus completed_unpromoted/failed/abandoned), while SETTLED_STATES and settled_at_attach keep their values \u2014 exactly the three pinned readings. One point off for the pipe case: the record is keyed by session, not pane-ness, so a non-TTY re-arm also replays the diff, unaddressed by the section.\nSCORE evidence: 19\nJUSTIFICATION evidence: The done-when test exists and passes. Independently re-ran tests/test_follow_replays_the_gap.py at head 1d08e629a in a scratch cwd with bytecode writes disabled: 3 passed in 9.69s, EXIT=0. test_a_reattach_replays_only_the_runs_that_moved asserts the header is line 0, the moved run is named exactly once as working \u2192 unpromoted with the arrow, and the unmoved run draws nothing; test_a_run_the_record_does_not_name_is_replayed_from_dispatched asserts an unnamed live run replays dispatched \u2192 working. The negative control is real and logged: negative-control.log restores the base revision's settled_at_attach into _row_is_stale_inventory, reads F.F 2 failed 1 passed EXIT=1, with the moved-run assertion failing as the section intends. base/after suite arms present: baseline-suite.log revision b43e66dcc6 (351 passed, EXIT=0), after-suite.log revision 1d08e629a (350 passed, 4 failed, EXIT=1), all four failure ids named. One point off: the focused file does not exercise failed/abandoned or the still-suppressed promoted run directly.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 1d08e629a touches exactly the four declared write paths (reckon/cli.py, reckon/crew/runs.py, reckon/crew/ticker.py, tests/test_follow_replays_the_gap.py), 536 insertions and 23 deletions, no others. The reviewed worktree is clean and its HEAD is 1d08e629a; the unused evidence fragment path was left untouched as the done-when names no artifact.\nSCORE durability: 17\nJUSTIFICATION durability: The mechanism is built to last \u2014 the record write is atomic and fsynced, read_delivered treats an absent or older-shaped record as no record rather than trusting a partial one, and the record is carried forward across armings so one moved run cannot evict the others from the diff (pinned by the third focused test). The deduction is that the change lands with four existing tests red, so the suite the node leaves behind no longer describes the shipped contract and main stays red until the follow-on rewrite lands; declared and out of the node's write grant, but real durability debt the merge inherits. The unbounded record is a smaller declared follow-on.\nSCORE fit: 18\nJUSTIFICATION fit: The code sits with its neighbours and speaks the repository's voice \u2014 delivered_path mirrors follower_lock_path's readable-digest naming, the reader/writer pair follows the sibling shape in runs.py, hidden_at_attach sits beside settled_at_attach and names the mechanism rather than the plan, and no plan/sprint/ticket identifier leaks into source or comments. The deduction is the pipe question, a behavioural change the section does not state and the reason four pinned tests go red, plus the json-vs-human record asymmetry.\nFINDING reckon/cli.py:3988 the record branch is keyed by session, not by pane-ness, so a non-TTY re-arm holding a record now draws only the header and the moved runs and no fleet row when nothing moved; the four after-suite failures are exactly this superseded 'a pipe re-arm draws the fleet' contract, and the coordinator must land a rewrite before merging or main stays red.\nFINDING reckon/cli.py:4730 note_delivered is called on the json branch for every emitted row but on the human branch only for rows that survive _row_is_stale_inventory; the record is one per session, so a session armed json then human can have the record hide a run the human reader was never shown.\n",
+  "review_run_id": "r-20261004T003920946416-review-of-a-re-attach-replays-the-gap",
+  "reviewed_base_sha": "b43e66dcc6feaea162db68c012a2e868e7efd60f",
+  "reviewed_head_sha": "1d08e629a25b90dd958206138b27999d276b8477",
+  "reviewed_run_id": "r-20261004T000819280781-a-re-attach-replays-the-gap",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T003920946416-review-of-a-re-attach-replays-the-gap",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T00:44:00.000000+00:00",
+  "total": 93
+}

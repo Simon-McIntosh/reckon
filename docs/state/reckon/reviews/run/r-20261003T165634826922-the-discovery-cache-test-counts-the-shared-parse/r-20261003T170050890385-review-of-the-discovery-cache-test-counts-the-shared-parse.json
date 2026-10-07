@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count and ids derived from the reviewed run's own gate logs. The reviewed manifest records baseline_suite and after_suite as null, so the canonical derivation over those two fields is unmeasured; the run's own head-arm logs are green (gate-alone.log 1 passed, gate-ordered.log 6 passed, gate-file.log 5 passed, all EXIT=0), and its negative-control.log restores exactly the base test file's one-argument stub and fails alone (EXIT=1, TypeError at reckon/metadata_index.py:145), which is the base-arm failure. I independently reproduced the base-arm failure by running the pre-change tests/test_discovery_cache.py at 3c8041ac (1 failed alone) and the head arms at f37a45628 (1 passed alone, 6 passed ordered, 5 passed full file), so no failing id is present at head that was absent at base: added_failure_count 0.",
+  "after_suite": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/the-discovery-cache-test-counts-the-shared-parse/tests/test_discovery_cache.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165634826922-the-discovery-cache-test-counts-the-shared-parse/gate-file.log",
+    "revision": "f37a45628626bf23ea2bafb40fde2e601fbe738c"
+  },
+  "backend": "clive",
+  "baseline_suite": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/the-discovery-cache-test-counts-the-shared-parse/tests/test_discovery_cache.py (base revision content exported to a scratch tree, target id alone)",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_discovery_cache.py::test_repeat_discovery_skips_git_and_metadata_for_all_mounts"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165634826922-the-discovery-cache-test-counts-the-shared-parse/negative-control.log",
+    "revision": "3c8041accc59a4db5eabb0f71ff5c1850559f3d1"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T17:07:39.141Z",
+  "dispatched_at": "2026-10-03T17:01:18Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165634826922-the-discovery-cache-test-counts-the-shared-parse/manifest.md",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: manifest.md records baseline_suite and after_suite as null, so the store's canonical zero-added derivation over those two fields reads unmeasured; the run's own head-arm gate logs support 0 and the base-arm failure is shown only by the negative control, not logged as a suite arm. I reproduced the base failing state (1 failed alone at 3c8041ac) so the zero-added figure is measured, not assumed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165634826922-the-discovery-cache-test-counts-the-shared-parse/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's orientation_write_paths names an evidence fragment and a figure directory under docs/evidence/fragments/the-suite-is-green-at-head/ and docs/figures/the-suite-is-green-at-head/ that the run did not create (the landing itself notes 'no fragment or figure'), so the declared write paths overstate the delivery; no artifact is missing from the code, only from the record's declared scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 tests-only change; no production call site is added or altered.",
+    "diff": "f37a45628626bf23ea2bafb40fde2e601fbe738c changes only tests/test_discovery_cache.py: counted_parse takes (path, slug=None) and forwards the slug to the real _plan_html.parse_meta, and metadata_index.clear() is called at the top of the test.",
+    "done_when": "the repaired id green under three orderings plus a mutation that reddens it; I reproduced all four at f37a45628 \u2014 alone 1 passed EXIT=0, ordered 6 passed EXIT=0, full file 5 passed, and the one-argument stub restored fails alone with TypeError at reckon/metadata_index.py:145 (EXIT=1).",
+    "goal": "the node goal is that tests/test_discovery_cache.py::test_repeat_discovery_skips_git_and_metadata_for_all_mounts count metadata parses through the digest-shared parse and pass regardless of collection order; the change accepts the slug the shipped call forwards and clears the shared index at test start, and the id passes alone (1 passed), ordered (6 passed) and as the full file (5 passed).",
+    "manifest": "read; status complete, one commit f37a45628, negative_control_log present and EXIT=1; its baseline_suite and after_suite fields are null, so the canonical added-failure derivation over those fields is unmeasured even though the run's own head-arm gate logs are green.",
+    "write_paths": "the manifest declares tests/test_discovery_cache.py plus an evidence fragment and figure path it did not create; the diff 3c8041ac..f37a45628 touches exactly tests/test_discovery_cache.py, 4 insertions / 2 deletions, no product file."
+  },
+  "justifications": {
+    "durability": "clearing metadata_index at test start removes the digest-order dependence and the slug forward matches the shipped _plan_html.parse_meta(path, slug=None) signature; the negative control proves the stub arity is load-bearing (EXIT=1).",
+    "evidence": "the reviewed run's head-arm gate logs (gate-alone.log, gate-ordered.log, gate-file.log) are green and its negative-control.log reddens the one-argument stub; I reproduced every arm plus the base failing state at 3c8041ac. The deduction is that the manifest leaves baseline_suite and after_suite null, so the canonical zero-added derivation is unmeasured from those fields.",
+    "fit": "the stub mirrors the production signature and the test uses the module's public metadata_index.clear(); no naming or comment issue, and the change is minimal.",
+    "goal_fidelity": "the goal \u2014 a repeat-discovery test that counts the digest-shared parse and passes regardless of order \u2014 is met: the id passes alone, ordered and as the full file, and the assertion is unchanged.",
+    "scope_discipline": "the diff 3c8041ac..f37a45628 is one test file, 4 insertions / 2 deletions, tests only; no product file, plan or index is touched."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165634826922-the-discovery-cache-test-counts-the-shared-parse/negative-control.log",
+  "negative_control_note": "restoring the base test file's one-argument counted_parse stub makes the target id fail alone with TypeError: counted_parse() takes 1 positional argument but 2 were given at reckon/metadata_index.py:145, so the repair is load-bearing and the unmutated head arm is green.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_discovery_cache.py::test_repeat_discovery_skips_git_and_metadata_for_all_mounts count metadata parses through the digest-shared parse and pass regardless of collection order; the change accepts the slug the shipped call forwards (metadata_index.parse_meta_shared(path, slug) -> _plan_html.parse_meta(path, slug) at reckon/metadata_index.py:145) and drops the shared index at test start, and the id passes alone (1 passed), after tests/test_resource_identity_reads_the_digest_index.py (6 passed) and as the full file (5 passed).\nVERDICT done_when: the repaired id is green under three orderings plus a mutation that reddens it; I reproduced all four in the reviewed worktree at f37a45628 \u2014 alone 1 passed EXIT=0, ordered 6 passed EXIT=0, full file 5 passed, and the one-argument stub restored fails alone with TypeError at reckon/metadata_index.py:145 (EXIT=1).\nVERDICT write_paths: the manifest declares tests/test_discovery_cache.py plus an evidence fragment and figure path it did not create; the diff 3c8041ac..f37a45628 touches exactly tests/test_discovery_cache.py, 4 insertions / 2 deletions, and no product file.\nVERDICT manifest: read; status complete, one commit f37a45628, negative_control_log present with a bare EXIT=1; its baseline_suite and after_suite fields are null, so the canonical zero-added derivation over those fields reads unmeasured even though the run's own head-arm gate logs are green.\nVERDICT diff: f37a45628626bf23ea2bafb40fde2e601fbe738c changes only tests/test_discovery_cache.py \u2014 counted_parse now takes (path, slug=None) and forwards the slug to the real _plan_html.parse_meta, and metadata_index.clear() is called at the top of the test so the parse count no longer depends on what an earlier test cached by digest.\nCALL_SITES: none (tests-only change; no production call site added or altered)\nSCORE goal_fidelity: 20\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 20\nJUSTIFICATION goal_fidelity: the goal \u2014 a repeat-discovery test that counts the digest-shared parse and passes regardless of order \u2014 is met: the id passes alone, ordered and as the full file, and the assertion is unchanged.\nJUSTIFICATION evidence: the reviewed run's head-arm gate logs (gate-alone.log, gate-ordered.log, gate-file.log) are green and its negative-control.log reddens the one-argument stub; I reproduced every arm plus the base failing state at 3c8041ac. The deduction is that the manifest leaves baseline_suite and after_suite null, so the canonical zero-added derivation is unmeasured from those fields.\nJUSTIFICATION scope_discipline: the diff 3c8041ac..f37a45628 is one test file, 4 insertions / 2 deletions, tests only; no product file, plan or index is touched.\nJUSTIFICATION durability: clearing metadata_index at test start removes the digest-order dependence and the slug forward matches the shipped _plan_html.parse_meta(path, slug=None) signature; the negative control proves the stub arity is load-bearing (EXIT=1).\nJUSTIFICATION fit: the stub mirrors the production signature and the test uses the module's public metadata_index.clear(); no naming or comment issue, and the change is minimal.",
+  "review_run_id": "r-20261003T170050890385-review-of-the-discovery-cache-test-counts-the-shared-parse",
+  "reviewed_base_sha": "3c8041accc59a4db5eabb0f71ff5c1850559f3d1",
+  "reviewed_head_sha": "f37a45628626bf23ea2bafb40fde2e601fbe738c",
+  "reviewed_run_id": "r-20261003T165634826922-the-discovery-cache-test-counts-the-shared-parse",
+  "reviewer_run_id": "r-20261003T170050890385-review-of-the-discovery-cache-test-counts-the-shared-parse",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T17:06:11.836785+00:00",
+  "total": 97
+}

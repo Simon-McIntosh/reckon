@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite and no after_suite field, and its live pointer carries suite_command null, so the added-failure count was not taken; on the reader: a synthetic base/head pair differing by one FAILED id returns count 1 at review.py:1076, and the reviewed manifest's shape is what makes this unmeasured rather than zero.",
+  "added_failures_source": "the reviewed run's own manifest (read through annotate_review_of_run) names neither baseline_suite nor after_suite, so the count is unmeasured rather than zero; the reviewed run's live pointer confirms suite_command null, so the armed-only arms were correctly omitted.",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/resumption.py:1297"
+  ],
+  "completed_at": "2026-09-30T19:17:15.670Z",
+  "dispatched_at": "2026-09-30T18:55:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T182922411100-reflex-skips-tier-none-reviews/manifest.md",
+      "line": "14",
+      "text": "the artifacts line asserts no /tmp directory was created by this node, but the node's own pytest created /tmp/reckon-crew-scratch/r-20260930T182922411100-reflex-skips-tier-none-reviews/pytest-of-mcintos (the basetemp the negative-control.log failing path resolves inside), and the done-when required that every /tmp directory the node created be deleted and listed in artifacts, so the record both misses the clause and misstates the /tmp state."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against e7eca9f03; f48deb9e0 adds _sweep_review_tier and the tier check inside the scoring branch of dispatch_awaiting_reviews, a new test module, and the evidence fragment, and touches no other module.",
+    "done_when": "the gate names tests/test_reflex_skips_tier_none_reviews.py and tests/test_review_role_is_not_reviewed.py, each log ending with an EXIT= line; gate.log:1 names revision f48deb9e0 and its last line reads EXIT=0 with 8 passed.",
+    "goal": "the node's goal is to make reckon.crew.recovery.dispatch_awaiting_reviews skip any run whose review tier, resolved through reckon.review_tiers, is none; recovery.py:2084 resolves each scoring candidate's tier through _sweep_review_tier and skips the dispatch when it reaches review_tiers.NONE.",
+    "manifest": "read; it states the skip is recorded as review_dispatch.status=\"skipped\" with its reason, names the two gate files and their 8 passed result, and carries one landing line \u2014 but its artifacts field claims no /tmp directory was created by this node, which inspection of the node's own pytest basetemp refutes.",
+    "write_paths": "the declared scope is reckon/crew/recovery.py, tests/test_reflex_skips_tier_none_reviews.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/reflex-skips-tier-none-reviews.html; git diff e7eca9f03..f48deb9e0 changes exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_reflex_skips_tier_none_reviews.py:207 asserts composed == [\"r-source\"] and reddens when the tier check is removed \u2014 the declared negative control reproduces exactly that with ['r-docs-only', 'r-source'] and EXIT=1, so the guard is load-bearing \u2014 deducting one because the exception-to-FULL fallback at recovery.py:2022-2024 and the light tier are exercised by no added assertion.",
+    "evidence": "the result is recorded rather than claimed \u2014 gate.log names f48deb9e0 and ends EXIT=0 (8 passed), the negative control reddens the new assertion (1 failed, EXIT=1), and I re-ran both named files at f48deb9e0 for 8 passed EXIT=0 \u2014 deducting three because the manifest's artifacts line asserts no /tmp directory was created by this node while the node's own pytest left /tmp/reckon-crew-scratch/r-20260930T182922411100-reflex-skips-tier-none-reviews/pytest-of-mcintos behind.",
+    "fit": "_sweep_review_tier follows the module's helper idiom and returns through the shared review_tiers resolver rather than re-deriving the rule, the commit carries a conventional subject and a body with no plan label or attribution, deducting one because the skip report at recovery.py:2089-2099 carries a review_tier key no other report shape has and contributes to no field of _review_outcome_counts (resumption.py:923).",
+    "goal_fidelity": "recovery.py:2081-2104 skips the review dispatch exactly when the tier resolves to review_tiers.NONE, and the tier is read through promotion._run_review_tier (promotion.py:3579), the same resolver promotion calls at promotion.py:3974, so the sweep and the gate cannot disagree.",
+    "scope_discipline": "git diff e7eca9f03..f48deb9e0 changes three paths and every one is inside the declared scope, no figure is written as the done-when names no artifact, and ruff check adds no finding to recovery.py (6 at base, 6 at head, none in the added region) and finds none in the new test module."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make reckon.crew.recovery.dispatch_awaiting_reviews skip any run whose review tier, resolved through reckon.review_tiers, is none; recovery.py:2084 resolves each scoring candidate's tier through _sweep_review_tier and skips the dispatch when it reaches review_tiers.NONE.\nVERDICT done_when: the gate names tests/test_reflex_skips_tier_none_reviews.py and tests/test_review_role_is_not_reviewed.py, each log ending with an EXIT= line; gate.log:1 names revision f48deb9e0 and its last line reads EXIT=0 with 8 passed.\nVERDICT write_paths: the declared scope is reckon/crew/recovery.py, tests/test_reflex_skips_tier_none_reviews.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/reflex-skips-tier-none-reviews.html; git diff e7eca9f03..f48deb9e0 changes exactly those three paths and nothing else.\nVERDICT manifest: read; it states the skip is recorded as review_dispatch.status=\"skipped\" with its reason, names the two gate files and their 8 passed result, and carries one landing line \u2014 but its artifacts field claims no /tmp directory was created by this node, which inspection of the node's own pytest basetemp refutes.\nVERDICT diff: read commit by commit against e7eca9f03; f48deb9e0 adds _sweep_review_tier and the tier check inside the scoring branch of dispatch_awaiting_reviews, a new test module, and the evidence fragment, and touches no other module.\nCALL_SITES: reckon/crew/resumption.py:1297\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: recovery.py:2081-2104 skips the review dispatch exactly when the tier resolves to review_tiers.NONE, and the tier is read through promotion._run_review_tier (promotion.py:3579), the same resolver promotion calls at promotion.py:3974, so the sweep and the gate cannot disagree.\nSCORE evidence: 17\nJUSTIFICATION evidence: the result is recorded rather than claimed \u2014 gate.log names f48deb9e0 and ends EXIT=0 (8 passed), the negative control reddens the new assertion (1 failed, EXIT=1), and I re-ran both named files at f48deb9e0 for 8 passed EXIT=0 \u2014 deducting three because the manifest's artifacts line asserts no /tmp directory was created by this node while the node's own pytest left /tmp/reckon-crew-scratch/r-20260930T182922411100-reflex-skips-tier-none-reviews/pytest-of-mcintos behind.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff e7eca9f03..f48deb9e0 changes three paths and every one is inside the declared scope, no figure is written as the done-when names no artifact, and ruff check adds no finding to recovery.py (6 at base, 6 at head, none in the added region) and finds none in the new test module.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_reflex_skips_tier_none_reviews.py:207 asserts composed == [\"r-source\"] and reddens when the tier check is removed \u2014 the declared negative control reproduces exactly that with ['r-docs-only', 'r-source'] and EXIT=1, so the guard is load-bearing \u2014 deducting one because the exception-to-FULL fallback at recovery.py:2022-2024 and the light tier are exercised by no added assertion.\nSCORE fit: 19\nJUSTIFICATION fit: _sweep_review_tier follows the module's helper idiom and returns through the shared review_tiers resolver rather than re-deriving the rule, the commit carries a conventional subject and a body with no plan label or attribution, deducting one because the skip report at recovery.py:2089-2099 carries a review_tier key no other report shape has and contributes to no field of _review_outcome_counts (resumption.py:923).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T182922411100-reflex-skips-tier-none-reviews/manifest.md:14 the artifacts line asserts no /tmp directory was created by this node, but the node's own pytest created /tmp/reckon-crew-scratch/r-20260930T182922411100-reflex-skips-tier-none-reviews/pytest-of-mcintos (the basetemp the negative-control.log failing path resolves inside), and the done-when required that every /tmp directory the node created be deleted and listed in artifacts, so the record both misses the clause and misstates the /tmp state.",
+  "review_run_id": "r-20260930T185521932342-review-of-reflex-skips-tier-none-reviews",
+  "reviewed_base_sha": "e7eca9f0361b661cc4a435b3a39015497a795688",
+  "reviewed_head_sha": "f48deb9e0ca8d6771d791c3da94e221b9df782d0",
+  "reviewed_run_id": "r-20260930T182922411100-reflex-skips-tier-none-reviews",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T19:11:13.844023+00:00",
+  "total": 95
+}

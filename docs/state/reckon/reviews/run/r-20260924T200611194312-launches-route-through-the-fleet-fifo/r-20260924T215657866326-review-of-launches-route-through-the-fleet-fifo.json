@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4100 dispatch",
+    "reckon/crew/dispatch.py:5143 supervised_launch",
+    "reckon/crew/resumption.py:666 _spawn reached by _resume",
+    "reckon/crew/recovery.py:1135 dispatch_awaiting_reviews",
+    "reckon/crew/dispatch.py:809 _start_watch_producer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T21:56:57.866326+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.cache/reckon-fleet-launch/gate-new.log",
+      "line": "1",
+      "text": "the gate receipt the manifest and the plan cite begins with pytest progress output rather than the revision, tree and command a gate log's first line must name, and its mtime 22:53:15 precedes ab9da177 (23:34:20), which added the gate file it is cited for, so the recorded result cannot be tied to the delivered revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.cache/reckon-fleet-launch/delta-head-2.log",
+      "line": "1",
+      "text": "the manifest's after_suite names this log as revision ab9da177 (HEAD) while its mtime 23:27:46 precedes that commit's creation at 23:34:20 and its first line names no revision, so the head-side delta is asserted rather than recorded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/manifest.md",
+      "line": "26",
+      "text": "the tests line names two test files rather than the gate command that actually ran and its result, so the command and its outcome are recoverable only from the plan prose, though the write-time audit accepts the shape."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the three commits against 02e2757d \u2014 7ae4787a adds the lane, its helpers and the spec's argv, ab9da177 restores the resumption seam and adds the 492-line gate, 19a0f17f appends the landing record, the cumulative anchor and the figure \u2014 and found the code doing what its commit messages and docstrings say.",
+    "done_when": "read the done_when's five cases against tests/test_dispatch_spawns_through_the_fleet.py and found one case for each \u2014 a spawn line with the acknowledged pid on the pointer (:292-305), a fork with no fleet record (:323-325), a refusal within its bound leaving no pointer and no worktree (:369-375), a producer start (:395-403), and a review dispatch plus a resumption (:446-487) \u2014 with the declared negative control's log at /home/ITER/mcintos/.cache/reckon-fleet-launch/negative-control.log showing both named assertions failing under the bypass.",
+    "goal": "read the node's goal \u2014 dispatch, resumption and producer launches reaching the supervisor through the fleet FIFO when a live fleet record names the dispatching node \u2014 and found reckon/crew/dispatch.py:5156-5169 doing that for all three launch kinds, with one declared narrowing: the lane also requires RECKON_FLEET_SPAWN (reckon/crew/dispatch.py:4988), so on the fleet node with the flag unset a launch still forks, a narrowing the node states in its plan landing record and its manifest evidence_inputs.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/manifest.md, which reads complete with three commits, six changed paths and its declared control, and found its test_logs citing three logs whose first lines are pytest progress output rather than the revision, tree and command a gate log's first line must name, two of them older than the commit they are cited against.",
+    "write_paths": "read the manifest's declared write paths and each commit's file list, and found every path inside them \u2014 reckon/crew/dispatch.py and reckon/crew/resumption.py in 7ae4787a and ab9da177, tests/test_dispatch_spawns_through_the_fleet.py in ab9da177, and the plan, the cumulative evidence anchor and the figure in 19a0f17f \u2014 with nothing outside the fence and the peer-owned tests/test_mcp_recovery.py untouched."
+  },
+  "justifications": {
+    "durability": "with the FIFO branch in _start_supervisor bypassed the executed control reports the acknowledged-pid assertion failing \u2014 pointer pid 1383654 against the stub's 1383618 \u2014 and the gate's other cases assert against independent sources, the stub's own child pid and the FIFO's contents.",
+    "evidence": "the gate's five cases are in tests/test_dispatch_spawns_through_the_fleet.py:292-487, but its cited receipt at /home/ITER/mcintos/.cache/reckon-fleet-launch/gate-new.log:1 carries no revision, tree or command, and my re-run of that file at 19a0f17f passed 6 cases in 8.87 s, so the result holds while the receipt does not tie to it.",
+    "fit": "reckon/crew/dispatch.py:4988-5106 follows the module's private-helper, CrewError and mechanism-docstring idiom, ruff over the two edited modules adds no finding, and the gate file follows the suite's fixture and temporary-repository idiom.",
+    "goal_fidelity": "reckon/crew/dispatch.py:5156-5169 routes a dispatch, a review, a resumption and a producer start through the FIFO, but only with RECKON_FLEET_SPAWN set (reckon/crew/dispatch.py:4988), a narrowing of the goal's record-only condition that the node declares rather than hides.",
+    "scope_discipline": "every path in the three commits is inside the fence the manifest declares, and the delta repair stayed in reckon/crew/resumption.py:652-676 rather than editing tests/test_mcp_recovery.py, which the fence excluded."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 02e2757d4795338d9c3af4209aef400cfbd4f7f4\nreviewed_head_sha: 19a0f17f4e85c1a9b97fe7130ffadc33306e73bf\nVERDICT goal: read the node's goal \u2014 dispatch, resumption and producer launches reaching the supervisor through the fleet FIFO when a live fleet record names the dispatching node \u2014 and found reckon/crew/dispatch.py:5156-5169 doing that for all three launch kinds, with one declared narrowing: the lane also requires RECKON_FLEET_SPAWN (reckon/crew/dispatch.py:4988), so on the fleet node with the flag unset a launch still forks, a narrowing the node states in its plan landing record and its manifest evidence_inputs.\nVERDICT done_when: read the done_when's five cases against tests/test_dispatch_spawns_through_the_fleet.py and found one case for each \u2014 a spawn line with the acknowledged pid on the pointer (:292-305), a fork with no fleet record (:323-325), a refusal within its bound leaving no pointer and no worktree (:369-375), a producer start (:395-403), and a review dispatch plus a resumption (:446-487) \u2014 with the declared negative control's log at /home/ITER/mcintos/.cache/reckon-fleet-launch/negative-control.log showing both named assertions failing under the bypass.\nVERDICT write_paths: read the manifest's declared write paths and each commit's file list, and found every path inside them \u2014 reckon/crew/dispatch.py and reckon/crew/resumption.py in 7ae4787a and ab9da177, tests/test_dispatch_spawns_through_the_fleet.py in ab9da177, and the plan, the cumulative evidence anchor and the figure in 19a0f17f \u2014 with nothing outside the fence and the peer-owned tests/test_mcp_recovery.py untouched.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/manifest.md, which reads complete with three commits, six changed paths and its declared control, and found its test_logs citing three logs whose first lines are pytest progress output rather than the revision, tree and command a gate log's first line must name, two of them older than the commit they are cited against.\nVERDICT diff: read the three commits against 02e2757d \u2014 7ae4787a adds the lane, its helpers and the spec's argv, ab9da177 restores the resumption seam and adds the 492-line gate, 19a0f17f appends the landing record, the cumulative anchor and the figure \u2014 and found the code doing what its commit messages and docstrings say.\nCALL_SITES: reckon/crew/dispatch.py:4100 dispatch, reckon/crew/dispatch.py:5143 supervised_launch, reckon/crew/resumption.py:666 _spawn reached by _resume, reckon/crew/recovery.py:1135 dispatch_awaiting_reviews, reckon/crew/dispatch.py:809 _start_watch_producer\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:5156-5169 routes a dispatch, a review, a resumption and a producer start through the FIFO, but only with RECKON_FLEET_SPAWN set (reckon/crew/dispatch.py:4988), a narrowing of the goal's record-only condition that the node declares rather than hides.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate's five cases are in tests/test_dispatch_spawns_through_the_fleet.py:292-487, but its cited receipt at /home/ITER/mcintos/.cache/reckon-fleet-launch/gate-new.log:1 carries no revision, tree or command, and my re-run of that file at 19a0f17f passed 6 cases in 8.87 s, so the result holds while the receipt does not tie to it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the three commits is inside the fence the manifest declares, and the delta repair stayed in reckon/crew/resumption.py:652-676 rather than editing tests/test_mcp_recovery.py, which the fence excluded.\nSCORE durability: 18\nJUSTIFICATION durability: with the FIFO branch in _start_supervisor bypassed the executed control reports the acknowledged-pid assertion failing \u2014 pointer pid 1383654 against the stub's 1383618 \u2014 and the gate's other cases assert against independent sources, the stub's own child pid and the FIFO's contents.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:4988-5106 follows the module's private-helper, CrewError and mechanism-docstring idiom, ruff over the two edited modules adds no finding, and the gate file follows the suite's fixture and temporary-repository idiom.\nFINDING /home/ITER/mcintos/.cache/reckon-fleet-launch/gate-new.log:1 the gate receipt the manifest and the plan cite begins with pytest progress output rather than the revision, tree and command a gate log's first line must name, and its mtime 22:53:15 precedes ab9da177 (23:34:20), which added the gate file it is cited for, so the recorded result cannot be tied to the delivered revision.\nFINDING /home/ITER/mcintos/.cache/reckon-fleet-launch/delta-head-2.log:1 the manifest's after_suite names this log as revision ab9da177 (HEAD) while its mtime 23:27:46 precedes that commit's creation at 23:34:20 and its first line names no revision, so the head-side delta is asserted rather than recorded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/manifest.md:26 the tests line names two test files rather than the gate command that actually ran and its result, so the command and its outcome are recoverable only from the plan prose, though the write-time audit accepts the shape.",
+  "review_run_id": "r-20260924T215657866326-review-of-launches-route-through-the-fleet-fifo",
+  "reviewed_base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+  "reviewed_head_sha": "19a0f17f4e85c1a9b97fe7130ffadc33306e73bf",
+  "reviewed_run_id": "r-20260924T200611194312-launches-route-through-the-fleet-fifo",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T23:16:19.927092+00:00",
+  "total": 86
+}

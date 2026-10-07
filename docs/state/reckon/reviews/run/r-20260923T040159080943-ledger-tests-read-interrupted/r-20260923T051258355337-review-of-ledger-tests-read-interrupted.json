@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "local",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:3248 crew_recover",
+    "reckon/crew/recovery.py:4377 recover",
+    "reckon/crew/recovery.py:2288 classify_pointer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T05:12:58.355337+00:00",
+  "findings": [
+    {
+      "file": "docs/figures/worker-death-is-recorded/ledger-gate-after.log",
+      "line": "1",
+      "text": "the after log pins rev=729dea35, the diff base, while it measured the worktree carrying the uncommitted expectation updates, so the one field naming a revision identifies a tree in which the change does not exist and a later reader comparing gates across repairs attributes 6 failed/89 passed to the base, where the same file reports 8 failed/87 passed; the manifests after_suite revision repeats the base label."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read against the single commit fb88efce whose parent is 729dea35; tests/test_ledger.py carries two renames with their expectations rewritten, the cumulative evidence record gains a 5.3 section (44 insertions, 0 deletions) and the plan a landing paragraph (19 insertions, 0 deletions), with no test skipped, xfailed or relaxed and no production file touched.",
+    "done_when": "the done-when requires both renamed tests green at a head built on 729dea35 with both whole-file logs recorded and a negative control; the logs show 8 failed/87 passed at the base and 6 failed/89 passed with the change differing only by the renamed pair, the control first line repeats the declared mutation verbatim and reddens both tests (2 failed in 2.45s), and my re-run at the reviewed head fb88efce gives 2 passed in 8.79s; the one gap, the after log revision label, is filed as a finding.",
+    "goal": "the goal is that the two tests expecting a dead run with nothing delivered to read abandoned expect interrupted instead, matching the locked phase design, and tests/test_ledger.py:1311 and tests/test_ledger.py:1346 now assert interrupted, the name locked in the plan decision data-key=\"phase-name\" data-choice=\"interrupted\".",
+    "manifest": "read in full; it names base 729dea35 and commit fb88efce, records both gate runs with their counts and failure ids, points at the negative-control log whose content matches its note, and its follow_ons name two stale citations of the old test names which I confirmed still carry them (docs/plans/suite-failures-have-an-owner.html and docs/state/reckon/crew.json).",
+    "write_paths": "the fence is tests/test_ledger.py, the plan and cumulative evidence HTML files and docs/figures/worker-death-is-recorded; git diff --numstat 729dea35..fb88efce lists exactly those with 13/6, 44/0, 19/0 and three log files, no production path and no deleted line in the cumulative files."
+  },
+  "justifications": {
+    "durability": "removing the interrupted arm from classify_pointer reddens both updated tests with interrupted read as abandoned, so each added assertion names a condition under which it fails (tests/test_ledger.py:1311-1314, tests/test_ledger.py:1346-1353), and each compares recover() output against a literal rather than a value the test passed in.",
+    "evidence": "the done-when counts are recorded in two all_debug logs (docs/figures/worker-death-is-recorded/ledger-gate-baseline.log 8 failed/87 passed, ledger-gate-after.log 6 failed/89 passed) whose committed copies are byte-identical to the run logs (md5 a0e91670 and 5e5294a3), and I reproduced the renamed pair passing at the reviewed head, with the after log revision label the exception filed as a finding.",
+    "fit": "the renamed tests keep the sentence-naming idiom of the file (tests/test_ledger.py:1301, tests/test_ledger.py:1326) and the added comment at tests/test_ledger.py:1307 states the mechanism without a plan, sprint or ticket identifier or an attribution.",
+    "goal_fidelity": "the two expectations now read interrupted at tests/test_ledger.py:1311 and tests/test_ledger.py:1346, and interrupted is the phase name locked in the plan decision (data-key=\"phase-name\" data-choice=\"interrupted\" at docs/plans/worker-death-is-recorded.html), so the new expectations follow the design rather than the implementation.",
+    "scope_discipline": "every path in git diff --numstat 729dea35..fb88efce sits inside the declared fence, the cumulative evidence file takes 44 insertions and 0 deletions, and no plan meta line (version, modified) is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the two tests expecting a dead run with nothing delivered to read abandoned expect interrupted instead, matching the locked phase design, and tests/test_ledger.py:1311 and tests/test_ledger.py:1346 now assert interrupted, the name locked in the plan decision data-key=\"phase-name\" data-choice=\"interrupted\".\nVERDICT done_when: the done-when requires both renamed tests green at a head built on 729dea35 with both whole-file logs recorded and a negative control; the logs show 8 failed/87 passed at the base and 6 failed/89 passed with the change differing only by the renamed pair, the control first line repeats the declared mutation verbatim and reddens both tests (2 failed in 2.45s), and my re-run at the reviewed head fb88efce gives 2 passed in 8.79s; the one gap, the after log revision label, is filed as a finding.\nVERDICT write_paths: the fence is tests/test_ledger.py, the plan and cumulative evidence HTML files and docs/figures/worker-death-is-recorded; git diff --numstat 729dea35..fb88efce lists exactly those with 13/6, 44/0, 19/0 and three log files, no production path and no deleted line in the cumulative files.\nVERDICT manifest: read in full; it names base 729dea35 and commit fb88efce, records both gate runs with their counts and failure ids, points at the negative-control log whose content matches its note, and its follow_ons name two stale citations of the old test names which I confirmed still carry them (docs/plans/suite-failures-have-an-owner.html and docs/state/reckon/crew.json).\nVERDICT diff: read against the single commit fb88efce whose parent is 729dea35; tests/test_ledger.py carries two renames with their expectations rewritten, the cumulative evidence record gains a 5.3 section (44 insertions, 0 deletions) and the plan a landing paragraph (19 insertions, 0 deletions), with no test skipped, xfailed or relaxed and no production file touched.\nCALL_SITES: reckon/cli.py:3248 crew_recover, reckon/crew/recovery.py:4377 recover, reckon/crew/recovery.py:2288 classify_pointer\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the two expectations now read interrupted at tests/test_ledger.py:1311 and tests/test_ledger.py:1346, and interrupted is the phase name locked in the plan decision (data-key=\"phase-name\" data-choice=\"interrupted\" at docs/plans/worker-death-is-recorded.html), so the new expectations follow the design rather than the implementation.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done-when counts are recorded in two all_debug logs (docs/figures/worker-death-is-recorded/ledger-gate-baseline.log 8 failed/87 passed, ledger-gate-after.log 6 failed/89 passed) whose committed copies are byte-identical to the run logs (md5 a0e91670 and 5e5294a3), and I reproduced the renamed pair passing at the reviewed head, with the after log revision label the exception filed as a finding.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --numstat 729dea35..fb88efce sits inside the declared fence, the cumulative evidence file takes 44 insertions and 0 deletions, and no plan meta line (version, modified) is touched.\nSCORE durability: 18\nJUSTIFICATION durability: removing the interrupted arm from classify_pointer reddens both updated tests with interrupted read as abandoned, so each added assertion names a condition under which it fails (tests/test_ledger.py:1311-1314, tests/test_ledger.py:1346-1353), and each compares recover() output against a literal rather than a value the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the renamed tests keep the sentence-naming idiom of the file (tests/test_ledger.py:1301, tests/test_ledger.py:1326) and the added comment at tests/test_ledger.py:1307 states the mechanism without a plan, sprint or ticket identifier or an attribution.\nFINDING docs/figures/worker-death-is-recorded/ledger-gate-after.log:1 the after log pins rev=729dea35, the diff base, while it measured the worktree carrying the uncommitted expectation updates, so the one field naming a revision identifies a tree in which the change does not exist and a later reader comparing gates across repairs attributes 6 failed/89 passed to the base, where the same file reports 8 failed/87 passed; the manifests after_suite revision repeats the base label.\n",
+  "review_run_id": "r-20260923T051258355337-review-of-ledger-tests-read-interrupted",
+  "reviewed_base_sha": "729dea3561bdfd77c014c7be4d21e2bee4801f4d",
+  "reviewed_head_sha": "fb88efce4cb59b85b0c74d1a098c48673ccaec14",
+  "reviewed_run_id": "r-20260923T040159080943-ledger-tests-read-interrupted",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T05:58:38.090906+00:00",
+  "total": 93
+}

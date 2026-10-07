@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own evidence plus this review's arms: the reviewed manifest names no baseline_suite/after_suite field, so the store's own read-time annotation reports the count unmeasured (verified: reckon.crew.review.annotate_review_of_run returns count None with note 'names no base gate log'); the value stored here is 0, supported by the node's own green gate logs (6 passed, 5 passed, each EXIT=0) and this review's head arm (34 passed/EXIT=0 at 2100e374, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T031950485794-review-of-the-reflex-resumes-an-unpromoted-run/review-head-arm.log). A clean base arm could not be re-measured because the harness pins the reckon import to the reviewed worktree, so the base half rests on the reviewed run's green logs and the prior review's base arm (27 passed/EXIT=0 at 3c4f5cd72).",
+  "backend": "clive",
+  "base_log_revision": "3c4f5cd72",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:2586"
+  ],
+  "completed_at": "2026-10-01T03:41:36.552Z",
+  "dispatched_at": "2026-10-01T03:20:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2270",
+      "severity": "follow-on",
+      "text": "follow-on: the retry is unbounded. The resume branch (recovery.py:2270) runs on every sweep for an unpromoted finding-bearing run whose worker is not live; the only thing that ends it is the reviewed run's head moving past the reviewed head (after a commit, _stored_review returns None and the round is dropped). A resumed turn that ends without moving the head therefore resumes again on the next sweep, and again after that, forever: the attempt count at recovery.py:2294 is recorded but never read as a cap, and _repair_launch_refusal (recovery.py:1959) has no attempt limit. The node brief's done_when reads 'a second sweep for the same round resumes nothing', which the finished-turn case at tests/test_the_reflex_resumes_an_unpromoted_run.py:305 contradicts by design (it asserts a second sweep resumes, attempt 2). This is the same cadence-churn class the s3 guards were raised against (a round re-firing every cadence), bounded here only by the reviewed run eventually committing."
+    },
+    {
+      "file": "manifest.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: changed_paths under-reports the diff. It names four paths (reckon/crew/recovery.py, tests/test_the_reflex_resumes_an_unpromoted_run.py, tests/test_repair_answers_only_blocking_findings.py, the evidence fragment), but the diff base..head edits three further files outside the declared fence: tests/test_a_repair_hold_names_its_cause.py, tests/test_reflex_dispatches_one_repair.py and tests/test_repair_skips_out_of_repo_foundings.py, all in commit 58d5e62c3 ('align the reflex tests'). Those three are a fence breach (the fence is recovery.py, the new test and the evidence fragment) and are not named in changed_paths, so the record does not disclose what the diff shows. The edits are visible in git and were disclosed in the earlier review's record, but the run's own manifest should name every path it changed."
+    },
+    {
+      "file": "tests/test_the_reflex_resumes_an_unpromoted_run.py",
+      "line": "376",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_promoted_reviewed_run_is_not_resumed asserts only recorded.get('status') != 'resumed' (line 376), which passes whether the recorded repair_dispatch carries status 'refused', some other value, or is absent entirely, so it does not pin the promoted-run refusal it names. It should assert the recorded status is exactly the refusal the promoted path writes (the dispatch path is taken and its launch refusal is what settles it)."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2294",
+      "severity": "follow-on",
+      "text": "follow-on: the 'attempt' returned to the caller (recovery.py:2294) is computed from the entry-time record mapping, while the durable attempt is incremented independently inside _record_repair_dispatch (recovery.py:1878) from a fresh pointer read. The two can disagree whenever the pointer moved between the function's entry read and the write, so the returned report's attempt is not the recorded one. The stored pointer value is authoritative; a caller trusting the report would read a stale count."
+    },
+    {
+      "file": "manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the node's declared negative_control (from its brief) was 'route the unpromoted case back to dispatch_module.dispatch; the resumed-not-dispatched case must fail', but the control actually run (negative-control-any-assistant-record-busy.log) restores the any-assistant-record busy check instead. That control is legitimate and does fire (1 failed, EXIT=1), but the brief's named falsification of the central resume-vs-dispatch decision was not exercised; the central decision rests on the gate test alone (test_an_unpromoted_exited_run_is_resumed_not_dispatched asserts dispatched == [])."
+    }
+  ],
+  "head_log_revision": "2100e374",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the resume branch is reached from the reflex sweep's dispatch_repair_for_run call (recovery.py:2586), gated by _reviewed_run_is_busy (recovery.py:2083 call site; definition 1767) whose resume-stream arm is at recovery.py:1794.",
+    "diff": "read commit by commit against base 3c4f5cd72: afa5c04f2 adds _repair_resume_advice and the resume branch, 58d5e62c3 adds the retry/attempt semantics and re-anchors three sibling tests, 1edf118d0 fixes the finished-turn busy check, a85e0be12 and 939f3a23e/d339d4b07 update the evidence fragment, 91e96cf09 re-points the blocking-finding control, 2100e3747 records it.",
+    "done_when": "re-run at the reviewed head 2100e374: the node gate tests/test_repair_answers_only_blocking_finished.py 6 passed and tests/test_the_reflex_resumes_an_unpromoted_run.py 5 passed (11 combined, EXIT=0 in the node's logs); my independent four-file head arm is 34 passed/EXIT=0. The node's own negative control reproduces (1 failed, EXIT=1).",
+    "goal": "the node replaces repair-by-dispatch of an unpromoted reviewed run with a resume of the run itself, delivering the composed findings as advice; the landed branch does that, and the retry it adds is unbounded.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run/manifest.md; status complete, commits 91e96cf09, 2100e3747, 1edf118d0, a85e0be12, 58d5e62c3, d339d4b07, 939f3a23e, afa5c04f2 over base 3c4f5cd72, gate logs named with their revisions, one negative-control log named with EXIT=1.",
+    "write_paths": "declared fence is recovery.py, the new test file and the evidence fragment (four with the figure); the diff adds four sibling reflex test files edited outside the fence, three of them unnamed in changed_paths."
+  },
+  "justifications": {
+    "durability": "the change is well-factored: _repair_resume_advice (recovery.py:1890) is a pure function of the composed round, the branch reuses resumption._resume exactly as a hand-typed resume does, and the busy-check fix is a single evidence-based condition (the last-record read reuses the existing _newest_stream_last_record_type helper and its tail window). Against that the retry has no attempt cap, the returned attempt is read from a stale mapping, and the promoted-run test does not pin its refusal.",
+    "evidence": "my independent head arm over the four gate files (the node's test plus the three sibling reflex tests) is green at 2100e374: 34 passed, EXIT=0 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T031950485794-review-of-the-reflex.../review-head-arm.log), and the node's own two gate logs are green (6 passed and 5 passed, each EXIT=0). The declared negative control fires (1 failed, EXIT=1). The evidence holes: the reviewed run names no baseline_suite/after_suite, so the store's own read-time derivation reports the added-failure count unmeasured (verified with the store reader); the brief's named negative control was not run; and a clean base arm could not be re-measured because the harness pins the reckon import to the reviewed worktree, so the base half of the count rests on the reviewed run's green logs and the prior review's base arm rather than on an arm I took.",
+    "fit": "_repair_resume_advice sits by mechanism beside _record_repair_dispatch, the branch names the resume entry point it reuses, and the busy-check change states its reason in the docstring. No plan, phase, sprint, ticket or version label appears in the added source or tests.",
+    "goal_fidelity": "the primary deliverable lands and works at this head: dispatch_repair_for_run (reckon/crew/recovery.py:2270) resumes an unpromoted finding-bearing implement run with the composed findings as advice through resumption._resume, records status resumed with the round id, and dispatches no node (tests/test_the_reflex_resumes_an_unpromoted_run.py:249 asserts one resume, the finding id in the advice, and dispatched == []). The prior review's blocking finding is fixed: _reviewed_run_is_busy (recovery.py:1767) now requires the newest stream's last record to be other than the result line (recovery.py:1794), so a finished resume no longer reads as a turn in progress. Against that, the retry half regressed the brief's 'a second sweep resumes nothing' and has no cap (see findings).",
+    "scope_discipline": "recovery.py, tests/test_the_reflex_resumes_an_unpromoted_run.py and the evidence fragment are the declared fence and hold the mechanism. Four sibling test files are edited outside it (test_a_repair_hold_names_its_cause.py, test_reflex_dispatches_one_repair.py, test_repair_skips_out_of_repo_findings.py in 58d5e62c3, and test_repair_answers_only_blocking_findings.py in 91e96cf09); only the last is named in the manifest's changed_paths, so three fence breaches are undisclosed in the run's own record."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node replaces repair-by-dispatch of an unpromoted reviewed run with a resume of the run itself carrying the composed findings as advice (reckon/crew/recovery.py:2270-2333); the branch does that, and adds an unbounded retry.\nVERDICT done_when: the emitted done-when is the plan's s3 measure; the node gate is 11 passed/EXIT=0 at 2100e374 and my head arm is 34 passed/EXIT=0; the node's negative control fires (1 failed, EXIT=1).\nVERDICT write_paths: declared fence is recovery.py, tests/test_the_reflex_resumes_an_unpromoted_run.py and the evidence fragment; the diff also edits three sibling test files in 58d5e62c3 that changed_paths does not name.\nVERDICT manifest: status complete, commits 91e96cf09 2100e3747 1edf118d0 a85e0be12 58d5e62c3 d339d4b07 939f3a23e afa5c04f2 over base 3c4f5cd72, gate logs named with revisions, negative control EXIT=1.\nVERDICT diff: read against base; the resume branch is placed after lane resolution and _repair_in_flight, and the busy-check fix adds the result-line condition to the resume-stream arm.\nCALL_SITES: reckon/crew/recovery.py:2586\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the resume branch at reckon/crew/recovery.py:2270 delivers the composed findings as advice and dispatches no node, and the prior blocking finding is fixed at recovery.py:1794; the retry adds unbounded churn.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head arm over the four gate files is 34 passed/EXIT=0 at 2100e374 and the declared negative control fires at EXIT=1, but the reviewed run names no suite arms so the store derivation is unmeasured.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: three sibling test files edited in 58d5e62c3 are outside the declared fence and unnamed in the manifest's changed_paths.\nSCORE durability: 15\nJUSTIFICATION durability: _repair_resume_advice is a pure function and the busy-check fix reuses the existing tail-record helper, but the retry has no attempt cap and the promoted-run test does not pin its refusal.\nSCORE fit: 19\nJUSTIFICATION fit: the new helper sits by mechanism beside _repair_dispatch and no plan, sprint or ticket label appears in the added source or tests.\nFINDING reckon/crew/recovery.py:2270 follow-on: the retry is unbounded; a resumed turn that ends without moving the reviewed head is resumed again on every sweep, with no attempt cap, contradicting the brief's done_when that a second sweep for the same round resumes nothing.\nFINDING manifest.md:8 follow-on: changed_paths names four paths but the diff edits three further sibling test files in 58d5e62c3 that are outside the fence and not disclosed.\nFINDING tests/test_the_reflex_resumes_an_unpromoted_run.py:376 follow-on: test_a_promoted_reviewed_run_is_not_resumed asserts only status != 'resumed', which holds whether the refusal is recorded or absent, so it does not pin the promoted refusal.\nFINDING reckon/crew/recovery.py:2294 follow-on: the returned attempt is read from the entry-time record while the durable attempt is incremented independently in _record_repair_dispatch, so the report can disagree with the stored pointer.\nFINDING manifest.md:12 follow-on: the brief's named negative control (route the unpromoted case back to dispatch) was not run; a different control (restore the any-assistant busy check) was, and it fires.",
+  "review_run_id": "r-20261001T031950485794-review-of-the-reflex-resumes-an-unpromoted-run",
+  "reviewed_base_sha": "3c4f5cd72081bed2cb7d4d55c605d6fcc7a4f556",
+  "reviewed_head_sha": "2100e374723358ee9ed2b75e205b90d74f59b0da",
+  "reviewed_run_id": "r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run",
+  "reviewer_run_id": "r-20261001T031950485794-review-of-the-reflex-resumes-an-unpromoted-run",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.049776+00:00",
+  "total": 80
+}

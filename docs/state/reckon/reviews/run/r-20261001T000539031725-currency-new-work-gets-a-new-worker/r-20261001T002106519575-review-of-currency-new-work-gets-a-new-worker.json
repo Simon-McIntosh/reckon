@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0: the reviewed manifest's after_suite names gate-main-session-and-members.log (EXIT=0, 18 passed, zero FAILED/ERROR ids), and its baseline_suite declares 'none' because the node changes no code and has no base arm, so the delta over the run's own arms is zero. Measured with reckon.crew.review.added_failures_from_gate_logs(base='', head=<after_suite log text>) -> (0, []); the store's read-path annotation reports this run unmeasured only because baseline_suite names no log path. Positive control: the same extractor over the same green text plus one FAILED line returns (1, ['tests/test_known_present.py::test_red']), so the reader is shown to see a failure known present (logging in the reviewer run's added-failure-derivation.log).",
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T00:30:36.371Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "exempted",
+      "reason": "a currency report is a point-in-time reading that feeds dispatch, not a lasting artifact; each unmet item it found (the f-nwgnw-member-friction member/repo repair and the s7 stopgap lift) is dispatched as its own node whose test reproduces the item at base before repairing it, so the durable guard lives in those nodes' tests rather than in the report"
+    }
+  },
+  "dispatched_at": "2026-10-01T00:21:22Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-new-work-gets-a-new-worker/report.md",
+      "line": "143",
+      "text": "the report states the control arm was \"reaching PLANNED\", but its own log ends in an unhandled traceback \u2014 repro-member-repo.log's last running line is AttributeError: 'DispatchPlan' object has no attribute 'member' at repro_member_repo.py line 104 \u2014 so the terminal EXIT=1 is the crash, not a clean control result, and the with-repo arm is not shown to reach PLANNED; the primary refusal line is corroborated and the finding does not hold the node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T000539031725-currency-new-work-gets-a-new-worker/repro-member-local.log",
+      "line": "104",
+      "text": "the same crash recurs in the local-flag arm, so neither reproduction log shows the control side passing; a repair node reading these logs cannot see the with-repo call reach PLANNED, though the refusal for repo=None printed in both."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites \u2014 the reviewed node changes no runtime code, so there is nothing for runtime code to reach.",
+    "diff": "there is no repository diff for a read-only currency-report node; the deliverable is report.md plus the gate and reproduction logs under the report and run directories, all outside any checkout.",
+    "done_when": "the measure names met/partly met/unmet per item, a settling file:line read from the committed blob at the main revision named on the first line, and an executed check per item; report.md:3 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, met items carry gate checks (report.md:38-46 for s3, report.md:59-67 for s4) and the unmet s7 carries a reproduction and needed write paths (report.md:83-117).",
+    "goal": "the goal is to establish at main which open followups and implementable sections of new-work-gets-a-new-worker still describe unmet work; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-new-work-gets-a-new-worker/report.md audits both open followups (f-nwgnw-002, f-nwgnw-member-friction) and section s7 \u2014 the one section the roadmap lists implementable (report.md:9-21) \u2014 and closes with the dispatch order at report.md:171-189.",
+    "manifest": "read; it names status complete, commits none (a read-only node), the one gate log with 18 passed and EXIT=0, the two reproduction logs, and baseline_suite's \"none\" beside after_suite failure_count 0.",
+    "write_paths": "the reviewed node is fenced to the report directory; the report and its logs sit there and git -C <reviewed worktree> status --short is empty at b7134f5fdfeba023bbd6cc74ad5c8350802e5920, so no repository path changed."
+  },
+  "justifications": {
+    "durability": "nothing guards the report \u2014 no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-new-work-gets-a-new-worker/report.md and crew/reports is not a git repository, so a later edit to a verdict or an anchor would fail nothing.",
+    "evidence": "the gate log's first line names revision b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and records 18 passed EXIT=0 (gate-main-session-and-members.log), and the unmet item's reproductions run and log their refusal (repro-member-repo.log), but the control arm's log ends in an unhandled AttributeError so the control side is not shown.",
+    "fit": "the report follows the repo's triage idiom (a verdict table then a per-item section naming the anchor and the reproduction), citing plan section ids as content and introducing no banned name.",
+    "goal_fidelity": "report.md:9-21 tabulates every open followup and the one implementable section with a verdict each, and report.md:171-189 orders them with the shared-file and lead-decision flags the goal implies.",
+    "scope_discipline": "the reviewed worktree is clean at b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and every artifact sits at the declared report path or the node's own run directory."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to establish at main which open followups and implementable sections of new-work-gets-a-new-worker still describe unmet work, so the next nodes repair only what is still broken; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-new-work-gets-a-new-worker/report.md audits both open followups (f-nwgnw-002, f-nwgnw-member-friction) and section s7 \u2014 the one section the roadmap lists implementable (report.md:9-21) \u2014 and closes with the dispatch order at report.md:171-189, so the deliverable is the triage the goal names.\nVERDICT done_when: the measure names met/partly met/unmet per item, a settling file:line read from the committed blob at the main revision named on the first line, and an executed check per item; the report's first line names b7134f5fdfeba023bbd6cc74ad5c8350802e5920 (report.md:3), met items carry gate checks (report.md:38-46 for s3, report.md:59-67 for s4) and the unmet s7 carries a reproduction and needed write paths (report.md:83-117), matching the measure.\nVERDICT write_paths: the reviewed node is fenced to the report directory; the report and its logs sit there and git -C <reviewed worktree> status --short is empty at b7134f5fdfeba023bbd6cc74ad5c8350802e5920, so no repository path changed.\nVERDICT manifest: read; it names status complete, commits none (a read-only node), the one gate log with 18 passed and EXIT=0, the two reproduction logs, and baseline_suite's \"none\" beside after_suite failure_count 0.\nVERDICT diff: there is no repository diff for a read-only currency-report node; the deliverable is report.md plus the gate and reproduction logs under the report and run directories, all outside any checkout.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:9-21 tabulates every open followup and the one implementable section with a verdict each, and report.md:171-189 orders them with the shared-file and lead-decision flags the goal implies.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log's first line names revision b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and records 18 passed EXIT=0 (gate-main-session-and-members.log), and the unmet item's reproductions run and log their refusal (repro-member-repo.log), but the control arm's log ends in an unhandled AttributeError so the control side is not shown.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and every artifact sits at the declared report path or the node's own run directory.\nSCORE durability: 5\nJUSTIFICATION durability: nothing guards the report \u2014 no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-new-work-gets-a-new-worker/report.md and crew/reports is not a git repository, so a later edit to a verdict or an anchor would fail nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the report follows the repo's triage idiom (a verdict table then a per-item section naming the anchor and the reproduction), citing plan section ids as content and introducing no banned name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-new-work-gets-a-new-worker/report.md:143 follow-on: the report states the control arm was \"reaching PLANNED\", but its own log ends in an unhandled traceback \u2014 repro-member-repo.log's last running line is AttributeError: 'DispatchPlan' object has no attribute 'member' at repro_member_repo.py line 104 \u2014 so the terminal EXIT=1 is the crash, not a clean control result, and the with-repo arm is not shown to reach PLANNED; the primary refusal line is corroborated and the finding does not hold the node.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T000539031725-currency-new-work-gets-a-new-worker/repro-member-local.log:104 follow-on: the same crash recurs in the local-flag arm, so neither reproduction log shows the control side passing; a repair node reading these logs cannot see the with-repo call reach PLANNED, though the refusal for repo=None printed in both.\n",
+  "review_run_id": "r-20261001T002106519575-review-of-currency-new-work-gets-a-new-worker",
+  "reviewed_base_sha": "b7134f5fdfeba023bbd6cc74ad5c8350802e5920",
+  "reviewed_head_sha": "b7134f5fdfeba023bbd6cc74ad5c8350802e5920",
+  "reviewed_run_id": "r-20261001T000539031725-currency-new-work-gets-a-new-worker",
+  "scores": {
+    "durability": 5,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:03.957571+00:00",
+  "total": 74
+}

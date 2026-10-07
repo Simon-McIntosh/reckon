@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:4417",
+    "reckon/crew/recovery.py:3596",
+    "reckon/crew/dispatch.py:4744"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/worker-death-is-recorded-landed.html",
+      "line": "204",
+      "text": "FIXED. The sentence that claimed a bare dead process keeps the existing abandoned reading is replaced: the record now states, at docs/evidence/archive/worker-death-is-recorded-landed.html:204-207, that on the live CLI path a dead process with no terminal event is folded to orphaned by dispatch.observe before the classifier runs and that phase becomes interrupted, so abandoned is no longer reachable through the live observation path and remains only as a compatibility reading for records that bypass the fold. This matches the code (reckon/crew/dispatch.py:4744 folds to orphaned, reckon/crew/recovery.py:2263 reads it as interruption) and the superseded tests/test_ledger.py:1307 expectation."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "4430",
+      "text": "FIXED. recover()'s fixed counts dict now includes INTERRUPTED_RUN_PHASE in the counted tuple (reckon/crew/recovery.py:4430, alongside running, scoring, promotable, completed_unpromoted and abandoned), so a killed run appears in a tally rather than only in runs, and the new test test_recover_counts_an_interrupted_run at tests/test_crew_interrupted_phase.py:199-221 asserts report['counts']['interrupted'] == 1. I reproduced the pre-repair KeyError on this test at the original head (review-count-reproduction.log: KeyError 'interrupted' at tests/test_crew_interrupted_phase.py:219) and confirmed the repaired head passes it within the 53-test gate."
+    },
+    {
+      "file": "tests/test_crew_interrupted_phase.py",
+      "line": "223",
+      "text": "FIXED. The new test test_observe_folds_a_dead_cli_run_to_orphaned_then_interrupted at tests/test_crew_interrupted_phase.py:223-261 now enters where a killed cli run actually travels: it writes a cli pointer, stubbed observe_log returns no terminal event, dispatch.observe folds it, and the test asserts observed['phase'] == 'orphaned' and classify_pointer(observed)['classification'] == 'interrupted' (:259-261). That crosses the dispatch.observe fold boundary (reckon/crew/dispatch.py:4736) the prior suite only reached through the now-red ledger tests, so a regression in the fold now reddens a delivered test."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T021304703755-a-killed-run-reads-interrupted/manifest.md",
+      "line": "14",
+      "text": "FIXED. The test_logs field at manifest.md:14 now names only absolute paths under the run directory \u2014 review-count-reproduction.log, gate-review-repair.log, negative-control-review-repair.log, baseline-suite.log and after-suite.log \u2014 none of which is gitignored or worktree-local, so a reader following the manifest after worktree reclamation finds every cited log. The docs/figures/worker-death-is-recorded/interrupted-focused.log path the finding named is gone from the field."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2350",
+      "text": "FIXED. The comment beside commits_beyond_base = 0 is rewritten at reckon/crew/recovery.py:2350-2352 to describe the actual cost profile: it now says the value is populated only while a dead unfinished run is being distinguished as an interruption with retained work or as an abandonment with nothing left, and that live and settled delivery paths never pay, which matches _interruption_evidence asking git for every dead run whose manifest is not terminal (reckon/crew/recovery.py:2274)."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s), unchanged by the repair: the classification reaches production through recovery.py:4417 (crew recover) and recovery.py:3596 (_watch_snapshot), and the phase it reads is written by dispatch.py:4744 (observe's orphaned fold).",
+    "diff": "the repair is three commits at the repaired head 729dea35 \u2014 badc8f46 (tests: the counts case and the live-fold case, +67 lines in tests/test_crew_interrupted_phase.py), b16fa8e1 (fix: INTERRUPTED_RUN_PHASE added to recover()'s counted tuple, recovery.py:4430), and 729dea35 (docs: the landing record and the plan's section 5). git diff --stat 72643793 729dea35 is 4 files, 100 insertions, 24 deletions, and the only code change is the single tuple member in recovery.py.",
+    "done_when": "the repair addressed all four items the review advice named plus the fifth from first-review.json, and its own recorded gate reproduces: gate-review-repair.log records 53 passed exit 0 at b16fa8e1, and I re-ran the same five-file gate at the repaired head 729dea35 and reproduced 53 passed EXIT=0 (logs/rereview-gate-rerun.log) with reckon/crew/recovery.py resolving to the reviewed worktree. The declared mutation is real: negative-control-review-repair.log's first line repeats the declared string verbatim and the signalled case fails 1 failed, 9 deselected, EXIT=1.",
+    "goal": "the goal is a run ended by a signal it did not choose, or a pid dead with no recorded exit, classifying interrupted rather than keeping its last live phase; all three populations the fence names remain delivered (recorded SIGTERM, orphaned dead pointer, dead pointer with commits beyond base at reckon/crew/recovery.py:2263,2274), the recovery routing stays resume-with-session and redispatch-without (reckon/crew/recovery.py:3030), and the evidence record's contradiction with the code is now removed at landed.html:204-207.",
+    "manifest": "read in full and re-parsed; status complete, seven commits named through 729dea35, the repaired gate and negative control named as absolute run-directory paths, and the two ledger expectation updates correctly left to the separately scoped node. The baseline/after suite pair is not comparable \u2014 see the evidence justification.",
+    "write_paths": "the repair changes exactly four files (reckon/crew/recovery.py, tests/test_crew_interrupted_phase.py, docs/evidence/archive/worker-death-is-recorded-landed.html, docs/plans/worker-death-is-recorded.html), every one inside the seven declared paths, and the run-directory logs and manifests live in the configuration home rather than the repository."
+  },
+  "justifications": {
+    "durability": "the classification, its recovery tally and the production fold are now each covered by a delivered test: test_recover_counts_an_interrupted_run (tests/test_crew_interrupted_phase.py:199) reddens on the pre-repair tree with KeyError 'interrupted' and passes at head, and test_observe_folds_a_dead_cli_run_to_orphaned_then_interrupted (tests/test_crew_interrupted_phase.py:223) reddens if the observe fold stops producing orphaned. The remaining unexercised surface is small: the compatibility reading for records that bypass the fold, and effective_phase, are asserted only indirectly.",
+    "evidence": "stronger than the first landing and independently reproduced: I re-ran the repaired gate at 729dea35 (53 passed EXIT=0, logs/rereview-gate-rerun.log), the recorded negative control is a genuine red on the declared mutation, and I reproduced the pre-repair failure of the counts test at the original head (the run's own review-count-reproduction.log shows KeyError 'interrupted' at tests/test_crew_interrupted_phase.py:219). One imprecision remains: the manifest's baseline_suite and after_suite are different file sets \u2014 the baseline command includes tests/test_ledger.py (6 failures at 94e854dc) while the after command replaces it with tests/test_crew_interrupted_phase.py (0 failures at b16fa8e1) \u2014 so the pair is not like-for-like and the +2 ledger delta the change introduces is not visible in the pair itself, only in the separate ledger logs and the follow-on note.",
+    "fit": "the repair fixes the stale cost comment at reckon/crew/recovery.py:2350 and now reads in the repository's own idiom; the new tests follow the file's existing fixture helpers (_pointer, _backends.Observation) and add no new mechanism. One residual from the first review is unchanged and out of this repair's named scope: effective_phase is emitted at reckon/crew/recovery.py:3129 with no reader in reckon/, so it is a field computed for no consumer.",
+    "goal_fidelity": "the repair closes the gap the first review recorded: the evidence record no longer publishes the opposite of what the ledger gate observed (landed.html:204-207 states abandoned is unreachable through the live path and why), and the interrupted class is now both counted (recovery.py:4430) and exercised across the real fold (tests/test_crew_interrupted_phase.py:223). All three interruption populations and both recovery routes remain delivered and measured, so the goal is met and the record a reader trusts now matches the code.",
+    "scope_discipline": "the repair diff 72643793..729dea35 is exactly four files, every one inside the seven declared paths, the only code change is the single counts-tuple member in recovery.py, and the two tests/test_ledger.py expectation changes are correctly left to the separately scoped node rather than absorbed."
+  },
+  "model": "deepseek-v4.1-flash",
+  "prior_findings": {
+    "findings": [
+      "docs/evidence/archive/worker-death-is-recorded-landed.html:205 \u2014 the record claimed a bare dead process keeps the existing abandoned reading, which the live fold makes unreachable.",
+      "reckon/crew/recovery.py:4423 \u2014 recover()'s counts never include interrupted, so a killed run appeared in runs but in no tally.",
+      "tests/test_crew_interrupted_phase.py:140 \u2014 every test entered classify_pointer directly and none exercised dispatch.observe's fold, the production path.",
+      "runs/r-20260923T021304703755-a-killed-run-reads-interrupted/manifest.md:14 \u2014 test_logs cited a gitignored, worktree-local log path.",
+      "reckon/crew/recovery.py:2350 \u2014 the comment beside commits_beyond_base described a cost profile the new _interruption_evidence replaced."
+    ],
+    "reviewed_head_sha": "72643793ca781cc60035e4fffad1a654c7e1ed34",
+    "scores": {
+      "durability": 12,
+      "evidence": 13,
+      "fit": 16,
+      "goal_fidelity": 14,
+      "scope_discipline": 19
+    },
+    "total": 74
+  },
+  "project": "reckon",
+  "raw_text": "Independent re-review of run r-20260923T021304703755-a-killed-run-reads-interrupted\n(node a-killed-run-reads-interrupted) at its repaired head 729dea35, against\ndocs/plans/worker-death-is-recorded.html section 5 as the semantic authority, mapping\nstatus liveness re-derived on every read\neach of the five findings in first-review.json (which scored the first landing 74).\nThe reviewer changed no repository path; the record below is the deliverable.\n\nREVISION: 729dea3561bdfd77c014c7be4d21e2bee4801f4d\nPRIOR REVIEWED HEAD: 72643793ca781cc60035e4fffad1a654c7e1ed34 (score 74)\n\nFINDING FIXED docs/evidence/archive/worker-death-is-recorded-landed.html:204 \u2014 the sentence that claimed a bare dead process keeps the existing abandoned reading is replaced: the record now states at :204-207 that on the live CLI path a dead process with no terminal event is folded to orphaned by dispatch.observe before the classifier runs and that phase becomes interrupted, so abandoned is no longer reachable through the live observation path and remains only as a compatibility reading for records that bypass the fold. This matches the code (dispatch.py:4744, recovery.py:2263) and the superseded tests/test_ledger.py:1307 expectation.\nFINDING FIXED reckon/crew/recovery.py:4430 \u2014 recover()'s fixed counts dict now includes INTERRUPTED_RUN_PHASE in the counted tuple (:4430), so a killed run appears in a tally rather than only in runs, and test_recover_counts_an_interrupted_run at tests/test_crew_interrupted_phase.py:199 asserts report['counts']['interrupted'] == 1; I reproduced the pre-repair KeyError 'interrupted' at tests/test_crew_interrupted_phase.py:219 on the original head and confirmed the repaired head passes it.\nFINDING FIXED tests/test_crew_interrupted_phase.py:223 \u2014 test_observe_folds_a_dead_cli_run_to_orphaned_then_interrupted (:223-261) enters where a killed cli run travels: a cli pointer with a stubbed observe_log returning no terminal event, through dispatch.observe's fold, asserting observed['phase'] == 'orphaned' (:260) and classify_pointer(observed)['classification'] == 'interrupted' (:261), so a regression in the fold reddens a delivered test.\nFINDING FIXED /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T021304703755-a-killed-run-reads-interrupted/manifest.md:14 \u2014 test_logs now names only absolute paths under the run directory (review-count-reproduction.log, gate-review-repair.log, negative-control-review-repair.log, baseline-suite.log, after-suite.log), none gitignored or worktree-local, so every cited log survives worktree reclamation.\nFINDING FIXED reckon/crew/recovery.py:2350 \u2014 the comment beside commits_beyond_base = 0 is rewritten at :2350-2352 to describe the actual cost profile, matching _interruption_evidence asking git for every dead run whose manifest is not terminal (recovery.py:2274).\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the repair closes the gap the first review recorded \u2014 the evidence record no longer publishes the opposite of what the ledger gate observed (landed.html:204-207), and the interrupted class is both counted (recovery.py:4430) and exercised across the real fold (tests/test_crew_interrupted_phase.py:223); all three interruption populations and both recovery routes remain delivered and measured.\nSCORE evidence: 16\nJUSTIFICATION evidence: I re-ran the repaired gate at 729dea35 (53 passed EXIT=0, logs/rereview-gate-rerun.log), the recorded negative control is a genuine red on the declared mutation, and I reproduced the pre-repair failure of the counts test at the original head (review-count-reproduction.log, KeyError 'interrupted' at tests/test_crew_interrupted_phase.py:219); the one imprecision is that baseline_suite and after_suite are different file sets \u2014 baseline includes tests/test_ledger.py (6 failures at 94e854dc) while after replaces it with tests/test_crew_interrupted_phase.py (0 at b16fa8e1) \u2014 so the pair is not like-for-like and the +2 ledger delta is visible only in the separate ledger logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the repair diff 72643793..729dea35 is exactly four files, every one inside the seven declared paths, the only code change is the single counts-tuple member in recovery.py, and the two tests/test_ledger.py expectation changes are correctly left to the separately scoped node.\nSCORE durability: 18\nJUSTIFICATION durability: the classification, its recovery tally and the production fold are now each covered by a delivered test \u2014 test_recover_counts_an_interrupted_run (tests/test_crew_interrupted_phase.py:199) reddens on the pre-repair tree with KeyError 'interrupted', and test_observe_folds_a_dead_cli_run_to_orphaned_then_interrupted (tests/test_crew_interrupted_phase.py:223) reddens if the observe fold stops producing orphaned; the residual unexercised surface is the bypass-the-fold compatibility reading and effective_phase.\nSCORE fit: 18\nJUSTIFICATION fit: the repair fixes the stale cost comment at reckon/crew/recovery.py:2350 and reads in the repository's own idiom, and the new tests follow the file's existing fixture helpers; effective_phase remains emitted at reckon/crew/recovery.py:3129 with no reader in reckon/, a residual from the first review outside this repair's named scope.\n",
+  "review_run_id": "legacy-9c7434f45f6f",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "94e854dcdef4d79a7a5a934cf7fa5d095af85554",
+  "reviewed_head_sha": "729dea3561bdfd77c014c7be4d21e2bee4801f4d",
+  "reviewed_revision": "729dea3561bdfd77c014c7be4d21e2bee4801f4d",
+  "reviewed_run_id": "r-20260923T021304703755-a-killed-run-reads-interrupted",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-23T06:05:00+00:00",
+  "total": 90
+}

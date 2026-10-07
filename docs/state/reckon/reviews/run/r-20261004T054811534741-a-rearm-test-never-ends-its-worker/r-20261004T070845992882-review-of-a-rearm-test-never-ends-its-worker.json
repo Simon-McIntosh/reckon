@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "claude",
+  "base_log_revision": "0f5941a18ae161c9746a3296ce35f759d3c444ba",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T07:14:45.109Z",
+  "dispatched_at": "2026-10-04T07:08:59Z",
+  "findings": [],
+  "head_log_revision": "97fa44072a0856921ff6b29d5a7a3ae6f57bfbc9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read revision by revision against the base; 97fa44072 adds the child harness and the stamp-freezing autouse fixture to all three modules, 1b0fa5af3 records the fragment, 329e11afa makes _run_follow's rows list optional so the importing case is restored, and 60f6fe121 appends the stacked-measure evidence; no production source changed.",
+    "done_when": "the done-when is a 30-iteration -n 8 loop of the three files beside a CPU load generator with no crashed worker, against a current-revision control that crashes; the head arm ran 30 iterations with 0 crashed workers and 0 follower reload launchers (logs/gate_summary.txt), and the base arm 0f5941a18 reproduced 9 crashed workers and 9 reload launchers naming its tree in its first loaded iteration (logs/base_iter_1.log, logs/base_iter_1.exec.reload-launcher.txt).",
+    "goal": "\u00a712's goal is that a follower re-arm case cannot end the xdist worker hosting it; change 97fa44072 runs each arming in a child process the test owns with the code stamp frozen per case, so the in-process os.execve the section identifies can no longer replace the runner.",
+    "manifest": "read; it names revisions 97fa44072, 1b0fa5af3, 329e11afa and 60f6fe121, base arm 10 failed/35 passed, head arm 30 iterations with 0 crashed workers, and negative_control_log logs/base_iter_1.log; every log path it names exists and each header names the revision quoted.",
+    "write_paths": "read the reviewed manifest; the diff 0f5941a18..60f6fe121 touches exactly four files, each a declared write path, and the declared docs/figures directory was left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_follower_rearm_shows_nothing_twice.py:271 raises AssertionError when the arming ends its child without writing a payload, so a returning re-exec reports as a case failure rather than a lost runner.",
+    "evidence": "logs/base_iter_1.log shows the control crashing 9 xdist workers while logs/gate_summary.txt records 0 across 30 head iterations, and the added-failure derivation over the reviewed manifest's own gate logs is empty (the importer regression retired at 329e11afa and confirmed green by an independent -n 8 rerun).",
+    "fit": "tests/test_follow_rearm_continues.py:1003 and its siblings name the mechanism (a child-owned arming, a frozen stamp) and carry no plan or section identifier.",
+    "goal_fidelity": "tests/test_follower_rearm_shows_nothing_twice.py:229 confines each arming to a child process, so the runner the section protects is no longer the process the follower can end.",
+    "scope_discipline": "the diff 0f5941a18..60f6fe121 touches only tests/test_follower_rearm_shows_nothing_twice.py, tests/test_follow_rearm_continues.py, tests/test_producer_takes_new_code.py and the a-rearm-test-never-ends-its-worker.html fragment, all declared."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a712's goal is that a follower re-arm case cannot end the xdist worker hosting it; change 97fa44072 runs each arming in a child process the test owns with the code stamp frozen per case, so the in-process os.execve the section identifies can no longer replace the runner.\nVERDICT done_when: the done-when is a 30-iteration -n 8 loop of the three files beside a CPU load generator with no crashed worker, against a current-revision control that crashes; the head arm ran 30 iterations with 0 crashed workers and 0 follower reload launchers (logs/gate_summary.txt), and the base arm 0f5941a18 reproduced 9 crashed workers and 9 reload launchers naming its tree in its first loaded iteration (logs/base_iter_1.log, logs/base_iter_1.exec.reload-launcher.txt).\nVERDICT write_paths: read the reviewed manifest; the diff 0f5941a18..60f6fe121 touches exactly four files, each a declared write path, and the declared docs/figures directory was left unused.\nVERDICT manifest: read; it names revisions 97fa44072, 1b0fa5af3, 329e11afa and 60f6fe121, base arm 10 failed/35 passed, head arm 30 iterations with 0 crashed workers, and negative_control_log logs/base_iter_1.log; every log path it names exists and each header names the revision quoted.\nVERDICT diff: read revision by revision against the base; 97fa44072 adds the child harness and the stamp-freezing autouse fixture to all three modules, 1b0fa5af3 records the fragment, 329e11afa makes _run_follow's rows list optional so the importing case is restored, and 60f6fe121 appends the stacked-measure evidence; no production source changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_follower_rearm_shows_nothing_twice.py:229 confines each arming to a child process, so the runner the section protects is no longer the process the follower can end.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base_iter_1.log shows the control crashing 9 xdist workers while logs/gate_summary.txt records 0 across 30 head iterations, and the added-failure derivation over the reviewed manifest's own gate logs is empty (the importer regression retired at 329e11afa and confirmed green by an independent -n 8 rerun).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 0f5941a18..60f6fe121 touches only tests/test_follower_rearm_shows_nothing_twice.py, tests/test_follow_rearm_continues.py, tests/test_producer_takes_new_code.py and the a-rearm-test-never-ends-its-worker.html fragment, all declared.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_follower_rearm_shows_nothing_twice.py:271 raises AssertionError when the arming ends its child without writing a payload, so a returning re-exec reports as a case failure rather than a lost runner.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_follow_rearm_continues.py:1003 and its siblings name the mechanism (a child-owned arming, a frozen stamp) and carry no plan or section identifier.\n",
+  "review_run_id": "r-20261004T070845992882-review-of-a-rearm-test-never-ends-its-worker",
+  "reviewed_base_sha": "0f5941a18ae161c9746a3296ce35f759d3c444ba",
+  "reviewed_head_sha": "60f6fe12170a772aef9b717825b336a734b3185c",
+  "reviewed_run_id": "r-20261004T054811534741-a-rearm-test-never-ends-its-worker",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T07:13:59.610684+00:00",
+  "total": 96
+}

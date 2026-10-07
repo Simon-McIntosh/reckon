@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5304",
+    "reckon/crew/dispatch.py:5313"
+  ],
+  "completed_at": "2026-10-03T08:09:56.929Z",
+  "dispatched_at": "2026-10-03T08:01:17Z",
+  "findings": [
+    {
+      "file": "tests/test_granted_path_is_a_claim.py",
+      "line": "216",
+      "severity": "follow-on",
+      "text": "follow-on: the added case test_a_peer_over_the_figures_parent_is_refused_as_at_base passes at the review base 8483293d0 (logs/recheck-base.log, 4 passed) as well as at head, so it is a pin rather than a reproduction; the figures topic resolves to a node-scoped subdirectory docs/figures/plan-a/<node> that is not equal to the granted landing topic, which is why the base's _live_conflict_outside_granted_landing kept the pair and refused \u2014 the case the prior review expected to be admitted never admitted."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5304",
+      "severity": "follow-on",
+      "text": "follow-on: the fix changes no refusal outcome. A five-shape ancestor probe run at all three revisions (logs/ancestor-probe-pre-feature-base.txt at 9e5081bb3, -base.txt at 8483293d0, -head.txt at 548bd8b8a) yields identical exit codes at every revision for a peer over docs/plans (0), docs/evidence (0), docs/evidence/archive (0), docs/figures (2) and docs/figures/plan-a (0), differing only in reported rows; head's refusal set cannot exceed base's because _candidate_scope_entries rows are a subset of _resolved_node_scope_entries rows and the excluded rows are exactly the landing-side pairs base's landing filter already dropped."
+    }
+  ],
+  "head_log_revision": "548bd8b8ace38278e9c626e57ff763c6163f834c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s) of _live_conflict_rows (dispatch.py:5304 refusal_rows, dispatch.py:5313 resolution.live_conflicts)",
+    "diff": "read both gained commits against base 8483293d0 commit by commit; 5bec60f71 adds the include_granted_landing default to _live_conflict_rows (dispatch.py:2249-2263), deletes _live_conflict_outside_granted_landing, and rebuilds the directory-claim judgement on refusal_rows (dispatch.py:5304-5340); 548bd8b8a rewrites the evidence fragment only, all inside the declared scope.",
+    "done_when": "the plan's done-when was already met at 8483293d0 and reviewed; this increment touches the refusal boundary; I reran the four-case file at base 8483293d0 (4 passed) and head 548bd8b8a (4 passed) from extracted trees (logs/recheck-base.log, logs/recheck-head.log), so the added case does not fail at the base.",
+    "goal": "the increment makes the refusal judgement structural and the report additive; the report behaviour is preserved, but the stated pair-loss defect produces no observable change at the review base.",
+    "manifest": "read; after_suite names revision 5bec60f71 (232 passed, EXIT=0) rather than the docs-only head 548bd8b8a; baseline_suite names 9e5081bb3 (1 failed, 231 passed); the negative-control log ends EXIT=1.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_granted_path_is_a_claim.py and the evidence fragment; the gained commits touch exactly those (git show --stat) and the head worktree is clean."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens the granted-collision case (logs/negative-control.log, 1 failed/3 passed) but exercises the report, not the refusal refactor; the new figures-parent case is green at base and head.",
+    "evidence": "the run is candid in evidence_inputs about the non-reproduction, and both arms are present, but the headline case passes at the review base and head alike, so no arm tests the change.",
+    "fit": "the refactor removes a single-use helper for a keyword default on the shared reader and keeps the module's underscore-private one-docstring idiom.",
+    "goal_fidelity": "the increment hardens the boundary coherently and preserves the report, but the stated defect does not reproduce and the judged set only ever narrows, so the intended repair is not demonstrated.",
+    "scope_discipline": "both gained commits are inside the manifest's declared write paths and the head worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment makes the refusal judgement structural \u2014 plan_dispatch now derives refusal_rows from _live_conflict_rows(..., include_granted_landing=False), i.e. exactly the _candidate_scope_entries rows the exclusive-claim walk produced, and reports live_conflicts from a second additive read of the same claims snapshot; the removed _live_conflict_outside_granted_landing took a landing set only to filter pairs the walk had already dropped.\nVERDICT done_when: the plan's done-when for the granted report was already met at 8483293d0 and reviewed; this increment touches the refusal boundary, and I reproduced the four-case file at base 8483293d0 (4 passed) and head 548bd8b8a (4 passed, logs/recheck-base.log, logs/recheck-head.log), so the added figures-parent case does not fail at the review base and does not exercise the change.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_granted_path_is_a_claim.py and docs/evidence/fragments/crew-runtime-positive-controls/granted-path-is-a-claim.html; the two gained commits touch exactly these (5bec60f71: dispatch.py + test, 548bd8b8a: the fragment), and the worktree at head is clean.\nVERDICT manifest: read; after_suite names revision 5bec60f71 (232 passed) rather than the head 548bd8b8a, which is docs-only, and baseline_suite/failure records are present; the negative-control log's last line is EXIT=1.\nVERDICT diff: read both gained commits against base 8483293d0; 5bec60f71 adds the include_granted_landing default to _live_conflict_rows (dispatch.py:2249-2263), deletes _live_conflict_outside_granted_landing (former dispatch.py:2367), and rebuilds the plan_dispatch directory-claim judgement on refusal_rows (dispatch.py:5304-5340); 548bd8b8a rewrites the evidence fragment's mechanism and arm prose. All within declared scope.\nCALL_SITES: reckon/crew/dispatch.py:5304, reckon/crew/dispatch.py:5313\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the increment hardens the report/refusal boundary coherently and preserves the report behaviour (a granted collision is reported and admitted), but its stated defect \u2014 a judgement losing a pair \u2014 produces no observable change at the review base: head's judged set is a subset of base's, and the only rows head drops are the landing-side pairs base's own filter already dropped, so the stated purpose is not demonstrated.\nSCORE evidence: 15\nJUSTIFICATION evidence: the run is candid \u2014 the manifest's evidence_inputs records that the figures-parent case passed at the prior review's head and the repair was landed as directed \u2014 and the arms are present, but the headline case pins rather than reproduces (it passes at both the review base and head), so no arm tests the change.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat for 5bec60f71 lists reckon/crew/dispatch.py and tests/test_granted_path_is_a_claim.py; 548bd8b8a lists only the evidence fragment; both inside the manifest's declared write paths, and the head worktree is clean.\nSCORE durability: 15\nJUSTIFICATION durability: the declared mutation (landing=set()) reddens the granted-collision case (logs/negative-control.log, 1 failed/3 passed) but exercises the report, not the refusal refactor; the new figures-parent case is green at base and head, so it cannot catch a regression of the change it was added for.\nSCORE fit: 19\nJUSTIFICATION fit: the refactor removes a single-use helper in favour of a keyword default on the shared reader, keeps the underscore-private one-docstring idiom, and introduces no name the repository naming rules forbid.\nFINDING tests/test_granted_path_is_a_claim.py:216 follow-on: the added case test_a_peer_over_the_figures_parent_is_refused_as_at_base passes at the review base 8483293d0 (logs/recheck-base.log, 4 passed) as well as at head, so it is a pin rather than a reproduction; the figures topic resolves to a node-scoped subdirectory docs/figures/plan-a/<node> that is not equal to the granted landing topic, which is why the base's _live_conflict_outside_granted_landing kept the pair and refused \u2014 the case the prior review expected to be admitted never admitted.\nFINDING reckon/crew/dispatch.py:5304 follow-on: the fix changes no refusal outcome. A five-shape ancestor probe run at all three revisions (logs/ancestor-probe-pre-feature-base.txt at 9e5081bb3, -base.txt at 8483293d0, -head.txt at 548bd8b8a) yields identical exit codes at every revision for a peer over docs/plans (0), docs/evidence (0), docs/evidence/archive (0), docs/figures (2) and docs/figures/plan-a (0), differing only in reported rows; head's refusal set cannot exceed base's because _candidate_scope_entries rows are a subset of _resolved_node_scope_entries rows and the excluded rows are exactly the landing-side pairs base's landing filter already dropped.\nreviewed_base_sha: 8483293d05338a26f638a58fdb01d1c5d1bfc1ba\nreviewed_head_sha: 548bd8b8ace38278e9c626e57ff763c6163f834c",
+  "review_run_id": "r-20261003T080043097813-review-of-granted-path-is-a-claim",
+  "reviewed_base_sha": "8483293d05338a26f638a58fdb01d1c5d1bfc1ba",
+  "reviewed_head_sha": "548bd8b8ace38278e9c626e57ff763c6163f834c",
+  "reviewed_run_id": "r-20261003T063655507273-granted-path-is-a-claim",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:07.128984+00:00",
+  "total": 85
+}

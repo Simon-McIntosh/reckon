@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "Derived from the reviewed run's own gate logs as the node requires. baseline_suite base-arm.json: revision 50b92333897d973bf2193d66231f896620e30b2f, 18 passed EXIT=0, completed=true, failure_ids []. after_suite head-arm.json: revision 4640cde0cd70640fb73515b51204f3101f4e1997, 24 passed EXIT=0, completed=true, failure_ids []. Zero added failures, so added_failure_count is 0 and added_failure_ids is empty. An independent wider arm I ran over 31 resume/reflex/recovery consumer files (345 cases) read 343 passed, 2 failed; both failures are artifacts of my basetemp path carrying the substring 'resume' (the cases assert 'resume' not in a next_action string that embeds the path), and both files pass 40/40 under a neutral basetemp, so no regression is attributable to this change.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:resume_window_refusal",
+    "reckon/crew/recovery.py:_last_recorded_input_tokens",
+    "reckon/crew/dispatch.py:resume_plan",
+    "reckon/crew/resumption.py:_launcher_refusal"
+  ],
+  "completed_at": "2026-10-02T21:49:50.641Z",
+  "dispatched_at": "2026-10-02T21:36:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203452309560-resume-refuses-a-session-over-the-window/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on (declared, not a discovery): the change modifies reckon/crew/dispatch.py (+18/-2: import block plus twelve lines calling the guard inside resume_plan) and reckon/crew/resumption.py (+9/-1: import plus the guard returned from _launcher_refusal), both outside the node's six declared write paths. The manifest declares this in evidence_inputs and check-manifest reports ok=false with the single finding 'changed paths outside the write scope: reckon/crew/dispatch.py, reckon/crew/resumption.py'. The done-when is unreachable without them because every resume door composes through resume_plan and the dry-run prediction reads _launcher_refusal, so recovery.py alone cannot make a hand-typed crew resume refuse. The deviation is minimal and justified, but dispatch.py is claimed by three concurrent peer nodes, so the merge owner must reconcile it. A coordinator must either extend this node's scope retrospectively, re-scope the two call sites to the merge owner, or refuse the merge."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203452309560-resume-refuses-a-session-over-the-window/manifest.md",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the full-suite arm was started and abandoned (10,367 cases on a node at load ~45; the base arm reached ~5% in four minutes and was stopped). The node's gate is bounded to the three-to-four test files that reach the resume doors. My wider 31-file consumer arm found no regression, but a suite-scale verification of the merged head is still owed and belongs to a separately dispatched test node."
+    }
+  ],
+  "item_aggregate": 81,
+  "item_verdicts": {
+    "call_sites": "verified 4 changed functions: recovery.py adds _request_input_tokens, _last_recorded_input_tokens, _lane_input_window and resume_window_refusal (+124 lines); dispatch.py:resume_plan calls the guard after the budget check and before the plan is built; resumption.py:_launcher_refusal returns it so the dry-run prediction consults the same gate.",
+    "diff": "read both commits against base 50b923338: 4640cde0c adds the window guard and its call sites, cefab8613 adds the evidence fragment. Diffstat: recovery.py +124, dispatch.py +18/-2, resumption.py +9/-1, tests/test_resume_refuses_a_session_over_the_window.py new +429, the evidence fragment +29.",
+    "done_when": "every clause of the section is met and demonstrated. The guard reads the run's last recorded per-request input (assistant message.usage / turn.completed usage, cache read included via _charged_input_from_usage) against the smallest published window (usable_input_window, already net of the launcher's output reservation, and effective_input_window), refuses before anything is written with the count, the window, the lane and a fresh-repair-node remedy, and fails open when the lane publishes no window or the stream recorded no usage. Six cases in the new test file cover both doors resuming within the window, both doors refusing over it with no attempt file and the pointer and manifest unchanged, the dry-run prediction matching the real refusal's type and message, and both fail-open directions; the last-record semantics are exercised with an earlier request on the other side of the window. I independently reproduced the declared mutation (remove both call sites): 3 failed / 3 passed, the over-window doors open their attempt and the dry-run no longer predicts the refusal.",
+    "goal": "the node delivers the section's guard: a session whose last recorded request input exceeds the lane's published input window is refused before an attempt opens, through both the hand-typed crew resume and the review-repair reflex, naming the count and the window with a fresh repair node as the remedy, and the dry run predicts the same refusal.",
+    "manifest": "read; status complete, commits 4640cde0c and cefab8613, orientation_base_sha 50b92333897d973bf2193d66231f896620e30b2f, baseline_suite base-arm.json 18 passed completed EXIT=0, after_suite head-arm.json 24 passed completed EXIT=0, negative_control-log 3 failed / 3 passed EXIT=1. Its scope deviation and its owed suite-scale arm are declared in evidence_inputs and follow_ons rather than omitted.",
+    "write_paths": "the head diff touches exactly the two declared source paths (recovery.py) plus the new test and evidence files, and two paths outside the six declared: dispatch.py and resumption.py, declared in evidence_inputs. No plan, sprint or server file is modified, no AI or plan identifier appears in the code or commit bodies, and the commits carry conventional subjects with bodies."
+  },
+  "justifications": {
+    "durability": "the guard rests on a real measurement, not a prediction: it reads the run's own last recorded per-request input from its streams, newest write first, so a resume attempt that died before reaching the model leaves a stream with no usage and does not blank an earlier recorded count. It refuses before anything is written, so a refused run keeps its classification and manifest, and it names a concrete remedy. Both fail-open directions are correct for durability (an unmeasured session is not a session known too large). No durable regression was found: my wider 31-file consumer arm is clean modulo a path-substring artifact in my own harness. The one residual is that the effective window depends on the lane's own published figures being current, which is the same dependency the dispatch-time context-fit check already carries.",
+    "evidence": "the node's own gate is shown to fire - base arm 18 passed EXIT=0 at 50b923338, head arm 24 passed EXIT=0 at 4640cde0c, and the negative control 3 failed / 3 passed EXIT=1 - and I reproduced the declared mutation independently to the same result, so the guard is not passing by disabling itself. The refusals are asserted to leave no attempt file and an unchanged pointer and manifest, which is the difference between a refusal and a try that died at the endpoint. Deduction: the node's arms are bounded to the files that reach the resume doors and the full-suite arm did not fit the fence, so suite-scale verification of the merged head is owed to a separate test node; my wider consumer arm reduces but does not remove that debt.",
+    "fit": "the guard reuses existing helpers rather than re-deriving them: _charged_input_from_usage for the charge, stream_paths_newest_first for the read order, _backend_settings for the lane, and it mirrors the dispatch-time context-fit check's smaller-of-two-figures rule for the window. Both doors share the one guard and the dry-run consults it rather than restating it, so a preview cannot drift from the real refusal. The tests follow the node-test idiom (a temporary RECKON_HOME under tmp_path with a proof the real crew home is untouched, a stub launcher, a throwaway repo). The deduction is the two call sites outside the declared scope, required because the doors are shared.",
+    "goal_fidelity": "the section asks that the reflex and a manual crew resume read the session's last recorded input-token count and refuse a session whose count plus the completion reserve exceeds the lane's published window, naming the count and the window with a fresh repair node as remedy, with a within-window resume and an over-window refusal covered and a negative control that removes the check. Each clause is met: the reserve is handled by taking the smaller of usable_input_window (already net of the launcher's output reservation) and effective_input_window, and the refusal names both figures, the lane and the remedy. Both doors read the count before any write.",
+    "scope_discipline": "the head diff touches testify two files outside the six declared write paths - reckon/crew/dispatch.py and reckon/crew/resumption.py - because the guard must be called from the two shared doors; recovery.py alone cannot make a hand-typed resume refuse. The deviation is minimal (an import block and twelve lines in dispatch.py, an import and one returned call in resumption.py), honestly declared in the manifest, and unavoidable, but dispatch.py is concurrently claimed by peer nodes and check-manifest reads ok=false on it. The file discipline is otherwise clean: no plan, sprint or server file is touched, and no out-of-scope evidence or figure path is written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node delivers the section's guard - a session whose last recorded request input exceeds the lane's published input window is refused before an attempt opens, through both the hand-typed crew resume and the review-repair reflex, naming the count and the window with a fresh repair node as remedy; the dry run predicts the same refusal.\nVERDICT done_when: every clause is met and demonstrated. The guard reads the run's last recorded per-request input (cache read included) against the smallest published window, refuses before any write, and fails open when no window or no usage is recorded. Six new cases cover both doors resuming within the window, both refusing over it with no attempt file and unchanged pointer and manifest, dry-run parity, and both fail-open directions; I reproduced the declared mutation to 3 failed / 3 passed.\nVERDICT write_paths: the head diff touches recovery.py (declared), the new test and evidence files (declared), and two files outside the six declared paths - dispatch.py and resumption.py - declared in evidence_inputs and flagged by check-manifest; no plan, sprint or server file is modified.\nVERDICT manifest: read; status complete, commits 4640cde0c and cefab8613, base 50b923338, baseline_suite 18 passed completed EXIT=0, after_suite 24 passed completed EXIT=0, negative control 3 failed / 3 passed EXIT=1.\nVERDICT diff: read both commits against base 50b923338; 4640cde0c adds the guard and its two call sites, cefab8613 adds the evidence fragment; diffstat recovery.py +124, dispatch.py +18/-2, resumption.py +9/-1, new test +429, evidence +29.\nCALL_SITES: reckon/crew/recovery.py:resume_window_refusal, reckon/crew/recovery.py:_last_recorded_input_tokens, SCORE goal_fidelity: 18\nSCORE evidence: 16\nSCORE scope_discipline: 13\nSCORE durability: 18\nSCORE fit: 16\nFINDING manifest.md:3 follow-on: dispatch.py and resumption.py modified outside the six declared write paths (declared, minimal, required because the doors are shared); dispatch.py is concurrently claimed by peers so the merge owner must reconcile it.\nFINDING manifest.md:4 follow-on: the full-suite arm was abandoned on a loaded node; suite-scale verification of the merged head is owed to a separately dispatched test node.\n",
+  "review_run_id": "r-20261002T213625937136-review-of-resume-refuses-a-session-over-the-window",
+  "reviewed_base_sha": "50b92333897d973bf2193d66231f896620e30b2f",
+  "reviewed_head_sha": "cefab8613386cf578bdbc20c49362ca69b0d9cdb",
+  "reviewed_run_id": "r-20261002T203452309560-resume-refuses-a-session-over-the-window",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T21:46:16+00:00",
+  "total": 81
+}

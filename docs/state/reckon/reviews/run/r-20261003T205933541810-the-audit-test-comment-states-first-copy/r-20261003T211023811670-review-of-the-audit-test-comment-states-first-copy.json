@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. baseline_suite: revision d6df73303afc67b37d5c3bfdeead923da9633413, completed true, failure_count 0, failure_ids []; after_suite: revision 11cbf66b1920df5c86e9b1d06354b25dbe0a7173, completed true, failure_count 0, failure_ids []. added ids = after_ids - base_ids = empty, so the reviewed change added no failing test. Both arms are identical by construction (a comment-only change), so the zero-failure result confirms no regression but cannot itself discriminate the change; the discriminating evidence is the diff (0 non-comment lines) and the declared wording control.",
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T21:14:11.677Z",
+  "dispatched_at": "2026-10-03T21:10:40Z",
+  "findings": [
+    {
+      "file": "tests/test_audit.py",
+      "line": "429",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control is a scratch grep module (tests/test_the_comment_states_the_first_copy_rule.py, run from a scratch dir with AUDIT_TEST_FILE pointing at the target), not a committed test. It asserts only the absence of the literal phrase 'reader keeps the last value' in whichever file AUDIT_TEST_FILE names, so it is a tautology of the diff rather than a behavioural guard, and it is uncommitted, so nothing in the tree prevents the stale claim being reintroduced silently. The node labelled it scratch honestly; noted so a later reader does not read the EXIT=1 control as a durable test. The correction and its accuracy against reckon/_plan_html.py:490 and reckon/doccheck.py:775 are the durable products."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit: c73a88e56 rewrites the two comment lines above test_audit_doc_reports_duplicated_plan_scalar (comment-only, +3/-2); 11cbf66b1 adds the one-line bare evidence anchor. No assertion, code, or plan state touched.",
+    "done_when": "the node's own done-when is a comment correction; independently reproduced: at head 11cbf66b1 tests/test_audit.py reads 15 passed EXIT=0 (re-run here), at base d6df73303 the extracted tree reads 15 passed EXIT=0, git diff --numstat base..head on tests/test_audit.py is 3 added / 2 deleted with 0 non-comment changed lines, and the base file at line 429 carries the retired claim while head carries none.",
+    "evidence": "head-suite.log, base-suite.log, negative-control.log, diff-check.log and fragment-tests.log all present and coherent; each gate log's header lines name the revision, the tree, the module under test (module.__file__) and the resolved cwd, and reconcile with the manifest's baseline_suite/after_suite.",
+    "goal": "the node's declared goal is to correct the stale comment at tests/test_audit.py:429 so it states the reader's actual duplicate-scalar rule; the comment now reads 'The reader keeps the first occurrence in document order and ignores every later copy, so a later duplicate is dead state...', which is the rule read_state applies (reckon/_plan_html.py:490-494) and _set_meta maintains (reckon/_plan_html.py:1149-1153, first-occurrence replace). It closes the follow-on recorded by the review of r-20261003T204354888755. \u00a711's own done-when (doccheck message/docstring) was already met by the sibling run at the base revision.",
+    "manifest": "read; status complete with commits c73a88e56, 11cbf66b1, changed_paths, landing, tests, test_logs, negative_control_log and both suite fields populated with completed true. The run's own check-manifest reported ok:true. The store record for this run was absent before this review.",
+    "write_paths": "the manifest declares tests/test_audit.py, the evidence fragment, and an unused docs/figures directory; git diff --name-status d6df73303 11cbf66b1 lists exactly tests/test_audit.py (M) and docs/evidence/fragments/a-review-dies-where-nobody-is-looking/the-audit-test-comment-states-first-copy.html (A), both inside the fence, with the figures directory correctly untouched."
+  },
+  "justifications": {
+    "durability": "the correction is a committed text change in git, so it persists. Docked because nothing committed guards it: the scratch line-check is not in the tree, so a future edit could restore the stale wording silently. A repo-level test that greps comments for a phrase would be brittle, so leaving it out is defensible, but the node then carries no durable guard and the manifest says so.",
+    "evidence": "the gate logs are readable and their headers name revision, tree, imported module and cwd; I independently re-ran the head arm (15 passed EXIT=0) and confirmed by git show that base line 429 carries the stale claim while head does not. Docked because the two suite arms are identical for a comment-only change, so the suite cannot discriminate it, and the negative control is a scratch literal-grep module rather than a behavioural test (its only failure mode is the literal phrase being present).",
+    "fit": "the comment stays in the file's existing explanatory voice beside the other test comments; the evidence fragment follows the r-evidence anchor shape with data-plan and data-node, and a bare anchor is an explicitly supported shape (reckon/evidence.py:461-489 returns it unchanged); both commits carry conventional subjects and bodies; no plan/sprint/ticket identifiers, version suffixes or attribution appear.",
+    "goal_fidelity": "the corrected comment is accurate against the reader it describes: read_state keeps the first occurrence in document order and ignores later copies (reckon/_plan_html.py:490-494), _set_meta replaces the first occurrence (reckon/_plan_html.py:1149-1153), and the audit message now names the first copy (reckon/doccheck.py:775). It removes the false last-copy claim the prior review flagged as a follow-on. One point held because the node is a follow-on correction rather than \u00a711's own deliverable, which already landed with the sibling.",
+    "scope_discipline": "git diff --name-status d6df73303 11cbf66b1 lists only the two declared paths; no plan HTML, ledger, index, sprint state or foreign file is touched. The declared docs/figures directory is correctly left empty."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node corrects the stale comment at tests/test_audit.py:429 to state the reader's first-copy rule, matching read_state (reckon/_plan_html.py:490-494) and the audit message (reckon/doccheck.py:775); it closes the follow-on from the review of r-20261003T204354888755.\nVERDICT done_when: comment-only; independently reproduced at head 11cbf66b1 (15 passed EXIT=0) and base d6df73303 (15 passed EXIT=0); diff 3 added / 2 deleted, 0 non-comment lines; base line 429 stale, head clean.\nVERDICT write_paths: git diff --name-status d6df73303 11cbf66b1 lists only tests/test_audit.py and the evidence fragment, both inside the fence; the declared figures dir is untouched.\nVERDICT manifest: read; status complete, commits c73a88e56 and 11cbf66b1, both suite fields completed true with 0 failures, negative_control_log named; the run's own check-manifest reported ok.\nVERDICT diff: c73a88e56 rewrites two comment lines (no assertion/code change); 11cbf66b1 adds a one-line bare evidence anchor.\nVERDICT evidence: gate log headers name revision, tree, module.__file__ and cwd and reconcile with the manifest; head arm re-run 15 passed EXIT=0.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the comment now states the rule read_state applies and _set_meta maintains, removing the false last-copy claim; held one point because it is a follow-on correction, not \u00a711's own deliverable already landed by the sibling.\nSCORE evidence: 17\nJUSTIFICATION evidence: independent head re-run 15 passed EXIT=0 and base/head comment content confirmed by git show; docked because both suite arms are identical for a comment-only change and the negative control is a scratch literal-grep, not a behavioural test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the base..head diff touches exactly the two declared paths; no plan, index, sprint or foreign file is touched and the declared figures dir is left empty.\nSCORE durability: 17\nJUSTIFICATION durability: the correction is committed text, but no committed test guards it and the declared control is scratch-only, so the stale wording could be reintroduced silently.\nSCORE fit: 19\nJUSTIFICATION fit: the comment keeps the file's explanatory voice, the fragment follows the supported bare-anchor shape, both commits carry conventional subjects and bodies, and no banned labels or attribution appear.\nFINDING tests/test_audit.py:429 follow-on: the declared negative control is an uncommitted scratch literal-grep module, a tautology of the diff rather than a durable guard; noted so its EXIT=1 is not misread as a committed test.\n",
+  "review_run_id": "r-20261003T211023811670-review-of-the-audit-test-comment-states-first-copy",
+  "reviewed_base_sha": "d6df73303afc67b37d5c3bfdeead923da9633413",
+  "reviewed_head_sha": "11cbf66b1920df5c86e9b1d06354b25dbe0a7173",
+  "reviewed_run_id": "r-20261003T205933541810-the-audit-test-comment-states-first-copy",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T211023811670-review-of-the-audit-test-comment-states-first-copy",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T21:13:17+00:00",
+  "total": 92
+}

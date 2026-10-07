@@ -1,0 +1,32 @@
+{
+  "absent": [],
+  "backend": "codex",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T09:36:19.481970+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "tests/test_a_met_wait_is_ready_not_abandoned.py:119 retains the exact resumed-run assertion, and the recorded falsifier proves removing the two launcher facts makes that assertion fail again.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260917T091121375999-the-sweep-fixture-declares-a-spawned-run/assigned-cohort.log records 45 passed and 0 failed, while baseline-reproduction.log and falsifier-without-launch-facts.log each record the expected focused failure.",
+    "fit": "tests/test_a_met_wait_is_ready_not_abandoned.py:37-38 adds launch and argv in the existing pointer dictionary using the same fields carried by an actual CLI-spawned run.",
+    "goal_fidelity": "tests/test_a_met_wait_is_ready_not_abandoned.py:37-38 supplies the two missing spawned-run facts while line 119 keeps the requested assertion unchanged, and the exact target cohort independently passes 45 of 45 tests.",
+    "scope_discipline": "the two reviewed commits change only tests/test_a_met_wait_is_ready_not_abandoned.py and the two declared monitor plan/evidence HTML paths, with no production guard or assertion change."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_met_wait_is_ready_not_abandoned.py:37-38 supplies the two missing spawned-run facts while line 119 keeps the requested assertion unchanged, and the exact target cohort independently passes 45 of 45 tests.\nSCORE evidence: 20\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260917T091121375999-the-sweep-fixture-declares-a-spawned-run/assigned-cohort.log records 45 passed and 0 failed, while baseline-reproduction.log and falsifier-without-launch-facts.log each record the expected focused failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two reviewed commits change only tests/test_a_met_wait_is_ready_not_abandoned.py and the two declared monitor plan/evidence HTML paths, with no production guard or assertion change.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_met_wait_is_ready_not_abandoned.py:119 retains the exact resumed-run assertion, and the recorded falsifier proves removing the two launcher facts makes that assertion fail again.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_met_wait_is_ready_not_abandoned.py:37-38 adds launch and argv in the existing pointer dictionary using the same fields carried by an actual CLI-spawned run.\n",
+  "review_run_id": "r-20260917T093619481970-review-of-the-sweep-fixture-declares-a-spawned-run",
+  "reviewed_base": "dd49eb825766838d4011a27e81fe2e844c2d7d38",
+  "reviewed_commit": "9999543a61de3fcddba420c9782193032620eed5",
+  "reviewed_run_id": "r-20260917T091121375999-the-sweep-fixture-declares-a-spawned-run",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T09:41:42.248687+00:00",
+  "total": 100
+}

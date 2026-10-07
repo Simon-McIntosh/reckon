@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_derivation": "derived by this review from the two arm logs the reviewed manifest's own baseline_suite and after_suite lines describe, /home/ITER/mcintos/.cache/reckon-read-plan-composed/gate-base.log (13 passed, FAILING_IDS none) and gate-head.log (20 passed, FAILING_IDS none): added_failure_count 0, ids []. Positive control in logs/added-failures-derivation.log: the same extractor over the run's red negative-control.log finds its 2 failing ids, so the empty result is measured rather than blind.",
+  "added_failures_note": "the stored count is this review's derivation from the two arm logs; the store's read-time annotation cannot reach them because the manifest's baseline_suite/after_suite lines hold prose rather than JSON with log_path, so annotate_review_of_run reports the reviewed run unmeasured (null) \u2014 the first finding of this review.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:_read_plan_view (line 1471)",
+    "reckon/mcp.py:_typed_resource_text (line 1084)"
+  ],
+  "completed_at": "2026-09-28T11:08:26.797Z",
+  "dispatched_at": "2026-09-28T10:48:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054600104139-read-plan-reads-the-composed-record/manifest.md",
+      "line": "21",
+      "text": "baseline_suite and after_suite still hold prose rather than the armed JSON the dispatch reserved, so the store's read-time derivation takes the sentence as a path and annotate_review_of_run reports this run unmeasured although both arm logs exist and are green, the remaining half of the previous review's third finding, shown by running the reviewed revision's own reader."
+    },
+    {
+      "file": "tests/test_read_plan_composes_the_record.py",
+      "line": "297",
+      "text": "the response-delivery claim rests on a helper test: it passes the warning into _append_read_warning and asserts it is appended, never driving _read_plan_view, and because reckon/mcp_views.py:1622 refuses a record's section read, the call at reckon/mcp.py:1490 is unreachable for the only resources that produce the warning, so the plan's claim that the read path carries it on the response is unproven end to end and that wiring has no guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit: 8602efcf lands the metas-keyed resolver and its three readers, 16ca61e7 records the landing in the plan and the record, d85fba28 repairs the three prior findings, the fallback now logs and returns a warning naming the record and the error (reckon/mcp.py:1127), _append_read_warning attaches it to the read response (reckon/mcp.py:1490), and the metas-versus-filename disagreement case joins the suite (tests/test_read_plan_composes_the_record.py:244).",
+    "done_when": "the done_when names tests/test_read_plan_composes_the_record.py passing at exit 0 with its sibling suites unchanged; the file now holds seven cases, the head arm records 20 passed EXIT 0 at d85fba28 and the base arm 13 passed EXIT 0 at 3476364e with no failing ids in either, and tests/test_readers_compose_the_record.py was edited (its record fixtures now name a plan per record rather than one shared byte string), a divergence the manifest discloses under follow_ons rather than conceals.",
+    "goal": "the node's goal is that read_plan return the composed evidence record through one record resolver in reckon/evidence.py; evidence_record_plan at reckon/evidence.py:400 decides from the document's own reckon-type and plan-evidence-for metas, reckon/serve.py and reckon/doccheck.py call it with no local copy left, and reckon/mcp.py:1112 composes the typed-text read through it; the public read_plan tool still refuses an evidence document at view='section' (reckon/mcp_views.py:1622), which the node reports as an open follow-on outside its fence.",
+    "manifest": "read; it reports the repair commit, names the three gate logs and the negative-control log, and discloses the readers-file fixture change, but its baseline_suite and after_suite lines still hold prose, so the store's read-time derivation cannot find the two arm logs and reports this run unmeasured; this review re-derived the count from those logs directly.",
+    "write_paths": "the manifest declares nine paths; git diff --name-only 3476364e..d85fba28 lists exactly those nine (the four modules, the two test files, the plan HTML, the archive record and the figures directory) with nothing outside them."
+  },
+  "justifications": {
+    "durability": "the disagreement case at tests/test_read_plan_composes_the_record.py:244 reddens under the declared filename mutation (negative-control.log, 2 failed 5 passed) and the fallback's log is caught by caplog, but no case drives the response the repair added, so deleting the reckon/mcp.py:1490 call would fail nothing.",
+    "evidence": "the head and base arms are logged with revision, tree, resolved cwd and the served reckon.__file__ (gate-head.log 20 passed EXIT 0 with no failing ids at d85fba28; gate-base.log 13 passed EXIT 0 at 3476364e) and this review re-derived the delta with a positive control, the deduction being the manifest's prose suite fields that leave the store's own reader unable to reach those logs.",
+    "fit": "_typed_resource_text_and_warning and _append_read_warning follow the module's reader idiom and carry no plan, sprint or version identifier, with a minor deduction for _LOGGER = logging.getLogger(\"reckon.mcp\") at reckon/mcp.py:154 where the repository's spelling is logging.getLogger(__name__) at reckon/serve.py:89.",
+    "goal_fidelity": "reckon/evidence.py:400 holds the one metas-keyed resolver that reckon/serve.py, reckon/doccheck.py and reckon/mcp.py:1112 all call, but the composed text is reachable only through the typed-text path because reckon/mcp_views.py:1622 admits plan resources only at view='section'.",
+    "scope_discipline": "every path in git diff --name-only 3476364e..d85fba28 is inside the manifest's nine declared paths, the archive record's only two deletions are this node's own replaced bullets with its sections and remaining lines intact, and no plan-version or plan-modified meta line appears in the docs diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that read_plan return the composed evidence record through one record resolver in reckon/evidence.py; evidence_record_plan at reckon/evidence.py:400 decides from the document's own reckon-type and plan-evidence-for metas, reckon/serve.py and reckon/doccheck.py call it with no local copy left, and reckon/mcp.py:1112 composes the typed-text read through it; the public read_plan tool still refuses an evidence document at view='section' (reckon/mcp_views.py:1622), which the node reports as an open follow-on outside its fence.\nVERDICT done_when: the done_when names tests/test_read_plan_composes_the_record.py passing at exit 0 with its sibling suites unchanged; the file now holds seven cases, the head arm records 20 passed EXIT 0 at d85fba28 and the base arm 13 passed EXIT 0 at 3476364e with no failing ids in either, and tests/test_readers_compose_the_record.py was edited (its record fixtures now name a plan per record rather than one shared byte string), a divergence the manifest discloses under follow_ons rather than conceals.\nVERDICT write_paths: the manifest declares nine paths; git diff --name-only 3476364e..d85fba28 lists exactly those nine (the four modules, the two test files, the plan HTML, the archive record and the figures directory) with nothing outside them.\nVERDICT manifest: read; it reports the repair commit, names the three gate logs and the negative-control log, and discloses the readers-file fixture change, but its baseline_suite and after_suite lines still hold prose, so the store's read-time derivation cannot find the two arm logs and reports this run unmeasured; this review re-derived the count from those logs directly.\nVERDICT diff: read commit by commit: 8602efcf lands the metas-keyed resolver and its three readers, 16ca61e7 records the landing in the plan and the record, d85fba28 repairs the three prior findings, the fallback now logs and returns a warning naming the record and the error (reckon/mcp.py:1127), _append_read_warning attaches it to the read response (reckon/mcp.py:1490), and the metas-versus-filename disagreement case joins the suite (tests/test_read_plan_composes_the_record.py:244).\nCALL_SITES: reckon/mcp.py:_read_plan_view (line 1471), reckon/mcp.py:_typed_resource_text (line 1084)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/evidence.py:400 holds the one metas-keyed resolver that reckon/serve.py, reckon/doccheck.py and reckon/mcp.py:1112 all call, but the composed text is reachable only through the typed-text path because reckon/mcp_views.py:1622 admits plan resources only at view='section'.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head and base arms are logged with revision, tree, resolved cwd and the served reckon.__file__ (gate-head.log 20 passed EXIT 0 with no failing ids at d85fba28; gate-base.log 13 passed EXIT 0 at 3476364e) and this review re-derived the delta with a positive control, the deduction being the manifest's prose suite fields that leave the store's own reader unable to reach those logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-only 3476364e..d85fba28 is inside the manifest's nine declared paths, the archive record's only two deletions are this node's own replaced bullets with its sections and remaining lines intact, and no plan-version or plan-modified meta line appears in the docs diff.\nSCORE durability: 18\nJUSTIFICATION durability: the disagreement case at tests/test_read_plan_composes_the_record.py:244 reddens under the declared filename mutation (negative-control.log, 2 failed 5 passed) and the fallback's log is caught by caplog, but no case drives the response the repair added, so deleting the reckon/mcp.py:1490 call would fail nothing.\nSCORE fit: 18\nJUSTIFICATION fit: _typed_resource_text_and_warning and _append_read_warning follow the module's reader idiom and carry no plan, sprint or version identifier, with a minor deduction for _LOGGER = logging.getLogger(\"reckon.mcp\") at reckon/mcp.py:154 where the repository's spelling is logging.getLogger(__name__) at reckon/serve.py:89.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054600104139-read-plan-reads-the-composed-record/manifest.md:21 baseline_suite and after_suite still hold prose rather than the armed JSON the dispatch reserved, so the store's read-time derivation takes the sentence as a path and annotate_review_of_run reports this run unmeasured although both arm logs exist and are green, the remaining half of the previous review's third finding, shown by running the reviewed revision's own reader.\nFINDING tests/test_read_plan_composes_the_record.py:297 the response-delivery claim rests on a helper test: it passes the warning into _append_read_warning and asserts it is appended, never driving _read_plan_view, and because reckon/mcp_views.py:1622 refuses a record's section read, the call at reckon/mcp.py:1490 is unreachable for the only resources that produce the warning, so the plan's claim that the read path carries it on the response is unproven end to end and that wiring has no guard.",
+  "review_run_id": "r-20260928T104746638927-review-of-read-plan-reads-the-composed-record",
+  "reviewed_base_sha": "3476364ed445b40d5806e25435045f587061d8e3",
+  "reviewed_head_sha": "d85fba289107c9e60fc6d0014d56c10ab2c15203",
+  "reviewed_run_id": "r-20260928T054600104139-read-plan-reads-the-composed-record",
+  "reviewer": "review-of-read-plan-reads-the-composed-record",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T11:05:26.692286+00:00",
+  "total": 94
+}

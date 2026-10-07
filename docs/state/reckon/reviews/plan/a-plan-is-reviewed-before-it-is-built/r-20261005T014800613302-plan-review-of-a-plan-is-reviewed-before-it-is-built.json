@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:04:53.776Z",
+  "dispatched_at": "2026-10-05T01:48:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s15",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added interface surface in its own text.",
+      "text": "s15 adds one function to reckon/crew/plan_review.py, a new public definition, yet the section names no counted definition it retires or merges and states no reason none can be; the inline digest-pair spellings it removes (reckon/crew/routing.py:2706, reckon/crew/recovery.py:493) are not counted definitions, so the net on public_definitions (1470 this week) is an unfunded addition",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a30cd6ccb40fa39ade3f7d4954849886145659b472fddc02ad57df722b9a0ff0",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 55,
+  "project": "reckon",
+  "responses": {
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T02:10:47.167839+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T014800613302-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "71e697be6d2d92b3462d109b4d13a2700a6338bd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 reckon/crew/plan_review.py hides the record shape, the store keying, the content fingerprint and the gate join behind module functions, and s15 concentrates the one reader the gate, the sweep and the composer share.",
+    "duplicate_owner": "pass \u2014 s15 is itself the de-duplication: it names reckon/crew/plan_review.py as the owner of the digest pair and removes the pair spelled inline at reckon/crew/routing.py:2706 and computed singly at reckon/crew/recovery.py:493.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; s15 adds a public definition without naming, in its own text, a counted definition it retires or merges, and without stating why nothing can be.",
+    "reuse_search": "pass \u2014 s3 extends the build skill's reuse-map rule (~/.claude/skills/reckon-build/SKILL.md:91) into a review that runs unremembered, and s15 extends reckon/crew/plan_review.py, the module that owns plan_fingerprint, rather than adding new machinery.",
+    "thin_wrapper": "pass \u2014 the loop extends the existing crew review store (decision review-storage; s9 moved the report grammar beside parse_review() in reckon/crew/review.py) rather than forking it, so no section adds an unjustified layer over machinery it could extend."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T02:07:47.296746+00:00"
+}

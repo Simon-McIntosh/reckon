@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:5305"
+  ],
+  "completed_at": "2026-10-03T01:28:52.223Z",
+  "dispatched_at": "2026-10-03T01:18:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1253",
+      "severity": "follow-on",
+      "text": "follow-on: the head ids now come from the cited log, but the baseline arm's failure_ids are still read from the manifest the worker writes, so a manifest that widened its baseline list could still admit a head failure; residual trust asymmetry, out of this rework's instruction and non-blocking."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both gained commits against base e4f53c46; de33b93cb restores the cited-log head reading and adds the empty-after-list case, and 4b57d9c1d is the fragment landing record with no code.",
+    "done_when": "the done-when names a case in tests/test_passed_verdict_needs_exit_zero.py that fails at the base for an interrupted baseline arm; base_arm2.log records that exact case failing (1 failed, 353 passed, EXIT=1) and head_arm3.log records 354 passed EXIT=0 over the same population.",
+    "goal": "the rework keeps the section-30 completed-check on both arms and restores the head-arm failing ids to the cited gate log; reckon/crew/promotion.py:1229-1235 refuses unless both baseline_suite and after_suite declare completed is True, and line 1261 reads the head ids from the citation's log through _head_arm_log_failure_ids.",
+    "manifest": "read; it records both suite arms and a negative control, and its headline figures reconcile with the three gate logs on disk.",
+    "write_paths": "read the manifest's declared paths; the diff e4f53c46..4b57d9c1d touches only reckon/crew/promotion.py, tests/test_passed_verdict_needs_exit_zero.py and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the manifest reading at reckon/crew/promotion.py:1261 in a scratch tree reddens exactly tests/test_passed_verdict_needs_exit_zero.py::test_an_empty_after_suite_failure_list_cannot_hide_an_id_the_head_log_names and ::test_a_head_that_adds_a_failure_beside_a_red_base_is_refused (2 failed, 5 passed) while the head passes all 7.",
+    "evidence": "base_arm2.log (1 failed, 353 passed, EXIT=1), head_arm3.log (354 passed, EXIT=0) and negative_control2.log (1 failed, 6 passed, EXIT=1) record measured results, though the declared control covers only the completion guard and the restored log-reading guard carried none until this review.",
+    "fit": "_head_arm_log_failure_ids at reckon/crew/promotion.py:1190 mirrors _baseline_suite_failure_ids/_head_suite_failure_ids and _arm_without_completion names its arm, keeping the module's idiom.",
+    "goal_fidelity": "reckon/crew/promotion.py:1229-1235 and 1261 keep the completed-check and take the head ids from the cited log, which is the node goal plus the coordinator's restoration.",
+    "scope_discipline": "git diff between e4f53c46 and 4b57d9c1d lists only the three declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the rework keeps the section-30 completed-check on both arms and restores the head-arm failing ids to the cited gate log; reckon/crew/promotion.py:1229-1235 refuses unless both baseline_suite and after_suite declare completed is True, and line 1261 reads the head ids from the citation's log through _head_arm_log_failure_ids.\nVERDICT done_when: the done-when names a case in tests/test_passed_verdict_needs_exit_zero.py that fails at the base for an interrupted baseline arm; base_arm2.log records that exact case failing (1 failed, 353 passed, EXIT=1) and head_arm3.log records 354 passed EXIT=0 over the same population.\nVERDICT write_paths: read the manifest's declared paths; the diff e4f53c46..4b57d9c1d touches only reckon/crew/promotion.py, tests/test_passed_verdict_needs_exit_zero.py and the evidence fragment, all inside them.\nVERDICT manifest: read; it records both suite arms and a negative control, and its headline figures reconcile with the three gate logs on disk.\nVERDICT diff: read both gained commits against base e4f53c46; de33b93cb restores the cited-log head reading and adds the empty-after-list case, and 4b57d9c1d is the fragment landing record with no code.\nCALL_SITES: reckon/crew/promotion.py:5305\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1229-1235 and 1261 keep the completed-check and take the head ids from the cited log, which is the node goal plus the coordinator's restoration.\nSCORE evidence: 18\nJUSTIFICATION evidence: base_arm2.log (1 failed, 353 passed, EXIT=1), head_arm3.log (354 passed, EXIT=0) and negative_control2.log (1 failed, 6 passed, EXIT=1) record measured results, though the declared control covers only the completion guard and the restored log-reading guard carried none until this review.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff between e4f53c46 and 4b57d9c1d lists only the three declared paths.\nSCORE durability: 20\nJUSTIFICATION durability: reinstating the manifest reading at reckon/crew/promotion.py:1261 in a scratch tree reddens exactly tests/test_passed_verdict_needs_exit_zero.py::test_an_empty_after_suite_failure_list_cannot_hide_an_id_the_head_log_names and ::test_a_head_that_adds_a_failure_beside_a_red_base_is_refused (2 failed, 5 passed) while the head passes all 7.\nSCORE fit: 19\nJUSTIFICATION fit: _head_arm_log_failure_ids at reckon/crew/promotion.py:1190 mirrors _baseline_suite_failure_ids/_head_suite_failure_ids and _arm_without_completion names its arm, keeping the module's idiom.\nFINDING reckon/crew/promotion.py:1253 follow-on: the head ids now come from the cited log, but the baseline arm's failure_ids are still read from the manifest the worker writes, so a manifest that widened its baseline list could still admit a head failure; residual trust asymmetry, out of this rework's instruction and non-blocking.\n",
+  "review_run_id": "r-20261003T011805766223-review-of-red-base-exemption-needs-completed-arms",
+  "reviewed_base_sha": "e4f53c46db8028d87376229b5a0e5bfada7edc29",
+  "reviewed_head_sha": "4b57d9c1d84275b8b5334cc3b9d8aa34b1a4d505",
+  "reviewed_run_id": "r-20261002T225040192210-red-base-exemption-needs-completed-arms",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T011805766223-review-of-red-base-exemption-needs-completed-arms",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T01:27:05.181363+00:00",
+  "total": 96
+}

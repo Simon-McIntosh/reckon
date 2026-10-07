@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bd621f63ce227fb31b8627fe9f4ac69d2115f90e",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:6645 (_raise_repository_scope_conflict at admission)",
+    "reckon/crew/dispatch.py:7180 (_raise_repository_scope_conflict after the run's own claim is published)"
+  ],
+  "completed_at": "2026-10-03T11:25:07.433Z",
+  "dispatched_at": "2026-10-03T11:14:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/review-record-is-one-runs-claim.html",
+      "line": "34",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate arm ran at 514dc0a91 but the landed head is 5d063ad47, so after_suite.revision is not the reviewed head; the intervening commit adds only the HTML evidence fragment, which cannot affect the pytest suite, so the evidence stands, but the recorded head pair names a revision the gate did not run at."
+    }
+  ],
+  "head_log_revision": "514dc0a91d38982c4c8be4ddaa48d891aa3d2733",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base bd621f63c; 16a2d19c3 adds the test, 514dc0a91 ruff-formats it, 5d063ad47 adds the fragment; no product source changed.",
+    "done_when": "the measure is the base/head gate with no added failure id plus an executed negative control; both arms are recorded as JSON with revisions and literal commands, and my own re-run of the declared mutation reddened the refusal case.",
+    "goal": "the declared goal is one review record as one run's write claim; the test declares a review record path as a live review run's write path and requires a second review of the same subject to be refused as ScopeConflict naming the first run, node and path, while a different subject's record path is admitted.",
+    "manifest": "read; status complete, three commits, both suites recorded as JSON with revision, command, exit_status, log_path, completed true and failure_count 0; negative control named and executed; docked for the head-arm revision sitting one docs-only commit below the landed head.",
+    "write_paths": "the diff base..head touches only the test file and the evidence fragment, both inside the four declared write paths."
+  },
+  "justifications": {
+    "durability": "the change is a guard whose load-bearing condition is demonstrated: skipping out-of-repository claims at reckon/crew/dispatch.py:2673 reddens the refusal case (DID NOT RAISE ScopeConflict) in an independent scratch run, so the test fails if the compared-path behaviour regresses.",
+    "evidence": "both arms recorded at their own revisions with literal commands and completed true (base bd621f63c 76 passed, head 514dc0a91 76 passed) and head-minus-base over pytest node ids is empty; independent head run 2 passed and reproduced negative control 1 failed/1 passed EXIT=1; docked because after_suite.revision 514dc0a91 is not the landed head 5d063ad47.",
+    "fit": "the test follows the repo idiom for dispatch scope cases (temp RECKON_HOME, synthetic reckon mount, crew.dispatch, monkeypatched _create_worktree) and resolves record paths through review_module.review_path, with mechanism-based names and no plan label, and asserts the real live pointer directory is untouched.",
+    "goal_fidelity": "tests/test_review_record_is_one_runs_claim.py drives crew.dispatch and asserts the ScopeConflict naming the first run plus the discriminating admission of a different subject, which is the section measure; pinned rather than repaired, which the done-when sanctions.",
+    "scope_discipline": "the diff spans exactly the two paths the manifest lists as changed, both inside the four declared write paths; no shared index or plan state mutated."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the declared goal is that one review record is one run's write claim; tests/test_review_record_is_one_runs_claim.py declares a review record path as a live review run's exclusive write path and requires a second review of the same subject under a fresh node id to be refused as ScopeConflict naming the first run, its node and the shared path, while a review of a different subject holding a different record path is admitted. Ran independently at head 5d063ad47: 2 passed.\nVERDICT done_when: the node's measure is the base/head gate with no added failure id plus an executed negative control; the manifest records both suites as JSON with revisions, literal absolute-path commands, completed true and log paths, names the negative-control log with its mutation, and my own re-run of that mutation reddened the refusal case (DID NOT RAISE ScopeConflict).\nVERDICT write_paths: the manifest declares four write paths; the diff base..head touches only tests/test_review_record_is_one_runs_claim.py and docs/evidence/fragments/crew-observability-truth/review-record-is-one-runs-claim.html, both inside them (reckon/crew/dispatch.py and the figures directory were declared and unused), and no plan or shared index is modified.\nVERDICT manifest: read; status complete, three commits, base_suite and after_suite recorded as JSON carrying revision, literal command, exit_status, log_path, completed true and failure_count 0, negative_control_log named and executed with its mutation declared, measurement_module and measurement_cwd recorded for the scratch base arm; docked because head-arm revision is 514dc0a91, one docs-only commit below the landed head 5d063ad47.\nVERDICT diff: read commit by commit against base bd621f63c; 16a2d19c3 adds the test (262 lines), 514dc0a91 ruff-formats it (4 insertions, 2 deletions), 5d063ad47 adds the evidence fragment (104 lines). No product source changed: the refusal already held at base, which is the outcome the done-when names for that case.\nCALL_SITES: reckon/crew/dispatch.py:6645 (_raise_repository_scope_conflict at admission), reckon/crew/dispatch.py:7180 (_raise_repository_scope_conflict after the run's own claim is published)\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 19\nJUSTIFICATION goal_fidelity: tests/test_review_record_is_one_runs_claim.py drives crew.dispatch and asserts the ScopeConflict naming the first run (dispatch.run_id/node_id/claimed_path) plus the discriminating admission of a different subject, which is exactly the section measure; not 20 because the node pins pre-existing behaviour rather than changing it, which the done-when explicitly sanctions.\nJUSTIFICATION evidence: the two arms are recorded at their own revisions with literal commands and completed true (base bd621f63c 76 passed, head 514dc0a91 76 passed, EXIT=0 each) and head-minus-base over pytest node ids is empty so added_failure_count is 0; I independently ran the new test at head (2 passed) and reproduced the negative control (1 failed, 1 passed, EXIT=1); docked because after_suite.revision 514dc0a91 is not the landed head 5d063ad47.\nJUSTIFICATION scope_discipline: the diff spans exactly the two paths the manifest lists as changed, both inside the four declared write paths, and no shared index or plan state is mutated.\nJUSTIFICATION durability: the change IS a guard, and its load-bearing condition is demonstrated rather than claimed \u2014 reinstating the regression (skipping out-of-repository claims in _raise_repository_scope_conflict at reckon/crew/dispatch.py:2673) reddens test_a_second_review_of_one_record_is_refused with DID NOT RAISE ScopeConflict in my own scratch run, so the test fails if the compared-path behaviour regresses.\nJUSTIFICATION fit: the test follows the repo idiom for dispatch scope cases (RECKON_HOME temp home, a synthetic reckon mount, crew.dispatch, monkeypatch of _create_worktree) and resolves record paths through review_module.review_path rather than hardcoding them, with mechanism-based names and no plan label or version suffix; it also asserts the real live pointer directory is untouched, as the repo AGENTS.md requires.\nFINDING docs/evidence/fragments/crew-observability-truth/review-record-is-one-runs-claim.html:34 follow-on: the head gate arm ran at 514dc0a91 but the landed head is 5d063ad47, so after_suite.revision is not the reviewed head; the intervening commit adds only the HTML evidence fragment, which cannot affect the pytest suite, so the evidence stands, but the recorded head pair names a revision the gate did not run at.",
+  "review_run_id": "r-20261003T111323768826-review-of-review-record-is-one-runs-claim",
+  "reviewed_base_sha": "bd621f63ce227fb31b8627fe9f4ac69d2115f90e",
+  "reviewed_head_sha": "5d063ad4741ad4421b000559d20052aeaea5db68",
+  "reviewed_run_id": "r-20261003T105134835432-review-record-is-one-runs-claim",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T11:21:27.121111+00:00",
+  "total": 95
+}

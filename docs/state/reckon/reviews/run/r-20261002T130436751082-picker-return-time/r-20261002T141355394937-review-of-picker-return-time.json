@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/prompts.py:48",
+    "reckon/crew/picker/__init__.py:61"
+  ],
+  "completed_at": "2026-10-02T14:37:08.068Z",
+  "dispatched_at": "2026-10-02T14:14:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "61",
+      "severity": "follow-on",
+      "text": "follow-on: the live pick renders state.jinja without project, records or budget_snapshot, so lane_context.build receives project=None and emits a null return_times block for every backend; the node's goal is reachable only once the concurrent picker-latency node threads project through, and the reviewed node is fenced out of this file."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against ca630c06; three commits, six files, the new module and test plus a two-line template change and the prompts seam, all inside the declared scope.",
+    "done_when": "six done-when items; items (1)-(4) and (6) are asserted by tests/test_picker_return_time.py (8 passed on re-run) and item (5), the live replay of 20, is recorded unmet and deferred by the coordinator in docs/evidence/fragments/one-typesafe-model-picker/picker-return-time.html.",
+    "goal": "the goal is \"give Jev each lane's expected return time and live load\"; reckon/crew/picker/lane_context.py builds per-candidate return_time blocks and a local_lane block, and reckon/crew/picker/templates/state.jinja renders both, but the return-time half is unreachable from production because the sole live caller passes no project.",
+    "manifest": "read; it reports the after_suite command as the two picker test files at 40 passed, and states item (5) is not met here and is deferred to picker-replay-measure.",
+    "write_paths": "read the node's declared fence; the diff ca630c06..44b75c262 touches exactly those paths and adds no file outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_picker_return_time.py:120 fails when p50_s and p90_s are swapped in lane_context.return_times (negative_control.log, exit 1), and its figures come from synthesised ledger rows the code reads rather than from values the test passed in.",
+    "evidence": "tests/test_picker_return_time.py exercises the module with project=\"reckon\" and reproduces green at 8 passed, but no test or run measures the production call site at reckon/crew/picker/__init__.py:61 where the goal is actually reached, and done-when item (5) is recorded unmet.",
+    "fit": "lane_context.py follows the None-not-zero idiom of reckon/crew/run_time_profile.py:36 and is wired through the existing reckon/crew/picker/prompts.py render seam, introducing no forbidden name.",
+    "goal_fidelity": "reckon/crew/picker/lane_context.py:150 builds the blocks the goal names, but reckon/crew/picker/__init__.py:61 renders state.jinja with no project so every p50_s/p90_s is null on the live path, leaving only the local-lane half of the goal delivered.",
+    "scope_discipline": "the diff ca630c06..44b75c262 touches exactly the five declared source/test paths plus the declared evidence fragment, with no file outside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"give Jev each lane's expected return time and live load\"; reckon/crew/picker/lane_context.py builds per-candidate return_time blocks and a local_lane block, and reckon/crew/picker/templates/state.jinja renders both, but the return-time half is unreachable from production because the sole live caller passes no project.\nVERDICT done_when: six done-when items; items (1)-(4) and (6) are asserted by tests/test_picker_return_time.py (8 passed on re-run) and item (5), the live replay of 20, is recorded unmet and deferred by the coordinator in docs/evidence/fragments/one-typesafe-model-picker/picker-return-time.html.\nVERDICT write_paths: read the node's declared fence; the diff ca630c06..44b75c262 touches exactly those paths and adds no file outside them.\nVERDICT manifest: read; it reports the after_suite command as the two picker test files at 40 passed, and states item (5) is not met here and is deferred to picker-replay-measure.\nVERDICT diff: read commit by commit against ca630c06; three commits, six files, the new module and test plus a two-line template change and the prompts seam, all inside the declared scope.\nCALL_SITES: reckon/crew/picker/prompts.py:48, reckon/crew/picker/__init__.py:61\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:150 builds the blocks the goal names, but reckon/crew/picker/__init__.py:61 renders state.jinja with no project so every p50_s/p90_s is null on the live path, leaving only the local-lane half of the goal delivered.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_picker_return_time.py exercises the module with project=\"reckon\" and reproduces green at 8 passed, but no test or run measures the production call site at reckon/crew/picker/__init__.py:61 where the goal is actually reached, and done-when item (5) is recorded unmet.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff ca630c06..44b75c262 touches exactly the five declared source/test paths plus the declared evidence fragment, with no file outside the fence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_picker_return_time.py:120 fails when p50_s and p90_s are swapped in lane_context.return_times (negative_control.log, exit 1), and its figures come from synthesised ledger rows the code reads rather than from values the test passed in.\nSCORE fit: 18\nJUSTIFICATION fit: lane_context.py follows the None-not-zero idiom of reckon/crew/run_time_profile.py:36 and is wired through the existing reckon/crew/picker/prompts.py render seam, introducing no forbidden name.\nFINDING reckon/crew/picker/__init__.py:61 follow-on: the live pick renders state.jinja without project, records or budget_snapshot, so lane_context.build receives project=None and emits a null return_times block for every backend; the node's goal is reachable only once the concurrent picker-latency node threads project through, and the reviewed node is fenced out of this file.\nreviewed_base_sha: ca630c06e894d95111a8627b11d02a023aa270dd\nreviewed_head_sha: 44b75c262a86e3bcd73d5ae82aeecb81038ed843",
+  "review_run_id": "r-20261002T141355394937-review-of-picker-return-time",
+  "reviewed_base_sha": "ca630c06e894d95111a8627b11d02a023aa270dd",
+  "reviewed_head_sha": "44b75c262a86e3bcd73d5ae82aeecb81038ed843",
+  "reviewed_run_id": "r-20261002T130436751082-picker-return-time",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T141355394937-review-of-picker-return-time",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T14:27:52.829738+00:00",
+  "total": 86
+}

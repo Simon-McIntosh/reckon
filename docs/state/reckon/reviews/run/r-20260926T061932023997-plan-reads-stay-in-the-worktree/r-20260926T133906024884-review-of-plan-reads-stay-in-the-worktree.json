@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:4761 read_plan -> _read_plan scoped at :771",
+    "reckon/mcp.py:4772 roadmap -> _roadmap_tool at :3617",
+    "reckon/mcp.py:4775 audit -> _audit_tool at :4650",
+    "reckon/mcp.py:2167 eleven _run_scoped_write_guard call sites in unregistered granular mutators"
+  ],
+  "completed_at": "2026-09-26T14:35:49.591Z",
+  "dispatched_at": "2026-09-26T13:39:23Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit over the six commits 0871ec7b..2abd1ece, where reckon/mcp.py adds the read resolver and the write guard, tests/test_plan_reads_stay_in_the_worktree.py adds the 23 tests, and the docs carry the landing record.",
+    "done_when": "the done_when's red-at-base/green-at-head pair and its RECKON_RUN_ID arm are recorded (logs/gate-plan-reads-base.txt 18 failed/124 passed all in the new file, both head logs 142 passed), and my own reproductions returned 18 failed/5 passed at base and 23 passed at head with the run id exported.",
+    "goal": "the goal is a run-scoped plan read resolving to the run's own worktree and a run-scoped write outside it erroring, and reckon/mcp.py:771 scopes the read while reckon/mcp.py:2167 refuses the granular writes naming the run and the would-be path.",
+    "manifest": "read, and it records the base and after suites, the declared negative control, the mutation arm and the four lint figures, naming a log for each and the earlier review findings it closes.",
+    "write_paths": "read the manifest's five declared paths, and git diff --stat 80d55621..2abd1ece lists exactly those five with both shared docs changed append-only (docs/evidence 155+/0-, docs/plans 108+/0-) and no plan-version or plan-modified line touched."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_reads_stay_in_the_worktree.py:412 parametrises all eleven guarded writers per site and :237 discriminates the trees by a plan only the worktree holds, with the manifest's mutation arm reddening exactly the _patch_plan case.",
+    "evidence": "the four logs carry revision headers (head 2abd1ece, base tree /tmp/reads-base3, all eighteen base failures in the new file) and my independent re-runs agree at 18 failed/5 passed base and 23 passed head.",
+    "fit": "reckon/mcp.py:531 mirrors the neighbouring _run_scoped_checkout at :499 and reuses _run_scoped_refusal with a keyword-only hint, and the added comments name mechanisms rather than plan labels.",
+    "goal_fidelity": "reckon/mcp.py:771 redirects a run's own project read to its worktree and reckon/mcp.py:531-590 deny every granular writer with the run id and the would-be path, the goal's two clauses.",
+    "scope_discipline": "git diff --numstat lists exactly the five declared paths (reckon/mcp.py 150+/3-, tests 461+/0-, two docs 305+/0-, figure 42+/0-)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a run-scoped plan read resolving to the run's own worktree and a run-scoped write outside it erroring, and reckon/mcp.py:771 scopes the read while reckon/mcp.py:2167 refuses the granular writes naming the run and the would-be path.\nVERDICT done_when: the done_when's red-at-base/green-at-head pair and its RECKON_RUN_ID arm are recorded (logs/gate-plan-reads-base.txt 18 failed/124 passed all in the new file, both head logs 142 passed), and my own reproductions returned 18 failed/5 passed at base and 23 passed at head with the run id exported.\nVERDICT write_paths: read the manifest's five declared paths, and git diff --stat 80d55621..2abd1ece lists exactly those five with both shared docs changed append-only (docs/evidence 155+/0-, docs/plans 108+/0-) and no plan-version or plan-modified line touched.\nVERDICT manifest: read, and it records the base and after suites, the declared negative control, the mutation arm and the four lint figures, naming a log for each and the earlier review findings it closes.\nVERDICT diff: read commit by commit over the six commits 0871ec7b..2abd1ece, where reckon/mcp.py adds the read resolver and the write guard, tests/test_plan_reads_stay_in_the_worktree.py adds the 23 tests, and the docs carry the landing record.\nCALL_SITES: reckon/mcp.py:4761 read_plan -> _read_plan scoped at :771, reckon/mcp.py:4772 roadmap -> _roadmap_tool at :3617, reckon/mcp.py:4775 audit -> _audit_tool at :4650, reckon/mcp.py:2167 eleven _run_scoped_write_guard call sites in unregistered granular mutators\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:771 redirects a run's own project read to its worktree and reckon/mcp.py:531-590 deny every granular writer with the run id and the would-be path, the goal's two clauses.\nSCORE evidence: 19\nJUSTIFICATION evidence: the four logs carry revision headers (head 2abd1ece, base tree /tmp/reads-base3, all eighteen base failures in the new file) and my independent re-runs agree at 18 failed/5 passed base and 23 passed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat lists exactly the five declared paths (reckon/mcp.py 150+/3-, tests 461+/0-, two docs 305+/0-, figure 42+/0-).\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_plan_reads_stay_in_the_worktree.py:412 parametrises all eleven guarded writers per site and :237 discriminates the trees by a plan only the worktree holds, with the manifest's mutation arm reddening exactly the _patch_plan case.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/mcp.py:531 mirrors the neighbouring _run_scoped_checkout at :499 and reuses _run_scoped_refusal with a keyword-only hint, and the added comments name mechanisms rather than plan labels.\n",
+  "review_run_id": "r-20260926T133906024884-review-of-plan-reads-stay-in-the-worktree",
+  "reviewed_base_sha": "80d5562139fee5153ccafe0a66054896af43b956",
+  "reviewed_head_sha": "2abd1ece9003e5da69b940dbe9c8685b22d7d751",
+  "reviewed_run_id": "r-20260926T061932023997-plan-reads-stay-in-the-worktree",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T14:28:05.611947+00:00",
+  "total": 96
+}

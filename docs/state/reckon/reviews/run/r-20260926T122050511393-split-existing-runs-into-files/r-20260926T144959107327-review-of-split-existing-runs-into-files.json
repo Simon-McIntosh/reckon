@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:4441"
+  ],
+  "completed_at": "2026-09-26T15:57:14.507Z",
+  "dispatched_at": "2026-09-26T14:50:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html",
+      "line": "717",
+      "text": "the base arm's revision cell is missing its opening td, so the row holds three cells against the four-column header at :716 and the text 355ef453, scratch tree via git archive, the new test copied in sits outside any cell, leaving a reader of the record with the base revision fostered out of the table while the head row below is well formed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against its base, 98ac4ced adding split_runs, _split_project_runs and _commit_run_split with the verb, 4c77e4e7 formatting only the lines the change added, and 6405f200 recording the landing in the plan and the cumulative evidence record, and the three product blobs are identical at 4c77e4e7 and 6405f200 so the head arm's log measures the shipped tree.",
+    "done_when": "the done_when names five assertions each failing at base where no entry point exists; the manifest records both arms over tests/test_split_existing_runs.py plus tests/test_ledger.py in one invocation each, and the logs verify it, gate-base.log carrying eight \"No such command 'split-runs'\" failures for the new cases and the head failure set minus the base set being exactly those eight.",
+    "goal": "the goal is a one-time per-project split of the aggregate runs list into runs/<run_id>.json through the one serialiser with a dry run; reckon/ledger.py:2178 lands split_runs with its per-project classifier at :2017 and the crew split-runs verb with --dry-run at reckon/cli.py:4430, and the real mount registry resolves each project's ledger beneath its docs root, the same aggregate at docs/state/reckon/crew.json that a real invocation would split.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/split-existing-runs-into-files/manifest.md, status complete, naming its three commits, both arm counts, the declared negative control and the lint delta; each claim I spot-checked held, including the mutation anchor at reckon/ledger.py:2093, so the record reads as a receipt rather than a claim.",
+    "write_paths": "the declared paths are reckon/ledger.py, reckon/cli.py, tests/test_split_existing_runs.py and the three docs paths, and every one of the six files changed across 355ef453..6405f200 is inside them, with zero deletions under docs/."
+  },
+  "justifications": {
+    "durability": "tests/test_split_existing_runs.py:182 asserts the written file's bytes against serialize_run's own output for the row, which the declared mutation at :2093 reddens, and the second-run, differing-file, window-promotion and dry-run claims each assert git's head or the file bytes rather than the code's report at :220, :247, :285 and :322.",
+    "evidence": "the gate's result is recorded in two receipts (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T122050511393-split-existing-runs-into-files/logs/gate-base.log and gate-head.log) whose failure-set difference is exactly the eight new cases, and I reproduced the lint delta, 13 findings in ledger.py and 2 in cli.py at both arms with the new test file clean.",
+    "fit": "the split follows ledger.py's idiom (LedgerError refusals, subprocess git with check=False, mechanism-first docstrings) and the three commit subjects are conventional with bodies, but the landing record it appends carries a malformed table row at docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html:717.",
+    "goal_fidelity": "reckon/ledger.py:2093 writes each aggregate row through serialize_run and :2111 removes the runs key through the shared envelope writer, exactly the entry point the goal names.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, and the only step beyond the goal is the disclosed _state_checkout parameterisation at reckon/ledger.py:914, which keeps the roster's refusal wording by defaulting its label to \"roster\"."
+  },
+  "node": "review-of-split-existing-runs-into-files",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a one-time per-project split of the aggregate runs list into runs/<run_id>.json through the one serialiser with a dry run; reckon/ledger.py:2178 lands split_runs with its per-project classifier at :2017 and the crew split-runs verb with --dry-run at reckon/cli.py:4430, and the real mount registry resolves each project's ledger beneath its docs root, the same aggregate at docs/state/reckon/crew.json that a real invocation would split.\nVERDICT done_when: the done_when names five assertions each failing at base where no entry point exists; the manifest records both arms over tests/test_split_existing_runs.py plus tests/test_ledger.py in one invocation each, and the logs verify it, gate-base.log carrying eight \"No such command 'split-runs'\" failures for the new cases and the head failure set minus the base set being exactly those eight.\nVERDICT write_paths: the declared paths are reckon/ledger.py, reckon/cli.py, tests/test_split_existing_runs.py and the three docs paths, and every one of the six files changed across 355ef453..6405f200 is inside them, with zero deletions under docs/.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/split-existing-runs-into-files/manifest.md, status complete, naming its three commits, both arm counts, the declared negative control and the lint delta; each claim I spot-checked held, including the mutation anchor at reckon/ledger.py:2093, so the record reads as a receipt rather than a claim.\nVERDICT diff: read commit by commit against its base, 98ac4ced adding split_runs, _split_project_runs and _commit_run_split with the verb, 4c77e4e7 formatting only the lines the change added, and 6405f200 recording the landing in the plan and the cumulative evidence record, and the three product blobs are identical at 4c77e4e7 and 6405f200 so the head arm's log measures the shipped tree.\nCALL_SITES: reckon/cli.py:4441\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2093 writes each aggregate row through serialize_run and :2111 removes the runs key through the shared envelope writer, exactly the entry point the goal names.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate's result is recorded in two receipts (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T122050511393-split-existing-runs-into-files/logs/gate-base.log and gate-head.log) whose failure-set difference is exactly the eight new cases, and I reproduced the lint delta, 13 findings in ledger.py and 2 in cli.py at both arms with the new test file clean.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the only step beyond the goal is the disclosed _state_checkout parameterisation at reckon/ledger.py:914, which keeps the roster's refusal wording by defaulting its label to \"roster\".\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_split_existing_runs.py:182 asserts the written file's bytes against serialize_run's own output for the row, which the declared mutation at :2093 reddens, and the second-run, differing-file, window-promotion and dry-run claims each assert git's head or the file bytes rather than the code's report at :220, :247, :285 and :322.\nSCORE fit: 18\nJUSTIFICATION fit: the split follows ledger.py's idiom (LedgerError refusals, subprocess git with check=False, mechanism-first docstrings) and the three commit subjects are conventional with bodies, but the landing record it appends carries a malformed table row at docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html:717.\nFINDING docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html:717 the base arm's revision cell is missing its opening td, so the row holds three cells against the four-column header at :716 and the text 355ef453, scratch tree via git archive, the new test copied in sits outside any cell, leaving a reader of the record with the base revision fostered out of the table while the head row below is well formed.",
+  "review_run_id": "r-20260926T144959107327-review-of-split-existing-runs-into-files",
+  "reviewed_base_sha": "355ef453f0b80758f8f15ca14f49250461aeeb0a",
+  "reviewed_head_sha": "6405f200a67cb4066d015ea3bce09c33241d91a9",
+  "reviewed_run_id": "r-20260926T122050511393-split-existing-runs-into-files",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T15:46:03.275467+00:00",
+  "total": 95
+}

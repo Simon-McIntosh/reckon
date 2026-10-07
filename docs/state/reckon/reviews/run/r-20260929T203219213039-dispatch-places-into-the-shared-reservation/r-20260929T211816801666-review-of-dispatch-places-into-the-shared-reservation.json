@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "6a104b893df8dc5129593a9116353d72465c04cc",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4911",
+    "reckon/crew/dispatch.py:6046",
+    "reckon/crew/placement.py:380",
+    "reckon/crew/placement.py:165"
+  ],
+  "completed_at": "2026-09-29T21:42:37.515Z",
+  "dispatched_at": "2026-09-29T21:18:29Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/dpr-delta-head-placement.log",
+      "line": "1",
+      "text": "the head arm's header line names the base revision 6a104b893df8dc5129593a9116353d72465c04cc while the arm measured 3209ea006, and logs/dpr-gate.log:1 and logs/dpr-negative-control.log:1 name the base revision too; reckon/crew/review.py:1245 records that header as head_log_revision, so every read of this review carries a head revision that disagrees with reviewed_head_sha and the node's own requirement that each log be headed with the revision it ran at is unmet for the three head-side logs."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/delta-head-arm.log",
+      "line": "4",
+      "text": "the arm over every file importing reckon.crew.dispatch or reckon.crew.placement, which the done-when names as the population for the 0-added figure, was stopped at about 40% and its header carries an empty module field; the cited after_suite arm stands in over 13 files, so the figure is measured over a narrower population than the measure names (disclosed in the manifest's evidence_inputs, and the stop itself was the instructed response to /tmp under the 5 GB floor)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/manifest.md",
+      "line": "21",
+      "text": "the suite observations record a template command rather than the command that ran ('--basetemp=<run>/bt-head <same files> plus tests/test_dispatch_places_into_the_shared_reservation.py', against the log's own command line, which carries no --basetemp) and an abbreviated revision ('3209ea006'), and while the run is unarmed (suite_command is null in the live pointer, so promotion.py:3989 skips the suite-delta gate) an armed promotion would refuse it, because promotion.py:4012 compares baseline_suite.revision with the pointer's full base_sha by exact string equality."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4911",
+      "text": "the call site that makes placement resolution hold the reservation -- the change the plan's section exists to make -- is asserted by no test: no test file both declares a placement and drives the dispatch entry point, and every placed-wrapping assertion calls resolve_backend_placement or apply_backend_placement directly (tests/test_crew_placement.py:51,65,75,91, tests/test_crew_lane_agnostic_placement.py:208, tests/test_placement_steps_under_reservation.py:135), so reverting this line to apply_backend_placement restores the per-worker minting with the suite still green."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "6013",
+      "text": "the bare step-client fallback the plan's section asks to replace is still present in apply_backend_placement and reachable by any future direct caller, whereas production now reaches it only through resolve_backend_placement, which always ensures first; the choice is deliberate and stated in the reviewed manifest, but a caller that reaches the wrapper directly mints an allocation per worker silently, which is the defect this node removed from the dispatch path."
+    }
+  ],
+  "head_log_revision": "6a104b893df8dc5129593a9116353d72465c04cc",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against base 6a104b893: 380 insertions and 10 deletions over five files, dispatch.py gaining the resolver and changing the call at :4911, the replacement test stating the ensure, the new file holding the four cases, and the retry assertion becoming a literal.",
+    "done_when": "the four cases the done-when names are the four tests at tests/test_dispatch_places_into_the_shared_reservation.py:144,170,197,216, the gate log records '4 passed' with EXIT=0, and the two arms record 3 pre-existing failures with 134 passed at base and 138 at head, so the added-failure count is 0.",
+    "goal": "the goal is that placement resolution holds or joins the one shared reservation through ensure_reservation, and reckon/crew/dispatch.py:6018 adds resolve_backend_placement which calls placement.ensure_reservation before delegating to the existing wrapper, with dispatch.py:4911 its only production caller.",
+    "manifest": "read; it states status complete, names the gate log and both arm logs, records 0 added failures and no attribution, and discloses both the /tmp-truncated importing-set arm and the wrapper's bare branch left in place.",
+    "write_paths": "the declared paths were read from the manifest; git diff --name-only across the base and head lists exactly five paths and every one is declared, with reckon/crew/placement.py and the figures directory declared and untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_places_into_the_shared_reservation.py:188 fails under the declared mutation (logs/dpr-negative-control.log records assert 2 == 1 with EXIT=1) and is independent of the value under test because it counts the recording scheduler's own log, but no test drives dispatch() with a placed backend, so the wiring at reckon/crew/dispatch.py:4911 is unguarded.",
+    "evidence": "the gate and both arms are recorded and reconcile -- 4 passed with EXIT=0, and the two arms carry the same three failure ids (134 passed at base, 138 at head) so the added count is 0 -- but all three head-side logs open with the base revision (logs/dpr-gate.log:1, logs/dpr-delta-head-placement.log:1, logs/dpr-negative-control.log:1) and the importing-set arm the done-when names stands unfinished at about 40%.",
+    "fit": "the resolver follows the module's existing idiom -- a lazy import as at reckon/crew/dispatch.py:5981, a docstring stating the mechanism rather than the incident, and delegation to the existing wrapper instead of a second implementation -- and introduces no symbol or comment carrying a plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4911 is the only production caller, so a dispatch declaring a placement reaches placement.ensure_reservation (reckon/crew/placement.py:418, under the cross-process lock) before the wrapper reads the published record at dispatch.py:6002, and a second project therefore joins the one allocation rather than minting another while a backend declaring no placement returns untouched at dispatch.py:6041.",
+    "scope_discipline": "git diff --name-only 6a104b893..3209ea006 lists exactly five paths and every one is inside the manifest's declared write paths, and the literal retry assertion in tests/test_ensure_holds_one_reservation.py:214 is named in the node's own done-when rather than carried in from elsewhere."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that placement resolution holds or joins the one shared reservation through ensure_reservation, and reckon/crew/dispatch.py:6018 adds resolve_backend_placement which calls placement.ensure_reservation before delegating to the existing wrapper, with dispatch.py:4911 its only production caller.\nVERDICT done_when: the four cases the done-when names are the four tests at tests/test_dispatch_places_into_the_shared_reservation.py:144,170,197,216, the gate log records '4 passed' with EXIT=0, and the two arms record 3 pre-existing failures with 134 passed at base and 138 at head, so the added-failure count is 0.\nVERDICT write_paths: the declared paths were read from the manifest; git diff --name-only across the base and head lists exactly five paths and every one is declared, with reckon/crew/placement.py and the figures directory declared and untouched.\nVERDICT manifest: read; it states status complete, names the gate log and both arm logs, records 0 added failures and no attribution, and discloses both the /tmp-truncated importing-set arm and the wrapper's bare branch left in place.\nVERDICT diff: read against base 6a104b893: 380 insertions and 10 deletions over five files, dispatch.py gaining the resolver and changing the call at :4911, the replacement test stating the ensure, the new file holding the four cases, and the retry assertion becoming a literal.\nCALL_SITES: reckon/crew/dispatch.py:4911, reckon/crew/dispatch.py:6046, reckon/crew/placement.py:380, reckon/crew/placement.py:165\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4911 is the only production caller, so a dispatch declaring a placement reaches placement.ensure_reservation (reckon/crew/placement.py:418, under the cross-process lock) before the wrapper reads the published record at dispatch.py:6002, and a second project therefore joins the one allocation rather than minting another while a backend declaring no placement returns untouched at dispatch.py:6041.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and both arms are recorded and reconcile -- 4 passed with EXIT=0, and the two arms carry the same three failure ids (134 passed at base, 138 at head) so the added count is 0 -- but all three head-side logs open with the base revision (logs/dpr-gate.log:1, logs/dpr-delta-head-placement.log:1, logs/dpr-negative-control.log:1) and the importing-set arm the done-when names stands unfinished at about 40%.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 6a104b893..3209ea006 lists exactly five paths and every one is inside the manifest's declared write paths, and the literal retry assertion in tests/test_ensure_holds_one_reservation.py:214 is named in the node's own done-when rather than carried in from elsewhere.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_dispatch_places_into_the_shared_reservation.py:188 fails under the declared mutation (logs/dpr-negative-control.log records assert 2 == 1 with EXIT=1) and is independent of the value under test because it counts the recording scheduler's own log, but no test drives dispatch() with a placed backend, so the wiring at reckon/crew/dispatch.py:4911 is unguarded.\nSCORE fit: 20\nJUSTIFICATION fit: the resolver follows the module's existing idiom -- a lazy import as at reckon/crew/dispatch.py:5981, a docstring stating the mechanism rather than the incident, and delegation to the existing wrapper instead of a second implementation -- and introduces no symbol or comment carrying a plan, stage or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/dpr-delta-head-placement.log:1 the head arm's header line names the base revision 6a104b893df8dc5129593a9116353d72465c04cc while the arm measured 3209ea006, and logs/dpr-gate.log:1 and logs/dpr-negative-control.log:1 name the base revision too; reckon/crew/review.py:1245 records that header as head_log_revision, so every read of this review carries a head revision that disagrees with reviewed_head_sha and the node's own requirement that each log be headed with the revision it ran at is unmet for the three head-side logs.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/delta-head-arm.log:4 the arm over every file importing reckon.crew.dispatch or reckon.crew.placement, which the done-when names as the population for the 0-added figure, was stopped at about 40% and its header carries an empty module field; the cited after_suite arm stands in over 13 files, so the figure is measured over a narrower population than the measure names (disclosed in the manifest's evidence_inputs, and the stop itself was the instructed response to /tmp under the 5 GB floor).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/manifest.md:21 the suite observations record a template command rather than the command that ran ('--basetemp=<run>/bt-head <same files> plus tests/test_dispatch_places_into_the_shared_reservation.py', against the log's own command line, which carries no --basetemp) and an abbreviated revision ('3209ea006'), and while the run is unarmed (suite_command is null in the live pointer, so promotion.py:3989 skips the suite-delta gate) an armed promotion would refuse it, because promotion.py:4012 compares baseline_suite.revision with the pointer's full base_sha by exact string equality.\nFINDING reckon/crew/dispatch.py:4911 the call site that makes placement resolution hold the reservation -- the change the plan's section exists to make -- is asserted by no test: no test file both declares a placement and drives the dispatch entry point, and every placed-wrapping assertion calls resolve_backend_placement or apply_backend_placement directly (tests/test_crew_placement.py:51,65,75,91, tests/test_crew_lane_agnostic_placement.py:208, tests/test_placement_steps_under_reservation.py:135), so reverting this line to apply_backend_placement restores the per-worker minting with the suite still green.\nFINDING reckon/crew/dispatch.py:6013 the bare step-client fallback the plan's section asks to replace is still present in apply_backend_placement and reachable by any future direct caller, whereas production now reaches it only through resolve_backend_placement, which always ensures first; the choice is deliberate and stated in the reviewed manifest, but a caller that reaches the wrapper directly mints an allocation per worker silently, which is the defect this node removed from the dispatch path.\n",
+  "review_run_id": "r-20260929T211816801666-review-of-dispatch-places-into-the-shared-reservation",
+  "reviewed_base_sha": "6a104b893df8dc5129593a9116353d72465c04cc",
+  "reviewed_head_sha": "3209ea0066426d5f4634f2280c3173e8e4fa593b",
+  "reviewed_run_id": "r-20260929T203219213039-dispatch-places-into-the-shared-reservation",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:02.890005+00:00",
+  "total": 89
+}

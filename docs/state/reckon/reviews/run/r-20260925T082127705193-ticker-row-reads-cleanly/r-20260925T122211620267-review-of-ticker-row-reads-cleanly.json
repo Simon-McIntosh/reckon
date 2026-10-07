@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:format_watch_transition",
+    "reckon/crew/recovery.py:watch_ticker",
+    "reckon/cli.py:_ticker_grid"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T12:22:11.620267+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1013",
+      "text": "the withdrawn branch is unreachable in production: no producer sets ledger_row \u2014 the transitions fold at reckon/crew/recovery.py:4749 appends \"promoted\" for every departure \u2014 so event.get(\"ledger_row\", True) defaults every real departure to promoted and a vanished run still reads as promoted, the exact defect the goal names."
+    },
+    {
+      "file": "tests/test_crew_ticker_layout.py",
+      "line": "250",
+      "text": "the layout change leaves twelve assertions red at 4b1408be across four out-of-fence test files (measured by the reviewer: 12 failed, 157 passed), so the reviewed head is not suite-green until the follow-up node lands; recorded by the worker as follow-on #3."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against b453d763; 4cec02e2 is the product change and 4b1408be the docs landing, and the ruff delta on ticker.py is 3 findings at both revisions.",
+    "done_when": "the done_when's measure is tests/test_ticker_reads_cleanly.py plus two declared mutations; the manifest records the 92-passed gate, a 66-passed base arm in a pinned scratch tree, and both red mutation logs, and my re-run of the named file at 4b1408be passed 26 of 26.",
+    "goal": "read the node goal beside the diff at 4b1408be; the state cell carries <state> \u00b7 <action>, the `now` marker is retired and every counter bucket renders, but the vanished-run clause holds only at the renderer because no producer populates ledger_row (reckon/crew/ticker.py:1013).",
+    "manifest": "read in full; it carries the gate command and result, the base arm with module.__file__ and cwd, both mutation logs, seven evidence inputs and three follow-ons, and its claimed twelve out-of-fence failures reproduce exactly (12 failed, 157 passed).",
+    "write_paths": "every path in the two commits lies inside the eleven declared paths \u2014 reckon/crew/ticker.py, four ticker test files and three docs paths \u2014 and nothing was committed outside them."
+  },
+  "justifications": {
+    "durability": "both declared mutations were applied and observed red (tests/test_ticker_reads_cleanly.py:93 fails when the queued bucket is dropped), but the withdrawn branch at reckon/crew/ticker.py:1013 has no producer and so no test asserts the production behaviour it claims.",
+    "evidence": "the manifest's gate result and both mutation logs reproduce \u2014 my re-run of tests/test_ticker_reads_cleanly.py at 4b1408be passed 26 of 26 and its twelve-assertion out-of-fence claim reproduced at 12 failed, 157 passed.",
+    "fit": "reckon/crew/ticker.py:225 follows the module's own comment-and-constant idiom and adds no plan, ticket or version identifier to any name.",
+    "goal_fidelity": "reckon/crew/ticker.py:1013 renders `withdrawn` only from a `ledger_row` field that no producer sets (reckon/crew/recovery.py:4749 appends \"promoted\" unconditionally), so alignment, the action cell and the retired marker land while a vanished run is still promoted in production.",
+    "scope_discipline": "the two commits touch only the eleven declared paths, and the twelve assertions the layout moved in four fenced-out files are reported as follow-ons rather than edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal beside the diff at 4b1408be; the state cell carries <state> \u00b7 <action>, the `now` marker is retired and every counter bucket renders, but the vanished-run clause holds only at the renderer because no producer populates ledger_row (reckon/crew/ticker.py:1013).\nVERDICT done_when: the done_when's measure is tests/test_ticker_reads_cleanly.py plus two declared mutations; the manifest records the 92-passed gate, a 66-passed base arm in a pinned scratch tree, and both red mutation logs, and my re-run of the named file at 4b1408be passed 26 of 26.\nVERDICT write_paths: every path in the two commits lies inside the eleven declared paths \u2014 reckon/crew/ticker.py, four ticker test files and three docs paths \u2014 and nothing was committed outside them.\nVERDICT manifest: read in full; it carries the gate command and result, the base arm with module.__file__ and cwd, both mutation logs, seven evidence inputs and three follow-ons, and its claimed twelve out-of-fence failures reproduce exactly (12 failed, 157 passed).\nVERDICT diff: read commit by commit against b453d763; 4cec02e2 is the product change and 4b1408be the docs landing, and the ruff delta on ticker.py is 3 findings at both revisions.\nCALL_SITES: reckon/crew/recovery.py:format_watch_transition, reckon/crew/recovery.py:watch_ticker, reckon/cli.py:_ticker_grid\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1013 renders `withdrawn` only from a `ledger_row` field that no producer sets (reckon/crew/recovery.py:4749 appends \"promoted\" unconditionally), so alignment, the action cell and the retired marker land while a vanished run is still promoted in production.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's gate result and both mutation logs reproduce \u2014 my re-run of tests/test_ticker_reads_cleanly.py at 4b1408be passed 26 of 26 and its twelve-assertion out-of-fence claim reproduced at 12 failed, 157 passed.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the two commits touch only the eleven declared paths, and the twelve assertions the layout moved in four fenced-out files are reported as follow-ons rather than edited.\nSCORE durability: 15\nJUSTIFICATION durability: both declared mutations were applied and observed red (tests/test_ticker_reads_cleanly.py:93 fails when the queued bucket is dropped), but the withdrawn branch at reckon/crew/ticker.py:1013 has no producer and so no test asserts the production behaviour it claims.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/ticker.py:225 follows the module's own comment-and-constant idiom and adds no plan, ticket or version identifier to any name.\nFINDING reckon/crew/ticker.py:1013 the withdrawn branch is unreachable in production: no producer sets ledger_row \u2014 the transitions fold at reckon/crew/recovery.py:4749 appends \"promoted\" for every departure \u2014 so event.get(\"ledger_row\", True) defaults every real departure to promoted and a vanished run still reads as promoted, the exact defect the goal names.\nFINDING tests/test_crew_ticker_layout.py:250 the layout change leaves twelve assertions red at 4b1408be across four out-of-fence test files (measured by the reviewer: 12 failed, 157 passed), so the reviewed head is not suite-green until the follow-up node lands; recorded by the worker as follow-on #3.\n",
+  "review_run_id": "r-20260925T122211620267-review-of-ticker-row-reads-cleanly",
+  "reviewed_base_sha": "b453d7632ec4d56392caba3b1efde4aa0475b23b",
+  "reviewed_head_sha": "4b1408be4b88f24acd5e0c8e039b11acbeb9daf7",
+  "reviewed_run_id": "r-20260925T082127705193-ticker-row-reads-cleanly",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T12:50:44.862980+00:00",
+  "total": 82
+}

@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (b5f74d36b, completed, 3 failures) and after_suite (ee76a8569, completed, 0 failures); added ids = after_ids - base_ids = empty, so the reviewed change added no failing test. The head arm ran at ee76a8569; the tip bba3c0816 changes only the evidence fragment.",
+  "backend": "local",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/doccheck.py:1114",
+    "reckon/cli.py:7760"
+  ],
+  "completed_at": "2026-10-03T20:57:43.816Z",
+  "dispatched_at": "2026-10-03T20:54:04Z",
+  "findings": [
+    {
+      "file": "tests/test_audit.py",
+      "line": "429",
+      "severity": "follow-on",
+      "text": "follow-on: the comment 'The reader keeps the last value, so the first line is dead state that a writer can keep updating while every read reports the other value' is now false \u2014 read_state keeps the first occurrence in document order (reckon/_plan_html.py:489) \u2014 and is outside this node's declared write scope; a one-line comment correction in that module."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against b5f74d36b: 4aa3059ef rewrites the message, the docstring and the module comment above _SCALAR_META_PREFIX to first-wins and adds the test; af67fb13d, ee76a8569 and bba3c0816 add and correct the evidence fragment.",
+    "done_when": "the plan's done-when asks for a test reading a duplicated scalar through both reader and audit and asserting the audit-named copy equals the reader's returned copy, with a scratch last-copy control that fails; tests/test_the_duplicate_audit_states_the_reader_rule.py does both and base-population.log shows the 3 reddenings.",
+    "goal": "the node's goal (plan \u00a711) is for the duplicate-plan-scalar message and docstring to state the reader's actual rule; reckon/doccheck.py:774 now reads 'the reader takes the first occurrence in document order' and the docstring at reckon/doccheck.py:749 states first-wins, matching reckon/_plan_html.py:489.",
+    "manifest": "read; status complete with commits, changed_paths, landing, tests, test_logs, negative_control_log and both suite fields populated and completed true.",
+    "write_paths": "the manifest declares reckon/doccheck.py, the new test, the evidence fragment and an unused figures dir; git diff --name-status b5f74d36b bba3c0816 lists exactly those three paths, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_the_duplicate_audit_states_the_reader_rule.py:74 asserts the value parsed out of the audit message equals the value read_state returns, an independent source, and the base arm reddens it as assert 0.1 == 0.9 when the last-copy wording is restored.",
+    "evidence": "the gate measures the done-when directly \u2014 head-population.log ends 21 passed in 2.97s EXIT=0 and base-population.log 3 failed, 18 passed in 2.16s EXIT=1 \u2014 and both logs' first lines name the revision, tree, module under test and cwd.",
+    "fit": "the message keeps the surrounding Finding idiom at reckon/doccheck.py:770 and the f-string interpolates values[0], no plan label or version number appears, and the docstring style matches the neighbouring _structure_findings at reckon/doccheck.py:731.",
+    "goal_fidelity": "the message at reckon/doccheck.py:775 names the copy in force ('the first occurrence in document order (\\'0.9\\')'), the docstring at reckon/doccheck.py:749 and the module comment at reckon/doccheck.py:84 state first-wins, matching read_state's rule at reckon/_plan_html.py:489.",
+    "scope_discipline": "git diff --name-status b5f74d36b bba3c0816 lists only reckon/doccheck.py, tests/test_the_duplicate_audit_states_the_reader_rule.py and the evidence fragment, all inside the declared write paths, with the declared figures directory correctly untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (plan \u00a711) is for the duplicate-plan-scalar message and docstring to state the reader's actual rule; reckon/doccheck.py:774 now reads 'the reader takes the first occurrence in document order' and the docstring at reckon/doccheck.py:749 states first-wins, matching reckon/_plan_html.py:489.\nVERDICT done_when: the plan's done-when asks for a test reading a duplicated scalar through both reader and audit and asserting the audit-named copy equals the reader's returned copy, with a scratch last-copy control that fails; tests/test_the_duplicate_audit_states_the_reader_rule.py does both and base-population.log shows the 3 reddenings.\nVERDICT write_paths: the manifest declares reckon/doccheck.py, the new test, the evidence fragment and an unused figures dir; git diff --name-status b5f74d36b bba3c0816 lists exactly those three paths, all inside the fence.\nVERDICT manifest: read; status complete with commits, changed_paths, landing, tests, test_logs, negative_control_log and both suite fields populated and completed true.\nVERDICT diff: read commit by commit against b5f74d36b: 4aa3059ef rewrites the message, the docstring and the module comment above _SCALAR_META_PREFIX to first-wins and adds the test; af67fb13d, ee76a8569 and bba3c0816 add and correct the evidence fragment.\nCALL_SITES: reckon/doccheck.py:1114, reckon/cli.py:7760\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the message at reckon/doccheck.py:775 names the copy in force ('the first occurrence in document order (\\'0.9\\')'), the docstring at reckon/doccheck.py:749 and the module comment at reckon/doccheck.py:84 state first-wins, matching read_state's rule at reckon/_plan_html.py:489.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate measures the done-when directly \u2014 head-population.log ends 21 passed in 2.97s EXIT=0 and base-population.log 3 failed, 18 passed in 2.16s EXIT=1 \u2014 and both logs' first lines name the revision, tree, module under test and cwd.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status b5f74d36b bba3c0816 lists only reckon/doccheck.py, tests/test_the_duplicate_audit_states_the_reader_rule.py and the evidence fragment, all inside the declared write paths, with the declared figures directory correctly untouched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_duplicate_audit_states_the_reader_rule.py:74 asserts the value parsed out of the audit message equals the value read_state returns, an independent source, and the base arm reddens it as assert 0.1 == 0.9 when the last-copy wording is restored.\nSCORE fit: 19\nJUSTIFICATION fit: the message keeps the surrounding Finding idiom at reckon/doccheck.py:770 and the f-string interpolates values[0], no plan label or version number appears, and the docstring style matches the neighbouring _structure_findings at reckon/doccheck.py:731.\nFINDING tests/test_audit.py:429 follow-on: the comment 'The reader keeps the last value, so the first line is dead state that a writer can keep updating while every read reports the other value' is now false \u2014 read_state keeps the first occurrence in document order (reckon/_plan_html.py:489) \u2014 and is outside this node's declared write scope; a one-line comment correction in that module.\n",
+  "review_run_id": "r-20261003T205349645871-review-of-the-duplicate-audit-states-the-reader-rule",
+  "reviewed_base_sha": "b5f74d36bac459d66dd241861a19261902b0a477",
+  "reviewed_head_sha": "bba3c08166b2969f29d131234fc155103c8029f9",
+  "reviewed_run_id": "r-20261003T204354888755-the-duplicate-audit-states-the-reader-rule",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T20:56:35+00:00",
+  "total": 96
+}

@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T20:36:48.470498+00:00",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "text": "the artifacts clause overstates the log's shape in two clauses: it says the first line names the command when the command is on line 2 of logs/cohort-merged-head.log (the manifest's own tests field says \"the log's second line\"), and it says terminal EXIT=1 is \"appended last\" when the last line is \"selector present: True\", the probe having been appended by tee after EXIT=1 at line 453."
+    },
+    {
+      "file": "docs/plans/work-does-not-fall-to-the-coordinator.html",
+      "line": "814",
+      "text": "the landing paragraph copies the same first-line clause into the plan, and docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:2175 carries it again in the senior cumulative record, so one sentence describing the receipt's bytes is false in three records; the substance it describes (revision, tree, command and an EXIT record all named) is present in the log, so this is a receipt-precision defect rather than a failed measure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 8cb11888..6b62ceba commit by commit; the diff is two documentation files, insertions only, adding the evidence section and the plan paragraph the landing contract asks for, and no source or test path is touched.",
+    "done_when": "the done-when asks for a log naming the revision and the command",
+    "goal": "the node's goal is one measurement at the merged head, the fifteen-file cohort's failure ids diffed against the set the promoted run recorded at its own base and reported as added ids or none; logs/cohort-merged-head.log:452 records 8 failed, 168 passed at 8cb11888 and the two cited id-set files are byte-identical, so the added set is empty and the goal is met.",
+    "manifest": "read in full and its JSON blocks re-parsed; status complete, the two suite blocks name the revisions and exit statuses the logs carry, and I confirmed the base ids match the promoted run's own logs/base-fail-ids.txt and the head ids match the head log; one clause of its artifacts description misstates the log's shape, recorded as a finding below.",
+    "write_paths": "the declared fence is the run directory plus three docs paths; git diff --stat 8cb11888 6b62ceba changes exactly docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html and docs/plans/work-does-not-fall-to-the-coordinator.html, 79 insertions and 0 deletions, and every log and id file sits under the fenced run directory."
+  },
+  "justifications": {
+    "durability": "a measurement has no test to redden, and its receipt is refutable instead: logs/cohort-merged-head.log:454 prints the resolved module at the measured worktree together with :455's selector check, so a rerun of the recorded command would falsify a wrong reading rather than passing silently, and the same invocation's eight failures at exit 1 keep an empty added set from being a silent one.",
+    "evidence": "the log names the revision, the tree and the command over its first two lines and carries terminal EXIT=1 at logs/cohort-merged-head.log:453, but the same receipt shape is misdescribed in three places (findings below) and the module path at :454 proves the tree for the probe process rather than in-process for the pytest run.",
+    "fit": "the records sit in the idiom of the neighbouring sections of docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:2118, use tables for the two set comparisons, state the no-figure carve-out, and introduce no name the repository naming rules forbid",
+    "goal_fidelity": "the pair of id sets the goal names are identical on re-derivation (sha256-distinct files, identical md5 b7019084f23987bdee7b5832d2b4e883) and the empty added set is stated explicitly in the manifest, which is the deliverable the goal names.",
+    "scope_discipline": "git diff --name-only is exactly the two docs paths the manifest declares, both inside the node's fence, with zero deletions, so no source, test or plan-meta line moved."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260922T200901675133-the-cohort-delta-at-the-merged-head\n(node the-cohort-delta-at-the-merged-head), read at its landed commit 6b62ceba against\ndocs/plans/work-does-not-fall-to-the-coordinator.html as the semantic authority.\n\nREVISION: 6b62ceba645b30085f0ee7179b05d8a3f0e3378e\n\nVERDICT goal: the node's goal is one measurement at the merged head, the fifteen-file cohort's failure ids diffed against the set the promoted run recorded at its own base and reported as added ids or none; logs/cohort-merged-head.log:452 records 8 failed, 168 passed at 8cb11888 and the two cited id-set files are byte-identical, so the added set is empty and the goal is met.\nVERDICT done_when: the done-when asks for a log naming the revision and the command\n  under the run directory, a terminal EXIT record, and the diff stated against the eight ids at base d53318f6; logs/cohort-merged-head.log carries all four, and I re-derived both id files from their own sources with grep -h '^FAILED' ... | sort and diffed them against the stored copies, reproducing each byte for byte.\nVERDICT write_paths: the declared fence is the run directory plus three docs paths; git diff --stat 8cb11888 6b62ceba changes exactly docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html and docs/plans/work-does-not-fall-to-the-coordinator.html, 79 insertions and 0 deletions, and every log and id file sits under the fenced run directory.\nVERDICT manifest: read in full and its JSON blocks re-parsed; status complete, the two suite blocks name the revisions and exit statuses the logs carry, and I confirmed the base ids match the promoted run's own logs/base-fail-ids.txt and the head ids match the head log; one clause of its artifacts description misstates the log's shape, recorded as a finding below.\nVERDICT diff: read 8cb11888..6b62ceba commit by commit; the diff is two documentation files, insertions only, adding the evidence section and the plan paragraph the landing contract asks for, and no source or test path is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the pair of id sets the goal names are identical on re-derivation (sha256-distinct files, identical md5 b7019084f23987bdee7b5832d2b4e883) and the empty added set is stated explicitly in the manifest, which is the deliverable the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: the log names the revision, the tree and the command over its first two lines and carries terminal EXIT=1 at logs/cohort-merged-head.log:453, but the same receipt shape is misdescribed in three places (findings below) and the module path at :454 proves the tree for the probe process rather than in-process for the pytest run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only is exactly the two docs paths the manifest declares, both inside the node's fence, with zero deletions, so no source, test or plan-meta line moved.\nSCORE durability: 18\nJUSTIFICATION durability: a measurement has no test to redden, and its receipt is refutable instead: logs/cohort-merged-head.log:454 prints the resolved module at the measured worktree together with :455's selector check, so a rerun of the recorded command would falsify a wrong reading rather than passing silently, and the same invocation's eight failures at exit 1 keep an empty added set from being a silent one.\nSCORE fit: 19\nJUSTIFICATION fit: the records sit in the idiom of the neighbouring sections of docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:2118, uses tables for the two set comparisons, states the no-figure carve-out, and introduces no name the repository naming rules forbid.\nFINDING manifest.md:20 the artifacts clause overstates the log's shape in two clauses: it says the first line names the command when the command is on line 2 of logs/cohort-merged-head.log (the manifest's own tests field says \"the log's second line\"), and it says terminal EXIT=1 is \"appended last\" when the last line is \"selector present: True\", the probe having been appended by tee after EXIT=1 at line 453.\nFINDING docs/plans/work-does-not-fall-to-the-coordinator.html:814 the landing paragraph copies the same first-line clause into the plan, and docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:2175 carries it again in the senior cumulative record, so one sentence describing the receipt's bytes is false in three records; the substance it describes (revision, tree, command and an EXIT record all named) is present in the log, so this is a receipt-precision defect rather than a failed measure.\n",
+  "review_run_id": "r-20260922T203648470498-review-of-the-cohort-delta-measurement",
+  "reviewed_base_sha": "8cb11888c332b357b4762887d73db1b3895140e0",
+  "reviewed_head_sha": "6b62ceba645b30085f0ee7179b05d8a3f0e3378e",
+  "reviewed_revision": "6b62ceba645b30085f0ee7179b05d8a3f0e3378e",
+  "reviewed_run_id": "r-20260922T200901675133-the-cohort-delta-at-the-merged-head",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T21:22:45.087144+00:00",
+  "total": 94
+}

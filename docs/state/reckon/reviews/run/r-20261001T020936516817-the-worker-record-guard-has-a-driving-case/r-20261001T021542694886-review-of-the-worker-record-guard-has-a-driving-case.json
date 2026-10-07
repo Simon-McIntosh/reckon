@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite pair, so this review ran arms at the reviewed base (3c4f5cd7, 16 passed EXIT=0) and head (61689bf9, 18 passed EXIT=0) and derived the count through the store's own reader (reckon/crew/review.py:1068): 0; a positive control injecting FAILED/ERROR ids shows the reader returns 2",
+  "backend": "clive",
+  "base_log_revision": "3c4f5cd7",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:1784",
+    "reckon/crew/recovery.py:4145",
+    "reckon/crew/recovery.py:4656",
+    "reckon/crew/recovery.py:5041"
+  ],
+  "completed_at": "2026-10-01T02:24:04.252Z",
+  "dispatched_at": "2026-10-01T02:16:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T020936516817-the-worker-record-guard-has-a-driving-case/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the gate log's header names rev 3c4f5cd7 (the reviewed base) while the 18-passed body beneath it can only come from the head 61689bf9, where the two new cases exist; the base tree holds 16 tests. Unlike the sibling node's header it carries no \"(uncommitted node change in tree)\" note, so a reader tying the gate to 3c4f5cd7 finds a file that cannot produce its own result."
+    },
+    {
+      "file": "tests/test_reflex_dispatches_one_repair.py",
+      "line": "548",
+      "severity": "follow-on",
+      "text": "test_a_dead_worker_record_lets_the_repair_compose records a reaped pid (subprocess.Popen then terminate/wait) and relies on that pid staying dead until the guard reads it; pid reuse on a busy host could make the control flake, reddening the file for a reason unrelated to the guard."
+    }
+  ],
+  "head_log_revision": "61689bf9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the changed code is a test; the branch it drives is the _worker_record_liveness call at reckon/crew/recovery.py:1784 (defined at recovery.py:4145); the same guard is also read in production at recovery.py:4656 and recovery.py:5041.",
+    "diff": "read the full diff f485... base 3c4f5cd7 -> 61689bf9: +76/-0 in one file; adds the _dispatch_direct helper (drives dispatch_repair_for_run directly with reckon.crew.dispatch.dispatch stubbed) and two cases, test_a_live_worker_record_dispatches_no_repair and test_a_dead_worker_record_lets_the_repair_compose.",
+    "done_when": "two cases driven through dispatch_repair_for_run with the launch stubbed; head arm tests/test_reflex_dispatches_one_repair.py 18 passed EXIT=0 and the declared negative control reddens the live case (1 failed EXIT=1), while the dead-pid control confirms the round composes.",
+    "goal": "drive the worker-record liveness refusal of _reviewed_run_is_busy (reckon/crew/recovery.py:1784) through dispatch_repair_for_run, which the pre-existing pointer-pid case leaves unreached.",
+    "manifest": "read at the run directory; status complete, commits 61689bf9 over base 3c4f5cd7, negative-control log named, artifact counts (gate.log 18 passed EXIT=0) reconcile with my numstat. One defect: its gate.log header names rev 3c4f5cd7 for a body of 18 tests that exists only at the head (16 tests at 61689bf9's base).",
+    "write_paths": "git diff --numstat 3c4f5cd7 61689bf9 names exactly one file, tests/test_reflex_dispatches_one_repair.py (76/0); the reviewed worktree is clean at the head."
+  },
+  "justifications": {
+    "durability": "the live case spawns a `sleep 60` child reaped in a finally block, so it is deterministic; the dead-worker control inlines terminate/wait. One-point deduction: test_a_dead_worker_record_lets_the_repair_compose records a reaped pid and then relies on that pid not being reused before the guard reads it, a small flakiness vector on a busy host.",
+    "evidence": "independent arms at the reviewed base and head: tests/test_reflex_dispatches_one_repair.py at 3c4f5cd7 -> 16 passed EXIT=0; at 61689bf9 -> 18 passed EXIT=0; added-failure derivation through the store's own reader (reckon/crew/review.py:1068) = (0, []) with a positive control injecting FAILED/ERROR ids returning 2, so the zero is a read zero. The negative control was independently reproduced: neutralising recovery._worker_record_liveness to return None (mutation plugin) reddens exactly test_a_live_worker_record_dispatches_no_repair, 1 failed EXIT=1, while the head arm fails 0. One-point deduction: the reviewed run's gate.log header names rev 3c4f5cd7 (the base) though the 18-test content it reports exists only at head 61689bf9, and unlike the sibling node's header it carries no \"(uncommitted node change in tree)\" note, so the header misattributes the gate to a revision whose file holds 16 tests.",
+    "fit": "the helper _dispatch_direct and both tests are named by mechanism, their docstrings state why the fixture isolates the worker-record branch from the pointer's own process answer, and no plan, phase, ticket or version label and no author attribution appears in code, symbol or comment.",
+    "goal_fidelity": "the node gives the worker-record liveness refusal its own driving case. At base 3c4f5cd7 the pre-existing test_a_live_worker_dispatches_no_repair sets the pointer's own pid (tests/test_reflex_dispatches_one_repair.py:475, pid=os.getpid()), so _reviewed_run_is_busy returns at reckon/crew/recovery.py:1782 before reaching the worker-record branch at recovery.py:1784, which calls _worker_record_liveness (defined recovery.py:4145). The new test_a_live_worker_record_dispatches_no_repair writes a completed pointer naming no pid and a worker record naming its own live child, so the refusal can only come from :1784; it asserts reason == \"the reviewed run's worker is live\", and a reaped-pid control asserts the round then composes. Premise reproduced: base arm 16 passed, head arm 18 passed.",
+    "scope_discipline": "git diff --numstat 3c4f5cd7 61689bf9 names exactly one file, tests/test_reflex_dispatches_one_repair.py (76/0), inside the node's declared write scope; no plan, index or sprint state was edited, and the reviewed worktree is clean at 61689bf9."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: drive the worker-record liveness refusal of _reviewed_run_is_busy (reckon/crew/recovery.py:1784) through dispatch_repair_for_run, which the pre-existing pointer-pid case leaves unreached.\nVERDICT done_when: two cases driven through dispatch_repair_for_run with the launch stubbed; head arm tests/test_reflex_dispatches_one_repair.py 18 passed EXIT=0 and the declared negative control reddens the live case (1 failed EXIT=1), while the dead-pid control confirms the round composes.\nVERDICT write_paths: git diff --numstat 3c4f5cd7 61689bf9 names exactly one file, tests/test_reflex_dispatches_one_repair.py (76/0); the reviewed worktree is clean at the head.\nVERDICT manifest: read at the run directory; status complete, commits 61689bf9 over base 3c4f5cd7, negative-control log named, artifact counts (gate.log 18 passed EXIT=0) reconcile with my numstat. One defect: its gate.log header names rev 3c4f5cd7 for a body of 18 tests that exists only at the head (16 tests at 61689bf9's base).\nVERDICT diff: read the full diff f485... base 3c4f5cd7 -> 61689bf9: +76/-0 in one file; adds the _dispatch_direct helper (drives dispatch_repair_for_run directly with reckon.crew.dispatch.dispatch stubbed) and two cases, test_a_live_worker_record_dispatches_no_repair and test_a_dead_worker_record_lets_the_repair_compose.\nCALL_SITES: reckon/crew/recovery.py:1784, reckon/crew/recovery.py:4656, reckon/crew/recovery.py:5041\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the node gives the worker-record liveness refusal its own driving case. At base 3c4f5cd7 the pre-existing test_a_live_worker_dispatches_no_repair sets the pointer's own pid (tests/test_reflex_dispatches_one_repair.py:475, pid=os.getpid()), so _reviewed_run_is_busy returns at reckon/crew/recovery.py:1782 before reaching the worker-record branch at recovery.py:1784, which calls _worker_record_liveness (defined recovery.py:4145). The new test_a_live_worker_record_dispatches_no_repair writes a completed pointer naming no pid and a worker record naming its own live child, so the refusal can only come from :1784; it asserts reason == \"the reviewed run's worker is live\", and a reaped-pid control asserts the round then composes. Premise reproduced: base arm 16 passed, head arm 18 passed.\nSCORE evidence: 18\nJUSTIFICATION evidence: independent arms at the reviewed base and head: tests/test_reflex_dispatches_one_repair.py at 3c4f5cd7 -> 16 passed EXIT=0; at 61689bf9 -> 18 passed EXIT=0; added-failure derivation through the store's own reader (reckon/crew/review.py:1068) = (0, []) with a positive control injecting FAILED/ERROR ids returning 2, so the zero is a read zero. The negative control was independently reproduced: neutralising recovery._worker_record_liveness to return None (mutation plugin) reddens exactly test_a_live_worker_record_dispatches_no_repair, 1 failed EXIT=1, while the head arm fails 0. One-point deduction: the reviewed run's gate.log header names rev 3c4f5cd7 (the base) though the 18-test content it reports exists only at head 61689bf9, and unlike the sibling node's header it carries no \"(uncommitted node change in tree)\" note, so the header misattributes the gate to a revision whose file holds 16 tests.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 3c4f5cd7 61689bf9 names exactly one file, tests/test_reflex_dispatches_one_repair.py (76/0), inside the node's declared write scope; no plan, index or sprint state was edited, and the reviewed worktree is clean at 61689bf9.\nSCORE durability: 18\nJUSTIFICATION durability: the live case spawns a `sleep 60` child reaped in a finally block, so it is deterministic; the dead-worker control inlines terminate/wait. One-point deduction: test_a_dead_worker_record_lets_the_repair_compose records a reaped pid and then relies on that pid not being reused before the guard reads it, a small flakiness vector on a busy host.\nSCORE fit: 20\nJUSTIFICATION fit: the helper _dispatch_direct and both tests are named by mechanism, their docstrings state why the fixture isolates the worker-record branch from the pointer's own process answer, and no plan, phase, ticket or version label and no author attribution appears in code, symbol or comment.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T020936516817-the-worker-record-guard-has-a-driving-case/gate.log:1 follow-on: the gate log's header names rev 3c4f5cd7 (the reviewed base) while the 18-passed body beneath it can only come from the head 61689bf9, where the two new cases exist; the base tree holds 16 tests. Unlike the sibling node's header it carries no \"(uncommitted node change in tree)\" note, so a reader tying the gate to 3c4f5cd7 finds a file that cannot produce its own result.\nFINDING tests/test_reflex_dispatches_one_repair.py:548 follow-on: test_a_dead_worker_record_lets_the_repair_compose records a reaped pid (subprocess.Popen then terminate/wait) and relies on that pid staying dead until the guard reads it; pid reuse on a busy host could make the control flake, reddening the file for a reason unrelated to the guard.\nREVISION: 61689bf90ce5d95e904ec4a71cb40104c56702a2\nreviewed_base_sha: 3c4f5cd72081bed2cb7d4d55c605d6fcc7a4f556",
+  "review_run_id": "r-20261001T021542694886-review-of-the-worker-record-guard-has-a-driving-case",
+  "reviewed_base_sha": "3c4f5cd72081bed2cb7d4d55c605d6fcc7a4f556",
+  "reviewed_commit": "61689bf90ce5d95e904ec4a71cb40104c56702a2",
+  "reviewed_head_sha": "61689bf90ce5d95e904ec4a71cb40104c56702a2",
+  "reviewed_run_id": "r-20261001T020936516817-the-worker-record-guard-has-a-driving-case",
+  "reviewer_run_id": "r-20261001T021542694886-review-of-the-worker-record-guard-has-a-driving-case",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T02:31:00+00:00",
+  "total": 96
+}

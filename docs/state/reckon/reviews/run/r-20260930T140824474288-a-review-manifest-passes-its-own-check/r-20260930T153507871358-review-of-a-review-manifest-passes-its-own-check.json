@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "b04701d0ed786a6a7ccecb582c253c136b90417e",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:4293",
+    "reckon/crew/reports.py:1070"
+  ],
+  "completed_at": "2026-09-30T15:47:52.622Z",
+  "dispatched_at": "2026-09-30T15:35:20Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T140824474288-a-review-manifest-passes-its-own-check/gate-head-failures.txt",
+      "line": "1",
+      "text": "the head arm's failure list holds bare node ids while the base arm's holds FAILED/ERROR-prefixed ones, so a reader diffing the pair in the base file's shape derives 57 added and 79 removed instead of the 1 added and 23 removed the logs support; the manifest's arm JSON and the logs are consistent, so the count stands and only this artifact is mis-shaped."
+    }
+  ],
+  "head_log_revision": "01c66e55f8094a7e050819d8814dd08e11da3e71",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base b04701d0e; d62c8f6ed carries the product change in reckon/crew/reports.py, 01c66e55f the seven cases, 37ed7ae8f, 2a479a2d2 and bd5427442 the fragment and its header, and 9e584dfd3 a trailing newline in the case file.",
+    "done_when": "the done-when names the field cases the probe replays, the declared negative control, and the whole tests/ directory at base and at head; the manifest records both arms as JSON with completed true whose logs name b04701d0e and 01c66e55f and end EXIT=1 with 79 and 57 ids, though the head arm was taken four commits before the delivered head and its one added id sits at follow_ons rather than under the done-when's blocked rule.",
+    "goal": "the goal asks the manifest audit to accept a review's granted store record and its .at-SHA sibling and to ask no commit of a review; reckon/crew/reports.py:974 waives the commit finding for the review role and reckon/crew/reports.py:1158 compares an out-of-repository declaration as the absolute path it is, and the deployed check reads ok:true with no findings on run r-20260930T140824474288 at head 9e584dfd3.",
+    "manifest": "read; its arm JSON reconciles with the gate logs I re-read (79 base ids, 57 head ids, added tests/test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type as follow_ons), and its probe, focused-run and lint claims hold when re-measured, with the exception that gate-head-failures.txt carries bare ids where gate-base-failures.txt carries FAILED/ERROR-prefixed ones.",
+    "write_paths": "read the dispatch's four declared paths; git diff --name-only b04701d0e..9e584dfd3 lists exactly three files - reckon/crew/reports.py, tests/test_a_review_manifest_passes_its_own_check.py and the evidence fragment - and every one lies inside the declaration."
+  },
+  "justifications": {
+    "durability": "mutating the review-role waiver in process so every role owes a commit reddens the four review acceptance cases of tests/test_a_review_manifest_passes_its_own_check.py and alters the refusal case's findings, while the node's own control restoring the base helpers reddens 6 of the 7.",
+    "evidence": "the two arms are recorded as JSON whose logs name b04701d0e and 01c66e55f and end EXIT=1 with 79 and 57 ids, but the head arm was taken at 01c66e55f rather than the delivered 9e584dfd3 and the one added id is recorded at follow_ons rather than under the done-when's blocked rule.",
+    "fit": "ruff check --no-cache over reckon/crew/reports.py and tests/test_a_review_manifest_passes_its_own_check.py reports the base's own 2 findings and nothing else, both are already formatted, and the new helpers follow the module's rule-docstring idiom.",
+    "goal_fidelity": "reckon/crew/reports.py:1015 waives the commit finding for the review role alone and reckon/crew/reports.py:1094 admits the head-keyed copy beside the granted record, which is what the goal asks.",
+    "scope_discipline": "every path of git diff --name-only b04701d0e..9e584dfd3 lies inside the four declared write paths, and the figures directory the dispatch granted is unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the manifest audit to accept a review's granted store record and its .at-SHA sibling and to ask no commit of a review; reckon/crew/reports.py:974 waives the commit finding for the review role and reckon/crew/reports.py:1158 compares an out-of-repository declaration as the absolute path it is, and the deployed check reads ok:true with no findings on run r-20260930T140824474288 at head 9e584dfd3.\nVERDICT done_when: the done-when names the field cases the probe replays, the declared negative control, and the whole tests/ directory at base and at head; the manifest records both arms as JSON with completed true whose logs name b04701d0e and 01c66e55f and end EXIT=1 with 79 and 57 ids, though the head arm was taken four commits before the delivered head and its one added id sits at follow_ons rather than under the done-when's blocked rule.\nVERDICT write_paths: read the dispatch's four declared paths; git diff --name-only b04701d0e..9e584dfd3 lists exactly three files - reckon/crew/reports.py, tests/test_a_review_manifest_passes_its_own_check.py and the evidence fragment - and every one lies inside the declaration.\nVERDICT manifest: read; its arm JSON reconciles with the gate logs I re-read (79 base ids, 57 head ids, added tests/test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type as follow_ons), and its probe, focused-run and lint claims hold when re-measured, with the exception that gate-head-failures.txt carries bare ids where gate-base-failures.txt carries FAILED/ERROR-prefixed ones.\nVERDICT diff: read commit by commit against base b04701d0e; d62c8f6ed carries the product change in reckon/crew/reports.py, 01c66e55f the seven cases, 37ed7ae8f, 2a479a2d2 and bd5427442 the fragment and its header, and 9e584dfd3 a trailing newline in the case file.\nCALL_SITES: reckon/cli.py:4293, reckon/crew/reports.py:1070\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1015 waives the commit finding for the review role alone and reckon/crew/reports.py:1094 admits the head-keyed copy beside the granted record, which is what the goal asks.\nSCORE evidence: 18\nJUSTIFICATION evidence: the two arms are recorded as JSON whose logs name b04701d0e and 01c66e55f and end EXIT=1 with 79 and 57 ids, but the head arm was taken at 01c66e55f rather than the delivered 9e584dfd3 and the one added id is recorded at follow_ons rather than under the done-when's blocked rule.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path of git diff --name-only b04701d0e..9e584dfd3 lies inside the four declared write paths, and the figures directory the dispatch granted is unused.\nSCORE durability: 19\nJUSTIFICATION durability: mutating the review-role waiver in process so every role owes a commit reddens the four review acceptance cases of tests/test_a_review_manifest_passes_its_own_check.py and alters the refusal case's findings, while the node's own control restoring the base helpers reddens 6 of the 7.\nSCORE fit: 19\nJUSTIFICATION fit: ruff check --no-cache over reckon/crew/reports.py and tests/test_a_review_manifest_passes_its_own_check.py reports the base's own 2 findings and nothing else, both are already formatted, and the new helpers follow the module's rule-docstring idiom.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T140824474288-a-review-manifest-passes-its-own-check/gate-head-failures.txt:1 the head arm's failure list holds bare node ids while the base arm's holds FAILED/ERROR-prefixed ones, so a reader diffing the pair in the base file's shape derives 57 added and 79 removed instead of the 1 added and 23 removed the logs support; the manifest's arm JSON and the logs are consistent, so the count stands and only this artifact is mis-shaped.",
+  "review_run_id": "r-20260930T153507871358-review-of-a-review-manifest-passes-its-own-check",
+  "reviewed_base_sha": "b04701d0ed786a6a7ccecb582c253c136b90417e",
+  "reviewed_head_sha": "9e584dfd3c78773701194d3d292c996444693034",
+  "reviewed_run_id": "r-20260930T140824474288-a-review-manifest-passes-its-own-check",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T15:44:25.026567+00:00",
+  "total": 94
+}

@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "81b535347259d3e171447e1be7880affb700ef03",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_views.py:2752 resource_view",
+    "reckon/serve.py:3044 plan payload",
+    "reckon/roadmap.py:2214 _build_roadmap"
+  ],
+  "completed_at": "2026-10-04T01:08:46.509Z",
+  "dispatched_at": "2026-10-04T00:59:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's changed_paths names reckon/crew/dispatch.py and reckon/crew/promotion.py, but git diff --stat 81b5353..e67ec7d is empty for both, so a reader reconciling changed_paths against the diff finds two entries the landed change does not contain."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2214",
+      "severity": "follow-on",
+      "text": "follow-on: section_attempts_by_plan loads the whole ledger and every live pointer on each delivered plan view; the run's paired view-timing logs record the roadmap build rising from 28.06s at base to 31.55s at head, adding roughly twelve percent to a read for a count that moves only when a run launches or completes."
+    }
+  ],
+  "head_log_revision": "e67ec7d6782012d9258b7510b0ec55a39fb93e0e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; the launch-counting commits (faca5b63, da7ff47cd) and their dispatch-side plan write were reverted by d2b52e548/1a3c4ef9, leaving a derived read plus a write-time strip of the legacy attempts attribute (reckon/_store.py:1389).",
+    "done_when": "the done_when's four outcomes are asserted by tests/test_section_attempts_are_tool_owned.py:157-262 (two dispatches and one promotion leave attempts at 2; a resume leaves it unchanged; outcomes are recorded; the stored plan carries no counter), and the manifest records the head gate at 208 passed.",
+    "goal": "the goal is SS4's tool-owned attempt counter; the delta derives the count from crew run history (reckon/mcp_views.py:1472 section_attempts_by_plan) and surfaces it on delivered plan reads (reckon/serve.py:3044) and the roadmap ready set (reckon/roadmap.py:2874) rather than incrementing it at dispatch.",
+    "manifest": "read at orientation; status complete, commits ending e67ec7d, baseline_suite revision 81b5353 (11 failed) and after_suite revision e67ec7d (0 failed), negative control whose last line reads EXIT=1.",
+    "write_paths": "the net diff 81b5353..e67ec7d changes 9 files, all inside the node's granted set once the six-file test widening the manifest records is included; reckon/crew/dispatch.py and reckon/crew/promotion.py are named in changed_paths but show no net change."
+  },
+  "justifications": {
+    "durability": "tests/test_section_attempts_are_tool_owned.py:157-262 asserts the derived count against independently dispatched run ids, and the negative-control-derived-final.log mutation (drop implement/test rows and raw pointers) reddens that case at EXIT=1.",
+    "evidence": "the node's after-suite-widened-final.log records 208 passed EXIT=0 at e67ec7d against baseline-suite-widened-final.log at 11 failed EXIT=1 at 81b5353, and my independent run of tests/test_section_attempts_are_tool_owned.py reported 7 passed EXIT=0.",
+    "fit": "the new symbols (section_attempts_by_plan, with_section_attempts) name the mechanism, the commits carry conventional subjects with bodies and no AI trailer, and no plan or sprint identifier reaches source.",
+    "goal_fidelity": "reckon/mcp_views.py:1472 derives attempts and outcomes from distinct implement/test run ids and reckon/roadmap.py:2874 exposes them in the ready set, but dispatch (reckon/crew/dispatch.py) and complete no longer write the section counter, so the plan's tool-owned counter is realised as a derived view.",
+    "scope_discipline": "git diff --name-only 81b5353..e67ec7d returns exactly the 9 changed files, none outside the granted set, though reckon/crew/dispatch.py and reckon/crew/promotion.py appear in the manifest's changed_paths with no net change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is SS4's tool-owned attempt counter; the delta derives the count from crew run history (reckon/mcp_views.py:1472 section_attempts_by_plan) and surfaces it on delivered plan reads (reckon/serve.py:3044) and the roadmap ready set (reckon/roadmap.py:2874) rather than incrementing it at dispatch.\nVERDICT done_when: the done_when's four outcomes are asserted by tests/test_section_attempts_are_tool_owned.py:157-262 (two dispatches and one promotion leave attempts at 2; a resume leaves it unchanged; outcomes are recorded; the stored plan carries no counter), and the manifest records the head gate at 208 passed.\nVERDICT write_paths: the net diff 81b5353..e67ec7d changes 9 files, all inside the node's granted set once the six-file test widening the manifest records is included; reckon/crew/dispatch.py and reckon/crew/promotion.py are named in changed_paths but show no net change.\nVERDICT manifest: read at orientation; status complete, commits ending e67ec7d, baseline_suite revision 81b5353 (11 failed) and after_suite revision e67ec7d (0 failed), negative control whose last line reads EXIT=1.\nVERDICT diff: read commit by commit; the launch-counting commits (faca5b63, da7ff47cd) and their dispatch-side plan write were reverted by d2b52e548/1a3c4ef9, leaving a derived read plus a write-time strip of the legacy attempts attribute (reckon/_store.py:1389).\nCALL_SITES: reckon/mcp_views.py:2752 resource_view, reckon/serve.py:3044 plan payload, reckon/roadmap.py:2214 _build_roadmap\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:1472 derives attempts and outcomes from distinct implement/test run ids and reckon/roadmap.py:2874 exposes them in the ready set, but dispatch (reckon/crew/dispatch.py) and complete no longer write the section counter, so the plan's tool-owned counter is realised as a derived view.\nSCORE evidence: 18\nJUSTIFICATION evidence: the node's after-suite-widened-final.log records 208 passed EXIT=0 at e67ec7d against baseline-suite-widened-final.log at 11 failed EXIT=1 at 81b5353, and my independent run of tests/test_section_attempts_are_tool_owned.py reported 7 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 81b5353..e67ec7d returns exactly the 9 changed files, none outside the granted set, though reckon/crew/dispatch.py and reckon/crew/promotion.py appear in the manifest's changed_paths with no net change.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_section_attempts_are_tool_owned.py:157-262 asserts the derived count against independently dispatched run ids, and the negative-control-derived-final.log mutation (drop implement/test rows and raw pointers) reddens that case at EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the new symbols (section_attempts_by_plan, with_section_attempts) name the mechanism, the commits carry conventional subjects with bodies and no AI trailer, and no plan or sprint identifier reaches source.\nFINDING reckon/crew/dispatch.py:1 follow-on: the manifest's changed_paths names reckon/crew/dispatch.py and reckon/crew/promotion.py, but git diff --stat 81b5353..e67ec7d is empty for both, so a reader reconciling changed_paths against the diff finds two entries the landed change does not contain.\nFINDING reckon/roadmap.py:2214 follow-on: section_attempts_by_plan loads the whole ledger and every live pointer on each delivered plan view; the run's paired view-timing logs record the roadmap build rising from 28.06s at base to 31.55s at head, adding roughly twelve percent to a read for a count that moves only when a run launches or completes.\n",
+  "review_run_id": "r-20261004T005927008360-review-of-attempts-is-a-tool-owned-counter",
+  "reviewed_base_sha": "81b535347259d3e171447e1be7880affb700ef03",
+  "reviewed_head_sha": "e67ec7d6782012d9258b7510b0ec55a39fb93e0e",
+  "reviewed_run_id": "r-20261003T224029355295-attempts-is-a-tool-owned-counter",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T005927008360-review-of-attempts-is-a-tool-owned-counter",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T01:06:04.904061+00:00",
+  "total": 92
+}

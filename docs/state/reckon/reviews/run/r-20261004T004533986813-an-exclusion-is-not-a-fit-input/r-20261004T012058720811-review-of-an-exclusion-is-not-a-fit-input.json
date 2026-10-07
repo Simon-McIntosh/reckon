@@ -1,0 +1,45 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-04T01:32:53.269Z",
+  "dispatched_at": "2026-10-04T01:21:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2988",
+      "severity": "follow-on",
+      "text": "follow-on: the rule is positional, so a path whose exclusion verb follows it is still charged -- an independent probe of _declared_input_files at head e2437ada9 reads `package/large.py is excluded from the declared inputs` as ['package/large.py'] where the clause-level cue at 068b3dbbe withheld it, and a verb outside the list (`skip package/b.py`) is likewise charged; both are the safe direction (over-charging refuses a fitting node rather than admitting an oversized one) and neither phrasing is in the census or the tests, so this is a narrower edge than the repaired defect, not a failure of the measure."
+    }
+  ],
+  "justifications": {
+    "durability": "the per-path scoping is load-bearing: removing only the excluding branch of _paths_a_clause_charges in a scratch copy of head e2437ada9 reddens all four exclusion cases -- 4 failed / 8 passed, the base arm's ids -- so the guard cannot be deleted without the gate failing; three new exclusion cases plus the two mixed-clause cases pin the behaviour at head.",
+    "evidence": "the reviewed run's own baseline_suite (626dcd594, 4 failed / 8 passed, EXIT=1) and after_suite (b990e88b0, 12 passed, EXIT=0) are readable, completed and reproduced independently: a fresh scratch extraction of head e2437ada9 runs 12 passed and of base 626dcd594 with the head test bytes runs the same 4 failed / 8 passed with identical ids, so added_failure_count is a measured 0. The prior review's dock -- two reproduction logs cited but absent from disk -- is repaired: logs/repro-exclusion-base.log and logs/repro-exclusion-fixed.log exist and their figures match my probe. Both negative controls (wording 1 failed / 11 passed; per-path scoping removed 4 failed / 8 passed) are on disk.",
+    "fit": "_GOVERNING_VERB sits beside the existing _NAMED_REPOSITORY_FILE with a comment stating the per-path rule, and _paths_a_clause_charges is one small helper called from the clause loop that already gates on the input/declar keywords; the change is minimal and in the module's idiom. Dock: the positional rule charges a path whose exclusion verb follows it, the safe direction but one phrasing unhandled.",
+    "goal_fidelity": "the plan's measure holds and the prior review's over-suppression is repaired: an independent probe of _declared_input_files at head e2437ada9 reads `Exclude package/large.py from declared inputs` as [] and `Treat package/large.py as a declared input` as ['package/large.py'], while the mixed briefs `Declare package/a.py as an input and avoid package/b.py` and its reverse read ['package/a.py'] only -- where base 626dcd594 charged both paths in both orders (57152 tokens) and the clause-level cue at 068b3dbbe charged neither. Dock: a path whose exclusion verb follows it is still charged, so one exclusion phrasing defeats the measure.",
+    "scope_discipline": "the gained range 068b3dbbe..e2437ada9 is exactly the three declared paths: b990e88b0 touches only reckon/crew/routing.py (14 changed lines) and tests/test_context_estimate_excludes_granted_paths.py, and e3b8c758f and e2437ada9 touch only docs/evidence/fragments/crew-observability-truth/an-exclusion-is-not-a-fit-input.html -- 151 insertions and 40 deletions, no edit to plan-version or plan-modified meta, and no touch of a concurrent node's paths."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the plan's measure holds and the prior review's over-suppression is repaired: an independent probe of _declared_input_files at head e2437ada9 reads `Exclude package/large.py from declared inputs` as [] and `Treat package/large.py as a declared input` as ['package/large.py'], while the mixed briefs `Declare package/a.py as an input and avoid package/b.py` and its reverse read ['package/a.py'] only -- where base 626dcd594 charged both paths in both orders (57152 tokens) and the clause-level cue at 068b3dbbe charged neither. Dock: a path whose exclusion verb follows it is still charged, so one exclusion phrasing defeats the measure.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's own baseline_suite (626dcd594, 4 failed / 8 passed, EXIT=1) and after_suite (b990e88b0, 12 passed, EXIT=0) are readable, completed and reproduced independently: a fresh scratch extraction of head e2437ada9 runs 12 passed and of base 626dcd594 with the head test bytes runs the same 4 failed / 8 passed with identical ids, so added_failure_count is a measured 0. The prior review's dock -- two reproduction logs cited but absent from disk -- is repaired: logs/repro-exclusion-base.log and logs/repro-exclusion-fixed.log exist and their figures match my probe. Both negative controls (wording 1 failed / 11 passed; per-path scoping removed 4 failed / 8 passed) are on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained range 068b3dbbe..e2437ada9 is exactly the three declared paths: b990e88b0 touches only reckon/crew/routing.py (14 changed lines) and tests/test_context_estimate_excludes_granted_paths.py, and e3b8c758f and e2437ada9 touch only docs/evidence/fragments/crew-observability-truth/an-exclusion-is-not-a-fit-input.html -- 151 insertions and 40 deletions, no edit to plan-version or plan-modified meta, and no touch of a concurrent node's paths.\nSCORE durability: 19\nJUSTIFICATION durability: the per-path scoping is load-bearing: removing only the excluding branch of _paths_a_clause_charges in a scratch copy of head e2437ada9 reddens all four exclusion cases -- 4 failed / 8 passed, the base arm's ids -- so the guard cannot be deleted without the gate failing; three new exclusion cases plus the two mixed-clause cases pin the behaviour at head.\nSCORE fit: 19\nJUSTIFICATION fit: _GOVERNING_VERB sits beside the existing _NAMED_REPOSITORY_FILE with a comment stating the per-path rule, and _paths_a_clause_charges is one small helper called from the clause loop that already gates on the input/declar keywords; the change is minimal and in the module's idiom. Dock: the positional rule charges a path whose exclusion verb follows it, the safe direction but one phrasing unhandled.\nFINDING reckon/crew/routing.py:2988 follow-on: the rule is positional, so a path whose exclusion verb follows it is still charged -- an independent probe of _declared_input_files at head e2437ada9 reads `package/large.py is excluded from the declared inputs` as ['package/large.py'] where the clause-level cue at 068b3dbbe withheld it, and a verb outside the list (`skip package/b.py`) is likewise charged; both are the safe direction (over-charging refuses a fitting node rather than admitting an oversized one) and neither phrasing is in the census or the tests, so this is a narrower edge than the repaired defect, not a failure of the measure.\nreviewed_base_sha: 068b3dbbe332c844c272949ccd4c4a21809bfbf8\nreviewed_head_sha: e2437ada9453f59f0e454ac7428d916890b8cfb7\n",
+  "review_run_id": "r-20261004T012058720811-review-of-an-exclusion-is-not-a-fit-input",
+  "reviewed_base_sha": "068b3dbbe332c844c272949ccd4c4a21809bfbf8",
+  "reviewed_head_sha": "e2437ada9453f59f0e454ac7428d916890b8cfb7",
+  "reviewed_run_id": "r-20261004T004533986813-an-exclusion-is-not-a-fit-input",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T012058720811-review-of-an-exclusion-is-not-a-fit-input",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T01:30:32.854978+00:00",
+  "total": 96
+}

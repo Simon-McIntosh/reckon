@@ -1,0 +1,44 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:3938"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T22:38:28.029308+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit \u2014 81179778 is the one-branch fix plus its docstring in reckon/crew/promotion.py, 67d5e552 adds the landing record, the evidence section and the figure in docs/, and bd6b2852 corrects the stated delta and adds the evidence link.",
+    "done_when": "the done_when's measure is run and logged \u2014 tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path is red at base with the gate-builder refusal (logs/baseline-base.log:37, 1 failed, EXIT=1), green at head (logs/after-head.log, 1 passed, EXIT=0) and red under the declared mutation (logs/negative-control.log, 1 failed, EXIT=1), and tests/test_gate_evidence.py is read, never edited.",
+    "goal": "the goal \u2014 a gate check citing a log digest with no log path survives promotion unchanged \u2014 is met at reckon/crew/promotion.py:655-656, where the empty-path branch returns dict(gate_check) and the caller at reckon/crew/promotion.py:3938 no longer overwrites the check with None.",
+    "manifest": "read; it records status complete, commits 81179778/67d5e552/bd6b2852, the four changed paths, the base 274/2 to head 275/1 delta and every log path it cites, and I re-ran the named test green at the reviewed tree's head.",
+    "write_paths": "the declared paths are reckon/crew/promotion.py and the three docs paths, and git diff c1e014bf..bd6b2852 changes exactly those four files, with tests/ absent from the diff."
+  },
+  "justifications": {
+    "durability": "tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path reddens when promotion.py:655 returns None again \u2014 measured red at base and under the declared mutation \u2014 so the branch is guarded, though only the digest spelling of the path-less case is covered.",
+    "evidence": "the receipts are logged, not claimed \u2014 logs/baseline-base.log red at c1e014bf, logs/after-head.log green at 81179778 and logs/negative-control.log red under the declared mutation \u2014 and the manifest's 274/2 to 275/1 delta matches logs/baseline-suite.log and logs/after-suite.log.",
+    "fit": "the repaired branch now matches its siblings at promotion.py:658-659, :665-666 and :672, which also return dict(gate_check), and the change introduces no new symbol.",
+    "goal_fidelity": "promotion.py:655-656 returns dict(gate_check) on the empty-path branch, exactly the survival the goal names, and the pinned test drives that branch end to end through the crew complete command.",
+    "scope_discipline": "every path in git diff c1e014bf..bd6b2852 is inside the declared write paths and tests/test_gate_evidence.py is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260924T215920404995-a-digest-only-gate-check-is-kept at head bd6b2852, base c1e014bf.\nreviewed_base: c1e014bf2de1bbdf071220d4b8e5d463495a325f\nreviewed_head_sha: bd6b28525947a33a70e03a6eae9913323cb70d78\n\nVERDICT goal: the goal \u2014 a gate check citing a log digest with no log path survives promotion unchanged \u2014 is met at reckon/crew/promotion.py:655-656, where the empty-path branch returns dict(gate_check) and the caller at reckon/crew/promotion.py:3938 no longer overwrites the check with None.\nVERDICT done_when: the done_when's measure is run and logged \u2014 tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path is red at base with the gate-builder refusal (logs/baseline-base.log:37, 1 failed, EXIT=1), green at head (logs/after-head.log, 1 passed, EXIT=0) and red under the declared mutation (logs/negative-control.log, 1 failed, EXIT=1), and tests/test_gate_evidence.py is read, never edited.\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py and the three docs paths, and git diff c1e014bf..bd6b2852 changes exactly those four files, with tests/ absent from the diff.\nVERDICT manifest: read; it records status complete, commits 81179778/67d5e552/bd6b2852, the four changed paths, the base 274/2 to head 275/1 delta and every log path it cites, and I re-ran the named test green at the reviewed tree's head.\nVERDICT diff: read commit by commit \u2014 81179778 is the one-branch fix plus its docstring in reckon/crew/promotion.py, 67d5e552 adds the landing record, the evidence section and the figure in docs/, and bd6b2852 corrects the stated delta and adds the evidence link.\n\nCALL_SITES: reckon/crew/promotion.py:3938\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:655-656 returns dict(gate_check) on the empty-path branch, exactly the survival the goal names, and the pinned test drives that branch end to end through the crew complete command.\nSCORE evidence: 19\nJUSTIFICATION evidence: the receipts are logged, not claimed \u2014 logs/baseline-base.log red at c1e014bf, logs/after-head.log green at 81179778 and logs/negative-control.log red under the declared mutation \u2014 and the manifest's 274/2 to 275/1 delta matches logs/baseline-suite.log and logs/after-suite.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff c1e014bf..bd6b2852 is inside the declared write paths and tests/test_gate_evidence.py is untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path reddens when promotion.py:655 returns None again \u2014 measured red at base and under the declared mutation \u2014 so the branch is guarded, though only the digest spelling of the path-less case is covered.\nSCORE fit: 19\nJUSTIFICATION fit: the repaired branch now matches its siblings at promotion.py:658-659, :665-666 and :672, which also return dict(gate_check), and the change introduces no new symbol.\n",
+  "review_run_id": "r-20260924T223828029308-review-of-a-digest-only-gate-check-is-kept",
+  "reviewed_base_sha": "c1e014bf2de1bbdf071220d4b8e5d463495a325f",
+  "reviewed_head_sha": "bd6b28525947a33a70e03a6eae9913323cb70d78",
+  "reviewed_run_id": "r-20260924T215920404995-a-digest-only-gate-check-is-kept",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T23:52:34.849464+00:00",
+  "total": 96
+}

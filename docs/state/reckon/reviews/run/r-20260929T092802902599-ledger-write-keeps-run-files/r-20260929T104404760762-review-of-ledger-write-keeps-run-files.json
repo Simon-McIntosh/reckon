@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived here from the reviewed run's own gate logs, which its manifest arms: the base arm logs/07-base-arm-targeted.log (21 failed, EXIT=1) reproduces every one of the 21 ids the head arm logs/05-head-arm.log fails, so added_failures_from_gate_logs gives 0; the manifest carries no baseline_suite/after_suite pair, so the store's own read-time annotation reports the count as unmeasured and this field is the reviewing run's derivation instead.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:930 (_keep_run_files_identical called from write)",
+    "reckon/crew/routing.py:1715",
+    "reckon/crew/promotion.py:1612",
+    "reckon/crew/promotion.py:4297"
+  ],
+  "completed_at": "2026-09-29T11:40:55.046Z",
+  "dispatched_at": "2026-09-29T10:44:17Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "930",
+      "text": "the per-run repair runs after the aggregate envelope is already written and there is no rollback, so a per-run file that cannot be made writable (EACCES, EROFS, ENOSPC) leaves the aggregate advanced, the file stale and the next ledger.load refusing the whole project \u2014 the very state the change exists to prevent; reproduced with a positive control in the reviewing run's log logs/08-review-write-ordering-repro.log."
+    },
+    {
+      "file": "tests/test_ledger_write_keeps_run_files.py",
+      "line": "95",
+      "text": "the assertion cannot fail for the reason it names: tests/conftest.py:331 is an autouse fixture that points RECKON_HOME at a temporary directory, so \"not Path(RECKON_HOME).is_relative_to(Path.home())\" is true by construction and no write escaping into the real home could ever redden it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/logs/07-base-arm-targeted.log",
+      "line": "2",
+      "text": "the header command carries placeholders (\"<venv>/python\", \"<21 head-failure ids>\") instead of the command that ran, so the arm carrying the zero-added-failure claim cannot be replayed from its own receipt."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/manifest.md",
+      "line": "15",
+      "text": "the manifest names its logs only under a test_logs list, so reckon/crew/review.py:613 finds no baseline_suite and no after_suite gate log and the store's own annotation reports the added-failure count as unmeasured to every reader."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit (bc444b40 adds the helper, its call at reckon/ledger.py:930 and the test; a55213dd lands the evidence fragment); the helper repairs only rows that already own a file (reckon/ledger.py:809-810), which is _split_project_runs' declared division of labour rather than an omission.",
+    "done_when": "the gate asserts the named measure \u2014 logs/01-base-shadow-ids.log shows all five shadow ids failing inside ledger.load with the differs-between refusal at the base, and logs/03-head-shadow-ids.log names the same five ids passing at the head, both recorded rather than claimed.",
+    "goal": "the node's goal was to stop ledger.write leaving an aggregate row ahead of its per-run file; reckon/ledger.py:930 calls _keep_run_files_identical from write, and logs/03-head-shadow-ids.log shows the five test_shadow_* fixtures green at a55213dd with the fixtures themselves untouched by the diff.",
+    "manifest": "read; it names both commits, seven gate logs and a negative control, but it carries no baseline_suite/after_suite pair and its base arm's header command holds placeholders, so the record is neither self-annotating nor replayable from its own receipt (findings below).",
+    "write_paths": "the manifest declares reckon/ledger.py, tests/test_ledger_write_keeps_run_files.py, one evidence fragment and a figures directory; git diff 57e4ea2e..a55213dd touches exactly the first three (3 files, +182 -1) and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger_write_keeps_run_files.py:88-90 fails if the write stops propagating the edit and its falsifier test fails if the reader is made tolerant, but the isolation assertion at :95 passes whatever the code does.",
+    "evidence": "the arms are recorded (logs/07-base-arm-targeted.log reproduces all 21 of logs/05-head-arm.log's failing ids, so added failures are 0 by derivation), but the base arm's placeholdered header and the manifest's missing suite pair keep either arm from being replayed or auto-annotated.",
+    "fit": "the helper reuses serialize_run and run_path as _split_project_runs does at reckon/ledger.py:806, introduces no forbidden name, and adds no lint finding (ruff reports 8 findings in ledger.py at both revisions; the new test file is clean).",
+    "goal_fidelity": "reckon/ledger.py:813 rewrites each existing per-run file through the same serialize_run a promotion uses, and logs/03-head-shadow-ids.log shows the five previously failing fixtures green at a55213dd without editing them.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, and the diff contains no fixture edit, which the plan's root-cause decision forbids."
+  },
+  "node": "review-of-ledger-write-keeps-run-files",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T092802902599-ledger-write-keeps-run-files\n(plan the-suite-is-green-at-head, section 2; reviewed node ledger-write-keeps-run-files)\nReviewed revisions: base 57e4ea2e71cf94733281b7278c414680c19eb778, head a55213dd9c2c0c89c0b082bcc79c709fb7eeae09\nReviewing run: r-20260929T104404760762-review-of-ledger-write-keeps-run-files\nDerived added failures: 0, from the run's own arms \u2014 base logs/07-base-arm-targeted.log (21 failed, EXIT=1, the same 21 ids the head arm names) against head logs/05-head-arm.log (21 failed, 1640 passed, EXIT=1).\n\nVERDICT goal: the node's goal was to stop ledger.write leaving an aggregate row ahead of its per-run file; reckon/ledger.py:930 calls _keep_run_files_identical from write, and logs/03-head-shadow-ids.log shows the five test_shadow_* fixtures green at a55213dd with the fixtures themselves untouched by the diff.\nVERDICT done_when: the gate asserts the named measure \u2014 logs/01-base-shadow-ids.log shows all five shadow ids failing inside ledger.load with the differs-between refusal at the base, and logs/03-head-shadow-ids.log names the same five ids passing at the head, both recorded rather than claimed.\nVERDICT write_paths: the manifest declares reckon/ledger.py, tests/test_ledger_write_keeps_run_files.py, one evidence fragment and a figures directory; git diff 57e4ea2e..a55213dd touches exactly the first three (3 files, +182 -1) and nothing outside them.\nVERDICT manifest: read; it names both commits, seven gate logs and a negative control, but it carries no baseline_suite/after_suite pair and its base arm's header command holds placeholders, so the record is neither self-annotating nor replayable from its own receipt (findings below).\nVERDICT diff: read commit by commit (bc444b40 adds the helper, its call at reckon/ledger.py:930 and the test; a55213dd lands the evidence fragment); the helper repairs only rows that already own a file (reckon/ledger.py:809-810), which is _split_project_runs' declared division of labour rather than an omission.\nCALL_SITES: reckon/ledger.py:930 (_keep_run_files_identical called from write), reckon/crew/routing.py:1715, reckon/crew/promotion.py:1612, reckon/crew/promotion.py:4297\n\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:813 rewrites each existing per-run file through the same serialize_run a promotion uses, and logs/03-head-shadow-ids.log shows the five previously failing fixtures green at a55213dd without editing them.\nSCORE evidence: 14\nJUSTIFICATION evidence: the arms are recorded (logs/07-base-arm-targeted.log reproduces all 21 of logs/05-head-arm.log's failing ids, so added failures are 0 by derivation), but the base arm's placeholdered header and the manifest's missing suite pair keep either arm from being replayed or auto-annotated.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the diff contains no fixture edit, which the plan's root-cause decision forbids.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_ledger_write_keeps_run_files.py:88-90 fails if the write stops propagating the edit and its falsifier test fails if the reader is made tolerant, but the isolation assertion at :95 passes whatever the code does.\nSCORE fit: 18\nJUSTIFICATION fit: the helper reuses serialize_run and run_path as _split_project_runs does at reckon/ledger.py:806, introduces no forbidden name, and adds no lint finding (ruff reports 8 findings in ledger.py at both revisions; the new test file is clean).\n\nFINDING reckon/ledger.py:930 the per-run repair runs after the aggregate envelope is already written and there is no rollback, so a per-run file that cannot be made writable (EACCES, EROFS, ENOSPC) leaves the aggregate advanced, the file stale and the next ledger.load refusing the whole project \u2014 the very state the change exists to prevent; reproduced with a positive control in the reviewing run's log logs/08-review-write-ordering-repro.log.\nFINDING tests/test_ledger_write_keeps_run_files.py:95 the assertion cannot fail for the reason it names: tests/conftest.py:331 is an autouse fixture that points RECKON_HOME at a temporary directory, so \"not Path(RECKON_HOME).is_relative_to(Path.home())\" is true by construction and no write escaping into the real home could ever redden it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/logs/07-base-arm-targeted.log:2 the header command carries placeholders (\"<venv>/python\", \"<21 head-failure ids>\") instead of the command that ran, so the arm carrying the zero-added-failure claim cannot be replayed from its own receipt.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T092802902599-ledger-write-keeps-run-files/manifest.md:15 the manifest names its logs only under a test_logs list, so reckon/crew/review.py:613 finds no baseline_suite and no after_suite gate log and the store's own annotation reports the added-failure count as unmeasured to every reader.",
+  "review_run_id": "r-20260929T104404760762-review-of-ledger-write-keeps-run-files",
+  "reviewed_base_sha": "57e4ea2e71cf94733281b7278c414680c19eb778",
+  "reviewed_head_sha": "a55213dd9c2c0c89c0b082bcc79c709fb7eeae09",
+  "reviewed_run_id": "r-20260929T092802902599-ledger-write-keeps-run-files",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T104404760762-review-of-ledger-write-keeps-run-files",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T11:32:34.842668+00:00",
+  "total": 84
+}

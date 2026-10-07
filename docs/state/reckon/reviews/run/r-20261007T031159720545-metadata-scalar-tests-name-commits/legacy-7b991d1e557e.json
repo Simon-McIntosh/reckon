@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base or head gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T03:20:29.201Z",
+  "dispatched_at": "2026-10-07T03:12:42Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit 6e8e3d2f7 against base 9e3cbe6a2; it adds commits to the metadata-only base and edited states and to the expected tuple, and adds (commits, plan-commits, 0*40) to the _METADATA_EDITS table.",
+    "done_when": "the done_when is the store test file naming commits with the file green; the manifest records 10 passed EXIT=0 (head-test_plan_review_store.log) and I re-ran the same file at the reviewed head for 10 passed, EXIT=0.",
+    "goal": "the node's goal is to make the plan-review store tests name the commits metadata scalar; tests/test_plan_review_store.py:107 now carries commits in the metadata-only case and :148 in its expected PLAN_METADATA_SCALARS tuple, matching reckon/crew/plan_review.py:96.",
+    "manifest": "read; it records the gate command, head-test_plan_review_store.log (10 passed, EXIT=0), negative-control.log (EXIT=1, 2 failed), and commit 6e8e3d2f7.",
+    "write_paths": "the declared paths are tests/test_plan_review_store.py, one evidence fragment and one figures directory; the diff touches only the test file and the declared fragment, with no reckon/ change."
+  },
+  "justifications": {
+    "durability": "negative-control.log removes commits from PLAN_METADATA_SCALARS and reddens exactly the two updated cases at EXIT=1, but the real-plan case asserts the edit table equals the constant itself, so its two sides move together by construction.",
+    "evidence": "the reviewed gate log head-test_plan_review_store.log records 10 passed EXIT=0 against the reviewed head, which I reproduced, and its first line names the revision, tree and command.",
+    "fit": "the additions are one tuple entry, one dict key on each side, and one edit-table row, matching the existing idiom in tests/test_plan_review_store.py:103-148.",
+    "goal_fidelity": "tests/test_plan_review_store.py:107 and :148 now name commits, and the constant already carried it at the base (reckon/crew/plan_review.py:96), so the mirrored expectations match the code.",
+    "reuse": "no definition is added; the change only mirrors the existing PLAN_METADATA_SCALARS constant into the test expectations, adding no capability.",
+    "scope_discipline": "the diff touches only tests/test_plan_review_store.py and the declared evidence fragment, with no production file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the plan-review store tests name the commits metadata scalar; tests/test_plan_review_store.py:107 now carries commits in the metadata-only case and :148 in its expected PLAN_METADATA_SCALARS tuple, matching reckon/crew/plan_review.py:96.\nVERDICT done_when: the done_when is the store test file naming commits with the file green; the manifest records 10 passed EXIT=0 (head-test_plan_review_store.log) and I re-ran the same file at the reviewed head for 10 passed, EXIT=0.\nVERDICT write_paths: the declared paths are tests/test_plan_review_store.py, one evidence fragment and one figures directory; the diff touches only the test file and the declared fragment, with no reckon/ change.\nVERDICT manifest: read; it records the gate command, head-test_plan_review_store.log (10 passed, EXIT=0), negative-control.log (EXIT=1, 2 failed), and commit 6e8e3d2f7.\nVERDICT diff: read commit 6e8e3d2f7 against base 9e3cbe6a2; it adds commits to the metadata-only base and edited states and to the expected tuple, and adds (\"commits\", \"plan-commits\", \"0\"*40) to the _METADATA_EDITS table.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_plan_review_store.py:107 and :148 now name commits, and the constant already carried it at the base (reckon/crew/plan_review.py:96), so the mirrored expectations match the code.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed gate log head-test_plan_review_store.log records 10 passed EXIT=0 against the reviewed head, which I reproduced, and its first line names the revision, tree and command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_plan_review_store.py and the declared evidence fragment, with no production file changed.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log removes commits from PLAN_METADATA_SCALARS and reddens exactly the two updated cases at EXIT=1, but the real-plan case asserts the edit table equals the constant itself, so its two sides move together by construction.\nSCORE fit: 19\nJUSTIFICATION fit: the additions are one tuple entry, one dict key on each side, and one edit-table row, matching the existing idiom in tests/test_plan_review_store.py:103-148.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change only mirrors the existing PLAN_METADATA_SCALARS constant into the test expectations, adding no capability.",
+  "review_run_id": "legacy-7b991d1e557e",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "9e3cbe6a280ba6ba9da8425f34604eaa12ad7370",
+  "reviewed_head_sha": "6e8e3d2f7b91c63263ddf1e72904dfb5a80782cd",
+  "reviewed_run_id": "r-20261007T031159720545-metadata-scalar-tests-name-commits",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T03:31:00+00:00",
+  "total": 116
+}

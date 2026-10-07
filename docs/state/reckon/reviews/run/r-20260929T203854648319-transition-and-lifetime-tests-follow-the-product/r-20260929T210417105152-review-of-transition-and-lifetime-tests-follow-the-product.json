@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery.py:_departure_word",
+    "reckon/crew/recovery.py:_departure_recorded_run_ids",
+    "reckon/crew/recovery.py:fleet_transitions",
+    "reckon/crew/recovery.py:watch_ticker",
+    "reckon/crew/dispatch.py:134",
+    "reckon/ledger.py:643"
+  ],
+  "completed_at": "2026-09-29T21:31:00.416Z",
+  "dispatched_at": "2026-09-29T21:04:31Z",
+  "findings": [
+    {
+      "file": "logs/head_ids.log",
+      "line": "1",
+      "text": "the revision header names 4c91e7bb while the run measured the head working tree, so this log, cited by the manifest as head-side evidence, reads at its header as both ids passing at the base and contradicts logs/arm_base.log."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 4c91e7bb; one commit, 45 insertions and 4 deletions, adds the ledger_home fixture and _record_promotion helper at tests/test_a_rewritten_terminal_manifest_transitions.py:39, the promotion row at :414, and widens the poll ceiling at tests/test_crew_watch_lifetime.py:170, where the only deleted assert line reappears against the module load bound.",
+    "done_when": "the done_when names ids 7 and 8, a base arm, a head arm and 20 xdist runs, and logs/arm_base.log reports 2 failed / 10 passed at 4c91e7bb with exactly those two ids, logs/arm_head.log reports 12 passed at 857c2fa6, and logs/watch_lifetime_xdist20.log records runs_passing=20 of 20 with 60 tests passed.",
+    "goal": "the goal is to bring the rewrite-marker and watch-lifetime tests in line with shipped behaviour, and both landed changes do it - tests/test_a_rewritten_terminal_manifest_transitions.py:414 now records the ledger row that reckon/crew/recovery.py:5914 makes the departure word depend on, and tests/test_crew_watch_lifetime.py:170 holds the watcher on an explicit release instead of bounding a real dispatch with its own 5 s ceiling.",
+    "manifest": "read; every key is filled, the logs it names exist under the run directory, and its no-assertion-lost claim reproduces under three counting methods at both revisions (28 and 25 assert statements per subject file, unchanged base to head).",
+    "write_paths": "the declared scope is the two subject test files plus a fragment path and a figure path; git diff 4c91e7bb..857c2fa6 touches exactly the two test files, and the fragment and figure are correctly unwritten because the landing contract's small-node rule applies at 49 changed lines."
+  },
+  "justifications": {
+    "durability": "reinstating each regression reddens its case (logs/arm_base.log fails id 7 at the failed/withdrawn reading and id 8 at the poll ceiling, and logs/negative_control.log reddens id 8 on the declared mutation), but the base arm passed id 8 once warm, so the guard on the widened bound is load-dependent rather than deterministic.",
+    "evidence": "both arms carry revision, tree, command and EXIT=, and reading the reviewed run's own two gate logs through reckon/crew/review.py's derivation returns added failures (0, []); the deduction is logs/head_ids.log:1, which names the base revision for a run made against the head working tree.",
+    "fit": "tests/test_crew_watch_lifetime.py:18 imports WATCHER_LOAD_BOUND_SECONDS from reckon/crew/dispatch.py:134 as tests/test_crew_dispatch_arming.py:16 and tests/test_crew_orphan.py:20 already do, and ruff check reports \"All checks passed!\" on both head files.",
+    "goal_fidelity": "reckon/crew/recovery.py:5927 gives \"promoted\" only to a run the ledger records and tests/test_a_rewritten_terminal_manifest_transitions.py:419 now asserts that reading, so the case measures the shipped rule rather than a stale expectation.",
+    "scope_discipline": "every changed line sits inside the declared test paths, and the source worktree is clean at 857c2fa6 with HEAD content in place after the base-arm restoration and the negative-control mutation."
+  },
+  "node": "review-of-transition-and-lifetime-tests-follow-the-product",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to bring the rewrite-marker and watch-lifetime tests in line with shipped behaviour, and both landed changes do it - tests/test_a_rewritten_terminal_manifest_transitions.py:414 now records the ledger row that reckon/crew/recovery.py:5914 makes the departure word depend on, and tests/test_crew_watch_lifetime.py:170 holds the watcher on an explicit release instead of bounding a real dispatch with its own 5 s ceiling.\nVERDICT done_when: the done_when names ids 7 and 8, a base arm, a head arm and 20 xdist runs, and logs/arm_base.log reports 2 failed / 10 passed at 4c91e7bb with exactly those two ids, logs/arm_head.log reports 12 passed at 857c2fa6, and logs/watch_lifetime_xdist20.log records runs_passing=20 of 20 with 60 tests passed.\nVERDICT write_paths: the declared scope is the two subject test files plus a fragment path and a figure path; git diff 4c91e7bb..857c2fa6 touches exactly the two test files, and the fragment and figure are correctly unwritten because the landing contract's small-node rule applies at 49 changed lines.\nVERDICT manifest: read; every key is filled, the logs it names exist under the run directory, and its no-assertion-lost claim reproduces under three counting methods at both revisions (28 and 25 assert statements per subject file, unchanged base to head).\nVERDICT diff: read commit by commit against 4c91e7bb; one commit, 45 insertions and 4 deletions, adds the ledger_home fixture and _record_promotion helper at tests/test_a_rewritten_terminal_manifest_transitions.py:39, the promotion row at :414, and widens the poll ceiling at tests/test_crew_watch_lifetime.py:170, where the only deleted assert line reappears against the module load bound.\nCALL_SITES: reckon/crew/recovery.py:_departure_word, reckon/crew/recovery.py:_departure_recorded_run_ids, reckon/crew/recovery.py:fleet_transitions, reckon/crew/recovery.py:watch_ticker, reckon/crew/dispatch.py:134, reckon/ledger.py:643\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:5927 gives \"promoted\" only to a run the ledger records and tests/test_a_rewritten_terminal_manifest_transitions.py:419 now asserts that reading, so the case measures the shipped rule rather than a stale expectation.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms carry revision, tree, command and EXIT=, and reading the reviewed run's own two gate logs through reckon/crew/review.py's derivation returns added failures (0, []); the deduction is logs/head_ids.log:1, which names the base revision for a run made against the head working tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed line sits inside the declared test paths, and the source worktree is clean at 857c2fa6 with HEAD content in place after the base-arm restoration and the negative-control mutation.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating each regression reddens its case (logs/arm_base.log fails id 7 at the failed/withdrawn reading and id 8 at the poll ceiling, and logs/negative_control.log reddens id 8 on the declared mutation), but the base arm passed id 8 once warm, so the guard on the widened bound is load-dependent rather than deterministic.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_crew_watch_lifetime.py:18 imports WATCHER_LOAD_BOUND_SECONDS from reckon/crew/dispatch.py:134 as tests/test_crew_dispatch_arming.py:16 and tests/test_crew_orphan.py:20 already do, and ruff check reports \"All checks passed!\" on both head files.\nFINDING logs/head_ids.log:1 the revision header names 4c91e7bb while the run measured the head working tree, so this log, cited by the manifest as head-side evidence, reads at its header as both ids passing at the base and contradicts logs/arm_base.log.\n",
+  "review_run_id": "r-20260929T210417105152-review-of-transition-and-lifetime-tests-follow-the-product",
+  "reviewed_base_sha": "4c91e7bb6b949f8f5b259330247e74adc31eb037",
+  "reviewed_head_sha": "857c2fa6699ccb401a433b1866f86788946ac2fd",
+  "reviewed_run_id": "r-20260929T203854648319-transition-and-lifetime-tests-follow-the-product",
+  "reviewer_run_id": "r-20260929T210417105152-review-of-transition-and-lifetime-tests-follow-the-product",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T21:26:51.586960+00:00",
+  "total": 93
+}

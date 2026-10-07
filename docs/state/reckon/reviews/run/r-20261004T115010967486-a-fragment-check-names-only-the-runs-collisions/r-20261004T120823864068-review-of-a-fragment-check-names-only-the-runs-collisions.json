@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs: population-base.log (revision e49e4731a) 711 passed / 0 failed and population-head.log (revision 738d1db02) 711 passed / 0 failed, so the set difference over pytest node ids is 0.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:5533",
+    "reckon/crew/reports.py:1841",
+    "reckon/crew/reports.py:1845"
+  ],
+  "completed_at": "2026-10-04T12:15:14.618Z",
+  "dispatched_at": "2026-10-04T12:08:50Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base e49e4731a; 738d1db02 scopes the composed-record audit and extends the test file, cbf08f977 adds the landing fragment, all inside the declared scope.",
+    "done_when": "the done_when names a test covering a cleanly-prefixed fragment passing beside committed collisions and a fragment repeating a committed id being refused by name, with a negative control at main 3dd7356fc or later; tests/test_fragment_ids_are_checked.py drives check-manifest for both on the record-backed and the recordless composition and the manifest records the base-arm control.",
+    "goal": "the node goal is that audit_manifest reports a fragment element-id collision only where one of its occurrences lies in a fragment the run changed; reckon/crew/reports.py:1824-1853 derives the changed fragments per plan from changed_paths and scopes the audit to them.",
+    "manifest": "read; it records the focused gate 6 passed EXIT=0 at 738d1db02, the negative control 4 failed EXIT=1 at eff21542c, and the population measurement of 711 passed / 0 failed on both arms.",
+    "write_paths": "the manifest declares reckon/crew/reports.py, reckon/doccheck.py, tests/test_fragment_ids_are_checked.py and the landing fragment; every path in commits 738d1db02 and cbf08f977 is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_fragment_ids_are_checked.py fails at base eff21542c (four cases: the two collision refusals and both cleanly-prefixed passes), so the new assertions are red before the change and green after; the refusal cases also assert the inherited measure/scope collisions are not named in the finding.",
+    "evidence": "the gate log logs/head-gate.log records 6 passed EXIT=0 at the worktree; logs/negative-control-eff21542c.log records 4 failed EXIT=1 at eff21542c, which is on main after the regression commit 3dd7356fc (verified ancestor of eff21542c); logs/population-base.log and logs/population-head.log record 711 passed / 0 failed each.",
+    "fit": "reckon/doccheck.py:1391-1393 adds the _fragment_source_label helper beside the composition reader it labels so the fragment label is spelled in one place, and the keyword-only changed_fragments parameter defaults to None so the audit-doc caller at reckon/doccheck.py:1573 keeps the whole-record behaviour unchanged.",
+    "goal_fidelity": "reckon/crew/reports.py:1838-1848 audits each changed fragment's plan and passes changed_fragments through to doccheck.audit_composed_record_ids and doccheck.audit_fragment_ids, so only a duplicate one of whose occurrences lies in the run's own fragment is reported; reckon/doccheck.py:1458-1466 filters duplicates by origin against the authored fragment labels.",
+    "scope_discipline": "commit 738d1db02 changes only reckon/crew/reports.py, reckon/doccheck.py and tests/test_fragment_ids_are_checked.py, and commit cbf08f977 adds only docs/evidence/fragments/crew-observability-truth/a-fragment-check-names-only-the-runs-collisions.html; all four paths are in the manifest's declared changed_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that audit_manifest reports a fragment element-id collision only where one of its occurrences lies in a fragment the run changed; reckon/crew/reports.py:1824-1853 derives the changed fragments per plan from changed_paths and scopes the audit to them.\nVERDICT done_when: the done_when names a test covering a cleanly-prefixed fragment passing beside committed collisions and a fragment repeating a committed id being refused by name, with a negative control at main 3dd7356fc or later; tests/test_fragment_ids_are_checked.py drives check-manifest for both on the record-backed and the recordless composition and the manifest records the base-arm control.\nVERDICT write_paths: the manifest declares reckon/crew/reports.py, reckon/doccheck.py, tests/test_fragment_ids_are_checked.py and the landing fragment; every path in commits 738d1db02 and cbf08f977 is inside them.\nVERDICT manifest: read; it records the focused gate 6 passed EXIT=0 at 738d1db02, the negative control 4 failed EXIT=1 at eff21542c, and the population measurement of 711 passed / 0 failed on both arms.\nVERDICT diff: read commit by commit against base e49e4731a; 738d1db02 scopes the composed-record audit and extends the test file, cbf08f977 adds the landing fragment, all inside the declared scope.\nCALL_SITES: reckon/cli.py:5533, reckon/crew/reports.py:1841, reckon/crew/reports.py:1845\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1838-1848 audits each changed fragment's plan and passes changed_fragments through to doccheck.audit_composed_record_ids and doccheck.audit_fragment_ids, so only a duplicate one of whose occurrences lies in the run's own fragment is reported; reckon/doccheck.py:1458-1466 filters duplicates by origin against the authored fragment labels.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate log logs/head-gate.log records 6 passed EXIT=0 at the worktree; logs/negative-control-eff21542c.log records 4 failed EXIT=1 at eff21542c, which is on main after the regression commit 3dd7356fc (verified ancestor of eff21542c); logs/population-base.log and logs/population-head.log record 711 passed / 0 failed each.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 738d1db02 changes only reckon/crew/reports.py, reckon/doccheck.py and tests/test_fragment_ids_are_checked.py, and commit cbf08f977 adds only docs/evidence/fragments/crew-observability-truth/a-fragment-check-names-only-the-runs-collisions.html; all four paths are in the manifest's declared changed_paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fragment_ids_are_checked.py fails at base eff21542c (four cases: the two collision refusals and both cleanly-prefixed passes), so the new assertions are red before the change and green after; the refusal cases also assert the inherited measure/scope collisions are not named in the finding.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/doccheck.py:1391-1393 adds the _fragment_source_label helper beside the composition reader it labels so the fragment label is spelled in one place, and the keyword-only changed_fragments parameter defaults to None so the audit-doc caller at reckon/doccheck.py:1573 keeps the whole-record behaviour unchanged.\n",
+  "review_run_id": "r-20261004T120823864068-review-of-a-fragment-check-names-only-the-runs-collisions",
+  "reviewed_base_sha": "e49e4731a1a2849ac2a3cc8b1aec295c1be8f811",
+  "reviewed_head_sha": "cbf08f977f505275f962b76ff4cc6ce3b2891384",
+  "reviewed_run_id": "r-20261004T115010967486-a-fragment-check-names-only-the-runs-collisions",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T120823864068-review-of-a-fragment-check-names-only-the-runs-collisions",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T12:24:47+00:00",
+  "total": 97
+}

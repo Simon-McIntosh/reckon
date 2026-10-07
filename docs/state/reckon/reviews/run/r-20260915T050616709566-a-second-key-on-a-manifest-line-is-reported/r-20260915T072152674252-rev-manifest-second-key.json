@@ -1,0 +1,36 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T07:21:52.674252+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "118",
+      "text": "_MANIFEST_KEY_ON_LINE_RE treats any manifest-field word followed by a colon anywhere in an unquoted plain-text value as a second top-level key; the direct probe \"tests: command output says status: complete\" raises ManifestParseError, so a legitimate tests or evidence sentence can make a terminal manifest unreadable even though no second field was authored."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_manifest_parse_format.py:446 pins the measured commits/changed_paths refusal and line 480 pins the separate-line control, but the prose-tolerance case at line 469 contains neither a colon nor a URL and therefore does not catch the false-positive boundary in reckon/crew/reports.py:118.",
+    "evidence": "tests/test_manifest_parse_format.py:446 and :480 assert the dispatched done-when, and the recorded base and after logs independently read 37 passed and 41 passed, although the broader prose-colon safety claim recorded at docs/evidence/archive/crew-observability-truth-landed.html:626 is false for a manifest-key word followed by a colon.",
+    "fit": "reckon/crew/reports.py:115 uses descriptive module-level vocabulary and helper names consistent with the surrounding parser, but the unanchored value scan at line 118 conflicts with parse_manifest's tolerant-prose contract at line 195 by rejecting an ordinary plain-text value that mentions status: as prose.",
+    "goal_fidelity": "reckon/crew/reports.py:260 now refuses the measured one-line commits/changed_paths form through ManifestParseError, and the message at line 142 names the line plus both keys instead of returning a corrupt commit string and an empty changed-path list.",
+    "scope_discipline": "the be380283..7b14e02 diff changes exactly the four declared paths: reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/evidence/archive/crew-observability-truth-landed.html, and docs/plans/crew-observability-truth.html."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:260 now refuses the measured one-line commits/changed_paths form through ManifestParseError, and the message at line 142 names the line plus both keys instead of returning a corrupt commit string and an empty changed-path list.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_manifest_parse_format.py:446 and :480 assert the dispatched done-when, and the recorded base and after logs independently read 37 passed and 41 passed, although the broader prose-colon safety claim recorded at docs/evidence/archive/crew-observability-truth-landed.html:626 is false for a manifest-key word followed by a colon.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the be380283..7b14e02 diff changes exactly the four declared paths: reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/evidence/archive/crew-observability-truth-landed.html, and docs/plans/crew-observability-truth.html.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_manifest_parse_format.py:446 pins the measured commits/changed_paths refusal and line 480 pins the separate-line control, but the prose-tolerance case at line 469 contains neither a colon nor a URL and therefore does not catch the false-positive boundary in reckon/crew/reports.py:118.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/reports.py:115 uses descriptive module-level vocabulary and helper names consistent with the surrounding parser, but the unanchored value scan at line 118 conflicts with parse_manifest's tolerant-prose contract at line 195 by rejecting an ordinary plain-text value that mentions status: as prose.\nFINDING reckon/crew/reports.py:118 _MANIFEST_KEY_ON_LINE_RE treats any manifest-field word followed by a colon anywhere in an unquoted plain-text value as a second top-level key; the direct probe \"tests: command output says status: complete\" raises ManifestParseError, so a legitimate tests or evidence sentence can make a terminal manifest unreadable even though no second field was authored.\n",
+  "review_run_id": "r-20260915T072152674252-rev-manifest-second-key",
+  "reviewed_base": "be380283d253112d1acb1150e710b4449da471ad",
+  "reviewed_commit": "7b14e02",
+  "reviewed_run_id": "r-20260915T050616709566-a-second-key-on-a-manifest-line-is-reported",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T07:29:36Z",
+  "total": 89
+}

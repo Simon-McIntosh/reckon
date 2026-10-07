@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6629fed0468f37540abab8039d5d75abc352e158",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/pace_replay.py:replay_committed_rows",
+    "reckon/crew/pace_replay.py:replay_project"
+  ],
+  "completed_at": "2026-10-02T18:07:50.301Z",
+  "dispatched_at": "2026-10-02T17:38:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T163633587568-pace-row-replays-its-window/base-gate.log",
+      "line": "6",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm did not run to completion (the log ends at 82% with no pytest summary or EXIT line), so the done-when's requirement that each id fail at the base revision in a recorded log is unmet by a completed run and the six failing ids cannot be read from it; negative-control.log reddens only three of them."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T163633587568-pace-row-replays-its-window/head-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's header names revision 6629fed0468f37540abab8039d5d75abc352e158 (the base commit) while its tree line reads \"worktree, uncommitted node changes\", so a reader taking the header revision at face value reads the 176-passed head arm as run at the base rather than at a9046c79c."
+    },
+    {
+      "file": "reckon/crew/pace_replay.py",
+      "line": "88",
+      "severity": "follow-on",
+      "text": "follow-on: the changed replay is reachable only through this module's own wrappers (replay_committed_rows, replay_project) and is imported by no production caller anywhere in the repository, so the fix has no runtime effect until another node wires it; the wiring is outside this node's declared scope."
+    }
+  ],
+  "head_log_revision": "6629fed0468f37540abab8039d5d75abc352e158",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 6629fed0468f37540abab8039d5d75abc352e158; a9046c79c adds a window length to _CLOCK_FIGURES (reckon/crew/pace_replay.py:445 _read_clock), rewrites _read_row (line 500) to read both clocks and flag a primary-only row, adds _operative_clock (line 549) and branches _recomputed_allowance (line 564) on the window the row reports, plus the two test files; all three files sit inside the declared scope.",
+    "done_when": "the done-when names six ids -- five in tests/test_dispatch_records_the_pace_row.py (including its allowance-replay assertion) plus tests/test_pace_replay.py::test_a_damaged_field_marks_its_row_and_never_the_week -- passing at head and failing at base with zero added ids; head-gate.log records 176 passed EXIT=0 at head, but the base arm the manifest cites is truncated, so only the head half is a completed run.",
+    "goal": "the node's goal is to make a recorded pace row replay its own allowance under window-length pacing; reckon/crew/pace_replay.py:564 _recomputed_allowance divides the operative window the row records (its length, elapsed fraction and reset) instead of a fixed week, and reckon/crew/pace_replay.py:549 _operative_clock selects that window by the length each clock carries.",
+    "manifest": "read; status complete; after_suite carries 176 passed / 0 failures with log_path head-gate.log while baseline_suite is recorded honestly as completed false with failure_ids [] because its base-gate.log never reached a summary line.",
+    "write_paths": "the manifest declares seven write paths; the diff touches exactly three (reckon/crew/pace_replay.py, tests/test_dispatch_records_the_pace_row.py, tests/test_pace_replay.py) and adds no file outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_pace_replay.py:664 asserts the replay's reproduced allowance equals the producer-derived row[\"allowance\"] from budget.pace_row (an independent source) and negative-control.log reddens it at EXIT=1 when the window length is dropped; the week-half fixture in tests/test_pace_replay.py:52 still builds its allowance through the same pace.allowance_for_group the module uses, so that half shares the module under test.",
+    "evidence": "the head arm is recorded (head-gate.log, 176 passed EXIT=0) and I re-ran tests/test_pace_replay.py::test_a_primary_only_window_replays_its_own_allowance green at a9046c79c, but the base arm the done_when names is truncated (base-gate.log ends at 82% with no summary), so the \"each fails at the base\" half rests on an incomplete run.",
+    "fit": "the new names (_operative_clock, _raw_at, _FIVE_HOUR_PERIOD) are mechanism-named with no plan or ticket identifier and follow the module's guarded-reader idiom at reckon/crew/pace_replay.py:445; _FIVE_HOUR_PERIOD duplicates the literal already in _CLOCK_PERIODS.",
+    "goal_fidelity": "reckon/crew/pace_replay.py:564 reproduces the recorded allowance from the row's own window for both the short-sibling (week) and the primary-only (elapsed-fraction) branches, matching reckon/budget.py:1946 _group_allowance, which this node did not change.",
+    "scope_discipline": "the diff a9046c79c touches exactly three of the manifest's seven declared write paths and adds no file outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a recorded pace row replay its own allowance under window-length pacing; reckon/crew/pace_replay.py:564 _recomputed_allowance divides the operative window the row records (its length, elapsed fraction and reset) instead of a fixed week, and reckon/crew/pace_replay.py:549 _operative_clock selects that window by the length each clock carries.\nVERDICT done_when: the done-when names six ids -- five in tests/test_dispatch_records_the_pace_row.py (including its allowance-replay assertion) plus tests/test_pace_replay.py::test_a_damaged_field_marks_its_row_and_never_the_week -- passing at head and failing at base with zero added ids; head-gate.log records 176 passed EXIT=0 at head, but the base arm the manifest cites is truncated, so only the head half is a completed run.\nVERDICT write_paths: the manifest declares seven write paths; the diff touches exactly three (reckon/crew/pace_replay.py, tests/test_dispatch_records_the_pace_row.py, tests/test_pace_replay.py) and adds no file outside them.\nVERDICT manifest: read; status complete; after_suite carries 176 passed / 0 failures with log_path head-gate.log while baseline_suite is recorded honestly as completed false with failure_ids [] because its base-gate.log never reached a summary line.\nVERDICT diff: read commit by commit against base 6629fed0468f37540abab8039d5d75abc352e158; a9046c79c adds a window length to _CLOCK_FIGURES (reckon/crew/pace_replay.py:445 _read_clock), rewrites _read_row (line 500) to read both clocks and flag a primary-only row, adds _operative_clock (line 549) and branches _recomputed_allowance (line 564) on the window the row reports, plus the two test files; all three files sit inside the declared scope.\nCALL_SITES: reckon/crew/pace_replay.py:replay_committed_rows, reckon/crew/pace_replay.py:replay_project\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/pace_replay.py:564 reproduces the recorded allowance from the row's own window for both the short-sibling (week) and the primary-only (elapsed-fraction) branches, matching reckon/budget.py:1946 _group_allowance, which this node did not change.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head arm is recorded (head-gate.log, 176 passed EXIT=0) and I re-ran tests/test_pace_replay.py::test_a_primary_only_window_replays_its_own_allowance green at a9046c79c, but the base arm the done_when names is truncated (base-gate.log ends at 82% with no summary), so the \"each fails at the base\" half rests on an incomplete run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a9046c79c touches exactly three of the manifest's seven declared write paths and adds no file outside them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_pace_replay.py:664 asserts the replay's reproduced allowance equals the producer-derived row[\"allowance\"] from budget.pace_row (an independent source) and negative-control.log reddens it at EXIT=1 when the window length is dropped; the week-half fixture in tests/test_pace_replay.py:52 still builds its allowance through the same pace.allowance_for_group the module uses, so that half shares the module under test.\nSCORE fit: 19\nJUSTIFICATION fit: the new names (_operative_clock, _raw_at, _FIVE_HOUR_PERIOD) are mechanism-named with no plan or ticket identifier and follow the module's guarded-reader idiom at reckon/crew/pace_replay.py:445; _FIVE_HOUR_PERIOD duplicates the literal already in _CLOCK_PERIODS.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T163633587568-pace-row-replays-its-window/base-gate.log:6 follow-on: the base arm did not run to completion (the log ends at 82% with no pytest summary or EXIT line), so the done-when's requirement that each id fail at the base revision in a recorded log is unmet by a completed run and the six failing ids cannot be read from it; negative-control.log reddens only three of them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T163633587568-pace-row-replays-its-window/head-gate.log:1 follow-on: the head arm's header names revision 6629fed0468f37540abab8039d5d75abc352e158 (the base commit) while its tree line reads \"worktree, uncommitted node changes\", so a reader taking the header revision at face value reads the 176-passed head arm as run at the base rather than at a9046c79c.\nFINDING reckon/crew/pace_replay.py:88 follow-on: the changed replay is reachable only through this module's own wrappers (replay_committed_rows, replay_project) and is imported by no production caller anywhere in the repository, so the fix has no runtime effect until another node wires it; the wiring is outside this node's declared scope.\n",
+  "review_run_id": "r-20261002T173817113832-review-of-pace-row-replays-its-window",
+  "reviewed_base_sha": "6629fed0468f37540abab8039d5d75abc352e158",
+  "reviewed_head_sha": "a9046c79cc8c3a0901610797de8864cf0d0df961",
+  "reviewed_run_id": "r-20261002T163633587568-pace-row-replays-its-window",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T173817113832-review-of-pace-row-replays-its-window",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T18:03:03.705709+00:00",
+  "total": 89
+}

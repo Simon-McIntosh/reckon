@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs: baseline_suite (revision 0fdfb55702088e3615ce28ce8422cea9b0306153) failure_count 1 with the sole failure tests/test_graph_target_reads_one_readiness.py::test_graph_member_released_by_a_cleared_hold_is_ready_in_both_views, after_suite (revision 37cd98d5e45bbcdb0044e87578a162332c0052d3) failure_count 0 with no failure ids, so the head adds no failing test id over the base; independently reproduced in the reviewer's own scratch trees under $TMPDIR (base plus the new test 1 failed/353 passed EXIT=1, head 354 passed EXIT=0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/roadmap.py:1727",
+    "reckon/roadmap.py:1732",
+    "reckon/mcp.py:3977"
+  ],
+  "completed_at": "2026-10-04T11:40:52.107Z",
+  "dispatched_at": "2026-10-04T11:30:02Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read against base 0fdfb5570; commit 37cd98d5e replaces the inline ready-atom condition in resolve_graph_target with member_row = schedule_rows.get(key) tested as member_row.get(\"ready\") and dependencies_complete (reckon/roadmap.py:1891), and commit 2a9ca5fa adds the evidence fragment; git diff --stat gives +215/-18 across three files, reckon/roadmap.py (28 lines), tests/test_graph_target_reads_one_readiness.py (168 new) and one fragment.",
+    "done_when": "the plan's \u00a74 done_when asks for a graph target's released member to be ready in both views and for a partial clear to stay blocked in both; tests/test_graph_target_reads_one_readiness.py:137 asserts the released member is ready_now on the roadmap and \"sample:probed\" in the graph ready set while its member status stays \"blocked\", and :157 asserts the partial clear keeps the plan blocked in both with \"later\" named as the remaining held blocker.",
+    "goal": "the plan's \u00a74 goal is one readiness computation for both surfaces; resolve_graph_target (reckon/roadmap.py:1736) now sets each member's readiness from the roadmap row's own verdict schedule_rows[key][\"ready\"], whose build_roadmap is_ready already carries the cleared-hold release (authorised = status in _AUTHORISED_STATUSES or slug in released_by_clear at reckon/roadmap.py:2863), ANDed with the graph's own cross-project plan_blocking_graph dependency check, so a plan released by a cleared hold appears in both the roadmap ready set and the graph ready set.",
+    "manifest": "read; it records the head gate 348 passed EXIT=0 at 37cd98d5e, the base negative control 1 failed/347 passed EXIT=1 at 0fdfb5570 with the sole failure being the released-in-both-views test and the message \"assert [] == ['sample:probed']\", and the importer population 346 passed at both arms EXIT=0; baseline_suite and after_suite are structured with failure_ids [\"tests/test_graph_target_reads_one_readiness.py::test_graph_member_released_by_a_cleared_hold_is_ready_in_both_views\"] (base) and [] (head).",
+    "write_paths": "the reviewed manifest declares reckon/roadmap.py, tests/test_graph_target_reads_one_readiness.py and docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-graph-target-reads-one-readiness.html; the 0fdfb5570..2a9ca5fa diff lies entirely inside those three paths."
+  },
+  "justifications": {
+    "durability": "the new test is red at base (verified independently: tests/test_graph_target_reads_one_readiness.py:152 fails with assert [] == ['sample:probed'] when resolve_graph_target builds its own ready list), so reverting the change to read the roadmap row's verdict reddens the test; tests/test_graph_target.py and the other 33 roadmap importer files stay green at head, so the guard is durable and adds no regression.",
+    "evidence": "both done-when cases are tested and the arms are recorded in the reviewed run's own baseline_suite and after_suite gate logs (base 1 failure, head 0), and the reviewer reproduced the arms independently in scratch trees under $TMPDIR (base 0fdfb5570 plus the new test: 1 failed/353 passed EXIT=1, the failure being assert [] == ['sample:probed']; head 37cd98d5e: 354 passed EXIT=0), yielding zero added failures.",
+    "fit": "the change reuses schedule_rows, already built in the same function for deferred_members, and delegates to the single readiness computation in build_roadmap instead of duplicating the ready atom inline; the new test file is ruff-clean and the changed roadmap.py introduces no new findings over the base blob (the same 3 pre-existing findings at both arms), and the evidence fragment is a complete HTML document.",
+    "goal_fidelity": "the graph ready set is now member_row.get(\"ready\") and dependencies_complete (reckon/roadmap.py:1891), where member_row[\"ready\"] is build_roadmap's is_ready which already folds in the cleared-hold release (reckon/roadmap.py:2863-2871), so a plan released by a cleared hold appears in both views exactly as the \u00a74 goal requires, with the cross-project closure dependency check kept as the only graph-specific term.",
+    "scope_discipline": "git diff --stat 0fdfb5570..2a9ca5fa touches only reckon/roadmap.py, tests/test_graph_target_reads_one_readiness.py and the one evidence fragment, all declared in the reviewed manifest; the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan's \u00a74 goal is one readiness computation for both surfaces; resolve_graph_target (reckon/roadmap.py:1736) now sets each member's readiness from the roadmap row's own verdict schedule_rows[key][\"ready\"], whose build_roadmap is_ready already carries the cleared-hold release (authorised = status in _AUTHORISED_STATUSES or slug in released_by_clear at reckon/roadmap.py:2863), ANDed with the graph's own cross-project plan_blocking_graph dependency check, so a plan released by a cleared hold appears in both the roadmap ready set and the graph ready set.\nVERDICT done_when: the plan's \u00a74 done_when asks for a graph target's released member to be ready in both views and for a partial clear to stay blocked in both; tests/test_graph_target_reads_one_readiness.py:137 asserts the released member is ready_now on the roadmap and \"sample:probed\" in the graph ready set while its member status stays \"blocked\", and :157 asserts the partial clear keeps the plan blocked in both with \"later\" named as the remaining held blocker.\nVERDICT write_paths: the reviewed manifest declares reckon/roadmap.py, tests/test_graph_target_reads_one_readiness.py and docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-graph-target-reads-one-readiness.html; the 0fdfb5570..2a9ca5fa diff lies entirely inside those three paths.\nVERDICT manifest: read; it records the head gate 348 passed EXIT=0 at 37cd98d5e, the base negative control 1 failed/347 passed EXIT=1 at 0fdfb5570 with the sole failure being the released-in-both-views test, and the importer population 346 passed at both arms EXIT=0; baseline_suite and after_suite are structured with failure_ids [\"tests/test_graph_target_reads_one_readiness.py::test_graph_member_released_by_a_cleared_hold_is_ready_in_both_views\"] (base) and [] (head).\nVERDICT diff: read against base 0fdfb5570; commit 37cd98d5e replaces the inline ready-atom condition in resolve_graph_target with member_row = schedule_rows.get(key) tested as member_row.get(\"ready\") and dependencies_complete (reckon/roadmap.py:1891), and commit 2a9ca5fa adds the evidence fragment; +215/-18 across three files.\nCALL_SITES: reckon/roadmap.py:1727, reckon/roadmap.py:1732, reckon/mcp.py:3977\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the graph ready set is now member_row.get(\"ready\") and dependencies_complete (reckon/roadmap.py:1891), where member_row[\"ready\"] is build_roadmap's is_ready which already folds in the cleared-hold release (reckon/roadmap.py:2863-2871), so a plan released by a cleared hold appears in both views exactly as the \u00a74 goal requires, with the cross-project closure dependency check kept as the only graph-specific term.\nSCORE evidence: 19\nJUSTIFICATION evidence: both done-when cases are tested and the arms are recorded in the reviewed run's own baseline_suite and after_suite gate logs (base 1 failure, head 0), and the reviewer reproduced the arms independently in scratch trees under $TMPDIR (base 0fdfb5570 plus the new test: 1 failed/353 passed EXIT=1, the failure being assert [] == ['sample:probed']; head 37cd98d5e: 354 passed EXIT=0), yielding zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 0fdfb5570..2a9ca5fa touches only reckon/roadmap.py, tests/test_graph_target_reads_one_readiness.py and the one evidence fragment, all declared in the reviewed manifest; the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the new test is red at base (verified independently: tests/test_graph_target_reads_one_readiness.py:152 fails with assert [] == ['sample:probed'] when resolve_graph_target builds its own ready list), so reverting the change to read the roadmap row's verdict reddens the test; tests/test_graph_target.py and the other 33 roadmap importer files stay green at head, so the guard is durable and adds no regression.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses schedule_rows, already built in the same function for deferred_members, and delegates to the single readiness computation in build_roadmap instead of duplicating the ready atom inline; the new test file is ruff-clean and the changed roadmap.py introduces no new findings over the base blob (the same 3 pre-existing findings at both arms), and the evidence fragment is a complete HTML document.\n",
+  "review_run_id": "r-20261004T112947018228-review-of-a-graph-target-reads-one-readiness",
+  "reviewed_base_sha": "0fdfb55702088e3615ce28ce8422cea9b0306153",
+  "reviewed_head_sha": "2a9ca5fa3b9111b686571c6d83aa60e2314a7d80",
+  "reviewed_run_id": "r-20261004T110102591352-a-graph-target-reads-one-readiness",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T112947018228-review-of-a-graph-target-reads-one-readiness",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T11:39:56.687817+00:00",
+  "total": 97
+}

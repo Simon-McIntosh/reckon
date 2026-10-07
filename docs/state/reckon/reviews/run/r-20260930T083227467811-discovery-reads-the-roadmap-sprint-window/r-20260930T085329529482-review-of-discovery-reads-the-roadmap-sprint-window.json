@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:2021 _summary_sprint_rows reached from the read_plan MCP tool (mcp.py:5110 _read_plan_tool via mcp.py:710 _read_plan) and from the audit MCP tool (mcp.py:5124 _audit_tool via mcp.py:4575 _audit)"
+  ],
+  "completed_at": "2026-09-30T09:12:40.444Z",
+  "dispatched_at": "2026-09-30T08:53:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window/logs/head.log",
+      "line": "1",
+      "text": "the header reads rev=49d95a386791ec396e9142c2b78abca28990f96e for the head arm whose tree carried the change, whose 123 collected tests sit one above the base arm's 122 with the new case as the difference, so the log names a revision that is not the one it measured and a reader cannot tie the head figure to ec9da9532 from the record alone."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window/logs/base.log",
+      "line": "1",
+      "text": "both arms spell their first-line revision rev=<sha> where the reader's pattern at reckon/crew/review.py:507 is revision[:] <sha>, so recorded_log_revision returns None for each and any stored review of this run carries null base_log_revision and head_log_revision, as this one does, leaving the count unattached to a commit for every automatic reader even though the manifest's own test_logs naming is correct."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window/manifest.md",
+      "line": "14",
+      "text": "the two arms are recorded only under tests: and test_logs: while the review reader at reckon/crew/review.py:487 derives the added-failure count from manifest fields named baseline_suite and after_suite, so an automatic reader of this run reports the count as unmeasured rather than as the zero its logs support."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the single commit ec9da9532 against base 49d95a38 \u2014 it deletes the duplicated resolver from reckon/mcp.py, routes the window through roadmap at reckon/mcp.py:2021, and adds the sentinel case at tests/test_summaries_list_live_and_recent_sprints.py:333, under a conventional subject with a body.",
+    "done_when": "the fence asks for a sentinel-window case, a mutation log, and one base and one head log over the same six test files each headed with its revision showing zero added failures by id; the case is at tests/test_summaries_list_live_and_recent_sprints.py:333 and the mutation log's first line repeats the declared string verbatim and ends EXIT=1, yet logs/head.log:1 is headed rev=49d95a386791ec396e9142c2b78abca28990f96e so the each-headed-with-its-revision clause is not met as written.",
+    "goal": "the goal is that discovery resolves the recent-sprint window through the roadmap's own resolver so the configured window has one owner, and reckon/mcp.py:2021 now calls roadmap._sprint_recent_days while grep over ec9da9532 finds no remaining reference to the deleted _resolved_sprint_recent_days and no second copy of the resolution anywhere under reckon/.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window/manifest.md; status is complete, the landing and tests lines state 122 passed at the base and 123 at the head with zero added failures by id, and the negative-control line names a log whose first line repeats the declared mutation verbatim and whose last line is EXIT=1.",
+    "write_paths": "the manifest declares reckon/mcp.py, tests/test_summaries_list_live_and_recent_sprints.py and one fragment plus one figure directory, and git show --stat ec9da9532 changes exactly the two product paths with no fragment, which is what the small-node rule instructs where the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "the case at tests/test_summaries_list_live_and_recent_sprints.py:333 reddens when the duplicate resolver is reinstated, which the negative-control log shows and which I reproduced against the base source, and it asserts both surfaces through a sentinel the code under test cannot supply itself, though it guards the resolution path rather than the config read that the neighbouring case at tests/test_summaries_list_live_and_recent_sprints.py:314 covers.",
+    "evidence": "both arms reconcile with their own logs and I reproduced the split independently \u2014 base source plus the new case 1 failed and 7 passed, head source 8 passed \u2014 but logs/head.log:1 names the base revision for the head arm and both logs spell it rev=<sha>, which the reader at reckon/crew/review.py:507 does not match, so the stored record's two revision fields are null and the 123-passed figure attaches to ec9da9532 only by the plus-one test count.",
+    "fit": "the change matches the surrounding idiom and updates the docstring at reckon/mcp.py:2017 to name the resolver it now uses, with no plan labels or version suffixes in the diff, and the one smell \u2014 a private name read across modules \u2014 is named by the node itself under follow_ons.",
+    "goal_fidelity": "reckon/mcp.py:2021 calls roadmap._sprint_recent_days and the resolver it replaces at reckon/roadmap.py:1162 keeps the deleted copy's fallback to the default window on an unresolvable config, so one owner is reached with no behaviour change for a project whose flight config cannot be read.",
+    "scope_discipline": "git show --stat ec9da9532 changes only reckon/mcp.py and tests/test_summaries_list_live_and_recent_sprints.py, both inside the declared paths, and adds nothing the goal does not imply."
+  },
+  "node": "review-of-discovery-reads-the-roadmap-sprint-window",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that discovery resolves the recent-sprint window through the roadmap's own resolver so the configured window has one owner, and reckon/mcp.py:2021 now calls roadmap._sprint_recent_days while grep over ec9da9532 finds no remaining reference to the deleted _resolved_sprint_recent_days and no second copy of the resolution anywhere under reckon/.\nVERDICT done_when: the fence asks for a sentinel-window case, a mutation log, and one base and one head log over the same six test files each headed with its revision showing zero added failures by id; the case is at tests/test_summaries_list_live_and_recent_sprints.py:333 and the mutation log's first line repeats the declared string verbatim and ends EXIT=1, yet logs/head.log:1 is headed rev=49d95a386791ec396e9142c2b78abca28990f96e so the each-headed-with-its-revision clause is not met as written.\nVERDICT write_paths: the manifest declares reckon/mcp.py, tests/test_summaries_list_live_and_recent_sprints.py and one fragment plus one figure directory, and git show --stat ec9da9532 changes exactly the two product paths with no fragment, which is what the small-node rule instructs where the done-when names no artifact.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window/manifest.md; status is complete, the landing and tests lines state 122 passed at the base and 123 at the head with zero added failures by id, and the negative-control line names a log whose first line repeats the declared mutation verbatim and whose last line is EXIT=1.\nVERDICT diff: read the single commit ec9da9532 against base 49d95a38 \u2014 it deletes the duplicated resolver from reckon/mcp.py, routes the window through roadmap at reckon/mcp.py:2021, and adds the sentinel case at tests/test_summaries_list_live_and_recent_sprints.py:333, under a conventional subject with a body.\nCALL_SITES: reckon/mcp.py:2021 _summary_sprint_rows reached from the read_plan MCP tool (mcp.py:5110 _read_plan_tool via mcp.py:710 _read_plan) and from the audit MCP tool (mcp.py:5124 _audit_tool via mcp.py:4575 _audit)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2021 calls roadmap._sprint_recent_days and the resolver it replaces at reckon/roadmap.py:1162 keeps the deleted copy's fallback to the default window on an unresolvable config, so one owner is reached with no behaviour change for a project whose flight config cannot be read.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms reconcile with their own logs and I reproduced the split independently \u2014 base source plus the new case 1 failed and 7 passed, head source 8 passed \u2014 but logs/head.log:1 names the base revision for the head arm and both logs spell it rev=<sha>, which the reader at reckon/crew/review.py:507 does not match, so the stored record's two revision fields are null and the 123-passed figure attaches to ec9da9532 only by the plus-one test count.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat ec9da9532 changes only reckon/mcp.py and tests/test_summaries_list_live_and_recent_sprints.py, both inside the declared paths, and adds nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the case at tests/test_summaries_list_live_and_recent_sprints.py:333 reddens when the duplicate resolver is reinstated, which the negative-control log shows and which I reproduced against the base source, and it asserts both surfaces through a sentinel the code under test cannot supply itself, though it guards the resolution path rather than the config read that the neighbouring case at tests/test_summaries_list_live_and_recent_sprints.py:314 covers.\nSCORE fit: 18\nJUSTIFICATION fit: the change matches the surrounding idiom and updates the docstring at reckon/mcp.py:2017 to name the resolver it now uses, with no plan labels or version suffixes in the diff, and the one smell \u2014 a private name read across modules \u2014 is named by the node itself under follow_ons.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window/logs/head.log:1 the header reads rev=49d95a386791ec396e9142c2b78abca28990f96e for the head arm whose tree carried the change, whose 123 collected tests sit one above the base arm's 122 with the new case as the difference, so the log names a revision that is not the one it measured and a reader cannot tie the head figure to ec9da9532 from the record alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window/logs/base.log:1 both arms spell their first-line revision rev=<sha> where the reader's pattern at reckon/crew/review.py:507 is revision[:] <sha>, so recorded_log_revision returns None for each and any stored review of this run carries null base_log_revision and head_log_revision, as this one does, leaving the count unattached to a commit for every automatic reader even though the manifest's own test_logs naming is correct.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window/manifest.md:14 the two arms are recorded only under tests: and test_logs: while the review reader at reckon/crew/review.py:487 derives the added-failure count from manifest fields named baseline_suite and after_suite, so an automatic reader of this run reports the count as unmeasured rather than as the zero its logs support.",
+  "review_run_id": "r-20260930T085329529482-review-of-discovery-reads-the-roadmap-sprint-window",
+  "reviewed_base_sha": "49d95a386791ec396e9142c2b78abca28990f96e",
+  "reviewed_head_sha": "ec9da9532e937abb7337ec032267f70e932f6ee1",
+  "reviewed_run_id": "r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window",
+  "reviewer_run_id": "r-20260930T085329529482-review-of-discovery-reads-the-roadmap-sprint-window",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T09:07:02.724107+00:00",
+  "total": 93
+}

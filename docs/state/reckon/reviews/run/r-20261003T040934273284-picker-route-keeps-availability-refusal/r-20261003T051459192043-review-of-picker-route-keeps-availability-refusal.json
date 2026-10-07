@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "8a81c011d77a5f8cf422ab9f5963b72ffbbb1fb2",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:1823",
+    "reckon/crew/dispatch.py:5908",
+    "reckon/crew/dispatch.py:4436"
+  ],
+  "completed_at": "2026-10-03T05:21:18.765Z",
+  "dispatched_at": "2026-10-03T05:15:24Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_route_keeps_availability_refusal.py",
+      "line": "328",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded base arm (base-gate.log, revision 8a81c011d) predates the two cases this commit adds, so neither test_the_cli_path_passes_precomputed_picker_inputs nor test_an_input_build_failure_falls_back_naming_the_input was demonstrated red against the pre-change tree; the red-at-base for both is inferred by reading the code, not recorded by an arm."
+    }
+  ],
+  "head_log_revision": "ae91c9d5941aefdc72914bdec1ceb86645bde0fb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 47da2dc0a against ae91c9d5: reckon/cli.py gains a build_picker_inputs call whose four returns are passed into dispatch_picker_selection, and reckon/crew/dispatch.py:4385 factors the three per-input guards into one public build_picker_inputs that dispatch()'s no-selection branch at reckon/crew/dispatch.py:5908 now calls; 59 lines of new tests and the evidence fragment.",
+    "done_when": "the node's measure is that a live picker dispatch still refuses an unserved backend while the input reads move off the pick path; tests/test_picker_route_keeps_availability_refusal.py:328 asserts the CLI hands non-None records, verdict_inputs and budget_snapshot, and the recorded head gate is 55 passed EXIT=0 at ae91c9d5.",
+    "goal": "the goal is that the live picker dispatch's three picker inputs (ledger rows, verdict inputs, budget snapshot) are built outside the picker's 5 s latency bound; reckon/cli.py:1823 builds them with build_picker_inputs before dispatch_picker_selection, so the picker thread no longer pays that cost inside its bound.",
+    "manifest": "read; status complete, commits oldest-first ending ae91c9d5, changed_paths list reckon/crew/dispatch.py under the coordinator's explicit grant, after_suite 0 failed at ae91c9d5 and baseline_suite 6 failed at 8a81c011d, negative control 2 failed/1 passed.",
+    "write_paths": "the commit touches reckon/cli.py, reckon/crew/dispatch.py, tests/test_picker_route_keeps_availability_refusal.py and docs/evidence/fragments/one-typesafe-model-picker/picker-route-keeps-availability-refusal.html; dispatch.py lies outside the node's declared paths but the coordinator's resume advice grants it for exactly this helper, bounded to the input build and cli.py's call to it."
+  },
+  "justifications": {
+    "durability": "tests/test_picker_route_keeps_availability_refusal.py:328 reddens if cli.py stops passing precomputed inputs (the recording wrapper's captured dict loses the records key) and :358 reddens if the per-input guard is removed so _picker_verdict_inputs raising escapes as an exception; both name the regression they catch.",
+    "evidence": "the recorded head-gate.log names revision ae91c9d5 and 55 passed EXIT=0, and an independent re-run of the new test file alone at ae91c9d5 gives 7 passed EXIT=0; the cut is that the recorded base arm was taken at 8a81c011d and does not include the two cases this commit adds, so the red side of the new guards is a reading rather than a measured arm.",
+    "fit": "build_picker_inputs at reckon/crew/dispatch.py:4385 reuses the existing _picker_input helper and its per-input guard idiom, ruff adds zero findings on the changed files (cli.py 4->4, dispatch.py 7->7, test 0), and no name carries a plan label.",
+    "goal_fidelity": "reckon/cli.py:1823 reads the three inputs before dispatch_picker_selection at reckon/cli.py:1827, so the pick thread's bound covers the pick rather than the reads, exactly as plan \u00a78's latency goal requires.",
+    "scope_discipline": "the diff touches only the four paths the fragment names, and the one path outside the declared scope, reckon/crew/dispatch.py, is the input build the coordinator's resume advice explicitly authorises for this node."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the live picker dispatch's three picker inputs (ledger rows, verdict inputs, budget snapshot) are built outside the picker's 5 s latency bound; reckon/cli.py:1823 builds them with build_picker_inputs before dispatch_picker_selection, so the picker thread no longer pays that cost inside its bound.\nVERDICT done_when: the node's measure is that a live picker dispatch still refuses an unserved backend while the input reads move off the pick path; tests/test_picker_route_keeps_availability_refusal.py:328 asserts the CLI hands non-None records, verdict_inputs and budget_snapshot, and the recorded head gate is 55 passed EXIT=0 at ae91c9d5.\nVERDICT write_paths: the commit touches reckon/cli.py, reckon/crew/dispatch.py, tests/test_picker_route_keeps_availability_refusal.py and docs/evidence/fragments/one-typesafe-model-picker/picker-route-keeps-availability-refusal.html; dispatch.py lies outside the node's declared paths but the coordinator's resume advice grants it for exactly this helper, bounded to the input build and cli.py's call to it.\nVERDICT manifest: read; status complete, commits oldest-first ending ae91c9d5, changed_paths list reckon/crew/dispatch.py under the coordinator's explicit grant, after_suite 0 failed at ae91c9d5 and baseline_suite 6 failed at 8a81c011d, negative control 2 failed/1 passed.\nVERDICT diff: read 47da2dc0a against ae91c9d5: reckon/cli.py gains a build_picker_inputs call whose four returns are passed into dispatch_picker_selection, and reckon/crew/dispatch.py:4385 factors the three per-input guards into one public build_picker_inputs that dispatch()'s no-selection branch at reckon/crew/dispatch.py:5908 now calls; 59 lines of new tests and the evidence fragment.\nCALL_SITES: reckon/cli.py:1823, reckon/crew/dispatch.py:5908, reckon/crew/dispatch.py:4436\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:1823 reads the three inputs before dispatch_picker_selection at reckon/cli.py:1827, so the pick thread's bound covers the pick rather than the reads, exactly as plan \u00a78's latency goal requires.\nSCORE evidence: 18\nJUSTIFICATION evidence: the recorded head-gate.log names revision ae91c9d5 and 55 passed EXIT=0, and an independent re-run of the new test file alone at ae91c9d5 gives 7 passed EXIT=0; the cut is that the recorded base arm was taken at 8a81c011d and does not include the two cases this commit adds, so the red side of the new guards is a reading rather than a measured arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only the four paths the fragment names, and the one path outside the declared scope, reckon/crew/dispatch.py, is the input build the coordinator's resume advice explicitly authorises for this node.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_picker_route_keeps_availability_refusal.py:328 reddens if cli.py stops passing precomputed inputs (the recording wrapper's captured dict loses the records key) and :358 reddens if the per-input guard is removed so _picker_verdict_inputs raising escapes as an exception; both name the regression they catch.\nSCORE fit: 19\nJUSTIFICATION fit: build_picker_inputs at reckon/crew/dispatch.py:4385 reuses the existing _picker_input helper and its per-input guard idiom, ruff adds zero findings on the changed files (cli.py 4->4, dispatch.py 7->7, test 0), and no name carries a plan label.\nFINDING tests/test_picker_route_keeps_availability_refusal.py:328 follow-on: the recorded base arm (base-gate.log, revision 8a81c011d) predates the two cases this commit adds, so neither test_the_cli_path_passes_precomputed_picker_inputs nor test_an_input_build_failure_falls_back_naming_the_input was demonstrated red against the pre-change tree; the red-at-base for both is inferred by reading the code, not recorded by an arm.\n",
+  "review_run_id": "r-20261003T051459192043-review-of-picker-route-keeps-availability-refusal",
+  "reviewed_base_sha": "47da2dc0a86ea611db272a85885ae8e585c5755b",
+  "reviewed_head_sha": "ae91c9d5941aefdc72914bdec1ceb86645bde0fb",
+  "reviewed_run_id": "r-20261003T040934273284-picker-route-keeps-availability-refusal",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T05:20:16.619441+00:00",
+  "total": 93
+}

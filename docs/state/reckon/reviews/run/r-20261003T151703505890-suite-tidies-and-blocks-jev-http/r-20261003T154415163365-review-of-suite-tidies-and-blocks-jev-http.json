@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "56b32133b371814567c2714ed9db66df7e0ca8de",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T15:54:55.695Z",
+  "dispatched_at": "2026-10-03T15:44:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151703505890-suite-tidies-and-blocks-jev-http/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate arm's header records the base revision 56b32133 with \"uncommitted head changes\" while the manifest's after_suite.revision asserts the commit da95e9148, so the gate-to-commit tie rests on the content digest alone; a reader reconciling the manifest against its own log finds a revision the log does not name."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/suite-cleans-its-temp.html",
+      "line": "39",
+      "severity": "follow-on",
+      "text": "follow-on: the head-row table has two consecutive tr start tags, so the before/after basetemp table is malformed HTML."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151703505890-suite-tidies-and-blocks-jev-http/negative-control.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control header names revision 56b32133 (base) although the case it reddens, test_a_present_credential_is_refused_before_the_network, exists only at head, so the header misnames the revision under test."
+    },
+    {
+      "file": "pyproject.toml",
+      "line": "61",
+      "severity": "follow-on",
+      "text": "follow-on: the node declared the figure path docs/figures/one-typesafe-model-picker/suite-tidies-and-blocks-jev-http and published no figure, so the headline basetemp reduction (12772 KB/3534 dirs to 2148 KB/1389 dirs) lives only in prose and a malformed table where a single before/after bar chart would carry it."
+    }
+  ],
+  "head_log_revision": "56b32133b371814567c2714ed9db66df7e0ca8de",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 56b32133; the commit adds one constant DECISIONS_ORIGIN to the picker client, a 24-line urlopen-wrapping guard in tests/conftest.py's no_live_jev fixture that raises LiveJevDisabledError for the picker's origin and delegates every other host, a 34-line present-credential test that patches socket.getaddrinfo as a lower-bound spy, the tmp_path_retention_policy ini line, and two HTML evidence fragments.",
+    "done_when": "The node's gate runs tests/test_suite_never_calls_live_jev.py plus all tests/test_picker*.py plus a fixed 20-file sample at an explicit per-arm basetemp; base 395 passed/2 skipped EXIT=0 and head 396 passed/2 skipped EXIT=0 with zero added failures, the extra case being the new present-credential guard; re-running tests/test_suite_never_calls_live_jev.py at reviewed head gives 4 passed EXIT=0.",
+    "goal": "The node fixes two suite-hygiene defects under \u00a76 fallout: pytest retained every test's tmp_path because the ini block set only timeout, and the live-Jev isolation rested on the credential being absent so a test that set the key would build and send a request; the change sets tmp_path_retention_policy = \"failed\" and wraps the picker client's urlopen in the autouse no_live_jev fixture, verified against the installed pytest default (\"all\") and by falsifying the guard at the socket layer.",
+    "manifest": "read; status complete, commit da95e9148, baseline_suite and after_suite both completed true with failure_count 0, negative_control_log named with its EXIT=1 and failing id test_a_present_credential_is_refused_before_the_network; the manifest's after_suite.revision names the committed head while the head gate log's own header names the base revision with uncommitted head changes, a mismatch the record carries rather than hides.",
+    "write_paths": "read; the diff touches pyproject.toml, tests/conftest.py, tests/test_suite_never_calls_live_jev.py, reckon/crew/picker/client.py and two evidence fragments, all inside the declared write paths; the declared figure path docs/figures/one-typesafe-model-picker/suite-tidies-and-blocks-jev-http is unwritten."
+  },
+  "justifications": {
+    "durability": "the guard is load-bearing (removing it lets a present credential reach openrouter.ai:443) and the new test screens at socket.getaddrinfo beneath any HTTP library, so a future switch away from urllib would turn it red rather than pass silently; the mild cuts are that the guard keys on a urllib monkeypatch and a literal origin prefix, so it protects only through that one call, and the retention policy is a repo-wide ini change whose blast radius is every test run.",
+    "evidence": "both arms carry revision headers and EXIT lines and re-derive to zero added failures, the negative control reddens exactly the new id at EXIT=1 caught by the socket spy, and I re-ran the isolation file at head to 4 passed; the cut is that the head gate log's first line reads revision 56b32133 with \"working tree: uncommitted head changes; content digest 35a1f2be7d40126b\" while the manifest's after_suite.revision states the commit da95e9148, so the log alone cannot tie the gate to that commit, and the negative-control header likewise names 56b32133 though the test it runs exists only at head.",
+    "fit": "names follow mechanism (DECISIONS_ORIGIN, refuse_live_jev, test_a_present_credential_is_refused_before_the_network), the commit carries a conventional subject and a body with no AI attribution trailer, and the two evidence fragments verify the plan section; the cut is a malformed table row in suite-cleans-its-temp.html where a tr start tag is doubled.",
+    "goal_fidelity": "pytest's installed default retention is \"all\" (checked in _pytest/tmpdir.py, default=\"all\"), so tmp_path_retention_policy=\"failed\" is the effective change the goal names, and the guard wraps exactly the call reckon/crew/picker/client.py:ask makes (urllib.request.urlopen on a Request whose full_url starts with DECISIONS_ORIGIN), which I falsified by calling client.ask with a credential present and no guard and watching getaddrinfo be reached.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, the change adds no field or file the goal does not imply, and no production module outside the picker client is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node fixes two suite-hygiene defects under \u00a76 fallout: pytest retained every test's tmp_path because the ini block set only timeout, and the live-Jev isolation rested on the credential being absent so a test that set the key would build and send a request; the change sets tmp_path_retention_policy = \"failed\" and wraps the picker client's urlopen in the autouse no_live_jev fixture, verified against the installed pytest default (\"all\") and by falsifying the guard at the socket layer.\nVERDICT done_when: The node's gate runs tests/test_suite_never_calls_live_jev.py plus all tests/test_picker*.py plus a fixed 20-file sample at an explicit per-arm basetemp; base 395 passed/2 skipped EXIT=0 and head 396 passed/2 skipped EXIT=0 with zero added failures, the extra case being the new present-credential guard; re-running tests/test_suite_never_calls_live_jev.py at reviewed head gives 4 passed EXIT=0.\nVERDICT write_paths: read; the diff touches pyproject.toml, tests/conftest.py, tests/test_suite_never_calls_live_jev.py, reckon/crew/picker/client.py and two evidence fragments, all inside the declared write paths; the declared figure path docs/figures/one-typesafe-model-picker/suite-tidies-and-blocks-jev-http is unwritten.\nVERDICT manifest: read; status complete, commit da95e9148, baseline_suite and after_suite both completed true with failure_count 0, negative_control_log named with its EXIT=1 and failing id test_a_present_credential_is_refused_before_the_network; the manifest's after_suite.revision names the committed head while the head gate log's own header names the base revision with uncommitted head changes, a mismatch the record carries rather than hides.\nVERDICT diff: read commit by commit against base 56b32133; the commit adds one constant DECISIONS_ORIGIN to the picker client, a 24-line urlopen-wrapping guard in tests/conftest.py's no_live_jev fixture that raises LiveJevDisabledError for the picker's origin and delegates every other host, a 34-line present-credential test that patches socket.getaddrinfo as a lower-bound spy, the tmp_path_retention_policy ini line, and two HTML evidence fragments.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: pytest's installed default retention is \"all\" (checked in _pytest/tmpdir.py, default=\"all\"), so tmp_path_retention_policy=\"failed\" is the effective change the goal names, and the guard wraps exactly the call reckon/crew/picker/client.py:ask makes (urllib.request.urlopen on a Request whose full_url starts with DECISIONS_ORIGIN), which I falsified by calling client.ask with a credential present and no guard and watching getaddrinfo be reached.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arms carry revision headers and EXIT lines and re-derive to zero added failures, the negative control reddens exactly the new id at EXIT=1 caught by the socket spy, and I re-ran the isolation file at head to 4 passed; the cut is that the head gate log's first line reads revision 56b32133 with \"working tree: uncommitted head changes; content digest 35a1f2be7d40126b\" while the manifest's after_suite.revision states the commit da95e9148, so the log alone cannot tie the gate to that commit, and the negative-control header likewise names 56b32133 though the test it runs exists only at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, the change adds no field or file the goal does not imply, and no production module outside the picker client is touched.\nSCORE durability: 18\nJUSTIFICATION durability: the guard is load-bearing (removing it lets a present credential reach openrouter.ai:443) and the new test screens at socket.getaddrinfo beneath any HTTP library, so a future switch away from urllib would turn it red rather than pass silently; the mild cuts are that the guard keys on a urllib monkeypatch and a literal origin prefix, so it protects only through that one call, and the retention policy is a repo-wide ini change whose blast radius is every test run.\nSCORE fit: 18\nJUSTIFICATION fit: names follow mechanism (DECISIONS_ORIGIN, refuse_live_jev, test_a_present_credential_is_refused_before_the_network), the commit carries a conventional subject and a body with no AI attribution trailer, and the two evidence fragments verify the plan section; the cut is a malformed table row in suite-cleans-its-temp.html where a tr start tag is doubled.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151703505890-suite-tidies-and-blocks-jev-http/gate-head.log:1 follow-on: the head gate arm's header records the base revision 56b32133 with \"uncommitted head changes\" while the manifest's after_suite.revision asserts the commit da95e9148, so the gate-to-commit tie rests on the content digest alone; a reader reconciling the manifest against its own log finds a revision the log does not name.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/suite-cleans-its-temp.html:39 follow-on: the head-row table has two consecutive tr start tags, so the before/after basetemp table is malformed HTML.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151703505890-suite-tidies-and-blocks-jev-http/negative-control.log:2 follow-on: the negative-control header names revision 56b32133 (base) although the case it reddens, test_a_present_credential_is_refused_before_the_network, exists only at head, so the header misnames the revision under test.\nFINDING pyproject.toml:61 follow-on: the node declared the figure path docs/figures/one-typesafe-model-picker/suite-tidies-and-blocks-jev-http and published no figure, so the headline basetemp reduction (12772 KB/3534 dirs to 2148 KB/1389 dirs) lives only in prose and a malformed table where a single before/after bar chart would carry it.",
+  "review_run_id": "r-20261003T154415163365-review-of-suite-tidies-and-blocks-jev-http",
+  "reviewed_base_sha": "56b32133b371814567c2714ed9db66df7e0ca8de",
+  "reviewed_head_sha": "da95e914820e30cfa0be275c6ec7287d4893b6e7",
+  "reviewed_run_id": "r-20261003T151703505890-suite-tidies-and-blocks-jev-http",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T15:52:23.748450+00:00",
+  "total": 92
+}

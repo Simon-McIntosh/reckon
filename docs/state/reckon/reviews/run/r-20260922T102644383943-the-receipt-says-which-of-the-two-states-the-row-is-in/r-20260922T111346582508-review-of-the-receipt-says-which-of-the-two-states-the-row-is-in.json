@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked reached from promotion.py:2356 by the promotion entry point",
+    "reckon/cli.py:2790 the crew complete command"
+  ],
+  "commits_read": [
+    "73cb04f97eb3c1533b4779c89469101eac6501fa",
+    "52f08a09517ad2afcc024fb90880bc40394c31d5",
+    "01277e552f4482bf26b9a74e6c10396074eb7628",
+    "24ead5c90f8a153415a953c4ef15651257687c6a"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T11:13:46.582508+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/gate.log",
+      "line": "1",
+      "text": "the log carries only the pytest tail with no first line naming the revision, tree and command the manifest contract requires, and gate-new-file.log:1 and gate-rollback-file.log:1 are the same, so a later reader cannot tie either count to the tree it ran at."
+    }
+  ],
+  "gate_rerun": {
+    "command": "env -C /tmp PYTHONPATH=<target-worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q <target-worktree>/tests/test_receipt_names_the_rolled_back_row.py <target-worktree>/tests/test_rollback_asks_head.py",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T111346582508-review-of-the-receipt-says-which-of-the-two-states-the-row-is-in/review-gate-recheck.log",
+    "result": "15 passed, exit 0",
+    "revision": "24ead5c90f8a153415a953c4ef15651257687c6a"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit \u2014 73cb04f9 is the rollback report and receipt branch plus the new test file, 52f08a09 the plan, evidence and figure, 01277e55 the parametrised derivation, 24ead5c9 the green docs rewrite; the two HTML records are insertions only over the range (0 deletions) and the code change is confined to the landing rollback and receipt path.",
+    "done_when": "the done-when names tests/test_receipt_names_the_rolled_back_row.py driving the promotion path with a real failing landing commit; the manifest records 3 passed there and 15 across it and tests/test_rollback_asks_head.py at 01277e55, and my re-run at the landed head 24ead5c9 reproduced 15 passed with the module resolving from the target tree.",
+    "goal": "the goal asks the failure receipt to tell a ledger row that survived the failed landing from one the rollback reverted and to name the recovery fitting the case; reckon/crew/promotion.py:1718 decides it from the rollback's per-path report together with the read-back, and promotion.py:1706 branches the emitted wording on it.",
+    "manifest": "read; it records the four commits, changed_paths, the gate command with both counts, the negative-control log and its note, evidence_inputs, follow_ons none, and names the third file as a granted extension rather than claiming it in scope.",
+    "write_paths": "the manifest declares five paths; git diff --numstat 654d1f0b 24ead5c9 touches exactly those five plus tests/test_rollback_asks_head.py, whose mid-flight extension is recorded in the run's resume-1-advice.txt."
+  },
+  "justifications": {
+    "durability": "the declared mutation replacing the branch at promotion.py:1706 with if False: reddens test_rolled_back_row_receipt_names_re_promotion_as_the_recovery (1 failed, 2 passed), which also asserts the row's absence from an independent ledger read at tests/test_receipt_names_the_rolled_back_row.py:104.",
+    "evidence": "the gate is the file the done-when names and I reproduced 15 passed at 24ead5c9 with the module resolving from the target tree, but the three gate logs are bare pytest tails with no revision or tree line, so the counts cannot be tied to the tree from the logs alone.",
+    "fit": "the private helpers with mechanism docstrings follow the module's existing idiom around promotion.py:1627 while keeping its call shape, and no symbol or comment carries a plan, ticket or stage identifier.",
+    "goal_fidelity": "promotion.py:1706 emits the rolled-back wording naming re-promotion as the recovery and promotion.py:1711 keeps the already-written wording where the report or the read-back says the row survives, which is the two-state distinction the goal names.",
+    "scope_discipline": "every path in git diff --numstat 654d1f0b 24ead5c9 is a declared path plus tests/test_rollback_asks_head.py, whose extension is recorded in resume-1-advice.txt and whose diff is 34 added and 3 removed lines confined to the parametrised test."
+  },
+  "negative_control_check": {
+    "declared_mutation": "delete the rolled-back branch decision: replace \"if _ledger_row_was_rolled_back(exc, ledger_path, row_present):\" with \"if False:\" in reckon/crew/promotion.py",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/negative-control-rolled-back-branch-deleted.log",
+    "result": "1 failed, 2 passed; test_rolled_back_row_receipt_names_re_promotion_as_the_recovery red on the wording assertion"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the failure receipt to tell a ledger row that survived the failed landing from one the rollback reverted and to name the recovery fitting the case; reckon/crew/promotion.py:1718 decides it from the rollback's per-path report together with the read-back, and promotion.py:1706 branches the emitted wording on it.\nVERDICT done_when: the done-when names tests/test_receipt_names_the_rolled_back_row.py driving the promotion path with a real failing landing commit; the manifest records 3 passed there and 15 across it and tests/test_rollback_asks_head.py at 01277e55, and my re-run at the landed head 24ead5c9 reproduced 15 passed with the module resolving from the target tree.\nVERDICT write_paths: the manifest declares five paths; git diff --numstat 654d1f0b 24ead5c9 touches exactly those five plus tests/test_rollback_asks_head.py, whose mid-flight extension is recorded in the run's resume-1-advice.txt.\nVERDICT manifest: read; it records the four commits, changed_paths, the gate command with both counts, the negative-control log and its note, evidence_inputs, follow_ons none, and names the third file as a granted extension rather than claiming it in scope.\nVERDICT diff: read commit by commit \u2014 73cb04f9 is the rollback report and receipt branch plus the new test file, 52f08a09 the plan, evidence and figure, 01277e55 the parametrised derivation, 24ead5c9 the green docs rewrite; the two HTML records are insertions only over the range (0 deletions) and the code change is confined to the landing rollback and receipt path.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked reached from promotion.py:2356 by the promotion entry point, reckon/cli.py:2790 the crew complete command\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:1706 emits the rolled-back wording naming re-promotion as the recovery and promotion.py:1711 keeps the already-written wording where the report or the read-back says the row survives, which is the two-state distinction the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is the file the done-when names and I reproduced 15 passed at 24ead5c9 with the module resolving from the target tree, but the three gate logs are bare pytest tails with no revision or tree line, so the counts cannot be tied to the tree from the logs alone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --numstat 654d1f0b 24ead5c9 is a declared path plus tests/test_rollback_asks_head.py, whose extension is recorded in resume-1-advice.txt and whose diff is 34 added and 3 removed lines confined to the parametrised test.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation replacing the branch at promotion.py:1706 with if False: reddens test_rolled_back_row_receipt_names_re_promotion_as_the_recovery (1 failed, 2 passed), which also asserts the row's absence from an independent ledger read at tests/test_receipt_names_the_rolled_back_row.py:104.\nSCORE fit: 19\nJUSTIFICATION fit: the private helpers with mechanism docstrings follow the module's existing idiom around promotion.py:1627 while keeping its call shape, and no symbol or comment carries a plan, ticket or stage identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/gate.log:1 the log carries only the pytest tail with no first line naming the revision, tree and command the manifest contract requires, and gate-new-file.log:1 and gate-rollback-file.log:1 are the same, so a later reader cannot tie either count to the tree it ran at.",
+  "review_run_id": "r-20260922T111346582508-review-of-the-receipt-says-which-of-the-two-states-the-row-is-in",
+  "reviewed_base_sha": "654d1f0b9c652c345d6e673a971ba84b72b02ae8",
+  "reviewed_head_sha": "24ead5c90f8a153415a953c4ef15651257687c6a",
+  "reviewed_revision": "24ead5c90f8a153415a953c4ef15651257687c6a",
+  "reviewed_run_id": "r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in",
+  "reviewer_head_sha": "45b41040a341242ada6b621016bbc1398df506cf",
+  "reviewer_run_id": "r-20260922T111346582508-review-of-the-receipt-says-which-of-the-two-states-the-row-is-in",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T11:26:24.561825+00:00",
+  "total": 92
+}

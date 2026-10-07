@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed manifest's own gate logs: baseline_suite a45ee70a has 2 failures (test_many_misses_read_each_stored_record_at_most_once, test_a_record_at_its_expected_path_never_reaches_the_scan), after_suite aeabdfa0a has 0, so no failure is added at head; I reproduced both arms in a scratch extraction.",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": "a45ee70a796d93e2c9f1044f745912111322a594",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:311",
+    "reckon/crew/obligations.py:346",
+    "reckon/cli.py:4219"
+  ],
+  "completed_at": "2026-10-01T12:15:03.115Z",
+  "dispatched_at": "2026-10-01T12:07:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1431",
+      "severity": "follow-on",
+      "text": "follow-on: when a run has a file of its own whose stored head differs from the head asked about, stored_record now returns (None, None) instead of falling through to the store-wide search, so a legitimately misfiled record of that same run at the asked head is missed; the docstring's premise that a caller wanting the newest record asks again without a head holds for select_review_for_head but not for every caller, though the condition requires both an own file at a non-matching head and a misfiled record at the asked head."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1554",
+      "severity": "follow-on",
+      "text": "follow-on: the index caches each file's mtime_ns and reviewed head, and its identity is the directory's stat, which does not move when a record is rewritten in place; the selected file is re-read so its content is current, but the metadata that gates selection is stale, so a record rewritten in place so that its reviewed_head_sha or reviewed_run_id changes is not re-indexed and a lookup naming the new head or run selects nothing until the directory identity moves."
+    },
+    {
+      "file": "tests/test_misfiled_lookup_is_indexed.py",
+      "line": "97",
+      "severity": "follow-on",
+      "text": "follow-on: the bounded-read case asserts the total read count equals STORE_SIZE over twenty-five misses, which is exactly what proves the first miss reads every record file including those whose reviewed_run_id differs; done-when clause one is thus satisfied only after the first miss and is not separately asserted, so a reader cannot see the amortisation boundary from the test name alone."
+    }
+  ],
+  "head_log_revision": "aeabdfa0a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "the diff a45ee70a..62fdcfea is 3 files and 391 insertions; its substance is that stored_record returns without a store-wide search when the run has a file of its own, _record_filed_elsewhere answers from a per-directory index whose selected file is re-read, and the new tests fail at base and pass at head.",
+    "done_when": "the done-when is that a miss reads no record file whose reviewed_run_id differs, the misfiled case is still found, and a timing case over a synthesised store of a few thousand records shows the miss bounded independent of store size; tests/test_misfiled_lookup_is_indexed.py synthesises 3,000 records and pins the first with 25 misses reading each file at most once (len(reads)==3000, no duplicate), the second with test_a_misfiled_record_is_still_found_and_flagged, and the third with a read-count that does not grow with the miss count rather than a wall-clock bound.",
+    "goal": "the node goal is that the misfiled-review fallback stops parsing the whole store on every miss; reckon/crew/review.py now answers a miss from an index keyed by reviewed_run_id built at most once per process and per store directory, refreshed when the directory's stat identity moves, and it skips the store-wide search entirely when the run has a bare or revision-keyed file of its own.",
+    "manifest": "the reviewed manifest reads status complete with commits aeabdfa0a and 62fdcfea4, registers readable baseline_suite (a45ee70a, 2 failed, EXIT=1) and after_suite (aeabdfa0a, 28 passed, EXIT=0) gate logs so the added-failure count derives to zero, and its negative_control_log is a bare path naming a mutation that disables the index cache.",
+    "write_paths": "three paths changed (reckon/crew/review.py, tests/test_misfiled_lookup_is_indexed.py, docs/evidence/fragments/scoring-should-stop-a-promotion/misfiled-lookup-is-indexed.html); git diff --stat a45ee70a..62fdcfea is exactly those three and no path outside the declared scope was touched."
+  },
+  "justifications": {
+    "durability": "the new cases fail on the base tree and pass at head, and the index is shown load-bearing by a real mutation rather than by a passing suite: disabling the cache turns the bounded-read case into 75,000 reads and EXIT=1, so the guard is what makes the test green; the head-mismatch case pins the short-circuit by spying on _record_filed_elsewhere rather than by a value it passed in.",
+    "evidence": "I reproduced the gate at head 62fdcfea in an isolated scratch extraction (28 passed, EXIT=0) and the base arm (2 failed, 26 passed, EXIT=1, both failures the new cases), and I reproduced the declared negative control by disabling the index cache, which reddened exactly test_many_misses_read_each_stored_record_at_most_once with 75,000 reads against 3,000 files (EXIT=1); the paired real-store obligations timings read head 19.447/19.846/20.176 s against base 23.580/26.277/23.441 s under a 22.4 s limit, and the two suite logs are readable so added_failure_count derives to zero. Marked down because done-when clause one is amortised rather than removed (the index build reads every file once, as its own test shows), and because the negative-control log's header names the base revision a45ee70a while the mutation it describes touches head-only code.",
+    "fit": "the index sits beside the existing store readers with the file's established docstring style, states its mechanism (a per-directory, per-process cache keyed on stat identity) rather than a plan or ticket, and both commit messages carry a body with no attribution, plan label or version identifier.",
+    "goal_fidelity": "the index is exactly the mechanism the followup names, keyed by reviewed_run_id and refreshed by the directory's stat identity, and the own-file short-circuit removes the scan the node was dispatched to remove; the short-circuit is wider than the goal and carries the narrowing recorded as a finding, which is why it is held below full marks.",
+    "scope_discipline": "git diff --stat a45ee70a..62fdcfea is 3 files and 391 insertions, all three inside the declared write paths, with the evidence fragment permitted by the landing contract, and ruff check and ruff format --check over the two changed Python paths are clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the misfiled-review fallback stops parsing the whole store on every miss; reckon/crew/review.py now answers a miss from an index keyed by reviewed_run_id built at most once per process and per store directory, refreshed when the directory's stat identity moves, and it skips the store-wide search entirely when the run has a bare or revision-keyed file of its own.\nVERDICT done_when: the done-when is that a miss reads no record file whose reviewed_run_id differs, the misfiled case is still found, and a timing case over a synthesised store of a few thousand records shows the miss bounded independent of store size; tests/test_misfiled_lookup_is_indexed.py synthesises 3,000 records and pins the first with 25 misses reading each file at most once (len(reads)==3000, no duplicate), the second with test_a_misfiled_record_is_still_found_and_flagged, and the third with a read-count that does not grow with the miss count rather than a wall-clock bound.\nVERDICT write_paths: three paths changed (reckon/crew/review.py, tests/test_misfiled_lookup_is_indexed.py, docs/evidence/fragments/scoring-should-stop-a-promotion/misfiled-lookup-is-indexed.html); git diff --stat a45ee70a..62fdcfea is exactly those three and no path outside the declared scope was touched.\nVERDICT manifest: the reviewed manifest reads status complete with commits aeabdfa0a and 62fdcfea4, registers readable baseline_suite (a45ee70a, 2 failed, EXIT=1) and after_suite (aeabdfa0a, 28 passed, EXIT=0) gate logs so the added-failure count derives to zero, and its negative_control_log is a bare path naming a mutation that disables the index cache.\nVERDICT diff: the diff a45ee70a..62fdcfea is 3 files and 391 insertions; its substance is that stored_record returns without a store-wide search when the run has a file of its own, _record_filed_elsewhere answers from a per-directory index whose selected file is re-read, and the new tests fail at base and pass at head.\nCALL_SITES: reckon/crew/recovery.py:311, reckon/crew/obligations.py:346, reckon/cli.py:4219\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the index is exactly the mechanism the followup names, keyed by reviewed_run_id and refreshed by the directory's stat identity, and the own-file short-circuit removes the scan the node was dispatched to remove; the short-circuit is wider than the goal and carries the narrowing recorded as a finding, which is why it is held below full marks.\nSCORE evidence: 18\nJUSTIFICATION evidence: I reproduced the gate at head 62fdcfea in an isolated scratch extraction (28 passed, EXIT=0) and the base arm (2 failed, 26 passed, EXIT=1, both failures the new cases), and I reproduced the declared negative control by disabling the index cache, which reddened exactly test_many_misses_read_each_stored_record_at_most_once with 75,000 reads against 3,000 files (EXIT=1); the paired real-store obligations timings read head 19.447/19.846/20.176 s against base 23.580/26.277/23.441 s under a 22.4 s limit, and the two suite logs are readable so added_failure_count derives to zero. Marked down because done-when clause one is amortised rather than removed (the index build reads every file once, as its own test shows), and because the negative-control log's header names the base revision a45ee70a while the mutation it describes touches head-only code.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat a45ee70a..62fdcfea is 3 files and 391 insertions, all three inside the declared write paths, with the evidence fragment permitted by the landing contract, and ruff check and ruff format --check over the two changed Python paths are clean.\nSCORE durability: 18\nJUSTIFICATION durability: the new cases fail on the base tree and pass at head, and the index is shown load-bearing by a real mutation rather than by a passing suite: disabling the cache turns the bounded-read case into 75,000 reads and EXIT=1, so the guard is what makes the test green; the head-mismatch case pins the short-circuit by spying on _record_filed_elsewhere rather than by a value it passed in.\nSCORE fit: 18\nJUSTIFICATION fit: the index sits beside the existing store readers with the file's established docstring style, states its mechanism (a per-directory, per-process cache keyed on stat identity) rather than a plan or ticket, and both commit messages carry a body with no attribution, plan label or version identifier.\nFINDING reckon/crew/review.py:1431 follow-on: when a run has a file of its own whose stored head differs from the head asked about, stored_record now returns (None, None) instead of falling through to the store-wide search, so a legitimately misfiled record of that same run at the asked head is missed; the docstring's premise that a caller wanting the newest record asks again without a head holds for select_review_for_head but not for every caller, though the condition requires both an own file at a non-matching head and a misfiled record at the asked head.\nFINDING reckon/crew/review.py:1554 follow-on: the index caches each file's mtime_ns and reviewed head, and its identity is the directory's stat, which does not move when a record is rewritten in place; the selected file is re-read so its content is current, but the metadata that gates selection is stale, so a record rewritten in place so that its reviewed_head_sha or reviewed_run_id changes is not re-indexed and a lookup naming the new head or run selects nothing until the directory identity moves.\nFINDING tests/test_misfiled_lookup_is_indexed.py:97 follow-on: the bounded-read case asserts the total read count equals STORE_SIZE over twenty-five misses, which is exactly what proves the first miss reads every record file including those whose reviewed_run_id differs; done-when clause one is thus satisfied only after the first miss and is not separately asserted, so a reader cannot see the amortisation boundary from the test name alone.",
+  "review_run_id": "r-20261001T120719584448-review-of-misfiled-lookup-is-indexed",
+  "reviewed_base_sha": "a45ee70a796d93e2c9f1044f745912111322a594",
+  "reviewed_head_sha": "62fdcfea450ee3eed2b23d3e2c5b99391a07d448",
+  "reviewed_run_id": "r-20261001T114504404027-misfiled-lookup-is-indexed",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.591374+00:00",
+  "total": 91
+}

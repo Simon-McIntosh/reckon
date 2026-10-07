@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3681",
+    "reckon/crew/dispatch.py:3700",
+    "reckon/crew/dispatch.py:3918",
+    "reckon/crew/routing.py:1270"
+  ],
+  "completed_at": "2026-09-25T18:45:06.708Z",
+  "dispatched_at": "2026-09-25T18:34:39Z",
+  "findings": [
+    {
+      "file": "tests/test_member_registration_commits.py",
+      "line": "254",
+      "text": "the case name still claims the retired commits-its-registration contract while the body asserts zero commits and no roster row, so a reader scanning ids reads the retired contract as covered."
+    },
+    {
+      "file": "tests/test_crew_ephemeral_members.py",
+      "line": "94",
+      "text": "the name still claims unnamed dispatches reuse their captured session while the body asserts a third disposable identity and no reuse, a name that now contradicts the assertions it fronts."
+    },
+    {
+      "file": "docs/evidence/archive/new-work-gets-a-new-worker-landed.html",
+      "line": "710",
+      "text": "the landing record quotes 13 passed in 6.23 s but its named receipt logs/head-arm-three-files.log carries 13 passed in 10.87s, so the duration is not verifiable from the receipt it points at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against ecd1528c; the single commit rewrites the two cases, adds the named-member companion, and records the landing in the plan and evidence files, touching no production source.",
+    "done_when": "the done_when names the two case ids, the three gate files passing whole at the head and zero added failure ids against 7e90064d; the manifest records all three and my own run at the landed head reproduces the gate (13 passed, exit 0).",
+    "goal": "the goal is to rewrite the two member tests that still asserted the retired shared session member; the bodies at tests/test_member_registration_commits.py:254 and tests/test_crew_ephemeral_members.py:94 now assert the disposable-<run id> identity, though both case names still state the retired contract.",
+    "manifest": "read; it records the gate result, the base and head arms with their failure ids, and the read-only-.git blocker, and the committed test blobs hash to the sha256 digests it records so the tested content is the committed content.",
+    "write_paths": "the node declared five paths and commit 8cedd826 touches four of them, the two test files, the evidence anchor and the plan's section, with nothing else in the diff."
+  },
+  "justifications": {
+    "durability": "reverting reckon/crew/dispatch.py:3681 to a session-derived member leaves the rewritten assertions false, since the member id loses its disposable- prefix, rev-list --count becomes 1 and the roster gains a row, and the base arm shows that contract red at 7e90064d.",
+    "evidence": "head-arm-three-files.log carries the 13-passed gate on the digests the commit holds and base-arm-named-tests.log carries the 2-failure reproduction, but docs/evidence/archive/new-work-gets-a-new-worker-landed.html:710 quotes 6.23 s where its named receipt says 10.87 s.",
+    "fit": "the rewritten cases reuse tests/test_crew_ephemeral_members.py's own helpers and style and introduce no plan, ticket or version identifier.",
+    "goal_fidelity": "tests/test_member_registration_commits.py:278 asserts the disposable member and tests/test_member_registration_commits.py:280 asserts zero commits, so the retired contract survives only in the case names at tests/test_member_registration_commits.py:254 and tests/test_crew_ephemeral_members.py:94.",
+    "scope_discipline": "every path in commit 8cedd826 is inside the declared write paths and no reckon/ source file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to rewrite the two member tests that still asserted the retired shared session member; the bodies at tests/test_member_registration_commits.py:254 and tests/test_crew_ephemeral_members.py:94 now assert the disposable-<run id> identity, though both case names still state the retired contract.\nVERDICT done_when: the done_when names the two case ids, the three gate files passing whole at the head and zero added failure ids against 7e90064d; the manifest records all three and my own run at the landed head reproduces the gate (13 passed, exit 0).\nVERDICT write_paths: the node declared five paths and commit 8cedd826 touches four of them, the two test files, the evidence anchor and the plan's section, with nothing else in the diff.\nVERDICT manifest: read; it records the gate result, the base and head arms with their failure ids, and the read-only-.git blocker, and the committed test blobs hash to the sha256 digests it records so the tested content is the committed content.\nVERDICT diff: read against ecd1528c; the single commit rewrites the two cases, adds the named-member companion, and records the landing in the plan and evidence files, touching no production source.\nCALL_SITES: reckon/crew/dispatch.py:3681, reckon/crew/dispatch.py:3700, reckon/crew/dispatch.py:3918, reckon/crew/routing.py:1270\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_member_registration_commits.py:278 asserts the disposable member and tests/test_member_registration_commits.py:280 asserts zero commits, so the retired contract survives only in the case names at tests/test_member_registration_commits.py:254 and tests/test_crew_ephemeral_members.py:94.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm-three-files.log carries the 13-passed gate on the digests the commit holds and base-arm-named-tests.log carries the 2-failure reproduction, but docs/evidence/archive/new-work-gets-a-new-worker-landed.html:710 quotes 6.23 s where its named receipt says 10.87 s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in commit 8cedd826 is inside the declared write paths and no reckon/ source file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: reverting reckon/crew/dispatch.py:3681 to a session-derived member leaves the rewritten assertions false, since the member id loses its disposable- prefix, rev-list --count becomes 1 and the roster gains a row, and the base arm shows that contract red at 7e90064d.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten cases reuse tests/test_crew_ephemeral_members.py's own helpers and style and introduce no plan, ticket or version identifier.\nFINDING tests/test_member_registration_commits.py:254 the case name still claims the retired commits-its-registration contract while the body asserts zero commits and no roster row, so a reader scanning ids reads the retired contract as covered.\nFINDING tests/test_crew_ephemeral_members.py:94 the name still claims unnamed dispatches reuse their captured session while the body asserts a third disposable identity and no reuse, a name that now contradicts the assertions it fronts.\nFINDING docs/evidence/archive/new-work-gets-a-new-worker-landed.html:710 the landing record quotes 13 passed in 6.23 s but its named receipt logs/head-arm-three-files.log carries 13 passed in 10.87s, so the duration is not verifiable from the receipt it points at.",
+  "review_run_id": "r-20260925T183428236086-review-of-member-tests-follow-disposable-identity",
+  "reviewed_base_sha": "ecd1528c40223e0a84b2cee08492a8e9a344ff54",
+  "reviewed_head_sha": "8cedd826764bd7716fbdc5db896405e481f8ca55",
+  "reviewed_run_id": "r-20260925T181651809360-member-tests-follow-disposable-identity",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T19:05:00+00:00",
+  "total": 91
+}

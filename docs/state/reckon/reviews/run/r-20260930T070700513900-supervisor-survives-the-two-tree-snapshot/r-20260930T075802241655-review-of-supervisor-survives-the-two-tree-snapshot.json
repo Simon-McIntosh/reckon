@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:7010",
+    "reckon/crew/dispatch.py:6786",
+    "reckon/crew/dispatch.py:6797",
+    "reckon/crew/dispatch.py:5090"
+  ],
+  "completed_at": "2026-09-30T08:32:37.480Z",
+  "dispatched_at": "2026-09-30T07:58:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "6914",
+      "text": "the supervisor's baseline no longer narrows to the two trees a fenced run can reach, so every fenced dispatch pays the full-registry snapshot again (312 trees at dispatch in the plan's own measurement, about 3.3 s per tree healthy and 30 s per tree degraded) while section 1's falsifier never drives the supervisor spec path, so no test reddens on the divergence."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "6453",
+      "text": "_confirm_supervisor_survived is byte-identical to the base revision and still raises whenever an exit record exists inside the two-second window whether or not that record names the worker the supervisor launched (probe in logs/refusal-probe.log), so the fix restores dispatch's return by keeping the supervisor busy rather than by making the return depend on the launch."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "6915",
+      "text": "the repair is anchored to a condition the diff leaves in place: with a fast filesystem or a small worktree registry the supervisor still completes inside the window and dispatch refuses exactly as reported, so the negative control shows only that the change is load-bearing, not that the refusal has been answered."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T070700513900-supervisor-survives-the-two-tree-snapshot/manifest.md",
+      "line": "12",
+      "text": "the manifest carries no baseline_suite or after_suite field, so the added-failure count for this run is unmeasured for every downstream reader, and its tests line reports the bounded eight-file pair at -n 4 in place of the done_when's -n 8 arm over the dispatch-importing files."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 57ccb6fe; the change stops _supervisor_spec carrying the fenced fact and stops _supervisor_tree_snapshot passing worktree or fenced to _write_boundary_tree_snapshot, so the supervisor's baseline is the full worktree registry again, while _confirm_supervisor_survived and the promotion comparison are untouched.",
+    "done_when": "I re-derived the gate in scratch trees \u2014 tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs is 1 failed EXIT=1 at base 57ccb6fe and 1 passed EXIT=0 at head 377dba269, and tests/test_boundary_check_reads_two_trees.py is 8 passed EXIT=0 at head, but the done_when's own arm measure (0 added failures, pytest-xdist -n 8 over the dispatch-importing files) was not met because both arms were killed at EXIT=124 with no summary line.",
+    "goal": "the goal is that dispatch returns once its supervisor runs again while keeping the two-tree boundary scan, and the landed change restores the return for the observed case but takes the two-tree snapshot off the supervisor path that docs/plans/the-boundary-check-reads-two-trees.html section 1 names explicitly.",
+    "manifest": "read; status complete with commits 0dfdddf18 and 377dba269, naming the root cause at reckon/crew/dispatch.py:6915 and disclosing the arm limitation under follow_ons, but it carries no baseline_suite or after_suite field, so both the review store's annotation and promotion's suite-delta reader see this run's arm result as prose only.",
+    "write_paths": "the reviewed manifest declares reckon/crew/dispatch.py, docs/evidence/fragments/the-boundary-check-reads-two-trees/supervisor-survives-the-two-tree-snapshot.html and a figures directory, and git show --stat on both commits shows dispatch.py (12 insertions, 11 deletions) and that fragment (72 insertions) with nothing outside them."
+  },
+  "justifications": {
+    "durability": "reverting the change reddens tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs, but that guard is keyed to the scan crossing the worktree registry root (tests/test_dispatch_returns_without_worker.py:627) while the launch-success refusal at reckon/crew/dispatch.py:6453 stays unguarded.",
+    "evidence": "the named test is genuinely red at base and green at head in my own scratch-tree runs (1 failed EXIT=1 at 57ccb6fe, 1 passed EXIT=0 at 377dba269) and the boundary file is 8 passed EXIT=0, but the done_when's arm measure is unmet and the reviewed manifest carries neither baseline_suite nor after_suite.",
+    "fit": "the change reads like its neighbours and introduces no forbidden name, but its docstring at reckon/crew/dispatch.py:6914 reverses a decision the same plan recorded as landed, leaving code and plan section 1 in disagreement.",
+    "goal_fidelity": "reckon/crew/dispatch.py:6914 sends the supervisor back to the full worktree registry, which docs/plans/the-boundary-check-reads-two-trees.html section 1 names among the two trees such a check should read, against a goal that says keeping the two-tree boundary scan.",
+    "scope_discipline": "both commits stay inside the paths the reviewed manifest declares and the reviewed worktree held nothing else at the reviewed head."
+  },
+  "node": "review-of-supervisor-survives-the-two-tree-snapshot",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that dispatch returns once its supervisor runs again while keeping the two-tree boundary scan, and the landed change restores the return for the observed case but takes the two-tree snapshot off the supervisor path that docs/plans/the-boundary-check-reads-two-trees.html section 1 names explicitly.\nVERDICT done_when: I re-derived the gate in scratch trees \u2014 tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs is 1 failed EXIT=1 at base 57ccb6fe and 1 passed EXIT=0 at head 377dba269, and tests/test_boundary_check_reads_two_trees.py is 8 passed EXIT=0 at head, but the done_when's own arm measure (0 added failures, pytest-xdist -n 8 over the dispatch-importing files) was not met because both arms were killed at EXIT=124 with no summary line.\nVERDICT write_paths: the reviewed manifest declares reckon/crew/dispatch.py, docs/evidence/fragments/the-boundary-check-reads-two-trees/supervisor-survives-the-two-tree-snapshot.html and a figures directory, and git show --stat on both commits shows dispatch.py (12 insertions, 11 deletions) and that fragment (72 insertions) with nothing outside them.\nVERDICT manifest: read; status complete with commits 0dfdddf18 and 377dba269, naming the root cause at reckon/crew/dispatch.py:6915 and disclosing the arm limitation under follow_ons, but it carries no baseline_suite or after_suite field, so both the review store's annotation and promotion's suite-delta reader see this run's arm result as prose only.\nVERDICT diff: read commit by commit against base 57ccb6fe; the change stops _supervisor_spec carrying the fenced fact and stops _supervisor_tree_snapshot passing worktree or fenced to _write_boundary_tree_snapshot, so the supervisor's baseline is the full worktree registry again, while _confirm_supervisor_survived and the promotion comparison are untouched.\nCALL_SITES: reckon/crew/dispatch.py:7010, reckon/crew/dispatch.py:6786, reckon/crew/dispatch.py:6797, reckon/crew/dispatch.py:5090\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:6914 sends the supervisor back to the full worktree registry, which docs/plans/the-boundary-check-reads-two-trees.html section 1 names among the two trees such a check should read, against a goal that says keeping the two-tree boundary scan.\nSCORE evidence: 12\nJUSTIFICATION evidence: the named test is genuinely red at base and green at head in my own scratch-tree runs (1 failed EXIT=1 at 57ccb6fe, 1 passed EXIT=0 at 377dba269) and the boundary file is 8 passed EXIT=0, but the done_when's arm measure is unmet and the reviewed manifest carries neither baseline_suite nor after_suite.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits stay inside the paths the reviewed manifest declares and the reviewed worktree held nothing else at the reviewed head.\nSCORE durability: 14\nJUSTIFICATION durability: reverting the change reddens tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs, but that guard is keyed to the scan crossing the worktree registry root (tests/test_dispatch_returns_without_worker.py:627) while the launch-success refusal at reckon/crew/dispatch.py:6453 stays unguarded.\nSCORE fit: 15\nJUSTIFICATION fit: the change reads like its neighbours and introduces no forbidden name, but its docstring at reckon/crew/dispatch.py:6914 reverses a decision the same plan recorded as landed, leaving code and plan section 1 in disagreement.\nFINDING reckon/crew/dispatch.py:6914 the supervisor's baseline no longer narrows to the two trees a fenced run can reach, so every fenced dispatch pays the full-registry snapshot again (312 trees at dispatch in the plan's own measurement, about 3.3 s per tree healthy and 30 s per tree degraded) while section 1's falsifier never drives the supervisor spec path, so no test reddens on the divergence.\nFINDING reckon/crew/dispatch.py:6453 _confirm_supervisor_survived is byte-identical to the base revision and still raises whenever an exit record exists inside the two-second window whether or not that record names the worker the supervisor launched (probe in logs/refusal-probe.log), so the fix restores dispatch's return by keeping the supervisor busy rather than by making the return depend on the launch.\nFINDING reckon/crew/dispatch.py:6915 the repair is anchored to a condition the diff leaves in place: with a fast filesystem or a small worktree registry the supervisor still completes inside the window and dispatch refuses exactly as reported, so the negative control shows only that the change is load-bearing, not that the refusal has been answered.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T070700513900-supervisor-survives-the-two-tree-snapshot/manifest.md:12 the manifest carries no baseline_suite or after_suite field, so the added-failure count for this run is unmeasured for every downstream reader, and its tests line reports the bounded eight-file pair at -n 4 in place of the done_when's -n 8 arm over the dispatch-importing files.\n",
+  "review_run_id": "r-20260930T075802241655-review-of-supervisor-survives-the-two-tree-snapshot",
+  "reviewed_base_sha": "57ccb6fef200d1f444f7c742d85555803d4f0976",
+  "reviewed_head_sha": "377dba269e52755cd33cd5ce6fcd638fcad98122",
+  "reviewed_run_id": "r-20260930T070700513900-supervisor-survives-the-two-tree-snapshot",
+  "reviewer_run_id": "r-20260930T075802241655-review-of-supervisor-survives-the-two-tree-snapshot",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T08:28:39.073776+00:00",
+  "total": 73
+}

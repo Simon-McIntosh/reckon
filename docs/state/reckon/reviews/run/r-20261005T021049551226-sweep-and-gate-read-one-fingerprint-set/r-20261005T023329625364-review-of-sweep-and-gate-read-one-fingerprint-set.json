@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3ab626d4103f7f57660409e4bcfd5ec0e06b9556",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:_plan_review_pending",
+    "reckon/crew/routing.py:require_plan_reviewed",
+    "reckon/crew/routing.py:_store_delivered_plan_review"
+  ],
+  "completed_at": "2026-10-05T02:38:57.599Z",
+  "dispatched_at": "2026-10-05T02:33:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/sweep-and-gate-read-one-fingerprint-set.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared write paths name an evidence fragment and a figure directory that the diff does not produce, so the node lands no durable evidence artifact of its own."
+    }
+  ],
+  "head_log_revision": "0f6c5f929f5690bc161593c1e8893f9db5b27079",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit against base 3ab626d41; 483f81dc3 adds the regression test and 0f6c5f929 introduces plan_review.py:598 _fingerprint_forms, rewires recovery.py:490-501 and routing.py:2613-2697 to the plan= parameter, and removes routing.py's hand-written {current, legacy} set.",
+    "done_when": "The done-when asks for a test storing a review under the legacy digest and asserting the sweep composes no review while the gate admits a build, the three named test files at 0 failed, and a negative control that reddens the no-compose case; tests/test_review_plan_command.py:219 test_sweep_and_gate_accept_the_same_review does exactly that, the gate log reports the four-file run at 65 passed EXIT=0, and negative-control.log shows 2 failed over the legacy no-compose cases with EXIT=1.",
+    "goal": "The goal is that one function in reckon/crew/plan_review.py returns the set of digests a plan's current content may be joined by and that the gate, sweep eligibility and composer read it without recovery.py or routing.py spelling the pair; reckon/crew/plan_review.py:598 _fingerprint_forms returns exactly that frozenset and recovery.py:494 _plan_review_pending and routing.py:2697 require_plan_reviewed now reach it through the new plan= parameter, matching the node's account.",
+    "manifest": "The manifest reports status complete, commits 483f81dc3 and 0f6c5f929, the four-file head gate, the ledger gate, the negative control and the zero-added-failure pair; the gate, ledger, negative-control and reproduction logs it names are present on disk under the run directory and were read.",
+    "write_paths": "The prompt fenced plan_review.py, recovery.py, routing.py, tests/test_review_reflex_sweep.py, tests/test_review_plan_command.py plus an evidence fragment and a figure directory; the diff touches only plan_review.py, recovery.py, routing.py and tests/test_review_plan_command.py, so every changed path is inside the grant though the declared fragment and figure were not produced."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows test_sweep_and_gate_accept_the_same_review[stored-legacy] and [delivered-legacy] failing when _plan_review_pending reads the current digest alone, so the added assertion reddens on the reinstated regression.",
+    "evidence": "baseline-regression.log reproduces the legacy-review re-dispatch at 2 failed, gate.log reports 65 passed EXIT=0 over the four files, and negative-control.log reddens the two legacy no-compose cases at EXIT=1.",
+    "fit": "plan_review.py:598 is a private helper extending the existing plan_review owner and the public definition count holds at 13 to 13, though the composer's sidecar write at recovery.py:593 still computes the current digest alone rather than reading the shared set.",
+    "goal_fidelity": "plan_review.py:598 is the one function that returns the current and legacy digests together and both recovery.py:494 and routing.py:2697 read it via plan=, with the interface probe confirming neither site computes a digest itself.",
+    "scope_discipline": "every changed path (plan_review.py, recovery.py, routing.py, tests/test_review_plan_command.py) lies inside the grant, though the declared evidence fragment and figure directory were not authored."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 3ab626d4103f7f57660409e4bcfd5ec0e06b9556\nreviewed_head_sha: 0f6c5f929f5690bc161593c1e8893f9db5b27079\nVERDICT goal: The goal is that one function in reckon/crew/plan_review.py returns the set of digests a plan's current content may be joined by and that the gate, sweep eligibility and composer read it without recovery.py or routing.py spelling the pair; reckon/crew/plan_review.py:598 _fingerprint_forms returns exactly that frozenset and recovery.py:494 _plan_review_pending and routing.py:2697 require_plan_reviewed now reach it through the new plan= parameter, matching the node's account.\nVERDICT done_when: The done-when asks for a test storing a review under the legacy digest and asserting the sweep composes no review while the gate admits a build, the three named test files at 0 failed, and a negative control that reddens the no-compose case; tests/test_review_plan_command.py:219 test_sweep_and_gate_accept_the_same_review does exactly that, the gate log reports the four-file run at 65 passed EXIT=0, and negative-control.log shows 2 failed over the legacy no-compose cases with EXIT=1.\nVERDICT write_paths: The prompt fenced plan_review.py, recovery.py, routing.py, tests/test_review_reflex_sweep.py, tests/test_review_plan_command.py plus an evidence fragment and a figure directory; the diff touches only plan_review.py, recovery.py, routing.py and tests/test_review_plan_command.py, so every changed path is inside the grant though the declared fragment and figure were not produced.\nVERDICT manifest: The manifest reports status complete, commits 483f81dc3 and 0f6c5f929, the four-file head gate, the ledger gate, the negative control and the zero-added-failure pair; the gate, ledger, negative-control and reproduction logs it names are present on disk under the run directory and were read.\nVERDICT diff: Read commit by commit against base 3ab626d41; 483f81dc3 adds the regression test and 0f6c5f929 introduces plan_review.py:598 _fingerprint_forms, rewires recovery.py:490-501 and routing.py:2613-2697 to the plan= parameter, and removes routing.py's hand-written {current, legacy} set.\nCALL_SITES: reckon/crew/recovery.py:_plan_review_pending, reckon/crew/routing.py:require_plan_reviewed, reckon/crew/routing.py:_store_delivered_plan_review\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: plan_review.py:598 is the one function that returns the current and legacy digests together and both recovery.py:494 and routing.py:2697 read it via plan=, with the interface probe confirming neither site computes a digest itself.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline-regression.log reproduces the legacy-review re-dispatch at 2 failed, gate.log reports 65 passed EXIT=0 over the four files, and negative-control.log reddens the two legacy no-compose cases at EXIT=1.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path (plan_review.py, recovery.py, routing.py, tests/test_review_plan_command.py) lies inside the grant, though the declared evidence fragment and figure directory were not authored.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows test_sweep_and_gate_accept_the_same_review[stored-legacy] and [delivered-legacy] failing when _plan_review_pending reads the current digest alone, so the added assertion reddens on the reinstated regression.\nSCORE fit: 17\nJUSTIFICATION fit: plan_review.py:598 is a private helper extending the existing plan_review owner and the public definition count holds at 13 to 13, though the composer's sidecar write at recovery.py:593 still computes the current digest alone rather than reading the shared set.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/sweep-and-gate-read-one-fingerprint-set.html:1 follow-on: the declared write paths name an evidence fragment and a figure directory that the diff does not produce, so the node lands no durable evidence artifact of its own.",
+  "review_run_id": "r-20261005T023329625364-review-of-sweep-and-gate-read-one-fingerprint-set",
+  "reviewed_base_sha": "3ab626d4103f7f57660409e4bcfd5ec0e06b9556",
+  "reviewed_head_sha": "0f6c5f929f5690bc161593c1e8893f9db5b27079",
+  "reviewed_run_id": "r-20261005T021049551226-sweep-and-gate-read-one-fingerprint-set",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T02:37:45.357958+00:00",
+  "total": 92
+}

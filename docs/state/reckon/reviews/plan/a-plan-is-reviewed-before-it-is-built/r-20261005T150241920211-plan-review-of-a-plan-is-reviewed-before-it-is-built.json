@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T15:07:23.785Z",
+  "dispatched_at": "2026-10-05T15:03:42Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:208",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a716 and \u00a717 must either point the prose parser and the document check at the single card definition or state why each keeps its own, and the \u00a717 done-when's nine-name grep does not reach either site.",
+      "text": "`_AuthoredProseParser.handle_starttag` recognises a landed card by testing `\"section-landed\" in classes` inline, and `reckon/doccheck.py:116` holds a third copy of the same class literal as `_LANDED_SECTION_CLASS`; \u00a717 moves the store's recognisers (`_landed_card_span`, `_is_structural_boundary`) into `reckon/_plan_html.py` and claims one definition of a card, but neither the fingerprint's prose walk nor the document check is pointed at it, so the class string keeps three owners and can drift silently.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "interface_budget-1",
+      "reason": "the section must name the exposed identity function in its own interface accounting and reconcile the count with \u00a717, or make it module-private with a stated reason.",
+      "text": "\u00a716 says \"the rule that maps a heading tag or its wrapping element to a section identity ... is exposed from `reckon/_plan_html.py` as a pure function over a tag's name and attributes\" and that the prose parser in `reckon/crew/plan_review.py` \"calls it at every heading it streams\"; that is a definition consumed across a package boundary, which \u00a716's own house rule counts as a public definition, yet \u00a716's interface accounting reads \"no public definition is added here\" and \u00a717's reads \"the net is one\", so the two sections under-report the public surface their change introduces.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6f059466fc395b60de5bf246902b7bca4c8b664ff604308b03c678fce603bd3a",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 81,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T150241920211-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "f71dc9f219106b794215f1f86dd5fc0c411b7f99",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 hides the per-section digest map, the new sidecar key and the set-join coverage question behind the unchanged `plan_fingerprint` signature and one module-private predicate; \u00a717 collapses every heading walk behind one private parser plus one public reader, so surface shrinks while behaviour grows.",
+    "duplicate_owner": "a finding \u2014 the plan consolidates the heading walks but still leaves the landed-card recogniser with three owners: `reckon/crew/plan_review.py:208` (`\"section-landed\"` checked inline) and `reckon/doccheck.py:116` (`_LANDED_SECTION_CLASS`) are not folded onto the recogniser \u00a717 moves into `reckon/_plan_html.py`, yet \u00a717 claims \"the writer that mints cards and the reader that recognises them share one definition of a card\".",
+    "interface_budget": "a finding \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition but states \"no public definition is added here\", and \u00a717 states \"the net is one\", so the two sections together name one addition where their own house rule counts two.",
+    "reuse_search": "pass \u2014 each active section names and extends existing machinery rather than proposing a parallel one: \u00a716 recomposes `plan_fingerprint`/`_fingerprint_forms` (reckon/crew/plan_review.py:368,598) and reuses `landed_section_ids`; \u00a717 consolidates onto `_StructuredSectionSpanParser`/`structured_section_spans` (reckon/_plan_html.py:44,94) and the existing AST census in `reckon/interface_counts.py`; \u00a718 hoists the existing `promotion._plan_remaining_sections`.",
+    "thin_wrapper": "pass \u2014 the wrappers the plan adds carry a justification: \u00a717's public reader is the package boundary over a parser that stays private while `structured_section_spans` keeps its spans-only contract, and \u00a716's exposed identity function is the one shared definition of section identity that the prose walk and the span parser both call."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.879768+00:00"
+}

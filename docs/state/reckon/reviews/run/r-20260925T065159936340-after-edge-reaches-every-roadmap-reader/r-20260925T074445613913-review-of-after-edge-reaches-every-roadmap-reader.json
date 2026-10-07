@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:_attach_ready_set",
+    "reckon/mcp.py:_roadmap",
+    "reckon/mcp.py:_roadmap_tool",
+    "reckon/flight.py:_project_roadmap"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:44:45.613913+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 29df6835; 5bdf633b is 3 files / 134 insertions, 5aa30835 is 3 files / 160 insertions, and both cumulative docs files are appended to rather than rewritten.",
+    "done_when": "the named gate tests/test_after_edge_reaches_every_reader.py is red at base (logs/base-new-test.log \u2014 2 failed, each KeyError 'after') and green at head.",
+    "goal": "read the goal against the diff of 5bdf633b; both builders between the parser and the readers \u2014 reckon/serve.py:1576 and reckon/mcp.py:1498 \u2014 now take their relation keys from EDGE_ROW_FIELDS (reckon/serve.py:1450), so an authored after edge survives the row every reader consumes.",
+    "manifest": "read in full; it names commits 5bdf633b and 5aa30835, the base and head arms with their log paths, and the declared negative control with its mutation.",
+    "write_paths": "the manifest declares six paths and the two commits touch exactly those six."
+  },
+  "justifications": {
+    "durability": "removing the edge_row call from reckon/mcp.py:1498 in a scratch export of the head reddens the MCP case at tests/test_after_edge_reaches_every_reader.py:108 with KeyError 'after' while the discovery case stays green, so each builder has a case that fails on its removal.",
+    "evidence": "the gate is recorded red at base and green at head, and the cohort arms carry identical failure ids (2 failed / 1147 passed / 1 skipped either side, logs/cohort-base.log and logs/cohort-head.log); the one clause not literally met is tests/test_schema.py staying green, which is 1 failed at both arms from an imas-ambix record and is measured at base in logs/named-gates-base-schema.log.",
+    "fit": "reckon/serve.py:1446 follows the module's constant-plus-helper idiom, no added name carries a plan or version label, and both commit subjects are conventional with a body.",
+    "goal_fidelity": "all four readers the goal names take their rows from one of the two fixed builders \u2014 the portfolio rollup through reckon/flight.py:1316, which calls discover_plans \u2014 and no build_roadmap call site takes rows from anywhere else.",
+    "scope_discipline": "the two commits touch only the six declared paths, and both cumulative docs files carry insertions only (30 lines into the plan page, 76 into the evidence record, zero deletions in either)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal against the diff of 5bdf633b; both builders between the parser and the readers \u2014 reckon/serve.py:1576 and reckon/mcp.py:1498 \u2014 now take their relation keys from EDGE_ROW_FIELDS (reckon/serve.py:1450), so an authored after edge survives the row every reader consumes.\nVERDICT done_when: the named gate tests/test_after_edge_reaches_every_reader.py is red at base (logs/base-new-test.log \u2014 2 failed, each KeyError 'after') and green at head.\nVERDICT write_paths: the manifest declares six paths and the two commits touch exactly those six.\nVERDICT manifest: read in full; it names commits 5bdf633b and 5aa30835, the base and head arms with their log paths, and the declared negative control with its mutation.\nVERDICT diff: read commit by commit against base 29df6835; 5bdf633b is 3 files / 134 insertions, 5aa30835 is 3 files / 160 insertions, and both cumulative docs files are appended to rather than rewritten.\nCALL_SITES: reckon/serve.py:_attach_ready_set, reckon/mcp.py:_roadmap, reckon/mcp.py:_roadmap_tool, reckon/flight.py:_project_roadmap\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all four readers the goal names take their rows from one of the two fixed builders \u2014 the portfolio rollup through reckon/flight.py:1316, which calls discover_plans \u2014 and no build_roadmap call site takes rows from anywhere else.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded red at base and green at head, and the cohort arms carry identical failure ids (2 failed / 1147 passed / 1 skipped either side, logs/cohort-base.log and logs/cohort-head.log); the one clause not literally met is tests/test_schema.py staying green, which is 1 failed at both arms from an imas-ambix record and is measured at base in logs/named-gates-base-schema.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only the six declared paths, and both cumulative docs files carry insertions only (30 lines into the plan page, 76 into the evidence record, zero deletions in either).\nSCORE durability: 18\nJUSTIFICATION durability: removing the edge_row call from reckon/mcp.py:1498 in a scratch export of the head reddens the MCP case at tests/test_after_edge_reaches_every_reader.py:108 with KeyError 'after' while the discovery case stays green, so each builder has a case that fails on its removal.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/serve.py:1446 follows the module's constant-plus-helper idiom, no added name carries a plan or version label, and both commit subjects are conventional with a body.\n",
+  "review_run_id": "r-20260925T074445613913-review-of-after-edge-reaches-every-roadmap-reader",
+  "reviewed_base_sha": "29df6835815360d539810edeede114eb40a2e3c9",
+  "reviewed_head_sha": "5aa3083531e18c8c23b747c50f7ce43b12181ea7",
+  "reviewed_run_id": "r-20260925T065159936340-after-edge-reaches-every-roadmap-reader",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T08:02:21.153582+00:00",
+  "total": 94
+}

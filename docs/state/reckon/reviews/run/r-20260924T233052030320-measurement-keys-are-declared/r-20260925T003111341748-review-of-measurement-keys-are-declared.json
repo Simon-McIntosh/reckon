@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/reports.py:_read_field_body",
+    "reckon/crew/promotion.py:336",
+    "reckon/evidence.py:162",
+    "reckon/cli.py:2810"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T00:31:11.341748+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+      "line": "2293",
+      "text": "the cohort is claimed as every existing file under tests/ that imports reckon.crew.reports, ten files, but eleven do: tests/test_crew_recovery.py:21 imports it (from reckon.crew import recovery, reports, runs) and is absent from the cohort command at logs/cohort-base.log:4, so the record's completeness claim is false as written; I re-ran that file at the reviewed head (3 failed, 89 passed) and at base 11dfbe67 in a scratch tree that printed its resolved module as /tmp/review-measurement-keys/base/reckon/crew/reports.py (3 failed, 89 passed, the same three ids), so the node's conclusion survives but a reader cannot tell that from the record."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/logs/cohort-head.log",
+      "line": "1",
+      "text": "the head arm's log names its revision and tree but carries no command line, the manifest's tests: line elides the file list as '<11 files>', and the base log's recorded command at cohort-base.log:4 reads 'PYTHONPATH=.venv/bin/python -m pytest ...' whose shell grammar runs '-m' as the command ('-m: command not found'), so no receipt in this run states a runnable head-arm command and the arm cannot be reproduced from the record alone even though the file list is recoverable by adding the new file to the base log's ten."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 11dfbe67 -- 5755dfec adds the two _TEXT_SHAPE entries and the 4-case file, b6117492 appends 25 lines to the plan and 76 to the evidence anchor with no deletion in either and no plan-version or plan-modified meta line touched.",
+    "done_when": "the fence's four demands were each read or re-run -- the file is 4 passed when I ran it at the reviewed head, the mutation log repeats the declared string verbatim on its first line and reddens 3 of 4, the restore is cmp-identical with a green re-run, and the cohort delta (1 failed, 317 passed at base 11dfbe67 versus 1 failed, 321 passed at head) has the same single failure id -- but the demand that a list body be reported with the shape finding is not what the reader does: my own probe shows a list body joined to '/tree/reports.py, /tree' with no finding and a mapping body refused with the shape message, and the discrepancy is disclosed in the manifest, the plan landing summary and the evidence anchor rather than hidden.",
+    "goal": "the goal is that the manifest schema declares the two measurement keys, and reckon/crew/reports.py:132-133 declares measurement_module and measurement_cwd with _TEXT_SHAPE beside the orientation keys; an in-process probe at the reviewed head printed frozenset({'text'}) for each and True for membership in _MANIFEST_FIELD_KEYS.",
+    "manifest": "read; status complete with commits 5755dfec and b6117492, its cohort and focused results reproduce against the logs it cites, and it discloses the deviation in negative_control_note and follow_ons; its tests: line states the cohort command with the file list elided as '<11 files>' and its head-arm log carries no command line at all.",
+    "write_paths": "the fence declares reckon/crew/reports.py, tests/test_manifest_measurement_keys_declared.py, the plan page, the cumulative evidence anchor and an unused figures directory; git diff --stat 11dfbe67..b6117492 touches the first four, 190 insertions and 0 deletions, and every touched path is one of them."
+  },
+  "justifications": {
+    "durability": "the declared mutation removing the two entries reddens 3 of the 4 cases (negative-control.log: declared-key, mapping-refusal and list-join) while the survivor is the text case a deletion cannot move, and I re-ran the file green at the reviewed head.",
+    "evidence": "the falsification and the focused result are recorded and I reproduced them, but the cohort claim at docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:2293 is false by one file and no receipt states a runnable head-arm command.",
+    "fit": "the entries sit with the other _TEXT_SHAPE declarations in the schema block and tests/test_manifest_measurement_keys_declared.py follows the module-constant-plus-case idiom of tests/test_manifest_declared_schema.py, with no plan, sprint or version token in any name or comment.",
+    "goal_fidelity": "reckon/crew/reports.py:132-133 declares both keys with _TEXT_SHAPE beside orientation_base_sha, and reckon/crew/prompts.py:389-390 is the template clause that asks for them.",
+    "scope_discipline": "git diff --stat 11dfbe67..b6117492 is four files, all inside the declared write paths, additive only, and the evidence append carries 0 deletions so no peer's anchor was displaced."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the manifest schema declares the two measurement keys, and reckon/crew/reports.py:132-133 declares measurement_module and measurement_cwd with _TEXT_SHAPE beside the orientation keys; an in-process probe at the reviewed head printed frozenset({'text'}) for each and True for membership in _MANIFEST_FIELD_KEYS.\nVERDICT done_when: the fence's four demands were each read or re-run -- the file is 4 passed when I ran it at the reviewed head, the mutation log repeats the declared string verbatim on its first line and reddens 3 of 4, the restore is cmp-identical with a green re-run, and the cohort delta (1 failed, 317 passed at base 11dfbe67 versus 1 failed, 321 passed at head) has the same single failure id -- but the demand that a list body be reported with the shape finding is not what the reader does: my own probe shows a list body joined to '/tree/reports.py, /tree' with no finding and a mapping body refused with the shape message, and the discrepancy is disclosed in the manifest, the plan landing summary and the evidence anchor rather than hidden.\nVERDICT write_paths: the fence declares reckon/crew/reports.py, tests/test_manifest_measurement_keys_declared.py, the plan page, the cumulative evidence anchor and an unused figures directory; git diff --stat 11dfbe67..b6117492 touches the first four, 190 insertions and 0 deletions, and every touched path is one of them.\nVERDICT manifest: read; status complete with commits 5755dfec and b6117492, its cohort and focused results reproduce against the logs it cites, and it discloses the deviation in negative_control_note and follow_ons; its tests: line states the cohort command with the file list elided as '<11 files>' and its head-arm log carries no command line at all.\nVERDICT diff: read commit by commit against 11dfbe67 -- 5755dfec adds the two _TEXT_SHAPE entries and the 4-case file, b6117492 appends 25 lines to the plan and 76 to the evidence anchor with no deletion in either and no plan-version or plan-modified meta line touched.\nCALL_SITES: reckon/crew/reports.py:_read_field_body, reckon/crew/promotion.py:336, reckon/evidence.py:162, reckon/cli.py:2810\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:132-133 declares both keys with _TEXT_SHAPE beside orientation_base_sha, and reckon/crew/prompts.py:389-390 is the template clause that asks for them.\nSCORE evidence: 16\nJUSTIFICATION evidence: the falsification and the focused result are recorded and I reproduced them, but the cohort claim at docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:2293 is false by one file and no receipt states a runnable head-arm command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 11dfbe67..b6117492 is four files, all inside the declared write paths, additive only, and the evidence append carries 0 deletions so no peer's anchor was displaced.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation removing the two entries reddens 3 of the 4 cases (negative-control.log: declared-key, mapping-refusal and list-join) while the survivor is the text case a deletion cannot move, and I re-ran the file green at the reviewed head.\nSCORE fit: 19\nJUSTIFICATION fit: the entries sit with the other _TEXT_SHAPE declarations in the schema block and tests/test_manifest_measurement_keys_declared.py follows the module-constant-plus-case idiom of tests/test_manifest_declared_schema.py, with no plan, sprint or version token in any name or comment.\nFINDING docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:2293 the cohort is claimed as every existing file under tests/ that imports reckon.crew.reports, ten files, but eleven do: tests/test_crew_recovery.py:21 imports it (from reckon.crew import recovery, reports, runs) and is absent from the cohort command at logs/cohort-base.log:4, so the record's completeness claim is false as written; I re-ran that file at the reviewed head (3 failed, 89 passed) and at base 11dfbe67 in a scratch tree that printed its resolved module as /tmp/review-measurement-keys/base/reckon/crew/reports.py (3 failed, 89 passed, the same three ids), so the node's conclusion survives but a reader cannot tell that from the record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/logs/cohort-head.log:1 the head arm's log names its revision and tree but carries no command line, the manifest's tests: line elides the file list as '<11 files>', and the base log's recorded command at cohort-base.log:4 reads 'PYTHONPATH=.venv/bin/python -m pytest ...' whose shell grammar runs '-m' as the command ('-m: command not found'), so no receipt in this run states a runnable head-arm command and the arm cannot be reproduced from the record alone even though the file list is recoverable by adding the new file to the base log's ten.",
+  "review_run_id": "r-20260925T003111341748-review-of-measurement-keys-are-declared",
+  "reviewed_base_sha": "11dfbe67c2144b5b25fe3b2ca40f013393d06b16",
+  "reviewed_head_sha": "b6117492b915541f9c5eedee9f86f8de9265c3e6",
+  "reviewed_run_id": "r-20260924T233052030320-measurement-keys-are-declared",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T01:00:48.605609+00:00",
+  "total": 93
+}

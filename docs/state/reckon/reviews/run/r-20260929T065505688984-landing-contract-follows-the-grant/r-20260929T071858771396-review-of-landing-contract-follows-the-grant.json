@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:1524",
+    "reckon/crew/dispatch.py:4664",
+    "reckon/crew/dispatch.py:1491"
+  ],
+  "completed_at": "2026-09-29T08:21:02.248Z",
+  "dispatched_at": "2026-09-29T07:19:18Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 9bd25dc2's parent: 9bd25dc2 adds _writes_its_landing_fragment and _compose_dispatch_prompt in reckon/crew/dispatch.py, the writes_landing_fragment argument and run_record_carrier choice in reckon/crew/prompts.py, and four cases in the new test file; 951c93b2 adds the evidence fragment and the decision figure, documentation only; no other path is touched.",
+    "done_when": "the measure is that the composed prompt states the plan contract only when the node's write paths carry its fragment, that the new file plus tests/test_role_write_scope.py and tests/test_small_node_prompt.py add no failing id to the base, and that the declared negative control is observed to fail; base-suite.log at 711647ff records 33 passed EXIT=0 over the two pre-existing files, head-suite.log at 9bd25dc2 records 37 passed EXIT=0 over three files, my own derivation over those two logs is added_failure_count 0 with added_failure_ids [], and negative-control.log's first line repeats the declared mutation verbatim and shows the writable-verifier case FAILED with EXIT=1.",
+    "goal": "the goal is that a worker reads the plan landing contract, which names its evidence fragment and figure directory, only when its fence grants the fragment; at head reckon/crew/dispatch.py:1430 _writes_its_landing_fragment resolves each declared write path with _resolve_declared_path against the plan repository and tests it against the same _landing_fragment_paths the default grant uses, reckon/crew/dispatch.py:1491 _compose_dispatch_prompt passes that fact beside can_write_worktree to compose_prompt, and reckon/crew/prompts.py:443 chooses the run-record carrier when the fact is False, so a writable test-role node composes without PLAN_LANDING_CONTRACT and with the run-record sentence, as the reviewed negative-control log shows and as my re-run of the named test file confirms (4 passed, EXIT=0).",
+    "manifest": "read; status complete, baseline_suite and after_suite are armed JSON naming revisions 711647ff and 9bd25dc2 with log_path values that exist on disk, negative_control_log is the bare path whose first line repeats the declared string verbatim, and the landing: line records the carrier gate; the reviewed head 951c93b2 differs from the after arm only by the two documentation paths, which I verified with git show --stat 951c93b2.",
+    "write_paths": "read the manifest's five declared paths; git diff --stat 711647ff..951c93b2 lists exactly those five (reckon/crew/dispatch.py, reckon/crew/prompts.py, tests/test_landing_contract_follows_the_grant.py, the plan's fragment HTML under docs/evidence/fragments/, and the node's figure directory under docs/figures/), 531 insertions and 16 deletions, nothing else."
+  },
+  "justifications": {
+    "durability": "reinstating the base decision by forcing the fragment fact granted at _compose_dispatch_prompt reddens test_a_writable_verifier_reads_the_run_record_carrier_not_the_plan_contract while the other three cases pass (negative-control.log, EXIT=1), and the added assertions compare literal contract and fragment strings against the composer's output rather than values the tests hand the code.",
+    "evidence": "base-suite.log and head-suite.log open with revision, tree and command, my derivation over them is 0 added failures with no ids, and I re-ran tests/test_landing_contract_follows_the_grant.py at 951c93b2 for 4 passed EXIT=0; the after arm sits at 9bd25dc2 and reaches the reviewed head only through the docs-only delta I verified.",
+    "fit": "the change reuses _landing_fragment_paths and _resolve_declared_path rather than a second path format, keeps both landing facts behind one call site at reckon/crew/dispatch.py:1463, and its comments state the mechanism with no plan, sprint or ticket reference.",
+    "goal_fidelity": "reckon/crew/prompts.py:443 selects the carrier from writes_landing_fragment, and reckon/crew/dispatch.py:1430 derives that fact from the node's own resolved write paths against the same _landing_fragment_paths the grant appends, so the only production composer at reckon/crew/dispatch.py:4664 no longer names the fragment to a node whose fence withholds it.",
+    "scope_discipline": "git diff --stat 711647ff..951c93b2 carries exactly the five declared write paths with 531 insertions and 16 deletions, and the naming checks over the added lines return no hit."
+  },
+  "node": "review-of-landing-contract-follows-the-grant",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T065505688984-landing-contract-follows-the-grant\n(plan a-landing-record-never-conflicts \u00a72; node landing-contract-follows-the-grant; role implement; spec exact)\nreviewed_base_sha: 711647fff3521ced6a1d64f1601f8c9bad4a3dc0\nreviewed_head_sha: 951c93b2b6732a61e020b3deb93bc4d45b208aec\nVERDICT goal: the goal is that a worker reads the plan landing contract, which names its evidence fragment and figure directory, only when its fence grants the fragment; at head reckon/crew/dispatch.py:1430 _writes_its_landing_fragment resolves each declared write path with _resolve_declared_path against the plan repository and tests it against the same _landing_fragment_paths the default grant uses, reckon/crew/dispatch.py:1491 _compose_dispatch_prompt passes that fact beside can_write_worktree to compose_prompt, and reckon/crew/prompts.py:443 chooses the run-record carrier when the fact is False, so a writable test-role node composes without PLAN_LANDING_CONTRACT and with the run-record sentence, as the reviewed negative-control log shows and as my re-run of the named test file confirms (4 passed, EXIT=0).\nVERDICT done_when: the measure is that the composed prompt states the plan contract only when the node's write paths carry its fragment, that the new file plus tests/test_role_write_scope.py and tests/test_small_node_prompt.py add no failing id to the base, and that the declared negative control is observed to fail; base-suite.log at 711647ff records 33 passed EXIT=0 over the two pre-existing files, head-suite.log at 9bd25dc2 records 37 passed EXIT=0 over three files, my own derivation over those two logs is added_failure_count 0 with added_failure_ids [], and negative-control.log's first line repeats the declared mutation verbatim and shows the writable-verifier case FAILED with EXIT=1.\nVERDICT write_paths: read the manifest's five declared paths; git diff --stat 711647ff..951c93b2 lists exactly those five (reckon/crew/dispatch.py, reckon/crew/prompts.py, tests/test_landing_contract_follows_the_grant.py, the plan's fragment HTML under docs/evidence/fragments/, and the node's figure directory under docs/figures/), 531 insertions and 16 deletions, nothing else.\nVERDICT manifest: read; status complete, baseline_suite and after_suite are armed JSON naming revisions 711647ff and 9bd25dc2 with log_path values that exist on disk, negative_control_log is the bare path whose first line repeats the declared string verbatim, and the landing: line records the carrier gate; the reviewed head 951c93b2 differs from the after arm only by the two documentation paths, which I verified with git show --stat 951c93b2.\nVERDICT diff: read commit by commit against 9bd25dc2's parent: 9bd25dc2 adds _writes_its_landing_fragment and _compose_dispatch_prompt in reckon/crew/dispatch.py, the writes_landing_fragment argument and run_record_carrier choice in reckon/crew/prompts.py, and four cases in the new test file; 951c93b2 adds the evidence fragment and the decision figure, documentation only; no other path is touched.\nCALL_SITES: reckon/cli.py:1524, reckon/crew/dispatch.py:4664, reckon/crew/dispatch.py:1491\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:443 selects the carrier from writes_landing_fragment, and reckon/crew/dispatch.py:1430 derives that fact from the node's own resolved write paths against the same _landing_fragment_paths the grant appends, so the only production composer at reckon/crew/dispatch.py:4664 no longer names the fragment to a node whose fence withholds it.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-suite.log and head-suite.log open with revision, tree and command, my derivation over them is 0 added failures with no ids, and I re-ran tests/test_landing_contract_follows_the_grant.py at 951c93b2 for 4 passed EXIT=0; the after arm sits at 9bd25dc2 and reaches the reviewed head only through the docs-only delta I verified.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 711647ff..951c93b2 carries exactly the five declared write paths with 531 insertions and 16 deletions, and the naming checks over the added lines return no hit.\nSCORE durability: 20\nJUSTIFICATION durability: reinstating the base decision by forcing the fragment fact granted at _compose_dispatch_prompt reddens test_a_writable_verifier_reads_the_run_record_carrier_not_the_plan_contract while the other three cases pass (negative-control.log, EXIT=1), and the added assertions compare literal contract and fragment strings against the composer's output rather than values the tests hand the code.\nSCORE fit: 20\nJUSTIFICATION fit: the change reuses _landing_fragment_paths and _resolve_declared_path rather than a second path format, keeps both landing facts behind one call site at reckon/crew/dispatch.py:1463, and its comments state the mechanism with no plan, sprint or ticket reference.",
+  "review_run_id": "r-20260929T071858771396-review-of-landing-contract-follows-the-grant",
+  "reviewed_base_sha": "711647fff3521ced6a1d64f1601f8c9bad4a3dc0",
+  "reviewed_head_sha": "951c93b2b6732a61e020b3deb93bc4d45b208aec",
+  "reviewed_run_id": "r-20260929T065505688984-landing-contract-follows-the-grant",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T071858771396-review-of-landing-contract-follows-the-grant",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T08:05:07.614321+00:00",
+  "total": 99
+}

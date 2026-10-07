@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite and after_suite gate logs. after_suite (logs/head-gate-neutral-tmpdir.log) is readable and complete: 35 passed, EXIT=0, zero failing ids at the shipped revision. The run's declared baseline_suite log (logs/base-gate.log) is UNREADABLE as recorded -- it carries only the three header lines and no pytest summary or EXIT= line, so completed:true in the manifest is not supported by the log it names. The head arm alone settles added failures: a readable head arm with zero failures adds none. The reviewer independently re-ran both arms from extracted scratch trees: base 36c6103de6f232af0db1a10417d401dd502fa333 four existing resume test files 33 passed EXIT=0; head db55c5581b24fd21805073eb44a86d86dd6e7966 five-file focused gate 35 passed EXIT=0. Zero failures at both arms, so no failure is added at any base.",
+  "backend": "local",
+  "base_log_revision": "36c6103de6f232af0db1a10417d401dd502fa333",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/resumption.py:741 _write_resume_prompt: the shared writer both hand-typed doors and _resume now call; writes plan.stdin_text (the advice restated with the attempt's own time fence) and falls back to the bare advice only for a backend that carries the prompt on argv",
+    "reckon/crew/resumption.py:800 _resume: refactored to call _write_resume_prompt, so the sweep's door and the hand-typed doors cannot drift",
+    "reckon/cli.py:5464 crew_resume: replaces the bare-advice write with _write_resume_prompt(advice_path, plan=plan, advice=advice)",
+    "reckon/mcp.py:4671 _crew_recover (action == 'resume'): replaces the bare-advice write with resumption_module._write_resume_prompt(...)"
+  ],
+  "carried_forward": {
+    "at": "2026-10-03T00:19:58Z",
+    "from": "db55c5581b24fd21805073eb44a86d86dd6e7966",
+    "paths": [
+      "tests/test_mcp_recovery.py"
+    ],
+    "to": "0e1a9c9d4b81fc9bbd1856bcb7469596b0569541"
+  },
+  "completed_at": "2026-10-03T00:02:26.221Z",
+  "dispatched_at": "2026-10-02T23:45:51Z",
+  "findings": [
+    {
+      "file": "logs/base-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "The reviewed run's declared baseline_suite log is unreadable: 3 lines (revision/tree/command headers) and no pytest summary or EXIT= sentinel, yet the manifest records completed:true, exit_status:0, failure_count:0 for that path. Nothing in the recorded artifact shows the base arm ran. The reviewer recovered the fact independently (base four-file arm 33 passed EXIT=0 from an extracted 36c6103 tree), so the conclusion is sound but the record is not self-supporting. The sibling negative-control.log likewise ends on '2 failed in 5.20s' with no EXIT= line. The head arm's log (head-gate.log) carries a stale header naming revision 36c6103 while the tree it names is the head worktree. These are recording defects in the reviewed run's evidence, outside this review node's write scope; recorded here under follow_ons."
+    }
+  ],
+  "head_log_revision": "db55c5581b24fd21805073eb44a86d86dd6e7966",
+  "item_verdicts": {
+    "diff": "Read at db55c5581. cli.py:5464 and mcp.py:4671 replace `advice_path.write_text(advice + \"\\n\")` with _write_resume_prompt(...); resumption.py extracts the previously-inline prompt composition from _resume into _write_resume_prompt (same body: `prompt_text = plan.stdin_text or advice; advice_path.write_text(prompt_text.rstrip(\"\\n\") + \"\\n\", encoding=\"utf-8\")`) and has _resume call it. 213 insertions / 11 deletions, no unrelated churn, no timezone or import sweeps.",
+    "done_when": "All clauses hold at db55c5581. Both hand-typed doors write the fence-restated prompt through the same code _resume uses. tests/test_every_resume_door_states_its_deadline.py drives each door with a stubbed launcher (_CapturingSpawn records the advice file at the launcher's prompt_path, which is what the worker reads) and asserts the advice plus exactly one 'FENCE -- TIME (resumed attempt)' line and the deadline derived from the pinned attempt start (Launched 2031-01-01T01:00:00+00:00 UTC; deadline 2031-01-01T01:25:00Z). The declared negative control (RECKON_RESUME_DOOR_NEGATIVE_CONTROL=1 restores the bare-advice write on the shared helper) reddens both door tests, the CLI door among them. Focused gate adds no failure against base. status reads complete.",
+    "goal": "Met. Every writer of resume-{turn}-advice.txt at head writes through the one shared helper resumption._write_resume_prompt, which writes plan.stdin_text -- the plan's own prompt, whose FENCE -- TIME (resumed attempt) line resume_plan composes from a fresh _utc_now() at this attempt's start. The three writers are resumption.py:800 (_resume, the sweep), cli.py:5464 (reckon crew resume) and mcp.py:4671 (the MCP resume surface); runs.py:455 only reads the file. The base defect reproduces verbatim: at 36c6103 both reckon/cli.py:5462 and reckon/mcp.py:4671 write `advice_path.write_text(advice + \"\\n\")`, so a resume through either door left the worker on the inherited session's first-attempt deadline.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T231500763833-every-resume-door-states-its-deadline/manifest.md: status complete, commit db55c5581, four changed paths named, baseline_suite and after_suite are proper JSON objects, negative_control_log named. The declared baseline_suite log (base-gate.log) is incomplete on disk and the negative-control.log lacks its EXIT= sentinel, so two declared arms are not self-supporting; the head arm and the shipped revision are legible.",
+    "write_paths": "The node's net change against its base 36c6103 is exactly four paths: reckon/cli.py, reckon/mcp.py, reckon/crew/resumption.py, tests/test_every_resume_door_states_its_deadline.py. No plan, sprint or shared index file is touched. The brief forbade editing dispatch.py or resumption.py unless a door could not reuse the fix without it; resumption.py was edited to host the shared helper, which is the reuse the brief preferred over a third copy, and dispatch.py is untouched. The manifest states the helper is shared but does not state the why for the resumption.py edit in so many words."
+  },
+  "justifications": {
+    "durability": "The fence logic now lives in one function that all three doors call, so a future door that forgets it is a visible omission rather than a silent drift; the helper is pure and reads plan.stdin_text with a defined fallback for argv-carried prompts. The new test drives both doors end to end through a stubbed launcher and reads back the exact file the worker would read, asserting the advice, exactly one fence line and the deadline from the pinned attempt start. The declared negative control mutates the shared helper -- the right seam -- and reddens both door cases. Verified green/red by the reviewer.",
+    "evidence": "Independently reproduced at db55c5581: new door test 2 passed EXIT=0; negative control 2 failed EXIT=1 (both doors redden, the CLI door among them); focused five-file gate 35 passed EXIT=0; base four-file arm 33 passed EXIT=0 -- zero added failures. Deductions for the reviewed run's own record: the declared baseline_suite log (base-gate.log) is unreadable (no summary or EXIT=), so completed:true is unsupported by the artifact it names; negative-control.log lacks the required EXIT= terminal line; head-gate.log carries a stale header naming the base revision while running the head tree. The facts are recoverable and were recovered, but the run's evidence is not self-supporting as delivered.",
+    "fit": "Reuses the existing structure: both doors already build their plan with resume_plan, and the helper sits beside _spawn in resumption.py and is reused by _resume itself. Docstrings state the mechanism (why the fence must be restated, why a door that writes the bare advice is wrong) rather than history, and no plan, sprint or ticket identifier appears in the new code. Naming is mine-neutral.",
+    "goal_fidelity": "The goal -- every way of resuming a run writes the attempt's own time fence into the prompt the worker reads -- is met at head. All three advice-file writers route through one helper, so the fence cannot drift between the sweep and the two hand-typed doors. The fence is composed by resume_plan from a fresh _utc_now() at the resume, so the restated deadline is this attempt's own. The base defect was reproduced at both doors before the repair.",
+    "scope_discipline": "Only the four declared paths changed; no shared state, plan or index file is touched; dispatch.py is untouched as the brief required. The one edit the brief fenced conditionally -- resumption.py -- is the minimal home for the shared helper, which is the reuse the brief asked for rather than a third copy of the two lines, and it carries no unrelated churn. The remaining deduction is that the manifest states the helper is shared but does not explicitly say why resumption.py had to be edited."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: met at db55c5581 -- all three resume-{turn}-advice.txt writers (resumption.py:800 _resume, cli.py:5464, mcp.py:4671) route through the shared resumption._write_resume_prompt; base 36c6103 reproduced writing the bare advice at cli.py:5462 and mcp.py:4671.\nVERDICT done_when: all clauses hold -- both doors write the fence-restated prompt via the same helper; new test drives each door with a stubbed launcher and asserts advice + exactly one 'FENCE -- TIME (resumed attempt)' + the deadline from the pinned start; negative control reddens both doors.\nVERDICT write_paths: four declared paths only; no shared state; dispatch.py untouched; resumption.py carries the shared helper (the reuse the brief preferred).\nVERDICT manifest: read; status complete, commit + four paths named, suites as JSON; the declared base-gate.log is unreadable and negative-control.log lacks its EXIT= sentinel.\nVERDICT diff: read; two-line substitution in cli.py and mcp.py, extraction of the inline composer from _resume into _write_resume_prompt; no unrelated churn.\nCALL_SITES: reckon/crew/resumption.py:741, reckon/crew/resumption.py:800, reckon/cli.py:5464, reckon/mcp.py:4671\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every door writes the attempt's own fence through one helper; base defect reproduced; no fourth door remains.\nSCORE evidence: 15\nJUSTIFICATION evidence: head, negative control, focused gate and base arm independently reproduced with zero added failures, but the run's declared baseline_suite log is unreadable and negative-control.log lacks its EXIT= line, so its own record does not support its own completed:true.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: only declared paths changed, no shared state, dispatch.py untouched; resumption.py host of the shared helper is the reuse asked for.\nSCORE durability: 18\nJUSTIFICATION durability: one shared writer closes the drift; test reads the worker's actual prompt file and pins the clock; negative control mutates the shared seam and reddens both doors.\nSCORE fit: 18\nJUSTIFICATION fit: reuses resume_plan and sits beside _spawn; docstrings state the mechanism; no plan or ticket identifiers.\nFINDING logs/base-gate.log:1 follow-on: the reviewed run's declared baseline_suite log is unreadable (no pytest summary or EXIT=) while the manifest records completed:true for it, and negative-control.log lacks its EXIT= line; the base fact was recovered independently (33 passed EXIT=0 at 36c6103), so the record, not the conclusion, is the defect.",
+  "review_run_id": "r-20261002T234509266382-review-of-every-resume-door-states-its-deadline",
+  "reviewed_base_sha": "db55c5581b24fd21805073eb44a86d86dd6e7966",
+  "reviewed_head_sha": "0e1a9c9d4b81fc9bbd1856bcb7469596b0569541",
+  "reviewed_run_id": "r-20261002T231500763833-every-resume-door-states-its-deadline",
+  "reviewer": "review-of-every-resume-door-states-its-deadline",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T00:19:58Z",
+  "total": 87
+}

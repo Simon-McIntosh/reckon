@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0 by id: the reviewed run's after_suite arm (gate.log at 8b571a3d) ran 131 tests to '131 passed' with no failing id, so the head failing set is empty and the added set (head minus base) is empty whatever the base arm holds. The store's read-time annotation reports this run's count unmeasured because its manifest's baseline_suite names no gate-log path; the count stored here is this review's own reading of the head arm's zero failures.",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:3863",
+    "tests/test_review_acceptance_floor_tracks_the_dimension_count.py:10"
+  ],
+  "completed_at": "2026-10-05T11:48:27.331Z",
+  "dispatched_at": "2026-10-05T11:36:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "663",
+      "severity": "blocking",
+      "text": "blocking: the review-dispatch done_when at reckon/crew/recovery.py:663 still spells the dimension count as the literal 5 (\"stores a parsed record scoring all 5 dimensions in the range 0..20\") against a six-dimension schema (review.REVIEW_DIMENSIONS = goal_fidelity, evidence, scope_discipline, durability, fit, reuse); a review node following that brief scores five dimensions and stores a record whose absent=['reuse'] leaves total None, which recovery._review_is_complete rejects and recovery._review_accepts_promotion can never accept, so the stale literal disables the acceptance path it was written to describe. The plan's own done-when grep (grep -Przo 'five[-\\s]+dimension|5 dimension' reckon/ --include=*.py) and the run's static-check both miss it because the source splits the literal across a string continuation (\"all 5 \" newline \"dimensions ...\"), the exact line-break escape \u00a77 warns about; consecutive-string-concatenation-aware sweep of reckon/ returns this one site and no other. This node's own dispatch done-when carried the stale \"5\" verbatim, demonstrating the harm."
+    }
+  ],
+  "head_log_revision": "8b571a3d49cb7d122a70c3833c5f71b7e6d5c76b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "git show 8b571a3d replaces 5 * review_module.REVIEW_MAX_SCORE * 9 // 10 with len(review_module.REVIEW_DIMENSIONS) * review_module.REVIEW_MAX_SCORE * 9 // 10 (=108), rewrites the five-dimension prose in recovery.py, promotion.py and review.py, and adds one two-test file; the arithmetic is correct and the boundary is asserted at 107 refused and 108 accepted.",
+    "done_when": "the floor equals len*REVIEW_MAX_SCORE*9//10 = 108 and a test asserts it tracks the tuple, and the negative control reddens that test (2 failed, EXIT=1), so three of the four clauses hold; the fourth clause, that no other site in reckon/ spells the dimension count as a literal, is UNMET because reckon/crew/recovery.py:663 still reads \"scoring all 5 dimensions in the range 0..20\".",
+    "goal": "the increment derives the review acceptance floor from the schema so the six-dimension maximum of 120 now requires 108; the base accepted a review totalling 90 and the head refuses it (head-probe.log floor 108 total 90 accepted=False).",
+    "manifest": "the reviewed manifest at head 8b571a3d records after_suite over gate.log with 131 passed, EXIT=0 and a header naming revision, tree and command; its baseline_suite field is empty, so the store's read-time annotation reports the added-failure count unmeasured, but the head arm carries no failing id, so the added set is empty however the base arm is counted.",
+    "write_paths": "the increment touches exactly the reviewed run's declared write paths, reckon/crew/recovery.py, reckon/crew/promotion.py and reckon/crew/review.py, plus its own new test tests/test_review_acceptance_floor_tracks_the_dimension_count.py; 4 files, 33 insertions and 8 deletions, and nothing outside that set."
+  },
+  "justifications": {
+    "durability": "test_review_acceptance_floor_tracks_the_dimension_count recomputes expected from len(REVIEW_DIMENSIONS) and would red if the floor were re-hardcoded, and the boundary test pins 107 and 108; but no test asserts the prose that describes the count tracks the schema, so reckon/crew/recovery.py:663's stale 5 \u2014 the exact class of defect \u00a77 exists to remove \u2014 can regress silently.",
+    "evidence": "the run records the defect reproducing at base (reproduction.log: dimensions=6 maximum=120 floor=90 total=90 accepted=True) and the fix at head (head-probe.log: floor 108 total 90 accepted=False), the focused gate is 131 passed EXIT=0 with a proper header, and the negative control is 2 failed EXIT=1; against that, static-check.log claims 0 prose matches, a false negative that leaves the residual literal unreported.",
+    "fit": "the edited lines match the surrounding style, the prose rewrites read naturally, and the new test uses the repository's parametrized boundary idiom without adding a mechanism.",
+    "goal_fidelity": "the floor now derives from the six-dimension schema and the acceptance boundary is proven both sides, but the done-when clause that no other site spells the count as a literal is false: reckon/crew/recovery.py:663 still hardcodes \"all 5 dimensions\", so the node's stated done-when is not fully met.",
+    "reuse": "the floor reads its count from the schema's single owner, review.REVIEW_DIMENSIONS, rather than duplicating the number, so a dimension added to the tuple moves the floor with it.",
+    "scope_discipline": "the diff is 33 insertions and 8 deletions across exactly the reviewed run's four declared write paths, and no file outside them changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment derives the review acceptance floor from the schema so the six-dimension maximum of 120 now requires 108; the base accepted a review totalling 90 and the head refuses it (head-probe.log floor 108 total 90 accepted=False).\nVERDICT done_when: the floor equals len*REVIEW_MAX_SCORE*9//10 = 108 and a test asserts it tracks the tuple, and the negative control reddens that test (2 failed, EXIT=1), so three of the four clauses hold; the fourth clause, that no other site in reckon/ spells the dimension count as a literal, is UNMET because reckon/crew/recovery.py:663 still reads \"scoring all 5 dimensions in the range 0..20\".\nVERDICT write_paths: the increment touches exactly the reviewed run's declared write paths, reckon/crew/recovery.py, reckon/crew/promotion.py and reckon/crew/review.py, plus its own new test tests/test_review_acceptance_floor_tracks_the_dimension_count.py; 4 files, 33 insertions and 8 deletions, and nothing outside that set.\nVERDICT manifest: the reviewed manifest at head 8b571a3d records after_suite over gate.log with 131 passed, EXIT=0 and a header naming revision, tree and command; its baseline_suite field is empty, so the store's read-time annotation reports the added-failure count unmeasured, but the head arm carries no failing id, so the added set is empty however the base arm is counted.\nVERDICT diff: git show 8b571a3d replaces 5 * review_module.REVIEW_MAX_SCORE * 9 // 10 with len(review_module.REVIEW_DIMENSIONS) * review_module.REVIEW_MAX_SCORE * 9 // 10 (=108), rewrites the five-dimension prose in recovery.py, promotion.py and review.py, and adds one two-test file; the arithmetic is correct and the boundary is asserted at 107 refused and 108 accepted.\nCALL_SITES: reckon/crew/recovery.py:3863, tests/test_review_acceptance_floor_tracks_the_dimension_count.py:10\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the floor now derives from the six-dimension schema and the acceptance boundary is proven both sides, but the done-when clause that no other site spells the count as a literal is false: reckon/crew/recovery.py:663 still hardcodes \"all 5 dimensions\", so the node's stated done-when is not fully met.\nSCORE evidence: 17\nJUSTIFICATION evidence: the run records the defect reproducing at base (reproduction.log: dimensions=6 maximum=120 floor=90 total=90 accepted=True) and the fix at head (head-probe.log: floor 108 total 90 accepted=False), the focused gate is 131 passed EXIT=0 with a proper header, and the negative control is 2 failed EXIT=1; against that, static-check.log claims 0 prose matches, a false negative that leaves the residual literal unreported.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is 33 insertions and 8 deletions across exactly the reviewed run's four declared write paths, and no file outside them changed.\nSCORE durability: 15\nJUSTIFICATION durability: test_review_acceptance_floor_tracks_the_dimension_count recomputes expected from len(REVIEW_DIMENSIONS) and would red if the floor were re-hardcoded, and the boundary test pins 107 and 108; but no test asserts the prose that describes the count tracks the schema, so reckon/crew/recovery.py:663's stale 5 \u2014 the exact class of defect \u00a77 exists to remove \u2014 can regress silently.\nSCORE fit: 18\nJUSTIFICATION fit: the edited lines match the surrounding style, the prose rewrites read naturally, and the new test uses the repository's parametrized boundary idiom without adding a mechanism.\nSCORE reuse: 18\nJUSTIFICATION reuse: the floor reads its count from the schema's single owner, review.REVIEW_DIMENSIONS, rather than duplicating the number, so a dimension added to the tuple moves the floor with it.\nFINDING reckon/crew/recovery.py:663 blocking: the review-dispatch done_when at reckon/crew/recovery.py:663 still spells the dimension count as the literal 5 (\"stores a parsed record scoring all 5 dimensions in the range 0..20\") against a six-dimension schema (review.REVIEW_DIMENSIONS = goal_fidelity, evidence, scope_discipline, durability, fit, reuse); a review node following that brief scores five dimensions and stores a record whose absent=['reuse'] leaves total None, which recovery._review_is_complete rejects and recovery._review_accepts_promotion can never accept, so the stale literal disables the acceptance path it was written to describe. The plan's own done-when grep (grep -Przo 'five[-\\s]+dimension|5 dimension' reckon/ --include=*.py) and the run's static-check both miss it because the source splits the literal across a string continuation (\"all 5 \" newline \"dimensions ...\"), the exact line-break escape \u00a77 warns about; consecutive-string-concatenation-aware sweep of reckon/ returns this one site and no other. This node's own dispatch done-when carried the stale \"5\" verbatim, demonstrating the harm.\nreviewed_base_sha: 1af6dba95de54006e5fc2f83421da0ef9c1156ad\nreviewed_head_sha: 8b571a3d49cb7d122a70c3833c5f71b7e6d5c76b\n",
+  "review_run_id": "r-20261005T113640561678-review-of-acceptance-floor-derives-from-the-dimension-count",
+  "reviewed_base_sha": "1af6dba95de54006e5fc2f83421da0ef9c1156ad",
+  "reviewed_head_sha": "8b571a3d49cb7d122a70c3833c5f71b7e6d5c76b",
+  "reviewed_run_id": "r-20261005T111317069412-acceptance-floor-derives-from-the-dimension-count",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T11:46:23.560757+00:00",
+  "total": 104
+}

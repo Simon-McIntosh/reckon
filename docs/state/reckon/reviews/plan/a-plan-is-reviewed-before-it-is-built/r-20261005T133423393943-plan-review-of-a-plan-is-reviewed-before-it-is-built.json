@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:39:40.700Z",
+  "dispatched_at": "2026-10-05T13:34:41Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:2481",
+      "id": "duplicate_owner-1",
+      "reason": "the author must add `_contains_plan_section` and `_section_labels` to the migration list (or restate the done-when's count and scope), otherwise the section ships duplicate enumerators while claiming a single one.",
+      "text": "the plan enumerates seven plan-heading walks and rewrites \"all seven\", but two more exist: `_contains_plan_section` (reckon/crew/routing.py:2481, called at :2566 on the plan's `base_html` to resolve a requested section) and `_section_labels` (reckon/evidence.py:65, walked over the plan HTML read from `resource.path` in `_render_document`); a migration of only the enumerated seven leaves both walking sections on their own, so the done-when \"counts the heading walkers in the package and requires one\" is unmet and the \"one raw-text section reader\" claim is false, and the package keeps a second section-enumeration path beside `_StructuredSectionSpanParser` in `reckon/_plan_html.py`, the owner to extend",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e32db95f84c097f9f86cb9e9cfe7d049c015e44e1b7ea61358925ce506b104e1",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 67,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T133423393943-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "30d1f050698cd838712ea086ebfc6c46ba1f1d02",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design consolidates the package's plan-section locating onto one raw-text enumerator whose interface is three fields (identity, heading text, replaced span as offsets), and puts the per-section digests and the coverage predicate on the single `reckon/crew/plan_review.py` owner, so substantial behaviour hides behind a small interface instead of spreading across wrappers.",
+    "duplicate_owner": "a finding \u2014 the plan's claim that the package \"walks a plan's headings in seven places\" is an undercount: two plan-heading walks are not in the enumeration, so the consolidation would leave duplicate section enumerators beside the intended owner.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; the section's own accounting names the one public definition it adds (the coverage predicate the gate and the sweep read), states why nothing is retired (the identity digest and the prose walk keep their names and gain a mode), and reuses the existing plan-review-missing refusal family so no refusal family is added.",
+    "reuse_search": "pass \u2014 the plan cites and extends the machinery that already exists rather than rebuilding it: `_StructuredSectionSpanParser`/`structured_section_spans` in `reckon/_plan_html.py`, `_authored_section_headings` in `reckon/mcp_views.py`, `_section_heading`/`_section_body_end`/`_collapse_authored_section`/`landed_section_ids` in `reckon/_store.py`, and `plan_fingerprint`/`_authored_prose`/`_fingerprint_forms` in `reckon/crew/plan_review.py`; every named symbol resolves (verified by opening each file) and each is extended in place.",
+    "thin_wrapper": "pass \u2014 the section adds the coverage predicate as new behaviour read by the gate (`reckon/crew/routing.py:require_plan_reviewed`) and the sweep (`reckon/crew/recovery.py`), and adds modes to `plan_fingerprint`/`_authored_prose` rather than forwarding to them; there is no added layer that merely relays to existing machinery without justification."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.918714+00:00"
+}

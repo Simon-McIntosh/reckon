@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/doccheck.py:audit_links"
+  ],
+  "completed_at": "2026-09-28T15:56:03.278Z",
+  "dispatched_at": "2026-09-28T14:52:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/open-work-is-capped-landed.html",
+      "line": "117",
+      "text": "the a-crew row states a denominator of 10 but names only nine counted sections (s2, s3, s4, s5, s6, s7, s9, s10, s11) and the record's own embedded command, re-run at the stated head, prints 9 for that plan \u2014 s1 is excluded as done and s8 as deferred under the rule the method states \u2014 so one of seventeen rows is still not reproducible by the instrument this round added, and the misstatement also inverts two keep reasons: :124 \"six of ten sections unlanded, the largest remaining count in the batch\" and :288 \"second only to the crew-process plan\" both read the other way at the correct 4 of 9, which leaves five unlanded against the six the review-dies row carries."
+    },
+    {
+      "file": "docs/evidence/archive/open-work-is-capped-landed.html",
+      "line": "137",
+      "text": "the a-dispatch row counts 6 of 9 present while four of those six carry no file and symbol \u2014 s2 and s3 are asserted from the plan's own \"declared done\" status, which the method at :68-69 says the reading does not use, and s9 and s10 cite a bare file with no symbol \u2014 so the done-when's \"cites the file and symbol that shows each counted one present\" holds for two counted sections of six; the same shape remains at :150 (a-dry-run, whose counted s2 is cited as a file only while the row's own text says it \"stops before the resolutions s2 names\"), :171 (a-follower-outlives, \"s5 done, no change needed\" with no citation and s6 cited by the absence of a marker at :172), and :280 (a-review-dies, s2 with no citation at all)."
+    },
+    {
+      "file": "docs/evidence/archive/open-work-is-capped-landed.html",
+      "line": "280",
+      "text": "the a-review-dies row cites reckon/crew/dispatch.py:5799 for EXIT_RECORD_NAME but that name is defined at dispatch.py:5859 at the stated head, 5799 falling inside _start_backend's docstring, so the line a reader opens is not the symbol the citation names."
+    },
+    {
+      "file": "docs/plans/open-work-is-capped.html",
+      "line": "62",
+      "text": "the plan's section 2 landing beat still reads \"keep 13, merge 2 ... close 2\" and \"the batch keep count is 13\" while the record landed this round reads keep 6 / merge 9 / close 2; the node was fenced out of editing any plan and declares the staleness under follow_ons, so nothing is hidden, but until the owning session corrects the beat the plan and its own evidence record disagree on the number the lead sums across the four batches."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the repair commit 5507c4a9 against its predecessor merge 6dab9287 and against the run's base ac9d7967 \u2014 two files, 266 insertions and 155 deletions, both inside the declared write paths: the record rewritten with the reader-derived denominators and the cited rows, and the figure regenerated to the repaired rows.",
+    "done_when": "the done-when requires the fraction read from code at main HEAD with a file and symbol for each counted section, the last coordinator per plan, a disposition, the keep count, and a manifest naming the HEAD; I re-ran the record's own command at :40-63 from the worktree root and reproduced 16 of 17 denominators exactly (logs-denominator.txt), checked all 34 cited paths against head 6dab9287 with a positive control (logs-citations.txt), and found one row unreproducible at :117 and eight counted sections across four rows carried without the required file and symbol.",
+    "goal": "the reviewed node's goal is a read-only triage of seventeen pending reckon plans; the landed record docs/evidence/archive/open-work-is-capped-landed.html:89-297 carries one row per plan with a presence fraction, the last coordinator marked live where a run is in flight, a proposed disposition and a one-line reason, and states the batch keep count 6 at :293.",
+    "manifest": "read in full; it reads status complete, names the reading head 6dab9287 in evidence_inputs and the stale plan beat under follow_ons, and names no suite because the node produces a record rather than a code change, so its baseline_suite and after_suite are legitimately empty and the added-failure count is unmeasured rather than zero.",
+    "write_paths": "the reviewed manifest declares docs/evidence/archive/open-work-is-capped-landed.html, docs/figures/open-work-is-capped and docs/plans/open-work-is-capped.html, and the repair commit 5507c4a9 touches exactly the record and the figure, the plan being left untouched as its brief required."
+  },
+  "justifications": {
+    "durability": "no gate asserts the record's own claims \u2014 reckon/doccheck.py:audit_links passes with zero findings and a negative control firing (logs-doccheck.txt), but nothing would fail on a wrong denominator or a figure that drifts from its rows, the reproduction command at :40-63 being a manual check.",
+    "evidence": "the record's embedded command at docs/evidence/archive/open-work-is-capped-landed.html:40-63 reproduces 16 of 17 denominators exactly and every citation I checked resolves at head, but :117 stays unreproducible and eight counted sections at :137, :150, :171 and :280 still carry no file and symbol.",
+    "fit": "docs/evidence/archive/open-work-is-capped-landed.html:12 uses the slug#section plan-verifies grammar its siblings use and resolves, the figure parses under ElementTree with literal characters only, and the commit carries a conventional subject and a body.",
+    "goal_fidelity": "docs/evidence/archive/open-work-is-capped-landed.html:117 states a denominator of 10 for a plan whose nine counted sections its own row names, so one row's reading is wrong even though the triage itself is delivered in full.",
+    "scope_discipline": "commit 5507c4a9 changes only docs/evidence/archive/open-work-is-capped-landed.html and docs/figures/open-work-is-capped/triage-first-batch.svg, both inside the manifest's declared paths, and no plan file is edited."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ac9d7967ea47055a8cff7e344ae9cb5ef6bb9437\nreviewed_head_sha: 5507c4a937a608868e4d9a9cd2beb61187beac05\nVERDICT goal: the reviewed node's goal is a read-only triage of seventeen pending reckon plans; the landed record docs/evidence/archive/open-work-is-capped-landed.html:89-297 carries one row per plan with a presence fraction, the last coordinator marked live where a run is in flight, a proposed disposition and a one-line reason, and states the batch keep count 6 at :293.\nVERDICT done_when: the done-when requires the fraction read from code at main HEAD with a file and symbol for each counted section, the last coordinator per plan, a disposition, the keep count, and a manifest naming the HEAD; I re-ran the record's own command at :40-63 from the worktree root and reproduced 16 of 17 denominators exactly (logs-denominator.txt), checked all 34 cited paths against head 6dab9287 with a positive control (logs-citations.txt), and found one row unreproducible at :117 and eight counted sections across four rows carried without the required file and symbol.\nVERDICT write_paths: the reviewed manifest declares docs/evidence/archive/open-work-is-capped-landed.html, docs/figures/open-work-is-capped and docs/plans/open-work-is-capped.html, and the repair commit 5507c4a9 touches exactly the record and the figure, the plan being left untouched as its brief required.\nVERDICT manifest: read in full; it reads status complete, names the reading head 6dab9287 in evidence_inputs and the stale plan beat under follow_ons, and names no suite because the node produces a record rather than a code change, so its baseline_suite and after_suite are legitimately empty and the added-failure count is unmeasured rather than zero.\nVERDICT diff: read the repair commit 5507c4a9 against its predecessor merge 6dab9287 and against the run's base ac9d7967 \u2014 two files, 266 insertions and 155 deletions, both inside the declared write paths: the record rewritten with the reader-derived denominators and the cited rows, and the figure regenerated to the repaired rows.\nCALL_SITES: reckon/doccheck.py:audit_links\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/archive/open-work-is-capped-landed.html:117 states a denominator of 10 for a plan whose nine counted sections its own row names, so one row's reading is wrong even though the triage itself is delivered in full.\nSCORE evidence: 14\nJUSTIFICATION evidence: the record's embedded command at docs/evidence/archive/open-work-is-capped-landed.html:40-63 reproduces 16 of 17 denominators exactly and every citation I checked resolves at head, but :117 stays unreproducible and eight counted sections at :137, :150, :171 and :280 still carry no file and symbol.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: commit 5507c4a9 changes only docs/evidence/archive/open-work-is-capped-landed.html and docs/figures/open-work-is-capped/triage-first-batch.svg, both inside the manifest's declared paths, and no plan file is edited.\nSCORE durability: 13\nJUSTIFICATION durability: no gate asserts the record's own claims \u2014 reckon/doccheck.py:audit_links passes with zero findings and a negative control firing (logs-doccheck.txt), but nothing would fail on a wrong denominator or a figure that drifts from its rows, the reproduction command at :40-63 being a manual check.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/archive/open-work-is-capped-landed.html:12 uses the slug#section plan-verifies grammar its siblings use and resolves, the figure parses under ElementTree with literal characters only, and the commit carries a conventional subject and a body.\nFINDING docs/evidence/archive/open-work-is-capped-landed.html:117 the a-crew row states a denominator of 10 but names only nine counted sections (s2, s3, s4, s5, s6, s7, s9, s10, s11) and the record's own embedded command, re-run at the stated head, prints 9 for that plan \u2014 s1 is excluded as done and s8 as deferred under the rule the method states \u2014 so one of seventeen rows is still not reproducible by the instrument this round added, and the misstatement also inverts two keep reasons: :124 \"six of ten sections unlanded, the largest remaining count in the batch\" and :288 \"second only to the crew-process plan\" both read the other way at the correct 4 of 9, which leaves five unlanded against the six the review-dies row carries.\nFINDING docs/evidence/archive/open-work-is-capped-landed.html:137 the a-dispatch row counts 6 of 9 present while four of those six carry no file and symbol \u2014 s2 and s3 are asserted from the plan's own \"declared done\" status, which the method at :68-69 says the reading does not use, and s9 and s10 cite a bare file with no symbol \u2014 so the done-when's \"cites the file and symbol that shows each counted one present\" holds for two counted sections of six; the same shape remains at :150 (a-dry-run, whose counted s2 is cited as a file only while the row's own text says it \"stops before the resolutions s2 names\"), :171 (a-follower-outlives, \"s5 done, no change needed\" with no citation and s6 cited by the absence of a marker at :172), and :280 (a-review-dies, s2 with no citation at all).\nFINDING docs/evidence/archive/open-work-is-capped-landed.html:280 the a-review-dies row cites reckon/crew/dispatch.py:5799 for EXIT_RECORD_NAME but that name is defined at dispatch.py:5859 at the stated head, 5799 falling inside _start_backend's docstring, so the line a reader opens is not the symbol the citation names.\nFINDING docs/plans/open-work-is-capped.html:62 the plan's section 2 landing beat still reads \"keep 13, merge 2 ... close 2\" and \"the batch keep count is 13\" while the record landed this round reads keep 6 / merge 9 / close 2; the node was fenced out of editing any plan and declares the staleness under follow_ons, so nothing is hidden, but until the owning session corrects the beat the plan and its own evidence record disagree on the number the lead sums across the four batches.",
+  "review_run_id": "r-20260928T145144527589-review-of-triage-pending-plans-first-batch",
+  "reviewed_base_sha": "ac9d7967ea47055a8cff7e344ae9cb5ef6bb9437",
+  "reviewed_head_sha": "5507c4a937a608868e4d9a9cd2beb61187beac05",
+  "reviewed_run_id": "r-20260928T121255203668-triage-pending-plans-first-batch",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T15:47:30.799346+00:00",
+  "total": 81
+}

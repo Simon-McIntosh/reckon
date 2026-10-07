@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052817612864-fenced-codex-can-persist-its-login/logs/head-arm-three-files-2.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052817612864-fenced-codex-can-persist-its-login/logs/base-arm-three-files.log",
+    "note": "the reviewed manifest names this pair under tests/test_logs rather than under the baseline_suite and after_suite keys the promotion suite-delta check and the review read path scan, so a read-time annotation reports the count unmeasured; this count is the set difference over the two arm logs the run itself recorded"
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_backends.py:2686",
+    "reckon/_backends.py:2559",
+    "reckon/crew/dispatch.py:4438",
+    "reckon/crew/dispatch.py:7091",
+    "reckon/crew/dispatch.py:7471",
+    "reckon/crew/resumption.py:242"
+  ],
+  "completed_at": "2026-09-28T07:33:26.322Z",
+  "dispatched_at": "2026-09-28T06:32:43Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052817612864-fenced-codex-can-persist-its-login/manifest.md",
+      "line": "13",
+      "text": "the manifest records its regression result as prose under tests rather than the baseline_suite and after_suite objects the read path scans, so the added-failure derivation the review store performs at read time finds no gate log and reports the count unmeasured for a run whose own logs measure it as zero."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052817612864-fenced-codex-can-persist-its-login/logs/new-test.log",
+      "line": "1",
+      "text": "this gate log opens with the pytest progress line rather than the revision, tree and command the delivery contract asks of every gate log, so the arm it records cannot be attributed to a revision from the log alone."
+    },
+    {
+      "file": "tests/test_fenced_codex_can_persist_its_login.py",
+      "line": "210",
+      "text": "the writable bind lets a fenced run truncate or blank the operator's single login and no assertion records that consequence, since the replaced read-only test dropped its removal-refused expectation and the end-to-end case at :229 exercises only the rewrite and the sibling refusal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit at e0e6aa9f against base 7b2e963b; three commits, 466 insertions across six files, and the final commit is docs-only so the code state the head names the run's head revision cc795a18.",
+    "done_when": "the done_when names four test properties and a negative control; all four are asserted in tests/test_fenced_codex_can_persist_its_login.py (argv carries --bind at lines 191-195, the ~/.codex overlay at 207, the no-copy absence at 219, the end-to-end rewrite at 229-240) and the negative control reddens the first of them, recorded in logs/negative-control.log.",
+    "goal": "the node goal was to let a fenced codex run write back a refreshed login through a read-write bind of the one operator auth.json, after measuring the write mode; reckon/_backends.py:2686 passes the codex login as read_write_binds into fence_argv, and logs/codex-auth-write-mode.log establishes the in-place write that makes the single-file bind sufficient.",
+    "manifest": "read in full; it reports status complete, the codex write mode IN PLACE, the new gate at 4 passed, the three neighbour files at base 12 passed to head 12 passed with zero added failures, and names every log it rests on.",
+    "write_paths": "the node's declared paths are reckon/_backends.py, tests/test_fenced_codex_can_persist_its_login.py, the landed evidence record, the figures directory and the plan; the diff touches those plus tests/test_each_run_owns_its_harness_home.py, which was granted mid-run by crew widen (resume-1-advice.txt) and edited only in the two named tests."
+  },
+  "justifications": {
+    "durability": "tests/test_fenced_codex_can_persist_its_login.py:191 fails if the bind reverts to --ro-bind, which logs/negative-control.log shows by measurement rather than by argument, and the same mutation reddens the end-to-end case at :232 through the refusal the defect produced.",
+    "evidence": "logs/base-arm-three-files.log and logs/head-arm-three-files-2.log both head with revision, tree and command and both read 12 passed, and logs/negative-control.log reddens the argv assertion with the login write refused Read-only file system; logs/new-test.log carries no such header.",
+    "fit": "reckon/_backends.py:2484 mirrors the existing read_only_binds parameter and the three commits read as conventional subjects with mechanism bodies, and the naming checks over the three touched source paths report no plan, ticket or attribution token.",
+    "goal_fidelity": "reckon/_backends.py:2559 mounts read_write_binds as --bind and launch_plan at :2686 feeds the codex login to it, which is exactly the goal, and the measurement the goal required lands first in logs/codex-auth-write-mode.log.",
+    "scope_discipline": "every path in the diff against 7b2e963b is inside the declared write paths once tests/test_each_run_owns_its_harness_home.py is read with the crew widen grant recorded in resume-1-advice.txt, and that file changed in exactly the two tests the grant named."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal was to let a fenced codex run write back a refreshed login through a read-write bind of the one operator auth.json, after measuring the write mode; reckon/_backends.py:2686 passes the codex login as read_write_binds into fence_argv, and logs/codex-auth-write-mode.log establishes the in-place write that makes the single-file bind sufficient.\nVERDICT done_when: the done_when names four test properties and a negative control; all four are asserted in tests/test_fenced_codex_can_persist_its_login.py (argv carries --bind at lines 191-195, the ~/.codex overlay at 207, the no-copy absence at 219, the end-to-end rewrite at 229-240) and the negative control reddens the first of them, recorded in logs/negative-control.log.\nVERDICT write_paths: the node's declared paths are reckon/_backends.py, tests/test_fenced_codex_can_persist_its_login.py, the landed evidence record, the figures directory and the plan; the diff touches those plus tests/test_each_run_owns_its_harness_home.py, which was granted mid-run by crew widen (resume-1-advice.txt) and edited only in the two named tests.\nVERDICT manifest: read in full; it reports status complete, the codex write mode IN PLACE, the new gate at 4 passed, the three neighbour files at base 12 passed to head 12 passed with zero added failures, and names every log it rests on.\nVERDICT diff: read commit by commit at e0e6aa9f against base 7b2e963b; three commits, 466 insertions across six files, and the final commit is docs-only so the code state the head names the run's head revision cc795a18.\nCALL_SITES: reckon/_backends.py:2686, reckon/_backends.py:2559, reckon/crew/dispatch.py:4438, reckon/crew/dispatch.py:7091, reckon/crew/dispatch.py:7471, reckon/crew/resumption.py:242\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2559 mounts read_write_binds as --bind and launch_plan at :2686 feeds the codex login to it, which is exactly the goal, and the measurement the goal required lands first in logs/codex-auth-write-mode.log.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base-arm-three-files.log and logs/head-arm-three-files-2.log both head with revision, tree and command and both read 12 passed, and logs/negative-control.log reddens the argv assertion with the login write refused Read-only file system; logs/new-test.log carries no such header.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff against 7b2e963b is inside the declared write paths once tests/test_each_run_owns_its_harness_home.py is read with the crew widen grant recorded in resume-1-advice.txt, and that file changed in exactly the two tests the grant named.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fenced_codex_can_persist_its_login.py:191 fails if the bind reverts to --ro-bind, which logs/negative-control.log shows by measurement rather than by argument, and the same mutation reddens the end-to-end case at :232 through the refusal the defect produced.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_backends.py:2484 mirrors the existing read_only_binds parameter and the three commits read as conventional subjects with mechanism bodies, and the naming checks over the three touched source paths report no plan, ticket or attribution token.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052817612864-fenced-codex-can-persist-its-login/manifest.md:13 the manifest records its regression result as prose under tests rather than the baseline_suite and after_suite objects the read path scans, so the added-failure derivation the review store performs at read time finds no gate log and reports the count unmeasured for a run whose own logs measure it as zero.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052817612864-fenced-codex-can-persist-its-login/logs/new-test.log:1 this gate log opens with the pytest progress line rather than the revision, tree and command the delivery contract asks of every gate log, so the arm it records cannot be attributed to a revision from the log alone.\nFINDING tests/test_fenced_codex_can_persist_its_login.py:210 the writable bind lets a fenced run truncate or blank the operator's single login and no assertion records that consequence, since the replaced read-only test dropped its removal-refused expectation and the end-to-end case at :229 exercises only the rewrite and the sibling refusal.\n",
+  "review_run_id": "r-20260928T063231222971-review-of-fenced-codex-can-persist-its-login",
+  "reviewed_base_sha": "7b2e963b6d9f750ad6c09cd848f322f465e3272d",
+  "reviewed_head_sha": "e0e6aa9f934db3bbb34ab4e3630420a12c5a158b",
+  "reviewed_run_id": "r-20260928T052817612864-fenced-codex-can-persist-its-login",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:01.357371+00:00",
+  "total": 91
+}

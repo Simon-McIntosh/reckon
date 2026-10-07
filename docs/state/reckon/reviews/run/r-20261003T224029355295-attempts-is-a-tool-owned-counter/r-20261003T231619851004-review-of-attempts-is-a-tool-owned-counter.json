@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "81b535347259d3e171447e1be7880affb700ef03",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/_store.py:record_section_launch",
+    "reckon/_store.py:record_section_outcome",
+    "reckon/_store.py:remove_section_launch",
+    "reckon/_store.py:_write_state_locked",
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/mcp_views.py:ready_set_view",
+    "docs/ui/plan.jsx:Plan"
+  ],
+  "completed_at": "2026-10-03T23:25:33.656Z",
+  "dispatched_at": "2026-10-03T23:16:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "7327",
+      "severity": "follow-on",
+      "text": "follow-on: _record_dispatch_section_launch writes the increment via record_section_launch and then commits it, but the assignment to counted_section cannot complete if that commit raises, so the outer rollback at dispatch.py:7433 sees counted_section as None and skips remove_section_launch, leaving the plan HTML with an uncommitted incremented count; the next dispatch to that section then refuses at the clean-before-launch check, so a failed-commit launch needs manual repair. Not independently reproduced -- the crew git shim refused the scratch fixture -- so it is a code-path reading, not a measurement."
+    }
+  ],
+  "head_log_revision": "da7ff47cd98778237d0bf3616f59259aebffe5f2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit against 81b535347 -- de2bf607c adds the failing regression test, faca5b63f adds the counter and outcome plumbing across reckless/_store.py, dispatch.py, promotion.py, roadmap.py, mcp_views.py and docs/ui/plan.jsx, 8f624bcd1 rewords a roadmap docstring off a plan-section reference, da7ff47cd adds the refused-launch rollback and the unknown-vs-zero distinction.",
+    "done_when": "the node's measure is met -- tests/test_section_attempts_are_tool_owned.py passes 27/27 with the three named section-record files at head (my run, EXIT=0), the same four files fail 3 of the five new cases at base revision 81b535347 (my run, EXIT=1), and the declared mutation reddens test_two_dispatches_increment_the_section_counter with assert 0 == 2.",
+    "goal": "the node goal is section-contract-and-computed-impl SS4 -- dispatch increments the target typed section's attempts and complete records the outcome, nothing else writes it, and the count shows on the heading and in the roadmap ready set; read in reckon/crew/dispatch.py:7327 and reckon/crew/promotion.py:7682.",
+    "manifest": "read; status complete, four commits named, baseline_suite and after_suite are flat records completed true at 3 and 0 failures, and the negative-control line names its log whose last line reads EXIT=1.",
+    "write_paths": "read the manifest's eight declared paths; git diff --name-only 81b535347..da7ff47cd shows exactly those eight and no others, 641 insertions and 8 line replacements, no file deletion."
+  },
+  "justifications": {
+    "durability": "tests/test_section_attempts_are_tool_owned.py asserts each SS4 clause against state read back from the repository, and the declared mutation reddens the counter assertion, but the counter-commit failure path at reckon/crew/dispatch.py:7327 leaves unrolled state.",
+    "evidence": "the head arm (27 passed, EXIT=0), the base arm (3 failed, 24 passed, EXIT=1 at 81b535347) and the declared mutation (1 failed, EXIT=1) each reproduced independently and match the reviewed run's own after-suite.log and baseline-suite-final.log summaries.",
+    "fit": "all four commits carry conventional subjects with bodies, no AI trailer, and the added symbols and comments name the mechanism (record_section_launch, _only_owned_comment_remains) with no plan or sprint identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:7327 increments on launch and rolls it back on a refused spawn while reckon/crew/promotion.py:7682 records promoted/failed/superseded, matching SS4's every clause and its resume-no-change and edit/merge-survival cases.",
+    "scope_discipline": "git diff --name-only 81b535347..da7ff47cd returns exactly the eight declared write paths, with the 8 removed lines all inside replaced hunks and no guard deleted or added outside scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is section-contract-and-computed-impl SS4 -- dispatch increments the target typed section's attempts and complete records the outcome, nothing else writes it, and the count shows on the heading and in the roadmap ready set; read in reckon/crew/dispatch.py:7327 and reckon/crew/promotion.py:7682.\nVERDICT done_when: the node's measure is met -- tests/test_section_attempts_are_tool_owned.py passes 27/27 with the three named section-record files at head (my run, EXIT=0), the same four files fail 3 of the five new cases at base revision 81b535347 (my run, EXIT=1), and the declared mutation reddens test_two_dispatches_increment_the_section_counter with assert 0 == 2.\nVERDICT write_paths: read the manifest's eight declared paths; git diff --name-only 81b535347..da7ff47cd shows exactly those eight and no others, 641 insertions and 8 line replacements, no file deletion.\nVERDICT manifest: read; status complete, four commits named, baseline_suite and after_suite are flat records completed true at 3 and 0 failures, and the negative-control line names its log whose last line reads EXIT=1.\nVERDICT diff: read commit by commit against 81b535347 -- de2bf607c adds the failing regression test, faca5b63f adds the counter and outcome plumbing across reckless/_store.py, dispatch.py, promotion.py, roadmap.py, mcp_views.py and docs/ui/plan.jsx, 8f624bcd1 rewords a roadmap docstring off a plan-section reference, da7ff47cd adds the refused-launch rollback and the unknown-vs-zero distinction.\nCALL_SITES: reckon/crew/dispatch.py:dispatch, reckon/crew/promotion.py:_complete_locked, reckon/_store.py:record_section_launch, reckon/_store.py:record_section_outcome, reckon/_store.py:remove_section_launch, reckon/_store.py:_write_state_locked, reckon/roadmap.py:_build_roadmap, reckon/mcp_views.py:ready_set_view, docs/ui/plan.jsx:Plan\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:7327 increments on launch and rolls it back on a refused spawn while reckon/crew/promotion.py:7682 records promoted/failed/superseded, matching SS4's every clause and its resume-no-change and edit/merge-survival cases.\nSCORE evidence: 20\nJUSTIFICATION evidence: the head arm (27 passed, EXIT=0), the base arm (3 failed, 24 passed, EXIT=1 at 81b535347) and the declared mutation (1 failed, EXIT=1) each reproduced independently and match the reviewed run's own after-suite.log and baseline-suite-final.log summaries.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 81b535347..da7ff47cd returns exactly the eight declared write paths, with the 8 removed lines all inside replaced hunks and no guard deleted or added outside scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_section_attempts_are_tool_owned.py asserts each SS4 clause against state read back from the repository, and the declared mutation reddens the counter assertion, but the counter-commit failure path at reckon/crew/dispatch.py:7327 leaves unrolled state.\nSCORE fit: 20\nJUSTIFICATION fit: all four commits carry conventional subjects with bodies, no AI trailer, and the added symbols and comments name the mechanism (record_section_launch, _only_owned_comment_remains) with no plan or sprint identifier.\nFINDING reckon/crew/dispatch.py:7327 follow-on: _record_dispatch_section_launch writes the increment via record_section_launch and then commits it, but the assignment to counted_section cannot complete if that commit raises, so the outer rollback at dispatch.py:7433 sees counted_section as None and skips remove_section_launch, leaving the plan HTML with an uncommitted incremented count; the next dispatch to that section then refuses at the clean-before-launch check, so a failed-commit launch needs manual repair. Not independently reproduced -- the crew git shim refused the scratch fixture -- so it is a code-path reading, not a measurement.\nreviewed_base_sha: 81b535347259d3e171447e1be7880affb700ef03\nreviewed_head_sha: da7ff47cd98778237d0bf3616f59259aebffe5f2\n",
+  "review_run_id": "r-20261003T231619851004-review-of-attempts-is-a-tool-owned-counter",
+  "reviewed_base_sha": "81b535347259d3e171447e1be7880affb700ef03",
+  "reviewed_head_sha": "da7ff47cd98778237d0bf3616f59259aebffe5f2",
+  "reviewed_run_id": "r-20261003T224029355295-attempts-is-a-tool-owned-counter",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T231619851004-review-of-attempts-is-a-tool-owned-counter",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T23:24:20.054678+00:00",
+  "total": 99
+}

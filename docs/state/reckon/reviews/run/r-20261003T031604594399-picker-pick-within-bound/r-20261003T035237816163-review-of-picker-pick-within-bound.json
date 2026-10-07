@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c6acda8e0531dc9bc764475570c364e72fe4c368",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:166",
+    "reckon/crew/picker/snapshot.py:172",
+    "reckon/crew/picker/lane_context.py:262"
+  ],
+  "completed_at": "2026-10-03T03:59:21.898Z",
+  "dispatched_at": "2026-10-03T03:53:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "262",
+      "severity": "follow-on",
+      "text": "follow-on: the new guard skips a live local worker whose project differs from the pick's project, so expected_wait_s no longer reflects the whole live local load; when another project's local workers are the only ones live the figure reads null (or low) while the lane is genuinely busy. Deliberate and pinned by test_expected_wait_never_reads_a_foreign_project_ledger, but it narrows a figure the picker prompt describes as the median wall time for the local runs now live, and the cost argument (one foreign ledger read) is a latency trade rather than a correctness one."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "172",
+      "severity": "follow-on",
+      "text": "follow-on: the fallback re-calls routing._context_fit_verdict when the competence verdict carried no context; that branch is safe because _context_fit_verdict returns None only when neither usable_input_window nor effective_input_window is declared (a settings lookup, no repository walk), so no second git subprocess runs on the expensive path. Recorded for completeness, not a defect."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/picker-pick-within-bound.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's manifest baseline_suite/after_suite carry a non-schema shape (arm/revision/tree/passed/failed/duration_s/exit/note) rather than the required keys (revision, command, exit_status, log_path, completed, failure_count, failure_ids); gate-base.log's header command line is also truncated (test_picker_inputs_never_block_document) though run_base.sh's real pytest command ran in full. Record-shape only; the derived delta is unaffected (both logs show 0 failed)."
+    }
+  ],
+  "head_log_revision": "9e45069bb5e0f06797c287b7dc0bf8e3aa8aa22f",
+  "item_aggregate": 8,
+  "item_verdicts": {
+    "call_sites": "read the two production call sites the node touches: snapshot._fit now consumes the context under competence['context'] (snapshot.py:172) and falls back only when it is absent (snapshot.py:174); lane_context._expected_wait gains the foreign-project guard (lane_context.py:262).",
+    "diff": "read a3e0bc20 against its parent c6acda8e0: 9e45069bb changes snapshot.py (context read from the competence verdict with a fallback) and lane_context.py (skip owner != project when records is held), adds tests/test_picker_pick_within_bound.py; a3e0bc20 adds the evidence fragment, the per-phase figure and its plot script.",
+    "done_when": "the node's done-when is the pick latency inside the 5 s dispatch bound; the manifest records base 122 passed and head 126 passed with zero added failures, and an independent HEAD re-run of tests/test_picker_pick_within_bound.py passes 4.",
+    "goal": "the node's goal under plan \u00a76 (f-otmp-pick-timeouts) is to bring the dispatch-path pick inside its 5 s bound; the diff removes a second instruction-chain context measurement per candidate and a foreign-project ledger read from the wait estimate.",
+    "manifest": "read; status complete, base and head gate logs named under the run directory, negative-control.log named with EXIT=1 and the fit test as the single failing id.",
+    "write_paths": "read the manifest's declared paths; the diff touches only reckon/crew/picker/snapshot.py, reckon/crew/picker/lane_context.py, tests/test_picker_pick_within_bound.py and the fragment/figure under docs, all inside them."
+  },
+  "justifications": {
+    "durability": "each cut is pinned by a test that fails loudly if reverted: test_fit_reuses_the_competence_context_measurement monkeypatches the second measurement to raise, and test_expected_wait_never_reads_a_foreign_project_ledger makes run_time_profile fail if a foreign ledger is read; the negative control reinstates the fit cut and records EXIT=1 with exactly that test failing. The second cut's falsification is self-contained but is not itself run as a recorded red.",
+    "evidence": "base 122 passed / head 126 passed derive from gate-base.log and gate-head.log (both EXIT=0, zero failures); negative-control.log shows 1 failed / 3 passed EXIT=1; the per-phase profile is the median of three runs with the ledger held; an independent HEAD re-run of the new file passes 4. Blemishes: gate-base.log's header command line is truncated and it carries a duplicated appended run, and the manifest's baseline_suite/after_suite use a non-schema shape.",
+    "fit": "the added lines follow the surrounding picker idiom and comment voice; comments state the mechanism (a second instruction-chain read, a foreign ledger on the critical path) with no plan, sprint or ticket identifiers and no author attribution.",
+    "goal_fidelity": "the pick inside its bound is met and measured (median total about 3.34 s to about 1.37 s, no ledger-scaling phase left inside pick()), and the fit cut is behaviour-preserving because _competence_verdict calls _context_fit_verdict on every return path and its context value is the same measurement; the wait-estimate cut, however, narrows expected_wait_s to the pick's own project, so the figure no longer reports the whole live local load.",
+    "scope_discipline": "every changed path (reckon/crew/picker/snapshot.py, reckon/crew/picker/lane_context.py, tests/test_picker_pick_within_bound.py, docs/evidence/fragments/.../picker-pick-within-bound.html and the figure directory) is inside the declared write paths, and the node mutated no plan or sprint state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal under plan \u00a76 (f-otmp-pick-timeouts) is to bring the dispatch-path pick inside its 5 s bound; the diff removes a second instruction-chain context measurement per candidate and a foreign-project ledger read from the wait estimate.\nVERDICT done_when: the node's done-when is the pick latency inside the 5 s dispatch bound; the manifest records base 122 passed and head 126 passed with zero added failures, and an independent HEAD re-run of tests/test_picker_pick_within_bound.py passes 4.\nVERDICT write_paths: read the manifest's declared paths; the pick changes stay inside reckon/crew/picker/ and the docs fragment/figure.\nVERDICT manifest: read; status complete, base and head gate logs named, negative-control.log with EXIT=1.\nVERDICT diff: read a3e0bc20 against c6acda8e0; snapshot.py reads context from the competence verdict with a fallback, lane_context.py skips a foreign owner when records is held, plus the new test file and the evidence fragment/figure.\nCALL_SITES: reckon/crew/picker/snapshot.py:166, reckon/crew/picker/snapshot.py:172, reckon/crew/picker/lane_context.py:262\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the pick bound goal is met and measured, and the fit cut is behaviour-preserving, but the wait-estimate cut narrows expected_wait_s to the pick's own project so the figure no longer reports the whole live local load.\nSCORE evidence: 17\nJUSTIFICATION evidence: base 122 / head 126 from the named gate logs with zero added failures, a negative control at EXIT=1, a three-run profile, and an independent HEAD re-run passing 4; the base log header is truncated and the suite records use a non-schema shape.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths and no plan or sprint state was mutated.\nSCORE durability: 18\nJUSTIFICATION durability: both cuts are pinned by tests that fail loudly on revert and the negative control records the fit cut red; the second cut's red is self-contained but not separately recorded.\nSCORE fit: 19\nJUSTIFICATION fit: added lines follow the surrounding idiom and comment voice with no forbidden names or attributions.\nFINDING reckon/crew/picker/lane_context.py:262 follow-on: the guard drops live local workers from other projects, so expected_wait_s no longer reflects the whole live local load; deliberate and pinned, but a latency trade that narrows the figure.\nFINDING reckon/crew/picker/snapshot.py:172 follow-on: the fallback re-calls _context_fit_verdict only on a cheap settings-only branch (no repository walk), so it is safe; recorded for completeness.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/picker-pick-within-bound.html:1 follow-on: the manifest suite records use a non-schema shape and the base gate header command line is truncated; record-shape only, delta unaffected.\nreviewed_base_sha: c6acda8e0531dc9bc764475570c364e72fe4c368\nreviewed_head_sha: a3e0bc206ccca11427d9ed76753e41179395be38\n",
+  "review_run_id": "r-20261003T035237816163-review-of-picker-pick-within-bound",
+  "reviewed_base_sha": "c6acda8e0531dc9bc764475570c364e72fe4c368",
+  "reviewed_head_sha": "a3e0bc206ccca11427d9ed76753e41179395be38",
+  "reviewed_run_id": "r-20261003T031604594399-picker-pick-within-bound",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T03:57:42+00:00",
+  "total": 91
+}

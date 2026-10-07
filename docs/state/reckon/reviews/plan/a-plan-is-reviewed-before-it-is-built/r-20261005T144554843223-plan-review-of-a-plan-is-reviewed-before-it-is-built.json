@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:51:22.970Z",
+  "dispatched_at": "2026-10-05T14:46:11Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:44",
+      "id": "deep_module-1",
+      "reason": "\u00a717 must state that generalisation or those three walks cannot be absorbed and remain duplicates.",
+      "text": "\u00a717 requires \"every heading walk in the package\" to call the section reader, but the reader it names yields h2 only, while `evidence._section_labels` (`reckon/evidence.py:65`, `find_all(re.compile(r\"^h[1-6]$\"))` and reads each heading's text and level), `routing._contains_plan_section` (`reckon/crew/routing.py:2481`, same regex) and `dispatch` section resolution (`reckon/crew/dispatch.py:334`, matches h1\u2013h6 and uses the level to bound sibling collection) genuinely consume all levels; a consolidation onto an h2-only reader silently narrows those three, so the parser must be generalised to every heading level and to yield heading text and level, a change \u00a717 does not state.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py:94",
+      "id": "interface_budget-1",
+      "reason": "the section must name the public reader it exposes to other packages or say why the widened public reader is not a new counted definition.",
+      "text": "\u00a717's interface accounting claims no public definition is added and that the parser keeps its name, but five module-crossing consumers cannot import the private `_StructuredSectionSpanParser`, so either an existing public entry (`structured_section_spans`, whose current return is spans only) must widen its contract to carry identity, heading text and the landed flag, or a new public reader is added and counted; \u00a717 names neither, and \u00a718's own house rule (\"a definition consumed across a package boundary earns a public name\") makes this a public-surface addition \u00a717 must account for.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bbbac77e955a467fdb3a2c8773309025c6c74bbb34a064649c732d42f3b1765f",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 79,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T144554843223-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "fae3996f78feb242ccb41e230bcc0383eaa917b2",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a717's \"one raw-text section reader\" is specified as the existing h2-only `_StructuredSectionSpanParser` (`reckon/_plan_html.py:44`, `handle_starttag` matches `tag == \"h2\"` and `_H2_OPEN_RE` only), yet three of the walks it must absorb match every level h1\u2013h6.",
+    "duplicate_owner": "pass \u2014 the plan names the duplicate owners and consolidates them rather than forking: the two `c-run-` spellings (`promotion._LANDING_COMMENT_PREFIX`, `plan_review.RUN_COMMENT_PREFIX`) and the two landing recognisers move to one home in \u00a718, and the heading walks consolidate onto the parser in \u00a717.",
+    "interface_budget": "a finding \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 rewrites module-crossing consumers (top-level `doccheck`, `mcp_views`, `evidence` plus crew `routing`, `dispatch`) onto a private parser while its own accounting states \"no public definition is added; the parser keeps its name\", leaving the public entry point that carries section identity and the landed flag unnamed.",
+    "reuse_search": "pass \u2014 \u00a716 extends the existing whole-document digest (`plan_fingerprint`/`_fingerprint_forms`), \u00a717 consolidates onto the existing raw-text `_StructuredSectionSpanParser`/`structured_section_spans` and its AST-rule precedent `_staged_writes` in `reckon/interface_counts.py` (verified present and test-consumed), and \u00a718 names the two existing readers (`promotion._plan_remaining_sections`, `doccheck._implementable_section_ids`) before hoisting one; each new mechanism cites the file it extends rather than proposing a subsystem.",
+    "thin_wrapper": "pass \u2014 \u00a716 states in its own text why the coverage predicate is not a wrapper over `read_plan_review` (one record vs a set of outstanding sections joined to a union of digests), and \u00a717/\u00a718 each justify their consolidation against the mechanism they replace rather than layering over it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.882077+00:00"
+}

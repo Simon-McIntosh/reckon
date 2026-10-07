@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked:4130",
+    "reckon/crew/promotion.py:_complete_locked:4163"
+  ],
+  "completed_at": "2026-09-25T13:26:41.447Z",
+  "dispatched_at": "2026-09-25T12:26:54Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1922",
+      "text": "append_run still declares attempts=12 though no caller passes it and the body never reads it, so the signature advertises a retry queue the function no longer has while the sibling record_hold_checks at :2365 uses the same name for a real loop."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against e160b02d \u2014 8db7ee86 adds the contract test file, e7b5051d rewrites append_run and adds run_store.indexed_run_ids, 94ff9739 and 0548c94b append the plan section, the landed record and the figure as additions only.",
+    "done_when": "The writer-side clauses are asserted in tests/test_append_run_writes_one_run_file.py (concurrent appends at :89, existing-target refusal at :180, aggregate duplicate at :203, nested id at :220, index lag at :266) and recorded in the run's logs, but the zero-added-failures clause is unmet \u2014 the manifest records 23 remaining failures that all reach the untouched promotion stager.",
+    "goal": "The goal is the ledger half of one record file per promotion; reckon/ledger.py:1943 resolves runs/<run_id>.json through run_path and line 1996 creates it with a single exclusive open and no aggregate write, and my independent re-run of the node's named test file at 0548c94b passed 17 cases.",
+    "manifest": "Read in full; it reports status blocked, the four commits with their per-commit logs, the base/head failure census, the focused gate and the negative-control receipt, and names the unmet measure as a blocker rather than claiming it.",
+    "write_paths": "Read the node definition's eight declared paths against the full diff from e160b02d; all changed files (reckon/ledger.py, reckon/run_store.py, tests/test_append_run_writes_one_run_file.py, tests/test_ledger.py, tests/test_a_promotion_never_creates_a_ledger.py, docs/plans/the-ledger-is-one-file-per-run.html, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html, docs/figures/the-ledger-is-one-file-per-run/append-flow.svg) lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_append_run_writes_one_run_file.py:126 records the exclusive open mode and :173 reddens under my base-body control that restores the crew.json rewrite.",
+    "evidence": "the gate names tests/test_append_run_writes_one_run_file.py and the manifest records its 17-case result, but the done_when's zero-added-failures clause is unmet \u2014 the 23 remaining failures sit on the promotion staging at reckon/crew/promotion.py:4130 that this node excludes by design.",
+    "fit": "the module matches its surrounding idiom, but reckon/ledger.py:1922 keeps an inert attempts parameter that no caller passes.",
+    "goal_fidelity": "reckon/ledger.py:1996 creates the run file with one exclusive open and line 1992 drops store_write, which is the goal's claim.",
+    "scope_discipline": "every changed file is inside the eight declared write paths and reckon/crew/promotion.py is untouched at 0548c94b."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is the ledger half of one record file per promotion; reckon/ledger.py:1943 resolves runs/<run_id>.json through run_path and line 1996 creates it with a single exclusive open and no aggregate write, and my independent re-run of the node's named test file at 0548c94b passed 17 cases.\nVERDICT done_when: The writer-side clauses are asserted in tests/test_append_run_writes_one_run_file.py (concurrent appends at :89, existing-target refusal at :180, aggregate duplicate at :203, nested id at :220, index lag at :266) and recorded in the run's logs, but the zero-added-failures clause is unmet \u2014 the manifest records 23 remaining failures that all reach the untouched promotion stager.\nVERDICT write_paths: Read the node definition's eight declared paths against the full diff from e160b02d; all changed files (reckon/ledger.py, reckon/run_store.py, tests/test_append_run_writes_one_run_file.py, tests/test_ledger.py, tests/test_a_promotion_never_creates_a_ledger.py, docs/plans/the-ledger-is-one-file-per-run.html, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html, docs/figures/the-ledger-is-one-file-per-run/append-flow.svg) lie inside them.\nVERDICT manifest: Read in full; it reports status blocked, the four commits with their per-commit logs, the base/head failure census, the focused gate and the negative-control receipt, and names the unmet measure as a blocker rather than claiming it.\nVERDICT diff: Read commit by commit against e160b02d \u2014 8db7ee86 adds the contract test file, e7b5051d rewrites append_run and adds run_store.indexed_run_ids, 94ff9739 and 0548c94b append the plan section, the landed record and the figure as additions only.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked:4130, reckon/crew/promotion.py:_complete_locked:4163\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1996 creates the run file with one exclusive open and line 1992 drops store_write, which is the goal's claim.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate names tests/test_append_run_writes_one_run_file.py and the manifest records its 17-case result, but the done_when's zero-added-failures clause is unmet \u2014 the 23 remaining failures sit on the promotion staging at reckon/crew/promotion.py:4130 that this node excludes by design.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed file is inside the eight declared write paths and reckon/crew/promotion.py is untouched at 0548c94b.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_append_run_writes_one_run_file.py:126 records the exclusive open mode and :173 reddens under my base-body control that restores the crew.json rewrite.\nSCORE fit: 17\nJUSTIFICATION fit: the module matches its surrounding idiom, but reckon/ledger.py:1922 keeps an inert attempts parameter that no caller passes.\nFINDING reckon/ledger.py:1922 append_run still declares attempts=12 though no caller passes it and the body never reads it, so the signature advertises a retry queue the function no longer has while the sibling record_hold_checks at :2365 uses the same name for a real loop.\n",
+  "review_run_id": "r-20260925T122641982064-review-of-append-run-writes-one-run-file",
+  "reviewed_base_sha": "e160b02da36e795399de72503f197180c1fd993c",
+  "reviewed_head_sha": "0548c94bbe93fd656e88cc167d8a7fcf2c7b27fb",
+  "reviewed_run_id": "r-20260925T074635678902-append-run-writes-one-run-file",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:19:35.038209+00:00",
+  "total": 87
+}

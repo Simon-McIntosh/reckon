@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T17:49:22.711Z",
+  "dispatched_at": "2026-10-04T17:42:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:709",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's own D1/PR-3 placed the plan-review report shape's item sets and loaders in review.py, so the parser belongs beside `parse_review` (extend it for the RUBRIC/WOULD_CHANGE grammar) rather than a second parser in plan_review.py.",
+      "text": "`parse_review_report` (with `_parse_finding` and the `_RUBRIC_LINE_RE` / `_FINDING_LINE_RE` / `_FINDING_TAIL_RE` regexes, plan_review.py:657-708) re-implements the report-parsing responsibility `reckon/crew/review.py:331 parse_review` already owns: both turn reviewer report text into `{item verdicts, absent items, findings}` and both match `FINDING` lines, and `parse_review` already returns `item_verdicts` and `absent_items` (review.py:344, 386, 465) \u2014 the same two fields plan_review's parser calls `rubric_items` and `absent_items`. The plan already treats review.py as the owner for this report family: the rubric item sets (`PLAN_REVIEW_ITEMS`, `PLAN_DESIGN_REVIEW_ITEMS`, review.py:147/157) and the prompt loaders (`load_plan_review_prompt`, review.py:268) were placed there. So the report grammar is now split across two modules and two `FINDING` regexes, which drift as the emitted form changes.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:238",
+      "id": "duplicate_owner-2",
+      "reason": "the plan-review node is built with `role=\"review\"` (recovery.py:2507), so dispatch.py's reader recognises it anyway and nothing currently breaks; the honest cleanup is to make the new prefix a second named constant beside `REVIEW_NODE_PREFIX` so the two readers cannot diverge when the role field is absent, which tightens the plan's D5 rather than changing it.",
+      "text": "the review-node identity gains a second spelling as a bare literal: `_is_review_node` was extended to `startswith((REVIEW_NODE_PREFIX, \"plan-review-of-\"))` while the constant that owns the concept is `REVIEW_NODE_PREFIX = \"review-of-\"` (recovery.py:217), and the same literal is minted again at recovery.py:469 and recovery.py:566. `reckon/crew/dispatch.py:11192 _is_review_run` reads the same role independently and keys only on `REVIEW_NODE_PREFIX` (falling back to `role == \"review\"`), so the two readers of \"is this a review node\" now use different vocabularies.",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f62ef23c394de6b43f4a79aef67cf93614aa6ee19b2b955582fc6b4402c3a934",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 23,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-04T23:07:59.658798+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-04T23:08:00.171369+00:00"
+    }
+  },
+  "review_run_id": "r-20261004T174151398715-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "a04d79950bd12c0fadec3dc0fb06a349f7e2f150",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design hides real behaviour behind a small interface: `reckon/crew/plan_review.py` mediates the record shape, the version-and-blob-keyed store, the fingerprint join and the delivered-report reconciliation behind a handful of functions (`plan_fingerprint`, `read_plan_review`, `store_plan_review`, `delivered_reports`, `review_report_directory`, `write_review_sidecar`) that `recovery.py`, `routing.py` and `mcp.py` call; the review dispatch is composed by one function `_review_dispatch_fields` (recovery.py:490) that serves both the code-review and plan-review subjects rather than a parallel composer (design brief D6).",
+    "duplicate_owner": "a finding \u2014 the plan-review report parser is placed in `reckon/crew/plan_review.py` although `reckon/crew/review.py` already owns reviewer-output parsing (`parse_review` returns the same `item_verdicts` / `absent_items` / findings shape the plan parser reproduces under different names).",
+    "reuse_search": "pass \u2014 the design cites and reuses the mechanisms it extends: the plan-review store path is `reckon.crew.review.review_store_root` (plan_review.py:290 reuses it rather than forking a store root), the content fingerprint parses through `reckon._plan_html`, the rubric item sets and prompt loaders are imported from `reckon/crew/review.py` (`PLAN_REVIEW_ITEMS`, `PLAN_DESIGN_REVIEW_ITEMS`, `load_plan_review_prompt`), \u00a73's interface figures come from the existing `reckon/interface_counts.py` (verified it publishes exactly `public_definitions`, `cli_options`, `mcp_views`, `refusal_families`, lines 290-293), and \u00a73 explicitly extends the build skill's reuse-map rule (`~/.claude/skills/reckon-build/references/coordinator-reference.md`:239, \"No implementation node before the reuse map exists\").",
+    "thin_wrapper": "pass \u2014 each layer the design adds states why it extends rather than forks: \u00a73 says the design review \"extends the build skill's reuse-map rule ... into a review that runs without being remembered\" rather than adding a new gate; \u00a76 extends the existing composer in `recovery.py` to a plan subject instead of a second composer; \u00a77 declares `review.plan_settle_seconds` in the existing `flight-defaults.yaml` default layer (read through `reckon/flight.py:plan_review_settle_seconds`, flight.py:684) rather than defaulting in code alone."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T19:11:06.692300+00:00"
+}

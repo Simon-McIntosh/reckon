@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f9c5d2cfc3b8f531809c0c30d11a1b2bcb2ac1aa",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:obligations",
+    "reckon/crew/obligation_snapshot.py:_derivation_module"
+  ],
+  "completed_at": "2026-10-03T08:35:09.528Z",
+  "dispatched_at": "2026-10-03T08:27:31Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the plan section's done-when also requires the earlier run's baseline_suite failure ids and named negative_control_log to be corrected to match their logs; this node's diff does not touch that record and its evidence_inputs leave the correction to the coordinator, so the section is only partly landed by this run."
+    }
+  ],
+  "head_log_revision": "a5576b7ff37dffc80d8d53ac7d7edf5610eb3586",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against f9c5d2cfc; the code commit removes _run_id_names_node and _RUN_STAMP and reads each file-only record once, and the doc commit adds the landing fragment.",
+    "done_when": "the done_when names a parity case where a node id differs from the tree's directory name while another record names the same tree; tests/test_held_worktrees_read_run_files.py:290 adds it and the manifest records it red at the base and green at the head.",
+    "goal": "the node goal is that the held-worktree fast path resolves a tree by the record's own namings rather than the node token in a run id; reckon/crew/obligations.py:_holding_record now matches every candidate through _names_worktree alone, and the added sixth MIXED_STATES case exercises exactly that shape.",
+    "manifest": "read; it records base 1 failed/97 passed EXIT=1, head 98 passed EXIT=0 and negative control 1 failed/8 passed EXIT=1, naming each gate log and the declared mutation.",
+    "write_paths": "read the manifest's declared paths; the diff touches only reckon/crew/obligations.py and tests/test_held_worktrees_read_run_files.py, both inside them, with the evidence fragment under the declared docs path."
+  },
+  "justifications": {
+    "durability": "the added assertion at tests/test_held_worktrees_read_run_files.py:300 compares _held_worktrees against an independent whole-ledger derivation, and the declared mutation reddens exactly the new case in negative-control.log, which I reproduced.",
+    "evidence": "the gate asserts the done-when's parity half at tests/test_held_worktrees_read_run_files.py:300 and the base/head/negative-control logs carry revision, tree, command, MODULE and CWD headers; docked because the section's third clause, correcting the earlier run's failure ids and control log, is not delivered by this run and is deferred to the coordinator.",
+    "fit": "reckon/crew/obligations.py:_holding_record follows the module's documented matching idiom and its comments state the mechanism rather than the ticket, introducing no name the repository rules forbid.",
+    "goal_fidelity": "reckon/crew/obligations.py:_holding_record matches (*rows, *records) by _names_worktree, and the parity case at tests/test_held_worktrees_read_run_files.py:293 reddens at f9c5d2cfc and passes at a5576b7ff, which I reproduced independently in a scratch tree.",
+    "scope_discipline": "the diff touches only reckon/crew/obligations.py and tests/test_held_worktrees_read_run_files.py plus the evidence fragment, all inside the manifest's declared paths, and the dead _run_id_names_node helper is removed with its now-unused import."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the held-worktree fast path resolves a tree by the record's own namings rather than the node token in a run id; reckon/crew/obligations.py:_holding_record now matches every candidate through _names_worktree alone, and the added sixth MIXED_STATES case exercises exactly that shape.\nVERDICT done_when: the done_when names a parity case where a node id differs from the tree's directory name while another record names the same tree; tests/test_held_worktrees_read_run_files.py:290 adds it and the manifest records it red at the base and green at the head.\nVERDICT write_paths: read the manifest's declared paths; the diff touches only reckon/crew/obligations.py and tests/test_held_worktrees_read_run_files.py, both inside them, with the evidence fragment under the declared docs path.\nVERDICT manifest: read; it records base 1 failed/97 passed EXIT=1, head 98 passed EXIT=0 and negative control 1 failed/8 passed EXIT=1, naming each gate log and the declared mutation.\nVERDICT diff: read commit by commit against f9c5d2cfc; the code commit removes _run_id_names_node and _RUN_STAMP and reads each file-only record once, and the doc commit adds the landing fragment.\nCALL_SITES: reckon/crew/obligations.py:obligations, reckon/crew/obligation_snapshot.py:_derivation_module\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:_holding_record matches (*rows, *records) by _names_worktree, and the parity case at tests/test_held_worktrees_read_run_files.py:293 reddens at f9c5d2cfc and passes at a5576b7ff, which I reproduced independently in a scratch tree.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate asserts the done-when's parity half at tests/test_held_worktrees_read_run_files.py:300 and the base/head/negative-control logs carry revision, tree, command, MODULE and CWD headers; docked because the section's third clause, correcting the earlier run's failure ids and control log, is not delivered by this run and is deferred to the coordinator.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/obligations.py and tests/test_held_worktrees_read_run_files.py plus the evidence fragment, all inside the manifest's declared paths, and the dead _run_id_names_node helper is removed with its now-unused import.\nSCORE durability: 19\nJUSTIFICATION durability: the added assertion at tests/test_held_worktrees_read_run_files.py:300 compares _held_worktrees against an independent whole-ledger derivation, and the declared mutation reddens exactly the new case in negative-control.log, which I reproduced.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:_holding_record follows the module's documented matching idiom and its comments state the mechanism rather than the ticket, introducing no name the repository rules forbid.\nFINDING manifest.md:20 follow-on: the plan section's done-when also requires the earlier run's baseline_suite failure ids and named negative_control_log to be corrected to match their logs; this node's diff does not touch that record and its evidence_inputs leave the correction to the coordinator, so the section is only partly landed by this run.",
+  "review_run_id": "r-20261003T082702992849-review-of-held-worktrees-fast-path-names-differ",
+  "reviewed_base_sha": "f9c5d2cfc3b8f531809c0c30d11a1b2bcb2ac1aa",
+  "reviewed_head_sha": "f44a2df141a9146030657eb925881681d44bc8ea",
+  "reviewed_run_id": "r-20261003T075909628508-held-worktrees-fast-path-names-differ",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T08:34:13.614428+00:00",
+  "total": 94
+}

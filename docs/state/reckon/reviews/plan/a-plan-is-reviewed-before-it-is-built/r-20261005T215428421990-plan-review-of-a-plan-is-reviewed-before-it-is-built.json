@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T21:59:40.487Z",
+  "dispatched_at": "2026-10-05T21:54:47Z",
+  "findings": [
+    {
+      "anchor": "reckon/doccheck.py:136",
+      "id": "reuse_search-1",
+      "reason": "the plan's \"widens that fallback by exactly the dotted and hyphenated continuations \u2026 and by nothing else\" is false as written, so it must either keep the `[1-9]` leading-digit frame for this fallback or add `s0` to the pinned test.",
+      "text": "composing the undeclared-plan fallback from the shared number core `\\d+(?:[.-]\\d+)*` widens `_NUMBERED_SECTION_ID` (`s[1-9][0-9]*`) to also admit `s0`/`s00`/`s01`, not only the dotted and hyphenated continuations the plan names, and the pinned synthetic test lists only s5, s5.1, s5-1, 5, \u00a75 and decisions",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "a-plan-is-reviewed-before-it-is-built#s16",
+      "id": "interface_budget-1",
+      "reason": "the section's \"+1 public definition\" accounting is short by the accessor the composer needs, or the design must state that `write_review_sidecar` computes the mapping itself from the document rather than the composer writing it.",
+      "text": "the composer that must write the `section_digests` mapping into the review sidecar lives in `reckon/crew/recovery.py` (it calls `plan_review.write_review_sidecar` at recovery.py:587, passing `plan_review.plan_fingerprint(document)`), yet \u00a716 declares `_section_digests` module-private on `plan_review.py` and states the public `plan_fingerprint` signature does not widen, so the mapping has no public path across the module boundary",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "a-plan-is-reviewed-before-it-is-built#s17",
+      "id": "deep_module-1",
+      "reason": "derivation and validity are genuinely different questions, the plan states the split explicitly, and co-locating the derivation with the raw-text parser that applies it is defensible.",
+      "text": "the plan adds `plan_headings` and the machinery-element predicate as public names on `reckon/_plan_html.py` while `reckon/_schema.py` (already imported by `_plan_html.py`) owns the sibling section-identity validity vocabulary (`is_section_identity`, `_RESOURCE_SEGMENT_RE`)",
+      "type": "deep_module",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "779ffe86d19f029d699db8bf276942e829eab8de3dd15dbcb3efcb2bab02873e",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 139,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T215428421990-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "ecfe0aeb74ad850b291c2e120fe24957781674f1",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 keeps one private raw-text read and projects `plan_headings` and `structured_section_spans` from it, and \u00a716 hides the digest and the coverage question behind private helpers rather than spreading wrappers over them.",
+    "duplicate_owner": "pass \u2014 \u00a717 consolidates the heading walks and card recognisers onto the existing `_StructuredSectionSpanParser` and names the owners it moves (`section_record_id`, `landed_section_ids`) rather than forking them; \u00a716 consumes them.",
+    "interface_budget": "a finding \u2014 public_definitions 1478, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 accounts a single added public definition (`strip_tags`) but requires the recovery composer to emit the section-digest mapping with no public accessor to obtain it.",
+    "reuse_search": "a finding \u2014 the plan cites the machinery it extends, but its shared-number-core reuse does not fit every frame it is composed into, widening one beyond what the plan states.",
+    "thin_wrapper": "pass \u2014 `strip_tags` adds entity decoding and skip-tag interior removal that `_TAG_RE` alone lacks, and \u00a717 re-homes `landed_section_ids` and the heading helpers rather than layering over them."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.750224+00:00"
+}

@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:2193:crew_watch"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:45:38.056417+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2333",
+      "text": "the fallback reports service_active False although that state was never measured on the path that raised at reckon/crew/runs.py:2247, and on the path where the unit was started and a later call failed my independent probe returned path \"fallback\" with manager_starts [True] and service_active false, so a caller reading the field is told the service is down when this very call started it."
+    },
+    {
+      "file": "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+      "line": "1062",
+      "text": "the section record lists the classifier's markers as \"failed to connect to bus, connection refused, the removed socket, and the launcher's is not available on this host\" while the tuple at reckon/crew/runs.py:2176-2182 carries five different ones, two of which (\"connection reset by peer\", \"transport endpoint is not connected\") the record does not name, so a reader reasoning about the classifier from the record will expect a bare removed-socket message to fall back when only the \"failed to connect to bus\" prefix makes it."
+    },
+    {
+      "file": "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+      "line": "1078",
+      "text": "the recorded Verification conditions do not reproduce the recorded result: with the root environment's interpreter, the worktree on PYTHONPATH and no environment bin on PATH, the named file reports 4 failed, 1 passed, because render_watch_unit resolves the reckon console script through _watcher_executable at reckon/crew/runs.py:2019; the manifest's own tests line carries the missing PATH prefix, so the two records disagree about the same gate."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all three commits against the base a42b3f86 rather than the titles; 851249ed adds _service_manager_unreachable, _arm_watcher_as_process and the try/except with the path and fallback_reason fields to reckon/crew/runs.py plus tests/test_watcher_arming_fallback.py, 5a068617 adds the default-producer case at tests/test_watcher_arming_fallback.py:156, and 92726278 appends the archive section, the plan landed summary and the figure.",
+    "done_when": "the done_when names tests/test_watcher_arming_fallback.py with the manager-refused half, the reachable-manager negative half and the declared mutation; re-run at the integrated head 6cf20d7d it read 5 passed in 0.37s, and the red log's first line repeats the mutation verbatim over 2 failed, 3 passed.",
+    "goal": "read the node goal and reckon/crew/runs.py:2244-2341, where the manager calls sit under a handler that returns the process-armed result; an independent call of ensure_watcher_service against a manager raising connection-refused returned path \"fallback\", started true, watcher_live true and the bus failure as fallback_reason, and the same call against a reachable manager returned path \"service\" with the producer never called.",
+    "manifest": "read; it names commits 851249ed, 5a068617 and 92726278, records the gate command with the root interpreter, PATH and PYTHONPATH, 17 passed exit 0, the red log's 2 failed 3 passed, and the fallback's path and fallback_reason fields.",
+    "write_paths": "the manifest declares five paths and git diff --stat a42b3f86..92726278 lists exactly those five at 426 insertions and 16 deletions, with the worktree clean and nothing outside the fence."
+  },
+  "justifications": {
+    "durability": "the red log shows both fallback cases fail when _service_manager_unreachable answers no, and tests/test_watcher_arming_fallback.py:156 pins the default arming to the dispatch producer, while the post-start fallback at reckon/crew/runs.py:2333 is uncovered.",
+    "evidence": "the gate log reads 17 passed at the worker's recorded command and my re-run of the named file read 5 passed at 6cf20d7d, but the archive's own Verification paragraph at docs/evidence/archive/crew-runtime-positive-controls-landed.html:1078 states conditions under which the file reports 4 failed, 1 passed.",
+    "fit": "the helper, the lazy import and the shared result shape match the surrounding module (reckon/crew/runs.py:2236-2242), and no name breaks the repository rules, though the docstring at :2167-2171 describes the marker set differently from the tuple at :2176-2182 that decides.",
+    "goal_fidelity": "reckon/crew/runs.py:2244-2264 arms through the dispatch producer when the bus is unreachable and reports which path it took, and my independent driver read path \"fallback\" with watcher_live true against a refused bus and path \"service\" against a healthy one, with one field overstating what was measured at :2333.",
+    "scope_discipline": "git diff --stat a42b3f86..92726278 lists the five declared paths at 426 insertions and 16 deletions spread over reckon/crew/runs.py, its new test file and the two docs surfaces, with the worktree clean afterwards."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal and reckon/crew/runs.py:2244-2341, where the manager calls sit under a handler that returns the process-armed result; an independent call of ensure_watcher_service against a manager raising connection-refused returned path \"fallback\", started true, watcher_live true and the bus failure as fallback_reason, and the same call against a reachable manager returned path \"service\" with the producer never called.\nVERDICT done_when: the done_when names tests/test_watcher_arming_fallback.py with the manager-refused half, the reachable-manager negative half and the declared mutation; re-run at the integrated head 6cf20d7d it read 5 passed in 0.37s, and the red log's first line repeats the mutation verbatim over 2 failed, 3 passed.\nVERDICT write_paths: the manifest declares five paths and git diff --stat a42b3f86..92726278 lists exactly those five at 426 insertions and 16 deletions, with the worktree clean and nothing outside the fence.\nVERDICT manifest: read; it names commits 851249ed, 5a068617 and 92726278, records the gate command with the root interpreter, PATH and PYTHONPATH, 17 passed exit 0, the red log's 2 failed 3 passed, and the fallback's path and fallback_reason fields.\nVERDICT diff: read all three commits against the base a42b3f86 rather than the titles; 851249ed adds _service_manager_unreachable, _arm_watcher_as_process and the try/except with the path and fallback_reason fields to reckon/crew/runs.py plus tests/test_watcher_arming_fallback.py, 5a068617 adds the default-producer case at tests/test_watcher_arming_fallback.py:156, and 92726278 appends the archive section, the plan landed summary and the figure.\nCALL_SITES: reckon/cli.py:2193:crew_watch\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2244-2264 arms through the dispatch producer when the bus is unreachable and reports which path it took, and my independent driver read path \"fallback\" with watcher_live true against a refused bus and path \"service\" against a healthy one, with one field overstating what was measured at :2333.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate log reads 17 passed at the worker's recorded command and my re-run of the named file read 5 passed at 6cf20d7d, but the archive's own Verification paragraph at docs/evidence/archive/crew-runtime-positive-controls-landed.html:1078 states conditions under which the file reports 4 failed, 1 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a42b3f86..92726278 lists the five declared paths at 426 insertions and 16 deletions spread over reckon/crew/runs.py, its new test file and the two docs surfaces, with the worktree clean afterwards.\nSCORE durability: 19\nJUSTIFICATION durability: the red log shows both fallback cases fail when _service_manager_unreachable answers no, and tests/test_watcher_arming_fallback.py:156 pins the default arming to the dispatch producer, while the post-start fallback at reckon/crew/runs.py:2333 is uncovered.\nSCORE fit: 18\nJUSTIFICATION fit: the helper, the lazy import and the shared result shape match the surrounding module (reckon/crew/runs.py:2236-2242), and no name breaks the repository rules, though the docstring at :2167-2171 describes the marker set differently from the tuple at :2176-2182 that decides.\nFINDING reckon/crew/runs.py:2333 the fallback reports service_active False although that state was never measured on the path that raised at reckon/crew/runs.py:2247, and on the path where the unit was started and a later call failed my independent probe returned path \"fallback\" with manager_starts [True] and service_active false, so a caller reading the field is told the service is down when this very call started it.\nFINDING docs/evidence/archive/crew-runtime-positive-controls-landed.html:1062 the section record lists the classifier's markers as \"failed to connect to bus, connection refused, the removed socket, and the launcher's is not available on this host\" while the tuple at reckon/crew/runs.py:2176-2182 carries five different ones, two of which (\"connection reset by peer\", \"transport endpoint is not connected\") the record does not name, so a reader reasoning about the classifier from the record will expect a bare removed-socket message to fall back when only the \"failed to connect to bus\" prefix makes it.\nFINDING docs/evidence/archive/crew-runtime-positive-controls-landed.html:1078 the recorded Verification conditions do not reproduce the recorded result: with the root environment's interpreter, the worktree on PYTHONPATH and no environment bin on PATH, the named file reports 4 failed, 1 passed, because render_watch_unit resolves the reckon console script through _watcher_executable at reckon/crew/runs.py:2019; the manifest's own tests line carries the missing PATH prefix, so the two records disagree about the same gate.",
+  "review_run_id": "r-20260921T164538056417-review-of-arming-survives-an-unreachable-service-bus",
+  "reviewed_run_id": "r-20260921T153628158498-arming-survives-an-unreachable-service-bus",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260921T164538056417-review-of-arming-survives-an-unreachable-service-bus",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:18:15.068360+00:00",
+  "total": 95
+}

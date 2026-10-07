@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:_run_session_copy",
+    "reckon/crew/fleet_supervisor.py:start_session"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:09:32.944734+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "276",
+      "text": "the wait stops on two consecutive equal non-empty reads one poll apart (TAB_POLL_SECONDS = 0.05), so it cannot distinguish a fully applied layout from one whose next tab has not appeared yet, and the only real application recorded on this machine spaced its tabs about 1.5 s apart (02:51:58.781, 02:52:00.328, 02:52:01.869), a cadence at which the client detaches after the first tab and the later tabs are applied with no client attached, which is the defect this node exists to remove, and no case covers a slow layout."
+    },
+    {
+      "file": "tests/test_fleet_supervisor.py",
+      "line": "468",
+      "text": "the assertion on the 200x50 pty is satisfied by a message composed from the same columns/rows values that would go to the ioctl at fleet_supervisor.py:331, and nothing reads the winsize back, so deleting that ioctl, the sizing the done_when names, leaves the case green."
+    },
+    {
+      "file": "tests/test_fleet_supervisor.py",
+      "line": "469",
+      "text": "the detach assertion is satisfied by a log line the code emits after _detach_client returns, so removing the detach call, or leaving the client process alive, leaves the case green although the done_when asserts the client is detached."
+    },
+    {
+      "file": "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+      "line": "792",
+      "text": "the excerpt presented as verbatim prints 02:52:01.328 for the third tab where the log it quotes reads 02:52:01.869 (the plan page's own quote of the same recording is correct)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit 6494baff against base 0260fc7b, five files and +453/-6; the production change is confined to the session-start path plus its helpers, and the two doc pages add a landed section without mutating plan state scalars.",
+    "done_when": "the done_when names tests/test_fleet_supervisor.py and an on-node check; the gate carries an ordering assertion that reddens under the node's executed negative control, the on-node log records four tabs with a positive control, and my own re-run of the named gate at 6494baff reports 6 passed.",
+    "goal": "the goal is a headless fleet session that keeps every layout tab when its first client attaches; reckon/crew/fleet_supervisor.py:306 attaches a 200x50 pty client for the layout and detaches it at :291, and the on-node check reports all four tabs with no pane error, but the wait rule at :276 can end that window before a slow layout's later tabs exist.",
+    "manifest": "read; it names the gate and the on-node log, records commit 6494baff, and its follow_ons records honestly that the defect did not reproduce in the node's own probes, so the before arm rests on a recording already in this machine's shared zellij log.",
+    "write_paths": "the diff's five paths (reckon/crew/fleet_supervisor.py, tests/test_fleet_supervisor.py, docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html, docs/figures/a-dispatch-returns-without-its-worker/headless_tab_sizing.svg, docs/plans/a-dispatch-returns-without-its-worker.html) are all inside the declared write paths, and the worktree is clean at 6494baff."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_supervisor.py:452 guards the create-attach-query order and reddens under the node's executed negative control, but the assertions at :468 and :469 are satisfied by log strings the code composes from the same values under test, so the pty size and the detach, both named in the done_when, would regress unnoticed.",
+    "evidence": "the gate and an executed negative control are recorded in the manifest's logs and I reproduced the gate at the reviewed head, but the node's own unit log names only the base revision (line 5), the on-node absence check passes on the unfixed probe configuration too, and the evidence page's excerpt at line 792 carries a wrong timestamp.",
+    "fit": "the helpers at reckon/crew/fleet_supervisor.py:234-306 follow the module's log()/constant idiom and are named by mechanism, with no plan label in any identifier or comment, and the upstream reference is the removal condition the done_when names.",
+    "goal_fidelity": "fleet_supervisor.py:393 sizes a headless session's tabs through a brief attached client, which is the goal's mechanism, but the stop rule at fleet_supervisor.py:276 can detach that client before a layout whose tabs appear more slowly than one poll interval has finished applying.",
+    "scope_discipline": "every path the diff touches is inside the declared write paths the manifest lists, the worktree is clean at the reviewed head, and no plan state scalar was mutated."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 0260fc7bbe6193ef5a42afd1d6b74bced266ece7\nreviewed_head_sha: 6494baff73bd78fc174b5a3ce8c99bcc1b676440\nVERDICT goal: the goal is a headless fleet session that keeps every layout tab when its first client attaches; reckon/crew/fleet_supervisor.py:306 attaches a 200x50 pty client for the layout and detaches it at :291, and the on-node check reports all four tabs with no pane error, but the wait rule at :276 can end that window before a slow layout's later tabs exist.\nVERDICT done_when: the done_when names tests/test_fleet_supervisor.py and an on-node check; the gate carries an ordering assertion that reddens under the node's executed negative control, the on-node log records four tabs with a positive control, and my own re-run of the named gate at 6494baff reports 6 passed.\nVERDICT write_paths: the diff's five paths (reckon/crew/fleet_supervisor.py, tests/test_fleet_supervisor.py, docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html, docs/figures/a-dispatch-returns-without-its-worker/headless_tab_sizing.svg, docs/plans/a-dispatch-returns-without-its-worker.html) are all inside the declared write paths, and the worktree is clean at 6494baff.\nVERDICT manifest: read; it names the gate and the on-node log, records commit 6494baff, and its follow_ons records honestly that the defect did not reproduce in the node's own probes, so the before arm rests on a recording already in this machine's shared zellij log.\nVERDICT diff: read the single commit 6494baff against base 0260fc7b, five files and +453/-6; the production change is confined to the session-start path plus its helpers, and the two doc pages add a landed section without mutating plan state scalars.\nCALL_SITES: reckon/crew/fleet_supervisor.py:_run_session_copy, reckon/crew/fleet_supervisor.py:start_session\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: fleet_supervisor.py:393 sizes a headless session's tabs through a brief attached client, which is the goal's mechanism, but the stop rule at fleet_supervisor.py:276 can detach that client before a layout whose tabs appear more slowly than one poll interval has finished applying.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and an executed negative control are recorded in the manifest's logs and I reproduced the gate at the reviewed head, but the node's own unit log names only the base revision (line 5), the on-node absence check passes on the unfixed probe configuration too, and the evidence page's excerpt at line 792 carries a wrong timestamp.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the diff touches is inside the declared write paths the manifest lists, the worktree is clean at the reviewed head, and no plan state scalar was mutated.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_fleet_supervisor.py:452 guards the create-attach-query order and reddens under the node's executed negative control, but the assertions at :468 and :469 are satisfied by log strings the code composes from the same values under test, so the pty size and the detach, both named in the done_when, would regress unnoticed.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at reckon/crew/fleet_supervisor.py:234-306 follow the module's log()/constant idiom and are named by mechanism, with no plan label in any identifier or comment, and the upstream reference is the removal condition the done_when names.\nFINDING reckon/crew/fleet_supervisor.py:276 the wait stops on two consecutive equal non-empty reads one poll apart (TAB_POLL_SECONDS = 0.05), so it cannot distinguish a fully applied layout from one whose next tab has not appeared yet, and the only real application recorded on this machine spaced its tabs about 1.5 s apart (02:51:58.781, 02:52:00.328, 02:52:01.869), a cadence at which the client detaches after the first tab and the later tabs are applied with no client attached, which is the defect this node exists to remove, and no case covers a slow layout.\nFINDING tests/test_fleet_supervisor.py:468 the assertion on the 200x50 pty is satisfied by a message composed from the same columns/rows values that would go to the ioctl at fleet_supervisor.py:331, and nothing reads the winsize back, so deleting that ioctl, the sizing the done_when names, leaves the case green.\nFINDING tests/test_fleet_supervisor.py:469 the detach assertion is satisfied by a log line the code emits after _detach_client returns, so removing the detach call, or leaving the client process alive, leaves the case green although the done_when asserts the client is detached.\nFINDING docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:792 the excerpt presented as verbatim prints 02:52:01.328 for the third tab where the log it quotes reads 02:52:01.869 (the plan page's own quote of the same recording is correct).",
+  "review_run_id": "r-20260925T070932944734-review-of-headless-tabs-survive-attach",
+  "reviewed_base_sha": "0260fc7bbe6193ef5a42afd1d6b74bced266ece7",
+  "reviewed_head_sha": "6494baff73bd78fc174b5a3ce8c99bcc1b676440",
+  "reviewed_run_id": "r-20260925T062456932626-headless-tabs-survive-attach",
+  "reviewer": "review-of-headless-tabs-survive-attach",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T07:46:19.627932+00:00",
+  "total": 81
+}

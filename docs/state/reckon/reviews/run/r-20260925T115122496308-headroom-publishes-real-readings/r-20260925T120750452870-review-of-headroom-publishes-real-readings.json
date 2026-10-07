@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:main",
+    "reckon/budget.py:1440 paid_lanes.read_document",
+    "reckon-paid-lanes.timer (user unit invoking the publisher CLI)"
+  ],
+  "completed_at": "2026-09-25T13:22:30.813Z",
+  "dispatched_at": "2026-09-25T12:08:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "201",
+      "text": "the staleness flag is age > DEFAULT_STALE_SECONDS (3600.0 at :62) rather than the lane document's own suggested_shelf_life_* value, so a publish from a half-hour-old document reports stale=false although the lane republishes every 30 seconds and the stated criterion is older than its shelf life; falsified by publishing samples aged 18, 60, 600 and 1800 seconds, all stale=false."
+    },
+    {
+      "file": "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+      "line": "791",
+      "text": "the Host local block row quotes ceiling=21, headroom=8, gate_waiting=2 and kv_occupancy=0.33, figures no artefact in the run directory carries \u2014 host-publish.json records ceiling=20, headroom=7, gate_waiting=5 and kv_occupancy=0.32 \u2014 and no tool result in stream.jsonl contains any ceiling or headroom figure, so the row's numbers are unverifiable from the record."
+    },
+    {
+      "file": "tests/test_headroom_publishes_real_readings.py",
+      "line": "101",
+      "text": "the done_when names a Claude stream fixture, but the test replaces budget._newest_stream_reading with a stub, so no test feeds a stream file into the reader and the stream path's protection rests on the unchanged code alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read against base 9d5f2815 commit by commit; 904d3baf adds the bounded rollout reader and its attribution plus the rate-limit translator and both tests, and b44fcb9d lands the plan comment and the evidence row at docs/evidence/archive/the-local-lane-is-the-default-landed.html:791.",
+    "done_when": "the done_when names a codex rollout fixture, a Claude stream fixture and a lane.json fixture, a host publish carrying a non-unknown reading per recent account plus a local-lane block, and the declared negative control; the rollout and lane fixtures are real files and the control is logged, but the Claude arm is stubbed at tests/test_headroom_publishes_real_readings.py:101 rather than fed a stream fixture.",
+    "goal": "the goal is codex-family windows read from ~/.codex/sessions rollouts, the Claude stream path kept, and a lane.json occupancy block published; reckon/crew/paid_lanes.py:639 reads the rollouts, reckon/crew/paid_lanes.py:167 reads the lane document, and the stream reader is untouched.",
+    "manifest": "read; status complete, the node test recorded at two passed and the compatibility gate at 84 passed, the negative-control log path, and five changed paths; its artifacts line quotes a local-lane headroom=8 that the receipt it points at does not carry.",
+    "write_paths": "the declaration names five files and a figures directory; git diff --name-only 9d5f2815 b44fcb9d names exactly those five files and nothing else, with the figures directory left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_headroom_publishes_real_readings.py:145 asserts the exact local_lane mapping from a fixture on disk, so remapping a lane.json key reddens it, but the hour-long staleness constant at reckon/crew/paid_lanes.py:62 carries no assertion and no other test file names budget._newest_stream_reading.",
+    "evidence": "the gate's Claude arm is stubbed at tests/test_headroom_publishes_real_readings.py:101, and the receipt the manifest names records ceiling=20, headroom=7, gate_waiting=5 and kv_occupancy=0.32 while the manifest and the evidence row quote 21, 8, 2 and 0.33.",
+    "fit": "the new reader follows the module's composition style at reckon/crew/paid_lanes.py:167, returning a document block injected at compose time, and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "the published document carries a measured local_lane block and per-account codex readings (reckon/crew/paid_lanes.py:167), but the staleness flag is computed against a fixed hour (reckon/crew/paid_lanes.py:201) rather than the document's own shelf life.",
+    "scope_discipline": "every path named by git diff --name-only 9d5f2815 b44fcb9d is inside the declared five-file scope, and no module outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is codex-family windows read from ~/.codex/sessions rollouts, the Claude stream path kept, and a lane.json occupancy block published; reckon/crew/paid_lanes.py:639 reads the rollouts, reckon/crew/paid_lanes.py:167 reads the lane document, and the stream reader is untouched.\nVERDICT done_when: the done_when names a codex rollout fixture, a Claude stream fixture and a lane.json fixture, a host publish carrying a non-unknown reading per recent account plus a local-lane block, and the declared negative control; the rollout and lane fixtures are real files and the control is logged, but the Claude arm is stubbed at tests/test_headroom_publishes_real_readings.py:101 rather than fed a stream fixture.\nVERDICT write_paths: the declaration names five files and a figures directory; git diff --name-only 9d5f2815 b44fcb9d names exactly those five files and nothing else, with the figures directory left unused.\nVERDICT manifest: read; status complete, the node test recorded at two passed and the compatibility gate at 84 passed, the negative-control log path, and five changed paths; its artifacts line quotes a local-lane headroom=8 that the receipt it points at does not carry.\nVERDICT diff: read against base 9d5f2815 commit by commit; 904d3baf adds the bounded rollout reader and its attribution plus the rate-limit translator and both tests, and b44fcb9d lands the plan comment and the evidence row at docs/evidence/archive/the-local-lane-is-the-default-landed.html:791.\nCALL_SITES: reckon/crew/paid_lanes.py:main, reckon/budget.py:1440 paid_lanes.read_document, reckon-paid-lanes.timer (user unit invoking the publisher CLI)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the published document carries a measured local_lane block and per-account codex readings (reckon/crew/paid_lanes.py:167), but the staleness flag is computed against a fixed hour (reckon/crew/paid_lanes.py:201) rather than the document's own shelf life.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate's Claude arm is stubbed at tests/test_headroom_publishes_real_readings.py:101, and the receipt the manifest names records ceiling=20, headroom=7, gate_waiting=5 and kv_occupancy=0.32 while the manifest and the evidence row quote 21, 8, 2 and 0.33.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path named by git diff --name-only 9d5f2815 b44fcb9d is inside the declared five-file scope, and no module outside them is touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_headroom_publishes_real_readings.py:145 asserts the exact local_lane mapping from a fixture on disk, so remapping a lane.json key reddens it, but the hour-long staleness constant at reckon/crew/paid_lanes.py:62 carries no assertion and no other test file names budget._newest_stream_reading.\nSCORE fit: 18\nJUSTIFICATION fit: the new reader follows the module's composition style at reckon/crew/paid_lanes.py:167, returning a document block injected at compose time, and introduces no name the repository naming rules forbid.\nFINDING reckon/crew/paid_lanes.py:201 the staleness flag is age > DEFAULT_STALE_SECONDS (3600.0 at :62) rather than the lane document's own suggested_shelf_life_* value, so a publish from a half-hour-old document reports stale=false although the lane republishes every 30 seconds and the stated criterion is older than its shelf life; falsified by publishing samples aged 18, 60, 600 and 1800 seconds, all stale=false.\nFINDING docs/evidence/archive/the-local-lane-is-the-default-landed.html:791 the Host local block row quotes ceiling=21, headroom=8, gate_waiting=2 and kv_occupancy=0.33, figures no artefact in the run directory carries \u2014 host-publish.json records ceiling=20, headroom=7, gate_waiting=5 and kv_occupancy=0.32 \u2014 and no tool result in stream.jsonl contains any ceiling or headroom figure, so the row's numbers are unverifiable from the record.\nFINDING tests/test_headroom_publishes_real_readings.py:101 the done_when names a Claude stream fixture, but the test replaces budget._newest_stream_reading with a stub, so no test feeds a stream file into the reader and the stream path's protection rests on the unchanged code alone.",
+  "review_run_id": "r-20260925T120750452870-review-of-headroom-publishes-real-readings",
+  "reviewed_base_sha": "9d5f2815ec4b75ba62d086d0abc76c7f12c8b5af",
+  "reviewed_head_sha": "b44fcb9de8cd3bad2c4012b40cb7fd7be29548d6",
+  "reviewed_run_id": "r-20260925T115122496308-headroom-publishes-real-readings",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:15:16.239270+00:00",
+  "total": 81
+}

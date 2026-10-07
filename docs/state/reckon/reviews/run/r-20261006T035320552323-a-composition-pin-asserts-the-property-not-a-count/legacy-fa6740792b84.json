@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T04:18:02.254Z",
+  "dispatched_at": "2026-10-06T03:53:51Z",
+  "findings": [
+    {
+      "file": "tests/test_section_spelling_grammars_share_one_core.py",
+      "line": "202",
+      "severity": "follow-on",
+      "text": "follow-on: the exact-set assertion validators == {_apply_set, _require_authored_section_fields, _apply_collapse_section} reddens when a legitimate fourth caller of is_section_identity is added to the store, the same count-over-source brittleness the two removed count(...) pins carried and \u00a720 exists to remove; assert containment of the three (that they call the helper) rather than exact set equality, so an unrelated addition does not redden the guard."
+    },
+    {
+      "file": "tests/test_section_spelling_grammars_share_one_core.py",
+      "line": "218",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion not (validators & inline_full_match) only rejects an inline full-match inside a function that also calls is_section_identity, so a new section-id validation that performs an inline full-match without routing through the helper is in neither set and escapes both assertions, leaving the guard narrower than the docstring's claim that every section-identity refusal routes through the helper and none performs an inline full match."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against f25c6ede; three files changed, the two test rewrites plus a new evidence fragment, all inside the declared scope and carrying no production code change.",
+    "done_when": "the done_when names the tests/ source-count grep, the two negative controls, the followup-pointer and reader tests, and public_definitions parity; the manifest records gate 112 passed EXIT=0, the two-line base listing, both controls EXIT=1, and public_definitions 1481 base = 1481 head.",
+    "goal": "the node goal is to rewrite the cross-module count-over-source pins into property assertions; the diff at 700e2dde removes the count lines at tests/test_the_invocation_parser_spells_a_section.py:177-178 and tests/test_section_spelling_grammars_share_one_core.py:179 and adds a behavioural spelling pin and an AST property assertion.",
+    "manifest": "read; it is complete, names commits 371c53240 and 700e2dde4, states 112 passed EXIT=0, both negative controls EXIT=1, and public_definitions equal at base and head.",
+    "write_paths": "read the manifest's declared paths; the diff touches two of the four named test files plus the named evidence fragment, every path inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_the_invocation_parser_spells_a_section.py:181 drives parse_invocation and checks \u00a75/\u00a75.1/\u00a75-1/\u00a75a, and the grammar negative control reddens the new pin (EXIT=1), but tests/test_section_spelling_grammars_share_one_core.py:202 asserts an exact set that reddens on a legitimate fourth caller.",
+    "evidence": "the gate the manifest records at logs/gate.log is 112 passed EXIT=0 over the four \u00a716/\u00a717/\u00a719 test files, and the done-when grep of those files for a source count over a symbol name reports none at the head.",
+    "fit": "both rewrites follow the existing AST-parsing idiom of tests/test_section_spelling_grammars_share_one_core.py:168 and introduce no plan, sprint or ticket label.",
+    "goal_fidelity": "tests/test_section_spelling_grammars_share_one_core.py:181 adds test_section_identity_validation_reuses_the_shared_helper and tests/test_the_invocation_parser_spells_a_section.py:177 adds the \u00a75 spelling loop, both asserting the property the removed count proxied for.",
+    "reuse": "the change adds no production definition and no new mechanism; the rewritten pins call the existing helpers is_section_identity and parse_invocation rather than re-implementing them.",
+    "scope_discipline": "the diff touches only tests/test_the_invocation_parser_spells_a_section.py, tests/test_section_spelling_grammars_share_one_core.py and the named evidence fragment, all within the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to rewrite the cross-module count-over-source pins into property assertions; the diff at 700e2dde removes the count lines at tests/test_the_invocation_parser_spells_a_section.py:177-178 and tests/test_section_spelling_grammars_share_one_core.py:179 and adds a behavioural spelling pin and an AST property assertion.\nVERDICT done_when: the done_when names the tests/ source-count grep, the two negative controls, the followup-pointer and reader tests, and public_definitions parity; the manifest records gate 112 passed EXIT=0, the two-line base listing, both controls EXIT=1, and public_definitions 1481 base = 1481 head.\nVERDICT write_paths: read the manifest's declared paths; the diff touches two of the four named test files plus the named evidence fragment, every path inside the declared write paths.\nVERDICT manifest: read; it is complete, names commits 371c53240 and 700e2dde4, states 112 passed EXIT=0, both negative controls EXIT=1, and public_definitions equal at base and head.\nVERDICT diff: read commit by commit against f25c6ede; three files changed, the two test rewrites plus a new evidence fragment, all inside the declared scope and carrying no production code change.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_section_spelling_grammars_share_one_core.py:181 adds test_section_identity_validation_reuses_the_shared_helper and tests/test_the_invocation_parser_spells_a_section.py:177 adds the \u00a75 spelling loop, both asserting the property the removed count proxied for.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate the manifest records at logs/gate.log is 112 passed EXIT=0 over the four \u00a716/\u00a717/\u00a719 test files, and the done-when grep of those files for a source count over a symbol name reports none at the head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_the_invocation_parser_spells_a_section.py, tests/test_section_spelling_grammars_share_one_core.py and the named evidence fragment, all within the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_invocation_parser_spells_a_section.py:181 drives parse_invocation and checks \u00a75/\u00a75.1/\u00a75-1/\u00a75a, and the grammar negative control reddens the new pin (EXIT=1), but tests/test_section_spelling_grammars_share_one_core.py:202 asserts an exact set that reddens on a legitimate fourth caller.\nSCORE fit: 18\nJUSTIFICATION fit: both rewrites follow the existing AST-parsing idiom of tests/test_section_spelling_grammars_share_one_core.py:168 and introduce no plan, sprint or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition and no new mechanism; the rewritten pins call the existing helpers is_section_identity and parse_invocation rather than re-implementing them.\nFINDING tests/test_section_spelling_grammars_share_one_core.py:202 follow-on: the exact-set assertion validators == {_apply_set, _require_authored_section_fields, _apply_collapse_section} reddens when a legitimate fourth caller of is_section_identity is added to the store, the same count-over-source brittleness the two removed count(...) pins carried and \u00a720 exists to remove; assert containment of the three (that they call the helper) rather than exact set equality, so an unrelated addition does not redden the guard.\nFINDING tests/test_section_spelling_grammars_share_one_core.py:218 follow-on: the assertion not (validators & inline_full_match) only rejects an inline full-match inside a function that also calls is_section_identity, so a new section-id validation that performs an inline full-match without routing through the helper is in neither set and escapes both assertions, leaving the guard narrower than the docstring's claim that every section-identity refusal routes through the helper and none performs an inline full match.\n",
+  "review_run_id": "legacy-fa6740792b84",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "f25c6ede09a75a9f4d1ea49f1f783f5a3237433e",
+  "reviewed_head_sha": "700e2dde433b40612885bab79627fcb11510e578",
+  "reviewed_run_id": "r-20261006T035320552323-a-composition-pin-asserts-the-property-not-a-count",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T04:11:42.931142+00:00",
+  "total": 110
+}

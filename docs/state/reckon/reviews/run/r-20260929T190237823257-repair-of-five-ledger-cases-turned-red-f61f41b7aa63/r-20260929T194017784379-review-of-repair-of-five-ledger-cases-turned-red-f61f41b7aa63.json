@@ -1,0 +1,110 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "added_failures_source": {
+    "arm_logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/control-57e4ea2e.log",
+      "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/case-head-f61f41b7a.log"
+    ],
+    "control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194017784379-review-of-repair-of-five-ledger-cases-turned-red-f61f41b7aa63/logs/added-failures-check.log",
+    "cross_check": "the record stored before this repair for the reviewed chain (r-20260929T175359855658-five-ledger-cases-turned-red.json, timestamp 2026-09-29T19:01:54Z) recorded the same two logs as 0 and 5 failures and the same five ids while the pre-repair probe was in force, so the re-run reproduces the arm outcomes and the id set exactly and the provenance repair changed no measurement",
+    "direct_count": 5,
+    "direct_derivation": "reckon.crew.review.added_failures_from_gate_logs over the two arm gate logs the reviewed run re-ran (control 5 passed at 57e4ea2e, head 5 failed at f61f41b7a), each id reduced against the scratch tree that arm's own header names",
+    "direct_ids": [
+      "tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input",
+      "tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it",
+      "tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it",
+      "tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger",
+      "tests/test_ledger.py::test_promotion_refuses_a_merge_conflicted_ledger"
+    ],
+    "direct_pair_is_not_a_regression": "the 5 is the bisect interval's own endpoints \u2014 green at 57e4ea2e, red at f61f41b7a \u2014 and is the measurement's subject, not a failure the reviewed run introduced: its base 58277c40b and its head 838afd0f2 differ by one docs fragment, no test file and no product module",
+    "fields_named_instead": [
+      "tests",
+      "test_logs",
+      "negative_control_log"
+    ],
+    "known_present_control_ids": [
+      "tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input",
+      "tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it",
+      "tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it",
+      "tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger",
+      "tests/test_ledger.py::test_promotion_refuses_a_merge_conflicted_ledger"
+    ],
+    "note": "the reviewed manifest names no baseline_suite or after_suite field, so both gate logs resolve to none and the count is unmeasured rather than zero. The reviewed run's own change is one docs fragment of 24 insertions at 838afd0f2, which reddens no test, and no failing test is attributable to it",
+    "reviewed_manifest": {
+      "bytes": 4756,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190237823257-repair-of-five-ledger-cases-turned-red-f61f41b7aa63/manifest.md",
+      "sha256": "04961ba2ab812b0cb2b594f0bb8a1240f3697795141e7c87b03b69f93104d7a3"
+    },
+    "suite_fields_named": []
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:460 compose_landed_record",
+    "reckon/serve.py:2214",
+    "reckon/mcp.py:1142",
+    "reckon/doccheck.py:1235"
+  ],
+  "completed_at": "2026-09-29T20:29:25.646Z",
+  "dispatched_at": "2026-09-29T19:40:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/run_five.sh",
+      "line": "21",
+      "text": "the logged '# command:' renders the node ids unprefixed while the executed invocation at run_five.sh:26 prefixes each with $TREE, so the recorded command re-run from the recorded cwd (the worktree) would collect the checkout's tests/test_ledger.py rather than the scratch tree's \u2014 the receipt names a different command from the one that ran, the same class as the module-under-test line repaired at line 22; the header's own '# tree:' and '# cwd:' lines are what let a reader recover the measured command."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 58277c40b \u2014 one commit, one new fragment of 24 insertions, no product source and no test file touched.",
+    "done_when": "the done_when asks for a commit answering each finding with an 'acted <id>: <commit>' line, and the reviewed manifest.md:10-11 names 838afd0f2 for both f55dd7471d1 and fc11d3caa1f, which I matched against the reviewed worktree's own git log.",
+    "goal": "the node's goal is to repair the two findings on r-20260929T175359855658-five-ledger-cases-turned-red, and both are answered \u2014 /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/report.md:32-34 replaces the false 'differs from it only by the plan-filing commit' parenthetical with the measured 67-commit/38-file relation, and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/run_five.sh:22 and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/bisect_step.sh:19 now pass -P so the probe resolves the module through PYTHONPATH rather than the driver's cwd.",
+    "manifest": "read the 4756-byte manifest; its commits, arms and test_logs claims match the logs on disk (control-57e4ea2e.log 5 passed, fail-467c0aab.log 5 failed, case-head-f61f41b7a.log 5 failed), but it names no baseline_suite or after_suite, so the review's count is unmeasured by the read path and was derived directly from the run's own two arms instead.",
+    "write_paths": "read the manifest's declared scope against what was written; the single landed path is docs/evidence/fragments/the-suite-is-green-at-head/repair-of-five-ledger-cases-turned-red-f61f41b7aa63.html, inside the granted fragment path, and the three crew artefacts the run repaired all sit inside the granted reports directory; the reviewed worktree is clean at 838afd0f2."
+  },
+  "justifications": {
+    "durability": "the committed change is prose and the executable half of the repair is a crew driver outside git, so no test in the tree reddens if the un-P probe returns; the repair-time mutation is quoted at logs/probe-reproduction.log:6-11.",
+    "evidence": "the defect is quoted as reproduced at logs/probe-reproduction.log:6-11 and every arm was re-run so its header names its own tree (hdr-s8-8ab1f3c7.txt:5), which I re-derived independently, but run_five.sh:21 still logs a command that omits the tree prefix the run applies at line 26.",
+    "fit": "the fragment follows the section idiom of its neighbours under docs/evidence/fragments/the-suite-is-green-at-head/ and commit 838afd0f2 carries a conventional subject with a body and no attribution.",
+    "goal_fidelity": "run_five.sh:22 now passes -P and I reproduced both forms \u2014 without it the import prints the driver's own checkout, with it /tmp/five-ledger/tree-s8-8ab1f3c7/reckon/__init__.py \u2014 and report.md:32-34 states the measured 467c0aab relation.",
+    "scope_discipline": "the diff against base is that one granted fragment path with 24 insertions, and the reviewed worktree at 838afd0f2 is clean with nothing written outside the granted reports directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to repair the two findings on r-20260929T175359855658-five-ledger-cases-turned-red, and both are answered \u2014 /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/report.md:32-34 replaces the false 'differs from it only by the plan-filing commit' parenthetical with the measured 67-commit/38-file relation, and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/run_five.sh:22 and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/bisect_step.sh:19 now pass -P so the probe resolves the module through PYTHONPATH rather than the driver's cwd.\nVERDICT done_when: the done_when asks for a commit answering each finding with an 'acted <id>: <commit>' line, and the reviewed manifest.md:10-11 names 838afd0f2 for both f55dd7471d1 and fc11d3caa1f, which I matched against the reviewed worktree's own git log.\nVERDICT write_paths: read the manifest's declared scope against what was written; the single landed path is docs/evidence/fragments/the-suite-is-green-at-head/repair-of-five-ledger-cases-turned-red-f61f41b7aa63.html, inside the granted fragment path, and the three crew artefacts the run repaired all sit inside the granted reports directory; the reviewed worktree is clean at 838afd0f2.\nVERDICT manifest: read the 4756-byte manifest; its commits, arms and test_logs claims match the logs on disk (control-57e4ea2e.log 5 passed, fail-467c0aab.log 5 failed, case-head-f61f41b7a.log 5 failed), but it names no baseline_suite or after_suite, so the review's count is unmeasured by the read path and was derived directly from the run's own two arms instead.\nVERDICT diff: read commit by commit against base 58277c40b \u2014 one commit, one new fragment of 24 insertions, no product source and no test file touched.\nCALL_SITES: reckon/evidence.py:460 compose_landed_record, reckon/serve.py:2214, reckon/mcp.py:1142, reckon/doccheck.py:1235\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: run_five.sh:22 now passes -P and I reproduced both forms \u2014 without it the import prints the driver's own checkout, with it /tmp/five-ledger/tree-s8-8ab1f3c7/reckon/__init__.py \u2014 and report.md:32-34 states the measured 467c0aab relation.\nSCORE evidence: 17\nJUSTIFICATION evidence: the defect is quoted as reproduced at logs/probe-reproduction.log:6-11 and every arm was re-run so its header names its own tree (hdr-s8-8ab1f3c7.txt:5), which I re-derived independently, but run_five.sh:21 still logs a command that omits the tree prefix the run applies at line 26.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff against base is that one granted fragment path with 24 insertions, and the reviewed worktree at 838afd0f2 is clean with nothing written outside the granted reports directory.\nSCORE durability: 13\nJUSTIFICATION durability: the committed change is prose and the executable half of the repair is a crew driver outside git, so no test in the tree reddens if the un-P probe returns; the repair-time mutation is quoted at logs/probe-reproduction.log:6-11.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment follows the section idiom of its neighbours under docs/evidence/fragments/the-suite-is-green-at-head/ and commit 838afd0f2 carries a conventional subject with a body and no attribution.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/run_five.sh:21 the logged '# command:' renders the node ids unprefixed while the executed invocation at run_five.sh:26 prefixes each with $TREE, so the recorded command re-run from the recorded cwd (the worktree) would collect the checkout's tests/test_ledger.py rather than the scratch tree's \u2014 the receipt names a different command from the one that ran, the same class as the module-under-test line repaired at line 22; the header's own '# tree:' and '# cwd:' lines are what let a reader recover the measured command.",
+  "review_run_id": "r-20260929T194017784379-review-of-repair-of-five-ledger-cases-turned-red-f61f41b7aa63",
+  "reviewed_base_sha": "58277c40b1f1f88d190aa21910ee4cb2bf69b469",
+  "reviewed_commits": [
+    "838afd0f23d561844b3a288f5bef169d9475d3ee"
+  ],
+  "reviewed_head_sha": "838afd0f23d561844b3a288f5bef169d9475d3ee",
+  "reviewed_manifest": {
+    "bytes": 4756,
+    "last_modified": "2026-09-29T19:37:42.721688+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190237823257-repair-of-five-ledger-cases-turned-red-f61f41b7aa63/manifest.md",
+    "sha256": "04961ba2ab812b0cb2b594f0bb8a1240f3697795141e7c87b03b69f93104d7a3"
+  },
+  "reviewed_run_id": "r-20260929T190237823257-repair-of-five-ledger-cases-turned-red-f61f41b7aa63",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-five-ledger-cases-turned-red-f61f41b7aa63",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_node": "review-of-repair-of-five-ledger-cases-turned-red-f61f41b7aa63",
+  "reviewer_run_id": "r-20260929T194017784379-review-of-repair-of-five-ledger-cases-turned-red-f61f41b7aa63",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T20:20:14.266209+00:00",
+  "total": 88
+}

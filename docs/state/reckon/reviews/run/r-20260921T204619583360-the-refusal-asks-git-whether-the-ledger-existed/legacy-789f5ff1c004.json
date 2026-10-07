@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1805",
+      "text": "the nested \"if _ledger_ever_tracked(path) is not False:\" inside \"if not path.exists() and not allow_create:\" adds a SIM102 finding; measured with the pinned ruff 0.16.4 under the project's declared rule set, reckon/ledger.py holds 13 findings at base c16659ff and 14 at head, so this commit adds one where the repo requires none, and the record's \"17 at base and 17 after\" reproduces under neither the declared selection (14) nor the default one (3)."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1775",
+      "text": "a truncated history reads as a definite never-tracked: in a depth-1 clone of a repository whose ledger deletion predates the shallow boundary the probe returns False and append_run created the ledger at version 1 (probe over a scratch repo; the same probe on the full repository returns True as a positive control), so a promotion can initialise over a recorded deletion instead of refusing - git rev-parse --is-shallow-repository would let the function return None, the answer its docstring promises when the question cannot be answered here."
+    },
+    {
+      "file": "tests/test_a_promotion_never_creates_a_ledger.py",
+      "line": "126",
+      "text": "the outside-a-checkout case depends on the ambient git ancestry of tmp_path: run with TMPDIR inside a committed repository it fails DID NOT RAISE LedgerError (measured), reporting the environment rather than the code; setting GIT_CEILING_DIRECTORIES to the tmp parent makes it pass again (measured), so the premise can be pinned inside the test."
+    },
+    {
+      "file": "docs/plans/scoring-should-stop-a-promotion.html",
+      "line": "352",
+      "text": "the landing record sits in the page body while read_state collects .r-comment only inside section[data-reckon=\"comments\"] (reckon/_plan_html.py:495), so parse_plan()['comments'] omits both s2d records; the manifest's stated cause, an undeclared section id, is refuted by the same measurement because the section2d comments at line 2441 are equally undeclared and are parsed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit - f1abfa99 carries reckon/ledger.py:1728-1812 and the focused test, aeff6178 lands the 49-line evidence anchor, the 29-line plan comment and the figure, and nothing else changes.",
+    "done_when": "the done_when names the two asserted cases in tests/test_a_promotion_never_creates_a_ledger.py plus the 15-file cohort with both counts pasted; the manifest pastes 10 failed / 246 passed against base 73392943's 10 failed / 229 passed, and I reproduced the focused file (5 passed at aeff6178) and confirmed the two failure sets are identical.",
+    "goal": "the goal asks the absent-ledger refusal to distinguish a deletion from a project that never had one by asking git; reckon/ledger.py:1728-1775 adds _ledger_ever_tracked and reckon/ledger.py:1805 gates the refusal on it, which does that in an ordinary full checkout.",
+    "manifest": "read; it records both commits (aeff6178 resolves to aeff6178a08fed2426c3c31d4fe1b4766608105a), the focused and cohort gates with their log paths, and a negative control whose first line repeats the declaration verbatim - but its ruff figure does not reproduce and its follow_on's stated parser mechanism is refuted by measurement.",
+    "write_paths": "read the five declared paths against git diff --numstat c16659ff..aeff6178, which lists exactly those five, the evidence anchor and the plan comment insertions-only (49/0 and 29/0)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_never_creates_a_ledger.py:88 and :102 assert both directions and the declared mutation reddens exactly the refusing case (negative-control.log:16-20, DID NOT RAISE LedgerError), though no case covers a truncated history.",
+    "evidence": "the focused and cohort logs each name the revision they ran at and I reproduced both, but the record's ruff figures (docs/evidence/archive/scoring-should-stop-a-promotion-landed.html, \"17 at base and 17 after\") do not reproduce - 13 -> 14 at reckon/ledger.py under the pinned ruff.",
+    "fit": "reckon/ledger.py:1728-1775 mirrors the discovery-walk and returncode idiom of _roster_checkout at reckon/ledger.py:835 in the same file and the names are mechanism-based, but the nested if at reckon/ledger.py:1805 adds a lint finding.",
+    "goal_fidelity": "reckon/ledger.py:1805 initialises a never-tracked path without allow_create while a git-recorded path still refuses naming the run store, so the goal holds in an ordinary checkout and is defeated only in the truncated-history case the finding names.",
+    "scope_discipline": "git diff --numstat c16659ff..aeff6178 lists exactly the five declared paths and the two docs files carry zero deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the absent-ledger refusal to distinguish a deletion from a project that never had one by asking git; reckon/ledger.py:1728-1775 adds _ledger_ever_tracked and reckon/ledger.py:1805 gates the refusal on it, which does that in an ordinary full checkout.\nVERDICT done_when: the done_when names the two asserted cases in tests/test_a_promotion_never_creates_a_ledger.py plus the 15-file cohort with both counts pasted; the manifest pastes 10 failed / 246 passed against base 73392943's 10 failed / 229 passed, and I reproduced the focused file (5 passed at aeff6178) and confirmed the two failure sets are identical.\nVERDICT write_paths: read the five declared paths against git diff --numstat c16659ff..aeff6178, which lists exactly those five, the evidence anchor and the plan comment insertions-only (49/0 and 29/0).\nVERDICT manifest: read; it records both commits (aeff6178 resolves to aeff6178a08fed2426c3c31d4fe1b4766608105a), the focused and cohort gates with their log paths, and a negative control whose first line repeats the declaration verbatim - but its ruff figure does not reproduce and its follow_on's stated parser mechanism is refuted by measurement.\nVERDICT diff: read commit by commit - f1abfa99 carries reckon/ledger.py:1728-1812 and the focused test, aeff6178 lands the 49-line evidence anchor, the 29-line plan comment and the figure, and nothing else changes.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1805 initialises a never-tracked path without allow_create while a git-recorded path still refuses naming the run store, so the goal holds in an ordinary checkout and is defeated only in the truncated-history case the finding names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the focused and cohort logs each name the revision they ran at and I reproduced both, but the record's ruff figures (docs/evidence/archive/scoring-should-stop-a-promotion-landed.html, \"17 at base and 17 after\") do not reproduce - 13 -> 14 at reckon/ledger.py under the pinned ruff.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat c16659ff..aeff6178 lists exactly the five declared paths and the two docs files carry zero deletions.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_promotion_never_creates_a_ledger.py:88 and :102 assert both directions and the declared mutation reddens exactly the refusing case (negative-control.log:16-20, DID NOT RAISE LedgerError), though no case covers a truncated history.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1728-1775 mirrors the discovery-walk and returncode idiom of _roster_checkout at reckon/ledger.py:835 in the same file and the names are mechanism-based, but the nested if at reckon/ledger.py:1805 adds a lint finding.\nFINDING reckon/ledger.py:1805 the nested \"if _ledger_ever_tracked(path) is not False:\" inside \"if not path.exists() and not allow_create:\" adds a SIM102 finding; measured with the pinned ruff 0.16.4 under the project's declared rule set, reckon/ledger.py holds 13 findings at base c16659ff and 14 at head, so this commit adds one where the repo requires none, and the record's \"17 at base and 17 after\" reproduces under neither the declared selection (14) nor the default one (3).\nFINDING reckon/ledger.py:1775 a truncated history reads as a definite never-tracked: in a depth-1 clone of a repository whose ledger deletion predates the shallow boundary the probe returns False and append_run created the ledger at version 1 (probe over a scratch repo; the same probe on the full repository returns True as a positive control), so a promotion can initialise over a recorded deletion instead of refusing - git rev-parse --is-shallow-repository would let the function return None, the answer its docstring promises when the question cannot be answered here.\nFINDING tests/test_a_promotion_never_creates_a_ledger.py:126 the outside-a-checkout case depends on the ambient git ancestry of tmp_path: run with TMPDIR inside a committed repository it fails DID NOT RAISE LedgerError (measured), reporting the environment rather than the code; setting GIT_CEILING_DIRECTORIES to the tmp parent makes it pass again (measured), so the premise can be pinned inside the test.\nFINDING docs/plans/scoring-should-stop-a-promotion.html:352 the landing record sits in the page body while read_state collects .r-comment only inside section[data-reckon=\"comments\"] (reckon/_plan_html.py:495), so parse_plan()['comments'] omits both s2d records; the manifest's stated cause, an undeclared section id, is refuted by the same measurement because the section2d comments at line 2441 are equally undeclared and are parsed.\n",
+  "review_run_id": "legacy-789f5ff1c004",
+  "review_run_id_source": "derived",
+  "reviewed_run_id": "r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-21T21:30:06.720806+00:00",
+  "total": 90
+}

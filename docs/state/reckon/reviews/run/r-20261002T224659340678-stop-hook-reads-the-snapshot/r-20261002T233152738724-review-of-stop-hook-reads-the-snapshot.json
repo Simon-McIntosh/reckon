@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "24ea2cb171817a871d7a4e078140101eab53f170",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:894 (main dispatches _prompt)",
+    "reckon/hooks/coordinator_obligations.py:895 (main dispatches _stop)",
+    "reckon/crew/obligations.py:740 (obligations() calls _review_duty_item at :773)"
+  ],
+  "completed_at": "2026-10-02T23:48:28.957Z",
+  "dispatched_at": "2026-10-02T23:32:26Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "625",
+      "severity": "follow-on",
+      "text": "follow-on: resolve() lost both callers when the change split its body into locate_session (:590) and _obligations_view, and no production or test module imports it now, so it is dead on the module's surface."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "254",
+      "severity": "follow-on",
+      "text": "follow-on: the new-session worker-slots fallback is gated on sessions_present rather than present, so a router that publishes an admission block with no sessions map skips the new-session share and reads the lane-wide worker_slots instead, contrary to the fallback order the function's own docstring names."
+    },
+    {
+      "file": "docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/stop-hook-reads-the-snapshot.html",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: plan-verifies names only #s3 while the node also implements \u00a711, and evidence-commit names the base 24ea2cb1 rather than the head, so a reader filtering evidence by \u00a711 or by the landed commit does not find this record."
+    }
+  ],
+  "head_log_revision": "64373b684fe7d100a5d5d75ae129161799fc4103",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 24ea2cb17; the single commit 64373b684 adds the snapshot-driven stop, the bounded inline derivation, the review-queued reading in obligations.py, the stale-code line and the empty-list header, and updates the shared hook test to publish a snapshot for both modes.",
+    "done_when": "six cases in tests/test_stop_hook_reads_the_snapshot.py cover the three stop branches (:220 fresh, :294 over an overridden short budget, :321 in-process cut), the queued reading and its return past the bound (:355), the stale-code line (:431) and the empty-list header (:451); the head arm records 33 passed EXIT=0 and the negative control reds exactly the queued case (1 failed, EXIT=1).",
+    "goal": "the node goal is that the stop hook decides from the session's snapshot and reads a lane-refused review duty as queued; reckon/hooks/coordinator_obligations.py:825 decides the stop from module.live_payload when the snapshot is FRESH and :792 (_blocking_items) drops the reflex-owned kinds, and reckon/crew/obligations.py:373 raises review-queued from the lane-paused refusal record.",
+    "manifest": "read; it reads status complete, records both gate arms with their revisions, completed true and a literal command, the negative control with its log, and added_failure_count 0 with no ids.",
+    "write_paths": "the diff 24ea2cb17..64373b684 touches only reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, tests/test_stop_hook_reads_the_snapshot.py, tests/test_coordinator_obligations_hook.py and the plan's evidence fragment, every path inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "removing the queued reading at reckon/crew/obligations.py:373 reds the queued case (logs/negative-control.log, 1 failed EXIT=1), and test_a_lane_refused_review_reads_queued_and_returns_after_the_bound:420 re-records the refusal past the bound and asserts review-missing blocks, so the bound is a guard rather than a suppression.",
+    "evidence": "the head arm at logs/head-arm-final.log runs the six new cases plus the two kept suites (33 passed, EXIT=0) and the negative control at logs/negative-control.log reds exactly test_a_lane_refused_review_reads_queued_and_returns_after_the_bound, so the gate asserts the done_when and its result is recorded.",
+    "fit": "the new names (REVIEW_QUEUED_DUTY_KIND, NON_BLOCKING_DUTY_KINDS, STOP_DERIVATION_BUDGET_SECONDS) carry no plan label or version, and the hook mirrors review-queued as _NON_BLOCKING_KINDS at coordinator_obligations.py:193 because the prompt path may not import the derivation.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:825 decides the stop from module.live_payload whenever the snapshot is FRESH and :792 _blocking_items drops the queued kind so it lists without holding the turn, which is what the goal states.",
+    "scope_discipline": "git diff --stat 24ea2cb17..64373b684 lists only the four declared Python paths and the evidence fragment, all inside the fence, and carries no plan-meta edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the stop hook decides from the session's snapshot and reads a lane-refused review duty as queued; reckon/hooks/coordinator_obligations.py:825 decides the stop from module.live_payload when the snapshot is FRESH and :792 (_blocking_items) drops the reflex-owned kinds, and reckon/crew/obligations.py:373 raises review-queued from the lane-paused refusal record.\nVERDICT done_when: six cases in tests/test_stop_hook_reads_the_snapshot.py cover the three stop branches (:220 fresh, :294 over an overridden short budget, :321 in-process cut), the queued reading and its return past the bound (:355), the stale-code line (:431) and the empty-list header (:451); the head arm records 33 passed EXIT=0 and the negative control reds exactly the queued case (1 failed, EXIT=1).\nVERDICT write_paths: the diff 24ea2cb17..64373b684 touches only reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, tests/test_stop_hook_reads_the_snapshot.py, tests/test_coordinator_obligations_hook.py and the plan's evidence fragment, every path inside the declared write paths.\nVERDICT manifest: read; it reads status complete, records both gate arms with their revisions, completed true and a literal command, the negative control with its log, and added_failure_count 0 with no ids.\nVERDICT diff: read commit by commit against 24ea2cb17; the single commit 64373b684 adds the snapshot-driven stop, the bounded inline derivation, the review-queued reading in obligations.py, the stale-code line and the empty-list header, and updates the shared hook test to publish a snapshot for both modes.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:894 (main dispatches _prompt), reckon/hooks/coordinator_obligations.py:895 (main dispatches _stop), reckon/crew/obligations.py:740 (obligations() calls _review_duty_item at :773)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:825 decides the stop from module.live_payload whenever the snapshot is FRESH and :792 _blocking_items drops the queued kind so it lists without holding the turn, which is what the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head arm at logs/head-arm-final.log runs the six new cases plus the two kept suites (33 passed, EXIT=0) and the negative control at logs/negative-control.log reds exactly test_a_lane_refused_review_reads_queued_and_returns_after_the_bound, so the gate asserts the done_when and its result is recorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 24ea2cb17..64373b684 lists only the four declared Python paths and the evidence fragment, all inside the fence, and carries no plan-meta edit.\nSCORE durability: 19\nJUSTIFICATION durability: removing the queued reading at reckon/crew/obligations.py:373 reds the queued case (logs/negative-control.log, 1 failed EXIT=1), and test_a_lane_refused_review_reads_queued_and_returns_after_the_bound:420 re-records the refusal past the bound and asserts review-missing blocks, so the bound is a guard rather than a suppression.\nSCORE fit: 18\nJUSTIFICATION fit: the new names (REVIEW_QUEUED_DUTY_KIND, NON_BLOCKING_DUTY_KINDS, STOP_DERIVATION_BUDGET_SECONDS) carry no plan label or version, and the hook mirrors review-queued as _NON_BLOCKING_KINDS at coordinator_obligations.py:193 because the prompt path may not import the derivation.\nFINDING reckon/hooks/coordinator_obligations.py:625 follow-on: resolve() lost both callers when the change split its body into locate_session (:590) and _obligations_view, and no production or test module imports it now, so it is dead on the module's surface.\nFINDING reckon/crew/obligations.py:254 follow-on: the new-session worker-slots fallback is gated on sessions_present rather than present, so a router that publishes an admission block with no sessions map skips the new-session share and reads the lane-wide worker_slots instead, contrary to the fallback order the function's own docstring names.\nFINDING docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/stop-hook-reads-the-snapshot.html:10 follow-on: plan-verifies names only #s3 while the node also implements \u00a711, and evidence-commit names the base 24ea2cb1 rather than the head, so a reader filtering evidence by \u00a711 or by the landed commit does not find this record.\nreviewed_base_sha: 24ea2cb171817a871d7a4e078140101eab53f170\nreviewed_head_sha: 64373b684fe7d100a5d5d75ae129161799fc4103",
+  "review_run_id": "r-20261002T233152738724-review-of-stop-hook-reads-the-snapshot",
+  "reviewed_base_sha": "24ea2cb171817a871d7a4e078140101eab53f170",
+  "reviewed_head_sha": "64373b684fe7d100a5d5d75ae129161799fc4103",
+  "reviewed_run_id": "r-20261002T224659340678-stop-hook-reads-the-snapshot",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T23:44:47.736130+00:00",
+  "total": 94
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144545446624-worker-scratch-lives-with-its-run/gates/after.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144545446624-worker-scratch-lives-with-its-run/gates/base.log",
+    "note": "the reviewed manifest names these two logs under baseline_suite and after_suite; the count and ids are the added failures over them, with the probe's own controls in logs/added-failures.log of the reviewing run (a synthetic head log yields 2 ids, a failure present in both logs yields 0, an absent head log yields None rather than zero)"
+  },
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4573 the pointer's recorded scratch",
+    "reckon/crew/dispatch.py:5555 _worker_runtime_environment sets TMPDIR (reached from :4764 the resume directive",
+    ":6460 _supervisor_spawn_worker",
+    ":7465 resume_plan",
+    ":7813 and :7845 change_lane)",
+    "reckon/crew/dispatch.py:5593 _worker_process_environment",
+    "reckon/crew/promotion.py:3646 _release_run_workspace",
+    "reckon/crew/promotion.py:3689 and :3701 the two _release_after_promotion fallbacks (reached from reckon/crew/promotion.py:4606 and :5075)",
+    "reckon/crew/promotion.py:5181 _remove_discarded_worktree's fallback (reached from reckon/crew/promotion.py:5159)",
+    "reckon/cli.py:4555 crew_complete and reckon/cli.py:4363 crew_discard."
+  ],
+  "completed_at": "2026-09-28T17:46:36.724Z",
+  "dispatched_at": "2026-09-28T17:07:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5506",
+      "text": "remove_worker_scratch validates run_id and then removes the recorded path instead whenever one is present, so the half of its own docstring at :5486-5489 that says the path removed names a well-formed run id is never applied to the path that is actually removed \u2014 a pointer record whose scratch field names a different run's directory removes that directory, as my probe showed by deleting <root>/r-recorded-sibling and reporting p3a_sibling_survives false, which is the sibling-survival property section 6's done-when asserts and the module comment at :5435 claims by construction; the direct-child test at :5518 bounds the blast radius to directories directly under the scratch root but does not reach the run the record names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit by commit \u2014 c6e49d9 adds the four helpers, the TMPDIR line and the pointer's recorded scratch path, 1dfda944 adds only the evidence fragment and its figure, and 83e37c72 pins the root to WORKER_SCRATCH_ROOT_DEFAULT at reckon/crew/dispatch.py:5439 and threads recorded_path through both release funnels, all three messages conventional with bodies and no attribution.",
+    "done_when": "The measure section 6 states is the four properties tests/test_worker_scratch_lives_with_its_run.py asserts at lines 189 (TMPDIR is the run's own directory under the pinned root), 216 and 247 (promotion and discard remove it, printing the path at 244 and 271), and 269 (a sibling run's directory survives), and my own re-run of that file at 83e37c72 is 9 passed with the two removal tests red under the declared mutation.",
+    "goal": "The goal's five properties live at reckon/crew/dispatch.py:5439-5534 (a pinned node-local root, the per-run directory, TMPDIR) and reckon/crew/promotion.py:3646 (removal of the recorded path), and my own probes against head 83e37c72 confirmed the pinning, the recorded-path removal, the reporting from a release that raises and a writable fenced TMPDIR outright, while the sibling-survival property holds only where the path is derived from the run id.",
+    "manifest": "read at the reviewed head; it reports status complete, the three commits and both arms with their log paths, and the structured fields rather than the prose hold up \u2014 both baseline_suite and after_suite parse as JSON, each names exactly the test files the log it points at ran (10 and 11 files, verified file by file), and the nonexistent tests/test_dispatch_spy.py the earlier review found in them is gone.",
+    "write_paths": "five were declared and git diff-tree 40d23d9..83e37c72 lists exactly reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_worker_scratch_lives_with_its_run.py, docs/evidence/fragments/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run.html and docs/figures/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run/scratch-lifecycle.svg, with the worktree clean at the head."
+  },
+  "justifications": {
+    "durability": "Running the declared mutation myself reddens exactly tests/test_worker_scratch_lives_with_its_run.py::test_promotion_removes_the_runs_scratch_directory and ::test_discard_removes_the_runs_scratch_directory while the other seven stay green, and I probed all five raising-release shapes directly, but no assertion plants a pointer whose scratch field names a sibling run, so the edit the finding below names would redden no test.",
+    "evidence": "gates/after.log names revision 83e37c72 with its tree, module and cwd and 65 passed against gates/base.log's 56 passed in the base scratch tree, my own derivation over those two logs returns 0 added ids with controls that see 2 injected ids and read an absent head log as unmeasured, and my independent re-run of the mutated file is 2 failed, 7 passed.",
+    "fit": "The helpers at reckon/crew/dispatch.py:5439-5534 sit beside _persisted_worker_environment with mechanism docstrings and a reasoned `# noqa: S108` matching the existing idiom at :5337, ruff adds no finding to either touched source file (7=7 and 10=10 by concise match) or to the new test file, ruff format's backlog in both files is byte-for-byte unchanged, and the added names state mechanism rather than plan stage.",
+    "goal_fidelity": "The pinning at reckon/crew/dispatch.py:5439, the recorded-path removal at reckon/crew/promotion.py:3646, the raising-release reporting at :3689 and :5181 and the fenced TMPDIR writability all hold, but the removal at reckon/crew/dispatch.py:5506 takes the record's path on the strength of the direct-child test at :5518 alone, so a record naming a sibling run's directory removes that sibling.",
+    "scope_discipline": "git diff-tree 40d23d9..83e37c72 lists exactly the five declared paths, the worktree is clean at 83e37c72, and the three messages are conventional with bodies and carry no attribution or plan identifier."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal's five properties live at reckon/crew/dispatch.py:5439-5534 (a pinned node-local root, the per-run directory, TMPDIR) and reckon/crew/promotion.py:3646 (removal of the recorded path), and my own probes against head 83e37c72 confirmed the pinning, the recorded-path removal, the reporting from a release that raises and a writable fenced TMPDIR outright, while the sibling-survival property holds only where the path is derived from the run id.\nVERDICT done_when: The measure section 6 states is the four properties tests/test_worker_scratch_lives_with_its_run.py asserts at lines 189 (TMPDIR is the run's own directory under the pinned root), 216 and 247 (promotion and discard remove it, printing the path at 244 and 271), and 269 (a sibling run's directory survives), and my own re-run of that file at 83e37c72 is 9 passed with the two removal tests red under the declared mutation.\nVERDICT write_paths: five were declared and git diff-tree 40d23d9..83e37c72 lists exactly reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_worker_scratch_lives_with_its_run.py, docs/evidence/fragments/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run.html and docs/figures/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run/scratch-lifecycle.svg, with the worktree clean at the head.\nVERDICT manifest: read at the reviewed head; it reports status complete, the three commits and both arms with their log paths, and the structured fields rather than the prose hold up \u2014 both baseline_suite and after_suite parse as JSON, each names exactly the test files the log it points at ran (10 and 11 files, verified file by file), and the nonexistent tests/test_dispatch_spy.py the earlier review found in them is gone.\nVERDICT diff: read commit by commit \u2014 c6e49d9 adds the four helpers, the TMPDIR line and the pointer's recorded scratch path, 1dfda944 adds only the evidence fragment and its figure, and 83e37c72 pins the root to WORKER_SCRATCH_ROOT_DEFAULT at reckon/crew/dispatch.py:5439 and threads recorded_path through both release funnels, all three messages conventional with bodies and no attribution.\nCALL_SITES: reckon/crew/dispatch.py:4573 the pointer's recorded scratch, reckon/crew/dispatch.py:5555 _worker_runtime_environment sets TMPDIR (reached from :4764 the resume directive, :6460 _supervisor_spawn_worker, :7465 resume_plan, :7813 and :7845 change_lane), reckon/crew/dispatch.py:5593 _worker_process_environment, reckon/crew/promotion.py:3646 _release_run_workspace, reckon/crew/promotion.py:3689 and :3701 the two _release_after_promotion fallbacks (reached from reckon/crew/promotion.py:4606 and :5075), reckon/crew/promotion.py:5181 _remove_discarded_worktree's fallback (reached from reckon/crew/promotion.py:5159), reckon/cli.py:4555 crew_complete and reckon/cli.py:4363 crew_discard.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The pinning at reckon/crew/dispatch.py:5439, the recorded-path removal at reckon/crew/promotion.py:3646, the raising-release reporting at :3689 and :5181 and the fenced TMPDIR writability all hold, but the removal at reckon/crew/dispatch.py:5506 takes the record's path on the strength of the direct-child test at :5518 alone, so a record naming a sibling run's directory removes that sibling.\nSCORE evidence: 20\nJUSTIFICATION evidence: gates/after.log names revision 83e37c72 with its tree, module and cwd and 65 passed against gates/base.log's 56 passed in the base scratch tree, my own derivation over those two logs returns 0 added ids with controls that see 2 injected ids and read an absent head log as unmeasured, and my independent re-run of the mutated file is 2 failed, 7 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff-tree 40d23d9..83e37c72 lists exactly the five declared paths, the worktree is clean at 83e37c72, and the three messages are conventional with bodies and carry no attribution or plan identifier.\nSCORE durability: 18\nJUSTIFICATION durability: Running the declared mutation myself reddens exactly tests/test_worker_scratch_lives_with_its_run.py::test_promotion_removes_the_runs_scratch_directory and ::test_discard_removes_the_runs_scratch_directory while the other seven stay green, and I probed all five raising-release shapes directly, but no assertion plants a pointer whose scratch field names a sibling run, so the edit the finding below names would redden no test.\nSCORE fit: 20\nJUSTIFICATION fit: The helpers at reckon/crew/dispatch.py:5439-5534 sit beside _persisted_worker_environment with mechanism docstrings and a reasoned `# noqa: S108` matching the existing idiom at :5337, ruff adds no finding to either touched source file (7=7 and 10=10 by concise match) or to the new test file, ruff format's backlog in both files is byte-for-byte unchanged, and the added names state mechanism rather than plan stage.\nFINDING reckon/crew/dispatch.py:5506 remove_worker_scratch validates run_id and then removes the recorded path instead whenever one is present, so the half of its own docstring at :5486-5489 that says the path removed names a well-formed run id is never applied to the path that is actually removed \u2014 a pointer record whose scratch field names a different run's directory removes that directory, as my probe showed by deleting <root>/r-recorded-sibling and reporting p3a_sibling_survives false, which is the sibling-survival property section 6's done-when asserts and the module comment at :5435 claims by construction; the direct-child test at :5518 bounds the blast radius to directories directly under the scratch root but does not reach the run the record names.",
+  "review_run_id": "r-20260928T170653454196-review-of-worker-scratch-lives-with-its-run",
+  "reviewed_base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "reviewed_head_sha": "83e37c7276070b80799bbb1bc8f448cabdba6f56",
+  "reviewed_run_id": "r-20260928T144545446624-worker-scratch-lives-with-its-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T17:30:03.078952+00:00",
+  "total": 96
+}

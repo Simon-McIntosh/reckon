@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:00:17.649Z",
+  "dispatched_at": "2026-10-05T15:53:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:167",
+      "id": "reuse_search-1",
+      "reason": "the section must name `list_plan_reviews` as the reader the predicate enumerates over (and the gate's existing `read_plan_review(... plan=resource.path)` call at `reckon/crew/routing.py:2698` likewise moved onto that enumeration), or the predicate cannot find the stored `section_digests` it compares against.",
+      "text": "\u00a716 says the coverage predicate is \"one function over two existing readers\" and joins \"a set of outstanding sections to the union of digests across stored records\", but `read_plan_review` returns exactly one record (newest, fingerprint- or version-filtered) and cannot supply a union across records; the only existing reader that enumerates every stored review of a project is `plan_review.list_plan_reviews` (`reckon/crew/plan_review.py:668`), which the section does not name, so the claim that the predicate \"adds no walk of its own\" is unmet and its dependency set is mis-stated",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:171",
+      "id": "interface_budget-1",
+      "reason": "the section's interface accounting and its `public_definitions` done-when must name the exported card predicate and the raise to +2, or the node's own gate will read as failed when the count moves by two.",
+      "text": "\u00a717 exports \"the one card predicate the parser module exposes beside the identity function\" and points `reckon/doccheck.py:116` and `reckon/crew/plan_review.py:208` at it; both consumers sit outside `reckon/_plan_html`, so by \u00a716's stated house rule the predicate is public and counted, yet \u00a717's interface accounting (\"one public definition is added, the reader on `reckon/_plan_html.py`\") and its done-when (\"`public_definitions` at the head is exactly one higher than at the base\") count only `plan_headings`, understating the family growth by one",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fe8af105c5f6e4322a948226f3f5f5e0a83c81ac10d9795935af6f607c3fc23c",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 84,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T155312073639-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "f962ff99fa38f3d814fccfcf5bed4b11d9ff8cf2",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 hides the section-set digest, the coverage join",
+    "duplicate_owner": "pass \u2014 each new or moved mechanism names the owner it",
+    "interface_budget": "a finding \u2014 public_definitions 1476, cli_options 317,",
+    "reuse_search": "a finding \u2014 \u00a716 builds its coverage predicate over the",
+    "thin_wrapper": "pass \u2014 \u00a717 states why the private span parser needs a"
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.866221+00:00"
+}

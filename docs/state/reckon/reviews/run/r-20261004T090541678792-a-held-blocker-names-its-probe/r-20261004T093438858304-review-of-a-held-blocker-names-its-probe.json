@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:800",
+    "reckon/project_state.py:1568"
+  ],
+  "completed_at": "2026-10-04T09:40:05.075Z",
+  "dispatched_at": "2026-10-04T09:34:55Z",
+  "findings": [
+    {
+      "file": "reckon/project_state.py",
+      "line": "1350",
+      "severity": "follow-on",
+      "text": "follow-on: the already-cleared early return sits after the probe-registry lookup at :1348, so a cleared blocker whose probe id left the registry raises \"unknown probe id\" instead of reporting its recorded clear; the branch is never exercised by the tests."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit c8ab8bda8 against base 060d94f50 commit by commit; four files changed, +315/-0, adding the probe registry, the evaluation command and the composed-state cleared filter.",
+    "done_when": "the done_when asks a temporary-repository test to show arrival clears, absence holds and an unknown id is reported; tests/test_held_blocker_probe.py:26 exercises all three against a tmp_path docs tree.",
+    "goal": "the selected node goal is to let a held blocker name a probe id resolving to a registered Python callable and clear it with the probe id and finding as the reason; reckon/held_probes.py:38 registers path-exists in PROBES and reckon/project_state.py:1338 resolves it and writes the cleared_reason at :1374.",
+    "manifest": "read; it records base 535 passed and head 537 passed with 0 added failures, a negative control reddening both new tests at base, and a focused 2-passed run.",
+    "write_paths": "the reviewed manifest declares reckon/project_state.py, reckon/held_probes.py, reckon/cli.py and tests/test_held_blocker_probe.py; every path in the c8ab8bda8 diff lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_held_blocker_probe.py:26 reddens at base with evaluate_held_blocker absent and asserts stored version 1->2 and cleared_reason against the resource the code had to write; the already-cleared early return at reckon/project_state.py:1350 is left untested.",
+    "evidence": "tests/test_held_blocker_probe.py:26 asserts the three done_when cases and both gate arms are recorded at EXIT=0 in baseline-suite.log and after-suite.log.",
+    "fit": "reckon/held_probes.py:38 uses a module-level registry and reckon/project_state.py:1377 stamps cleared_at with datetime.now(UTC), matching the surrounding idiom.",
+    "goal_fidelity": "reckon/project_state.py:1350-1374 clears the blocker and records reason \"probe path-exists: <finding>\", naming the probe id and its finding as the goal states.",
+    "scope_discipline": "every file in the c8ab8bda8 diff is a declared write path and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the selected node goal is to let a held blocker name a probe id resolving to a registered Python callable and clear it with the probe id and finding as the reason; reckon/held_probes.py:38 registers path-exists in PROBES and reckon/project_state.py:1338 resolves it and writes the cleared_reason at :1374.\nVERDICT done_when: the done_when asks a temporary-repository test to show arrival clears, absence holds and an unknown id is reported; tests/test_held_blocker_probe.py:26 exercises all three against a tmp_path docs tree.\nVERDICT write_paths: the reviewed manifest declares reckon/project_state.py, reckon/held_probes.py, reckon/cli.py and tests/test_held_blocker_probe.py; every path in the c8ab8bda8 diff lies inside them.\nVERDICT manifest: read; it records base 535 passed and head 537 passed with 0 added failures, a negative control reddening both new tests at base, and a focused 2-passed run.\nVERDICT diff: read the single commit c8ab8bda8 against base 060d94f50 commit by commit; four files changed, +315/-0, adding the probe registry, the evaluation command and the composed-state cleared filter.\nCALL_SITES: reckon/cli.py:800, reckon/project_state.py:1568\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_state.py:1350-1374 clears the blocker and records reason \"probe path-exists: <finding>\", naming the probe id and its finding as the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_held_blocker_probe.py:26 asserts the three done_when cases and both gate arms are recorded at EXIT=0 in baseline-suite.log and after-suite.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every file in the c8ab8bda8 diff is a declared write path and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_held_blocker_probe.py:26 reddens at base with evaluate_held_blocker absent and asserts stored version 1->2 and cleared_reason against the resource the code had to write; the already-cleared early return at reckon/project_state.py:1350 is left untested.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/held_probes.py:38 uses a module-level registry and reckon/project_state.py:1377 stamps cleared_at with datetime.now(UTC), matching the surrounding idiom.\nFINDING reckon/project_state.py:1350 follow-on: the already-cleared early return sits after the probe-registry lookup at :1348, so a cleared blocker whose probe id left the registry raises \"unknown probe id\" instead of reporting its recorded clear; the branch is never exercised by the tests.\n",
+  "review_run_id": "r-20261004T093438858304-review-of-a-held-blocker-names-its-probe",
+  "reviewed_base_sha": "060d94f50eb15f12d1922401450b8685723321e9",
+  "reviewed_head_sha": "c8ab8bda848dbac97cc7a5b6f290fe52113553fe",
+  "reviewed_run_id": "r-20261004T090541678792-a-held-blocker-names-its-probe",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T093438858304-review-of-a-held-blocker-names-its-probe",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T09:44:00+00:00",
+  "total": 96
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_scopes_view_reads_claim_owners_without_mutating_the_pointer"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "61abcb5df23d0b4a7f713b8c08b27a984379470a",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:4370",
+    "reckon/crew/runs.py:820"
+  ],
+  "completed_at": "2026-10-04T03:27:55.905Z",
+  "dispatched_at": "2026-10-04T03:22:37Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "4385",
+      "severity": "follow-on",
+      "text": "follow-on: the claim_map owner carries binding only when the planner supplied the key, so a planner that omitted it would leave the verdict silently absent rather than explicit; harmless while plan_scope_lanes always sets the key, but the read contract stays implicit rather than asserted."
+    },
+    {
+      "file": "tests/test_crew.py",
+      "line": "1607",
+      "severity": "follow-on",
+      "text": "follow-on: the change reddens a pre-existing assertion that pins the owner dict to its pre-change shape, left unrepaired because that file is outside the node's fence; the merged head is not green until it is repaired."
+    }
+  ],
+  "head_log_revision": "7e69db0534586b80f0f5f89d257d8e1d2e7b273d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base 61abcb5df; reckon/crew/runs.py and reckon/mcp.py change the read model, beside the node test file and the evidence fragment.",
+    "done_when": "the done_when names a temp-RECKON_HOME and repository test file; the manifest records that run at tests/test_the_scopes_view_says_what_it_evaluated.py (7 passed) and the flat baseline and after arms.",
+    "goal": "the node goal is to make the scopes view say what it evaluated and whether each claim binds; reckon/crew/runs.py:977 adds a candidate_wave block and reckon/crew/runs.py:663 adds binding and disposition_reason to each listed claim.",
+    "manifest": "read; it records the flat baseline 13 passed EXIT=0, the node file 7 passed, the head flat arm 1 failed 19 passed with the failure named under follow_ons, and a negative control 4 failed 3 passed.",
+    "write_paths": "read the manifest's five declared paths; the diff touches four of them and nothing outside them."
+  },
+  "justifications": {
+    "durability": "nine assertions are added and the negative control reddens four of them (tests/test_the_scopes_view_says_what_it_evaluated.py:243) when the binding verdict is removed from the read model.",
+    "evidence": "tests/test_the_scopes_view_says_what_it_evaluated.py exercises each done_when clause and the manifest records each arm, though the candidate_wave half is verified only by a KeyError on key removal rather than by a negative control.",
+    "fit": "binding and disposition_reason mirror dispatch's own claim fields at reckon/crew/dispatch.py:1434 and reuse its claim_disposition rule, so both surfaces share one vocabulary.",
+    "goal_fidelity": "reckon/crew/runs.py:978 distinguishes evaluated from unevaluated, and reckon/crew/runs.py:663 exposes binding beside disposition_reason on every listed claim.",
+    "scope_discipline": "the diff is confined to reckon/crew/runs.py, reckon/mcp.py, tests/test_the_scopes_view_says_what_it_evaluated.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the scopes view say what it evaluated and whether each claim binds; reckon/crew/runs.py:977 adds a candidate_wave block and reckon/crew/runs.py:663 adds binding and disposition_reason to each listed claim.\nVERDICT done_when: the done_when names a temp-RECKON_HOME and repository test file; the manifest records that run at tests/test_the_scopes_view_says_what_it_evaluated.py (7 passed) and the flat baseline and after arms.\nVERDICT write_paths: read the manifest's five declared paths; the diff touches four of them and nothing outside them.\nVERDICT manifest: read; it records the flat baseline 13 passed EXIT=0, the node file 7 passed, the head flat arm 1 failed 19 passed with the failure named under follow_ons, and a negative control 4 failed 3 passed.\nVERDICT diff: read both commits against base 61abcb5df; reckon/crew/runs.py and reckon/mcp.py change the read model, beside the node test file and the evidence fragment.\nCALL_SITES: reckon/mcp.py:4370, reckon/crew/runs.py:820\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:978 distinguishes evaluated from unevaluated, and reckon/crew/runs.py:663 exposes binding beside disposition_reason on every listed claim.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_the_scopes_view_says_what_it_evaluated.py exercises each done_when clause and the manifest records each arm, though the candidate_wave half is verified only by a KeyError on key removal rather than by a negative control.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff is confined to reckon/crew/runs.py, reckon/mcp.py, tests/test_the_scopes_view_says_what_it_evaluated.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: nine assertions are added and the negative control reddens four of them (tests/test_the_scopes_view_says_what_it_evaluated.py:243) when the binding verdict is removed from the read model.\nSCORE fit: 18\nJUSTIFICATION fit: binding and disposition_reason mirror dispatch's own claim fields at reckon/crew/dispatch.py:1434 and reuse its claim_disposition rule, so both surfaces share one vocabulary.\nFINDING reckon/mcp.py:4385 follow-on: the claim_map owner carries binding only when the planner supplied the key, so a planner that omitted it would leave the verdict silently absent rather than explicit; harmless while plan_scope_lanes always sets the key, but the read contract stays implicit rather than asserted.\nFINDING tests/test_crew.py:1607 follow-on: the change reddens a pre-existing assertion that pins the owner dict to its pre-change shape, left unrepaired because that file is outside the node's fence; the merged head is not green until it is repaired.\nREVIEWED_BASE_SHA: 61abcb5df23d0b4a7f713b8c08b27a984379470a\nREVIEWED_HEAD_SHA: 7e69db0534586b80f0f5f89d257d8e1d2e7b273d\n",
+  "review_run_id": "r-20261004T032159729647-review-of-the-scopes-view-says-what-it-evaluated",
+  "reviewed_base_sha": "61abcb5df23d0b4a7f713b8c08b27a984379470a",
+  "reviewed_head_sha": "7e69db0534586b80f0f5f89d257d8e1d2e7b273d",
+  "reviewed_run_id": "r-20261004T030028315026-the-scopes-view-says-what-it-evaluated",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T03:26:21.127968+00:00",
+  "total": 88
+}

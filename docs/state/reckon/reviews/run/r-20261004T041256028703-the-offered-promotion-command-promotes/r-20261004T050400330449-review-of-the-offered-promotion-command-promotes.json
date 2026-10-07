@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:_live_item (review-ready hook's next_command)",
+    "reckon/cli.py:5117 (crew status next_action)",
+    "reckon/mcp_views.py:1753 (mcp run view next_action)"
+  ],
+  "completed_at": "2026-10-04T05:08:36.372Z",
+  "dispatched_at": "2026-10-04T05:04:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8018",
+      "severity": "follow-on",
+      "text": "follow-on: the guard fires only when exactly one canonical commit resolves and it equals the base; a promotable run whose manifest commit resolves to nothing (reclaimed worktree, unknown citation) yields an empty commit list and still falls to the plain `--gate <verdict>` offer with neither --commit nor --no-commit, which promotion refuses. Pre-existing and outside the plan's done_when (which is about the base-citing case), recorded so a reader knows the fix is scoped to len==1."
+    },
+    {
+      "file": "logs/head-subset.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's header names its revision and tree but spells the command's population as the literal placeholder `<seven on-surface files>` rather than the file list, so the log alone cannot reconstruct what was measured; the manifest's after_suite.command does name the seven files explicitly, so the record reconciles."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit-by-commit against base f87d778c9; one commit, three files (reckon/crew/recovery.py +20/-3, tests/test_the_offered_promotion_command_promotes.py +310, a new evidence fragment +93), all inside scope.",
+    "done_when": "the plan's done_when (docs/plans/the-obligations-hook-reads-a-snapshot.html:276) names a test that drives a read-only run to promotable, fills only the offered command's placeholders, runs it and asserts it promotes; tests/test_the_offered_promotion_command_promotes.py::test_the_offered_command_for_a_read_only_run_promotes_it does exactly that, and the manifest records its head run.",
+    "goal": "the node's goal is to make the promotion the classifier and the obligations hook offer for a read-only run one crew complete accepts; reckon/crew/recovery.py:8018 now offers --gate not-run --no-commit --outcome when a promotable run's only resolved commit equals its dispatch base.",
+    "manifest": "read; it records head 2 passed EXIT=0, the base-arm on-surface subset 1 failed 137 passed EXIT=1, and a negative control EXIT=1, with the log paths.",
+    "write_paths": "the manifest declares recovery.py, the new test file, an evidence fragment and a figures directory; the commit touches only the first three, every one inside the declared set."
+  },
+  "justifications": {
+    "durability": "test_the_offered_command_for_a_read_only_run_promotes_it fails if the classifier is reverted to the --commit <base> offer (the committed command then exits 1), and test_a_run_with_commits_beyond_its_base_still_gets_its_commit_list guards the untouched branch; both assert against a base sha read from git, not a value the test handed the code.",
+    "evidence": "the new test drives the real classifier and runs the offered command through the CLI (tests/test_the_offered_promotion_command_promotes.py:255), and the base revision's offer is refused with the cited-base error in logs/negative-control.log; the wider 35-file population was not finished (manifest follow_ons), so evidence rests on the seven-file on-surface subset.",
+    "fit": "the branch reuses the existing same_revision helper (reckon/crew/recovery.py:804) and the promotion module's own base_sha spelling (reckon/crew/promotion.py:342), and the added comment states the mechanism without any plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/recovery.py:8018 compares the resolved commits to the pointer's base and emits --gate not-run --no-commit --outcome when they are the same single commit, which is precisely what the plan's done_when asks for; the run-time re-check here confirms the read-only offer is accepted (EXIT=0).",
+    "scope_discipline": "git diff --stat f87d778c9 0b576fa05 shows exactly reckon/crew/recovery.py, tests/test_the_offered_promotion_command_promotes.py and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/the-offered-promotion-command-promotes.html, all within the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the promotion the classifier and the obligations hook offer for a read-only run one crew complete accepts; reckon/crew/recovery.py:8018 now offers --gate not-run --no-commit --outcome when a promotable run's only resolved commit equals its dispatch base.\nVERDICT done_when: the plan's done_when (docs/plans/the-obligations-hook-reads-a-snapshot.html:276) names a test that drives a read-only run to promotable, fills only the offered command's placeholders, runs it and asserts it promotes; tests/test_the_offered_promotion_command_promotes.py::test_the_offered_command_for_a_read_only_run_promotes_it does exactly that, and the manifest records its head run.\nVERDICT write_paths: the manifest declares recovery.py, the new test file, an evidence fragment and a figures directory; the commit touches only the first three, every one inside the declared set.\nVERDICT manifest: read; it records head 2 passed EXIT=0, the base-arm on-surface subset 1 failed 137 passed EXIT=1, and a negative control EXIT=1, with the log paths.\nVERDICT diff: read commit-by-commit against base f87d778c9; one commit, three files (reckon/crew/recovery.py +20/-3, tests/test_the_offered_promotion_command_promotes.py +310, a new evidence fragment +93), all inside scope.\nCALL_SITES: reckon/crew/obligations.py:_live_item (review-ready hook's next_command), reckon/cli.py:5117 (crew status next_action), reckon/mcp_views.py:1753 (mcp run view next_action)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:8018 compares the resolved commits to the pointer's base and emits --gate not-run --no-commit --outcome when they are the same single commit, which is precisely what the plan's done_when asks for; the run-time re-check here confirms the read-only offer is accepted (EXIT=0).\nSCORE evidence: 19\nJUSTIFICATION evidence: the new test drives the real classifier and runs the offered command through the CLI (tests/test_the_offered_promotion_command_promotes.py:255), and the base revision's offer is refused with the cited-base error in logs/negative-control.log; the wider 35-file population was not finished (manifest follow_ons), so evidence rests on the seven-file on-surface subset.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat f87d778c9 0b576fa05 shows exactly reckon/crew/recovery.py, tests/test_the_offered_promotion_command_promotes.py and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/the-offered-promotion-command-promotes.html, all within the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: test_the_offered_command_for_a_read_only_run_promotes_it fails if the classifier is reverted to the --commit <base> offer (the committed command then exits 1), and test_a_run_with_commits_beyond_its_base_still_gets_its_commit_list guards the untouched branch; both assert against a base sha read from git, not a value the test handed the code.\nSCORE fit: 20\nJUSTIFICATION fit: the branch reuses the existing same_revision helper (reckon/crew/recovery.py:804) and the promotion module's own base_sha spelling (reckon/crew/promotion.py:342), and the added comment states the mechanism without any plan, sprint or ticket identifier.\nFINDING reckon/crew/recovery.py:8018 follow-on: the guard fires only when exactly one canonical commit resolves and it equals the base; a promotable run whose manifest commit resolves to nothing (reclaimed worktree, unknown citation) yields an empty commit list and still falls to the plain `--gate <verdict>` offer with neither --commit nor --no-commit, which promotion refuses. Pre-existing and outside the plan's done_when (which is about the base-citing case), recorded so a reader knows the fix is scoped to len==1.\nFINDING logs/head-subset.log:1 follow-on: the gate log's header names its revision and tree but spells the command's population as the literal placeholder `<seven on-surface files>` rather than the file list, so the log alone cannot reconstruct what was measured; the manifest's after_suite.command does name the seven files explicitly, so the record reconciles.\n",
+  "review_run_id": "r-20261004T050400330449-review-of-the-offered-promotion-command-promotes",
+  "reviewed_base_sha": "f87d778c9c986d6b55705d3589531fdf8212afc1",
+  "reviewed_head_sha": "0b576fa054af71ebb9d6c328366f2f4ae836ba1c",
+  "reviewed_run_id": "r-20261004T041256028703-the-offered-promotion-command-promotes",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T05:00:00+00:00",
+  "total": 98
+}

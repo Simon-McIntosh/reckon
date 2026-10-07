@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:_write_state_locked",
+    "reckon/mcp_views.py:resource_view"
+  ],
+  "completed_at": "2026-10-02T14:57:43.324Z",
+  "dispatched_at": "2026-10-02T14:40:00Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "1731",
+      "severity": "follow-on",
+      "text": "follow-on: authored_plan_text still decomposes every section[data-reckon='section'] element, so a plan that wraps a data-reckon='section' authored section has its prose dropped from read_plan(search=...) and discovery search even though this change now lets that same section be read and collapsed by id, leaving the search surface inconsistent with the read surface."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base ca630c06e894; 6e5371720 adds _wrapper_section_heading and the wrapper_span return in reckon/_store.py, _authored_section_headings and the wrapper-aware selection in reckon/mcp_views.py, help text in reckon/mcp.py, and the 259-line test; b5179bc74 adds the 75-line evidence fragment.",
+    "done_when": "the done-when asks that collapse and the section read resolve a wrapper-carried id with tests over both shapes, and tests/test_section_id_on_its_wrapper_resolves.py:154-259 exercises collapse and read across two wrapper variants (data-reckon='section' and bare) plus the h2 shape, and the declared negative control restores the h2-only lookup and is refused.",
+    "goal": "the node goal is that collapse_section and read_plan(view='section') each resolve a section id carried on a wrapping <section id=...> element as well as on the h2, and reckon/_store.py:907 _section_heading (falling back to _wrapper_section_heading) plus reckon/mcp_views.py:1756 _authored_section_headings implement exactly those two surfaces.",
+    "manifest": "read; status complete, records base arm 9 failed/127 passed EXIT=1, head arm 136 passed EXIT=0, negative control 6 failed/5 passed EXIT=1, each log naming its revision on a header line and ending with a bare EXIT= line; base failure ids are all in the new test's wrapper cases.",
+    "write_paths": "the manifest declares reckon/_store.py, reckon/mcp.py, reckon/mcp_views.py, tests/test_section_id_on_its_wrapper_resolves.py and the evidence fragment, and diff-tree of ca630c06..b5179bc7 touches exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the wrapper cases fail at base (tests/test_section_id_on_its_wrapper_resolves.py:155,209) and the restored h2-only lookup reddens the collapse cases (logs/negative-control.log, 6 failed), while the read-side wrapper resolution rests on the base arm rather than the mutation, which touches only reckon/_store.py.",
+    "evidence": "tests/test_section_id_on_its_wrapper_resolves.py:154-259 asserts the wrapper collapse, id survival, single-card idempotence and neighbour-bounded read, and I independently reproduced 11 passed EXIT=0 at head and 9 failed EXIT=1 at base for that file, matching the reviewed logs.",
+    "fit": "reckon/_store.py:841 _wrapper_section_heading follows the existing _section_heading idiom and reuses _matching_section_close and _landed_card_html, and reckon/mcp_views.py:1745 reuses the structured-region test, though the wrapper scan duplicates the h2 scan; no name the repository naming rules forbid was introduced.",
+    "goal_fidelity": "reckon/_store.py:1027 routes the collapse through _section_heading, which at line 907 falls back to _wrapper_section_heading, and reckon/mcp_views.py:1886 selects a wrapper's heading from _authored_section_headings, so both surfaces resolve the wrapper-carried id the goal names.",
+    "scope_discipline": "diff-tree of ca630c06..b5179bc7 lists only reckon/_store.py, reckon/mcp.py, reckon/mcp_views.py, tests/test_section_id_on_its_wrapper_resolves.py and the evidence fragment, all inside the manifest's declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that collapse_section and read_plan(view='section') each resolve a section id carried on a wrapping <section id=...> element as well as on the h2, and reckon/_store.py:907 _section_heading (falling back to _wrapper_section_heading) plus reckon/mcp_views.py:1756 _authored_section_headings implement exactly those two surfaces.\nVERDICT done_when: the done-when asks that collapse and the section read resolve a wrapper-carried id with tests over both shapes, and tests/test_section_id_on_its_wrapper_resolves.py:154-259 exercises collapse and read across two wrapper variants (data-reckon='section' and bare) plus the h2 shape, and the declared negative control restores the h2-only lookup and is refused.\nVERDICT write_paths: the manifest declares reckon/_store.py, reckon/mcp.py, reckon/mcp_views.py, tests/test_section_id_on_its_wrapper_resolves.py and the evidence fragment, and diff-tree of ca630c06..b5179bc7 touches exactly those five paths and nothing else.\nVERDICT manifest: read; status complete, records base arm 9 failed/127 passed EXIT=1, head arm 136 passed EXIT=0, negative control 6 failed/5 passed EXIT=1, each log naming its revision on a header line and ending with a bare EXIT= line; base failure ids are all in the new test's wrapper cases.\nVERDICT diff: read commit by commit against base ca630c06e894; 6e5371720 adds _wrapper_section_heading and the wrapper_span return in reckon/_store.py, _authored_section_headings and the wrapper-aware selection in reckon/mcp_views.py, help text in reckon/mcp.py, and the 259-line test; b5179bc74 adds the 75-line evidence fragment.\nCALL_SITES: reckon/_store.py:_write_state_locked, reckon/mcp_views.py:resource_view\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:1027 routes the collapse through _section_heading, which at line 907 falls back to _wrapper_section_heading, and reckon/mcp_views.py:1886 selects a wrapper's heading from _authored_section_headings, so both surfaces resolve the wrapper-carried id the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_section_id_on_its_wrapper_resolves.py:154-259 asserts the wrapper collapse, id survival, single-card idempotence and neighbour-bounded read, and I independently reproduced 11 passed EXIT=0 at head and 9 failed EXIT=1 at base for that file, matching the reviewed logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: diff-tree of ca630c06..b5179bc7 lists only reckon/_store.py, reckon/mcp.py, reckon/mcp_views.py, tests/test_section_id_on_its_wrapper_resolves.py and the evidence fragment, all inside the manifest's declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: the wrapper cases fail at base (tests/test_section_id_on_its_wrapper_resolves.py:155,209) and the restored h2-only lookup reddens the collapse cases (logs/negative-control.log, 6 failed), while the read-side wrapper resolution rests on the base arm rather than the mutation, which touches only reckon/_store.py.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/_store.py:841 _wrapper_section_heading follows the existing _section_heading idiom and reuses _matching_section_close and _landed_card_html, and reckon/mcp_views.py:1745 reuses the structured-region test, though the wrapper scan duplicates the h2 scan; no name the repository naming rules forbid was introduced.\nFINDING reckon/mcp_views.py:1731 follow-on: authored_plan_text still decomposes every section[data-reckon='section'] element, so a plan that wraps a data-reckon='section' authored section has its prose dropped from read_plan(search=...) and discovery search even though this change now lets that same section be read and collapsed by id, leaving the search surface inconsistent with the read surface.",
+  "review_run_id": "r-20261002T143926835137-review-of-section-id-on-its-wrapper-resolves",
+  "reviewed_base_sha": "ca630c06e894d95111a8627b11d02a023aa270dd",
+  "reviewed_head_sha": "b5179bc74b7f84c0fe4ad989c03b4eb23e6b5c42",
+  "reviewed_run_id": "r-20261002T130500572100-section-id-on-its-wrapper-resolves",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T14:56:10.530764+00:00",
+  "total": 90
+}

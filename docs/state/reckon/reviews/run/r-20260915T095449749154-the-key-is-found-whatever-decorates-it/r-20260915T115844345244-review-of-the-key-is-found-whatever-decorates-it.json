@@ -1,0 +1,32 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T11:58:44.345244+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "reverting the matcher to the base form makes the two new emphasis cases raise ManifestParseError \u2014 proven by the reproduction at base (tests/test_manifest_parse_format.py:403) where 2 failed and 60 passed \u2014 and the done-names-the-word refusal test survives the same gate.",
+    "evidence": "independent re-run in a scratch tree of the base revision returned 59 passed and of the reviewed commit returned 62 passed with zero added failures, and the recorded after log shows the reproduction failed on exactly '- **status**: complete' and '**status**: complete' (2 failed, 60 passed in 0.79s), so the gate measures what the done-when asserts and its result is on disk.",
+    "fit": "the change adds one `(?:\\*\\*)?` alternation mirroring the existing after-colon and before-key groups in the same compiled pattern (reckon/crew/reports.py:122-125) and introduces no symbols, plan labels, or non-conventional commit subjects.",
+    "goal_fidelity": "the landed change makes the decorated-field matcher accept closing bold before the colon (reckon/crew/reports.py:122-125) and the parametrized assertion covers all eight required spellings plus the done/missing/two-key/commit-identifier refusals, which I re-ran green at the reviewed commit.",
+    "scope_discipline": "the combined diff of the two commits touches exactly the four declared write paths (reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html) and the plan diff carries no plan-version/plan-modified edit."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the landed change makes the decorated-field matcher accept closing bold before the colon (reckon/crew/reports.py:122-125) and the parametrized assertion covers all eight required spellings plus the done/missing/two-key/commit-identifier refusals, which I re-ran green at the reviewed commit.\nSCORE evidence: 20\nJUSTIFICATION evidence: independent re-run in a scratch tree of the base revision returned 59 passed and of the reviewed commit returned 62 passed with zero added failures, and the recorded after log shows the reproduction failed on exactly '- **status**: complete' and '**status**: complete' (2 failed, 60 passed in 0.79s), so the gate measures what the done-when asserts and its result is on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the combined diff of the two commits touches exactly the four declared write paths (reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html) and the plan diff carries no plan-version/plan-modified edit.\nSCORE durability: 20\nJUSTIFICATION durability: reverting the matcher to the base form makes the two new emphasis cases raise ManifestParseError \u2014 proven by the reproduction at base (tests/test_manifest_parse_format.py:403) where 2 failed and 60 passed \u2014 and the done-names-the-word refusal test survives the same gate.\nSCORE fit: 20\nJUSTIFICATION fit: the change adds one `(?:\\*\\*)?` alternation mirroring the existing after-colon and before-key groups in the same compiled pattern (reckon/crew/reports.py:122-125) and introduces no symbols, plan labels, or non-conventional commit subjects.\n",
+  "review_run_id": "r-20260915T115844345244-review-of-the-key-is-found-whatever-decorates-it",
+  "reviewed_base": "95175ec3bcdddeeb2abdc51702f8f385c02daa77",
+  "reviewed_commit": "843ca05c1e2e756efdcd423645397430507208c6",
+  "reviewed_run_id": "r-20260915T095449749154-the-key-is-found-whatever-decorates-it",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T12:36:25.980583+00:00",
+  "total": 100
+}

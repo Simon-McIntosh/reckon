@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 5,
+  "added_failure_ids": [
+    "tests/test_follower_prints_only_policy_rows.py::test_a_noise_pair_prints_nothing_through_the_followers_own_rows",
+    "tests/test_follower_prints_only_policy_rows.py::test_a_row_the_policy_held_is_not_remembered_as_delivered",
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_with_nothing_new_draws_no_rows",
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_delivers_only_the_transitions_written_while_away",
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted"
+  ],
+  "added_failures_note": "derived from the reviewed run's own gate logs: gates/head-selection.log names 8 FAILED ids and gates/base-selection.log records '3 failed' but prints no FAILED ids, so the id difference alone would report all 8 as added; the three the reviewed manifest names pre-existing were confirmed failing at 16423b79 in an exact base tree (gates/base-pre-existing-trio.log, 3 failed in 311.69s), leaving these 5 added by this run.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:_follow_watch_lines",
+    "reckon/cli.py:crew_follow"
+  ],
+  "completed_at": "2026-09-29T08:12:55.533Z",
+  "dispatched_at": "2026-09-29T03:59:59Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "2855",
+      "text": "the seek target is taken from stream_path.stat().st_size after _fleet_replay has already read the stream (reckon/cli.py:2412), so a transition appended in that window is neither replayed nor followed and the pane holds the run's previous state until the next arming."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times/manifest.md",
+      "line": "46",
+      "text": "baseline_suite and after_suite are prose rather than the contract's JSON, so review.py:977-982 resolves no log and every read through read_review reports the added-failure count as unmeasured instead of the five this run added."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times/gates/base-selection.log",
+      "line": "9",
+      "text": "the base arm records its \"3 failed\" without printing FAILED node ids, so the id difference the done-when rests on cannot be computed from the two logs and the run's own instrument reports all eight head ids as added."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read all three commits against 16423b79; reckon/cli.py carries _recorded_fleet_times, _fleet_replay and the replay branch (reckon/cli.py:2826-2857), the reannounced gate (reckon/cli.py:3358-3444), two rewritten test files, the harness reference paragraph, the evidence fragment and its figure.",
+    "done_when": "the done-when names the six replay cases, the Monitor case, the harness paragraph, the observed mutation and zero added failures by id; the first four are recorded (24 passed in scope, negative control 7 failed of 24) but gates/head-selection.log:9-16 shows five added ids inside the very row-policy and follow files the clause names, so the by-id clause is unmet and the manifest states that.",
+    "goal": "the goal is a replay on every arming, one row per live run carrying the recorded time it entered its state in ascending order; reckon/cli.py:2426-2456 keeps each live run's row, overlaying the state and observed_at the run's own stream last recorded for it and sorting on that stamp.",
+    "manifest": "read; it names the three commits, the 24-passed in-scope run, the observed negative control and the five added failures under follow_ons, but writes baseline_suite (manifest.md:46) and after_suite (manifest.md:54) as prose rather than the contract's JSON, so review.py:_gate_log_path resolves neither log and a read through read_review reports the added-failure count unmeasured.",
+    "write_paths": "read the reviewed manifest.md:3 declared paths against git diff 16423b79..80cdd69b; all seven changed paths are inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_follow_rearm_continues.py:289-299 and :339-341 redden if a replayed row is stamped with the arming time or left in fleet order, as the declared mutation's own log observes, and the local_clock precondition at tests/test_follow_rearm_continues.py:266 keeps the rendered-line assertion from passing vacuously.",
+    "evidence": "gates/head-selection.log:9-16 records eight head failures of which five belong to this run, while gates/base-selection.log:9 records its \"3 failed\" with no FAILED ids, leaving the by-id half of the done-when unreadable from the evidence the run stored.",
+    "fit": "reckon/cli.py:2400-2456 follows the surrounding private-helper idiom and explains a mechanism in its docstring, and no symbol or comment in the diff carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/cli.py:2439-2456 stamps every replayed row from the stream's last record for that run and sorts ascending, and tests/test_follow_rearm_continues.py:248-341 asserts both through the follower's own generator.",
+    "scope_discipline": "every path of git diff 16423b79..80cdd69b lies inside the declared write paths, and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a replay on every arming, one row per live run carrying the recorded time it entered its state in ascending order; reckon/cli.py:2426-2456 keeps each live run's row, overlaying the state and observed_at the run's own stream last recorded for it and sorting on that stamp.\nVERDICT done_when: the done-when names the six replay cases, the Monitor case, the harness paragraph, the observed mutation and zero added failures by id; the first four are recorded (24 passed in scope, negative control 7 failed of 24) but gates/head-selection.log:9-16 shows five added ids inside the very row-policy and follow files the clause names, so the by-id clause is unmet and the manifest states that.\nVERDICT write_paths: read the reviewed manifest.md:3 declared paths against git diff 16423b79..80cdd69b; all seven changed paths are inside them.\nVERDICT manifest: read; it names the three commits, the 24-passed in-scope run, the observed negative control and the five added failures under follow_ons, but writes baseline_suite (manifest.md:46) and after_suite (manifest.md:54) as prose rather than the contract's JSON, so review.py:_gate_log_path resolves neither log and a read through read_review reports the added-failure count unmeasured.\nVERDICT diff: read all three commits against 16423b79; reckon/cli.py carries _recorded_fleet_times, _fleet_replay and the replay branch (reckon/cli.py:2826-2857), the reannounced gate (reckon/cli.py:3358-3444), two rewritten test files, the harness reference paragraph, the evidence fragment and its figure.\nCALL_SITES: reckon/cli.py:_follow_watch_lines, reckon/cli.py:crew_follow\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/cli.py:2439-2456 stamps every replayed row from the stream's last record for that run and sorts ascending, and tests/test_follow_rearm_continues.py:248-341 asserts both through the follower's own generator.\nSCORE evidence: 12\nJUSTIFICATION evidence: gates/head-selection.log:9-16 records eight head failures of which five belong to this run, while gates/base-selection.log:9 records its \"3 failed\" with no FAILED ids, leaving the by-id half of the done-when unreadable from the evidence the run stored.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path of git diff 16423b79..80cdd69b lies inside the declared write paths, and the change carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_follow_rearm_continues.py:289-299 and :339-341 redden if a replayed row is stamped with the arming time or left in fleet order, as the declared mutation's own log observes, and the local_clock precondition at tests/test_follow_rearm_continues.py:266 keeps the rendered-line assertion from passing vacuously.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/cli.py:2400-2456 follows the surrounding private-helper idiom and explains a mechanism in its docstring, and no symbol or comment in the diff carries a plan, sprint or ticket label.\nFINDING reckon/cli.py:2855 the seek target is taken from stream_path.stat().st_size after _fleet_replay has already read the stream (reckon/cli.py:2412), so a transition appended in that window is neither replayed nor followed and the pane holds the run's previous state until the next arming.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times/manifest.md:46 baseline_suite and after_suite are prose rather than the contract's JSON, so review.py:977-982 resolves no log and every read through read_review reports the added-failure count as unmeasured instead of the five this run added.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times/gates/base-selection.log:9 the base arm records its \"3 failed\" without printing FAILED node ids, so the id difference the done-when rests on cannot be computed from the two logs and the run's own instrument reports all eight head ids as added.\n",
+  "review_run_id": "legacy-29097f8ae9a8",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "16423b795127b784ffefbfd4c3944cd583b477f1",
+  "reviewed_head_sha": "80cdd69bfe4cea0652efd69d9c0e52e14ae4fc4e",
+  "reviewed_run_id": "r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times",
+  "reviewer_measured_added_failures": {
+    "count": 5,
+    "ids": [
+      "tests/test_follower_prints_only_policy_rows.py::test_a_noise_pair_prints_nothing_through_the_followers_own_rows",
+      "tests/test_follower_prints_only_policy_rows.py::test_a_row_the_policy_held_is_not_remembered_as_delivered",
+      "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_with_nothing_new_draws_no_rows",
+      "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_delivers_only_the_transitions_written_while_away",
+      "tests/test_follower_rearm_shows_nothing_twice.py::test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted"
+    ],
+    "logs": {
+      "added_five_reproduction": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T052223319139-review-of-rearm-replays-the-fleet-with-recorded-times/gates/head-added-five.log",
+      "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times/gates/base-selection.log",
+      "base_arm_reproduction": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T052223319139-review-of-rearm-replays-the-fleet-with-recorded-times/gates/base-pre-existing-trio.log",
+      "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times/gates/head-selection.log"
+    },
+    "method": "pytest FAILED-id set difference over the reviewed run's own base and head selection logs, with the three pre-existing ids re-measured at the base revision in a scratch tree of that revision",
+    "preexisting_confirmed_at_base_sha": "16423b795127b784ffefbfd4c3944cd583b477f1",
+    "preexisting_ids": [
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+      "tests/test_crew_watch_lifetime.py::test_dispatch_is_admitted_during_the_stale_terminal_window",
+      "tests/test_follow_observes_other_sessions.py::test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three"
+    ],
+    "raw_id_difference_from_logs": 8
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T05:59:29.456123+00:00",
+  "total": 84
+}

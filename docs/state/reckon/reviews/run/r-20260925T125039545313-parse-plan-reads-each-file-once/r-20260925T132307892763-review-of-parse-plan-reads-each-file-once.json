@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/serve.py:Handler.do_GET",
+    "reckon/ledger.py:evidence_records_for_plan",
+    "reckon/_store.py:list_followups_across",
+    "reckon/_store.py:list_questions_across",
+    "reckon/evidence.py:synthesize_landed_record",
+    "reckon/doccheck.py:_read_lifecycle_state",
+    "reckon/doccheck.py:audit_file",
+    "reckon/doccheck.py:_collect_corpus",
+    "reckon/doccheck.py:audit_links",
+    "reckon/doccheck.py:slug_collision_findings"
+  ],
+  "completed_at": "2026-09-25T13:31:50Z",
+  "dispatched_at": "2026-09-25T13:23:29Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T125039545313-parse-plan-reads-each-file-once/manifest.md",
+      "line": "13",
+      "text": "the tests field contains the unsubstituted placeholder <pytest named gate> instead of the gate command that actually ran; gate.log records only the symbolic label pytest-named-parse-doccheck-audit-gate, so a later reader cannot rerun the claimed 113-test selection exactly from the durable receipt."
+    },
+    {
+      "file": "tests/test_parse_plan_memo.py",
+      "line": "45",
+      "text": "test_unchanged_plan_is_read_once exercises parse_plan, lifecycle and audit_links but never audit_file; changing reckon/doccheck.py:audit_file back to a direct Path.read_text leaves the test green, so the promised one-read question/followup audit path lacks a regression guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "I read all three commits against the base: the first adds shared text/full-record/link memos and the regression tests, the second normalizes relative corpus roots to one absolute path identity, and the third records the timings, mutation receipt, residual profile and figure without changing coordinator-owned plan state.",
+    "done_when": "I read every named receipt: gate.log records 113 passed at the reviewed head; the three-run medians are audit 35.39 to 14.58 s, roadmap 11.82 to 7.81 s and discovery 9.71 to 0.98 s; reproduction.log records two base reads; and negative-control.log records the path-only mutation failing all three invalidation cases, although the exact pytest argv is not recoverable from the manifest.",
+    "goal": "I read live plan section s3 and the source goal; reckon/_plan_html.py:1173-1305 adds one stat-keyed shared text read plus a deep-copied parse_plan memo, and reckon/doccheck.py routes lifecycle, file, link-corpus and collision reads through those memos.",
+    "manifest": "The manifest names all three commits, all six changed paths, eleven receipt paths, the exact-head result, mutation failure and residual attribution, but manifest.md:13 violates its own contract by retaining the unsubstituted command placeholder <pytest named gate>.",
+    "write_paths": "The range 53b0e22a..4784f497 changes exactly the six declared paths: reckon/_plan_html.py, reckon/doccheck.py, tests/test_parse_plan_memo.py, the cumulative evidence HTML, one SVG under the declared figure directory, and the owning plan HTML."
+  },
+  "justifications": {
+    "durability": "tests/test_parse_plan_memo.py:35-110 reddens on removed caching, path-only invalidation and returned-object aliasing, but lines 45-52 never call audit_file, so the question/followup per-file audit read is not guarded against a return to direct file reads.",
+    "evidence": "gate.log, reproduction.log, negative-control.log and the six before/after timing logs carry quantitative receipts, but manifest.md:13 substitutes <pytest named gate> for the required executable command and the after timing receipts are pinned to the first implementation commit rather than the reviewed head.",
+    "fit": "reckon/_plan_html.py:1173 and reckon/doccheck.py:1334 reuse the existing reckon.file_memo.memoized convention and the new names describe mechanisms rather than plan or release labels.",
+    "goal_fidelity": "reckon/_plan_html.py:1173-1305 and reckon/doccheck.py:340-341,1211-1215,1288-1369,1445-1518 implement the plan's stat-identity reuse, isolated-return and one-physical-read behavior.",
+    "scope_discipline": "git diff 53b0e22a..4784f497 contains only the six paths declared at manifest.md:3, and the cumulative evidence metadata replacements retain the earlier section while appending the new anchor."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 53b0e22ad51909f97c1fb415c66958e9bd7ae0f7\nreviewed_head_sha: 4784f4976e1d6960b07569119ca61e8720e9f12f\nVERDICT goal: I read live plan section s3 and the source goal; reckon/_plan_html.py:1173-1305 adds one stat-keyed shared text read plus a deep-copied parse_plan memo, and reckon/doccheck.py routes lifecycle, file, link-corpus and collision reads through those memos.\nVERDICT done_when: I read every named receipt: gate.log records 113 passed at the reviewed head; the three-run medians are audit 35.39 to 14.58 s, roadmap 11.82 to 7.81 s and discovery 9.71 to 0.98 s; reproduction.log records two base reads; and negative-control.log records the path-only mutation failing all three invalidation cases, although the exact pytest argv is not recoverable from the manifest.\nVERDICT write_paths: The range 53b0e22a..4784f497 changes exactly the six declared paths: reckon/_plan_html.py, reckon/doccheck.py, tests/test_parse_plan_memo.py, the cumulative evidence HTML, one SVG under the declared figure directory, and the owning plan HTML.\nVERDICT manifest: The manifest names all three commits, all six changed paths, eleven receipt paths, the exact-head result, mutation failure and residual attribution, but manifest.md:13 violates its own contract by retaining the unsubstituted command placeholder <pytest named gate>.\nVERDICT diff: I read all three commits against the base: the first adds shared text/full-record/link memos and the regression tests, the second normalizes relative corpus roots to one absolute path identity, and the third records the timings, mutation receipt, residual profile and figure without changing coordinator-owned plan state.\nCALL_SITES: reckon/serve.py:Handler.do_GET, reckon/ledger.py:evidence_records_for_plan, reckon/_store.py:list_followups_across, reckon/_store.py:list_questions_across, reckon/evidence.py:synthesize_landed_record, reckon/doccheck.py:_read_lifecycle_state, reckon/doccheck.py:audit_file, reckon/doccheck.py:_collect_corpus, reckon/doccheck.py:audit_links, reckon/doccheck.py:slug_collision_findings\nSCORE goal_fidelity: 20\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 17\nSCORE fit: 20\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:1173-1305 and reckon/doccheck.py:340-341,1211-1215,1288-1369,1445-1518 implement the plan's stat-identity reuse, isolated-return and one-physical-read behavior.\nJUSTIFICATION evidence: gate.log, reproduction.log, negative-control.log and the six before/after timing logs carry quantitative receipts, but manifest.md:13 substitutes <pytest named gate> for the required executable command and the after timing receipts are pinned to the first implementation commit rather than the reviewed head.\nJUSTIFICATION scope_discipline: git diff 53b0e22a..4784f497 contains only the six paths declared at manifest.md:3, and the cumulative evidence metadata replacements retain the earlier section while appending the new anchor.\nJUSTIFICATION durability: tests/test_parse_plan_memo.py:35-110 reddens on removed caching, path-only invalidation and returned-object aliasing, but lines 45-52 never call audit_file, so the question/followup per-file audit read is not guarded against a return to direct file reads.\nJUSTIFICATION fit: reckon/_plan_html.py:1173 and reckon/doccheck.py:1334 reuse the existing reckon.file_memo.memoized convention and the new names describe mechanisms rather than plan or release labels.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T125039545313-parse-plan-reads-each-file-once/manifest.md:13 the tests field contains the unsubstituted placeholder <pytest named gate> instead of the gate command that actually ran; gate.log records only the symbolic label pytest-named-parse-doccheck-audit-gate, so a later reader cannot rerun the claimed 113-test selection exactly from the durable receipt.\nFINDING tests/test_parse_plan_memo.py:45 test_unchanged_plan_is_read_once exercises parse_plan, lifecycle and audit_links but never audit_file; changing reckon/doccheck.py:audit_file back to a direct Path.read_text leaves the test green, so the promised one-read question/followup audit path lacks a regression guard.",
+  "review_run_id": "r-20260925T132307892763-review-of-parse-plan-reads-each-file-once",
+  "reviewed_base_sha": "53b0e22ad51909f97c1fb415c66958e9bd7ae0f7",
+  "reviewed_head_sha": "4784f4976e1d6960b07569119ca61e8720e9f12f",
+  "reviewed_run_id": "r-20260925T125039545313-parse-plan-reads-each-file-once",
+  "reviewer": "review-of-parse-plan-reads-each-file-once",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:29:26.145911+00:00",
+  "total": 94
+}

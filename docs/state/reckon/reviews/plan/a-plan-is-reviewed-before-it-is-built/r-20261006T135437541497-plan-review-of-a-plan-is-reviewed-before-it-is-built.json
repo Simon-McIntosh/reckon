@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T13:59:31.737Z",
+  "dispatched_at": "2026-10-06T13:54:57Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:1180",
+      "id": "reuse_search-1",
+      "reason": "the plan must collapse \u00a723 to the two remaining call sites or state the remaining slice, rather than describe already-landed machinery as new.",
+      "text": "\u00a723 is written as pending work but its target machinery already exists at the base: `store_delivered_reviews` is defined (plan_review.py:1180) and called by the gate (reckon/crew/routing.py:2672); `_store_delivered_report` is already private (plan_review.py:1136); `write_review_sidecar` already takes `store_error` (plan_review.py:1018); `read_plan_review` is already re-expressed over the coverage predicate with the `plan=` argument (plan_review.py:748, 775); a test named for the section already exists (tests/test_a_delivered_review_that_is_not_stored_says_why.py:187); and the section's stated base, `routing._store_delivered_plan_review`, returns nothing from `grep -rn '_store_delivered_plan_review' reckon/`. The only part of \u00a723's done-when still unmet is that `reckon/cli.py:2613` and `reckon/mcp.py:4324` still call `read_plan_review` without the plan content. A dispatch of \u00a723 as written would re-create existing code and its narrative contradicts the tree.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:2676",
+      "id": "duplicate_owner-1",
+      "reason": "the sections should name the one owner that turns (project, slug) into the plan document the coverage predicate reads, so three callers do not fork the resolution the gate already performs.",
+      "text": "the plan has no single owner named for resolving a plan's document path from (project, slug): the gate obtains it as `resource.path` (routing.py:2676) while \u00a723 asks both `reckon/cli.py:2613` and `reckon/mcp.py:4324` to \"resolve the plan's path and pass it\" \u2014 two additional independent resolutions of one join, with no shared resolver named in \u00a723 or \u00a726, and `_schema.resolve_plan_ref` (reckon/_schema.py:714) resolves a ref/scope, not a document path.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "51302c5ad9261fde333088a6f187a8e2d4cac936ea8bcad5091518f4fd696058",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 213,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the one owner already exists: reckon.resources.resolve_resource turns (project, slug) into the plan document for the gate (routing.py:2659) and, through the store's docs-directory lookup _store._resolve_html_file, for the CLI and MCP readers; no second resolution of the join is written, only the mounted docs directory is looked up before calling it",
+      "when": "2026-10-06T14:00:47.291671+00:00"
+    },
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "timing, not a defect: section 23 was cut into two nodes (comment c-20261006T124500Z-s23-two-nodes); the first landed at 00b257189 with exactly the machinery named, the second (the CLI and MCP callers) is in review now, and the section is collapsed with its landing summary when that node merges",
+      "when": "2026-10-06T14:00:46.772324+00:00"
+    }
+  },
+  "review_run_id": "r-20261006T135437541497-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "79a80fbeef07cd6bd634d4b48e9a68aa412bb6db",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716's `section_prose` is one reader on `reckon/_plan_html.py` replacing the slicer in `plan_review.py` and the three separate prose extractors, over one `_structural_spans` parse, so substantial boundary and slicing behaviour hides behind one call.",
+    "duplicate_owner": "a finding \u2014 \u00a723 and \u00a726 each add a caller that must resolve a plan's document path (`reckon/cli.py:2613`, `reckon/mcp.py:4324`), and neither names the one owner of that resolution that the gate already uses (`reckon/crew/routing.py:2676` passes `resource.path`) \u2014 the recurring plan-path-resolution duplicate.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 states its net is one public definition (`section_prose`) with the interim `strip_tags` retired to private and the reused refusal family, \u00a723 states its net is level (`store_delivered_reviews` added, `store_delivered_report` made private), \u00a726 names its +1 (`review_coverage`) and that no second reader is added, and \u00a727 states nothing public is added or retired.",
+    "reuse_search": "a finding \u2014 \u00a723 describes as future work machinery that already exists at the base (`store_delivered_reviews`, the private store step, the `store_error` sidecar field and the coverage-aware `read_plan_review`), so the plan is rebuilding what it does not cite as built.",
+    "thin_wrapper": "pass \u2014 no open section adds a layer over existing machinery without justification: \u00a723 removes a wrapper (making the hoisted store step the one owner), and \u00a716 replaces extractors rather than forwarding to them."
+  },
+  "section_digests": {
+    "_document": "8bdbd14686108be37e8e1f4110438cdbb25dded36e46c1bc84d3aaf8a649a46c",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "c98ed06a0b056c11cea2efa42680c30fdaf88fdeae3ca43d04f7b31af17fed20",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "9392bdfa49fcf52b6856100b3a6d3824e000fd4e4a4af7900f7ec262acd82fa0",
+    "s22": "5a1cf8eab82a83a4877f9f74ee81283174341d70a24da01bbf97695d84564e9f",
+    "s23": "2f89e8f7bbc5795ecad4f5113a6a991a364d10143c7ec6c80f5368e4ccaa6df1",
+    "s24": "b0870b19487b883350a25f7c90d57a62bc3bcd5f015e3c0e42caa08281ccfb11",
+    "s25": "55c54e0c4d76fc729ae8aae0b9a190890292be3f312bc2851a4557138e3967ee",
+    "s26": "f1f71f91c594556223203d07d03191b1ab5fba420d4d3457af0cd8db43fa1c3f",
+    "s27": "dfd7b4cc90493438163a6aa92cc360fc905c83b9e08a11bc7c8457a36038dc95",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:00:37.571789+00:00"
+}

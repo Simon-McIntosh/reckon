@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:2485 watch_follow(transitions=True)",
+    "reckon/crew/runs.py:2055 the watcher service argv",
+    "reckon/crew/recovery.py:4843 watch_ticker",
+    "reckon/crew/recovery.py:4882 the tick's stop call",
+    "reckon/crew/recovery.py:4951 watch_follow calling watch_ticker",
+    "reckon/crew/recovery.py:923 dispatch_review_for_run composing the brief through _review_dispatch_fields at :358"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T16:01:43.383409+00:00",
+  "findings": [
+    {
+      "file": "tests/test_a_delivered_review_ends_its_turn.py",
+      "line": "189",
+      "text": "the delivered_at assertion compares the function's own return value against max() over that function's own two returned mtimes while the fixture dates them equal, so it holds whatever the code does and cannot redden on the earlier-write regression the done-when's later-of-those-two-writes clause exists to catch."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "589",
+      "text": "the manifest_status_is_template(status) clause cannot fire, because it is reached only when status == \"complete\" and a template status carries a bar so it never equals complete; the completeness check is the equality test alone, so the manifest-template protection is not what refuses a template there."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read both commits against the base, commit by commit; 9cda3533 lands the recovery helpers, the tick call and the brief clause with the new test module, and e66d34a0 re-wraps the composed done-when string and adds the figure script and the two documentation pages, with nothing outside the declared paths in either commit.",
+    "done_when": "the measure is a watcher tick that stops a delivered review whose stream keeps growing past the later of its two writes, signalling that run's recorded pid only, recording ended_after_delivery with the grace and the stop time, with the four exclusion cases and the brief left intact; tests/test_a_delivered_review_ends_its_turn.py:166, :192, :202, :211, :225 and :240 drive watch_ticker with a recording stub and hold exactly those clauses.",
+    "goal": "the goal is that a review which has already delivered stops holding its lane instead of streaming on, that the composed brief says so, and that other readers can ask whether a run has delivered; reckon/crew/recovery.py:640 adds review_delivered, :672 adds _stop_delivered_reviews with its five-minute grace constant at :520, :4882 runs it on every tick inside the watcher registration the same function opens at :4867, and :403 puts the rule into the composed brief.",
+    "manifest": "read; it states 7 passed for the new module and 9 for tests/test_review_reflex_sweep.py, records the negative control at negative-control.log with the declared mutation verbatim on its first line and case 1 observed not stopped, attributes the wider selection's 4 failures to base, and leaves the plan's terminal state to the coordinator.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, tests/test_a_delivered_review_ends_its_turn.py, docs/plans/a-review-dies-where-nobody-is-looking.html, docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html and the docs/figures/a-review-dies-where-nobody-is-looking directory; git diff ef9ddbac94090787a7bcf8a81b9a38e7286a0e59..e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f touches only those paths."
+  },
+  "justifications": {
+    "durability": "the fixture at tests/test_a_delivered_review_ends_its_turn.py:97 dates both writes identically, so a min-instead-of-max regression survives all seven tests, and the assertion added at :189 to guard that clause compares the function's own return values with one another.",
+    "evidence": "the manifest and my rerun of tests/test_a_delivered_review_ends_its_turn.py record 7 passed at head with the negative control red under the declared mutation, but the measure's later-of-those-two-writes clause has no assertion that can redden, per the finding at tests/test_a_delivered_review_ends_its_turn.py:189, and the gate logs carry no revision, tree or command header.",
+    "fit": "reckon/crew/recovery.py:520-737 follows the module's private-helper idiom with a section banner, reuses _mutate_pointer and the identity-checked signaller, and names the emitted facts by mechanism with no plan, sprint or ticket label in any identifier.",
+    "goal_fidelity": "reckon/crew/recovery.py:4882 stops the run from the tick the watcher service actually runs, reachable through reckon/cli.py:2485 and reckon/crew/runs.py:2055, and :403 states the rule in the brief, so both halves of the goal are live in production rather than only under test.",
+    "scope_discipline": "every path in git diff ef9ddbac94090787a7bcf8a81b9a38e7286a0e59..e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f lies inside the declared scope, and the plan page change at docs/plans/a-review-dies-where-nobody-is-looking.html is appended prose with anchors rather than a status write."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260923T143539802664-a-delivered-review-ends-its-turn\n(node a-delivered-review-ends-its-turn, plan reckon:a-review-dies-where-nobody-is-looking \u00a74),\nread in the reviewed worktree at e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f over base ef9ddbac94090787a7bcf8a81b9a38e7286a0e59.\nreviewed_base_sha: ef9ddbac94090787a7bcf8a81b9a38e7286a0e59\nreviewed_head_sha: e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f\n\nVERDICT goal: the goal is that a review which has already delivered stops holding its lane instead of streaming on, that the composed brief says so, and that other readers can ask whether a run has delivered; reckon/crew/recovery.py:640 adds review_delivered, :672 adds _stop_delivered_reviews with its five-minute grace constant at :520, :4882 runs it on every tick inside the watcher registration the same function opens at :4867, and :403 puts the rule into the composed brief.\nVERDICT done_when: the measure is a watcher tick that stops a delivered review whose stream keeps growing past the later of its two writes, signalling that run's recorded pid only, recording ended_after_delivery with the grace and the stop time, with the four exclusion cases and the brief left intact; tests/test_a_delivered_review_ends_its_turn.py:166, :192, :202, :211, :225 and :240 drive watch_ticker with a recording stub and hold exactly those clauses.\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, tests/test_a_delivered_review_ends_its_turn.py, docs/plans/a-review-dies-where-nobody-is-looking.html, docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html and the docs/figures/a-review-dies-where-nobody-is-looking directory; git diff ef9ddbac94090787a7bcf8a81b9a38e7286a0e59..e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f touches only those paths.\nVERDICT manifest: read; it states 7 passed for the new module and 9 for tests/test_review_reflex_sweep.py, records the negative control at negative-control.log with the declared mutation verbatim on its first line and case 1 observed not stopped, attributes the wider selection's 4 failures to base, and leaves the plan's terminal state to the coordinator.\nVERDICT diff: read both commits against the base, commit by commit; 9cda3533 lands the recovery helpers, the tick call and the brief clause with the new test module, and e66d34a0 re-wraps the composed done-when string and adds the figure script and the two documentation pages, with nothing outside the declared paths in either commit.\nSCORE goal_fidelity: 19\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 16\nSCORE fit: 19\nCALL_SITES: reckon/cli.py:2485 watch_follow(transitions=True), reckon/crew/runs.py:2055 the watcher service argv, reckon/crew/recovery.py:4843 watch_ticker, reckon/crew/recovery.py:4882 the tick's stop call, reckon/crew/recovery.py:4951 watch_follow calling watch_ticker, reckon/crew/recovery.py:923 dispatch_review_for_run composing the brief through _review_dispatch_fields at :358\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:4882 stops the run from the tick the watcher service actually runs, reachable through reckon/cli.py:2485 and reckon/crew/runs.py:2055, and :403 states the rule in the brief, so both halves of the goal are live in production rather than only under test.\nJUSTIFICATION evidence: the manifest and my rerun of tests/test_a_delivered_review_ends_its_turn.py record 7 passed at head with the negative control red under the declared mutation, but the measure's later-of-those-two-writes clause has no assertion that can redden, per the finding at tests/test_a_delivered_review_ends_its_turn.py:189, and the gate logs carry no revision, tree or command header.\nJUSTIFICATION scope_discipline: every path in git diff ef9ddbac94090787a7bcf8a81b9a38e7286a0e59..e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f lies inside the declared scope, and the plan page change at docs/plans/a-review-dies-where-nobody-is-looking.html is appended prose with anchors rather than a status write.\nJUSTIFICATION durability: the fixture at tests/test_a_delivered_review_ends_its_turn.py:97 dates both writes identically, so a min-instead-of-max regression survives all seven tests, and the assertion added at :189 to guard that clause compares the function's own return values with one another.\nJUSTIFICATION fit: reckon/crew/recovery.py:520-737 follows the module's private-helper idiom with a section banner, reuses _mutate_pointer and the identity-checked signaller, and names the emitted facts by mechanism with no plan, sprint or ticket label in any identifier.\nFINDING tests/test_a_delivered_review_ends_its_turn.py:189 the delivered_at assertion compares the function's own return value against max() over that function's own two returned mtimes while the fixture dates them equal, so it holds whatever the code does and cannot redden on the earlier-write regression the done-when's later-of-those-two-writes clause exists to catch.\nFINDING reckon/crew/recovery.py:589 the manifest_status_is_template(status) clause cannot fire, because it is reached only when status == \"complete\" and a template status carries a bar so it never equals complete; the completeness check is the equality test alone, so the manifest-template protection is not what refuses a template there.\n",
+  "review_run_id": "r-20260923T160143383409-review-of-a-delivered-review-ends-its-turn",
+  "reviewed_base_sha": "ef9ddbac94090787a7bcf8a81b9a38e7286a0e59",
+  "reviewed_head_sha": "e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f",
+  "reviewed_run_id": "r-20260923T143539802664-a-delivered-review-ends-its-turn",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T17:25:56.266425+00:00",
+  "total": 90
+}

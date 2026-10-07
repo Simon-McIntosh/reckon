@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:5442",
+    "reckon/crew/recovery.py:496"
+  ],
+  "completed_at": "2026-10-01T11:38:11.312Z",
+  "dispatched_at": "2026-10-01T11:29:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts/review.md",
+      "line": "84",
+      "severity": "follow-on",
+      "text": "follow-on: the new \"The revision you record\" section is unreachable \u2014 reckon/crew/review.py:241 load_review_prompt has no caller anywhere in reckon/ \u2014 so no reviewer reads this file; the ask that actually reaches a reviewer is only the dispatch done_when, and the node's measure names the prompt as one of its two delivered halves."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1554",
+      "severity": "follow-on",
+      "text": "follow-on: a record carrying reviewed_base_sha or reviewed_head_sha with a null value reaches the row as the key set to null rather than omitted, so a promoted row can name a revision that is not a sha; carried_revision_pair preserves the key by design but no case covers the null value."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against the base \u2014 0841bff48 asks the brief and the prompt for the pair, 91d959b0e carries the pair onto the promoted row's block, 0297bc0ac is the docs-only landing record.",
+    "done_when": "the measure names the brief ask, the prompt ask and the row block; tests/test_a_promoted_row_names_its_reviewed_revision.py asserts all three, and the manifest records the two gate arms (428 passed at fa66c530, 433 passed at 91d959b0e, zero added) and the declared mutation reddening the row case.",
+    "goal": "the node's goal is that a promoted ledger row names the revision its review read; the composed brief asks the reviewer to record the pair (reckon/crew/recovery.py:472, _review_dispatch_fields) and the row now carries it (reckon/crew/review.py:1513 ledger_block through carried_revision_pair).",
+    "manifest": "read; it records base fa66c530 arm 428 passed/0 failed (EXIT=0) and head 91d959b0e 433 passed/0 failed (EXIT=0), the negative control at 2 failed/3 passed (EXIT=1), and it honestly reports the review prompt's inertness as a follow-on.",
+    "write_paths": "`git diff --stat fa66c530..0297bc0ac` lists exactly the five declared paths \u2014 reckon/crew/recovery.py, reckon/crew/prompts/review.md, reckon/crew/review.py, tests/test_a_promoted_row_names_its_reviewed_revision.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-promoted-row-names-its-reviewed-revision.html \u2014 the declared docs/figures directory is unused and no plan meta line is touched."
+  },
+  "justifications": {
+    "durability": "the row, legacy-spelling and bare-block cases fail under the declared mutation (negative control 2 failed, 3 passed), but tests/test_a_promoted_row_names_its_reviewed_revision.py:66,75 are substring-presence checks on the brief and prompt text.",
+    "evidence": "the base and head arms and the mutation receipt are on disk with exit lines, the derivations are reproduced by hand-with positive controls, and the derivation instrument sees synthetic and absent failures before any zero is reported.",
+    "fit": "ledger_block reuses carried_revision_pair and the module idiom, the added lines pass the naming checks, and no new symbol carries a plan label.",
+    "goal_fidelity": "reckon/crew/review.py:1554-1556 writes the canonical pair onto the row block and the row case round-trips a stored record to it, but the prompt half never reaches a reviewer because reckon/crew/review.py:241 load_review_prompt has no caller in reckon/.",
+    "scope_discipline": "git diff --stat fa66c530..0297bc0ac lists exactly the five declared write paths and no plan meta line is modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a promoted ledger row names the revision its review read; the composed brief asks the reviewer to record the pair (reckon/crew/recovery.py:472, _review_dispatch_fields) and the row now carries it (reckon/crew/review.py:1513 ledger_block through carried_revision_pair).\nVERDICT done_when: the measure names the brief ask, the prompt ask and the row block; tests/test_a_promoted_row_names_its_reviewed_revision.py asserts all three, and the manifest records the two gate arms (428 passed at fa66c530, 433 passed at 91d959b0e, zero added) and the declared mutation reddening the row case.\nVERDICT write_paths: `git diff --stat fa66c530..0297bc0ac` lists exactly the five declared paths \u2014 reckon/crew/recovery.py, reckon/crew/prompts/review.md, reckon/crew/review.py, tests/test_a_promoted_row_names_its_reviewed_revision.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-promoted-row-names-its-reviewed-revision.html \u2014 the declared docs/figures directory is unused and no plan meta line is touched.\nVERDICT manifest: read; it records base fa66c530 arm 428 passed/0 failed (EXIT=0) and head 91d959b0e 433 passed/0 failed (EXIT=0), the negative control at 2 failed/3 passed (EXIT=1), and it honestly reports the review prompt's inertness as a follow-on.\nVERDICT diff: read commit by commit against the base \u2014 0841bff48 asks the brief and the prompt for the pair, 91d959b0e carries the pair onto the promoted row's block, 0297bc0ac is the docs-only landing record.\nCALL_SITES: reckon/crew/promotion.py:5442, reckon/crew/recovery.py:496\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1554-1556 writes the canonical pair onto the row block and the row case round-trips a stored record to it, but the prompt half never reaches a reviewer because reckon/crew/review.py:241 load_review_prompt has no caller in reckon/.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base and head arms and the mutation receipt are on disk with exit lines, the derivations are reproduced by hand-with positive controls, and the derivation instrument sees synthetic and absent failures before any zero is reported.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat fa66c530..0297bc0ac lists exactly the five declared write paths and no plan meta line is modified.\nSCORE durability: 17\nJUSTIFICATION durability: the row, legacy-spelling and bare-block cases fail under the declared mutation (negative control 2 failed, 3 passed), but tests/test_a_promoted_row_names_its_reviewed_revision.py:66,75 are substring-presence checks on the brief and prompt text.\nSCORE fit: 18\nJUSTIFICATION fit: ledger_block reuses carried_revision_pair and the module idiom, the added lines pass the naming checks, and no new symbol carries a plan label.\nFINDING reckon/crew/prompts/review.md:84 follow-on: the new \"The revision you record\" section is unreachable \u2014 reckon/crew/review.py:241 load_review_prompt has no caller anywhere in reckon/ \u2014 so no reviewer reads this file; the ask that actually reaches a reviewer is only the dispatch done_when, and the node's measure names the prompt as one of its two delivered halves.\nFINDING reckon/crew/review.py:1554 follow-on: a record carrying reviewed_base_sha or reviewed_head_sha with a null value reaches the row as the key set to null rather than omitted, so a promoted row can name a revision that is not a sha; carried_revision_pair preserves the key by design but no case covers the null value.\n",
+  "review_run_id": "r-20261001T112905240654-review-of-a-promoted-row-names-its-reviewed-revision",
+  "reviewed_base_sha": "fa66c530ce2dc05583a0fdbb96726f7bd77cca96",
+  "reviewed_head_sha": "0297bc0ac85cba48f8a72e45cbe8e976ddae08a6",
+  "reviewed_run_id": "r-20261001T075619492612-a-promoted-row-names-its-reviewed-revision",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T11:52:00+00:00",
+  "total": 91
+}

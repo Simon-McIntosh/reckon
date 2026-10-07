@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/install.py:build_hook_snippet",
+    "reckon/hooks/install.py:install_hook_settings",
+    "reckon/hooks/worker_git_guard.py:main"
+  ],
+  "completed_at": "2026-09-25T22:07:03.117Z",
+  "dispatched_at": "2026-09-25T21:41:00Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/worker_git_guard.py",
+      "line": "230",
+      "text": "a git alias name is outside MUTATING_VERBS, so `git -C <other> -c alias.zap='reset --hard HEAD~1' zap` is allowed and the reset lands in the other checkout (probe E2E, guard-bypass-probe.log)."
+    },
+    {
+      "file": "reckon/hooks/worker_git_guard.py",
+      "line": "232",
+      "text": "an inline environment assignment is not parsed, so `GIT_DIR=<other>/.git GIT_WORK_TREE=<other> git reset --hard` falls back to the segment cwd inside the worktree and is allowed (probe E2E moved the other checkout's HEAD)."
+    },
+    {
+      "file": "reckon/hooks/worker_git_guard.py",
+      "line": "165",
+      "text": "cd tracking recognises only a cd that begins its segment after \"(\" tokens, so `$(cd <other> && git reset --hard)`, backticks, `bash -c '...'`, `{ cd <other>; ...; }` and `X=1 cd <other>` leave the cwd stale and are allowed."
+    },
+    {
+      "file": "reckon/hooks/install.py",
+      "line": "139",
+      "text": "the landed installer entry is reachable only from tests; reckon/cli.py:162 (_configure_crew_guards) wires the two sibling guards through its own composer, so approving the install later needs new wiring rather than the include_git_guard flag alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 2cd573f1; 8d515f5e adds reckon/hooks/worker_git_guard.py (331 lines), the install.py opt-in entry and 7 tests, c9ac064e appends the landing record and the evidence anchor, and no plan-version or plan-modified meta line is touched.",
+    "done_when": "the done_when names the four behaviours, the installer dry run and the three companion suites; the manifest records each with committed logs (docs/figures/a-worker-cannot-write-your-home/gate-worker-git-guard-head.txt 7 passed; base a collection error because the module is absent; companions 36 passed either side), and this review re-ran the named test file at the reviewed head (7 passed) and re-derived the four behaviours in-process.",
+    "goal": "the node's goal is a PreToolUse Bash guard, in scope only under RECKON_RUN_ID, refusing a mutating git verb aimed at any checkout but the run's own, with an installer entry and no install; reckon/hooks/worker_git_guard.py:251-301 decides that, and the probe refuses every resolution route the followup names (-C, --git-dir, --work-tree, `cd &&`, relative paths) while three routes named in this review's dispatch (alias, inline GIT_DIR, command substitution) are allowed in error, as the findings record.",
+    "manifest": "read at the run directory's manifest.md; it records the commit shas, changed paths, the gate command with base and head results, the companion-suite counts, the negative-control log path and its reverted arm, and every claim I re-derived matched.",
+    "write_paths": "the six declared paths cover the diff; git diff --numstat 2cd573f1..c9ac064e lists 13 files, all inside the fence, with 0 deletions on both cumulative documents (94 lines added to the evidence archive, 41 to the plan)."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_git_guard.py:57-74 reddens if the -C or cd resolution regresses (neutering _within in memory flips that case, control in guard-bypass-probe.log), but tests/test_worker_git_guard.py:152 compares two products of one install call and no test covers the alias or GIT_DIR routes.",
+    "evidence": "the done_when's four behaviours, the installer dry run and the companion suites are recorded with committed logs under docs/figures/a-worker-cannot-write-your-home/, and I reproduced the four behaviours and the refusal text in-process.",
+    "fit": "reckon/hooks/worker_git_guard.py mirrors reckon/hooks/native_agent_guard.py (docstring shape, decide/main, deny payload and exit 2), and both commits carry bodies clean of attribution, ticket and plan identifiers.",
+    "goal_fidelity": "reckon/hooks/worker_git_guard.py:286-300 refuses the specified resolution routes, but a git alias (worker_git_guard.py:230) and an inline GIT_DIR (worker_git_guard.py:232) each reach another checkout, proved end-to-end in guard-bypass-probe.log.",
+    "scope_discipline": "every path in git diff --numstat 2cd573f1..c9ac064e lies inside the declared write paths, and the two cumulative documents gain 135 lines with no deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a PreToolUse Bash guard, in scope only under RECKON_RUN_ID, refusing a mutating git verb aimed at any checkout but the run's own, with an installer entry and no install; reckon/hooks/worker_git_guard.py:251-301 decides that, and the probe refuses every resolution route the followup names (-C, --git-dir, --work-tree, `cd &&`, relative paths) while three routes named in this review's dispatch (alias, inline GIT_DIR, command substitution) are allowed in error, as the findings record.\nVERDICT done_when: the done_when names the four behaviours, the installer dry run and the three companion suites; the manifest records each with committed logs (docs/figures/a-worker-cannot-write-your-home/gate-worker-git-guard-head.txt 7 passed; base a collection error because the module is absent; companions 36 passed either side), and this review re-ran the named test file at the reviewed head (7 passed) and re-derived the four behaviours in-process.\nVERDICT write_paths: the six declared paths cover the diff; git diff --numstat 2cd573f1..c9ac064e lists 13 files, all inside the fence, with 0 deletions on both cumulative documents (94 lines added to the evidence archive, 41 to the plan).\nVERDICT manifest: read at the run directory's manifest.md; it records the commit shas, changed paths, the gate command with base and head results, the companion-suite counts, the negative-control log path and its reverted arm, and every claim I re-derived matched.\nVERDICT diff: read commit by commit against base 2cd573f1; 8d515f5e adds reckon/hooks/worker_git_guard.py (331 lines), the install.py opt-in entry and 7 tests, c9ac064e appends the landing record and the evidence anchor, and no plan-version or plan-modified meta line is touched.\nCALL_SITES: reckon/hooks/install.py:build_hook_snippet, reckon/hooks/install.py:install_hook_settings, reckon/hooks/worker_git_guard.py:main\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/hooks/worker_git_guard.py:286-300 refuses the specified resolution routes, but a git alias (worker_git_guard.py:230) and an inline GIT_DIR (worker_git_guard.py:232) each reach another checkout, proved end-to-end in guard-bypass-probe.log.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's four behaviours, the installer dry run and the companion suites are recorded with committed logs under docs/figures/a-worker-cannot-write-your-home/, and I reproduced the four behaviours and the refusal text in-process.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --numstat 2cd573f1..c9ac064e lies inside the declared write paths, and the two cumulative documents gain 135 lines with no deletions.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_worker_git_guard.py:57-74 reddens if the -C or cd resolution regresses (neutering _within in memory flips that case, control in guard-bypass-probe.log), but tests/test_worker_git_guard.py:152 compares two products of one install call and no test covers the alias or GIT_DIR routes.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/hooks/worker_git_guard.py mirrors reckon/hooks/native_agent_guard.py (docstring shape, decide/main, deny payload and exit 2), and both commits carry bodies clean of attribution, ticket and plan identifiers.\nFINDING reckon/hooks/worker_git_guard.py:230 a git alias name is outside MUTATING_VERBS, so `git -C <other> -c alias.zap='reset --hard HEAD~1' zap` is allowed and the reset lands in the other checkout (probe E2E, guard-bypass-probe.log).\nFINDING reckon/hooks/worker_git_guard.py:232 an inline environment assignment is not parsed, so `GIT_DIR=<other>/.git GIT_WORK_TREE=<other> git reset --hard` falls back to the segment cwd inside the worktree and is allowed (probe E2E moved the other checkout's HEAD).\nFINDING reckon/hooks/worker_git_guard.py:165 cd tracking recognises only a cd that begins its segment after \"(\" tokens, so `$(cd <other> && git reset --hard)`, backticks, `bash -c '...'`, `{ cd <other>; ...; }` and `X=1 cd <other>` leave the cwd stale and are allowed.\nFINDING reckon/hooks/install.py:139 the landed installer entry is reachable only from tests; reckon/cli.py:162 (_configure_crew_guards) wires the two sibling guards through its own composer, so approving the install later needs new wiring rather than the include_git_guard flag alone.\n",
+  "review_run_id": "r-20260925T214049011099-review-of-worker-git-stays-in-its-worktree",
+  "reviewed_base_sha": "2cd573f16da3d3e726047091547afe6f4af6d458",
+  "reviewed_head_sha": "c9ac064ed4430263270c4a03668848f980e5f5b1",
+  "reviewed_run_id": "r-20260925T210146231713-worker-git-stays-in-its-worktree",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T22:01:32.487635+00:00",
+  "total": 88
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-28T20:06:07.166Z",
+  "dispatched_at": "2026-09-28T19:50:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "47",
+      "text": "ACTED_WORD and DECLINED_WORD are a second declaration of the response vocabulary that reckon/crew/plan_review.py:116 RESPONSE_ACTIONS already owns, and the reuse map this node's done_when cites states the vocabulary must not be re-invented: a rename on the plan-review side leaves this brief emitting a spelling nothing else recognises, and no test crosses the two."
+    },
+    {
+      "file": "tests/test_review_findings_compose_a_repair.py",
+      "line": "79",
+      "text": "the expected ids are computed by the code under test (repair.review_findings) rather than from an independent source, so the assertion holds for any minting scheme \u2014 a mutation making finding_id return a constant keeps len(ids) == 3 true and still finds that id in a brief whose three lines then carry one colliding id, which is the collision that makes a finding impossible to answer back."
+    },
+    {
+      "file": "tests/test_review_findings_compose_a_repair.py",
+      "line": "92",
+      "text": "the idempotence assertion composes the same stored record twice, so a node_id that ignored the reviewed head would pass while the round identity's discriminating half \u2014 a later review of the same run at a new head being a different round \u2014 is never exercised."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against ba1a26e4275b4f105c6e3050d1d7d6177383f0db; 6ea239a9 adds reckon/crew/repair.py and the test, fac12a7e adds only the evidence fragment and the figure, and neither touches the held reckon/crew/review.py or reckon/crew/recovery.py.",
+    "done_when": "the done_when names tests/test_review_findings_compose_a_repair.py and four assertions \u2014 one node composed, its brief naming all three findings by id, its write scope holding the out-of-fence path, and a second composition returning the same node; all four are present at tests/test_review_findings_compose_a_repair.py:76-97 and the manifest records both arms.",
+    "goal": "the node's goal is to compose exactly one repair node per review round from a stored review's findings; reckon/crew/repair.py:214 compose_repair_node returns that single node, returns None for a finding-less review, and keys the node id on the reviewed run plus the head the review read (reckon/crew/repair.py:112).",
+    "manifest": "read; it records the gate on tests/test_review_findings_compose_a_repair.py as 2 passed EXIT=0, names all three logs, carries the base and head arms as armed JSON with their FAILED ids, and names the negative control with its EXIT=1 and FAILED id.",
+    "write_paths": "the node was fenced to reckon/crew/repair.py, tests/test_review_findings_compose_a_repair.py, the evidence fragment and the figures directory; `git diff --stat ba1a26e4..fac12a7e` returns exactly those four paths and the worktree at fac12a7e is clean."
+  },
+  "justifications": {
+    "durability": "the negative control reddens the three-finding case, but the id assertion at tests/test_review_findings_compose_a_repair.py:79 takes its expected ids from the code under test and the round check at :92 never contrasts a different head.",
+    "evidence": "tests/test_review_findings_compose_a_repair.py:76-97 asserts each of the four things the done_when names, and the reviewed run's gate-base.log (EXIT=2, collection error) beside gate-head.log (EXIT=0, 2 passed) records both arms.",
+    "fit": "reckon/crew/repair.py:47-48 declares its own acted/declined literals where reckon/crew/plan_review.py:116 already declares RESPONSE_ACTIONS, and reckon/crew/repair.py:50-53 carries a write-scope comment above the time-budget constant.",
+    "goal_fidelity": "reckon/crew/repair.py:237-270 composes one node whose stable ids, union write scope and declined-with-reason contract carry the \u00a73 deliverable, though nothing dispatches it yet \u2014 a wiring split the node's own done_when states.",
+    "scope_discipline": "`git diff --stat ba1a26e4..fac12a7e` lists only reckon/crew/repair.py, tests/test_review_findings_compose_a_repair.py and the two evidence paths the fence granted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to compose exactly one repair node per review round from a stored review's findings; reckon/crew/repair.py:214 compose_repair_node returns that single node, returns None for a finding-less review, and keys the node id on the reviewed run plus the head the review read (reckon/crew/repair.py:112).\nVERDICT done_when: the done_when names tests/test_review_findings_compose_a_repair.py and four assertions \u2014 one node composed, its brief naming all three findings by id, its write scope holding the out-of-fence path, and a second composition returning the same node; all four are present at tests/test_review_findings_compose_a_repair.py:76-97 and the manifest records both arms.\nVERDICT write_paths: the node was fenced to reckon/crew/repair.py, tests/test_review_findings_compose_a_repair.py, the evidence fragment and the figures directory; `git diff --stat ba1a26e4..fac12a7e` returns exactly those four paths and the worktree at fac12a7e is clean.\nVERDICT manifest: read; it records the gate on tests/test_review_findings_compose_a_repair.py as 2 passed EXIT=0, names all three logs, carries the base and head arms as armed JSON with their FAILED ids, and names the negative control with its EXIT=1 and FAILED id.\nVERDICT diff: read commit by commit against ba1a26e4275b4f105c6e3050d1d7d6177383f0db; 6ea239a9 adds reckon/crew/repair.py and the test, fac12a7e adds only the evidence fragment and the figure, and neither touches the held reckon/crew/review.py or reckon/crew/recovery.py.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/repair.py:237-270 composes one node whose stable ids, union write scope and declined-with-reason contract carry the \u00a73 deliverable, though nothing dispatches it yet \u2014 a wiring split the node's own done_when states.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_review_findings_compose_a_repair.py:76-97 asserts each of the four things the done_when names, and the reviewed run's gate-base.log (EXIT=2, collection error) beside gate-head.log (EXIT=0, 2 passed) records both arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat ba1a26e4..fac12a7e` lists only reckon/crew/repair.py, tests/test_review_findings_compose_a_repair.py and the two evidence paths the fence granted.\nSCORE durability: 14\nJUSTIFICATION durability: the negative control reddens the three-finding case, but the id assertion at tests/test_review_findings_compose_a_repair.py:79 takes its expected ids from the code under test and the round check at :92 never contrasts a different head.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/repair.py:47-48 declares its own acted/declined literals where reckon/crew/plan_review.py:116 already declares RESPONSE_ACTIONS, and reckon/crew/repair.py:50-53 carries a write-scope comment above the time-budget constant.\nFINDING reckon/crew/repair.py:47 ACTED_WORD and DECLINED_WORD are a second declaration of the response vocabulary that reckon/crew/plan_review.py:116 RESPONSE_ACTIONS already owns, and the reuse map this node's done_when cites states the vocabulary must not be re-invented: a rename on the plan-review side leaves this brief emitting a spelling nothing else recognises, and no test crosses the two.\nFINDING tests/test_review_findings_compose_a_repair.py:79 the expected ids are computed by the code under test (repair.review_findings) rather than from an independent source, so the assertion holds for any minting scheme \u2014 a mutation making finding_id return a constant keeps len(ids) == 3 true and still finds that id in a brief whose three lines then carry one colliding id, which is the collision that makes a finding impossible to answer back.\nFINDING tests/test_review_findings_compose_a_repair.py:92 the idempotence assertion composes the same stored record twice, so a node_id that ignored the reviewed head would pass while the round identity's discriminating half \u2014 a later review of the same run at a new head being a different round \u2014 is never exercised.\n",
+  "review_run_id": "r-20260928T195034464501-review-of-review-findings-compose-one-repair",
+  "reviewed_base_sha": "ba1a26e4275b4f105c6e3050d1d7d6177383f0db",
+  "reviewed_head_sha": "fac12a7ef70bf14d55739c5cdf16facc59045311",
+  "reviewed_run_id": "r-20260928T193846170874-review-findings-compose-one-repair",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T20:01:44.473412+00:00",
+  "total": 86
+}

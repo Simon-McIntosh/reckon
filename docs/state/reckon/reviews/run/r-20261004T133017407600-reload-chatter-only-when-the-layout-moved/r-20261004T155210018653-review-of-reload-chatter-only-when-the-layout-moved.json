@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured 0 added failures: the reviewed run's two gate logs (gate-base.log 54 passed EXIT=0; gate-after.log 59 passed EXIT=0) both reach their summary line with no FAILED/ERROR node id, so the head failure set minus the base failure set is empty. Derived directly from the two logs the reviewed manifest names under test_logs, because the manifest carries no baseline_suite/after_suite JSON fields for the store's read-path annotator to read (see finding).",
+  "backend": "clive-local",
+  "base_log_revision": "a5442aa2",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:4097 (resume layout comparison in _follow_watch_lines)",
+    "reckon/cli.py:4816 (crew_follow pane_line gate on FOLLOWER_FORMAT_EVENT)",
+    "reckon/cli.py:4896 (crew_follow pane_line gate on FOLLOWER_PRODUCER_RELOADING_EVENT)"
+  ],
+  "completed_at": "2026-10-04T16:01:07.900Z",
+  "dispatched_at": "2026-10-04T15:52:29Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "the reviewed manifest carries the two gate logs under test_logs and a prose tests line, but not the dispatch contract's baseline_suite/after_suite JSON objects, so the review store's own read path (reckon/crew/review.py annotate_review_of_run) finds no base or head log and will report this run's added-failure count as unmeasured when the record is read back, even though both logs show zero failures and this record records 0. The store's suite fields should be written on the reviewed run's next manifest so the read-path annotation and this hand-derived record agree."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "3076",
+      "severity": "follow-on",
+      "text": "_ticker_layout_signature keys on an unordered-at-the-render-level list of fixed-grid constants plus MIN_WIDTH; a move that reorders the fixed cells while preserving the multiset of widths and the composed MIN_WIDTH would leave the signature unchanged and print no marker, so a genuine layout move could pass unmarked. No such reorder exists in the tree today and the plan's stated cases do not cover it; recorded so the next reader knows the signature's boundary rather than assuming it sees every layout change."
+    }
+  ],
+  "head_log_revision": "1635938a8",
+  "item_verdicts": {
+    "call_sites": "verified the two production call sites the change reaches: crew_follow's event loop for FOLLOWER_FORMAT_EVENT and FOLLOWER_PRODUCER_RELOADING_EVENT.",
+    "diff": "reckon/cli.py +106/-16 over four files; the signature helper, the on-poll layout carry, the resume comparison, and the pane_line gate on two event families.",
+    "done_when": "the reviewed manifest is shape-correct on every key except the contract baseline_suite/after_suite suite fields, which it omits.",
+    "goal": "s44: reload chatter reaches the pane only when the layout moved or the reload failed; the commit implements exactly that rule.",
+    "manifest": "manifest fields complete and its head/base arithmetic is internally consistent and independently reproducible; suite fields absent (see finding).",
+    "write_paths": "four changed paths, all within the reviewed node's declared write scope."
+  },
+  "justifications": {
+    "durability": "every behaviour the measure names has a failing-flip test in the commit: reinstating the unconditional marker fails test_a_reload_whose_grid_did_not_move_keeps_the_pane_quiet (verified by the reproduced negative control), emitting two markers fails the len(marks)==1 assertion, and echoing the in-window producer note to the pane fails the all(pane_line is False) assertion; the producer-stop pane gate has its own end-to-end test (test_the_pane_echoes_a_producer_stop_only_when_work_is_at_stake). Comments state the mechanism (the marker 'is owed only when the replacement image's grid differs'), not the work item.",
+    "evidence": "the manifest's head arithmetic reproduces independently: the four-file gate at head 1635938a8 re-run in the reviewed worktree reads 59 passed in 101.11s, EXIT=0, matching the manifest's 59 passed; the base arm log reads 54 passed EXIT=0, and the diff adds exactly 5 test cases (4 in tests/test_follow_rearm_continues.py, 1 in tests/test_producer_says_why_it_stops.py), so 54+5=59. The declared negative control reproduces: forcing layout_changed=True on a scratch copy under /tmp drops test_a_reload_whose_grid_did_not_move_keeps_the_pane_quiet to assert True is False, EXIT=1. The count is 18 not 20 because the reviewed manifest omits the contract's baseline_suite/after_suite suite fields, so the store's own read-path annotator (annotate_review_of_run) reports the added-failure count as unmeasured for this run.",
+    "fit": "_ticker_layout_signature is a private module helper beside the follow loop, returning a 16-hex sha256 of the ticker's fixed-grid constants, and the pane_line convention is reused verbatim from the stop and reload-failed lines rather than invented again. The layout comparison defaults to marking a change when the resume carries no layout (None != hash), so a checkpoint from an older image still prints once. The four naming checks over the added lines find no plan/sprint/ticket identifiers and no author attribution.",
+    "goal_fidelity": "all three s44 measures land and are asserted: an unchanged grid still emits FOLLOWER_FORMAT_EVENT to JSON with layout_changed false and pane_line false (test_a_reload_whose_grid_did_not_move_keeps_the_pane_quiet, tests/test_follow_rearm_continues.py); a changed grid prints exactly one marker (test_a_reload_whose_grid_moved_marks_the_switch_once asserts len(marks)==1); and the producer-reloading note is JSON-only inside its window and echoed once on overrun ahead of the cycle advice (test_a_producer_reload_inside_its_window_keeps_the_pane_quiet, test_a_producer_reload_past_its_window_names_the_reload_then_the_remedy).",
+    "scope_discipline": "commit 1635938a841254a0396612089cf9632a9834a612 touches exactly four paths - reckon/cli.py, tests/test_follow_rearm_continues.py, tests/test_producer_says_why_it_stops.py, docs/evidence/fragments/crew-observability-truth/reload-chatter-only-when-the-layout-moved.html - every one inside the reviewed node's declared write scope, with no out-of-fence path modified and no shared index, sprint or plan state touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 19\nVERDICT goal: s44 reload-chatter rule implemented: marker only when the grid moved, producer note only on overrun.\nVERDICT done_when: plan measures all asserted; manifest omits baseline_suite/after_suite suite fields.\nVERDICT write_paths: four changed paths, all within declared scope.\nVERDICT manifest: arithmetic internally consistent and independently reproduced; suite fields absent.\nVERDICT diff: signature helper + on-poll layout carry + resume comparison + pane_line gate over two event families.\nVERDICT call_sites: two production event-loop call sites verified.\nCALL_SITES: reckon/cli.py:4097, reckon/cli.py:4816, reckon/cli.py:4896\nFINDING manifest.md:20 follow-on: manifest omits baseline_suite/after_suite fields, so the store read path reports the added-failure count unmeasured.\nFINDING reckon/cli.py:3076 follow-on: signature misses a fixed-cell reorder that preserves widths and MIN_WIDTH.\nREVIEWED_BASE_SHA: a5442aa26bf28d2c3c73e62afafc13a5b1f2ffe5\nREVIEWED_HEAD_SHA: 1635938a841254a0396612089cf9632a9834a612",
+  "review_run_id": "r-20261004T155210018653-review-of-reload-chatter-only-when-the-layout-moved",
+  "reviewed_base": "a5442aa26bf28d2c3c73e62afafc13a5b1f2ffe5",
+  "reviewed_base_sha": "a5442aa26bf28d2c3c73e62afafc13a5b1f2ffe5",
+  "reviewed_commit": "1635938a841254a0396612089cf9632a9834a612",
+  "reviewed_head_sha": "1635938a841254a0396612089cf9632a9834a612",
+  "reviewed_run_id": "r-20261004T133017407600-reload-chatter-only-when-the-layout-moved",
+  "reviewer_node": "review-of-reload-chatter-only-when-the-layout-moved",
+  "reviewer_run_id": "r-20261004T155210018653-review-of-reload-chatter-only-when-the-layout-moved",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T15:59:26.403374+00:00",
+  "total": 95
+}

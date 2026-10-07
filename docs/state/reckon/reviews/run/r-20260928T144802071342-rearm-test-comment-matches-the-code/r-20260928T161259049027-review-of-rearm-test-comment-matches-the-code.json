@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144802071342-rearm-test-comment-matches-the-code/logs/after.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144802071342-rearm-test-comment-matches-the-code/logs/baseline.log",
+    "note": "the reviewed manifest's baseline_suite and after_suite name these two gate logs; the count and ids are the set difference over them computed with the module's own added_failures_from_gate_logs in this review's logs/added-failures.log"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:3272 the FOLLOWER_RESUME_EVENT branch gates the burst on session and _follow_replay_visible",
+    "reckon/cli.py:2913 _follow_replay_visible answers sys.stdout.isatty()",
+    "reckon/cli.py:2932 _follow_history_burst composes the frame and the dim rows",
+    "reckon/cli.py:3279 the burst is echoed by _echo_follow_line"
+  ],
+  "completed_at": "2026-09-28T16:51:45.820Z",
+  "dispatched_at": "2026-09-28T16:13:18Z",
+  "findings": [
+    {
+      "file": "tests/test_follow_rearm_continues.py",
+      "line": "452",
+      "text": "the terminal bullet's list \u2014 one string holding a frame line, then the replayed rows, then the live rows \u2014 reads as the composed string's contents, but _follow_history_burst returns only the frame and the replayed rows (reckon/cli.py:2948) and the live rows follow the write (reckon/cli.py:3262); a reader would take the burst to hold the live rows, which is the very boundary this comment exists to draw."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against the base: 55c1cc0d and d104ea93 change only the section comment's prose in tests/test_follow_rearm_continues.py plus the in-scope landing fragment; every added payload line is a comment line, the module's AST is identical across the pair, and HISTORY_HEADER/HISTORY_SEPARATOR at :459-460 are untouched and still used as assertion markers by the tests.",
+    "done_when": "every part of the measure checks out at the reviewed head \u2014 the comment states the terminal-only framed burst and cites both functions; the test file's payload change is prose only (module AST identical at 40d23d9b and d104ea93 and no non-comment diff line); both gate arms are 19 passed exit 0 with headers naming revision, tree, cwd, command and module under test, each header's tree sha matching its commit's tree; and the added-failure count from the two logs by the module's own added_failures_from_gate_logs is 0 with no ids (logs/added-failures.log).",
+    "goal": "the node's goal is that the section comment at tests/test_follow_rearm_continues.py:438-457 describe the history burst as the code writes it \u2014 terminal-only and under one dim frame line \u2014 instead of calling it unframed; at head every sentence names its subject and both branches match reckon/cli.py:2913 (_follow_replay_visible) and :2932 (_follow_history_burst), except that the terminal bullet's list at :452 places the live rows inside the string _follow_history_burst composes.",
+    "manifest": "read; it states complete with its two commits, both gate logs, the artifact paths and two follow-ons; its numeric claims hold (19 passed both arms, 0 added failures by id, fragment inside the fence), and follow-on (1) reproduces \u2014 docs/plans/the-fleet-counters-count-the-fleet.html:135 and :156 still describe a closing separator and a header naming the history's span.",
+    "write_paths": "the fence is tests/test_follow_rearm_continues.py, docs/evidence/fragments/the-fleet-counters-count-the-fleet/rearm-test-comment-matches-the-code.html and the figures topic; git diff --name-status 40d23d9b..d104ea93 names the first two and nothing else, and reckon/crew/dispatch.py:1358 grants the fragment path to an implement role."
+  },
+  "justifications": {
+    "durability": "nothing reddens on the comment text alone \u2014 the AST is identical across the pair so reverting the prose fails no test \u2014 while the behaviour the prose describes is pinned in the same file at tests/test_follow_rearm_continues.py:508, :557 and :605.",
+    "evidence": "both gate logs under the reviewed run directory carry revision, tree, cwd, command and module headers whose tree shas match 40d23d9b and d104ea93 and both end 19 passed, and the added-failure count re-derives to 0 with the module's own added_failures_from_gate_logs (logs/added-failures.log).",
+    "fit": "the paragraph keeps the section-comment idiom and names both functions in backticks (tests/test_follow_rearm_continues.py:447-455), introducing no forbidden name, though its bullet list is a format the file's other comments do not use.",
+    "goal_fidelity": "tests/test_follow_rearm_continues.py:447-455 names the gate and both branches the code holds at reckon/cli.py:2913-2948, but the same bullet's list at :452 places the live rows inside the composed string.",
+    "scope_discipline": "every path in the pair's diff is inside the declared fence \u2014 the test file and the fragment reckon/crew/dispatch.py:1358 grants \u2014 and the test module's AST is identical across the pair."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 40d23d9bbefd0199d68c74caec573769bed888ff\nreviewed_head_sha: d104ea932b5d02f40cf1b5f889206ad8b2337fe9\nVERDICT goal: the node's goal is that the section comment at tests/test_follow_rearm_continues.py:438-457 describe the history burst as the code writes it \u2014 terminal-only and under one dim frame line \u2014 instead of calling it unframed; at head every sentence names its subject and both branches match reckon/cli.py:2913 (_follow_replay_visible) and :2932 (_follow_history_burst), except that the terminal bullet's list at :452 places the live rows inside the string _follow_history_burst composes.\nVERDICT done_when: every part of the measure checks out at the reviewed head \u2014 the comment states the terminal-only framed burst and cites both functions; the test file's payload change is prose only (module AST identical at 40d23d9b and d104ea93 and no non-comment diff line); both gate arms are 19 passed exit 0 with headers naming revision, tree, cwd, command and module under test, each header's tree sha matching its commit's tree; and the added-failure count from the two logs by the module's own added_failures_from_gate_logs is 0 with no ids (logs/added-failures.log).\nVERDICT write_paths: the fence is tests/test_follow_rearm_continues.py, docs/evidence/fragments/the-fleet-counters-count-the-fleet/rearm-test-comment-matches-the-code.html and the figures topic; git diff --name-status 40d23d9b..d104ea93 names the first two and nothing else, and reckon/crew/dispatch.py:1358 grants the fragment path to an implement role.\nVERDICT manifest: read; it states complete with its two commits, both gate logs, the artifact paths and two follow-ons; its numeric claims hold (19 passed both arms, 0 added failures by id, fragment inside the fence), and follow-on (1) reproduces \u2014 docs/plans/the-fleet-counters-count-the-fleet.html:135 and :156 still describe a closing separator and a header naming the history's span.\nVERDICT diff: read commit by commit against the base: 55c1cc0d and d104ea93 change only the section comment's prose in tests/test_follow_rearm_continues.py plus the in-scope landing fragment; every added payload line is a comment line, the module's AST is identical across the pair, and HISTORY_HEADER/HISTORY_SEPARATOR at :459-460 are untouched and still used as assertion markers by the tests.\nCALL_SITES: reckon/cli.py:3272 the FOLLOWER_RESUME_EVENT branch gates the burst on session and _follow_replay_visible, reckon/cli.py:2913 _follow_replay_visible answers sys.stdout.isatty(), reckon/cli.py:2932 _follow_history_burst composes the frame and the dim rows, reckon/cli.py:3279 the burst is echoed by _echo_follow_line\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_follow_rearm_continues.py:447-455 names the gate and both branches the code holds at reckon/cli.py:2913-2948, but the same bullet's list at :452 places the live rows inside the composed string.\nSCORE evidence: 18\nJUSTIFICATION evidence: both gate logs under the reviewed run directory carry revision, tree, cwd, command and module headers whose tree shas match 40d23d9b and d104ea93 and both end 19 passed, and the added-failure count re-derives to 0 with the module's own added_failures_from_gate_logs (logs/added-failures.log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the pair's diff is inside the declared fence \u2014 the test file and the fragment reckon/crew/dispatch.py:1358 grants \u2014 and the test module's AST is identical across the pair.\nSCORE durability: 12\nJUSTIFICATION durability: nothing reddens on the comment text alone \u2014 the AST is identical across the pair so reverting the prose fails no test \u2014 while the behaviour the prose describes is pinned in the same file at tests/test_follow_rearm_continues.py:508, :557 and :605.\nSCORE fit: 17\nJUSTIFICATION fit: the paragraph keeps the section-comment idiom and names both functions in backticks (tests/test_follow_rearm_continues.py:447-455), introducing no forbidden name, though its bullet list is a format the file's other comments do not use.\nFINDING tests/test_follow_rearm_continues.py:452 the terminal bullet's list \u2014 one string holding a frame line, then the replayed rows, then the live rows \u2014 reads as the composed string's contents, but _follow_history_burst returns only the frame and the replayed rows (reckon/cli.py:2948) and the live rows follow the write (reckon/cli.py:3262); a reader would take the burst to hold the live rows, which is the very boundary this comment exists to draw.\n",
+  "review_run_id": "r-20260928T161259049027-review-of-rearm-test-comment-matches-the-code",
+  "reviewed_base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "reviewed_head_sha": "d104ea932b5d02f40cf1b5f889206ad8b2337fe9",
+  "reviewed_run_id": "r-20260928T144802071342-rearm-test-comment-matches-the-code",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T16:42:31.130496+00:00",
+  "total": 84
+}

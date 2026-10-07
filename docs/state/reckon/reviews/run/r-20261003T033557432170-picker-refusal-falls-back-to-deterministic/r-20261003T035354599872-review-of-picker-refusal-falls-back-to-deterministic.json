@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:1782",
+    "reckon/crew/dispatch.py:5338",
+    "reckon/crew/dispatch.py:5876",
+    "reckon/crew/dispatch.py:6033",
+    "reckon/crew/dispatch.py:10943"
+  ],
+  "carried_forward": {
+    "at": "2026-10-03T04:28:52Z",
+    "from": "b783edc7b83f7a7c58ac95299fa09ff9e924ec7d",
+    "paths": [
+      "tests/test_picker_in_dispatch.py"
+    ],
+    "to": "2e20a26d9c1b6f21a0ccb1e59a22f0d38508e546"
+  },
+  "completed_at": "2026-10-03T04:03:36.209Z",
+  "dispatched_at": "2026-10-03T03:54:30Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T033557432170-picker-refusal-falls-back-to-deterministic/gate-base.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's module-identity probe is broken as written -- `import reckon.crew.dispatch as m` binds the `dispatch` function on the reckon.crew package rather than the submodule, so `m.__file__` raises AttributeError and the log never prints the `# measurement_module:`/`# measurement_cwd:` header lines it was meant to carry, yet the manifest records both fields; independently confirmed with importlib that each tree's own dispatch.py is the module actually imported, so the values are correct and only their log backing is missing."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4578",
+      "severity": "follow-on",
+      "text": "follow-on: with every gate open a `refuse` whose reason names \"default-backend-ineligible\" now dispatches to that default backend (the test asserts exit 0 / backend codex); the deterministic gates cover the lane hold, competence and in-harness, but the picker's own serving/refusal judgement is not re-applied, so the plan's zero-dispatches-to-a-refused-model measure rests on the default being eligible. This is exactly what the brief mandated and is no worse than deterministic routing, but it is worth recording beside the switch measure."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/picker-refusal-falls-back-to-deterministic.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment named in the write scope was not produced; the node's diff is ~248 changed lines and changes both product source and tests, which exceeds the small-node threshold of 50 changed lines, so the small-node exception the brief invokes does not obviously apply and the coordinator's plan landing may lack its evidence anchor. Recorded for the coordinator, not as a worker defect, because the brief explicitly stated 'this node writes no figure and no evidence prose'."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read b783edc7b against d9f3e0cdc: the refuse/route-no-backend raise is replaced by a named_backend derivation that routes refuse, route-without-backend and fallback alike to the configured default, preserving the route-with-backend, hold and unknown-action branches; plus a 224-line new test file.",
+    "done_when": "the done-when is a two-case test measure; an independent re-run reproduces base 3 failed / 7 passed EXIT=1 (the same three ids the manifest's baseline_suite names) and head 10 passed EXIT=0 across test_picker_refusal_falls_back_to_deterministic.py and test_dry_run_shows_each_set_override.py.",
+    "goal": "the node's goal under plan \u00a76 is that a picker which finds nothing eligible leaves the dispatch to deterministic routing; the diff makes a \"refuse\" selection, or a \"route\" with no backend, fall through to the configured default backend exactly as \"fallback\" does (dispatch.py:4571-4582), so the lane-gate hold, competence refusal and in-harness refusal raise their own exit code and payload, and the selection stays recorded on the resolved run.",
+    "manifest": "read; status complete, baseline_suite 3 failed at d9f3e0cdc and after_suite 0 failed at b783edc7b, negative-control.log EXIT=1 with the held-lane test as the single id, commits b783edc7b.",
+    "write_paths": "the manifest's declared paths are reckon/crew/dispatch.py, the new test file, and a fragment/figure under docs; the reviewed diff touches only dispatch.py and the new test file, all inside them."
+  },
+  "justifications": {
+    "durability": "the refusal fall-through is pinned by two tests with a recorded red control (restoring the CrewError fails the held-lane test at EXIT=1), and the hold and unknown-action branches are preserved; the negative-control log's header is terse but carries the mutation and the failing id.",
+    "evidence": "base reproduces (3 failed, quoted exit 1 vs the deterministic 75) and head passes; the negative control records EXIT=1 with the held-lane test as the failing id; both arm logs' module-identity probe failed with AttributeError ('function' object has no attribute '__file__'), so the manifest's measurement_module and measurement_cwd are not printed by their own logs, though both were independently confirmed via importlib in each tree.",
+    "fit": "comments state the mechanism with no plan, sprint or ticket identifiers and no author attribution; the commit is a conventional fix with a body; the only 'wave' hit in the naming check is the flight fixture's budget_group value, a data name and not a plan label.",
+    "goal_fidelity": "the goal is met exactly as the brief required; the refactor preserves every prior branch (route-with-backend, fallback, hold, unknown action) while refuse and route-no-backend now reach the deterministic gates, and an independent base/head re-run reproduces the defect at base and the fix at head.",
+    "scope_discipline": "exactly dispatch.py and the new test file changed, both inside the declared write paths; no plan, sprint or index state was mutated; the fragment named in the scope was not written, which the brief's own clause instructed ('this node writes no evidence prose'), so it is a record gap for the coordinator rather than a scope breach."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal under plan \u00a76 is that a picker which finds nothing eligible leaves the dispatch to deterministic routing; the diff makes a \"refuse\" selection, or a \"route\" with no backend, fall through to the configured default backend exactly as \"fallback\" does (dispatch.py:4571-4582), so the lane-gate hold, competence refusal and in-harness refusal raise their own exit code and payload, and the selection stays recorded on the resolved run.\nVERDICT done_when: the done-when is a two-case test measure; an independent re-run reproduces base 3 failed / 7 passed EXIT=1 (the same three ids the manifest's baseline_suite names) and head 10 passed EXIT=0 across test_picker_refusal_falls_back_to_deterministic.py and test_dry_run_shows_each_set_override.py.\nVERDICT write_paths: the manifest's declared paths are reckon/crew/dispatch.py, the new test file, and a fragment/figure under docs; the reviewed diff touches only dispatch.py and the new test file, all inside them.\nVERDICT manifest: read; status complete, baseline_suite 3 failed at d9f3e0cdc and after_suite 0 failed at b783edc7b, negative-control.log EXIT=1 with the held-lane test as the single id, commits b783edc7b.\nVERDICT diff: read b783edc7b against d9f3e0cdc: the refuse/route-no-backend raise is replaced by a named_backend derivation that routes refuse, route-without-backend and fallback alike to the configured default, preserving the route-with-backend, hold and unknown-action branches; plus a 224-line new test file.\nVERDICT call_sites: read the production call sites plan_dispatch serves: reckon/cli.py:1782 (the crew dispatch the tests drive) and the internal re-dispatch and launch paths reckon/crew/dispatch.py:5338, 5876, 6033 and 10943 all route through this same block.\nCALL_SITES: reckon/cli.py:1782, reckon/crew/dispatch.py:5338, reckon/crew/dispatch.py:5876, reckon/crew/dispatch.py:6033, reckon/crew/dispatch.py:10943\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the goal is met exactly as the brief required; the refactor preserves every prior branch (route-with-backend, fallback, hold, unknown action) while refuse and route-no-backend now reach the deterministic gates, and an independent base/head re-run reproduces the defect at base and the fix at head.\nSCORE evidence: 18\nJUSTIFICATION evidence: base reproduces (3 failed, quoted exit 1 vs the deterministic 75) and head passes; the negative control records EXIT=1 with the held-lane test as the failing id; both arm logs' module-identity probe failed with AttributeError ('function' object has no attribute '__file__'), so the manifest's measurement_module and measurement_cwd are not printed by their own logs, though both were independently confirmed via importlib in each tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: exactly dispatch.py and the new test file changed, both inside the declared write paths; no plan, sprint or index state was mutated; the fragment named in the scope was not written, which the brief's own clause instructed ('this node writes no evidence prose'), so it is a record gap for the coordinator rather than a scope breach.\nSCORE durability: 19\nJUSTIFICATION durability: the refusal fall-through is pinned by two tests with a recorded red control (restoring the CrewError fails the held-lane test at EXIT=1), and the hold and unknown-action branches are preserved; the negative-control log's header is terse but carries the mutation and the failing id.\nSCORE fit: 19\nJUSTIFICATION fit: comments state the mechanism with no plan, sprint or ticket identifiers and no author attribution; the commit is a conventional fix with a body; the only 'wave' hit in the naming check is the flight fixture's budget_group value, a data name and not a plan label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T033557432170-picker-refusal-falls-back-to-deterministic/gate-base.log:1 follow-on: the base arm's module-identity probe is broken as written -- `import reckon.crew.dispatch as m` binds the `dispatch` function on the reckon.crew package rather than the submodule, so `m.__file__` raises AttributeError and the log never prints the `# measurement_module:`/`# measurement_cwd:` header lines it was meant to carry, yet the manifest records both fields; independently confirmed with importlib that each tree's own dispatch.py is the module actually imported, so the values are correct and only their log backing is missing.\nFINDING reckon/crew/dispatch.py:4578 follow-on: with every gate open a `refuse` whose reason names \"default-backend-ineligible\" now dispatches to that default backend (the test asserts exit 0 / backend codex); the deterministic gates cover the lane hold, competence and in-harness, but the picker's own serving/refusal judgement is not re-applied, so the plan's zero-dispatches-to-a-refused-model measure rests on the default being eligible. This is exactly what the brief mandated and is no worse than deterministic routing, but it is worth recording beside the switch measure.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/picker-refusal-falls-back-to-deterministic.html:1 follow-on: the fragment named in the write scope was not produced; the node's diff is ~248 changed lines and changes both product source and tests, which exceeds the small-node threshold of 50 changed lines, so the small-node exception the brief invokes does not obviously apply and the coordinator's plan landing may lack its evidence anchor. Recorded for the coordinator, not as a worker defect, because the brief explicitly stated 'this node writes no figure and no evidence prose'.\nreviewed_base_sha: d9f3e0cdc9f7e83a6d48e3eb3e09c9093f847616\nreviewed_head_sha: b783edc7b83f7a7c58ac95299fa09ff9e924ec7d\n",
+  "review_run_id": "r-20261003T035354599872-review-of-picker-refusal-falls-back-to-deterministic",
+  "reviewed_base_sha": "b783edc7b83f7a7c58ac95299fa09ff9e924ec7d",
+  "reviewed_head_sha": "2e20a26d9c1b6f21a0ccb1e59a22f0d38508e546",
+  "reviewed_run_id": "r-20261003T033557432170-picker-refusal-falls-back-to-deterministic",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T04:28:52Z",
+  "total": 96
+}

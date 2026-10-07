@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after_suite_field": "the three log paths named in after_suite.log_path, read together: 0 failing ids, matching failure_ids []",
+    "baseline_suite_field": "the three log paths named in baseline_suite.log_path, read together: 4 failing ids, matching the field's own failure_ids list exactly",
+    "derivation": "added = head FAILED/ERROR ids minus base FAILED/ERROR ids, taken through reckon.crew.review.added_failures_from_gate_logs over the concatenated logs of each arm; result 0 ids",
+    "production_read_path": "reckon.crew.review.annotate_review_of_run returns None with the note 'the reviewed manifest names no base gate log', because baseline_suite.log_path joins three paths in a field its reader takes as one; the stored count here is the measurement over the logs the field names, not what that reader returns",
+    "run_dir": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T193532461213-receipt-rollback-classification-red"
+  },
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/ledger.py:1977 append_run",
+    "reckon/ledger.py:641 run_path",
+    "reckon/ledger.py:700 load",
+    "reckon/ledger.py:2271 runs",
+    "reckon/crew/promotion.py:4989 _complete_locked",
+    "reckon/crew/promotion.py:2639 _restore_landing_writes",
+    "reckon/crew/promotion.py:2694 _report_written_ledger_row",
+    "reckon/crew/promotion.py:2730 _ledger_row_was_rolled_back"
+  ],
+  "completed_at": "2026-09-28T20:30:52.903Z",
+  "dispatched_at": "2026-09-28T20:06:53Z",
+  "findings": [
+    {
+      "file": "tests/test_rollback_asks_head.py",
+      "line": "216",
+      "text": "the added ledger.run_path(\"sample\", run_id, repository).relative_to(repository) call is wrapped across three lines where ruff format joins them into one, so the file is formatted at base and would be reformatted at head \u2014 measured with the repository's own ruff and config, base \"3 files already formatted\" against head \"1 file would be reformatted\"."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T193532461213-receipt-rollback-classification-red/manifest.md",
+      "line": "18",
+      "text": "baseline_suite and after_suite each carry a log_path joining three absolute log paths with \", \" in a field whose reader takes one path, so review._gate_log_path returns the whole string and _read_gate_log returns None for both arms, and review.annotate_review_of_run answers added_failure_count None with \"the reviewed manifest names no base gate log\" for a run whose own failure_ids show the answer is zero \u2014 the automatic added-failure instrument reads nothing here, and only 3 of 1460 manifests in the run store write the field this way."
+    },
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/receipt-rollback-classification-red/docs/evidence/fragments/the-suite-is-green-at-head/receipt-rollback-classification-red.html",
+      "line": "88",
+      "text": "the landing record reports the head arm as \"At head d9999ede\" and the manifest's tests field repeats the word, while the run's head is 0b8fe1be and d9999ede is the test commit two docs-only commits back; the arm log names d9999ede honestly and my re-run at 0b8fe1be is green, so no conclusion is wrong, but the sentence a coordinator reads says the green arm was taken at the head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit; d9999ede is the one test commit, a46459bf and 0b8fe1be are docs-only and touch no test file, so the head arm at d9999ede covers the test content of head 0b8fe1be \u2014 verified by git diff d9999ede..HEAD -- tests/ returning nothing \u2014 and each commit carries a conventional subject with a body naming what changed and why.",
+    "done_when": "the done_when gates the three named test files with both arms recorded as logs headed by revision, tree and command and ending in EXIT=, and no head failing id absent from base; the six arm logs under the run directory carry those headers and sentinels, the base arm reports exactly the four named ids with EXIT=1 and the head arm 27 passed with EXIT=0, and my own re-run of the three files in the reviewed worktree at 0b8fe1be returns 3, 12 and 12 passed with EXIT=0 in each.",
+    "goal": "the node's goal is that each of the four red ids is green at head or named as a blocked product defect, with the commit that moved each behaviour named and the assertion count per edited function unchanged; all four ids are green at head, the manifest's behaviour_attribution names 98ac4ced plus e7b5051d for the two receipt cases and e7b5051d for the rollback table and 3d02a02f for the pass-rate row, and I re-counted the assertions by AST over the three files at base and head \u2014 80 -> 82, with test_receipt_names_the_rolled_back_row.py::test_rolled_back_row_receipt_names_re_promotion_as_the_recovery the only function that moved (9 -> 11) and no function losing one.",
+    "manifest": "read in full; it is quantitative, names the revision each arm ran at and the four ids, and its claims reproduce except that its baseline_suite and after_suite log_path values join three paths in one field, which defeats the reader that derives added failures from them (finding 2).",
+    "write_paths": "the node was fenced to the three test files, one evidence fragment and one figure directory, and git diff --stat ba1a26e4..0b8fe1be returns exactly five paths \u2014 tests/test_receipt_names_the_rolled_back_row.py, tests/test_rollback_asks_head.py, tests/test_failure_classification.py, docs/evidence/fragments/the-suite-is-green-at-head/receipt-rollback-classification-red.html and docs/figures/the-suite-is-green-at-head/receipt-rollback-classification-red/red-ids-and-the-change-that-moved-them.svg \u2014 with nothing under reckon/."
+  },
+  "justifications": {
+    "durability": "the two assertions added to tests/test_receipt_names_the_rolled_back_row.py:112-121 read filesystem and git state rather than a value the test supplied, each names a condition under which it fails (the run file present after a rollback, or HEAD carrying a path it never held), and the node's negative control reddens the edited assertion when its base form is restored.",
+    "evidence": "the gate measures the done-when and both arms are recorded with revision, tree, command and EXIT= lines, and I reproduced the head arm independently, but the two suite fields write three log paths into a singular log_path so review.annotate_review_of_run returns added_failure_count None for this run (measured, log /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T200639659711-review-of-receipt-rollback-classification-red/logs/review-verification.log), and the head arm is described as taken at head when its log header names d9999ede.",
+    "fit": "the change follows the surrounding test idiom and introduces no banned name, but tests/test_rollback_asks_head.py is ruff-format clean at base and not at head \u2014 the added ledger.run_path(...).relative_to(repository) call at lines 216-218 is split where the formatter joins it \u2014 so the commit adds a format finding the repository's own rule forbids.",
+    "goal_fidelity": "all four ids named in the dispatch are green at 0b8fe1be (tests/test_receipt_names_the_rolled_back_row.py, tests/test_rollback_asks_head.py and tests/test_failure_classification.py each EXIT=0 in my re-run), and the manifest's per-id attribution resolves in the code at the commit it names, e.g. append_run's `\"path\": str(target)` at line 2002 of e7b5051d against the aggregate-path pre-image at line 1988 of its parent.",
+    "scope_discipline": "git diff --stat ba1a26e4..0b8fe1be lists five paths and every one is inside the declared write paths, with no file under reckon/ modified and no test disabled, skipped or xfailed."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ba1a26e4275b4f105c6e3050d1d7d6177383f0db\nreviewed_head_sha: 0b8fe1be9b5d4fb900d7526edd2f188a2495ca64\nVERDICT goal: the node's goal is that each of the four red ids is green at head or named as a blocked product defect, with the commit that moved each behaviour named and the assertion count per edited function unchanged; all four ids are green at head, the manifest's behaviour_attribution names 98ac4ced plus e7b5051d for the two receipt cases and e7b5051d for the rollback table and 3d02a02f for the pass-rate row, and I re-counted the assertions by AST over the three files at base and head \u2014 80 -> 82, with test_receipt_names_the_rolled_back_row.py::test_rolled_back_row_receipt_names_re_promotion_as_the_recovery the only function that moved (9 -> 11) and no function losing one.\nVERDICT done_when: the done_when gates the three named test files with both arms recorded as logs headed by revision, tree and command and ending in EXIT=, and no head failing id absent from base; the six arm logs under the run directory carry those headers and sentinels, the base arm reports exactly the four named ids with EXIT=1 and the head arm 27 passed with EXIT=0, and my own re-run of the three files in the reviewed worktree at 0b8fe1be returns 3, 12 and 12 passed with EXIT=0 in each.\nVERDICT write_paths: the node was fenced to the three test files, one evidence fragment and one figure directory, and git diff --stat ba1a26e4..0b8fe1be returns exactly five paths \u2014 tests/test_receipt_names_the_rolled_back_row.py, tests/test_rollback_asks_head.py, tests/test_failure_classification.py, docs/evidence/fragments/the-suite-is-green-at-head/receipt-rollback-classification-red.html and docs/figures/the-suite-is-green-at-head/receipt-rollback-classification-red/red-ids-and-the-change-that-moved-them.svg \u2014 with nothing under reckon/.\nVERDICT manifest: read in full; it is quantitative, names the revision each arm ran at and the four ids, and its claims reproduce except that its baseline_suite and after_suite log_path values join three paths in one field, which defeats the reader that derives added failures from them (finding 2).\nVERDICT diff: read commit by commit; d9999ede is the one test commit, a46459bf and 0b8fe1be are docs-only and touch no test file, so the head arm at d9999ede covers the test content of head 0b8fe1be \u2014 verified by git diff d9999ede..HEAD -- tests/ returning nothing \u2014 and each commit carries a conventional subject with a body naming what changed and why.\nCALL_SITES: reckon/ledger.py:1977 append_run, reckon/ledger.py:641 run_path, reckon/ledger.py:700 load, reckon/ledger.py:2271 runs, reckon/crew/promotion.py:4989 _complete_locked, reckon/crew/promotion.py:2639 _restore_landing_writes, reckon/crew/promotion.py:2694 _report_written_ledger_row, reckon/crew/promotion.py:2730 _ledger_row_was_rolled_back\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all four ids named in the dispatch are green at 0b8fe1be (tests/test_receipt_names_the_rolled_back_row.py, tests/test_rollback_asks_head.py and tests/test_failure_classification.py each EXIT=0 in my re-run), and the manifest's per-id attribution resolves in the code at the commit it names, e.g. append_run's `\"path\": str(target)` at line 2002 of e7b5051d against the aggregate-path pre-image at line 1988 of its parent.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate measures the done-when and both arms are recorded with revision, tree, command and EXIT= lines, and I reproduced the head arm independently, but the two suite fields write three log paths into a singular log_path so review.annotate_review_of_run returns added_failure_count None for this run (measured, log /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T200639659711-review-of-receipt-rollback-classification-red/logs/review-verification.log), and the head arm is described as taken at head when its log header names d9999ede.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat ba1a26e4..0b8fe1be lists five paths and every one is inside the declared write paths, with no file under reckon/ modified and no test disabled, skipped or xfailed.\nSCORE durability: 19\nJUSTIFICATION durability: the two assertions added to tests/test_receipt_names_the_rolled_back_row.py:112-121 read filesystem and git state rather than a value the test supplied, each names a condition under which it fails (the run file present after a rollback, or HEAD carrying a path it never held), and the node's negative control reddens the edited assertion when its base form is restored.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the surrounding test idiom and introduces no banned name, but tests/test_rollback_asks_head.py is ruff-format clean at base and not at head \u2014 the added ledger.run_path(...).relative_to(repository) call at lines 216-218 is split where the formatter joins it \u2014 so the commit adds a format finding the repository's own rule forbids.\nFINDING tests/test_rollback_asks_head.py:216 the added ledger.run_path(\"sample\", run_id, repository).relative_to(repository) call is wrapped across three lines where ruff format joins them into one, so the file is formatted at base and would be reformatted at head \u2014 measured with the repository's own ruff and config, base \"3 files already formatted\" against head \"1 file would be reformatted\".\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T193532461213-receipt-rollback-classification-red/manifest.md:18 baseline_suite and after_suite each carry a log_path joining three absolute log paths with \", \" in a field whose reader takes one path, so review._gate_log_path returns the whole string and _read_gate_log returns None for both arms, and review.annotate_review_of_run answers added_failure_count None with \"the reviewed manifest names no base gate log\" for a run whose own failure_ids show the answer is zero \u2014 the automatic added-failure instrument reads nothing here, and only 3 of 1460 manifests in the run store write the field this way.\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/receipt-rollback-classification-red/docs/evidence/fragments/the-suite-is-green-at-head/receipt-rollback-classification-red.html:88 the landing record reports the head arm as \"At head d9999ede\" and the manifest's tests field repeats the word, while the run's head is 0b8fe1be and d9999ede is the test commit two docs-only commits back; the arm log names d9999ede honestly and my re-run at 0b8fe1be is green, so no conclusion is wrong, but the sentence a coordinator reads says the green arm was taken at the head.",
+  "review_run_id": "r-20260928T200639659711-review-of-receipt-rollback-classification-red",
+  "reviewed_base_sha": "ba1a26e4275b4f105c6e3050d1d7d6177383f0db",
+  "reviewed_head_sha": "0b8fe1be9b5d4fb900d7526edd2f188a2495ca64",
+  "reviewed_run_id": "r-20260928T193532461213-receipt-rollback-classification-red",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T20:23:56.846527+00:00",
+  "total": 91
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T15:59:59.136Z",
+  "dispatched_at": "2026-10-04T15:53:09Z",
+  "findings": [
+    {
+      "file": "skills/reckon-build/references/coordinator-reference.md",
+      "line": "655",
+      "severity": "follow-on",
+      "text": "follow-on: the moved fleet-size table's header now reads 'Strategy (the single canonical table lives in ../SKILL.md)' while its rows remain directly beneath, so the file both disclaims the table and carries it, and the manifest's Deviation 2 describes tests/test_skill_contracts.py:671 as asserting 'one canonical table across the skill and its references' when it asserts only one occurrence of the literal header string '| Items | Strategy |'."
+    },
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "266",
+      "severity": "follow-on",
+      "text": "follow-on: the six-step core keeps legacy workflow step numbers (### 5. Verify every worker, ### 5b., and ### 4b-4e at :348,:366,:376,:387) that belong to the 0-9 workflow now reachable only in the reference, so the loop's own numbered subsections map to no step it names; tests/test_skill_contracts.py:1516-1517 split on those literal headings, so the numbering is forced rather than chosen, but the end-to-end read the core exists for is left ambiguous."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit 4e60a9e3b against base d4f3d2fa5; three files, 1611 insertions / 1201 deletions, and the moved body diffs against the former SKILL.md body with exactly the one fleet-size header edit the manifest claims.",
+    "done_when": "the done-when states word ceiling, six steps, both skill-contract suites passing, former text reachable and the total recorded against 37,619; the manifest records 3485 words, 41,004 words total and gate.log shows 76 passed 0 failed.",
+    "goal": "the node goal is skills/reckon-build/SKILL.md rewritten as the coordinator's six-step loop at most 4,000 words with the former body moved whole to references/coordinator-reference.md; skills/reckon-build/SKILL.md:20-25 titles the loop's six steps and :64,86,102,195,205,289 carry them as headed subsections.",
+    "manifest": "read; it states the two suites passed with its log path, names both deviations and records the word figures, but its baseline_suite and after_suite fields are absent so the run names no armed arm.",
+    "write_paths": "read the manifest's declared paths (SKILL.md, coordinator-reference.md, the evidence fragment, and the figures directory); the three changed files in git show --stat are all inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_skill_contracts.py:733 guards gross growth of SKILL.md and the pinned-sentence tests guard its content, but the moved body's own token estimate of 15491 sits under the 15625 budget, so a revert to the former body would keep every test green.",
+    "evidence": "the manifest's gate command and gate.log reproduce (76 passed, exit 0 at 4e60a9e3b), but no test asserts the done-when's word ceiling or six-step clause, so those are manually measured rather than gated.",
+    "fit": "the loop mirrors the surrounding skill idiom and introduces no banned name, but the advisory fleet-size table now sits whole in both skills/reckon-build/SKILL.md:339 and skills/reckon-build/references/coordinator-reference.md:655, a duplication the header-string check does not catch.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:20-25 and :64-309 render the six-step loop Read/Review the design/Shape the wave/Decide between nodes/Integrate/Close that plan section s5 names as the deliverable, at 3485 words against the 4000 ceiling.",
+    "scope_discipline": "git show --stat 4e60a9e3b touches only skills/reckon-build/SKILL.md, skills/reckon-build/references/coordinator-reference.md and docs/evidence/fragments/the-orchestrator-orchestrates/build-skill-is-the-coordinators-loop.html, all within the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is skills/reckon-build/SKILL.md rewritten as the coordinator's six-step loop at most 4,000 words with the former body moved whole to references/coordinator-reference.md; skills/reckon-build/SKILL.md:20-25 titles the loop's six steps and :64,86,102,195,205,289 carry them as headed subsections.\nVERDICT done_when: the done-when states word ceiling, six steps, both skill-contract suites passing, former text reachable and the total recorded against 37,619; the manifest records 3485 words, 41,004 words total and gate.log shows 76 passed 0 failed.\nVERDICT write_paths: read the manifest's declared paths (SKILL.md, coordinator-reference.md, the evidence fragment, and the figures directory); the three changed files in git show --stat are all inside that set.\nVERDICT manifest: read; it states the two suites passed with its log path, names both deviations and records the word figures, but its baseline_suite and after_suite fields are absent so the run names no armed arm.\nVERDICT diff: read commit 4e60a9e3b against base d4f3d2fa5; three files, 1611 insertions / 1201 deletions, and the moved body diffs against the former SKILL.md body with exactly the one fleet-size header edit the manifest claims.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:20-25 and :64-309 render the six-step loop Read/Review the design/Shape the wave/Decide between nodes/Integrate/Close that plan section s5 names as the deliverable, at 3485 words against the 4000 ceiling.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's gate command and gate.log reproduce (76 passed, exit 0 at 4e60a9e3b), but no test asserts the done-when's word ceiling or six-step clause, so those are manually measured rather than gated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 4e60a9e3b touches only skills/reckon-build/SKILL.md, skills/reckon-build/references/coordinator-reference.md and docs/evidence/fragments/the-orchestrator-orchestrates/build-skill-is-the-coordinators-loop.html, all within the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_skill_contracts.py:733 guards gross growth of SKILL.md and the pinned-sentence tests guard its content, but the moved body's own token estimate of 15491 sits under the 15625 budget, so a revert to the former body would keep every test green.\nSCORE fit: 18\nJUSTIFICATION fit: the loop mirrors the surrounding skill idiom and introduces no banned name, but the advisory fleet-size table now sits whole in both skills/reckon-build/SKILL.md:339 and skills/reckon-build/references/coordinator-reference.md:655, a duplication the header-string check does not catch.\nFINDING skills/reckon-build/references/coordinator-reference.md:655 follow-on: the moved fleet-size table's header now reads 'Strategy (the single canonical table lives in ../SKILL.md)' while its rows remain directly beneath, so the file both disclaims the table and carries it, and the manifest's Deviation 2 describes tests/test_skill_contracts.py:671 as asserting 'one canonical table across the skill and its references' when it asserts only one occurrence of the literal header string '| Items | Strategy |'.\nFINDING skills/reckon-build/SKILL.md:266 follow-on: the six-step core keeps legacy workflow step numbers (### 5. Verify every worker, ### 5b., and ### 4b-4e at :348,:366,:376,:387) that belong to the 0-9 workflow now reachable only in the reference, so the loop's own numbered subsections map to no step it names; tests/test_skill_contracts.py:1516-1517 split on those literal headings, so the numbering is forced rather than chosen, but the end-to-end read the core exists for is left ambiguous.\n",
+  "review_run_id": "r-20261004T155242621698-review-of-build-skill-is-the-coordinators-loop",
+  "reviewed_base": "d4f3d2fa5e6ec1a2a4c79463f67c93882d6558ed",
+  "reviewed_base_sha": "d4f3d2fa5e6ec1a2a4c79463f67c93882d6558ed",
+  "reviewed_commit": "4e60a9e3b8ab208c031b543c83522b3885a49739",
+  "reviewed_head_sha": "4e60a9e3b8ab208c031b543c83522b3885a49739",
+  "reviewed_run_id": "r-20261004T130057296274-build-skill-is-the-coordinators-loop",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T15:59:24.073640+00:00",
+  "total": 90
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "b1132f73f2e9493dbd5f3f5b134334e56cddedd7",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1404",
+    "reckon/crew/dispatch.py:6296"
+  ],
+  "completed_at": "2026-10-03T16:01:01.577Z",
+  "dispatched_at": "2026-10-03T15:53:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/outcomes.py",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "follow-on: _success returns True for any outcome beginning with `review scored ` without reading the score value, so a low-scoring review counts as a success in the success-rate and calibration figures; the rule is stated but a threshold would make the success label match the outcome it claims to measure."
+    },
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite records revision ef9d4155 while the reviewed head is 827c8bdb; the later commit is docs-only so the measured code is unchanged and the delta stands, but a reader reconciling the added-failure count against the reviewed head should know the gate ran on the parent commit."
+    }
+  ],
+  "head_log_revision": "ef9d41555d973c161e2ec424d5fa76415379a47b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; outcomes.py +429 and tests/test_picker_outcomes.py +299 carry the change, cli.py +30 wires the flag, dispatch.py +58 edits only the BudgetHold hold path, SKILL.md and test_skill_contracts.py are the minimal flag edits, plus the evidence fragment and svg.",
+    "done_when": "the done_when names a live reading since 2026-10-03T03:00Z published to the evidence fragment with one figure; picker-outcomes.html:1 cites 14 projects and 224 selections and the success-by-confidence figure is committed.",
+    "goal": "the node goal is to judge the picker by its own decision outcomes readable from the CLI; reckon/crew/picker/outcomes.py:149 derives mechanics, matched-route outcomes, calibration, offered spend and holds, and reckon/cli.py:1404 exposes them on `reckon crew pick --outcomes`.",
+    "manifest": "read; it records base 194 passed and head 200 passed, both EXIT=0, the negative control (2 failed, EXIT=1), and names both gate logs.",
+    "write_paths": "the manifest declares 8 exclusive paths; the base..head diff changes exactly those 8 across ef9d4155 (feat) and 827c8bdb (docs)."
+  },
+  "justifications": {
+    "durability": "tests/test_picker_outcomes.py:70 asserts the success rule, calibration buckets, fallback grouping, route-mismatch exclusion, empty/malformed rows and the end-to-end dispatch hold, each against fixture-derived values; the declared negative control (invert) reddens the two known-outcome tests, so the guarded behaviour is shown to fail when reverted.",
+    "evidence": "base-gate.log and head-gate.log give 194 to 200 passed with EXIT=0 and the production added-failures deriver over those two logs yields count 0; negative-control.log shows EXIT=1 with the two known-outcome tests red; live-outcomes.json reconciles with every figure in picker-outcomes.html; the one caveat is that the head log's revision is ef9d4155 while the reviewed head is 827c8bdb, a docs-only commit (see finding).",
+    "fit": "outcomes.py follows the picker package and ledger idioms with module-scope constants (SUCCESS_RULE, BUCKETS, BURN_LEVELS), and the naming checks record no label or prose hit in the two authored files; the module docstring states the success rule and the route-mode limitation.",
+    "goal_fidelity": "reckon/crew/picker/outcomes.py:149 summarize returns rules, mechanics (actions, fallback kinds, latency p50/p90), routed_outcomes, calibration, metered_spend and holds, and reckon/cli.py:1404 emits the same payload as JSON from the existing pick verb.",
+    "scope_discipline": "every path in the base..head diff is one of the 8 declared write paths, and reckon/crew/dispatch.py:6296 changes only the BudgetHold branch that records a picker hold, the one edit the brief permits there."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to judge the picker by its own decision outcomes readable from the CLI; reckon/crew/picker/outcomes.py:149 derives mechanics, matched-route outcomes, calibration, offered spend and holds, and reckon/cli.py:1404 exposes them on `reckon crew pick --outcomes`.\nVERDICT done_when: the done_when names a live reading since 2026-10-03T03:00Z published to the evidence fragment with one figure; picker-outcomes.html:1 cites 14 projects and 224 selections and the success-by-confidence figure is committed.\nVERDICT write_paths: the manifest declares 8 exclusive paths; the base..head diff changes exactly those 8 across ef9d4155 (feat) and 827c8bdb (docs).\nVERDICT manifest: read; it records base 194 passed and head 200 passed, both EXIT=0, the negative control (2 failed, EXIT=1), and names both gate logs.\nVERDICT diff: read commit by commit; outcomes.py +429 and tests/test_picker_outcomes.py +299 carry the change, cli.py +30 wires the flag, dispatch.py +58 edits only the BudgetHold hold path, SKILL.md and test_skill_contracts.py are the minimal flag edits, plus the evidence fragment and svg.\nCALL_SITES: reckon/cli.py:1404, reckon/crew/dispatch.py:6296\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/outcomes.py:149 summarize returns rules, mechanics (actions, fallback kinds, latency p50/p90), routed_outcomes, calibration, metered_spend and holds, and reckon/cli.py:1404 emits the same payload as JSON from the existing pick verb.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-gate.log and head-gate.log give 194 to 200 passed with EXIT=0 and the production added-failures deriver over those two logs yields count 0; negative-control.log shows EXIT=1 with the two known-outcome tests red; live-outcomes.json reconciles with every figure in picker-outcomes.html; the one caveat is that the head log's revision is ef9d4155 while the reviewed head is 827c8bdb, a docs-only commit (see finding).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the base..head diff is one of the 8 declared write paths, and reckon/crew/dispatch.py:6296 changes only the BudgetHold branch that records a picker hold, the one edit the brief permits there.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_picker_outcomes.py:70 asserts the success rule, calibration buckets, fallback grouping, route-mismatch exclusion, empty/malformed rows and the end-to-end dispatch hold, each against fixture-derived values; the declared negative control (invert) reddens the two known-outcome tests, so the guarded behaviour is shown to fail when reverted.\nSCORE fit: 18\nJUSTIFICATION fit: outcomes.py follows the picker package and ledger idioms with module-scope constants (SUCCESS_RULE, BUCKETS, BURN_LEVELS), and the naming checks record no label or prose hit in the two authored files; the module docstring states the success rule and the route-mode limitation.\nreviewed_base_sha: b1132f73f2e9493dbd5f3f5b134334e56cddedd7\nreviewed_head_sha: 827c8bdb22c9f95710050281321ab56a30ea523d\nFINDING reckon/crew/picker/outcomes.py:60 follow-on: _success returns True for any outcome beginning with `review scored ` without reading the score value, so a low-scoring review counts as a success in the success-rate and calibration figures; the rule is stated but a threshold would make the success label match the outcome it claims to measure.\nFINDING manifest.md:21 follow-on: the after_suite records revision ef9d4155 while the reviewed head is 827c8bdb; the later commit is docs-only so the measured code is unchanged and the delta stands, but a reader reconciling the added-failure count against the reviewed head should know the gate ran on the parent commit.\n",
+  "review_run_id": "r-20261003T155148436042-review-of-picker-outcomes",
+  "reviewed_base_sha": "b1132f73f2e9493dbd5f3f5b134334e56cddedd7",
+  "reviewed_head_sha": "827c8bdb22c9f95710050281321ab56a30ea523d",
+  "reviewed_run_id": "r-20261003T151908208690-picker-outcomes",
+  "reviewer_run_id": "r-20261003T155148436042-review-of-picker-outcomes",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T16:00:10.908545+00:00",
+  "total": 94
+}

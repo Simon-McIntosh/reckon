@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:_repository_tree_boundary_violations",
+    "reckon/crew/routing.py:_repository_tree_snapshot",
+    "reckon/crew/dispatch.py:_boundary_snapshot_roots",
+    "reckon/crew/routing.py:_registered_worktrees"
+  ],
+  "completed_at": "2026-10-01T08:05:56.130Z",
+  "dispatched_at": "2026-10-01T07:56:28Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md",
+      "line": "25",
+      "severity": "follow-on",
+      "text": "follow-on: the after-arm 'registered at dispatch' cells are bracketing readings taken from other runs, so the done_when's per-run registered count is not met for the after arm; the narrowed snapshot structurally cannot hold it and the report says so, but the gap is real."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "follow-on: the direct git worktree list count of 63-65 is not written to any log under the run directory with an EXIT= line -- it survives only in the worker's stream transcript -- so the figure the report labels measured directly has no durable logged command."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md",
+      "line": "144",
+      "severity": "follow-on",
+      "text": "follow-on: the plan's third per-run figure, wall time from crew complete start to its commit, is reported as not held, so the measure is answered on two of its three figures and the third is a bound against coordinator latency rather than a promotion duration."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "no repository file changed -- the reviewed worktree at 70433b10 carries no commit since its base and a clean working tree; the deliverables are the report and the figure outside the repository.",
+    "done_when": "the done_when names a report under 40 KB, a figure, and per-run figures; the report gives the tree counts and the timings from the named records, but the per-run registered count is a bracketing reading only (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:25) and the crew-complete timing is recorded as not held (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:144).",
+    "goal": "the node's goal is to measure from real promoted runs whether fenced runs read two trees against a registered count above a hundred, against runs promoted before the change; the report does exactly that, and reports the registered count was 63-85, not above 100 (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:113).",
+    "manifest": "read; it states the measurement commands and their EXIT lines (assemble.py EXIT=0, verify-and-time.py EXIT=1 on a git-guard refusal, make-figure.log EXIT=0, scan-ledger.py EXIT=0), records no commit, and names a negative_control of none for a report-and-figure node.",
+    "write_paths": "the declared paths are the report .md and the figure .svg; both exist, no repository file changed, and the reviewed worktree at 70433b10 carries no commit and a clean status."
+  },
+  "justifications": {
+    "durability": "the boundary-roots instrument was exercised both ways (fenced -> 2 roots, unfenced -> None) in verify-and-time.log, but no guard fails if _boundary_snapshot_roots regresses, which is the separately dispatched test node's charge.",
+    "evidence": "the tree counts are read from each run's tree-snapshot.json and match an independent re-read (2 after vs 66/67/75/84 before vs 79-92 unfenced), but the direct registry count of 63-65 (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:60) has no logged command ending EXIT= and the named verifier exited 1.",
+    "fit": "the report and the 1400-px despined figure with direct labels follow the house plot style, and no repository name, plan label or ticket id is introduced.",
+    "goal_fidelity": "the report answers the goal and states the falsifier honestly (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:113), but the per-run registered count the measure names is only bracketed (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:25).",
+    "scope_discipline": "the diff touches no repository file -- the reviewed worktree at 70433b10 is clean and carries no commit -- and only the two declared report paths exist."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure from real promoted runs whether fenced runs read two trees against a registered count above a hundred, against runs promoted before the change; the report does exactly that, and reports the registered count was 63-85, not above 100 (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:113).\nVERDICT done_when: the done_when names a report under 40 KB, a figure, and per-run figures; the report gives the tree counts and the timings from the named records, but the per-run registered count is a bracketing reading only (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:25) and the crew-complete timing is recorded as not held (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:144).\nVERDICT write_paths: the declared paths are the report .md and the figure .svg; both exist, no repository file changed, and the reviewed worktree at 70433b10 carries no commit and a clean status.\nVERDICT manifest: read; it states the measurement commands and their EXIT lines (assemble.py EXIT=0, verify-and-time.py EXIT=1 on a git-guard refusal, make-figure.log EXIT=0, scan-ledger.py EXIT=0), records no commit, and names a negative_control of none for a report-and-figure node.\nVERDICT diff: no repository file changed -- the reviewed worktree at 70433b10 carries no commit since its base and a clean working tree; the deliverables are the report and the figure outside the repository.\nCALL_SITES: reckon/crew/promotion.py:_repository_tree_boundary_violations, reckon/crew/routing.py:_repository_tree_snapshot, reckon/crew/dispatch.py:_boundary_snapshot_roots, reckon/crew/routing.py:_registered_worktrees\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the report answers the goal and states the falsifier honestly (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:113), but the per-run registered count the measure names is only bracketed (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:25).\nSCORE evidence: 16\nJUSTIFICATION evidence: the tree counts are read from each run's tree-snapshot.json and match an independent re-read (2 after vs 66/67/75/84 before vs 79-92 unfenced), but the direct registry count of 63-65 (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:60) has no logged command ending EXIT= and the named verifier exited 1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches no repository file -- the reviewed worktree at 70433b10 is clean and carries no commit -- and only the two declared report paths exist.\nSCORE durability: 17\nJUSTIFICATION durability: the boundary-roots instrument was exercised both ways (fenced -> 2 roots, unfenced -> None) in verify-and-time.log, but no guard fails if _boundary_snapshot_roots regresses, which is the separately dispatched test node's charge.\nSCORE fit: 18\nJUSTIFICATION fit: the report and the 1400-px despined figure with direct labels follow the house plot style, and no repository name, plan label or ticket id is introduced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:25 follow-on: the after-arm 'registered at dispatch' cells are bracketing readings taken from other runs, so the done_when's per-run registered count is not met for the after arm; the narrowed snapshot structurally cannot hold it and the report says so, but the gap is real.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:60 follow-on: the direct git worktree list count of 63-65 is not written to any log under the run directory with an EXIT= line -- it survives only in the worker's stream transcript -- so the figure the report labels measured directly has no durable logged command.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md:144 follow-on: the plan's third per-run figure, wall time from crew complete start to its commit, is reported as not held, so the measure is answered on two of its three figures and the third is a bound against coordinator latency rather than a promotion duration.",
+  "review_run_id": "r-20261001T075606493794-review-of-the-two-tree-saving-is-measured",
+  "reviewed_base_sha": "70433b10de182a0c30f52cb1d60c525eab0af91b",
+  "reviewed_head_sha": "70433b10de182a0c30f52cb1d60c525eab0af91b",
+  "reviewed_run_id": "r-20261001T072815636138-the-two-tree-saving-is-measured",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T08:04:05.844402+00:00",
+  "total": 88
+}

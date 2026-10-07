@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T11:19:31.865Z",
+  "dispatched_at": "2026-10-02T11:10:27Z",
+  "findings": [
+    {
+      "file": "~/.config/reckon/crew/reports/reckon/complete-reprofile.md",
+      "line": "100",
+      "severity": "follow-on",
+      "text": "follow-on: the section \"Changes to the baseline scripts (stated in full)\" omits complete-reprofile-artifacts/build_reprofile_json.py, a script added to the preserved artifacts, so the report does not state every change as its own heading and the done_when claims."
+    },
+    {
+      "file": "~/.config/reckon/crew/reports/reckon/complete-reprofile.md",
+      "line": "122",
+      "severity": "follow-on",
+      "text": "follow-on: the sentence \"no cold-cache regression, but no cold-cache saving either\" is contradicted by the report's own figures \u2014 cold clone scan 42.53 s against the baseline's 40.24 s is a 2.29 s (about 6%) cold regression, so the gloss reads the opposite of what the table shows."
+    },
+    {
+      "file": "~/.config/reckon/crew/reports/reckon/complete-reprofile.md",
+      "line": "126",
+      "severity": "follow-on",
+      "text": "follow-on: the report ships no figure, against the user mandate to illustrate research and measurement documents with a graphic; a head-vs-baseline bar chart of the four sites would carry the result more directly than the table alone."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "no code diff \u2014 the node is measure-only and its worktree is clean at 7f9b8764; the deliverables live outside git under the run directory and the reports directory.",
+    "done_when": "the done_when names the re-run of the baseline's case with the preserved scripts, the three call sites and _tree_state beside their baseline figures, any site above 5 s by file:line, and the two output files; all are present and reconcile with the run's own summary-unfenced.json.",
+    "goal": "the node's goal is to re-measure one `crew complete`'s wall time at the merged head against the 81.86 s baseline; ~/.config/reckon/crew/reports/reckon/complete-reprofile.md reports 69.94 s cold and 23.53 s warm beside it.",
+    "manifest": "read; status complete, it names both gate logs, and every figure matches summary-unfenced.json and summary-baseline-recomputed.json.",
+    "write_paths": "only ~/.config/reckon/crew/reports/reckon/complete-reprofile.md and .json were written under the declared scope, plus the node's own run directory the dispatch mandated; no tracked repository file changed."
+  },
+  "justifications": {
+    "durability": "no automated test guards this measure \u2014 it is a read-only profile \u2014 so a stale figure fails nothing automatically; reproducibility rests on the preserved artifacts under r-20261002T104603166755-crew-complete-time-after-the-bounds/complete-reprofile-artifacts/ and the byte-identical baseline profile copy, not on a regression test.",
+    "evidence": "~/.config/reckon/crew/reports/reckon/complete-reprofile.md:100 heads a section claiming to state every change in full but omits complete-reprofile-artifacts/build_reprofile_json.py, a script added to the preserved artifacts, so the done_when's \"states every change\" is not met in full even though the measured figures themselves reconcile.",
+    "fit": "~/.config/reckon/crew/reports/reckon/complete-reprofile.md follows the idiom of its sibling complete-profile.md (same table and section shape, no version or plan label in the filename or ids), with one deduction for shipping no figure.",
+    "goal_fidelity": "~/.config/reckon/crew/reports/reckon/complete-reprofile.json carries revision 7f9b87644855f26c9a5b5ee6078f49586c6984c5, wall_seconds 69.94 and baseline_wall_seconds 81.86, which is the goal's re-measurement of one promotion at the merged head beside the baseline.",
+    "scope_discipline": "`git -C <worktree> status --porcelain -uno` at 7f9b87644855f26c9a5b5ee6078f49586c6984c5 is empty and every written path (reports/reckon/complete-reprofile.md and .json, plus the node's own run directory) is inside the declared or dispatch-mandated scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to re-measure one `crew complete`'s wall time at the merged head against the 81.86 s baseline; ~/.config/reckon/crew/reports/reckon/complete-reprofile.md reports 69.94 s cold and 23.53 s warm beside it.\nVERDICT done_when: the done_when names the re-run of the baseline's case with the preserved scripts, the three call sites and _tree_state beside their baseline figures, any site above 5 s by file:line, and the two output files; all are present and reconcile with the run's own summary-unfenced.json.\nVERDICT write_paths: only ~/.config/reckon/crew/reports/reckon/complete-reprofile.md and .json were written under the declared scope, plus the node's own run directory the dispatch mandated; no tracked repository file changed.\nVERDICT manifest: read; status complete, it names both gate logs, and every figure matches summary-unfenced.json and summary-baseline-recomputed.json.\nVERDICT diff: no code diff \u2014 the node is measure-only and its worktree is clean at 7f9b8764; the deliverables live outside git under the run directory and the reports directory.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: ~/.config/reckon/crew/reports/reckon/complete-reprofile.json carries revision 7f9b87644855f26c9a5b5ee6078f49586c6984c5, wall_seconds 69.94 and baseline_wall_seconds 81.86, which is the goal's re-measurement of one promotion at the merged head beside the baseline.\nSCORE evidence: 17\nJUSTIFICATION evidence: ~/.config/reckon/crew/reports/reckon/complete-reprofile.md:100 heads a section claiming to state every change in full but omits complete-reprofile-artifacts/build_reprofile_json.py, a script added to the preserved artifacts, so the done_when's \"states every change\" is not met in full even though the measured figures themselves reconcile.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git -C <worktree> status --porcelain -uno` at 7f9b87644855f26c9a5b5ee6078f49586c6984c5 is empty and every written path (reports/reckon/complete-reprofile.md and .json, plus the node's own run directory) is inside the declared or dispatch-mandated scope.\nSCORE durability: 16\nJUSTIFICATION durability: no automated test guards this measure \u2014 it is a read-only profile \u2014 so a stale figure fails nothing automatically; reproducibility rests on the preserved artifacts under r-20261002T104603166755-crew-complete-time-after-the-bounds/complete-reprofile-artifacts/ and the byte-identical baseline profile copy, not on a regression test.\nSCORE fit: 19\nJUSTIFICATION fit: ~/.config/reckon/crew/reports/reckon/complete-reprofile.md follows the idiom of its sibling complete-profile.md (same table and section shape, no version or plan label in the filename or ids), with one deduction for shipping no figure.\nFINDING ~/.config/reckon/crew/reports/reckon/complete-reprofile.md:100 follow-on: the section \"Changes to the baseline scripts (stated in full)\" omits complete-reprofile-artifacts/build_reprofile_json.py, a script added to the preserved artifacts, so the report does not state every change as its own heading and the done_when claims.\nFINDING ~/.config/reckon/crew/reports/reckon/complete-reprofile.md:122 follow-on: the sentence \"no cold-cache regression, but no cold-cache saving either\" is contradicted by the report's own figures \u2014 cold clone scan 42.53 s against the baseline's 40.24 s is a 2.29 s (about 6%) cold regression, so the gloss reads the opposite of what the table shows.\nFINDING ~/.config/reckon/crew/reports/reckon/complete-reprofile.md:126 follow-on: the report ships no figure, against the user mandate to illustrate research and measurement documents with a graphic; a head-vs-baseline bar chart of the four sites would carry the result more directly than the table alone.",
+  "review_run_id": "r-20261002T111002338408-review-of-crew-complete-time-after-the-bounds",
+  "reviewed_base_sha": "7f9b87644855f26c9a5b5ee6078f49586c6984c5",
+  "reviewed_head_sha": "7f9b87644855f26c9a5b5ee6078f49586c6984c5",
+  "reviewed_run_id": "r-20261002T104603166755-crew-complete-time-after-the-bounds",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.755490+00:00",
+  "total": 91
+}

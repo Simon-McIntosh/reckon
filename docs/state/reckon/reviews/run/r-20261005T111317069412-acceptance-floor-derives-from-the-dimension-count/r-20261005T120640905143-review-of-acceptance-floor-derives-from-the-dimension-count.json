@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured zero: the delta's base arm is the reviewed run's own gate.log at 8b571a3d (131 passed, EXIT=0) and its head arm repair-gate.log at c0e8a899 (147 passed, EXIT=0); reckon.crew.review.added_failures_from_gate_logs over the two returns (0, []), and a positive control on synthetic logs returns (1, ['tests/test_x.py::test_y']).",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery.py:694",
+    "reckon/crew/recovery.py:798",
+    "reckon/crew/recovery.py:1389",
+    "reckon/crew/recovery.py:2320",
+    "reckon/crew/recovery.py:2343",
+    "reckon/crew/recovery.py:2432",
+    "reckon/crew/recovery.py:3276"
+  ],
+  "completed_at": "2026-10-05T12:20:35.259Z",
+  "dispatched_at": "2026-10-05T12:07:05Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "git show c0e8a899 replaces the literal \"all 5 dimensions ... 0..20\" in _review_dispatch_fields with f-string fragments reading len(review_module.REVIEW_DIMENSIONS) and review_module.REVIEW_MAX_SCORE, and adds test_review_dispatch_brief_tracks_the_dimension_count parametrised over the current schema and one extra dimension, asserting the rendered done_when carries the derived count.",
+    "done_when": "the reviewed node's done-when clause that no other site in reckon/ spells the dimension count as a stale literal is now met \u2014 a consecutive-string-concatenation-aware AST sweep of reckon/ at c0e8a899 returns zero disagreeing counts (positive control: the parent 8b571a3d recovery.py returns the stale count=5 site), and the split-string literal the prior review filed at recovery.py:663 is gone; accurate prose describing the six-dimension schema remains in review.py docstrings (lines 1, 78, 767, 1967, 2016), unchanged by this delta and not the stale class.",
+    "goal": "the increment composes the review dispatch done_when from the schema so the brief asks for every required dimension and the correct score maximum; at the reviewed head reckon/crew/recovery.py:_review_dispatch_fields renders \"scoring all 6 dimensions in the range 0..20\" from len(review_module.REVIEW_DIMENSIONS) and review_module.REVIEW_MAX_SCORE, and the added test asserts the rendered brief follows both the current six-dimension schema and a seven-dimension expansion.",
+    "manifest": "the reviewed manifest at head c0e8a899 records after_suite over repair-gate.log (147 passed, EXIT=0, header naming revision, tree and command) and carries an empty baseline_suite; the run's own directory additionally holds gate.log for the prior head 8b571a3d (131 passed, EXIT=0), so both arms of this delta are readable and reckon.crew.review.added_failures_from_gate_logs over the two returns a measured zero.",
+    "write_paths": "the delta touches exactly reckon/crew/recovery.py and tests/test_review_acceptance_floor_tracks_the_dimension_count.py, both inside the reviewed run's declared write paths; 19 insertions and 2 deletions; nothing outside them changed."
+  },
+  "justifications": {
+    "durability": "the added test derives its expectation from len(REVIEW_DIMENSIONS) and monkeypatches the schema owner, so a re-hardcoded count reddens it \u2014 confirmed by my own mutation \u2014 but it guards only the dispatch brief, so prose that spells the count (review.py docstrings) remains untested, as the prior review already noted.",
+    "evidence": "the reviewed run records the repair gate at 147 passed EXIT=0 with a header naming revision, tree and command, and a negative control at 2 failed EXIT=1; independently I re-ran the focused gate at c0e8a899 in a scratch tree (18 passed, EXIT=0), reproduced the mutation (2 failed, EXIT=1), and derived added failures with the store's own instrument over both arms at (0, []).",
+    "fit": "the f-string composition matches the surrounding idiom in _review_dispatch_fields, the test uses the module's existing monkeypatch/tmp_path idiom, and the commit subject and body state the mechanism without plan or ticket references.",
+    "goal_fidelity": "the delta does what it claims \u2014 the dispatch done_when derives its dimension count and score maximum from the schema owner, so a dimension added to REVIEW_DIMENSIONS moves the rendered brief with it, and the new test proves both the current count and an expanded one; the only shortfall is that the repaired brief did not reach this review's own dispatch (its done_when still reads \"all 5\"), a deployment-lag effect of the coordinator composing from the reviewed head rather than a defect in the commit.",
+    "reuse": "the rendered count and maximum read from review_module.REVIEW_DIMENSIONS and review_module.REVIEW_MAX_SCORE, the schema's single owners, rather than duplicating the numbers, so the brief cannot drift from the schema.",
+    "scope_discipline": "the commit changes exactly reckon/crew/recovery.py and the test, 19 insertions and 2 deletions, both inside the reviewed run's declared write paths, and no file outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment composes the review dispatch done_when from the schema so the brief asks for every required dimension and the correct score maximum; at the reviewed head reckon/crew/recovery.py:_review_dispatch_fields renders \"scoring all 6 dimensions in the range 0..20\" from len(review_module.REVIEW_DIMENSIONS) and review_module.REVIEW_MAX_SCORE, and the added test asserts the rendered brief follows both the current six-dimension schema and a seven-dimension expansion.\nVERDICT done_when: the reviewed node's done-when clause that no other site in reckon/ spells the dimension count as a stale literal is now met \u2014 a consecutive-string-concatenation-aware AST sweep of reckon/ at c0e8a899 returns zero disagreeing counts (positive control: the parent 8b571a3d recovery.py returns the stale count=5 site), and the split-string literal the prior review filed at recovery.py:663 is gone; accurate prose describing the six-dimension schema remains in review.py docstrings (lines 1, 78, 767, 1967, 2016), unchanged by this delta and not the stale class.\nVERDICT write_paths: the delta touches exactly reckon/crew/recovery.py and tests/test_review_acceptance_floor_tracks_the_dimension_count.py, both inside the reviewed run's declared write paths; 19 insertions and 2 deletions; nothing outside them changed.\nVERDICT manifest: the reviewed manifest at head c0e8a899 records after_suite over repair-gate.log (147 passed, EXIT=0, header naming revision, tree and command) and carries an empty baseline_suite; the run's own directory additionally holds gate.log for the prior head 8b571a3d (131 passed, EXIT=0), so both arms of this delta are readable and reckon.crew.review.added_failures_from_gate_logs over the two returns a measured zero.\nVERDICT diff: git show c0e8a899 replaces the literal \"all 5 dimensions ... 0..20\" in _review_dispatch_fields with f-string fragments reading len(review_module.REVIEW_DIMENSIONS) and review_module.REVIEW_MAX_SCORE, and adds test_review_dispatch_brief_tracks_the_dimension_count parametrised over the current schema and one extra dimension, asserting the rendered done_when carries the derived count.\nCALL_SITES: reckon/crew/recovery.py:694, reckon/crew/recovery.py:798, reckon/crew/recovery.py:1389, reckon/crew/recovery.py:2320, reckon/crew/recovery.py:2343, reckon/crew/recovery.py:2432, reckon/crew/recovery.py:3276\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta does what it claims \u2014 the dispatch done_when derives its dimension count and score maximum from the schema owner, so a dimension added to REVIEW_DIMENSIONS moves the rendered brief with it, and the new test proves both the current count and an expanded one; the only shortfall is that the repaired brief did not reach this review's own dispatch (its done_when still reads \"all 5\"), a deployment-lag effect of the coordinator composing from the reviewed head rather than a defect in the commit.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run records the repair gate at 147 passed EXIT=0 with a header naming revision, tree and command, and a negative control at 2 failed EXIT=1; independently I re-ran the focused gate at c0e8a899 in a scratch tree (18 passed, EXIT=0), reproduced the mutation (2 failed, EXIT=1), and derived added failures with the store's own instrument over both arms at (0, []).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit changes exactly reckon/crew/recovery.py and the test, 19 insertions and 2 deletions, both inside the reviewed run's declared write paths, and no file outside them.\nSCORE durability: 19\nJUSTIFICATION durability: the added test derives its expectation from len(REVIEW_DIMENSIONS) and monkeypatches the schema owner, so a re-hardcoded count reddens it \u2014 confirmed by my own mutation \u2014 but it guards only the dispatch brief, so prose that spells the count (review.py docstrings) remains untested, as the prior review already noted.\nSCORE fit: 19\nJUSTIFICATION fit: the f-string composition matches the surrounding idiom in _review_dispatch_fields, the test uses the module's existing monkeypatch/tmp_path idiom, and the commit subject and body state the mechanism without plan or ticket references.\nSCORE reuse: 20\nJUSTIFICATION reuse: the rendered count and maximum read from review_module.REVIEW_DIMENSIONS and review_module.REVIEW_MAX_SCORE, the schema's single owners, rather than duplicating the numbers, so the brief cannot drift from the schema.\nreviewed_base_sha: 8b571a3d49cb7d122a70c3833c5f71b7e6d5c76b\nreviewed_head_sha: c0e8a899e12064a747c39fa73787a1b67d651e5b\n",
+  "review_run_id": "r-20261005T120640905143-review-of-acceptance-floor-derives-from-the-dimension-count",
+  "reviewed_base_sha": "8b571a3d49cb7d122a70c3833c5f71b7e6d5c76b",
+  "reviewed_head_sha": "c0e8a899e12064a747c39fa73787a1b67d651e5b",
+  "reviewed_run_id": "r-20261005T111317069412-acceptance-floor-derives-from-the-dimension-count",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T12:18:36.373558+00:00",
+  "total": 116
+}

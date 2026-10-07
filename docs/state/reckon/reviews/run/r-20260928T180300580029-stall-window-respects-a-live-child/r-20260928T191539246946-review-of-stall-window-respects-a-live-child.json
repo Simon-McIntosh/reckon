@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:_watch_verdict",
+    "reckon/crew/recovery.py:watch_follow",
+    "reckon/cli.py:3480"
+  ],
+  "completed_at": "2026-09-28T19:26:31.063Z",
+  "dispatched_at": "2026-09-28T19:15:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3810",
+      "text": "the descendant reading is gated on `local_reading`, so a run whose `launcher_host` is absent or names another host keeps the fifteen-minute window even where `_worker_record_liveness` has just proved a live worker by local pid and start time, which makes \u00a76's extension narrower than the rule it implements."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3811",
+      "text": "`_worker_record_pid` re-reads and re-parses the run's worker record that `_worker_record_liveness` read a few lines earlier in the same call, so every row of a supervised run pays a second file read where one read could serve both."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 58405bd6 \u2014 5949a8b6 adds the descendant reading to `classify_pointer` (reckon/crew/recovery.py:3810, row key at :4738) plus the one window both stall sites compare, and e1a7fcf4 adds only the landing record and its figure.",
+    "done_when": "read at tests/test_stall_window_respects_a_child.py:317, which holds a live pointer over a real sleeping child, backdates the stream past the 900 s window with a 3600 s budget, asserts the ticker's baseline is `working` and three later readings publish nothing, then kills the child on the third tick and asserts the next row is `stalled`; the no-child narrowing is at tests/test_stall_window_respects_a_child.py:388 and the supervised pid at :427.",
+    "goal": "\u00a76's goal is that a quiet run whose worker process is alive with a live descendant process is not read stalled inside the fifteen-minute window; reckon/crew/recovery.py:5206 `_stall_window_seconds` returns `max(stall_seconds, budget_seconds)` on that pair and `stall_seconds` otherwise, and both stall sites read it \u2014 reckon/crew/recovery.py:5387 (`_watch_verdict`) and reckon/crew/recovery.py:6282 (the follower generator).",
+    "manifest": "read; it records the head arm (18 failed, 256 passed, EXIT=1), the base arm (22 failed, 252 passed, EXIT=1), all five logs, the tree-resolution proof, and reports both its fence-time overrun and two non-scope accidents rather than omitting them.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, tests/test_stall_window_respects_a_child.py, docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/stall-window-respects-a-live-child.html and its figure directory; `git diff --numstat 58405bd6..e1a7fcf4` lists exactly those four paths (119/2, 454/0, 157/0, 40/0) and nothing else."
+  },
+  "justifications": {
+    "durability": "the negative control at negative_control.log:1 drops the descendant term in a scratch copy and three of the four cases redden, so the assertions are shown to fail on the defect they guard, and the quiet time is read from the fixture's own stream mtime (tests/test_stall_window_respects_a_child.py:286) rather than from the reader under test.",
+    "evidence": "both gate logs carry revision, tree, module and command headers (baseline_suite.log:2 names /tmp/swrc-base, after_suite.log:2 names the node worktree), the negative control names its mutant line and proves the tree it imported, and the added-failure set difference over the two logs is empty (0 added ids).",
+    "fit": "`_stall_window_seconds`, `_process_children` and `_int_or_none` follow the module's private-helper idiom with mechanism docstrings and carry no forbidden name, though reckon/crew/recovery.py:3811 re-reads a record already read at reckon/crew/recovery.py:2960.",
+    "goal_fidelity": "reckon/crew/recovery.py:5206 with its two call sites implements \u00a76's rule as written, but the `local_reading` gate at reckon/crew/recovery.py:3810 leaves `process_descendant_alive` unread for a run whose pointer names another host while its own worker record proves a live local worker, so that run keeps the fifteen-minute window.",
+    "scope_discipline": "every path in `git diff --numstat 58405bd6..e1a7fcf4` is inside the declared write paths, and the third stall comparison at reckon/crew/runs.py:3217 was reported as a follow-on rather than edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a76's goal is that a quiet run whose worker process is alive with a live descendant process is not read stalled inside the fifteen-minute window; reckon/crew/recovery.py:5206 `_stall_window_seconds` returns `max(stall_seconds, budget_seconds)` on that pair and `stall_seconds` otherwise, and both stall sites read it \u2014 reckon/crew/recovery.py:5387 (`_watch_verdict`) and reckon/crew/recovery.py:6282 (the follower generator).\nVERDICT done_when: read at tests/test_stall_window_respects_a_child.py:317, which holds a live pointer over a real sleeping child, backdates the stream past the 900 s window with a 3600 s budget, asserts the ticker's baseline is `working` and three later readings publish nothing, then kills the child on the third tick and asserts the next row is `stalled`; the no-child narrowing is at tests/test_stall_window_respects_a_child.py:388 and the supervised pid at :427.\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, tests/test_stall_window_respects_a_child.py, docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/stall-window-respects-a-live-child.html and its figure directory; `git diff --numstat 58405bd6..e1a7fcf4` lists exactly those four paths (119/2, 454/0, 157/0, 40/0) and nothing else.\nVERDICT manifest: read; it records the head arm (18 failed, 256 passed, EXIT=1), the base arm (22 failed, 252 passed, EXIT=1), all five logs, the tree-resolution proof, and reports both its fence-time overrun and two non-scope accidents rather than omitting them.\nVERDICT diff: read commit by commit against 58405bd6 \u2014 5949a8b6 adds the descendant reading to `classify_pointer` (reckon/crew/recovery.py:3810, row key at :4738) plus the one window both stall sites compare, and e1a7fcf4 adds only the landing record and its figure.\nCALL_SITES: reckon/crew/recovery.py:_watch_verdict, reckon/crew/recovery.py:watch_follow, reckon/cli.py:3480\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:5206 with its two call sites implements \u00a76's rule as written, but the `local_reading` gate at reckon/crew/recovery.py:3810 leaves `process_descendant_alive` unread for a run whose pointer names another host while its own worker record proves a live local worker, so that run keeps the fifteen-minute window.\nSCORE evidence: 18\nJUSTIFICATION evidence: both gate logs carry revision, tree, module and command headers (baseline_suite.log:2 names /tmp/swrc-base, after_suite.log:2 names the node worktree), the negative control names its mutant line and proves the tree it imported, and the added-failure set difference over the two logs is empty (0 added ids).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --numstat 58405bd6..e1a7fcf4` is inside the declared write paths, and the third stall comparison at reckon/crew/runs.py:3217 was reported as a follow-on rather than edited.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at negative_control.log:1 drops the descendant term in a scratch copy and three of the four cases redden, so the assertions are shown to fail on the defect they guard, and the quiet time is read from the fixture's own stream mtime (tests/test_stall_window_respects_a_child.py:286) rather than from the reader under test.\nSCORE fit: 18\nJUSTIFICATION fit: `_stall_window_seconds`, `_process_children` and `_int_or_none` follow the module's private-helper idiom with mechanism docstrings and carry no forbidden name, though reckon/crew/recovery.py:3811 re-reads a record already read at reckon/crew/recovery.py:2960.\nFINDING reckon/crew/recovery.py:3810 the descendant reading is gated on `local_reading`, so a run whose `launcher_host` is absent or names another host keeps the fifteen-minute window even where `_worker_record_liveness` has just proved a live worker by local pid and start time, which makes \u00a76's extension narrower than the rule it implements.\nFINDING reckon/crew/recovery.py:3811 `_worker_record_pid` re-reads and re-parses the run's worker record that `_worker_record_liveness` read a few lines earlier in the same call, so every row of a supervised run pays a second file read where one read could serve both.",
+  "review_run_id": "r-20260928T191539246946-review-of-stall-window-respects-a-live-child",
+  "reviewed_base_sha": "58405bd6eeca722241894b0ad21bce826ab4c433",
+  "reviewed_head_sha": "e1a7fcf42f62a76b7eeeec731e4bacbd06a49ca2",
+  "reviewed_run_id": "r-20260928T180300580029-stall-window-respects-a-live-child",
+  "reviewer_node": "review-of-stall-window-respects-a-live-child",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T19:23:51.187991+00:00",
+  "total": 90
+}

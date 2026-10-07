@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absence_control": "a missing log returns (None, []) - unmeasured, never a measured zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/gate-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/base-arm.log",
+    "count_derivation": "added_failures_from_gate_logs over the reviewed run's own gate logs: logs/base-arm.log as the baseline arm and logs/gate-head.log as the head arm",
+    "manifest_fields_note": "manifest.md:43-53 hold baseline_suite/after_suite as prose rather than log paths, so a reader that re-derives from those fields alone (review.annotate_review_of_run) gets unmeasured; the count above was derived from the two logs the manifest's test_logs names",
+    "positive_control": {
+      "count": 5,
+      "ids": [
+        "tests/test_resumed_burn_prices_to_rollout.py::test_a_lane_change_stream_is_summed_not_superseded",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[three-attempts]",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[two-attempts-a]",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[two-attempts-b]",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_summing_the_attempts_is_the_overcount_the_thread_fold_removes"
+      ],
+      "log_as_head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/base-arm.log",
+      "note": "the red base arm read as the head against the green head arm: its five known failures are found when swapped and absent in the true direction"
+    }
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:5846 (accumulate_run_spend reads the per-thread fold)",
+    "reckon/crew/promotion.py:4515 (ledger.per_run_budget prices the promoted attempt)"
+  ],
+  "completed_at": "2026-09-28T15:45:18.378Z",
+  "dispatched_at": "2026-09-28T14:50:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-fleet-reports-its-velocity-landed.html",
+      "line": "278",
+      "text": "the landing anchor says four of the ten tests/test_ledger.py failures were confirmed at the base revision while the run's manifest.md:48 says ten of ten, and no log in the run directory receipts the re-run, so the claim that the ledger suite's red state predates this change cannot be checked from the run's own evidence."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1849",
+      "text": "the unmeasured-cost branch added for symmetry with the token counters has no assertion: tests/test_resumed_burn_prices_to_rollout.py:264 covers only the token counters and tests/test_ledger.py:534 only the numeric prior, so a regression that charged the whole cumulative cost to the newer attempt would leave this node's gate green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md",
+      "line": "43",
+      "text": "baseline_suite and after_suite are prose mappings rather than the armed-only JSON the run's own brief names at prompt.txt:123-124, and reckon/crew/review.py:612 reads such a field's first line as a log path, so the store's read-time derivation reports the added-failure count unmeasured for this run even though the two gate logs exist and give a measured zero."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 76e1bf93 - eaa6adfb adds the thread identity and the fold to metering.py, d72ffc3f extends reckon/ledger.py:1842-1855 so an unmeasured prior reading leaves the attempt's share \"unknown\", and 55d36c04 with af2abc73 carry the landing record, evidence anchor and figure; reckon/crew/promotion.py:1847 keeps a near-duplicate stream gatherer that still drops lane-change files, pre-existing and outside this node's fence.",
+    "done_when": "the quantitative claim of three resumed streams priced within 1% is asserted by tests/test_resumed_burn_prices_to_rollout.py:147 and receipted by logs/base-arm.log (5 failed, 69 passed, EXIT=1) against logs/gate-head.log (76 passed, EXIT=0), with logs/measurement.log recording 8 host runs and out_of_band=0, and the declared control reddening the summed case at logs/negative-control.log (4 failed, EXIT=1).",
+    "goal": "the node's goal is to price a resumed codex run's burn so it matches the run's rollout total, and reckon/crew/metering.py:460 now folds each declared thread to its newest measured attempt and sums the threads, with run_streams gathering lane-change files at metering.py:317,338; the eight host lineages in logs/measurement.log price at 1.0003-1.0010 of their rollout receipts.",
+    "manifest": "read; it records the four commits, the five gate logs, the measurement module and its cwd, but its baseline_suite and after_suite lines at manifest.md:43-53 are prose mappings rather than the armed-only JSON the brief names at prompt.txt:123-124, so the store's read-time derivation cannot open the fields as log paths and reports the added-failure count unmeasured for this run.",
+    "write_paths": "the run's manifest declares six paths and git diff --stat 76e1bf93..af2abc73 lists exactly those six files, so every landed path is inside the fence."
+  },
+  "justifications": {
+    "durability": "the declared control reddens the fold (logs/negative-control.log) and tests/test_resumed_burn_prices_to_rollout.py:192,238 each fail if their behaviour regresses, but the cost_usd half of the ledger change at reckon/ledger.py:1842-1852 has no assertion, since tests/test_ledger.py:534 exercises only the numeric prior.",
+    "evidence": "the arms, the control and the measurement are on disk with revision and imported-module headers, but both suite logs keep the unsubstituted placeholders \"<repo>\" and \"<five suites>\" in their command lines so no arm re-runs as written, and the ledger suite's red state rests on records that disagree on how many of the ten failures were checked at the base revision (manifest.md:48 against the landing anchor's line 278).",
+    "fit": "reckon/crew/metering.py:436 states the fold rule in mechanism terms and the added names (thread_id, _lane_change_order, _attempt_rank) describe what they do, with no plan or tracker label anywhere in the diff.",
+    "goal_fidelity": "metering.py:460 folds each declared thread to its newest measured attempt and sums the threads, which is the pricing the goal names and the one logs/measurement.log prices within 0.1% on eight host runs.",
+    "scope_discipline": "git diff --stat 76e1bf93..af2abc73 lists only the six declared paths, the figure included, and the worktree at af2abc73 is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to price a resumed codex run's burn so it matches the run's rollout total, and reckon/crew/metering.py:460 now folds each declared thread to its newest measured attempt and sums the threads, with run_streams gathering lane-change files at metering.py:317,338; the eight host lineages in logs/measurement.log price at 1.0003-1.0010 of their rollout receipts.\nVERDICT done_when: the quantitative claim of three resumed streams priced within 1% is asserted by tests/test_resumed_burn_prices_to_rollout.py:147 and receipted by logs/base-arm.log (5 failed, 69 passed, EXIT=1) against logs/gate-head.log (76 passed, EXIT=0), with logs/measurement.log recording 8 host runs and out_of_band=0, and the declared control reddening the summed case at logs/negative-control.log (4 failed, EXIT=1).\nVERDICT write_paths: the run's manifest declares six paths and git diff --stat 76e1bf93..af2abc73 lists exactly those six files, so every landed path is inside the fence.\nVERDICT manifest: read; it records the four commits, the five gate logs, the measurement module and its cwd, but its baseline_suite and after_suite lines at manifest.md:43-53 are prose mappings rather than the armed-only JSON the brief names at prompt.txt:123-124, so the store's read-time derivation cannot open the fields as log paths and reports the added-failure count unmeasured for this run.\nVERDICT diff: read commit by commit against 76e1bf93 - eaa6adfb adds the thread identity and the fold to metering.py, d72ffc3f extends reckon/ledger.py:1842-1855 so an unmeasured prior reading leaves the attempt's share \"unknown\", and 55d36c04 with af2abc73 carry the landing record, evidence anchor and figure; reckon/crew/promotion.py:1847 keeps a near-duplicate stream gatherer that still drops lane-change files, pre-existing and outside this node's fence.\nCALL_SITES: reckon/crew/recovery.py:5846 (accumulate_run_spend reads the per-thread fold), reckon/crew/promotion.py:4515 (ledger.per_run_budget prices the promoted attempt)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: metering.py:460 folds each declared thread to its newest measured attempt and sums the threads, which is the pricing the goal names and the one logs/measurement.log prices within 0.1% on eight host runs.\nSCORE evidence: 15\nJUSTIFICATION evidence: the arms, the control and the measurement are on disk with revision and imported-module headers, but both suite logs keep the unsubstituted placeholders \"<repo>\" and \"<five suites>\" in their command lines so no arm re-runs as written, and the ledger suite's red state rests on records that disagree on how many of the ten failures were checked at the base revision (manifest.md:48 against the landing anchor's line 278).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 76e1bf93..af2abc73 lists only the six declared paths, the figure included, and the worktree at af2abc73 is clean.\nSCORE durability: 16\nJUSTIFICATION durability: the declared control reddens the fold (logs/negative-control.log) and tests/test_resumed_burn_prices_to_rollout.py:192,238 each fail if their behaviour regresses, but the cost_usd half of the ledger change at reckon/ledger.py:1842-1852 has no assertion, since tests/test_ledger.py:534 exercises only the numeric prior.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/metering.py:436 states the fold rule in mechanism terms and the added names (thread_id, _lane_change_order, _attempt_rank) describe what they do, with no plan or tracker label anywhere in the diff.\nFINDING docs/evidence/archive/the-fleet-reports-its-velocity-landed.html:278 the landing anchor says four of the ten tests/test_ledger.py failures were confirmed at the base revision while the run's manifest.md:48 says ten of ten, and no log in the run directory receipts the re-run, so the claim that the ledger suite's red state predates this change cannot be checked from the run's own evidence.\nFINDING reckon/ledger.py:1849 the unmeasured-cost branch added for symmetry with the token counters has no assertion: tests/test_resumed_burn_prices_to_rollout.py:264 covers only the token counters and tests/test_ledger.py:534 only the numeric prior, so a regression that charged the whole cumulative cost to the newer attempt would leave this node's gate green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md:43 baseline_suite and after_suite are prose mappings rather than the armed-only JSON the run's own brief names at prompt.txt:123-124, and reckon/crew/review.py:612 reads such a field's first line as a log path, so the store's read-time derivation reports the added-failure count unmeasured for this run even though the two gate logs exist and give a measured zero.",
+  "review_run_id": "r-20260928T145013782239-review-of-resumed-burn-prices-to-rollout",
+  "reviewed_base_sha": "76e1bf938b1bf16cd18618cd03f742f264f079eb",
+  "reviewed_head_sha": "af2abc7377d0ad51a821ec80f0e1f6b1866f48fb",
+  "reviewed_run_id": "r-20260928T132148906656-resumed-burn-prices-to-rollout",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T15:38:30.340874+00:00",
+  "total": 86
+}

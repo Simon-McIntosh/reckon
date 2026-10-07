@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "sonnet",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3209",
+    "reckon/mcp.py:3320",
+    "reckon/_store.py:1419"
+  ],
+  "completed_at": "2026-10-02T12:39:44.567Z",
+  "dispatched_at": "2026-10-02T12:23:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/plan-writes-are-not-fenced/every-writer-commutes-with-landing.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control reverts both the per-file plan lock and the comment append, so negative-control.log cannot show that the declared mutation (the comment append alone) is what the comment-append case depends on."
+    },
+    {
+      "file": "tests/test_landing_write_races_every_writer.py",
+      "line": "293",
+      "severity": "follow-on",
+      "text": "follow-on: the state-set case passes in the negative-control run with the fence fully reverted, so its green result is not evidence that the fence protects a state set."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base ff112f9f; ae46158ea adds the file tests/test_landing_write_races_every_writer.py and 3697b1d85 the fragment, 375 insertions and 0 deletions, no product source.",
+    "done_when": "the done-when requires that for each writer its change is present afterwards or its loss is refused with both versions named, plus a sequential positive control; tests/test_landing_write_races_every_writer.py:312 asserts present-or-refused and :337 asserts the sequential write advances the version.",
+    "goal": "the node goal is to prove plan-writes-are-not-fenced section 6 \u2014 every writer that can race the landing write commutes or refuses \u2014 by one two-writer test per writer; tests/test_landing_write_races_every_writer.py:283 parametrizes all five writers (landing record, followup append, section append, state set, comment append) and each case races a landing write.",
+    "manifest": "read; status complete, both suite arms 133 passed EXIT=0, negative control EXIT=1 with four failing ids, added failures measured.",
+    "write_paths": "the manifest declares five write paths; the diff touches only two of the declared ones \u2014 the test and the fragment \u2014 so reckon/_store.py and reckon/mcp.py carry no change."
+  },
+  "justifications": {
+    "durability": "reverting the write-path fence reddens four cases including the declared comment-append falsifier, but the state-set case passes in that same reverted run at tests/test_landing_write_races_every_writer.py:293, so one of the five cases does not discriminate the fence.",
+    "evidence": "gate-base.log and gate-head.log each record 133 passed EXIT=0 and negative-control.log records 4 failed EXIT=1 with comment-append among the failing ids the head arm does not fail.",
+    "fit": "tests/test_landing_write_races_every_writer.py:83 uses monkeypatch.setenv and tmp_path to synthesise an isolated repository in the repository's established plan-write test idiom, and the file carries no plan label or version token.",
+    "goal_fidelity": "tests/test_landing_write_races_every_writer.py:283 races each of the five section-6 writers against an in-flight landing write, meeting the goal's one-test-per-writer, though at the head revision the plan lock serialises the writers so the rendezvous degrades rather than truly overlapping.",
+    "scope_discipline": "the diff touches only tests/test_landing_write_races_every_writer.py and docs/evidence/fragments/plan-writes-are-not-fenced/every-writer-commutes-with-landing.html, both inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to prove plan-writes-are-not-fenced section 6 \u2014 every writer that can race the landing write commutes or refuses \u2014 by one two-writer test per writer; tests/test_landing_write_races_every_writer.py:283 parametrizes all five writers (landing record, followup append, section append, state set, comment append) and each case races a landing write.\nVERDICT done_when: the done-when requires that for each writer its change is present afterwards or its loss is refused with both versions named, plus a sequential positive control; tests/test_landing_write_races_every_writer.py:312 asserts present-or-refused and :337 asserts the sequential write advances the version.\nVERDICT write_paths: the manifest declares five write paths; the diff touches only two of the declared ones \u2014 the test and the fragment \u2014 so reckon/_store.py and reckon/mcp.py carry no change.\nVERDICT manifest: read; status complete, both suite arms 133 passed EXIT=0, negative control EXIT=1 with four failing ids, added failures measured.\nVERDICT diff: read both commits against base ff112f9f; ae46158ea adds the file tests/test_landing_write_races_every_writer.py and 3697b1d85 the fragment, 375 insertions and 0 deletions, no product source.\nCALL_SITES: reckon/crew/promotion.py:3209, reckon/mcp.py:3320, reckon/_store.py:1419\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_landing_write_races_every_writer.py:283 races each of the five section-6 writers against an in-flight landing write, meeting the goal's one-test-per-writer, though at the head revision the plan lock serialises the writers so the rendezvous degrades rather than truly overlapping.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log and gate-head.log each record 133 passed EXIT=0 and negative-control.log records 4 failed EXIT=1 with comment-append among the failing ids the head arm does not fail.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_landing_write_races_every_writer.py and docs/evidence/fragments/plan-writes-are-not-fenced/every-writer-commutes-with-landing.html, both inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: reverting the write-path fence reddens four cases including the declared comment-append falsifier, but the state-set case passes in that same reverted run at tests/test_landing_write_races_every_writer.py:293, so one of the five cases does not discriminate the fence.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_landing_write_races_every_writer.py:83 uses monkeypatch.setenv and tmp_path to synthesise an isolated repository in the repository's established plan-write test idiom, and the file carries no plan label or version token.\nFINDING docs/evidence/fragments/plan-writes-are-not-fenced/every-writer-commutes-with-landing.html:1 follow-on: the negative control reverts both the per-file plan lock and the comment append, so negative-control.log cannot show that the declared mutation (the comment append alone) is what the comment-append case depends on.\nFINDING tests/test_landing_write_races_every_writer.py:293 follow-on: the state-set case passes in the negative-control run with the fence fully reverted, so its green result is not evidence that the fence protects a state set.\n",
+  "review_run_id": "r-20261002T122234770611-review-of-every-writer-commutes-with-landing",
+  "reviewed_base_sha": "ff112f9f01e00ca5d0ea338a5b60cafb821e5e18",
+  "reviewed_head_sha": "3697b1d8574865ede15b3087766cd07d443ccecd",
+  "reviewed_run_id": "r-20261002T112800164243-every-writer-commutes-with-landing",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:34:49.841036Z",
+  "total": 91
+}

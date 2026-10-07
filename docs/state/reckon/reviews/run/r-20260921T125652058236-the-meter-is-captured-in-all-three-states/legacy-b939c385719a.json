@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "docs/ui/crew.jsx:388"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "docs/figures/burn-is-visible-before-it-bites/after/capture-index.json",
+      "line": "180",
+      "text": "explicit_unknown is copied from the case name rather than measured - the producing harness sets it as case == \"no-window\" - so this field would read true even had the annotation failed to render, and the claim a reader takes from it is backed only by the separate rendered.annotation_unknown signal beside it."
+    },
+    {
+      "file": "docs/ui/crew.jsx",
+      "line": "517",
+      "text": "the projected exhaustion is carried only in the projection mark's title attribute, so no capture shows that stamp as legible text; the index's projected_exhaustion_at is corroborated by the mark's x-offset (16.16% predicted against 245.5px on a 1305px box, within a pixel) but a reader of the PNG alone cannot read the date, which is the one figure of the three the entry does not legibly show."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read the single commit bedd7050; it carries the six PNGs, capture-index.json, three added lines on the plan and the archive record, and no other path.",
+    "done_when": "read capture-index.json against every PNG; each of the six entries names a case and a width, every file's IHDR reads 1374x900 or 1920x900 equal to its name and its entry, and the manifest's gate is tests/test_spa_owed_captures.py plus tests/test_spa_viewport_containment.py at 9 passed in 66.24s exit 0.",
+    "goal": "read docs/figures/burn-is-visible-before-it-bites/after/; the goal is six captures of the meter's three states with their figures recorded, and the directory holds exactly capture-index.json plus six PNGs named for their case and width.",
+    "manifest": "read; it states six captures plus the index at bedd7050, the focused gate at 9 passed, and names its own replaced instrument whose first version could not fail.",
+    "write_paths": "the diffstat bc721e88..bedd7050 covers exactly the three declared areas - the after/ directory, docs/plans/burn-is-visible-before-it-bites.html and docs/evidence/archive/burn-is-visible-before-it-bites-landed.html - 9 files, 364 insertions, 0 deletions."
+  },
+  "justifications": {
+    "durability": "tests/test_spa_crew_burn.py:232 guards the no-meter rendering the no-window capture shows, but no test reads the after/ directory, so deleting all six PNGs leaves the suite green.",
+    "evidence": "measured on the PNGs themselves - unsustainable-1374.png carries a 261px fill on a 1305px content box, exactly the recorded 20%, both rate texts (10.3x 1-hour, 1.71x 7-day) are legible in it, and its projection mark sits at x=245.5 where the recorded 2026-09-15T03:09Z maps to 16.16%.",
+    "fit": "capture-index.json records each width read from the PNG's own IHDR rather than from the filename, and the harness stays in the run directory instead of the repository.",
+    "goal_fidelity": "docs/figures/burn-is-visible-before-it-bites/after/capture-index.json:247 holds the two declared widths and its six entries cover the unsustainable, sustainable and no-window cases the plan names.",
+    "scope_discipline": "every path in bedd7050 is inside docs/figures/burn-is-visible-before-it-bites, docs/plans/burn-is-visible-before-it-bites.html and docs/evidence/archive/burn-is-visible-before-it-bites-landed.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read docs/figures/burn-is-visible-before-it-bites/after/; the goal is six captures of the meter's three states with their figures recorded, and the directory holds exactly capture-index.json plus six PNGs named for their case and width.\nVERDICT done_when: read capture-index.json against every PNG; each of the six entries names a case and a width, every file's IHDR reads 1374x900 or 1920x900 equal to its name and its entry, and the manifest's gate is tests/test_spa_owed_captures.py plus tests/test_spa_viewport_containment.py at 9 passed in 66.24s exit 0.\nVERDICT write_paths: the diffstat bc721e88..bedd7050 covers exactly the three declared areas - the after/ directory, docs/plans/burn-is-visible-before-it-bites.html and docs/evidence/archive/burn-is-visible-before-it-bites-landed.html - 9 files, 364 insertions, 0 deletions.\nVERDICT manifest: read; it states six captures plus the index at bedd7050, the focused gate at 9 passed, and names its own replaced instrument whose first version could not fail.\nVERDICT diff: read the single commit bedd7050; it carries the six PNGs, capture-index.json, three added lines on the plan and the archive record, and no other path.\nCALL_SITES: docs/ui/crew.jsx:388\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/figures/burn-is-visible-before-it-bites/after/capture-index.json:247 holds the two declared widths and its six entries cover the unsustainable, sustainable and no-window cases the plan names.\nSCORE evidence: 17\nJUSTIFICATION evidence: measured on the PNGs themselves - unsustainable-1374.png carries a 261px fill on a 1305px content box, exactly the recorded 20%, both rate texts (10.3x 1-hour, 1.71x 7-day) are legible in it, and its projection mark sits at x=245.5 where the recorded 2026-09-15T03:09Z maps to 16.16%.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in bedd7050 is inside docs/figures/burn-is-visible-before-it-bites, docs/plans/burn-is-visible-before-it-bites.html and docs/evidence/archive/burn-is-visible-before-it-bites-landed.html.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_spa_crew_burn.py:232 guards the no-meter rendering the no-window capture shows, but no test reads the after/ directory, so deleting all six PNGs leaves the suite green.\nSCORE fit: 19\nJUSTIFICATION fit: capture-index.json records each width read from the PNG's own IHDR rather than from the filename, and the harness stays in the run directory instead of the repository.\nFINDING docs/figures/burn-is-visible-before-it-bites/after/capture-index.json:180 explicit_unknown is copied from the case name rather than measured - the producing harness sets it as case == \"no-window\" - so this field would read true even had the annotation failed to render, and the claim a reader takes from it is backed only by the separate rendered.annotation_unknown signal beside it.\nFINDING docs/ui/crew.jsx:517 the projected exhaustion is carried only in the projection mark's title attribute, so no capture shows that stamp as legible text; the index's projected_exhaustion_at is corroborated by the mark's x-offset (16.16% predicted against 245.5px on a 1305px box, within a pixel) but a reader of the PNG alone cannot read the date, which is the one figure of the three the entry does not legibly show.",
+  "review_run_id": "legacy-b939c385719a",
+  "review_run_id_source": "derived",
+  "reviewed_run_id": "r-20260921T125652058236-the-meter-is-captured-in-all-three-states",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-21T16:53:54.978671+00:00",
+  "total": 89
+}

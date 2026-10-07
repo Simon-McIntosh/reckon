@@ -1,0 +1,125 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6a104b893df8dc5129593a9116353d72465c04cc",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5060",
+    "reckon/crew/dispatch.py:6773",
+    "reckon/crew/dispatch.py:6438"
+  ],
+  "completed_at": "2026-09-29T21:15:50.536Z",
+  "dispatched_at": "2026-09-29T20:42:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-returns-at-merged-main/report.md",
+      "line": "87",
+      "text": "both charged shim calls in every failing run are attributed to the dispatch process, but the shim records the caller pid and that pid is the arm's supervisor (1413344, 1413345, 1413343 in wave 1, each within two of the passing arm's supervisor_pid 1413346, while the passing arm's driver_process_pid is 1412897), so the supervisor made the session-worktree and repo status calls itself before exiting and the conclusion that the failure precedes the boundary scan entirely is unsupported by the run's own evidence."
+    }
+  ],
+  "head_log_revision": "368fbdb9bed223f7ff5ea6c48ac579f7d73e0696",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "there is no diff to read: manifest.md:11-12 records commits none and changed_paths [] because the role is read-only, and the deliverables are report.md plus the 20 logs and 20 gate JSONs under the declared scope",
+    "done_when": "report.md:16-21 gives five runs at each of the four named revisions, and every log names its revision, tree and imported module and ends with a bare EXIT= line, which I confirmed across all 20 logs",
+    "goal": "report.md:9-12 answers the goal three-way question as deterministic and pre-existing at the stated base, and I re-checked the four revisions and all 20 logs behind it",
+    "manifest": "manifest.md:5-23 records a complete status with the four-arm results, the pre-existing set in baseline_suite, current main in after_suite and an empty failure_attribution, all consistent with the logs, but its artifacts line misattributes the failing runs' shim calls",
+    "write_paths": "manifest.md:3 declares the reports directory, every delivered file sits inside it, and the reviewed worktree is clean at aecade2833d with no commits, so nothing was written outside the fence"
+  },
+  "justifications": {
+    "durability": "the diagnosis is re-derivable from the recorded command and revisions (I reproduced the 32-versus-2 shim counts from the surviving basetemp logs under /tmp/rc-archive), but nothing fails if the conclusion stops holding and the failing runs' shim logs exist only in node-local /tmp, outside the delivered scope.",
+    "evidence": "the four-arm five-run gate is recorded and reproducible, all 20 logs ending in a bare EXIT= and naming their revision, and I re-verified the blob and merge topology claims, but report.md:87 misattributes the failing runs' two charged shim calls to the dispatch process against the run's own shim evidence.",
+    "fit": "the run follows the dispatch contract's own record shape with revision, tree and module headers and bare EXIT= lines and introduces no name the naming rules forbid, though manifest.md:21 states a process attribution the evidence does not support.",
+    "goal_fidelity": "report.md:9-12 answers the goal with the failing set measured at base 6a104b893 (5/5) and current main 368fbdb9 (5/5) against the branch tip b63fe49df (5/5 passing), which I re-derived myself from base-run1.log and branch-run1.log.",
+    "scope_discipline": "manifest.md:12 records no repository change and the reviewed worktree is clean at aecade2833d, with every delivered file inside the reports directory declared at manifest.md:3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: report.md:9-12 answers the goal's three-way question (deterministic, pre-existing at the stated base, not intermittent), and I re-checked the four revisions and all 20 logs behind it.\nVERDICT done_when: report.md:16-21 gives five runs at each of the four named revisions, and every log names its revision, tree and imported module and ends with a bare EXIT= line, which I confirmed across all 20 logs.\nVERDICT write_paths: manifest.md:3 declares the reports directory, every delivered file sits inside it, and the reviewed worktree is clean at aecade2833d with no commits, so nothing was written outside the fence.\nVERDICT manifest: manifest.md:5-23 records a complete status with the four-arm results, the pre-existing set in baseline_suite, current main in after_suite and an empty failure_attribution, all consistent with the logs, but its artifacts line misattributes the failing runs' shim calls.\nVERDICT diff: there is no diff to read, because manifest.md:11-12 records commits none and changed_paths [] for a read-only role, and the deliverables are report.md plus the 20 logs and 20 gate JSONs under the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:5060, reckon/crew/dispatch.py:6773, reckon/crew/dispatch.py:6438\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:9-12 answers the goal with the failing set measured at base 6a104b893 (5/5) and current main 368fbdb9 (5/5) against the branch tip b63fe49df (5/5 passing), which I re-derived myself from base-run1.log and branch-run1.log.\nSCORE evidence: 15\nJUSTIFICATION evidence: the four-arm five-run gate is recorded and reproducible, all 20 logs ending in a bare EXIT= and naming their revision, and I re-verified the blob and merge topology claims, but report.md:87 misattributes the failing runs' two charged shim calls to the dispatch process against the run's own shim evidence.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: manifest.md:12 records no repository change and the reviewed worktree is clean at aecade2833d, with every delivered file inside the reports directory declared at manifest.md:3.\nSCORE durability: 14\nJUSTIFICATION durability: the diagnosis is re-derivable from the recorded command and revisions (I reproduced the 32-versus-2 shim counts from the surviving basetemp logs under /tmp/rc-archive), but nothing fails if the conclusion stops holding and the failing runs' shim logs exist only in node-local /tmp, outside the delivered scope.\nSCORE fit: 17\nJUSTIFICATION fit: the run follows the dispatch contract's own record shape with revision, tree and module headers and bare EXIT= lines and introduces no name the naming rules forbid, though manifest.md:21 states a process attribution the evidence does not support.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-returns-at-merged-main/report.md:87 both charged shim calls in every failing run are attributed to the dispatch process, but the shim records the caller pid and that pid is the arm's supervisor (1413344, 1413345, 1413343 in wave 1, each within two of the passing arm's supervisor_pid 1413346, while the passing arm's driver_process_pid is 1412897), so the supervisor made the session-worktree and repo status calls itself before exiting and the conclusion that the failure precedes the boundary scan entirely is unsupported by the run's own evidence.",
+  "review_evidence": {
+    "added_failures_derivation": {
+      "base_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-returns-at-merged-main/base-run1.log",
+      "head_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-returns-at-merged-main/main-run1.log",
+      "method": "set difference over the pytest node ids reported FAILED in the reviewed run's own baseline_suite and after_suite logs, as reckon.crew.review.added_failures_from_gate_logs derives it",
+      "result": "both logs report the one id tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs, so the difference is empty: count 0, no ids"
+    },
+    "gate_log_census": {
+      "checked": "all 20 logs under the report directory",
+      "result": "base 5 failed, branch 5 passed, merge 5 failed, main 5 failed; every log carries a revision header, a tree line, a module-under-test line for reckon and reckon.crew.promotion resolved inside its own scratch tree, a one-line pytest summary and a bare EXIT= last line"
+    },
+    "instrument_control_pid_check": {
+      "method": "read the shim logs under /tmp/rc-archive/<arm>/bt<i>/dispatch-returns0/home-returns/shim-returns.log for all 20 runs and compared each recorded caller pid with the passing arm's own gate JSON",
+      "result": "wave 1 callers are base 1413344, merge 1413345, main 1413343 and passing branch 1413346, while the branch arm records driver_process_pid 1412897; the same separation holds in waves 2 to 5 (failers 1562171 to 1565201 against recorded drivers 1561252, 1564236, 1566910 and 1570274), so the failing runs' two charged calls were made by their supervisors, not by the dispatch process"
+    },
+    "revision_pair_note": "the reviewed run landed no commit, so its head is its own worktree revision aecade2833d68fbaf87b3e6477793c2886ebf57e, which is also the revision the dispatch keyed this record at; the empty diff is recorded in reviewed_commits and reviewed_changed_paths rather than implied by the pair",
+    "topology_check": {
+      "dispatch_blob": "1a7a0c8dd102cae3bcc118fd41ec3afdcf90a728 at base 6a104b893, merge d26768553 and current main 368fbdb9, and 6548c26a281d075ca700c21055af9ef7b92d2eff at the branch tip b63fe49df, confirming the report's blob claim",
+      "merge": "d26768553 has parents 6a104b893 and b63fe49df and is an ancestor of 368fbdb9",
+      "merge_base": "60708b078c03a99e1c9d45504b7693483704dc9d, confirming the branch tip lacks the main-side commits between that point and base",
+      "test_module": "419cb76296a52e038c356939aa7dbfcdfacd634f at all four revisions"
+    }
+  },
+  "review_run_id": "legacy-36b74cc5d6e4",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "aecade2833d68fbaf87b3e6477793c2886ebf57e",
+  "reviewed_changed_paths": [],
+  "reviewed_commits": [],
+  "reviewed_done_when": "A report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-returns-at-merged-main/report.md gives the case's result five times each at four revisions (base 6a104b893, branch tip b63fe49df, merge d26768553, current main 368fbdb9), each measured in a scratch tree made by git archive under /tmp, every log naming revision, tree and imported module and ending with a bare EXIT= line, and the report states which revisions fail, how many of five, the failing assertion and whether the review-gate change in reckon/crew/promotion.py is on the failing path, with the pre-existing set in baseline_suite, the head result in after_suite and every added failure in failure_attribution.",
+  "reviewed_goal": "Establish whether tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs fails deterministically from the review-gate merge d26768553, from a later commit, or intermittently.",
+  "reviewed_head_sha": "aecade2833d68fbaf87b3e6477793c2886ebf57e",
+  "reviewed_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204143713340-dispatch-returns-at-merged-main/manifest.md",
+  "reviewed_manifest_artifacts_note": "the manifest's artifact line reports the shim positive control; the passing figure (32 charged calls) is carried by the branch gate JSON as status_calls_total, while the failing runs' figure of 2 has no counterpart in the delivered scope",
+  "reviewed_node": "dispatch-returns-at-merged-main",
+  "reviewed_plan": "the-suite-is-green-at-head",
+  "reviewed_run_id": "r-20260929T204143713340-dispatch-returns-at-merged-main",
+  "reviewed_suite_fields": {
+    "after_suite": {
+      "command": "python -m pytest -p no:cacheprovider -q tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs (x5, scratch tree /tmp/rc-archive/main/tree)",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 5,
+      "failure_ids": [
+        "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-returns-at-merged-main/main-run1.log",
+      "revision": "368fbdb9bed223f7ff5ea6c48ac579f7d73e0696",
+      "runs_failed_of_five": 5
+    },
+    "baseline_suite": {
+      "command": "python -m pytest -p no:cacheprovider -q tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs (x5, scratch tree /tmp/rc-archive/base/tree)",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 5,
+      "failure_ids": [
+        "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-returns-at-merged-main/base-run1.log",
+      "revision": "6a104b893df8dc5129593a9116353d72465c04cc",
+      "runs_failed_of_five": 5
+    }
+  },
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/dispatch-returns-at-merged-main",
+  "reviewed_write_paths": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-returns-at-merged-main"
+  ],
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash",
+    "node": "review-of-dispatch-returns-at-merged-main",
+    "run_id": "r-20260929T211615512452-review-of-dispatch-returns-at-merged-main"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T21:45:00+00:00",
+  "total": 84
+}

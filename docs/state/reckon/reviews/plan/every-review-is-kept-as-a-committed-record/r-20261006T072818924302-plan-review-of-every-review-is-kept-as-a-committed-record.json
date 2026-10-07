@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T07:34:14.124Z",
+  "dispatched_at": "2026-10-06T07:28:35Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "reuse_search-1",
+      "reason": "the same finding was deferred on \u00a75 (followup f-erkc-002) and the section text still names a fresh script, so the plan either cites the owner or restates the import contract.",
+      "text": "\u00a75 proposes a new one-shot migration script when `scripts/import_runs_into_store.py` already parses a host store, deduplicates by identity, is idempotent on re-run, dry-runs by default and returns an exit contract via `reckon.run_store.import_ledger`; the plan never cites it, so a reader cannot tell whether the new script extends it or rebuilds it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:80",
+      "id": "reuse_search-2",
+      "reason": "the section must extend the existing placement owner, not invent one in `ledger.py`, or every later reader resolves reviews through a rule the store does not use.",
+      "text": "\u00a73 states the review path is resolved by `reckon/ledger.py` (`ledger_path`, `run_path`) \"not by a second path rule\", but the review-path rules already exist as `reckon/crew/review.py:1242` (`review_path` / `review_store_root`) and `reckon/crew/plan_review.py:330` (`plan_review_path`); the plan searched neither, and its \"no second path rule\" claim is made without opening the current one",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:94",
+      "id": "deep_module-1",
+      "reason": "the section must extend the writer to a set of paths (making the interface as deep as the behaviour it claims) or drop the no-extra-commit claim; as written the design describes a write its own entry point cannot perform.",
+      "text": "\u00a73 claims the record \"is written into the committed store in that same state write, so it travels in the ledger commit the promotion already makes and no commit is added\", but the writer it names, `_commit_state_write` (`reckon/ledger.py:1657`), takes one `path: Path` and commits `git commit --only \u2026 -- <relative_path>`, so a record at a second path is not carried by that commit",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "thin_wrapper-1",
+      "reason": "without the justification the plan should extend the existing importer, which removes a script from the surface and one more thing to keep in step.",
+      "text": "the \u00a75 script is a thin layer over the existing host-store importer and the plan gives no reason `scripts/import_runs_into_store.py` cannot be extended (it already exposes dry-run, identity dedup and an idempotent re-run contract); a parallel script is the honest fork of a mechanism that exists",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:103",
+      "id": "duplicate_owner-1",
+      "reason": "the section must repoint the three existing readers at the committed store rather than add a fourth, or the gate and acceptance read a different store than the sweep.",
+      "text": "\u00a73 adds a reader in `reckon/crew/review.py` to serve `select_review_for_head`, `list_plan_reviews`, the gate and acceptance, but those entry points already exist and already own the read: `reckon/crew/recovery.py:315` (`select_review_for_head`), `reckon/crew/plan_review.py:568` (`read_plan_review`), `reckon/crew/plan_review.py:618` (`list_plan_reviews`); the plan misattributes the reader to `review.py` and would fork the read path",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:169",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the surface it adds in its own text (fold the hold onto an existing settable scalar or name the retirement), or the hold adds a third refusal site and a new scalar family without changing net surface.",
+      "text": "\u00a77 adds a settable top-level path `review_hold` to the scalar registry (`reckon/_store.py:2063`, `_PLAN_SET_TOP`) and a `plan-review-hold` meta to `PLAN_METADATA_SCALARS` (`reckon/crew/plan_review.py:76`), and \u00a75 adds a store-writer guard refusal in \u00a75, and neither section names what it retires or merges or why nothing can be, against refusal_families 23",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5ee4d6e563f75415565c47986c6ba3987eb10e4557fdae339bd143608f084ba8",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T072818924302-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "ff60d63b8c6e826f23cbf3635c057e78659a3ce9",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a73 assigns the record-against-the-ledger-commit behaviour to `_commit_state_write`, whose interface commits exactly one path, so the single deep write the section relies on is not the interface it names.",
+    "duplicate_owner": "a finding \u2014 \u00a73 names `reckon/ledger.py` as the review-path owner and `reckon/crew/review.py` as the reader, forking placement and read paths that already have owners (`review_path`, `plan_review_path`, `select_review_for_head`, `read_plan_review`, `list_plan_reviews`).",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a77 adds the settable path `review_hold` plus a meta scalar and refusals in three call sites, and \u00a75 adds a store-writer guard refusal, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the design cites no existing owner for the machinery it recreates: the review-path placement (`review_path`, `plan_review_path`), the readers (`select_review_for_head`, `read_*`, `list_plan_reviews`), the host-store importer (`scripts/import_runs_into_store.py`) and the one-path state writer (`_commit_state_write`) are all present in the tree and none is named.",
+    "thin_wrapper": "a finding \u2014 \u00a75 adds `scripts/import_review_store.py` over the host-store parse/dedup/dry-run shape `scripts/import_runs_into_store.py` already implements, and states no reason that importer cannot be extended."
+  },
+  "section_digests": {
+    "_document": "11befdee4e82ad57e68884e1b530ea62f52af8bcdb8d46b239b3b97833b2b8ea",
+    "s1": "d333aa7f2c925cc28d10652f937427775e80946ff9334b6bcd9145aff3e04b91",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "1deaae93170da54c61978307dbab3da40c3c48a84f99317725e133633ac2ef5f",
+    "s4": "dea334f0d090c1767f8a7fc0d2447619076d332ae2ad1eedfd7bcdbbd3e633df",
+    "s5": "049b059cf1b7f88d13015349cd5ec13979bc801dbe26d0bdee08b0bee6abe02a",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "25a9982c5350cf821a2704cd37f14481c3f75e262726ee9efa7d8e7fdeff5c6e",
+    "s8": "b9ad6cbd95673381cecbab7e03b74058aaae945bd4185b4c1f6d51658433b081"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T13:42:26.598308+00:00"
+}

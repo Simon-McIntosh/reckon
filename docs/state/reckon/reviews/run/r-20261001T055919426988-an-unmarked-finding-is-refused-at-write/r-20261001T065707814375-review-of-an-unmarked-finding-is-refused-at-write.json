@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "84fd7ff4f1e2b39103856b757f6a1c68a71985e6",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:crew_check_manifest",
+    "reckon/crew.py:audit_manifest (facade export)"
+  ],
+  "completed_at": "2026-10-01T07:04:30.187Z",
+  "dispatched_at": "2026-10-01T06:57:26Z",
+  "findings": [
+    {
+      "file": "tests/test_an_unmarked_finding_is_refused_at_write.py",
+      "line": "146",
+      "severity": "follow-on",
+      "text": "follow-on: the goal's phrase \"without one of FINDING_SEVERITIES\" has two halves \u2014 absent and outside the vocabulary \u2014 and only the absent half is asserted; test_a_record_with_an_unmarked_finding_is_refused_at_the_write feeds only severities the store dropped, and test_a_record_whose_findings_all_state_a_severity_is_not_refused feeds only the two declared values, so a regression that changed `_severity_stated` to accept any non-null severity (reckon/crew/reports.py:1170) would leave every case green while the written-directly `minor`/`moderate`/`low` records the plan names stayed unread; the remedy is one case storing a finding whose severity is outside FINDING_SEVERITIES and asserting it is refused."
+    }
+  ],
+  "head_log_revision": "a8b598af15f764bfb35e428e60b1c6d92640db5e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 84fd7ff4f; a8b598af1 adds the check to reckon/crew/reports.py and the falsifier, 721907273 adds the evidence fragment, nothing outside the declared paths.",
+    "done_when": "the done_when names a base arm, a four-case falsifier in a new tests/test_an_unmarked_finding_is_refused_at_write.py built from a record written through the production store, a negative control removing the check, and both arms over the new test plus every existing test file that calls audit_manifest; the manifest records base 2 failed/489 passed and head 1 failed/490 passed with no added failure id, and I re-ran the new file at head (4 passed) and at base with the file placed in the tree (1 failed/3 passed, the unmarked case) to confirm both.",
+    "goal": "the node's goal is that audit_manifest reports a review run whose stored record carries any finding without one of FINDING_SEVERITIES, naming each such finding's file and line; reckon/crew/reports.py:1439 adds `_unmarked_finding_severity_findings(node)` to audit_manifest, gated on the node's role being the review role (reckon/crew/reports.py:1163 `_node_is_a_reviewer`), and I confirmed against this run's own live pointer that a review dispatch declares exactly the two store record paths the check reads.",
+    "manifest": "read; it records both suite arms as JSON with completed true and literal absolute-path commands, the negative-control log, and the added-failure derivation, all of which I recomputed independently.",
+    "write_paths": "read the manifest's declared scope (reckon/crew/reports.py, tests/test_an_unmarked_finding_is_refused_at_write.py, docs/evidence/fragments/scoring-should-stop-a-promotion/an-unmarked-finding-is-refused-at-write.html); `git diff --stat 84fd7ff4f 721907273` lists exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unmarked_finding_is_refused_at_write.py:124 reddens when the check call is removed (I reinstated that mutation and got EXIT=1), but the goal's \"outside the vocabulary\" half is unasserted at tests/test_an_unmarked_finding_is_refused_at_write.py:146.",
+    "evidence": "tests/test_an_unmarked_finding_is_refused_at_write.py:112 asserts the refusal and gate/base-gate.log records it failing at 84fd7ff4f while gate/head-gate.log records it passing at a8b598af1, both ended EXIT=1 with revision-named headers I re-ran to confirm.",
+    "fit": "reckon/crew/reports.py:1135 follows the surrounding finding-producer idiom and the new test file name describes the behaviour, adding no plan or ticket identifier; ruff check over both changed Python paths reports the same two pre-existing findings as the base.",
+    "goal_fidelity": "reckon/crew/reports.py:1147 `_unmarked_finding_severity_findings` reads the declared store record through `review_module.stored_record` and reports every finding whose severity is absent or outside FINDING_SEVERITIES, exactly as the goal states.",
+    "scope_discipline": "every path in `git diff 84fd7ff4f 721907273` sits inside the two declared source paths and the one evidence fragment, with no change to the parser the goal says stays unchanged."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that audit_manifest reports a review run whose stored record carries any finding without one of FINDING_SEVERITIES, naming each such finding's file and line; reckon/crew/reports.py:1439 adds `_unmarked_finding_severity_findings(node)` to audit_manifest, gated on the node's role being the review role (reckon/crew/reports.py:1163 `_node_is_a_reviewer`), and I confirmed against this run's own live pointer that a review dispatch declares exactly the two store record paths the check reads.\nVERDICT done_when: the done_when names a base arm, a four-case falsifier in a new tests/test_an_unmarked_finding_is_refused_at_write.py built from a record written through the production store, a negative control removing the check, and both arms over the new test plus every existing test file that calls audit_manifest; the manifest records base 2 failed/489 passed and head 1 failed/490 passed with no added failure id, and I re-ran the new file at head (4 passed) and at base with the file placed in the tree (1 failed/3 passed, the unmarked case) to confirm both.\nVERDICT write_paths: read the manifest's declared scope (reckon/crew/reports.py, tests/test_an_unmarked_finding_is_refused_at_write.py, docs/evidence/fragments/scoring-should-stop-a-promotion/an-unmarked-finding-is-refused-at-write.html); `git diff --stat 84fd7ff4f 721907273` lists exactly those three paths.\nVERDICT manifest: read; it records both suite arms as JSON with completed true and literal absolute-path commands, the negative-control log, and the added-failure derivation, all of which I recomputed independently.\nVERDICT diff: read commit by commit against base 84fd7ff4f; a8b598af1 adds the check to reckon/crew/reports.py and the falsifier, 721907273 adds the evidence fragment, nothing outside the declared paths.\nCALL_SITES: reckon/cli.py:crew_check_manifest, reckon/crew.py:audit_manifest (facade export)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1147 `_unmarked_finding_severity_findings` reads the declared store record through `review_module.stored_record` and reports every finding whose severity is absent or outside FINDING_SEVERITIES, exactly as the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_an_unmarked_finding_is_refused_at_write.py:112 asserts the refusal and gate/base-gate.log records it failing at 84fd7ff4f while gate/head-gate.log records it passing at a8b598af1, both ended EXIT=1 with revision-named headers I re-ran to confirm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff 84fd7ff4f 721907273` sits inside the two declared source paths and the one evidence fragment, with no change to the parser the goal says stays unchanged.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_an_unmarked_finding_is_refused_at_write.py:124 reddens when the check call is removed (I reinstated that mutation and got EXIT=1), but the goal's \"outside the vocabulary\" half is unasserted at tests/test_an_unmarked_finding_is_refused_at_write.py:146.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/reports.py:1135 follows the surrounding finding-producer idiom and the new test file name describes the behaviour, adding no plan or ticket identifier; ruff check over both changed Python paths reports the same two pre-existing findings as the base.\nFINDING tests/test_an_unmarked_finding_is_refused_at_write.py:146 follow-on: the goal's phrase \"without one of FINDING_SEVERITIES\" has two halves \u2014 absent and outside the vocabulary \u2014 and only the absent half is asserted; test_a_record_with_an_unmarked_finding_is_refused_at_the_write feeds only severities the store dropped, and test_a_record_whose_findings_all_state_a_severity_is_not_refused feeds only the two declared values, so a regression that changed `_severity_stated` to accept any non-null severity (reckon/crew/reports.py:1170) would leave every case green while the written-directly `minor`/`moderate`/`low` records the plan names stayed unread; the remedy is one case storing a finding whose severity is outside FINDING_SEVERITIES and asserting it is refused.",
+  "review_run_id": "r-20261001T065707814375-review-of-an-unmarked-finding-is-refused-at-write",
+  "reviewed_base_sha": "84fd7ff4f1e2b39103856b757f6a1c68a71985e6",
+  "reviewed_head_sha": "72190727326291757e6d71f6d49ca77b33faaa61",
+  "reviewed_run_id": "r-20261001T055919426988-an-unmarked-finding-is-refused-at-write",
+  "reviewer_run_id": "r-20261001T065707814375-review-of-an-unmarked-finding-is-refused-at-write",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.306098+00:00",
+  "total": 92
+}

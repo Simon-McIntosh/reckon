@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T10:10:35.048058+00:00",
+  "findings": [
+    {
+      "file": "the-guard-holds-at-the-merged-head.md",
+      "line": "72",
+      "text": "the baseline half of the comparison is stated, not shown: the command uses a '<first-parent-export>' PYTHONPATH placeholder with no statement of how the first-parent tree was materialized, so a reader cannot reproduce which tree the 505/20 baseline ran against; the merged-head side and the empty failure delta were independently re-derived from the armed logs, so the substantive claim holds, but the primary side's provenance is opaque."
+    },
+    {
+      "file": "the-guard-holds-at-the-merged-head.md",
+      "line": "25",
+      "text": "the report's wording 'emits permissionDecision: deny on stderr' reads as observed subprocess behaviour, but it is upheld at the unit boundary \u2014 tests/test_worker_message_guard.py drives guard.main() through monkeypatched stdin and capsys and asserts exit 2, empty stdout, the JSON deny payload on stderr and the run id in systemMessage; no live hook invocation is captured in the node's own log, so the refused subprocess contract is asserted rather than observed (the plan's done-when is unit-level, so the gate is still honestly met)."
+    }
+  ],
+  "justifications": {
+    "durability": "The guarded thing is made to happen and the refusal is shown, not inferred from suite success: the refusal test asserts exit 2, empty stdout, a JSON payload on stderr carrying permissionDecision deny, and the matched run id in systemMessage; the quiet control asserts exit 0 for a recipient that is not live; independently re-ran the three test files 20/20 green at a descendant of the reviewed merged head; docked one because the refused subprocess contract is proven at guard.main()'s unit boundary rather than by a captured hook invocation in the node's log.",
+    "evidence": "Every headline figure reproduces on disk: baseline.log carries 20 failed / 505 passed / 2 skipped, after.log carries 20 failed / 518 passed / 2 skipped, the failure-id set difference is empty in both directions (0 added, 0 removed), tests/test_worker_message_guard.py is absent at the first parent (verified via git ls-tree) and present at the merge, and the guard module exists in reckon/hooks/ at the merged head; docked one because the baseline run's '<first-parent-export>' PYTHONPATH placeholder leaves the primary tree's provenance unreproducible without knowing how the export was made.",
+    "fit": "The node follows the merged-head attribution idiom exactly \u2014 a focused suite at first parent versus merged head with the failure-id set compared rather than absolute green, the new test file handled honestly as absent-at-base rather than manufactured into a baseline failure, the negative path exercised directly, and attribution {} returned because no failure exists only at the merge; docked one for the exit-1-at-both-revisions table that requires the report's own 'attribution, not an absolute-green verdict' caveat to be read as non-critical.",
+    "goal_fidelity": "The node's done-when \u2014 verify the merged result, show the guard still fires, attribute any added failure \u2014 is met: 0 added failures across the 24-file to 25-file focused surface (505 vs 518 passed, identical 20-failure set), all 20 guard/install/wiring cases pass at the merged head including the live-worker exit 2 deny and the non-worker exit 0 control, and the refusal names the run id and the resume command as the plan requires; a separately re-run gate reproduced the 20 passing cases in 1.93s.",
+    "scope_discipline": "Exactly one changed path (the report file), no source, test, plan, index or sprint mutation by a test-role node; the heavy focused suite ran on the all_debug compute partition (117s/89s, off the login node as the compute rules require); the first parent was exported under PYTHONPATH without switching or modifying the assigned worktree, honouring the one-worktree rule."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The node's done-when \u2014 verify the merged result, show the guard still fires, attribute any added failure \u2014 is met: 0 added failures across the 24-file to 25-file focused surface (505 vs 518 passed, identical 20-failure set), all 20 guard/install/wiring cases pass at the merged head including the live-worker exit 2 deny and the non-worker exit 0 control, and the refusal names the run id and the resume command as the plan requires; a separately re-run gate reproduced the 20 passing cases in 1.93s.\nSCORE evidence: 19\nJUSTIFICATION evidence: Every headline figure reproduces on disk: baseline.log carries 20 failed / 505 passed / 2 skipped, after.log carries 20 failed / 518 passed / 2 skipped, the failure-id set difference is empty in both directions (0 added, 0 removed), tests/test_worker_message_guard.py is absent at the first parent (verified via git ls-tree) and present at the merge, and the guard module exists in reckon/hooks/ at the merged head; docked one because the baseline run's '<first-parent-export>' PYTHONPATH placeholder leaves the primary tree's provenance unreproducible without knowing how the export was made.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Exactly one changed path (the report file), no source, test, plan, index or sprint mutation by a test-role node; the heavy focused suite ran on the all_debug compute partition (117s/89s, off the login node as the compute rules require); the first parent was exported under PYTHONPATH without switching or modifying the assigned worktree, honouring the one-worktree rule.\nSCORE durability: 19\nJUSTIFICATION durability: The guarded thing is made to happen and the refusal is shown, not inferred from suite success: the refusal test asserts exit 2, empty stdout, a JSON payload on stderr carrying permissionDecision deny, and the matched run id in systemMessage; the quiet control asserts exit 0 for a recipient that is not live; independently re-ran the three test files 20/20 green at a descendant of the reviewed merged head; docked one because the refused subprocess contract is proven at guard.main()'s unit boundary rather than by a captured hook invocation in the node's log.\nSCORE fit: 19\nJUSTIFICATION fit: The node follows the merged-head attribution idiom exactly \u2014 a focused suite at first parent versus merged head with the failure-id set compared rather than absolute green, the new test file handled honestly as absent-at-base rather than manufactured into a baseline failure, the negative path exercised directly, and attribution {} returned because no failure exists only at the merge; docked one for the exit-1-at-both-revisions table that requires the report's own 'attribution, not an absolute-green verdict' caveat to be read as non-critical.\nFINDING the-guard-holds-at-the-merged-head.md:72 the baseline half of the comparison is stated, not shown: the command uses a '<first-parent-export>' PYTHONPATH placeholder with no statement of how the first-parent tree was materialized, so a reader cannot reproduce which tree the 505/20 baseline ran against; the merged-head side and the empty failure delta were independently re-derived from the armed logs, so the substantive claim holds, but the primary side's provenance is opaque.\nFINDING the-guard-holds-at-the-merged-head.md:25 the report's wording 'emits permissionDecision: deny on stderr' reads as observed subprocess behaviour, but it is upheld at the unit boundary \u2014 tests/test_worker_message_guard.py drives guard.main() through monkeypatched stdin and capsys and asserts exit 2, empty stdout, the JSON deny payload on stderr and the run id in systemMessage; no live hook invocation is captured in the node's own log, so the refused subprocess contract is asserted rather than observed (the plan's done-when is unit-level, so the gate is still honestly met).",
+  "review_run_id": "r-20260915T101035048058-review-of-the-guard-holds-at-the-merged-head",
+  "reviewed_base": "08a0bfbe3577b070d6061d734e6f4c6750f363d3",
+  "reviewed_commit": "9b92f6fea634e5c505bf73d4f4734c9dd53c7461",
+  "reviewed_run_id": "r-20260915T093545453615-the-guard-holds-at-the-merged-head",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T10:29:50+00:00",
+  "total": 97
+}

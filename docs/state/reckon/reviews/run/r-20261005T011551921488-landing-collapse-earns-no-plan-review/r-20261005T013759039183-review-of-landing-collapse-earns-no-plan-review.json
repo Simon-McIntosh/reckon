@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/routing.py:require_plan_reviewed",
+    "reckon/crew/recovery.py:_plan_review_pending",
+    "reckon/crew/recovery.py:_review_dispatch_fields",
+    "reckon/mcp.py:4324",
+    "reckon/cli.py:2613"
+  ],
+  "completed_at": "2026-10-05T01:45:40.175Z",
+  "dispatched_at": "2026-10-05T01:38:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "493",
+      "severity": "follow-on",
+      "text": "follow-on: _plan_review_pending and _review_dispatch_fields compute only the current fingerprint while reckon/crew/routing.py:2701 now also accepts the legacy digest, so a review stored under the legacy digest reads as current at the build gate but as due in the sweep, re-dispatching the review the compat arm exists to avoid."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1863",
+      "severity": "follow-on",
+      "text": "follow-on: the fix commit folds a mechanical reflow of garbage_collect_orphan_scratch into the behavioural change, so a reader cannot see the intended change apart from the reformat."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T011551921488-landing-collapse-earns-no-plan-review/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's first line is a pytest progress line rather than a revision/tree/command header, so its 45-passed result is not tied to the commit it measured."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 4513cdbc206b26828d931409db776a28e6a5ad47 -- 3080646c9 carries the production change and the tests, d9bb6912f the evidence fragment; the production hunks fall inside reckon/_store.py, reckon/crew/plan_review.py and reckon/crew/routing.py.",
+    "done_when": "the done_when names a collapse driven through the production collapse_section op and asserts the fingerprint is equal across it while a live-section edit moves it; tests/test_plan_review_store.py:446 does exactly that through mcp._edit_plan_tool, and I re-ran it green (2 passed, EXIT=0).",
+    "goal": "the node goal is to stop a landing collapse from moving the plan-review fingerprint; at head d9bb6912f reckon/crew/plan_review.py:368 plan_fingerprint drops a landed card's interior and the section declarations, and reckon/_store.py:1020 landed_section_ids names the landed sections.",
+    "manifest": "read at the run directory; status complete at head d9bb6912f with base 4513cdbc206b26828d931409db776a28e6a5ad47, naming gate.log (45 passed, EXIT=0) and negative_control.log (1 failed, EXIT=1); it records no baseline_suite or after_suite, only one gate log.",
+    "write_paths": "the manifest declares five changed paths; git diff --name-only 4513cdbc206b26828d931409db776a28e6a5ad47..d9bb6912f03cb27d8e2ca49b9f4ebbe40727f01c lists exactly those five and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_store.py:446 compares the fingerprint across a real collapse through the production op, and the negative control reinstates card digestion and reddens exactly that equality (negative_control.log, 1 failed, EXIT=1).",
+    "evidence": "tests/test_plan_review_store.py:446 asserts the exact measure and negative_control.log reddens it, but the reviewed gate.log's first line is a pytest progress line with no revision header and the manifest records no baseline_suite or after_suite, so the 45-passed count is not tied to the commit by the log itself.",
+    "fit": "reckon/_store.py:1020 landed_section_ids reuses _landed_card_span and _H2_OPEN_RE beside the writer that creates the card rather than forking a recogniser, and the added names are mechanism vocabulary.",
+    "goal_fidelity": "reckon/crew/plan_review.py:337 drops the per-section declaration and reckon/crew/plan_review.py:425 drops a landed card's interior, so a collapse leaves the digest equal while a live-section prose edit still moves it, the property the deliverable states.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared five, but reckon/crew/routing.py:1863 reflows garbage_collect_orphan_scratch unrelated to the goal and the legacy-digest arm resolves no stored record (the evidence census names 0 additional current)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to stop a landing collapse from moving the plan-review fingerprint; at head d9bb6912f reckon/crew/plan_review.py:368 plan_fingerprint drops a landed card's interior and the section declarations, and reckon/_store.py:1020 landed_section_ids names the landed sections.\nVERDICT done_when: the done_when names a collapse driven through the production collapse_section op and asserts the fingerprint is equal across it while a live-section edit moves it; tests/test_plan_review_store.py:446 does exactly that through mcp._edit_plan_tool, and I re-ran it green (2 passed, EXIT=0).\nVERDICT write_paths: the manifest declares five changed paths; git diff --name-only 4513cdbc206b26828d931409db776a28e6a5ad47..d9bb6912f03cb27d8e2ca49b9f4ebbe40727f01c lists exactly those five and nothing else.\nVERDICT manifest: read at the run directory; status complete at head d9bb6912f with base 4513cdbc206b26828d931409db776a28e6a5ad47, naming gate.log (45 passed, EXIT=0) and negative_control.log (1 failed, EXIT=1); it records no baseline_suite or after_suite, only one gate log.\nVERDICT diff: read commit by commit against base 4513cdbc206b26828d931409db776a28e6a5ad47 -- 3080646c9 carries the production change and the tests, d9bb6912f the evidence fragment; the production hunks fall inside reckon/_store.py, reckon/crew/plan_review.py and reckon/crew/routing.py.\nCALL_SITES: reckon/crew/routing.py:require_plan_reviewed, reckon/crew/recovery.py:_plan_review_pending, reckon/crew/recovery.py:_review_dispatch_fields, reckon/mcp.py:4324, reckon/cli.py:2613\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:337 drops the per-section declaration and reckon/crew/plan_review.py:425 drops a landed card's interior, so a collapse leaves the digest equal while a live-section prose edit still moves it, the property the deliverable states.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_plan_review_store.py:446 asserts the exact measure and negative_control.log reddens it, but the reviewed gate.log's first line is a pytest progress line with no revision header and the manifest records no baseline_suite or after_suite, so the 45-passed count is not tied to the commit by the log itself.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared five, but reckon/crew/routing.py:1863 reflows garbage_collect_orphan_scratch unrelated to the goal and the legacy-digest arm resolves no stored record (the evidence census names 0 additional current).\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_plan_review_store.py:446 compares the fingerprint across a real collapse through the production op, and the negative control reinstates card digestion and reddens exactly that equality (negative_control.log, 1 failed, EXIT=1).\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_store.py:1020 landed_section_ids reuses _landed_card_span and _H2_OPEN_RE beside the writer that creates the card rather than forking a recogniser, and the added names are mechanism vocabulary.\nFINDING reckon/crew/recovery.py:493 follow-on: _plan_review_pending and _review_dispatch_fields compute only the current fingerprint while reckon/crew/routing.py:2701 now also accepts the legacy digest, so a review stored under the legacy digest reads as current at the build gate but as due in the sweep, re-dispatching the review the compat arm exists to avoid.\nFINDING reckon/crew/routing.py:1863 follow-on: the fix commit folds a mechanical reflow of garbage_collect_orphan_scratch into the behavioural change, so a reader cannot see the intended change apart from the reformat.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T011551921488-landing-collapse-earns-no-plan-review/gate.log:1 follow-on: the gate log's first line is a pytest progress line rather than a revision/tree/command header, so its 45-passed result is not tied to the commit it measured.\n",
+  "review_run_id": "r-20261005T013759039183-review-of-landing-collapse-earns-no-plan-review",
+  "reviewed_base_sha": "4513cdbc206b26828d931409db776a28e6a5ad47",
+  "reviewed_head_sha": "d9bb6912f03cb27d8e2ca49b9f4ebbe40727f01c",
+  "reviewed_run_id": "r-20261005T011551921488-landing-collapse-earns-no-plan-review",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T01:44:16.199584+00:00",
+  "total": 85
+}

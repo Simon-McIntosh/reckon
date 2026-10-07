@@ -1,0 +1,36 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T13:51:26.660388+00:00",
+  "findings": [
+    {
+      "file": "docs/research/orientation-gate-evidence-attribution.md",
+      "line": "1",
+      "text": "the research note is authored as markdown in an HTML-only served research tree: reckon/resources.py:411 discovers the served inventory by rglob(\"*.html\"), and both landing anchors link the note extensionlessly (/reckon/research/orientation-gate-evidence-attribution), which resources.py:783 rewrites to the .html sibling that does not exist \u2014 so the archive anchor and plan landed summary 404 on the served surface and the note is not reachable through the surface that links to it. The substantive measurement survives in the archive anchor's own prose, but the primary record's linked read fails. Author the note as HTML per the repo's authored-docs convention, or do not anchor it as a served research resource. The declared write path carried the .md extension, so the coordinator owns part of this; the worker authored both anchors and did not flag the mismatch in its manifest."
+    }
+  ],
+  "justifications": {
+    "durability": "the measured claim is recorded in git (commit 60ecc724) and the archive anchor preserves the full failure count and method in its own HTML prose; docked five because the served link to the primary note resolves to a non-existent .html (resources.py:783 against a .md file in a tree resources.py:411 never indexes), so nothing on the served surface reads the note itself.",
+    "evidence": "base_b5480eef_run.log and head_2e550a8b_run.log both record EXIT=1, 12 failed / 18 passed, and the manifest's stored failure_ids match the FAILED lines in each log exactly; both test files are byte-identical across the pair (equal sha1 at each revision), and neither candidate commit touches either file.",
+    "fit": "the diff follows the measured docs' idiom and names everything by mechanism; docked five because docs/research/ is HTML-only (20 .html, 0 .md) and the repo's authored-docs rule requires structured docs to be HTML, so a .md note there cannot be served or linked.",
+    "goal_fidelity": "the node measured exactly the question it was dispatched with: docs/research/orientation-gate-evidence-attribution.md runs tests/test_crew_orientation.py and tests/test_gate_evidence.py at both b5480eef and 2e550a8b, finds the identical twelve failures at each, and states the added count explicitly as zero.",
+    "scope_discipline": "commit 60ecc724 touches exactly the three declared write paths (docs/research/orientation-gate-evidence-attribution.md, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html), its parent equals the manifest's orientation_base_sha dcb6db38, and the worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node measured exactly the question it was dispatched with: docs/research/orientation-gate-evidence-attribution.md runs tests/test_crew_orientation.py and tests/test_gate_evidence.py at both b5480eef and 2e550a8b, finds the identical twelve failures at each, and states the added count explicitly as zero.\nSCORE evidence: 19\nJUSTIFICATION evidence: base_b5480eef_run.log and head_2e550a8b_run.log both record EXIT=1, 12 failed / 18 passed, and the manifest's stored failure_ids match the FAILED lines in each log exactly; both test files are byte-identical across the pair (equal sha1 at each revision), and neither candidate commit touches either file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 60ecc724 touches exactly the three declared write paths (docs/research/orientation-gate-evidence-attribution.md, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html), its parent equals the manifest's orientation_base_sha dcb6db38, and the worktree is clean at head.\nSCORE durability: 15\nJUSTIFICATION durability: the measured claim is recorded in git (commit 60ecc724) and the archive anchor preserves the full failure count and method in its own HTML prose; docked five because the served link to the primary note resolves to a non-existent .html (resources.py:783 against a .md file in a tree resources.py:411 never indexes), so nothing on the served surface reads the note itself.\nSCORE fit: 15\nJUSTIFICATION fit: the diff follows the measured docs' idiom and names everything by mechanism; docked five because docs/research/ is HTML-only (20 .html, 0 .md) and the repo's authored-docs rule requires structured docs to be HTML, so a .md note there cannot be served or linked.\nFINDING docs/research/orientation-gate-evidence-attribution.md:1 the research note is authored as markdown in an HTML-only served research tree: reckon/resources.py:411 discovers the served inventory by rglob(\"*.html\"), and both landing anchors link the note extensionlessly (/reckon/research/orientation-gate-evidence-attribution), which resources.py:783 rewrites to the .html sibling that does not exist \u2014 so the archive anchor and plan landed summary 404 on the served surface and the note is not reachable through the surface that links to it. The substantive measurement survives in the archive anchor's own prose, but the primary record's linked read fails. Author the note as HTML per the repo's authored-docs convention, or do not anchor it as a served research resource. The declared write path carried the .md extension, so the coordinator owns part of this; the worker authored both anchors and did not flag the mismatch in its manifest.\n",
+  "review_run_id": "r-20260915T135126660388-review-of-attribute-the-orientation-and-gate-evidence-failures",
+  "reviewed_base": "dcb6db38633810ee32b010cf0967300f8f9c270d",
+  "reviewed_commit": "60ecc724510df7d2c4fb37d1bb00c0b93d93765e",
+  "reviewed_run_id": "r-20260915T115738959461-attribute-the-orientation-and-gate-evidence-failures",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T14:40:00Z",
+  "total": 88
+}

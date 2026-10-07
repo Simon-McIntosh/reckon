@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8d32d2478c36eaf9502ccda328fe716a2975c8d9",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/roadmap.py:124",
+    "reckon/_schema.py:822",
+    "reckon/doccheck.py:1033",
+    "reckon/followup_pointers.py:152",
+    "reckon/crew/promotion.py:7251"
+  ],
+  "completed_at": "2026-10-05T21:16:03.851Z",
+  "dispatched_at": "2026-10-05T21:10:39Z",
+  "findings": [],
+  "head_log_revision": "1cd1b6c6dcb5f099ff7d40023e18c890cf960531",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read base..head commit by commit: fd124bc33 is the source refactor, 8d32d2478 adds only the evidence fragment, 1cd1b6c6 adds only a 40-line test; no unrelated change and no production code beyond the declared modules.",
+    "done_when": "Reproduced independently at head 1cd1b6c6: grep 'c-run-' reckon/ reports one line (plan_review.py:123); grep 'startswith(' in plan_review.py and promotion.py shows no comparison against the prefix; grep '== \"implementable\"' reports exactly _schema.py:795 (predicate body) and _plan_html.py:353 (progress figure), against six lines at base 5827941a7; the head gate reran 24 passed EXIT=0; public_definitions is 1477 at base and 1478 at head.",
+    "goal": "The landed change reduces the \"which sections are still work\" rule to one schema predicate and the landing-comment prefix to one owner: reckon/_schema.py:788 is_implementable_section is called by all five remaining-work readers (roadmap.py:124, _schema.py:822, doccheck.py:1033, followup_pointers.py:152, promotion.py:7251), and RUN_COMMENT_PREFIX at reckon/crew/plan_review.py:123 is the single owner of the c-run- literal with _is_run_comment shared by plan_review.py:333 and promotion.py:7228.",
+    "manifest": "The reviewed manifest names baseline_suite->repair-baseline.log (revision 8d32d2478, 22 passed, EXIT=0) and after_suite->repair-head.log (revision 1cd1b6c6, 24 passed, EXIT=0); both logs carry no FAILED or ERROR line so the added-failure count is a measured zero, and I reproduced the head result at 1cd1b6c6.",
+    "write_paths": "git diff --name-only 5827941a7..1cd1b6c6 lists exactly the eight declared paths, and the repair commit 1cd1b6c6 alters only tests/test_one_reader_of_remaining_work.py, leaving production source identical to the gated fd124bc33."
+  },
+  "justifications": {
+    "durability": "test_run_comment_prefix_has_one_owner reddens on a re-added literal (negative-control.log EXIT=1), test_all_remaining_work_readers_call_the_schema_predicate fails if a reader stops calling the predicate or the schema imports upward, and test_readers_keep_landed_work_until_reclassification plus test_undeclared_plan_combines_heading_and_anchor_fallbacks pin the agreement on a declared and an independent undeclared plan.",
+    "evidence": "I re-ran the done-when greps, the public_definitions census (1477 at base, 1478 at head), and the named gate (24 passed, EXIT=0 at revision 1cd1b6c6); the head gate log now names the reviewed head itself, closing the base/head mismatch the earlier review docked.",
+    "fit": "is_implementable_section at reckon/_schema.py:788 sits beside the declaration enum below every consumer with no upward import (asserted), _is_run_comment sits beside its public constant in the crew module that owns run vocabulary, and no plan, stage or ticket label appears in the changed source or tests.",
+    "goal_fidelity": "Every clause of the section holds at head \u2014 is_implementable_section replaces the four inline comparisons called by the five readers and the c-run- literal has one owner at reckon/crew/plan_review.py:123 \u2014 and each reader keeps its own question, ordering, fallback and landing subtraction.",
+    "reuse": "Four inline spellings of the classification comparison and two owners of the c-run- literal collapse onto one predicate and one constant, and public_definitions moves 1477 to 1478 \u2014 exactly one added definition serving its five callers.",
+    "scope_discipline": "The base..head diff touches exactly the eight declared write paths (git diff --name-only), and the repair is test-only so the gated production source at fd124bc33 is the source at head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The landed change reduces the \"which sections are still work\" rule to one schema predicate and the landing-comment prefix to one owner: reckon/_schema.py:788 is_implementable_section is called by all five remaining-work readers (roadmap.py:124, _schema.py:822, doccheck.py:1033, followup_pointers.py:152, promotion.py:7251), and RUN_COMMENT_PREFIX at reckon/crew/plan_review.py:123 is the single owner of the c-run- literal with _is_run_comment shared by plan_review.py:333 and promotion.py:7228.\nVERDICT done_when: Reproduced independently at head 1cd1b6c6: grep 'c-run-' reckon/ reports one line (plan_review.py:123); grep 'startswith(' in plan_review.py and promotion.py shows no comparison against the prefix; grep '== \"implementable\"' reports exactly _schema.py:795 (predicate body) and _plan_html.py:353 (progress figure), against six lines at base 5827941a7; the head gate reran 24 passed EXIT=0; public_definitions is 1477 at base and 1478 at head.\nVERDICT write_paths: git diff --name-only 5827941a7..1cd1b6c6 lists exactly the eight declared paths, and the repair commit 1cd1b6c6 alters only tests/test_one_reader_of_remaining_work.py, leaving production source identical to the gated fd124bc33.\nVERDICT manifest: The reviewed manifest names baseline_suite->repair-baseline.log (revision 8d32d2478, 22 passed, EXIT=0) and after_suite->repair-head.log (revision 1cd1b6c6, 24 passed, EXIT=0); both logs carry no FAILED or ERROR line so the added-failure count is a measured zero, and I reproduced the head result at 1cd1b6c6.\nVERDICT diff: Read base..head commit by commit: fd124bc33 is the source refactor, 8d32d2478 adds only the evidence fragment, 1cd1b6c6 adds only a 40-line test; no unrelated change and no production code beyond the declared modules.\nCALL_SITES: reckon/roadmap.py:124, reckon/_schema.py:822, reckon/doccheck.py:1033, reckon/followup_pointers.py:152, reckon/crew/promotion.py:7251\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: Every clause of the section holds at head \u2014 is_implementable_section replaces the four inline comparisons called by the five readers and the c-run- literal has one owner at reckon/crew/plan_review.py:123 \u2014 and each reader keeps its own question, ordering, fallback and landing subtraction.\nSCORE evidence: 20\nJUSTIFICATION evidence: I re-ran the done-when greps, the public_definitions census (1477 at base, 1478 at head), and the named gate (24 passed, EXIT=0 at revision 1cd1b6c6); the head gate log now names the reviewed head itself, closing the base/head mismatch the earlier review docked.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base..head diff touches exactly the eight declared write paths (git diff --name-only), and the repair is test-only so the gated production source at fd124bc33 is the source at head.\nSCORE durability: 20\nJUSTIFICATION durability: test_run_comment_prefix_has_one_owner reddens on a re-added literal (negative-control.log EXIT=1), test_all_remaining_work_readers_call_the_schema_predicate fails if a reader stops calling the predicate or the schema imports upward, and test_readers_keep_landed_work_until_reclassification plus test_undeclared_plan_combines_heading_and_anchor_fallbacks pin the agreement on a declared and an independent undeclared plan.\nSCORE fit: 20\nJUSTIFICATION fit: is_implementable_section at reckon/_schema.py:788 sits beside the declaration enum below every consumer with no upward import (asserted), _is_run_comment sits beside its public constant in the crew module that owns run vocabulary, and no plan, stage or ticket label appears in the changed source or tests.\nSCORE reuse: 20\nJUSTIFICATION reuse: Four inline spellings of the classification comparison and two owners of the c-run- literal collapse onto one predicate and one constant, and public_definitions moves 1477 to 1478 \u2014 exactly one added definition serving its five callers.\n",
+  "review_run_id": "r-20261005T211021237895-review-of-one-reader-of-which-sections-are-still-work",
+  "reviewed_base_sha": "5827941a7a61d756c6c3c097957ecd1f6b14636f",
+  "reviewed_head_sha": "1cd1b6c6dcb5f099ff7d40023e18c890cf960531",
+  "reviewed_run_id": "r-20261005T203553230597-one-reader-of-which-sections-are-still-work",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T21:14:51.082585+00:00",
+  "total": 120
+}

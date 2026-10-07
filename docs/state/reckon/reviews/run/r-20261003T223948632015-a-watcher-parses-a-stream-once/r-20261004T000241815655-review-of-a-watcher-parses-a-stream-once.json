@@ -1,0 +1,99 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "commits_read": [
+    "caf9ef9bb744db98ac1d6abee27ebc459824352b",
+    "a0c43474384d939d320acad6714beebe15b6a835",
+    "e69e8bdaf48c0c09b8a99f633ab42367faff07e4"
+  ],
+  "completed_at": "2026-10-04T00:09:15.589Z",
+  "dispatched_at": "2026-10-04T00:02:56Z",
+  "evidence": {
+    "independent_base_arm": {
+      "error": "RuntimeError: OrderedDict mutated during iteration",
+      "exit_status": 1,
+      "failure_count": 1,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T000241815655-review-of-a-watcher-parses-a-stream-once/independent-base-arm.log",
+      "revision": "977aaf7542100c2387702915a9fb1a76bf1875fe (base _backends.py overlaid with the head test)"
+    },
+    "independent_focused": {
+      "exit_status": 0,
+      "passed": 3,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T000241815655-review-of-a-watcher-parses-a-stream-once/independent-focused.log",
+      "revision": "e69e8bdaf48c0c09b8a99f633ab42367faff07e4"
+    },
+    "negative_control": {
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T223948632015-a-watcher-parses-a-stream-once/race-base-final.log",
+      "reason": "race-base-final.log ran the head concurrency test against pre-fix source at 977aaf754, recording RuntimeError: OrderedDict mutated during iteration after 1,581 iterations and 1,509 evictions, EXIT=1; this review independently reproduced it (independent-base-arm.log: 1,744 iterations, EXIT=1)."
+    },
+    "target_gate_logs": {
+      "added_failure_count": 0,
+      "added_failure_ids": [],
+      "after_suite": {
+        "completed": true,
+        "failure_count": 0,
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T223948632015-a-watcher-parses-a-stream-once/after-concurrency-suite.log",
+        "revision": "a0c434743"
+      },
+      "baseline_suite": {
+        "completed": true,
+        "failure_count": 3,
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T223948632015-a-watcher-parses-a-stream-once/baseline-concurrency-suite.log",
+        "revision": "977aaf7542100c2387702915a9fb1a76bf1875fe"
+      }
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-watcher-parses-a-stream-once/reckon/_backends.py",
+      "line": "3586",
+      "severity": "follow-on",
+      "text": "_count_parsed_bytes(len(data)) is invoked outside _PARSED_STREAM_LOCK at :3586, and _PARSED_STREAM_BYTES[0] += count (:3894) is a non-atomic read-modify-write consumed by take_parsed_stream_bytes (:3899) from the producer's poll accounting. Now that concurrent discovery threads reach the cache, the 'bytes parsed this poll' figure can under-count or be attributed across poll windows. Metrics only: no crash, no cache corruption. The line is unchanged by the reviewed commits, so this is a residual observation rather than a regression introduced here."
+    }
+  ],
+  "follow_ons": [
+    "reckon/_backends.py:3894 _PARSED_STREAM_BYTES[0] += count is an unsynchronised read-modify-write now reachable from concurrent discovery threads; it feeds a poll-accounting metric only, so guard it with _PARSED_STREAM_LOCK (or document it as best-effort) if the counter must be exact. Outside this review node's write fence."
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/_backends.py:_observe_run_stream, reckon/_backends.py:cached_stream_timestamp_bounds, reckon/crew/recovery.py:_admission_refusal, reckon/crew/promotion.py:_terminal_stream_data",
+    "diff": "Read all three commits against 977aaf754; every mutation of _PARSED_STREAMS and of _ParsedStream fields is now inside _PARSED_STREAM_LOCK (lines 3565-3617, 3622-3623, 3632-3657, 4024-4025, 4046-4065), and the shared events list is returned read-only-by-contract.",
+    "done_when": "Read tests/test_watch_stream_parse_is_cached.py at e69e8bdaf; the section-9 assertions remain (<=1 full parse over ten snapshots, parse-only-appended-bytes, classification parity, <=1 full parse across ten partition_live_runs) and a0c434743 adds test_concurrent_stream_readers_survive_eviction_and_growth, which runs 16 threads over 52 streams with a 6 KB cache bound and asserts stress_evictions >= 100 so a pass demonstrates real contention. Independently reran the file green (3 passed) and independently reproduced the base defect (see evidence).",
+    "goal": "Read plan a-follower-outlives-its-monitor section 9 and the prior review's follow-on. The three gained commits synchronize the module-level parsed-stream cache the prior review flagged as unsynchronised: caf9ef9bb adds _PARSED_STREAM_LOCK (=_backends.py:3555) and takes it for cache lookup, publication, eviction, observation reuse and timestamp summaries while leaving file reads and json parsing outside it; a0c434743 adds an eviction-count assertion to the concurrency test; e69e8bdaf records the verification in the evidence fragment.",
+    "manifest": "Read the target manifest (sha256 310d82f7); it records the three new commits, the concurrency-focused suite, the base-arm race failure and the repaired gate, and the read-only caller audit. Its baseline_suite/after_suite blocks are the concurrency suite at 977aaf754 (3 failed) and a0c434743 (0 failed).",
+    "write_paths": "Read the target manifest's declared paths and the diff stat of 977aaf754..e69e8bdaf; the three changed paths (reckon/_backends.py, tests/test_watch_stream_parse_is_cached.py, docs/evidence/fragments/a-follower-outlives-its-monitor/a-watcher-parses-a-stream-once.html) are all inside the target's fence and the worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "the concurrency test now asserts stress_evictions >= 100, so its passing result is a genuine contention exercise rather than a no-eviction run, and the per-iteration classification parity against a fresh parse holds the read-only contract; a residual metrics-only race remains (recorded as a follow-on).",
+    "evidence": "I independently reran tests/test_watch_stream_parse_is_cached.py at the reviewed head (3 passed, stress_evictions 3819 over 52 streams) and independently reproduced the defect by overlaying the head test onto pre-fix source at 977aaf754, which failed with RuntimeError: OrderedDict mutated during iteration (1744 iterations, exit 1).",
+    "fit": "the fix now guards the shared cache with threading.Lock, matching the codebase idiom set by reckon/mcp_views.py:_PROBE_CACHE_LOCK and reckon/serve.py:_SIGNATURE_MEMO_LOCK, and it names nothing forbidden.",
+    "goal_fidelity": "reckon/_backends.py:3559-3617 splits cache access into _cached_stream_entry, which reads only under the lock and publishes a fresh immutable _ParsedStream per file identity, and cached_stream_events (:3620), which returns the shared list; all three reading paths (observe_log, recovery._admission_refusal, promotion via cached_stream_timestamp_bounds) route through it, closing the prior review's unsynchronised-cache finding.",
+    "scope_discipline": "the three gained commits touch exactly the three files the node goal names and no other tracked path; the worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read plan a-follower-outlives-its-monitor section 9 and the prior review's follow-on; the three gained commits synchronize the parsed-stream cache the prior review flagged, caf9ef9bb adding _PARSED_STREAM_LOCK and taking it for lookup, publication, eviction, observation reuse and timestamp summaries while leaving file reads and parsing outside it.\nVERDICT done_when: Read tests/test_watch_stream_parse_is_cached.py at e69e8bdaf; section-9 assertions remain and a0c434743 adds test_concurrent_stream_readers_survive_eviction_and_growth (16 threads, 52 streams, 6 KB bound, stress_evictions >= 100); independently reran green (3 passed) and reproduced the base defect.\nVERDICT write_paths: the three changed paths are exactly those the node goal names and lie inside the target's fence; worktree clean at head.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3559-3617 splits cache access into a locked lookup/publish and a read-only accessor; all three reading paths route through it, closing the unsynchronised-cache finding.\nSCORE evidence: 18\nJUSTIFICATION evidence: independent head rerun 3 passed; independent base-arm reproduction failed with RuntimeError: OrderedDict mutated during iteration at 977aaf754.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: exactly the three named files changed, all inside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: eviction-count assertion makes the passing concurrency test a real contention exercise; parity-per-iteration holds the read-only contract; a metrics-only byte-counter race remains.\nSCORE fit: 18\nJUSTIFICATION fit: lock-guarded shared cache matches mcp_views._PROBE_CACHE_LOCK and serve._SIGNATURE_MEMO_LOCK idiom; naming clean.\nFINDING reckon/_backends.py:3586 follow-on: _PARSED_STREAM_BYTES[0] += count (:3894) is unsynchronised and now reachable concurrently; metrics-only, pre-existing.\n",
+  "review_limitations": [
+    "Read the target's three gained commits, its manifest, its evidence fragment and its base/after gate logs; independently reran tests/test_watch_stream_parse_is_cached.py at the reviewed head (3 passed) and independently reproduced the base race by overlaying the head test onto pre-fix source at 977aaf754 (1 failed, RuntimeError). Did not rerun the 222-test import suite or the CPU/warm-discovery measures.",
+    "This review attaches findings and scores only; it does not repair source, update the target manifest, merge commits, promote the target run or verify the merged primary head.",
+    "The call-site list is runtime reach read from the source, not a dynamic trace; the read-only contract of dialect.observe is evidenced by the per-iteration parity assertions in the concurrency test rather than by a source-only proof."
+  ],
+  "review_run_id": "r-20261004T000241815655-review-of-a-watcher-parses-a-stream-once",
+  "reviewed_base_sha": "977aaf7542100c2387702915a9fb1a76bf1875fe",
+  "reviewed_head_sha": "e69e8bdaf48c0c09b8a99f633ab42367faff07e4",
+  "reviewed_run_id": "r-20261003T223948632015-a-watcher-parses-a-stream-once",
+  "reviewer_run_id": "r-20261004T000241815655-review-of-a-watcher-parses-a-stream-once",
+  "scope_note": "Re-review of the commits the run gained since it was last reviewed (base 977aaf754, the prior reviewed head, to head e69e8bdaf); it does not re-score the earlier commits already reviewed at 977aaf754.",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T223948632015-a-watcher-parses-a-stream-once/manifest.md",
+  "source_manifest_sha256": "310d82f7c693a47e5911e7bcd83478c4eca8f1fdf72b8c70953701f0ab7aab99",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-watcher-parses-a-stream-once",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T00:25:00+00:00",
+  "total": 91
+}

@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4efd4fdeae367f7f5c5931a24d41e674136c0c54",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:5412",
+    "reckon/crew/promotion.py:913",
+    "reckon/crew/promotion.py:450",
+    "reckon/crew/promotion.py:1967",
+    "reckon/cli.py:6045"
+  ],
+  "completed_at": "2026-10-03T03:58:47.973Z",
+  "dispatched_at": "2026-10-03T03:50:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030558364233-promote-a-reclaimed-run/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's log names revision 17c205ecb, one commit short of the reviewed head e0b05e3a; the intervening commit is the evidence fragment only, so the measured code is the reviewed code, but no gate log names the final revision."
+    },
+    {
+      "file": "/tmp/reckon-crew-scratch/r-20261003T030558364233-promote-a-reclaimed-run",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the run's /tmp scratch root remains on disk with a claude subdirectory although the manifest checkpoint states the scratch was removed; it is node-local and dies with the allocation."
+    }
+  ],
+  "head_log_revision": "17c205ecb305a261edd3beaadaa41d4e941a0260",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read both commits against 4efd4fdea: 17c205ecb adds `_run_commit_directory` and the unreadable-root guard to reckon/crew/promotion.py plus the new test file; e0b05e3a adds only the evidence fragment. No file outside the declared paths is touched by either commit.",
+    "done_when": "Both clauses hold: promotion reads a reclaimed run's commits through its repository and never runs git in the removed directory (`_commit_canonical_id` returns None for a root that is not a directory, reckon/crew/promotion.py:445), and tests/test_promote_a_reclaimed_run.py promotes a run whose worktree directory has been deleted in a temporary repository and RECKON_HOME. The reviewer re-ran that file at the reviewed head: 2 passed in 14.50s, EXIT=0.",
+    "goal": "The node's goal \u2014 a run whose worktree directory has been deleted can still be promoted \u2014 is met: `_run_commit_directory` (reckon/crew/promotion.py:419) returns the run's worktree while it is a directory and its repository otherwise, and `_require_gate_evidence` reads citations through it at reckon/crew/promotion.py:913.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030558364233-promote-a-reclaimed-run/manifest.md; status complete, commits 17c205ecb305a261edd3beaadaa41d4e941a0260 and e0b05e3a0a2a0a7a5a4262a0c03acca67fb5d22f, negative_control_log is a bare path, and baseline_suite and after_suite are JSON with exit_status 0, completed true and literal absolute-path commands.",
+    "write_paths": "The declared scope is reckon/crew/promotion.py, tests/test_promote_a_reclaimed_run.py, docs/evidence/fragments/crew-runtime-positive-controls/promote-a-reclaimed-run.html and a figures directory; the diff touches exactly the first three (promotion.py +54/-9, the 164-line test file, the 49-line fragment) and leaves the declared figures directory uncreated because the done-when names no figure."
+  },
+  "justifications": {
+    "durability": "Both new cases are red at the base (gate-base-reproduction.log, 2 failed, EXIT=1, FileNotFoundError naming the deleted worktree) and under the declared mutation (negative-control.log, 2 failed, EXIT=1), and test_a_reclaimed_run_cites_through_its_repository asserts an independent refusal (\"does not resolve\") rather than echoing the value it passed in.",
+    "evidence": "Both arms carry EXIT and their summary lines and the added-failure count is measured through reckon/crew/review.py:added_failures_from_gate_logs against each arm's recorded working directory; deducted one because the head arm ran at 17c205ecb rather than the reviewed head e0b05e3a, so no gate log names the final reviewed revision.",
+    "fit": "The change follows the module's existing shape \u2014 a documented helper beside `_registered_repository_roots` (reckon/crew/promotion.py:419) with mechanism-naming docstrings \u2014 and introduces no plan, ticket or version identifier in a name, comment or filename.",
+    "goal_fidelity": "The reclaimed-run promotion path is delivered and proven by tests/test_promote_a_reclaimed_run.py::test_a_reclaimed_run_promotes_and_registers_its_commit, which the reviewer re-ran green at the reviewed head (2 passed, EXIT=0, reported in reviewer-head-rerun.log).",
+    "scope_discipline": "The diff touches exactly the three declared paths (reckon/crew/promotion.py, tests/test_promote_a_reclaimed_run.py, docs/evidence/fragments/crew-runtime-positive-controls/promote-a-reclaimed-run.html) and leaves the declared figures directory uncreated, with no plan, index or sprint file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal \u2014 a run whose worktree directory has been deleted can still be promoted \u2014 is met: `_run_commit_directory` (reckon/crew/promotion.py:419) returns the run's worktree while it is a directory and its repository otherwise, and `_require_gate_evidence` reads citations through it at reckon/crew/promotion.py:913.\nVERDICT done_when: Both clauses hold: promotion reads a reclaimed run's commits through its repository and never runs git in the removed directory (`_commit_canonical_id` returns None for a root that is not a directory, reckon/crew/promotion.py:445), and tests/test_promote_a_reclaimed_run.py promotes a run whose worktree directory has been deleted in a temporary repository and RECKON_HOME. The reviewer re-ran that file at the reviewed head: 2 passed in 14.50s, EXIT=0.\nVERDICT write_paths: The declared scope is reckon/crew/promotion.py, tests/test_promote_a_reclaimed_run.py, docs/evidence/fragments/crew-runtime-positive-controls/promote-a-reclaimed-run.html and a figures directory; the diff touches exactly the first three (promotion.py +54/-9, the 164-line test file, the 49-line fragment) and leaves the declared figures directory uncreated because the done-when names no figure.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030558364233-promote-a-reclaimed-run/manifest.md; status complete, commits 17c205ecb305a261edd3beaadaa41d4e941a0260 and e0b05e3a0a2a0a7a5a4262a0c03acca67fb5d22f, negative_control_log is a bare path, and baseline_suite and after_suite are JSON with exit_status 0, completed true and literal absolute-path commands.\nVERDICT diff: Read both commits against 4efd4fdea: 17c205ecb adds `_run_commit_directory` and the unreadable-root guard to reckon/crew/promotion.py plus the new test file; e0b05e3a adds only the evidence fragment. No file outside the declared paths is touched by either commit.\nCALL_SITES: reckon/crew/promotion.py:5412, reckon/crew/promotion.py:913, reckon/crew/promotion.py:450, reckon/crew/promotion.py:1967, reckon/cli.py:6045\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The reclaimed-run promotion path is delivered and proven by tests/test_promote_a_reclaimed_run.py::test_a_reclaimed_run_promotes_and_registers_its_commit, which the reviewer re-ran green at the reviewed head (2 passed, EXIT=0, reported in reviewer-head-rerun.log).\nSCORE evidence: 19\nJUSTIFICATION evidence: Both arms carry EXIT and their summary lines and the added-failure count is measured through reckon/crew/review.py:added_failures_from_gate_logs against each arm's recorded working directory; deducted one because the head arm ran at 17c205ecb rather than the reviewed head e0b05e3a, so no gate log names the final reviewed revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff touches exactly the three declared paths (reckon/crew/promotion.py, tests/test_promote_a_reclaimed_run.py, docs/evidence/fragments/crew-runtime-positive-controls/promote-a-reclaimed-run.html) and leaves the declared figures directory uncreated, with no plan, index or sprint file changed.\nSCORE durability: 20\nJUSTIFICATION durability: Both new cases are red at the base (gate-base-reproduction.log, 2 failed, EXIT=1, FileNotFoundError naming the deleted worktree) and under the declared mutation (negative-control.log, 2 failed, EXIT=1), and test_a_reclaimed_run_cites_through_its_repository asserts an independent refusal (\"does not resolve\") rather than echoing the value it passed in.\nSCORE fit: 20\nJUSTIFICATION fit: The change follows the module's existing shape \u2014 a documented helper beside `_registered_repository_roots` (reckon/crew/promotion.py:419) with mechanism-naming docstrings \u2014 and introduces no plan, ticket or version identifier in a name, comment or filename.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030558364233-promote-a-reclaimed-run/gate-head.log:1 follow-on: the head arm's log names revision 17c205ecb, one commit short of the reviewed head e0b05e3a; the intervening commit is the evidence fragment only, so the measured code is the reviewed code, but no gate log names the final revision.\nFINDING /tmp/reckon-crew-scratch/r-20261003T030558364233-promote-a-reclaimed-run:1 follow-on: the run's /tmp scratch root remains on disk with a claude subdirectory although the manifest checkpoint states the scratch was removed; it is node-local and dies with the allocation.",
+  "review_run_id": "r-20261003T035002447065-review-of-promote-a-reclaimed-run",
+  "reviewed_base_sha": "4efd4fdeae367f7f5c5931a24d41e674136c0c54",
+  "reviewed_head_sha": "e0b05e3a0a2a0a7a5a4262a0c03acca67fb5d22f",
+  "reviewed_run_id": "r-20261003T030558364233-promote-a-reclaimed-run",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T035002447065-review-of-promote-a-reclaimed-run",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T03:57:30.043607+00:00",
+  "total": 99
+}

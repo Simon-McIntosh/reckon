@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:09:52.395Z",
+  "dispatched_at": "2026-10-06T06:05:51Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:791",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name `review_report_directory` (or persist the snapshot path on the record) so the predicate does not re-spell the report-directory layout, the path-resolution duplicate the rubric calls out.",
+      "text": "\u00a721 recomputes each stored review's unit digests from \"the plan.html written beside its report\", but the stored record built by `store_delivered_report` (`reckon/crew/plan_review.py:931-945`) carries no report or snapshot path, only `review_run_id`; the path is owned by `review_report_directory` (`reckon/crew/plan_review.py:791`), which the section does not name",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:296",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to call `_section_digests(snapshot_path)`; the section should say so, or state why the existing reader cannot be extended.",
+      "text": "\u00a721 adds a private \"snapshot read\" though `_section_digests` (`reckon/crew/plan_review.py:296`) already accepts a `Path` and reads the document through `_as_document` (`reckon/crew/plan_review.py:205`), so a separate reader adds no behaviour the existing digest function lacks",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s22",
+      "id": "reuse_search-1",
+      "reason": "an un-named text source lets the change measure re-extract prose and drift from the reader \u00a716 built, the reuse the section must cite.",
+      "text": "\u00a722 compares a unit's authored prose against the reviewed snapshot's text without naming `section_prose` (`reckon/_plan_html.py`), the one reader \u00a716 places for authored unit text",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1b83f3e509907638cbf38cc5891911c6805e437a387f7359b8275fe9cafcd94c",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 170,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T060526431221-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "4ea84a67fc9d5c7680ef31e2890696de0d201707",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716's `section_prose` and \u00a721's coverage predicate each hide substantial behaviour (slicing, skip-set subtraction, document-unit keying; snapshot recompute and per-unit join) behind one function, and the plan names each consumer.",
+    "duplicate_owner": "a finding \u2014 \u00a721 locates each stored review's `plan.html` snapshot without naming `review_report_directory`, the function that owns that path.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 retires public `strip_tags` for private `_strip_tags` in the same change that adds `section_prose`, and \u00a721/\u00a722/\u00a723 each state no counted surface is added, so every section that touches a family names what it retires or why nothing is.",
+    "reuse_search": "a finding \u2014 \u00a722 adds a word-level change measure over a unit's authored prose without naming the reader that owns that text, which \u00a716 defines as `section_prose` on `reckon/_plan_html.py`.",
+    "thin_wrapper": "a finding \u2014 \u00a721 introduces a private \"snapshot read\" though `_section_digests` already accepts a path and reads the document through `_as_document`."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "a85d3d5b6115911cebee511fc8dcb878e34525faa6ed760e6c6d5e252a745c18",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "f9d565044ceadd9efad803df1a02e432ee733e65dc94ef9da18cbcff2fe5fac9",
+    "s22": "247ca23670dcf2676a652d94e9e494e9171f656e38e0a824c715cdcc0176789d",
+    "s23": "6a3f188c551badb342d6a19af417492aada053086591ae24449f1c9325aa11eb",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:22:13.032338+00:00"
+}

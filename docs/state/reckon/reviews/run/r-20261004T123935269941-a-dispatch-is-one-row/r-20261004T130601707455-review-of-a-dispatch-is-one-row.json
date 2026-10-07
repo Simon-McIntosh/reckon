@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:3242",
+    "reckon/cli.py:3405",
+    "reckon/cli.py:4089",
+    "reckon/cli.py:4174",
+    "reckon/cli.py:4212"
+  ],
+  "completed_at": "2026-10-04T13:20:03.995Z",
+  "dispatched_at": "2026-10-04T13:06:21Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit 3176d8f8d; it adds ARRIVAL_KIND/ARRIVAL_STATE/ARRIVAL_WINDOW and _arrival_resolution, widens the hold tuple to carry carries_arrival, and adds the arrival branches in feed() with no change outside reckon/crew/ticker.py and the test file.",
+    "done_when": "Read the done-when in the reviewed run's prompt.txt:97; the gate ran tests/test_a_dispatch_is_one_row.py with the two pre-existing suites and the recorded 36 passed EXIT=0 plus the fragment's rows-per-launch replay assert the measure, both independently reproduced.",
+    "goal": "Read the node goal in the reviewed run's prompt.txt:30 and the landed change in reckon/crew/ticker.py:1284; RowPolicy holds (None, dispatched) for 90 s and discharges it on the first transition out of dispatched, so a launch prints one row reading dispatched -> state.",
+    "manifest": "Read manifest.md; it records the head gate 36 passed EXIT=0, the base arm 30 passed EXIT=0, the negative control EXIT=1 and rows-per-launch 2.000 -> 1.003, all consistent with the diff I read.",
+    "write_paths": "Read the manifest orientation_write_paths; the landed commit 3176d8f8d stays inside reckon/crew/ticker.py, tests/test_a_dispatch_is_one_row.py and docs/evidence/fragments... the declared scope."
+  },
+  "justifications": {
+    "durability": "five of the six added assertions redden when the arrival hold is removed from a head copy (negative control EXIT=1, five failing ids), so they guard the change; the sixth, tests/test_a_dispatch_is_one_row.py:95, pins the pre-existing re-arm suppression rather than the new hold and stays green under that mutation.",
+    "evidence": "the gate tests/test_a_dispatch_is_one_row.py runs the five cases the done-when names plus a sixth and reads 36 passed EXIT=0 at head, independently reproduced in a scratch tree, and the fragment docs/evidence/fragments/crew-observability-truth/a-dispatch-is-one-row.html records the rows-per-launch replay whose base (2.000) and head (1.003) arms I re-ran and matched.",
+    "fit": "the arrival constants (ticker.py:1126-1132) and the hold branches extend NOISE_PAIRS' own idiom and naming (NOISE_PAIRS, NOISE_RESOLUTIONS) with mechanism names that carry no plan label, version or ticket reference.",
+    "goal_fidelity": "reckon/crew/ticker.py:1284-1288 holds the (None, dispatched) kind for ARRIVAL_WINDOW 90 s and reckon/crew/ticker.py:1231-1254 discharges it on the first transition out of dispatched, so a launch prints one row reading dispatched -> state; an independent replay of the last 24 h watch stream through PaneRowPath reads 2.000 rows/launch at base against 1.003 at head.",
+    "scope_discipline": "commit 3176d8f8d touches exactly reckon/crew/ticker.py, tests/test_a_dispatch_is_one_row.py and docs/evidence/fragments/crew-observability-truth/a-dispatch-is-one-row.html, a subset of the declared write paths, and rewrites no expectation in the two pre-existing suites which read 30 passed 0 failed at both base and head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the reviewed goal at prompt.txt:30 and the landed RowPolicy change at reckon/crew/ticker.py:1284; the arrival kind (None, dispatched) is held for ARRIVAL_WINDOW=90 s and discharged by the first transition out of dispatched, so a launch prints one row reading dispatched -> state.\nVERDICT done_when: read the done-when at prompt.txt:97; the gate ran tests/test_a_dispatch_is_one_row.py plus tests/test_follower_prints_only_policy_rows.py and tests/test_ticker_row_is_one_transition.py to 36 passed EXIT=0, and the fragment records the rows-per-launch replay, both reproduced independently in a scratch tree.\nVERDICT write_paths: read the manifest orientation_write_paths; commit 3176d8f8d touches only reckon/crew/ticker.py, tests/test_a_dispatch_is_one_row.py and docs/evidence/fragments/crew-observability-truth/a-dispatch-is-one-row.html, a subset of the declared scope.\nVERDICT manifest: read manifest.md; the head gate 36 passed EXIT=0, base arm 30 passed EXIT=0, negative control EXIT=1 and rows-per-launch 2.000 -> 1.003 all reconcile with the diff.\nVERDICT diff: read commit 3176d8f8d; it adds ARRIVAL_KIND/ARRIVAL_STATE/ARRIVAL_WINDOW and _arrival_resolution; the hold tuple gains carries_arrival and feed() gains the arrival branches, with nothing unrelated alongside.\nCALL_SITES: reckon/cli.py:3242, reckon/cli.py:3405, reckon/cli.py:4089, reckon/cli.py:4174, reckon/cli.py:4212\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1284-1288 holds the (None, dispatched) kind for ARRIVAL_WINDOW 90 s and reckon/crew/ticker.py:1231-1254 discharges it on the first transition out of dispatched, so a launch prints one row; an independent replay of the last 24 h watch stream reads 2.000 rows/launch at base against 1.003 at head.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_dispatch_is_one_row.py runs the five done-when cases and reads 36 passed EXIT=0, independently reproduced, and the fragment records the rows-per-launch replay whose 2.000 and 1.003 arms I re-ran and matched.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 3176d8f8d touches exactly reckon/crew/ticker.py, tests/test_a_dispatch_is_one_row.py and docs/evidence/fragments/crew-observability-truth/a-dispatch-is-one-row.html, a subset of the declared write paths, and rewrites no pre-existing expectation.\nSCORE durability: 19\nJUSTIFICATION durability: five of the six added assertions redden when the arrival hold is removed from a head copy (negative control EXIT=1, five failing ids); the sixth, tests/test_a_dispatch_is_one_row.py:95, pins the pre-existing re-arm suppression and stays green under that mutation.\nSCORE fit: 19\nJUSTIFICATION fit: the arrival constants (ticker.py:1126-1132) and hold branches extend NOISE_PAIRS' own idiom with mechanism names carrying no plan label, version or ticket reference.\n",
+  "review_run_id": "r-20261004T130601707455-review-of-a-dispatch-is-one-row",
+  "reviewed_base_sha": "f1aa483e30a9251e7ec35da10ae0aa7e655a710a",
+  "reviewed_head_sha": "3176d8f8d4236db465fe361e3595b8159dbe31da",
+  "reviewed_run_id": "r-20261004T123935269941-a-dispatch-is-one-row",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T130601707455-review-of-a-dispatch-is-one-row",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:08.381283+00:00",
+  "total": 97
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/_plan_html.py:64 SECTION_NUMBER_PATTERN",
+    "reckon/_plan_html.py:67 _SECTION_IDENTITY",
+    "reckon/ledger.py:207 normalize_section",
+    "reckon/evidence.py:52 _section_key",
+    "reckon/doccheck.py:131 _NUMBERED_SECTION_ID",
+    "reckon/_store.py:1604 _require_new_section_contracts",
+    "reckon/roadmap.py:172 _SECTION_WORD_RE",
+    "reckon/roadmap.py:267 _gate_section_refs",
+    "reckon/_store.py:2321 is_section_identity",
+    "reckon/_store.py:2921 is_section_identity",
+    "reckon/_store.py:2973 is_section_identity"
+  ],
+  "completed_at": "2026-10-05T23:22:44Z",
+  "dispatched_at": "2026-10-05T23:00:32Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "read one by one; 05b18e7ab is the source refactor over six source files (43 changed lines) plus the new test file, and 26b0e72fd adds only the evidence fragment, so the gated source equals the source at head.",
+    "done_when": "I reproduced the done-when at head 26b0e72fd: grep of the six-grammar census gives 8 sites at base 7722368f and 6 at head with the core text appearing in reckon/_plan_html.py alone; grep -c \"A-Za-z0-9._-\" reckon/_store.py reads 4 at both base and head; interface_counts.count_revision reports public_definitions 1480 at base and 1480 at head; the store identity validations refuse an unsafe id with \"safe section identity\"; and the recorded negative control (negative-control.log) restores the bare \\d+ token in roadmap._SECTION_WORD_RE and reddens two gate-binding cases, EXIT=1, which I re-derived at runtime.",
+    "goal": "The node exported one section-number core on reckon/_plan_html.py (SECTION_NUMBER_PATTERN, line 64) that the six section-spelling grammars compose (reckon/_plan_html.py _SECTION_IDENTITY, ledger.py normalize_section, evidence.py _section_key, doccheck.py _NUMBERED_SECTION_ID, _store.py _require_new_section_contracts, roadmap.py _SECTION_WORD_RE), and the store's three section-id validations (_store.py lines 2321 declaration path, 2921 authored-fields, 2973 collapse) call is_section_identity; the AST census at head reports exactly those six sites and each pattern contains SECTION_NUMBER.",
+    "manifest": "read; it carries base 366 passed EXIT=0 and head 412 passed EXIT=0 with the checked-in changed_paths matching the diff exactly; the negative control is 2 failed, 2 passed, 42 deselected, EXIT=1.",
+    "write_paths": "the declaration names ten paths, including routing.py and the figure directory which the change did not need; git diff --name-only 7722368f..26b0e72fd lists eight paths, every one inside the declaration, with nothing added outside it."
+  },
+  "justifications": {
+    "durability": "the negative control restores a bare \\d+ token in roadmap._SECTION_WORD_RE and reddens two gate-word binding cases (EXIT=1), and tests/test_section_spelling_grammars_share_one_core.py further pins core ownership (one file), the six-frame census, per-plan fallback deltas and the three store refusals.",
+    "evidence": "I independently re-ran tests/test_section_spelling_grammars_share_one_core.py at head (46 passed, EXIT=0), re-derived the added-failure count 0 from base-gate.log (366 passed EXIT=0) and head-gate.log (412 passed EXIT=0), computed public_definitions 1480/1480 with interface_counts, and reproduced the negative control firing in-process.",
+    "fit": "edits are minimal and sit in the owning modules, the core is a named module constant rather than a second scanner, the new test file is named for the capability, and no plan, stage or version identifier appears in the changed source or tests.",
+    "goal_fidelity": "one exported number core on reckon/_plan_html.py is composed by exactly the six section-spelling grammars at head, the core text \\d+(?:[.-]\\d+)* appears in that module alone, and the store's three identity validations call is_section_identity with refusals pinned by test_store_identity_validations_use_schema_and_refuse_invalid_ids.",
+    "reuse": "the change consolidates nine historical grammar spellings to six that all compose one exported core text owned once, and the continuation frame is derived from the whole core text rather than re-spelled.",
+    "scope_discipline": "git diff --name-only 7722368f..26b0e72fd lists eight paths all inside the ten declared write paths, and the one out-of-scope defect the node found (a command-invocation continuation grammar) is recorded under follow_ons and left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node exported one section-number core on reckon/_plan_html.py (SECTION_NUMBER_PATTERN, line 64) that the six section-spelling grammars compose (reckon/_plan_html.py _SECTION_IDENTITY, ledger.py normalize_section, evidence.py _section_key, doccheck.py _NUMBERED_SECTION_ID, _store.py _require_new_section_contracts, roadmap.py _SECTION_WORD_RE), and the store's three section-id validations (_store.py lines 2321 declaration path, 2921 authored-fields, 2973 collapse) call is_section_identity; the AST census at head reports exactly those six sites and each pattern contains SECTION_NUMBER.\nVERDICT done_when: I reproduced the done-when at head 26b0e72fd: grep of the six-grammar census gives 8 sites at base 7722368f and 6 at head with the core text appearing in reckon/_plan_html.py alone; grep -c \"A-Za-z0-9._-\" reckon/_store.py reads 4 at both base and head; interface_counts.count_revision reports public_definitions 1480 at base and 1480 at head; the store identity validations refuse an unsafe id with \"safe section identity\"; and the recorded negative control (negative-control.log) restores the bare \\d+ token in roadmap._SECTION_WORD_RE and reddens two gate-binding cases, EXIT=1, which I re-derived at runtime.\nVERDICT write_paths: the declaration names ten paths, including routing.py and the figure directory which the change did not need; git diff --name-only 7722368f..26b0e72fd lists eight paths, every one inside the declaration, with nothing added outside it.\nVERDICT manifest: read; it carries base 366 passed EXIT=0 and head 412 passed EXIT=0 with the checked-in changed_paths matching the diff exactly; the negative control is 2 failed, 2 passed, 42 deselected, EXIT=1.\nVERDICT diff: read one by one; 05b18e7ab is the source refactor over six source files (43 changed lines) plus the new test file, and 26b0e72fd adds only the evidence fragment, so the gated source equals the source at head.\nCALL_SITES: reckon/_plan_html.py:64 SECTION_NUMBER_PATTERN, reckon/_plan_html.py:67 _SECTION_IDENTITY, reckon/ledger.py:207 normalize_section, reckon/evidence.py:52 _section_key, reckon/doccheck.py:131 _NUMBERED_SECTION_ID, reckon/_store.py:1604 _require_new_section_contracts, reckon/roadmap.py:172 _SECTION_WORD_RE, reckon/roadmap.py:267 _gate_section_refs, reckon/_store.py:2321 is_section_identity, reckon/_store.py:2921 is_section_identity, reckon/_store.py:2973 is_section_identity\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: one exported number core on reckon/_plan_html.py is composed by exactly the six section-spelling grammars at head, the core text \\d+(?:[.-]\\d+)* appears in that module alone, and the store's three identity validations call is_section_identity with refusals pinned by test_store_identity_validations_use_schema_and_refuse_invalid_ids.\nSCORE evidence: 20\nJUSTIFICATION evidence: I independently re-ran tests/test_section_spelling_grammars_share_one_core.py at head (46 passed, EXIT=0), re-derived the added-failure count 0 from base-gate.log (366 passed EXIT=0) and head-gate.log (412 passed EXIT=0), computed public_definitions 1480/1480 with interface_counts, and reproduced the negative control firing in-process.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 7722368f..26b0e72fd lists eight paths all inside the ten declared write paths, and the one out-of-scope defect the node found (a command-invocation continuation grammar) is recorded under follow_ons and left untouched.\nSCORE durability: 20\nJUSTIFICATION durability: the negative control restores a bare \\d+ token in roadmap._SECTION_WORD_RE and reddens two gate-word binding cases (EXIT=1), and tests/test_section_spelling_grammars_share_one_core.py further pins core ownership (one file), the six-frame census, per-plan fallback deltas and the three store refusals.\nSCORE fit: 20\nJUSTIFICATION fit: edits are minimal and sit in the owning modules, the core is a named module constant rather than a second scanner, the new test file is named for the capability, and no plan, stage or version identifier appears in the changed source or tests.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change consolidates nine historical grammar spellings to six that all compose one exported core text owned once, and the continuation frame is derived from the whole core text rather than re-spelled.\n",
+  "review_run_id": "legacy-2fb68a246127",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "7722368f108a0d40ff2f916418847b31623899b0",
+  "reviewed_head_sha": "26b0e72fd23e6c65392f459178e31e7dfc96bbf3",
+  "reviewed_run_id": "r-20261005T225956730168-section-spelling-grammars-share-one-core",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T23:30:07.828943+00:00",
+  "total": 120
+}

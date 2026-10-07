@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived here with reckon.crew.review.added_failures_from_gate_logs, read against the two logs the reviewed manifest names under baseline_suite and after_suite (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T191753796671-direct-resume-teardown-reads-its-own-home/gate-base.log and gate-head.log); both arms read 14 passed EXIT=0 with no FAILED or ERROR line, so the count is a measured zero",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:7737",
+    "reckon/crew/dispatch.py:8054",
+    "reckon/crew/runs.py:37",
+    "reckon/crew/runs.py:68",
+    "reckon/crew/runs.py:73"
+  ],
+  "completed_at": "2026-09-29T20:28:38.621Z",
+  "dispatched_at": "2026-09-29T19:52:35Z",
+  "findings": [
+    {
+      "file": "tests/test_direct_resume_needs_an_observed_death.py",
+      "line": "87",
+      "text": "_real_crew_home() re-derives the real crew home as ~/.config/reckon/crew, but reckon's resolver falls back to ~/docs-server when that directory is absent (reckon/_store.py:137-140), so on an install whose config home is the legacy root the absence reading is taken of a tree the case would not write into and an un-isolated case's run paths under the legacy root go unseen; re-deriving rather than calling runs.crew_home() is right, because that resolver follows the monkeypatch and would prove nothing, but the probe's aim is then only as good as the host layout, and it is verified on this host alone (instrument-check.log:2-4)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against base 62e7fc4b9 \u2014 949d6294e removes _home_fingerprint and its before-and-after comparison and adds _real_crew_home, _case_artifacts and the teardown absence assertion in one file, and 1a4c9933 adds the 65-line evidence fragment; of the 28 assert lines the file carries at each revision exactly one differs, the fixture's no-write proof, so the manifest's claim that no other assertion changes holds.",
+    "done_when": "every item of the done_when has a receipt \u2014 gate arms 62e7fc4b9 and 949d6294e each read 14 passed ending EXIT=0 (gate-base.log, gate-head.log), the head file alone ran three consecutive times at 9 passed exit 0 (head-run-1.log, head-run-2.log, head-run-3.log), the declared mutation is repeated verbatim as negative-control.log:1 and reddens the file with 9 errors exit 1, the manifest's baseline_suite and after_suite objects carry revision, a literal command, completed true and failure_count 0, and the fragment docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/direct-resume-teardown-reads-its-own-home.html records the arms, the instrument check and the control.",
+    "goal": "the goal is that the direct-resume cases prove their no-write claim from state the test owns, and the landing does exactly that \u2014 tests/test_direct_resume_needs_an_observed_death.py:116-117 replaces the real-home mtime fingerprint with the absence of the paths _case_artifacts (:90) names for the five run ids the file mints (:62), while the crew-home isolation and the assertion pinning it (:113-114) are unchanged.",
+    "manifest": "read in full; status complete, both suite arms recorded with completed true and a literal command, test_logs naming the seven logs I opened, negative_control_log a bare path whose first line repeats the dispatch's declared string, changed_paths matching the two files the commits touch, and commits naming 949d6294e and 1a4c99339.",
+    "write_paths": "the declared fence is tests/test_direct_resume_needs_an_observed_death.py, the evidence fragment and docs/figures/a-stalled-row-says-whether-the-worker-lives/direct-resume-teardown-reads-its-own-home; the two landed commits touch only the first two (949d6294e one file, 1a4c9933 one file), the figures directory was not used, and git status --porcelain in the worktree at 1a4c99339 prints nothing."
+  },
+  "justifications": {
+    "durability": "the added probe at :117 fails on a writer that never consulted RECKON_HOME \u2014 a case whose write lands in the real home while runs.crew_home() still resolves under tmp_path and the assertion at :114 passes \u2014 but the declared mutation reddens that pre-existing assertion at fixture setup instead, so the added assertion's own red path is demonstrated only against a stand-in root, and its aim is pinned only by instrument_check.py.",
+    "evidence": "the manifest's two gate arms reconcile with their logs (14 passed, EXIT=0 each) and I re-derived their set difference with reckon.crew.review.added_failures_from_gate_logs over gate-base.log and gate-head.log, getting 0 added ids, but the flake the change exists to remove did not fire in this window (the base arm is green), so the removal rests on the mechanism read at :116-117 rather than on a reproduction.",
+    "fit": "the helper names, docstrings and fixture shape at :85-117 match the file's surroundings, ruff check and ruff format --check on the file are clean at head as the fragment claims, and no plan label, ticket or attribution appears in the diff or the commit messages.",
+    "goal_fidelity": "tests/test_direct_resume_needs_an_observed_death.py:116-117 lands the only half the goal still needed, since the crew-home isolation at :113 and its resolution assertion at :114 already existed at base.",
+    "scope_discipline": "every path either commit touches is inside the declared fence, the tree is clean at 1a4c99339, and the declared figures directory is simply unused."
+  },
+  "node": "review-of-direct-resume-teardown-reads-its-own-home",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the direct-resume cases prove their no-write claim from state the test owns, and the landing does exactly that \u2014 tests/test_direct_resume_needs_an_observed_death.py:116-117 replaces the real-home mtime fingerprint with the absence of the paths _case_artifacts (:90) names for the five run ids the file mints (:62), while the crew-home isolation and the assertion pinning it (:113-114) are unchanged.\nVERDICT done_when: every item of the done_when has a receipt \u2014 gate arms 62e7fc4b9 and 949d6294e each read 14 passed ending EXIT=0 (gate-base.log, gate-head.log), the head file alone ran three consecutive times at 9 passed exit 0 (head-run-1.log, head-run-2.log, head-run-3.log), the declared mutation is repeated verbatim as negative-control.log:1 and reddens the file with 9 errors exit 1, the manifest's baseline_suite and after_suite objects carry revision, a literal command, completed true and failure_count 0, and the fragment docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/direct-resume-teardown-reads-its-own-home.html records the arms, the instrument check and the control.\nVERDICT write_paths: the declared fence is tests/test_direct_resume_needs_an_observed_death.py, the evidence fragment and docs/figures/a-stalled-row-says-whether-the-worker-lives/direct-resume-teardown-reads-its-own-home; the two landed commits touch only the first two (949d6294e one file, 1a4c9933 one file), the figures directory was not used, and git status --porcelain in the worktree at 1a4c99339 prints nothing.\nVERDICT manifest: read in full; status complete, both suite arms recorded with completed true and a literal command, test_logs naming the seven logs I opened, negative_control_log a bare path whose first line repeats the dispatch's declared string, changed_paths matching the two files the commits touch, and commits naming 949d6294e and 1a4c99339.\nVERDICT diff: read both commits against base 62e7fc4b9 \u2014 949d6294e removes _home_fingerprint and its before-and-after comparison and adds _real_crew_home, _case_artifacts and the teardown absence assertion in one file, and 1a4c9933 adds the 65-line evidence fragment; of the 28 assert lines the file carries at each revision exactly one differs, the fixture's no-write proof, so the manifest's claim that no other assertion changes holds.\nCALL_SITES: reckon/crew/dispatch.py:7737, reckon/crew/dispatch.py:8054, reckon/crew/runs.py:37, reckon/crew/runs.py:68, reckon/crew/runs.py:73\nREVIEWER_NOTE the landed change is a test fixture, so no runtime code reaches it; the sites above are the production surface the file drives (resume_plan and change_lane) plus the path helpers run_dir and pointer_path that the probe's aim was compared against in instrument_check.py.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_direct_resume_needs_an_observed_death.py:116-117 lands the only half the goal still needed, since the crew-home isolation at :113 and its resolution assertion at :114 already existed at base.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's two gate arms reconcile with their logs (14 passed, EXIT=0 each) and I re-derived their set difference with reckon.crew.review.added_failures_from_gate_logs over gate-base.log and gate-head.log, getting 0 added ids, but the flake the change exists to remove did not fire in this window (the base arm is green), so the removal rests on the mechanism read at :116-117 rather than on a reproduction.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path either commit touches is inside the declared fence, the tree is clean at 1a4c99339, and the declared figures directory is simply unused.\nSCORE durability: 17\nJUSTIFICATION durability: the added probe at :117 fails on a writer that never consulted RECKON_HOME \u2014 a case whose write lands in the real home while runs.crew_home() still resolves under tmp_path and the assertion at :114 passes \u2014 but the declared mutation reddens that pre-existing assertion at fixture setup instead, so the added assertion's own red path is demonstrated only against a stand-in root, and its aim is pinned only by instrument_check.py.\nSCORE fit: 18\nJUSTIFICATION fit: the helper names, docstrings and fixture shape at :85-117 match the file's surroundings, ruff check and ruff format --check on the file are clean at head as the fragment claims, and no plan label, ticket or attribution appears in the diff or the commit messages.\nFINDING tests/test_direct_resume_needs_an_observed_death.py:87 _real_crew_home() re-derives the real crew home as ~/.config/reckon/crew, but reckon's resolver falls back to ~/docs-server when that directory is absent (reckon/_store.py:137-140), so on an install whose config home is the legacy root the absence reading is taken of a tree the case would not write into and an un-isolated case's run paths under the legacy root go unseen; re-deriving rather than calling runs.crew_home() is right, because that resolver follows the monkeypatch and would prove nothing, but the probe's aim is then only as good as the host layout, and it is verified on this host alone (instrument-check.log:2-4).\n",
+  "review_run_id": "r-20260929T195220702338-review-of-direct-resume-teardown-reads-its-own-home",
+  "reviewed_base_sha": "62e7fc4b92e4ff825e6b442bfdcf58701ef5a798",
+  "reviewed_head_sha": "1a4c9933945b5781824f32ebd3e03ad76e43c057",
+  "reviewed_run_id": "r-20260929T191753796671-direct-resume-teardown-reads-its-own-home",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T195220702338-review-of-direct-resume-teardown-reads-its-own-home",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T20:16:49.168583+00:00",
+  "total": 91
+}

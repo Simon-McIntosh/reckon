@@ -1,0 +1,96 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T09:22:52.800Z",
+  "dispatched_at": "2026-10-05T09:17:43Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py:3421",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a73 should call the owner directly at the call sites or declare the delegate a retained exception with its reason, so its own \"one implementation\" done-when is measurable.",
+      "text": "`_run_streams` only imports `metering.run_streams` at call time and returns its result, adding no behaviour; the plan \u00a73 says `metering.run_streams` \"replaces the copies in promotion and the ledger\", but the census re-run counts three stream enumerations (the home plus this delegate and `reckon/ledger.py:3161`), not one",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:165",
+      "id": "duplicate_owner-1",
+      "reason": "extend the named owner to these call sites, or list them as retained exceptions, so \"one atomic JSON writer\" is true of the plan's own instrument.",
+      "text": "`_durable_replace` (fsync file, `os.replace`, fsync directory) duplicates the atomic-publish core of `reckon/_store.py:write_json_atomically` and is reached from nine call sites, at least five staging a `json.dumps` payload, while `reckon/crew/follow_checkpoint.py:242` `_replace_atomically` is a second such owner; the plan names `_store.write_json_atomically` as the owner and even grants it `fsync_directory`, yet leaves both forks unnamed because its census instrument cannot see a rename made inside a helper",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/interface_counts.py",
+      "id": "duplicate_owner-2",
+      "reason": "`census.py` is a frozen research artifact pinned to historical commits and cannot be the runtime owner, so the documented port is the correct design; recording it here would not change the plan.",
+      "text": "the module re-implements the four-family counting rules (public definitions, CLI options, MCP views, refusal families) already owned by `docs/research/data/crew-pattern-review/code-depth/census.py:def interfaces`, copying its `FUNCTIONS`/`DEFINITIONS`/`call_name` helpers verbatim; the port is deliberate and documented in the docstring (a package caller cannot import from `docs/`), so it is an accepted fork rather than a silent one",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-worker-reuses-before-it-writes.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the interface-budget rule requires a surface-adding section to account in its own text for the surface it adds, and \u00a74's landed summary does not.",
+      "text": "\u00a74 adds `reckon/clones.py` to the `public_definitions` family (`functions_in`, `clone_matches`, `revised_python`, `changed_paths`, `promotion_clone_matches`) without naming what it retires or merges, or stating why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-reuses-before-it-writes.html#s5",
+      "id": "interface_budget-2",
+      "reason": "\u00a75 is the section that introduced the interface-budget rule, so its own new module is the first case the rule should have been applied to; its text should state the accounting or the reason none can be given.",
+      "text": "\u00a75 adds `reckon/interface_counts.py` to the `public_definitions` family (`count_revision`, `count_revision_cached`, `counts`, `read_trees`) without naming what it retires or merges, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4a5ffddad06e94d8974f834b34b73ddba51c34f7edd5bf8be13970239e9af926",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 82,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T09:25:16.394657+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the port is the runtime owner by the reviewer's own reading: the census under docs/research is a frozen artefact pinned to historical commits that a package caller cannot import, and the docstring records the port; accounting for the surface it adds is now stated on \u00a75",
+      "when": "2026-10-05T09:25:17.096714+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T09:25:17.975218+00:00"
+    },
+    "interface_budget-2": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T09:25:18.793673+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the promotion delegate exists because reckon.crew.metering imports promotion state and a module-level import would cycle; it adds no behaviour and the census counts enumerations, not owners, so \u00a73's one-implementation claim stands with one owner and one lazy delegate; removing it belongs to the metering owner's plan",
+      "when": "2026-10-05T09:25:15.670418+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T091726230659-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "8ed8922a4b7f483f4d248e444d9097af3230a2fc",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/_timestamps.py` hides four input shapes (Z suffix, numeric offset, naive, epoch seconds/milliseconds) behind `parse_utc`/`parse_iso`; `reckon/clones.py` hides the six-token-window detector and its corpus cache behind `clone_matches`/`promotion_clone_matches`; `reckon/interface_counts.py` hides git-tree reading and four counting rules behind `count_revision`. Each interface is far smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a73 declares `reckon/_store.py:write_json_atomically` the one atomic JSON writer, but `reckon/project_state.py:165` `_durable_replace` (nine call sites, directory fsync) survives as a parallel atomic-publish owner the plan neither migrates to that writer nor lists as a retained exception.",
+    "interface_budget": "a finding \u2014 public_definitions 1474, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 and \u00a75 each add public definitions to the `public_definitions` family without naming, in their section text, what each retires or merges, or why nothing can be (both are new capabilities, which is exactly the case the rule requires be stated).",
+    "reuse_search": "pass \u2014 the plan is search-grounded: \u00a71 derives from the code-depth census, \u00a72/\u00a73 done-when re-run `docs/research/data/crew-pattern-review/code-depth/census.py`, and the two new detectors name the owner they extend (`reckon/_store.py:write_json_atomically` built beside the existing envelope writer; `reckon/clones.py` and `reckon/interface_counts.py` each name the census instrument they carry).",
+    "thin_wrapper": "a finding \u2014 `reckon/crew/promotion.py:3421` `_run_streams` is a pure four-line forward to `metering.run_streams` with no behaviour of its own, so \u00a73's \"one implementation\" goal is met by a delegating copy rather than by deleting the copy."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T09:24:33.044555+00:00"
+}

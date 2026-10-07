@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's base/head arm gate logs under test_logs; set difference (head minus base) of pytest node ids is 0. The manifest names no baseline_suite/after_suite, so annotate_review_of_run reads it as unmeasured.",
+  "base_log_revision": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:1846",
+    "reckon/crew/recovery.py:5241",
+    "reckon/crew/recovery.py:5962"
+  ],
+  "completed_at": "2026-10-01T23:55:25.100Z",
+  "dispatched_at": "2026-10-01T23:30:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225629671259-worker-record-liveness-uses-the-record-probe/manifest.md",
+      "line": "0",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names no baseline_suite or after_suite field, so annotate_review_of_run derives added_failure_count as unmeasured for this run even though its base and head arm gate logs exist under test_logs; a manifest that ran both arms should name them under the two suite fields so the review's added-failure count is taken, not unmeasured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225629671259-worker-record-liveness-uses-the-record-probe/logs/head-test_crew_record_liveness.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm logs record the base commit in their header because each arm ran before the fix was committed, so the head evidence does not name the head revision; a reader tying the done-when's head arm to the change cannot do so from the log header."
+    }
+  ],
+  "head_log_revision": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 8259af866 against base df6a40b5c. _worker_record_liveness now returns None when _launched_on_this_host(record) is false and otherwise returns runs.record_process_alive(data, process_alive); the caller's probe (recovery.process_alive) is handed in rather than having its module binding bypassed, and the start-tick comparison is now owned in one place (runs.record_process_alive) instead of duplicated. All three production call sites (recovery.py:1846, 5241, 5962) consume an `is True` test or a local_reading-gated read, so None reads as no evidence rather than as death.",
+    "done_when": "the named gate is tests/test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid, which scans the liveness modules for a process_alive call whose argument is a record-sourced pid; it is 9 passed at head and 1 failed at base (the scan reports the flagged call at the pre-fix site). I reproduced it independently in a scratch tree: tests/test_crew_record_liveness.py 9 passed at head revision, and with the pre-fix recovery.py restored the same id fails (the scan reports recovery.py:4725). The new foreign case tests/test_a_foreign_worker_record_does_not_defer_a_manifest.py is 2 passed at head (foreign run honoured through its terminal manifest; same run launched here still defers), both red under the restored bare probe.",
+    "goal": "the node goal is that a worker record's liveness must not be decided by a bare pid probe, because the crew home is shared across login nodes and a worker record carries a pid with no host of its own; reckon/crew/recovery.py _worker_record_liveness previously called runs.process_alive(pid) directly and re-implemented the start-tick comparison runs.record_process_alive owns, and classify_pointer reached it without the launched-on-this-host gate local_liveness applies. The change routes the read through runs.record_process_alive(data, process_alive) and gates the whole function on _launched_on_this_host(record), so every caller answers on one set of terms.",
+    "manifest": "read; it names commit 8259af866, the head and base arms, a negative-control log, added-failure figures and a landing line. Two evidence-quality defects: it names NO baseline_suite or after_suite field, so the store's read-time annotate_review_of_run derives an unmeasured added-failure count for this run even though the base and head arm logs exist under test_logs; and its head-arm logs carry the base revision in their header because they ran before the commit, so the head evidence does not name the head revision.",
+    "write_paths": "the diff from base df6a40b5c8e077c9f74517ff52f1858bac2c6011 to head 8259af866e86c8a55514216dc30e093d77c41106 touches exactly reckon/crew/recovery.py (21 lines inside the _worker_record_liveness body and its docstring) and the new tests/test_a_foreign_worker_record_does_not_defer_a_manifest.py; both are inside the node's declared write paths and no other file is touched."
+  },
+  "justifications": {
+    "durability": "restoring the pre-fix _worker_record_liveness (bare runs.process_alive on the record's pid) reproduces both failures in a scratch tree -- the foreign case reads the run as running on the borrowed pid and the source scan flags the bare call -- so the guard is load-bearing rather than untestable, and the change is a genuine repair rather than a redundant re-derivation.",
+    "evidence": "the head arm is independently reproduced green in a scratch tree (11 passed: 2 foreign plus 9 scan) and the base arm red on both named ids (2 failed, 9 passed, EXIT=1), but the reviewed manifest names no baseline_suite/after_suite field and its head-arm logs record the base revision, so the run's own recorded evidence does not carry the revision it measured and the store's own annotation would report the added-failure count unmeasured.",
+    "fit": "the fix reuses the existing host-gate helper _launched_on_this_host and the existing record_process_alive accessor exactly as local_liveness does, which is the smallest change that makes every caller agree; the internal gate is redundant at recovery.py:5241 where launched_here is already true, and callers now receive None (no evidence) rather than a borrowed True for foreign runs, which is the intended reading and is absorbed by each caller's `is True` test.",
+    "goal_fidelity": "the defect is precisely a foreign run's worker pid being read as local proof of life; gating _worker_record_liveness on _launched_on_this_host(record) and taking the pid decision from runs.record_process_alive fixes the mechanism at the one function every liveness caller shares, so classify_pointer's superseded_manifest arm can no longer defer a foreign run's terminal manifest on a borrowed pid.",
+    "scope_discipline": "the diff from base df6a40b5c to head 8259af866 is exactly reckon/crew/recovery.py (21 lines) plus the new test file, both within the declared write paths, with no plan file, index, or unrelated module touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a worker record's liveness must not be decided by a bare pid probe, because the crew home is shared across login nodes and a worker record carries a pid with no host of its own; reckon/crew/recovery.py _worker_record_liveness previously called runs.process_alive(pid) directly and re-implemented the start-tick comparison runs.record_process_alive owns, and classify_pointer reached it without the launched-on-this-host gate local_liveness applies. The change routes the read through runs.record_process_alive(data, process_alive) and gates the whole function on _launched_on_this_host(record), so every caller answers on one set of terms.\nVERDICT done_when: the named gate is tests/test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid, which scans the liveness modules for a process_alive call whose argument is a record-sourced pid; it is 9 passed at head and 1 failed at base (the scan reports the flagged call at the pre-fix site). I reproduced it independently in a scratch tree: tests/test_crew_record_liveness.py 9 passed at head revision, and with the pre-fix recovery.py restored the same id fails (the scan reports recovery.py:4725). The new foreign case tests/test_a_foreign_worker_record_does_not_defer_a_manifest.py is 2 passed at head (foreign run honoured through its terminal manifest; same run launched here still defers), both red under the restored bare probe.\nVERDICT write_paths: the diff from base df6a40b5c8e077c9f74517ff52f1858bac2c6011 to head 8259af866e86c8a55514216dc30e093d77c41106 touches exactly reckon/crew/recovery.py (21 lines inside the _worker_record_liveness body and its docstring) and the new tests/test_a_foreign_worker_record_does_not_defer_a_manifest.py; both are inside the node's declared write paths and no other file is touched.\nVERDICT manifest: read; it names commit 8259af866, the head and base arms, a negative-control log, added-failure figures and a landing line. Two evidence-quality defects: it names NO baseline_suite or after_suite field, so the store's read-time annotate_review_of_run derives an unmeasured added-failure count for this run even though the base and head arm logs exist under test_logs; and its head-arm logs carry the base revision in their header because they ran before the commit, so the head evidence does not name the head revision.\nVERDICT diff: read commit 8259af866 against base df6a40b5c. _worker_record_liveness now returns None when _launched_on_this_host(record) is false and otherwise returns runs.record_process_alive(data, process_alive); the caller's probe (recovery.process_alive) is handed in rather than having its module binding bypassed, and the start-tick comparison is now owned in one place (runs.record_process_alive) instead of duplicated. All three production call sites (recovery.py:1846, 5241, 5962) consume an `is True` test or a local_reading-gated read, so None reads as no evidence rather than as death.\nCALL_SITES: reckon/crew/recovery.py:1846, reckon/crew/recovery.py:5241, reckon/crew/recovery.py:5962\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the defect is precisely a foreign run's worker pid being read as local proof of life; gating _worker_record_liveness on _launched_on_this_host(record) and taking the pid decision from runs.record_process_alive fixes the mechanism at the one function every liveness caller shares, so classify_pointer's superseded_manifest arm can no longer defer a foreign run's terminal manifest on a borrowed pid.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head arm is independently reproduced green in a scratch tree (11 passed: 2 foreign plus 9 scan) and the base arm red on both named ids (2 failed, 9 passed, EXIT=1), but the reviewed manifest names no baseline_suite/after_suite field and its head-arm logs record the base revision, so the run's own recorded evidence does not carry the revision it measured and the store's own annotation would report the added-failure count unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from base df6a40b5c to head 8259af866 is exactly reckon/crew/recovery.py (21 lines) plus the new test file, both within the declared write paths, with no plan file, index, or unrelated module touched.\nSCORE durability: 20\nJUSTIFICATION durability: restoring the pre-fix _worker_record_liveness (bare runs.process_alive on the record's pid) reproduces both failures in a scratch tree -- the foreign case reads the run as running on the borrowed pid and the source scan flags the bare call -- so the guard is load-bearing rather than untestable, and the change is a genuine repair rather than a redundant re-derivation.\nSCORE fit: 19\nJUSTIFICATION fit: the fix reuses the existing host-gate helper _launched_on_this_host and the existing record_process_alive accessor exactly as local_liveness does, which is the smallest change that makes every caller agree; the internal gate is redundant at recovery.py:5241 where launched_here is already true, and callers now receive None (no evidence) rather than a borrowed True for foreign runs, which is the intended reading and is absorbed by each caller's `is True` test.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225629671259-worker-record-liveness-uses-the-record-probe/manifest.md:0 follow-on: the reviewed manifest names no baseline_suite or after_suite field, so annotate_review_of_run derives added_failure_count as unmeasured for this run even though its base and head arm gate logs exist under test_logs; a manifest that ran both arms should name them under the two suite fields so the review's added-failure count is taken, not unmeasured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225629671259-worker-record-liveness-uses-the-record-probe/logs/head-test_crew_record_liveness.log:1 follow-on: the head-arm logs record the base commit in their header because each arm ran before the fix was committed, so the head evidence does not name the head revision; a reader tying the done-when's head arm to the change cannot do so from the log header.\nreviewed_base_sha: df6a40b5c8e077c9f74517ff52f1858bac2c6011\nreviewed_head_sha: 8259af866e86c8a55514216dc30e093d77c41106\n",
+  "review_run_id": "r-20261001T233019350916-review-of-worker-record-liveness-uses-the-record-probe",
+  "reviewed_base_sha": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "reviewed_head_sha": "8259af866e86c8a55514216dc30e093d77c41106",
+  "reviewed_run_id": "r-20261001T225629671259-worker-record-liveness-uses-the-record-probe",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T233019350916-review-of-worker-record-liveness-uses-the-record-probe",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.132895+00:00",
+  "total": 97
+}

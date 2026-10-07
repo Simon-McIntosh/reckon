@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absence_control": "a missing log returns (None, []) - unmeasured, never a measured zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/gate-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/base-arm.log",
+    "count_derivation": "review.added_failures_from_gate_logs over the two logs the reviewed manifest's baseline_suite and after_suite fields name: logs/base-arm.log as the baseline arm at 76e1bf93 and logs/gate-head.log as the head arm at 9c2efe4b",
+    "positive_control": {
+      "count": 7,
+      "ids": [
+        "tests/test_resumed_burn_prices_to_rollout.py::test_a_lane_change_stream_is_summed_not_superseded",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[three-attempts]",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[two-attempts-a]",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[two-attempts-b]",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_an_unmeasured_prior_attempt_leaves_the_interval_unknown",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_an_unmeasured_prior_cost_leaves_the_interval_unknown",
+        "tests/test_resumed_burn_prices_to_rollout.py::test_summing_the_attempts_is_the_overcount_the_thread_fold_removes"
+      ],
+      "log_as_head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/base-arm.log",
+      "note": "the red base arm read as the head against the green head arm: the seven tests the change adds are found in the swapped direction and absent in the true direction"
+    },
+    "shape_control": "the same observation on one line is read: _gate_log_path('baseline_suite: {\"log_path\": ...}') returns the path, so the unmeasured read above is the fields' multi-line shape rather than a broken reader",
+    "store_derivation_note": "review.annotate_review_of_run re-derives from the manifest fields and reports this run unmeasured because review.py:612 reads a single-line JSON object or a bare path; the count above is measured from the same two logs, which the fields themselves name"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:5846 (accumulate_run_spend reads the per-thread fold)",
+    "reckon/crew/promotion.py:4515 (ledger.per_run_budget prices a promoted attempt against its predecessor)"
+  ],
+  "completed_at": "2026-09-28T17:33:01.016Z",
+  "dispatched_at": "2026-09-28T16:14:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md",
+      "line": "50",
+      "text": "baseline_suite and after_suite carry multi-line strictly-quoted JSON blocks, which the review store's line-local reader reckon/crew/review.py:612 cannot reach: it parses a single-line JSON object or a bare path and returns None for both fields here, so read_review reports this run's added-failure count unmeasured even though the two logs the fields name give a measured zero."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md",
+      "line": "71",
+      "text": "the after_suite note says \"the two commits after it (af2abc73, ec3a248e)\" while af2abc73 precedes 9c2efe4b and exactly one commit follows it, and it says those commits touch \"docs/evidence HTML and the figure\" where ec3a248e touches the plan HTML and no post-arm commit touches the figure; the operative claim, that the metering and ledger source at the head is what the arm ran, holds because 9c2efe4b..ec3a248e changes only the two HTML files."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md",
+      "line": "54",
+      "text": "every recorded command, in the suite fields and in each gate log's command line, carries the unsubstituted <repo> placeholder the brief refuses at prompt.txt:117 for tests:, so a reader cannot re-run any arm as written."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 76e1bf93 - eaa6adfb adds the thread identity, the supersede fold and the lane-change gather to metering.py, 55d36c04 records the landing, d72ffc3f keeps an unmeasured prior reading out of per_run_budget at ledger.py:1842-1855, af2abc73 records the delta in the landing, 9c2efe4b adds tests/test_resumed_burn_prices_to_rollout.py:291 asserting the unmeasured prior cost, and ec3a248e corrects the arms and the ledger figure in the two HTML files.",
+    "done_when": "the gate's own measure is met as written - logs/gate-head.log shows 77 passed EXIT=0 at revision 9c2efe4b with reckon.__file__ naming the worktree, against logs/base-arm.log showing 7 failed, 70 passed EXIT=1 at 76e1bf93, and the seven ids that fail at the base and pass at the head are exactly the added behaviour; both negative controls redden (logs/negative-control.log, logs/negative-control-cost.log); the ten pre-existing tests/test_ledger.py failures are the same set in both ledger arms (10 failed, 86 passed each) and are reported under follow_ons, which the gate permits.",
+    "goal": "the node's goal is to price a resumed codex run's burn per attempt so it matches its rollout total, and reckon/crew/metering.py:436 folds each declared thread to its newest measured attempt and sums the threads while run_streams gathers lane-change files at metering.py:338; the eight host lineages in logs/measurement.log price at 1.0003-1.0010 of their rollout receipts with out_of_band=0.",
+    "manifest": "read; it records six commits, seven on-disk logs, the measurement module and its cwd, the reuse-map citations and the failure attribution, but its suite fields at manifest.md:50,68 defeat the review store's own reader and its commands carry the unsubstituted placeholder <repo>, so the record is complete but not fully machine-readable.",
+    "write_paths": "git diff --name-status 76e1bf93..ec3a248e lists exactly the six declared paths (metering.py and ledger.py modified, the test file and the figure added, both HTML files modified), so nothing landed outside the fence."
+  },
+  "justifications": {
+    "durability": "the fold's three rules each carry a test (tests/test_resumed_burn_prices_to_rollout.py:166,192,238), both halves of per_run_budget are asserted (264,291) and both negative controls redden the guarded behaviour, so the resume closed the one assertion gap the earlier reading of this run named.",
+    "evidence": "four suite arms, two negative controls and the measurement are on disk with revision and imported-module headers and the resume closed the ledger-suite receipt gap with logs/ledger-base-arm.log and logs/negative-control-cost.log, but every recorded command carries the unsubstituted <repo> placeholder so no arm re-runs as written, and the suite fields' shape leaves the store's read-time added-failure derivation unmeasured.",
+    "fit": "the added names (thread_id, _attempt_rank, _lane_change_order) and the comments at metering.py:303,324 describe the mechanism, and no plan, sprint or tracker label appears anywhere in the diff.",
+    "goal_fidelity": "metering.py:436 folds each declared thread to its newest measured attempt and metering.py:303-315 rank the attempts, which is the pricing the goal names, and logs/measurement.log prices eight host lineages within 0.1% of their rollouts.",
+    "scope_discipline": "git diff --name-status 76e1bf93..ec3a248e lists exactly the six declared paths and the reviewed manifest records a clean worktree at the head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to price a resumed codex run's burn per attempt so it matches its rollout total, and reckon/crew/metering.py:436 folds each declared thread to its newest measured attempt and sums the threads while run_streams gathers lane-change files at metering.py:338; the eight host lineages in logs/measurement.log price at 1.0003-1.0010 of their rollout receipts with out_of_band=0.\nVERDICT done_when: the gate's own measure is met as written - logs/gate-head.log shows 77 passed EXIT=0 at revision 9c2efe4b with reckon.__file__ naming the worktree, against logs/base-arm.log showing 7 failed, 70 passed EXIT=1 at 76e1bf93, and the seven ids that fail at the base and pass at the head are exactly the added behaviour; both negative controls redden (logs/negative-control.log, logs/negative-control-cost.log); the ten pre-existing tests/test_ledger.py failures are the same set in both ledger arms (10 failed, 86 passed each) and are reported under follow_ons, which the gate permits.\nVERDICT write_paths: git diff --name-status 76e1bf93..ec3a248e lists exactly the six declared paths (metering.py and ledger.py modified, the test file and the figure added, both HTML files modified), so nothing landed outside the fence.\nVERDICT manifest: read; it records six commits, seven on-disk logs, the measurement module and its cwd, the reuse-map citations and the failure attribution, but its suite fields at manifest.md:50,68 defeat the review store's own reader and its commands carry the unsubstituted placeholder <repo>, so the record is complete but not fully machine-readable.\nVERDICT diff: read commit by commit against 76e1bf93 - eaa6adfb adds the thread identity, the supersede fold and the lane-change gather to metering.py, 55d36c04 records the landing, d72ffc3f keeps an unmeasured prior reading out of per_run_budget at ledger.py:1842-1855, af2abc73 records the delta in the landing, 9c2efe4b adds tests/test_resumed_burn_prices_to_rollout.py:291 asserting the unmeasured prior cost, and ec3a248e corrects the arms and the ledger figure in the two HTML files.\nCALL_SITES: reckon/crew/recovery.py:5846 (accumulate_run_spend reads the per-thread fold), reckon/crew/promotion.py:4515 (ledger.per_run_budget prices a promoted attempt against its predecessor)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: metering.py:436 folds each declared thread to its newest measured attempt and metering.py:303-315 rank the attempts, which is the pricing the goal names, and logs/measurement.log prices eight host lineages within 0.1% of their rollouts.\nSCORE evidence: 17\nJUSTIFICATION evidence: four suite arms, two negative controls and the measurement are on disk with revision and imported-module headers and the resume closed the ledger-suite receipt gap with logs/ledger-base-arm.log and logs/negative-control-cost.log, but every recorded command carries the unsubstituted <repo> placeholder so no arm re-runs as written, and the suite fields' shape leaves the store's read-time added-failure derivation unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-status 76e1bf93..ec3a248e lists exactly the six declared paths and the reviewed manifest records a clean worktree at the head.\nSCORE durability: 18\nJUSTIFICATION durability: the fold's three rules each carry a test (tests/test_resumed_burn_prices_to_rollout.py:166,192,238), both halves of per_run_budget are asserted (264,291) and both negative controls redden the guarded behaviour, so the resume closed the one assertion gap the earlier reading of this run named.\nSCORE fit: 18\nJUSTIFICATION fit: the added names (thread_id, _attempt_rank, _lane_change_order) and the comments at metering.py:303,324 describe the mechanism, and no plan, sprint or tracker label appears anywhere in the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md:50 baseline_suite and after_suite carry multi-line strictly-quoted JSON blocks, which the review store's line-local reader reckon/crew/review.py:612 cannot reach: it parses a single-line JSON object or a bare path and returns None for both fields here, so read_review reports this run's added-failure count unmeasured even though the two logs the fields name give a measured zero.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md:71 the after_suite note says \"the two commits after it (af2abc73, ec3a248e)\" while af2abc73 precedes 9c2efe4b and exactly one commit follows it, and it says those commits touch \"docs/evidence HTML and the figure\" where ec3a248e touches the plan HTML and no post-arm commit touches the figure; the operative claim, that the metering and ledger source at the head is what the arm ran, holds because 9c2efe4b..ec3a248e changes only the two HTML files.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md:54 every recorded command, in the suite fields and in each gate log's command line, carries the unsubstituted <repo> placeholder the brief refuses at prompt.txt:117 for tests:, so a reader cannot re-run any arm as written.\n",
+  "review_run_id": "r-20260928T161435115153-review-of-resumed-burn-prices-to-rollout",
+  "reviewed_base_sha": "76e1bf938b1bf16cd18618cd03f742f264f079eb",
+  "reviewed_head_sha": "ec3a248e9664154849dd7b47f4c9552c03dddbc0",
+  "reviewed_run_id": "r-20260928T132148906656-resumed-burn-prices-to-rollout",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T17:25:31.293505+00:00",
+  "total": 90
+}

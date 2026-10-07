@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/logs/gate-head-a4525840.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/logs/gate-739d56b9.log",
+    "note": "the reviewed manifest records its two suite observations under key names that are not the manifest-suite contract (log, passed/failed, failing_ids), so review.annotate_review_of_run resolves no log path and would render this count unmeasured; the count and ids stored here are the set difference over the two gate logs the manifest actually names, computed with the module's own added_failures_from_gate_logs, whose positive control (same call, head arm = logs/negative-control-red.log) returns 1 for the added case."
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4089",
+    "reckon/crew/dispatch.py:4079",
+    "reckon/crew/dispatch.py:540",
+    "reckon/crew/reserve.py:203"
+  ],
+  "completed_at": "2026-09-28T11:40:49.983Z",
+  "dispatched_at": "2026-09-28T10:57:14Z",
+  "findings": [
+    {
+      "file": "docs/plans/a-window-paces-the-lane.html",
+      "line": "1127",
+      "text": "the landing paragraph claims the gate's own two files are byte-identical from bdada7e5 to the node head, but the node's own commit 3e1a0066 modifies tests/test_dispatch_records_the_pace_row.py, one of those two files; the identity holds only to the dispatch base a4525840, and the same sentence is repeated in the archive record at docs/evidence/archive/a-window-paces-the-lane-landed.html:2848."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/manifest.md",
+      "line": "26",
+      "text": "failure_attribution cites promotion.py line 1100 as where the replay keeps only result.returncode; line 1100 is check=False and the read is at promotion.py:1107, so the one citation that locates the output-discarding defect sends a reader to the wrong line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/logs/repro-main-checkout-d1252a0a.log",
+      "line": "9",
+      "text": "the module_file header names the node's worktree while the command recorded at line 8 runs env -C /home/ITER/mcintos/Code/reckon, which resolves reckon from the main checkout (the shared venv's editable path has named that checkout since 2026-09-24); the field that exists to certify which tree was measured contradicts its own command."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/manifest.md",
+      "line": "24",
+      "text": "the suite observations are recorded as log/passed/failed/failing_ids and omit completed/failure_count/failure_ids, and after_suite also omits command, none of which are the manifest-suite contract names; ledger.suite_observation_missing_fields reports four to five missing fields per observation and review.py:_gate_log_path resolves no log, so a measured green reads as unmeasured to every consumer, and any future promotion of a run whose recorded suite_command is set would be refused on it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against the dispatch base a4525840; three files, +99 lines, no deletions, the cumulative evidence record spliced rather than rewritten.",
+    "done_when": "the done_when names one invocation over tests/test_pace_replay.py and tests/test_dispatch_records_the_pace_row.py at four revisions; the manifest records that invocation, its exit status and its log for each, and the gate result reproduces in a scratch tree (23 passed, exit 0 at ef6ec8eb).",
+    "goal": "the node was dispatched to show the pace gate green at main with the reserve refusal exercised; the diff adds tests/test_dispatch_records_the_pace_row.py:596 and the manifest records the gate green at its head.",
+    "manifest": "read in full; it reports status complete, two commits, a declared negative control and both suite observations, but records the suites under key names no reader of the manifest-suite contract resolves.",
+    "write_paths": "the manifest declares three exclusive paths; git diff a4525840..ef6ec8eb in the node worktree touches exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "the added case at tests/test_dispatch_records_the_pace_row.py:596 fails when the refusal is removed, as the node's own negative control shows (DID NOT RAISE CrewError, 1 failed, 22 passed); it couples to the refusal message wording, which is production text at reckon/crew/reserve.py:203.",
+    "evidence": "the gate result is recorded and reproducible and the negative control at logs/negative-control-red.log reddens exactly the added case, but the header of logs/repro-main-checkout-d1252a0a.log names a different tree from the one its own recorded command resolves, so part of the evidence does not certify what it claims.",
+    "fit": "the case follows the file's existing shape (module-level CONFIG, the host fixture, _plant_receipt and _dispatch), and its name and docstring at tests/test_dispatch_records_the_pace_row.py:596 state the mechanism with no plan or tracker identifier.",
+    "goal_fidelity": "the added case at tests/test_dispatch_records_the_pace_row.py:596 exercises the refusal the node was sent to cover, and the headline claim of a green gate reproduces independently: 23 passed, exit 0 at ef6ec8eb and 22 passed, exit 0 at bdada7e5, each re-run in a scratch tree whose module_file named that tree.",
+    "scope_discipline": "git diff --stat a4525840..ef6ec8eb in the node worktree lists tests/test_dispatch_records_the_pace_row.py, docs/plans/a-window-paces-the-lane.html and docs/evidence/archive/a-window-paces-the-lane-landed.html, all inside the declared write paths, with zero deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was dispatched to show the pace gate green at main with the reserve refusal exercised; the diff adds tests/test_dispatch_records_the_pace_row.py:596 and the manifest records the gate green at its head.\nVERDICT done_when: the done_when names one invocation over tests/test_pace_replay.py and tests/test_dispatch_records_the_pace_row.py at four revisions; the manifest records that invocation, its exit status and its log for each, and the gate result reproduces in a scratch tree (23 passed, exit 0 at ef6ec8eb).\nVERDICT write_paths: the manifest declares three exclusive paths; git diff a4525840..ef6ec8eb in the node worktree touches exactly those three files and nothing else.\nVERDICT manifest: read in full; it reports status complete, two commits, a declared negative control and both suite observations, but records the suites under key names no reader of the manifest-suite contract resolves.\nVERDICT diff: read commit by commit against the dispatch base a4525840; three files, +99 lines, no deletions, the cumulative evidence record spliced rather than rewritten.\nCALL_SITES: reckon/crew/dispatch.py:4089, reckon/crew/dispatch.py:4079, reckon/crew/dispatch.py:540, reckon/crew/reserve.py:203\nSCORE goal_fidelity: 18\nSCORE evidence: 14\nSCORE scope_discipline: 19\nSCORE durability: 17\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: the added case at tests/test_dispatch_records_the_pace_row.py:596 exercises the refusal the node was sent to cover, and the headline claim of a green gate reproduces independently: 23 passed, exit 0 at ef6ec8eb and 22 passed, exit 0 at bdada7e5, each re-run in a scratch tree whose module_file named that tree.\nJUSTIFICATION evidence: the gate result is recorded and reproducible and the negative control at logs/negative-control-red.log reddens exactly the added case, but the header of logs/repro-main-checkout-d1252a0a.log names a different tree from the one its own recorded command resolves, so part of the evidence does not certify what it claims.\nJUSTIFICATION scope_discipline: git diff --stat a4525840..ef6ec8eb in the node worktree lists tests/test_dispatch_records_the_pace_row.py, docs/plans/a-window-paces-the-lane.html and docs/evidence/archive/a-window-paces-the-lane-landed.html, all inside the declared write paths, with zero deletions.\nJUSTIFICATION durability: the added case at tests/test_dispatch_records_the_pace_row.py:596 fails when the refusal is removed, as the node's own negative control shows (DID NOT RAISE CrewError, 1 failed, 22 passed); it couples to the refusal message wording, which is production text at reckon/crew/reserve.py:203.\nJUSTIFICATION fit: the case follows the file's existing shape (module-level CONFIG, the host fixture, _plant_receipt and _dispatch), and its name and docstring at tests/test_dispatch_records_the_pace_row.py:596 state the mechanism with no plan or tracker identifier.\nFINDING docs/plans/a-window-paces-the-lane.html:1127 the landing paragraph claims the gate's own two files are byte-identical from bdada7e5 to the node head, but the node's own commit 3e1a0066 modifies tests/test_dispatch_records_the_pace_row.py, one of those two files; the identity holds only to the dispatch base a4525840, and the same sentence is repeated in the archive record at docs/evidence/archive/a-window-paces-the-lane-landed.html:2848.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/manifest.md:26 failure_attribution cites promotion.py line 1100 as where the replay keeps only result.returncode; line 1100 is check=False and the read is at promotion.py:1107, so the one citation that locates the output-discarding defect sends a reader to the wrong line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/logs/repro-main-checkout-d1252a0a.log:9 the module_file header names the node's worktree while the command recorded at line 8 runs env -C /home/ITER/mcintos/Code/reckon, which resolves reckon from the main checkout (the shared venv's editable path has named that checkout since 2026-09-24); the field that exists to certify which tree was measured contradicts its own command.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/manifest.md:24 the suite observations are recorded as log/passed/failed/failing_ids and omit completed/failure_count/failure_ids, and after_suite also omits command, none of which are the manifest-suite contract names; ledger.suite_observation_missing_fields reports four to five missing fields per observation and review.py:_gate_log_path resolves no log, so a measured green reads as unmeasured to every consumer, and any future promotion of a run whose recorded suite_command is set would be refused on it.\n",
+  "review_run_id": "r-20260928T105701215830-review-of-pace-gate-green-at-main",
+  "reviewed_base_sha": "a45258403d39eb2f417242f520f3c84425c39be3",
+  "reviewed_head_sha": "ef6ec8eb8b428d58b97ddae875763f0024d3561d",
+  "reviewed_run_id": "r-20260928T100759132734-pace-gate-green-at-main",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T11:33:12.595092+00:00",
+  "total": 86
+}

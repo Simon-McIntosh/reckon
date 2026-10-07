@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "local",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T12:11:30.753625+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T085229395567-review-gate-covers-every-writing-run/manifest.md",
+      "line": "16",
+      "text": "the baseline_suite and after_suite blocks state prose counts and log filenames but omit the contracted revision, command, exit_status, completed, failure_count and failure_ids fields, so the 18-to-19 delta is reported rather than reproducible from the suite records alone."
+    },
+    {
+      "file": "tests/test_review_gate_coverage.py",
+      "line": "411",
+      "text": "the status refusal is parametrized over three literal synonyms while the live fleet carries at least five more observed non-vocabulary words (working, reported, partial, shipped, in-progress-completing); a direct call shows each of those is refused and names the accepted vocabulary too, so this is a coverage gap rather than a behaviour gap."
+    },
+    {
+      "file": "tests/test_review_gate_coverage.py",
+      "line": "288",
+      "text": "the inverse control asserts a role changing no tracked path is not refused but names no path at all, so the report-only shape a writing role takes when its artefact lives outside its repository is untested; a constructed instance of it, a test role naming /tmp/gate-probe/reviews/out.json, was NOT GATED on a direct call, and it belongs in the file because it is the shape that separates writing from reporting."
+    },
+    {
+      "file": "tests/test_review_gate_coverage.py",
+      "line": "264",
+      "text": "no case asserts the order of the two refusals, so the fact that the review refusal now arrives before the verifier-source refusal for a test-role run committing a source path is pinned only by tests/test_crew_test_role.py, which still asserts the message the review refusal displaced."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read b650bbec against ee622294; it replaces the role-equality predicate with a written-repository predicate plus a second guard, and adds a 438-line test file.",
+    "done_when": "read the node manifest's evidence block and re-ran the guard myself rather than the tests; the measure is reachability, and chargeability holds: four writing-role shapes refused, four inverse controls green, a recognised status accepted and six non-vocabulary words refused by name.",
+    "goal": "read the node prompt's goal line and the plan's \u00a72f; the goal is that the promotion review gate follow the writing rather than the role name, and a direct call to reckon/crew/promotion.py:2037 _require_review_waiver with a test, documentation and investigate record each naming a tracked path returns the scoring refusal in all three cases, so the goal is met where it was asked for.",
+    "manifest": "read manifest.md:1-22, and both commits' changed paths match the orientation_write_paths declared at manifest.md:3.",
+    "write_paths": "b650bbec touches exactly reckon/crew/promotion.py and tests/test_review_gate_coverage.py, and 6c53a757 touches the three declared docs paths, so the landed diff equals the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_review_gate_coverage.py holds 22 cases over 16 test functions and the guard sits on the only promotion route, reckon/cli.py:2909 into promotion.py:2149 and 2167, but no case pins that the review refusal precedes the verifier-source refusal and no case covers a writing role naming a path outside its repository.",
+    "evidence": "the guard was called directly at the changed revision and returned the scoring refusal for all four writing shapes and NOT GATED for all four inverse controls, but manifest.md:16-17 state the suite delta as prose counts and log filenames rather than the contracted structured fields, so the delta is not reproducible from the suite records alone.",
+    "fit": "the two guards are named by mechanism, _require_review_waiver and _require_recognised_manifest_status, promotion.py:2037 and 2005, they reuse the existing _changed_paths_inside_repository seam rather than adding one, and the test file carries no plan or stage identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:2063-2068 keys on _manifest_repository_paths rather than the role literal, and direct calls show test, documentation, investigate and role-less records each naming a tracked path are all refused while the review role stays exempt.",
+    "scope_discipline": "b650bbec contains exactly the two declared source paths and 6c53a757 exactly the three declared docs paths, with no undeclared or generated file."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node prompt's goal line and the plan's \u00a72f; the goal is that the promotion review gate follow the writing rather than the role name, and a direct call to reckon/crew/promotion.py:2037 _require_review_waiver with a test, documentation and investigate record each naming a tracked path returns the scoring refusal in all three cases, so the goal is met where it was asked for.\nVERDICT done_when: read the node manifest's evidence block and re-ran the guard myself rather than the tests; the measure is reachability, and chargeability holds: four writing-role shapes refused, four inverse controls green, a recognised status accepted and six non-vocabulary words refused by name.\nVERDICT write_paths: b650bbec touches exactly reckon/crew/promotion.py and tests/test_review_gate_coverage.py, and 6c53a757 touches the three declared docs paths, so the landed diff equals the declared scope.\nVERDICT manifest: read manifest.md:1-22, and both commits' changed paths match the orientation_write_paths declared at manifest.md:3.\nVERDICT diff: read b650bbec against ee622294; it replaces the role-equality predicate with a written-repository predicate plus a second guard, and adds a 438-line test file.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2063-2068 keys on _manifest_repository_paths rather than the role literal, and direct calls show test, documentation, investigate and role-less records each naming a tracked path are all refused while the review role stays exempt.\nSCORE evidence: 17\nJUSTIFICATION evidence: the guard was called directly at the changed revision and returned the scoring refusal for all four writing shapes and NOT GATED for all four inverse controls, but manifest.md:16-17 state the suite delta as prose counts and log filenames rather than the contracted structured fields, so the delta is not reproducible from the suite records alone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: b650bbec contains exactly the two declared source paths and 6c53a757 exactly the three declared docs paths, with no undeclared or generated file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_gate_coverage.py holds 22 cases over 16 test functions and the guard sits on the only promotion route, reckon/cli.py:2909 into promotion.py:2149 and 2167, but no case pins that the review refusal precedes the verifier-source refusal and no case covers a writing role naming a path outside its repository.\nSCORE fit: 19\nJUSTIFICATION fit: the two guards are named by mechanism, _require_review_waiver and _require_recognised_manifest_status, promotion.py:2037 and 2005, they reuse the existing _changed_paths_inside_repository seam rather than adding one, and the test file carries no plan or stage identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T085229395567-review-gate-covers-every-writing-run/manifest.md:16 the baseline_suite and after_suite blocks state prose counts and log filenames but omit the contracted revision, command, exit_status, completed, failure_count and failure_ids fields, so the 18-to-19 delta is reported rather than reproducible from the suite records alone.\nFINDING tests/test_review_gate_coverage.py:411 the status refusal is parametrized over three literal synonyms while the live fleet carries at least five more observed non-vocabulary words (working, reported, partial, shipped, in-progress-completing); a direct call shows each of those is refused and names the accepted vocabulary too, so this is a coverage gap rather than a behaviour gap.\nFINDING tests/test_review_gate_coverage.py:288 the inverse control asserts a role changing no tracked path is not refused but names no path at all, so the report-only shape a writing role takes when its artefact lives outside its repository is untested; a constructed instance of it, a test role naming /tmp/gate-probe/reviews/out.json, was NOT GATED on a direct call, and it belongs in the file because it is the shape that separates writing from reporting.\nFINDING tests/test_review_gate_coverage.py:264 no case asserts the order of the two refusals, so the fact that the review refusal now arrives before the verifier-source refusal for a test-role run committing a source path is pinned only by tests/test_crew_test_role.py, which still asserts the message the review refusal displaced.\n",
+  "review_run_id": "r-20260921T121130753625-review-of-review-gate-covers-every-writing-run",
+  "reviewed_base_sha": "ee62229409a7287d6722eb3220bbae43b36f3ca5",
+  "reviewed_head_sha": "b650bbec6630a3c4975e1e60dd0be2f704690b70",
+  "reviewed_run_id": "r-20260921T085229395567-review-gate-covers-every-writing-run",
+  "reviewer_head_sha": "7d88fb3312f661ef5a7fdf2156a55ad6b841ffc3",
+  "reviewer_run_id": "r-20260921T121130753625-review-of-review-gate-covers-every-writing-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T12:33:46.076523+00:00",
+  "total": 93
+}

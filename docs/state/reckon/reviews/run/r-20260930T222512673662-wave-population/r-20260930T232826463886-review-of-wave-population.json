@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0362a6a0cac2e059b4bfdca59ec2a6da92a19e86",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T23:35:23.152Z",
+  "dispatched_at": "2026-09-30T23:28:40Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/wave-population/head.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: head.log's module_file= header line is empty because the header-writing command was truncated, so the durable artifact does not itself show that the head arm imported the exported head tree; the corroborating receipt (print(reckon.__file__) -> /tmp/wave-population/head/reckon/__init__.py) survives only in the run stream (stream.jsonl record 13949) and in the manifest's measurement_module field, not in a log under the delivery scope, so a later reader cannot confirm head-arm isolation from the stored evidence alone."
+    }
+  ],
+  "head_log_revision": "013b5335bc0ac6abf05c7b8a93ac0853020da5fd",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node is read-only, so it carries no repository diff and no landed revision; the delivered change is the report directory named above, and every artifact in it lies inside the single declared write path.",
+    "done_when": "the node's fence (prompt.txt:83-84) requires both revisions exported as trees and the whole tests/ directory run in each arm, each log naming its revision and ending in EXIT=, each arm recorded as JSON, a report listing head-only and base-only ids, and a 3x rerun of any head-only id; base.log:1-2 and head.log:1-2 carry revision/tree/command headers, both end EXIT=1, base.json/head.json carry completed true, report.md lists the 0/0 diff, and head-only.txt is empty so no rerun was owed.",
+    "goal": "the node's goal (prompt.txt:30) is to measure whether this wave's merges added any failing test by comparing main at 0362a6a0ca against 013b5335bc; report.md:19-24 and report.md:27-101 deliver that attribution, listing 0 failures present only at head, 0 only at base, and the 73 pre-existing ids in the reviewed manifest's own baseline_suite and after_suite.",
+    "manifest": "its manifest reads status complete; baseline_suite and after_suite each carry the literal command with absolute paths, completed true, exit_status 1, failure_count 73 and the full failure_ids list; artifacts and test_logs name base.log, head.log and report.md, and measurement_module and measurement_cwd are recorded for both scratch arms.",
+    "write_paths": "the node was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/wave-population and read-only elsewhere; ls of that directory shows only base.log, head.log, base.json, head.json, base-failed.txt, head-failed.txt, head-only.txt, report.md, reruns.sh and the node's own helper scripts, and the manifest records changed_paths [] with no landed revision."
+  },
+  "justifications": {
+    "durability": "the deliverable is a one-shot measurement with no guard that fails if it regresses, and the head arm's isolation (head.log:2) is not durably logged under the delivery scope, so re-verifying it needs both trees re-exported; the fence itself required deleting /tmp/wave-population, so that limit is inherent to the measure rather than a lapse.",
+    "evidence": "base.log:1-2 and head.log:1-2 name each arm's revision, tree and command, base.json/head.json record completed true with failure_count 73 and exit_status 1, and head-only.txt is empty so no head-only rerun was owed; re-deriving the failure sets from the raw logs matches the run's own base-failed.txt and head-failed.txt exactly, so the zero is a measured zero carried beside a positive control (73 ids extracted from both arms, 9278 items at head against 9234 at base).",
+    "fit": "the node follows its dispatch contract (orientation manifest, per-arm logs naming revision/tree/command and ending in EXIT=, JSON arm records, a report), uses the project venv and node-local /tmp, and self-reports its shell slip at report.md:121; the one deduction is that the slip left a malformed contract line at head.log:2.",
+    "goal_fidelity": "report.md:19-24 and report.md:27-101 deliver the goal's attribution (0 new, 0 removed, 73 pre-existing), and independently extracting the FAILED ids from base.log and head.log reproduces the 73/73 set equality; the one deduction is that the head arm's code identity is proven outside the durable logs rather than inside them.",
+    "scope_discipline": "the manifest's changed_paths is [] and every file under /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/wave-population is inside the single declared write path, with no repository path touched."
+  },
+  "node": "review-of-wave-population",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (prompt.txt:30) is to measure whether this wave's merges added any failing test by comparing main at 0362a6a0ca against 013b5335bc; report.md:19-24 and report.md:27-101 deliver that attribution, listing 0 failures present only at head, 0 only at base, and the 73 pre-existing ids in the reviewed manifest's own baseline_suite and after_suite.\nVERDICT done_when: the node's fence (prompt.txt:83-84) requires both revisions exported as trees and the whole tests/ directory run in each arm, each log naming its revision and ending in EXIT=, each arm recorded as JSON, a report listing head-only and base-only ids, and a 3x rerun of any head-only id; base.log:1-2 and head.log:1-2 carry revision/tree/command headers, both end EXIT=1, base.json/head.json carry completed true, report.md lists the 0/0 diff, and head-only.txt is empty so no rerun was owed.\nVERDICT write_paths: the node was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/wave-population and read-only elsewhere; ls of that directory shows only base.log, head.log, base.json, head.json, base-failed.txt, head-failed.txt, head-only.txt, report.md, reruns.sh and the node's own helper scripts, and the manifest records changed_paths [] with no landed revision.\nVERDICT manifest: its manifest reads status complete; baseline_suite and after_suite each carry the literal command with absolute paths, completed true, exit_status 1, failure_count 73 and the full failure_ids list; artifacts and test_logs name base.log, head.log and report.md, and measurement_module and measurement_cwd are recorded for both scratch arms.\nVERDICT diff: the node is read-only, so it carries no repository diff and no landed revision; the delivered change is the report directory named above, and every artifact in it lies inside the single declared write path.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:19-24 and report.md:27-101 deliver the goal's attribution (0 new, 0 removed, 73 pre-existing), and independently extracting the FAILED ids from base.log and head.log reproduces the 73/73 set equality; the one deduction is that the head arm's code identity is proven outside the durable logs rather than inside them.\nSCORE evidence: 19\nJUSTIFICATION evidence: base.log:1-2 and head.log:1-2 name each arm's revision, tree and command, base.json/head.json record completed true with failure_count 73 and exit_status 1, and head-only.txt is empty so no head-only rerun was owed; re-deriving the failure sets from the raw logs matches the run's own base-failed.txt and head-failed.txt exactly, so the zero is a measured zero carried beside a positive control (73 ids extracted from both arms, 9278 items at head against 9234 at base).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the manifest's changed_paths is [] and every file under /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/wave-population is inside the single declared write path, with no repository path touched.\nSCORE durability: 16\nJUSTIFICATION durability: the deliverable is a one-shot measurement with no guard that fails if it regresses, and the head arm's isolation (head.log:2) is not durably logged under the delivery scope, so re-verifying it needs both trees re-exported; the fence itself required deleting /tmp/wave-population, so that limit is inherent to the measure rather than a lapse.\nSCORE fit: 18\nJUSTIFICATION fit: the node follows its dispatch contract (orientation manifest, per-arm logs naming revision/tree/command and ending in EXIT=, JSON arm records, a report), uses the project venv and node-local /tmp, and self-reports its shell slip at report.md:121; the one deduction is that the slip left a malformed contract line at head.log:2.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/wave-population/head.log:2 follow-on: head.log's module_file= header line is empty because the header-writing command was truncated, so the durable artifact does not itself show that the head arm imported the exported head tree; the corroborating receipt (print(reckon.__file__) -> /tmp/wave-population/head/reckon/__init__.py) survives only in the run stream (stream.jsonl record 13949) and in the manifest's measurement_module field, not in a log under the delivery scope, so a later reader cannot confirm head-arm isolation from the stored evidence alone.",
+  "review_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/wave-population/base.log",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/wave-population/head.log"
+  ],
+  "review_run_id": "r-20260930T232826463886-review-of-wave-population",
+  "reviewed_base_sha": "0362a6a0cac2e059b4bfdca59ec2a6da92a19e86",
+  "reviewed_head_sha": "013b5335bc0ac6abf05c7b8a93ac0853020da5fd",
+  "reviewed_run_id": "r-20260930T222512673662-wave-population",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T23:33:47.999557+00:00",
+  "total": 92
+}

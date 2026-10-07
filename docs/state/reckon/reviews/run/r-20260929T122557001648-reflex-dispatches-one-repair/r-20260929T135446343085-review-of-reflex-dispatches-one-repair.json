@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/resumption.py:1297",
+    "reckon/crew/recovery.py:1770"
+  ],
+  "completed_at": "2026-09-29T14:49:29.262Z",
+  "dispatched_at": "2026-09-29T13:55:06Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T122557001648-reflex-dispatches-one-repair/manifest.md",
+      "line": "10",
+      "text": "the head arm's file list was derived by a text grep (reckon.crew.recovery|crew import recovery|from reckon.crew.recovery) that matches only single-name imports, so it ran 93 files while an AST scan of the same tree finds 94 tests/ files importing reckon.crew.recovery: seven importers were never measured \u2014 including tests/test_review_role_is_not_reviewed.py, which drives the modified recovery.dispatch_awaiting_reviews at line 228 \u2014 and six grepped files do not import the module at all; my head probe of the seven excluded files passes (94 passed, EXIT=0), so the delta survives the gap, but the recorded population is not the one the done-when names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against e2c4a662; it carries the repair pass, the composer's negative_control declaration (repair.py:297), the _review_tree working-directory guard (recovery.py:215) and four driving tests, with the commit body naming each change rather than leaving it to be inferred.",
+    "done_when": "The done-when's driving test passes as recorded (tests/test_reflex_dispatches_one_repair.py:238; reproduced 4 passed, EXIT=0), and the added-failure claim re-derives to zero through the store's own reader (review.py:870) from the reviewed run's baseline_suite/after_suite logs, whose 35 base and 31 head failure ids the manifest transcribes exactly.",
+    "goal": "The node's goal is one repair node per finding-bearing review round, and the landed change wires exactly that: recovery.py:1747-1770 runs dispatch_repair_for_run (recovery.py:1429) for every live pointer and reports each composed repair beside the review pass.",
+    "manifest": "Read in full; it records the focused gate and both arm logs with their EXIT= lines and names the negative-control mutation it declares, and its one evidence shortfall is the finding below.",
+    "write_paths": "Read the manifest's declared scope and the diff: git diff --name-status e2c4a662..1fb5dd19 lists exactly recovery.py, repair.py and tests/test_reflex_dispatches_one_repair.py, and the reviewed worktree is clean at 1fb5dd19."
+  },
+  "justifications": {
+    "durability": "The four tests re-derive the finding id rule independently (tests/test_reflex_dispatches_one_repair.py:178) and the declared mutation reddens the three-finding test's dispatch-count assertion (arm-red.log), while the redispatch-after-death branch (recovery.py:1420-1425) and the _review_tree guard (recovery.py:215) carry no test.",
+    "evidence": "The focused gate and the zero-added-failure delta both reproduce (4 passed, EXIT=0; 0 added ids through review.py:870), but the arm population came from a text grep that missed seven importing test files, so the recorded head arm measured 93 of the 94 tests/ files that import the changed module.",
+    "fit": "The pass reuses the module's pointer-mutation and sweep-report idioms, and its new names (dispatch_repair_for_run, _repair_in_flight, REPAIR_DISPATCH_FIELD) name mechanisms with no plan, ticket or version identifier.",
+    "goal_fidelity": "recovery.py:1747-1770 composes at most one repair per live pointer through compose_repair_for_run and reports it beside the review pass, which is the goal's sentence.",
+    "scope_discipline": "The diff touches exactly the three declared paths, and both supporting changes are implied by the goal \u2014 repair.py:297 declares the negative control the composed scope requires, and recovery.py:215 stops a repair's head being read from the sweeping process's own working directory."
+  },
+  "node": "review-of-reflex-dispatches-one-repair",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is one repair node per finding-bearing review round, and the landed change wires exactly that: recovery.py:1747-1770 runs dispatch_repair_for_run (recovery.py:1429) for every live pointer and reports each composed repair beside the review pass.\nVERDICT done_when: The done-when's driving test passes as recorded (tests/test_reflex_dispatches_one_repair.py:238; reproduced 4 passed, EXIT=0), and the added-failure claim re-derives to zero through the store's own reader (review.py:870) from the reviewed run's baseline_suite/after_suite logs, whose 35 base and 31 head failure ids the manifest transcribes exactly.\nVERDICT write_paths: Read the manifest's declared scope and the diff: git diff --name-status e2c4a662..1fb5dd19 lists exactly recovery.py, repair.py and tests/test_reflex_dispatches_one_repair.py, and the reviewed worktree is clean at 1fb5dd19.\nVERDICT manifest: Read in full; it records the focused gate and both arm logs with their EXIT= lines and names the negative-control mutation it declares, and its one evidence shortfall is the finding below.\nVERDICT diff: Read commit by commit against e2c4a662; it carries the repair pass, the composer's negative_control declaration (repair.py:297), the _review_tree working-directory guard (recovery.py:215) and four driving tests, with the commit body naming each change rather than leaving it to be inferred.\nCALL_SITES: reckon/crew/resumption.py:1297, reckon/crew/recovery.py:1770\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: recovery.py:1747-1770 composes at most one repair per live pointer through compose_repair_for_run and reports it beside the review pass, which is the goal's sentence.\nSCORE evidence: 17\nJUSTIFICATION evidence: The focused gate and the zero-added-failure delta both reproduce (4 passed, EXIT=0; 0 added ids through review.py:870), but the arm population came from a text grep that missed seven importing test files, so the recorded head arm measured 93 of the 94 tests/ files that import the changed module.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff touches exactly the three declared paths, and both supporting changes are implied by the goal \u2014 repair.py:297 declares the negative control the composed scope requires, and recovery.py:215 stops a repair's head being read from the sweeping process's own working directory.\nSCORE durability: 18\nJUSTIFICATION durability: The four tests re-derive the finding id rule independently (tests/test_reflex_dispatches_one_repair.py:178) and the declared mutation reddens the three-finding test's dispatch-count assertion (arm-red.log), while the redispatch-after-death branch (recovery.py:1420-1425) and the _review_tree guard (recovery.py:215) carry no test.\nSCORE fit: 20\nJUSTIFICATION fit: The pass reuses the module's pointer-mutation and sweep-report idioms, and its new names (dispatch_repair_for_run, _repair_in_flight, REPAIR_DISPATCH_FIELD) name mechanisms with no plan, ticket or version identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T122557001648-reflex-dispatches-one-repair/manifest.md:10 the head arm's file list was derived by a text grep (reckon.crew.recovery|crew import recovery|from reckon.crew.recovery) that matches only single-name imports, so it ran 93 files while an AST scan of the same tree finds 94 tests/ files importing reckon.crew.recovery: seven importers were never measured \u2014 including tests/test_review_role_is_not_reviewed.py, which drives the modified recovery.dispatch_awaiting_reviews at line 228 \u2014 and six grepped files do not import the module at all; my head probe of the seven excluded files passes (94 passed, EXIT=0), so the delta survives the gap, but the recorded population is not the one the done-when names.\nreviewed_base_sha: e2c4a6620a2a734df4dea74eac887dc54ff2a6a6\nreviewed_head_sha: 1fb5dd1925913ecba14bbefeff29d5653c251a3b\n",
+  "review_run_id": "r-20260929T135446343085-review-of-reflex-dispatches-one-repair",
+  "reviewed_base_sha": "e2c4a6620a2a734df4dea74eac887dc54ff2a6a6",
+  "reviewed_head_sha": "1fb5dd1925913ecba14bbefeff29d5653c251a3b",
+  "reviewed_run_id": "r-20260929T122557001648-reflex-dispatches-one-repair",
+  "reviewer_run_id": "r-20260929T135446343085-review-of-reflex-dispatches-one-repair",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T14:42:48.074345+00:00",
+  "total": 95
+}

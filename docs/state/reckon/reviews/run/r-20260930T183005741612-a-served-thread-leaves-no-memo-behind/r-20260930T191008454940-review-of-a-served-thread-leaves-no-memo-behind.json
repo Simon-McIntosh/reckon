@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "reviewed manifest names its base and after logs under test_logs, not the baseline_suite/after_suite fields the read-time annotation reads (so read_review annotates unmeasured); derived instead from the reviewed run's own base-orderA-1.log vs fixed-orderA-1.log, both all-passing: zero added failing tests",
+  "added_failures_source": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/base-orderA-1.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/fixed-orderA-1.log"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T19:27:27.739Z",
+  "dispatched_at": "2026-09-30T19:12:37Z",
+  "findings": [
+    {
+      "file": "tests/test_server_listens_before_it_watches.py",
+      "line": "212",
+      "text": "the teardown assertion compares serve._SIGNATURE_TTL_S against the literal 0.0 the fixture itself assigned on :211 on the same thread, after stop() has joined the only writer, so it holds whatever the product does and cannot fail when the join is removed while the compensating assignment remains - the negative control reddens only because it removed that assignment too."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/manifest.md",
+      "line": "7",
+      "text": "the commits line names 6d7d5a469edc8b2bd84b6bc6ff71d0f90f1c1e52, which resolves to no object (git cat-file -t fails), while the evidence-fragment commit is 6d7d5a469d0b4900cce47497371967eb6fb25bff, so the run's own record cites a sha a later reader cannot resolve."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/base-orderA-1.log",
+      "line": "1",
+      "text": "the base arms record only \"4 passed\" and never the serve._SIGNATURE_TTL_S value the done-when required each run to log after the server tests' teardown, so the base evidence does not measure the quantity the done-when named and the base failure did not reproduce."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base e7eca9f0 - 83f453e2 adds 32 lines and removes 1 in the served_entry_point fixture, 6d7d5a46 adds the 50-line evidence fragment; no product source changes.",
+    "done_when": "the done-when requires base and after runs over the server and tag-inventory tests, each logging the tag-inventory failure and the serve._SIGNATURE_TTL_S value after teardown; the manifest records base 3 of 3 and after 5 of 5 in each order, but logs/base-orderA-1.log carries no memo value and the base failure did not reproduce.",
+    "goal": "the node's goal is to contain the served entry-point test's discovery-memo write within its own test, and tests/test_server_listens_before_it_watches.py:119-213 joins the served thread before teardown returns and resets serve._SIGNATURE_TTL_S to 0.0, so the write is ordered inside the test.",
+    "manifest": "read; it names the mechanism at reckon/serve.py:3397-3399, both arm counts, the timing and the red control, but its commits line names 6d7d5a469edc8b2bd84b6bc6ff71d0f90f1c1e52, which resolves to no git object.",
+    "write_paths": "the manifest declares tests/test_server_listens_before_it_watches.py, an evidence fragment and a figures directory; git diff e7eca9f0..6d7d5a46 touches only the test file and the fragment, both inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_server_listens_before_it_watches.py:211 assigns serve._SIGNATURE_TTL_S = 0.0 and :212 asserts it equals 0.0 on the same thread after stop() has joined the only writer, so it cannot redden when the join alone regresses.",
+    "evidence": "the base arms at logs/base-orderA-1.log logged only \"4 passed\" and not the serve._SIGNATURE_TTL_S value the done-when named, and the base failure did not reproduce, though the negative control at logs/negative-control.log reddens 3 errors and 1 failure.",
+    "fit": "the fixture follows the surrounding idiom at tests/test_server_listens_before_it_watches.py:128 and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "tests/test_server_listens_before_it_watches.py:120 joins the served thread (bounded by _THREAD_STOP_S) and :211 resets serve._SIGNATURE_TTL_S to 0.0, so the memo write no longer outlives the test.",
+    "scope_discipline": "git diff e7eca9f0..6d7d5a46 is two files, 82 insertions and 1 deletion, both inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to contain the served entry-point test's discovery-memo write within its own test, and tests/test_server_listens_before_it_watches.py:119-213 joins the served thread before teardown returns and resets serve._SIGNATURE_TTL_S to 0.0, so the write is ordered inside the test.\nVERDICT done_when: the done-when requires base and after runs over the server and tag-inventory tests, each logging the tag-inventory failure and the serve._SIGNATURE_TTL_S value after teardown; the manifest records base 3 of 3 and after 5 of 5 in each order, but logs/base-orderA-1.log carries no memo value and the base failure did not reproduce.\nVERDICT write_paths: the manifest declares tests/test_server_listens_before_it_watches.py, an evidence fragment and a figures directory; git diff e7eca9f0..6d7d5a46 touches only the test file and the fragment, both inside the declared scope.\nVERDICT manifest: read; it names the mechanism at reckon/serve.py:3397-3399, both arm counts, the timing and the red control, but its commits line names 6d7d5a469edc8b2bd84b6bc6ff71d0f90f1c1e52, which resolves to no git object.\nVERDICT diff: read both commits against base e7eca9f0 - 83f453e2 adds 32 lines and removes 1 in the served_entry_point fixture, 6d7d5a46 adds the 50-line evidence fragment; no product source changes.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_server_listens_before_it_watches.py:120 joins the served thread (bounded by _THREAD_STOP_S) and :211 resets serve._SIGNATURE_TTL_S to 0.0, so the memo write no longer outlives the test.\nSCORE evidence: 14\nJUSTIFICATION evidence: the base arms at logs/base-orderA-1.log logged only \"4 passed\" and not the serve._SIGNATURE_TTL_S value the done-when named, and the base failure did not reproduce, though the negative control at logs/negative-control.log reddens 3 errors and 1 failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff e7eca9f0..6d7d5a46 is two files, 82 insertions and 1 deletion, both inside the manifest's declared write paths.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_server_listens_before_it_watches.py:211 assigns serve._SIGNATURE_TTL_S = 0.0 and :212 asserts it equals 0.0 on the same thread after stop() has joined the only writer, so it cannot redden when the join alone regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture follows the surrounding idiom at tests/test_server_listens_before_it_watches.py:128 and introduces no name the repository naming rules forbid.\nFINDING tests/test_server_listens_before_it_watches.py:212 the teardown assertion compares serve._SIGNATURE_TTL_S against the literal 0.0 the fixture itself assigned on :211 on the same thread, after stop() has joined the only writer, so it holds whatever the product does and cannot fail when the join is removed while the compensating assignment remains - the negative control reddens only because it removed that assignment too.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/manifest.md:7 the commits line names 6d7d5a469edc8b2bd84b6bc6ff71d0f90f1c1e52, which resolves to no object (git cat-file -t fails), while the evidence-fragment commit is 6d7d5a469d0b4900cce47497371967eb6fb25bff, so the run's own record cites a sha a later reader cannot resolve.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/base-orderA-1.log:1 the base arms record only \"4 passed\" and never the serve._SIGNATURE_TTL_S value the done-when required each run to log after the server tests' teardown, so the base evidence does not measure the quantity the done-when named and the base failure did not reproduce.",
+  "review_run_id": "r-20260930T191008454940-review-of-a-served-thread-leaves-no-memo-behind",
+  "reviewed_base_sha": "e7eca9f0361b661cc4a435b3a39015497a795688",
+  "reviewed_head_sha": "6d7d5a469d0b4900cce47497371967eb6fb25bff",
+  "reviewed_run_id": "r-20260930T183005741612-a-served-thread-leaves-no-memo-behind",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260930T191008454940-review-of-a-served-thread-leaves-no-memo-behind",
+  "scores": {
+    "durability": 11,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T19:25:25.656074+00:00",
+  "total": 82
+}

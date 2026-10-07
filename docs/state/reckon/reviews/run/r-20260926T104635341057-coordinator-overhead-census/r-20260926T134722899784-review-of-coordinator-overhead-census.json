@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T14:58:31.592Z",
+  "dispatched_at": "2026-09-26T13:47:39Z",
+  "findings": [
+    {
+      "file": "docs/research/data/crew-pattern-review/coordinator-overhead/findings.md",
+      "line": "13",
+      "text": "the table's rank-1 cost is the classifier's residual bucket (Other tools and uncategorised shell work, 11,862 calls, more than any two later rows combined), so the study's largest measured cost measures classification coverage rather than an identified coordinator activity."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read all six commits against base 457bbec7; the change adds the census, verification and render tooling with their measured JSON, three logs, the effort figure, a plan aside and an aside-linked evidence section, and nothing outside those.",
+    "done_when": "every done_when item is measured and stored except the hand-committed worker diff count, which findings.md:71 records as null with its provenance reason under the authorisation at lane-change-2-prompt.txt:181 to record an unfinished priority as not measured instead of stopping.",
+    "goal": "the goal is a census of what coordinators spend per landed node read from their session transcripts, and overhead.json:1 carries 2,182 promoted runs among 2,328 records across 52 recorded sessions, with per-session turns, logical tokens, an exclusive tool-call mix, 320 dispatch and 338 promotion refusals with recovery turns, and 1,086 replayed branch merges.",
+    "manifest": "the manifest reports status complete with its gate command and logs, and the byte-identity claim it rests on is recorded at verification.log:61 as SHA-256 1fca1f44, which I matched by hashing the shipped overhead.json, 174,903 bytes, and the retained overhead.replayed.json it names.",
+    "write_paths": "the node was fenced to four paths, and the diff from base 457bbec7 to head 4413e78a changes eleven files, every one under them and every hunk an insertion."
+  },
+  "justifications": {
+    "durability": "verify.py:26-101 re-asserts window bounds, the quoted-advice control at verify.py:33, transcript reconciliation and refusal parsing, so a regression in census.py's derivation reddens the rerun leg instead of passing silently.",
+    "evidence": "verify.py:110 asserts a fresh census run is byte-identical to the stored overhead.json and verification.log:61 records that digest, so the gate measures reproducibility rather than the classifier's correctness.",
+    "fit": "census.py follows the pinned-inputs pattern of docs/research/data, its added names carry no plan or ticket identifiers, and findings.md:83 documents render.py regenerating the report from the measured JSON.",
+    "goal_fidelity": "overhead.json:1 delivers every goal item per landed node, the one exception being the hand-committed diff count whose null findings.md:71 states with its reason.",
+    "scope_discipline": "git diff --numstat 457bbec7..4413e78a lists eleven insertion-only files, all under the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a census of what coordinators spend per landed node read from their session transcripts, and overhead.json:1 carries 2,182 promoted runs among 2,328 records across 52 recorded sessions, with per-session turns, logical tokens, an exclusive tool-call mix, 320 dispatch and 338 promotion refusals with recovery turns, and 1,086 replayed branch merges.\nVERDICT done_when: every done_when item is measured and stored except the hand-committed worker diff count, which findings.md:71 records as null with its provenance reason under the authorisation at lane-change-2-prompt.txt:181 to record an unfinished priority as not measured instead of stopping.\nVERDICT write_paths: the node was fenced to four paths, and the diff from base 457bbec7 to head 4413e78a changes eleven files, every one under them and every hunk an insertion.\nVERDICT manifest: the manifest reports status complete with its gate command and logs, and the byte-identity claim it rests on is recorded at verification.log:61 as SHA-256 1fca1f44, which I matched by hashing the shipped overhead.json, 174,903 bytes, and the retained overhead.replayed.json it names.\nVERDICT diff: read all six commits against base 457bbec7; the change adds the census, verification and render tooling with their measured JSON, three logs, the effort figure, a plan aside and an aside-linked evidence section, and nothing outside those.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: overhead.json:1 delivers every goal item per landed node, the one exception being the hand-committed diff count whose null findings.md:71 states with its reason.\nSCORE evidence: 18\nJUSTIFICATION evidence: verify.py:110 asserts a fresh census run is byte-identical to the stored overhead.json and verification.log:61 records that digest, so the gate measures reproducibility rather than the classifier's correctness.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --numstat 457bbec7..4413e78a lists eleven insertion-only files, all under the four declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: verify.py:26-101 re-asserts window bounds, the quoted-advice control at verify.py:33, transcript reconciliation and refusal parsing, so a regression in census.py's derivation reddens the rerun leg instead of passing silently.\nSCORE fit: 19\nJUSTIFICATION fit: census.py follows the pinned-inputs pattern of docs/research/data, its added names carry no plan or ticket identifiers, and findings.md:83 documents render.py regenerating the report from the measured JSON.\nFINDING docs/research/data/crew-pattern-review/coordinator-overhead/findings.md:13 the table's rank-1 cost is the classifier's residual bucket (Other tools and uncategorised shell work, 11,862 calls, more than any two later rows combined), so the study's largest measured cost measures classification coverage rather than an identified coordinator activity.\n",
+  "review_run_id": "r-20260926T134722899784-review-of-coordinator-overhead-census",
+  "reviewed_base_sha": "457bbec7e691465101ea7c56716fe23eb8477dfe",
+  "reviewed_head_sha": "4413e78a7c83012ab3e10eabc7fca311ed165d2f",
+  "reviewed_run_id": "r-20260926T104635341057-coordinator-overhead-census",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T14:56:48.201154+00:00",
+  "total": 93
+}

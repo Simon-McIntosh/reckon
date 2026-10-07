@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:worker_scratch_root"
+  ],
+  "completed_at": "2026-10-04T11:12:51.888Z",
+  "dispatched_at": "2026-10-04T11:06:46Z",
+  "findings": [
+    {
+      "file": "logs/negative-control-run-scratch-stays-in-its-temp-root.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control log's header names revision 4e9e26f7e (base) while its tree is the head worktree and the code it measured carries the fixture, so a reader ordering the arms by the header would take the red run for a base-arm observation."
+    },
+    {
+      "file": "tests/test_run_scratch_stays_in_its_temp_root.py",
+      "line": "86",
+      "severity": "follow-on",
+      "text": "follow-on: the test drives the private dispatch._worker_runtime_environment rather than a public dispatch entry point, so a refactor that moved scratch creation out of that helper would leave the guard green while a real dispatch leaked."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 774da08f9 and 3437cffab against 4e9e26f7e; three files, +181/-1 - the conftest fixture, the new test file, and the evidence fragment; no product code changed.",
+    "done_when": "the done_when names a test showing a dispatch places its scratch beneath the session temp root with the real root gaining no entry, plus the dispatch population adding no failure against base; tests/test_run_scratch_stays_in_its_temp_root.py asserts both halves and the manifest records both arms.",
+    "goal": "the node's goal is to point RECKON_WORKER_SCRATCH_ROOT beneath the pytest session base temp from a session-scoped autouse fixture so no test writes run scratch into the real /tmp/reckon-crew-scratch; tests/conftest.py:641 adds that fixture and reckon/crew/dispatch.py:8252 resolves the overriding root.",
+    "manifest": "read; status complete, base 4e9e26f7e to head 3437cffab, changed_paths match the grant, negative_control_log present and red (1 failed EXIT=1), baseline_suite and after_suite present.",
+    "write_paths": "the node is fenced to tests/conftest.py, tests/test_run_scratch_stays_in_its_temp_root.py and the evidence fragment; all three appear in the diff and nothing else does."
+  },
+  "justifications": {
+    "durability": "tests/test_run_scratch_stays_in_its_temp_root.py:102 asserts base in scratch.parents and :106 asserts the real root gained nothing, both reddened by the negative control; docked because :58 compares os.environ to worker_scratch_root()'s own read of that same variable.",
+    "evidence": "the head gate log is 1301 passed/1 skipped/1 error and the base log is 1298 passed/1 failed/1 skipped/1 error, added failures 0 by id, and the negative control reddens the new test EXIT=1; docked because the base arm is given its own override and so does not itself evidence the real-root leak, and the negative-control log's header names the base revision.",
+    "fit": "the fixture at tests/conftest.py:641 mirrors the neighbouring _publish_session_temp_root fixture and names no plan, ticket or version identifier.",
+    "goal_fidelity": "tests/conftest.py:641 _publish_worker_scratch_root assigns RECKON_WORKER_SCRATCH_ROOT to <basetemp>/reckon-crew-scratch, and reckon/crew/dispatch.py:8264 reads it so ensure_worker_scratch places the run beneath the session temp.",
+    "scope_discipline": "the diff touches exactly tests/conftest.py, tests/test_run_scratch_stays_in_its_temp_root.py and docs/evidence/fragments/crew-runtime-positive-controls/a-test-run-scratch-stays-in-its-temp-root.html, the three declared write paths, and nothing else."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to point RECKON_WORKER_SCRATCH_ROOT beneath the pytest session base temp from a session-scoped autouse fixture so no test writes run scratch into the real /tmp/reckon-crew-scratch; tests/conftest.py:641 adds that fixture and reckon/crew/dispatch.py:8252 resolves the overriding root.\nVERDICT done_when: the done_when names a test showing a dispatch places its scratch beneath the session temp root with the real root gaining no entry, plus the dispatch population adding no failure against base; tests/test_run_scratch_stays_in_its_temp_root.py asserts both halves and the manifest records both arms.\nVERDICT write_paths: the node is fenced to tests/conftest.py, tests/test_run_scratch_stays_in_its_temp_root.py and the evidence fragment; all three appear in the diff and nothing else does.\nVERDICT manifest: read; status complete, base 4e9e26f7e to head 3437cffab, changed_paths match the grant, negative_control_log present and red (1 failed EXIT=1), baseline_suite and after_suite present.\nVERDICT diff: read 774da08f9 and 3437cffab against 4e9e26f7e; three files, +181/-1 - the conftest fixture, the new test file, and the evidence fragment; no product code changed.\nCALL_SITES: reckon/crew/dispatch.py:worker_scratch_root\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/conftest.py:641 _publish_worker_scratch_root assigns RECKON_WORKER_SCRATCH_ROOT to <basetemp>/reckon-crew-scratch, and reckon/crew/dispatch.py:8264 reads it so ensure_worker_scratch places the run beneath the session temp.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate log is 1301 passed/1 skipped/1 error and the base log is 1298 passed/1 failed/1 skipped/1 error, added failures 0 by id, and the negative control reddens the new test EXIT=1; docked because the base arm is given its own override and so does not itself evidence the real-root leak, and the negative-control log's header names the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly tests/conftest.py, tests/test_run_scratch_stays_in_its_temp_root.py and docs/evidence/fragments/crew-runtime-positive-controls/a-test-run-scratch-stays-in-its-temp-root.html, the three declared write paths, and nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_run_scratch_stays_in_its_temp_root.py:102 asserts base in scratch.parents and :106 asserts the real root gained nothing, both reddened by the negative control; docked because :58 compares os.environ to worker_scratch_root()'s own read of that same variable.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture at tests/conftest.py:641 mirrors the neighbouring _publish_session_temp_root fixture and names no plan, ticket or version identifier.\nFINDING logs/negative-control-run-scratch-stays-in-its-temp-root.log:1 follow-on: the negative-control log's header names revision 4e9e26f7e (base) while its tree is the head worktree and the code it measured carries the fixture, so a reader ordering the arms by the header would take the red run for a base-arm observation.\nFINDING tests/test_run_scratch_stays_in_its_temp_root.py:86 follow-on: the test drives the private dispatch._worker_runtime_environment rather than a public dispatch entry point, so a refactor that moved scratch creation out of that helper would leave the guard green while a real dispatch leaked.",
+  "review_run_id": "r-20261004T110623645633-review-of-a-test-run-scratch-stays-in-its-temp-root",
+  "reviewed_base_sha": "4e9e26f7ea1f7e844bf30a94e15763156eaad8b9",
+  "reviewed_head_sha": "3437cffab84019a78742077fe03054a6274ecd1b",
+  "reviewed_run_id": "r-20261004T101655975444-a-test-run-scratch-stays-in-its-temp-root",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T110623645633-review-of-a-test-run-scratch-stays-in-its-temp-root",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T11:10:16+00:00",
+  "total": 94
+}

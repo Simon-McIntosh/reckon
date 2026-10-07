@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:_skills_source",
+    "reckon/agent_context.py:121"
+  ],
+  "completed_at": "2026-09-25T09:22:29.234Z",
+  "dispatched_at": "2026-09-25T07:57:22Z",
+  "findings": [
+    {
+      "file": "skills/reckon-sprint/SKILL.md",
+      "line": "68",
+      "text": "teaches live_sprint_ids and the liveness-derived active_sprint_id as current behaviour, but at a29717dd neither exists in code \u2014 git grep for live_sprint_ids at a29717dd over reckon/ is empty, reckon/roadmap.py:1188 still makes the unique active row the authority and reckon/mcp.py:1760 still raises multiple-active-sprints \u2014 so the agent-facing doc asserts an interface the tree does not provide until the summary and push nodes land."
+    },
+    {
+      "file": "skills/reckon-sprint/SKILL.md",
+      "line": "76",
+      "text": "teaches that push leaves every other sprint's status alone, while tests/test_sprint_push_status.py:74 at this same revision asserts push demotes the previous active sprint (result demoted is S1) and passes, so the skill and the committed suite contradict each other until the push node lands."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075707089974-sprint-skill-teaches-liveness/manifest.md",
+      "line": "2",
+      "text": "orientation_base_sha is e731091f0d04055bb3246fb1a9fdcb83f0b00a0e, which resolves to no object; the true base is e731091f0d04055bb3246fb1a9fdcb9b988f23ef, as the run's own logs/grep-check.log records, so the record cannot name the range it measured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075707089974-sprint-skill-teaches-liveness/manifest.md",
+      "line": "12",
+      "text": "changed_paths names liveness_work.py, committed as liveness_derivation.py, and a mangled plan filename (a-sprint-is-live-while-a-cream-while-a-crew-works-it.html), so the record does not name the files it changed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base e731091f; 21077dfa changes only skills/reckon-sprint/SKILL.md (46 insertions, 33 deletions), and a29717dd adds the evidence page, the figure script and PNG and the plan's landed note without touching the plan meta lines.",
+    "done_when": "the done-when is the retired-invariant grep plus every test that greps skills/; the manifest records grep exit 1 at the edited revision against five lines at base e731091f and 71 passed, and my re-run at a29717dd reproduced both results.",
+    "goal": "the goal is to rewrite the reckon-sprint skill's one-pushed-sprint rule to the crew-derived liveness definition, and skills/reckon-sprint/SKILL.md:47 now carries that section against the base's \"One pushed sprint\" heading.",
+    "manifest": "read; it records both test runs with their logs and points at the evidence record, but orientation_base_sha resolves to no object and changed_paths mis-names two files (findings below name the record defects).",
+    "write_paths": "the declared paths are skills/reckon-sprint/SKILL.md, docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html, docs/figures/a-sprint-is-live-while-a-crew-works-it and docs/plans/a-sprint-is-live-while-a-crew-works-it.html, and every path in the two commits lies inside that set."
+  },
+  "justifications": {
+    "durability": "no test fails if the skill text regresses \u2014 tests/test_skill_contracts.py:108 asserts other sentences and tests/test_sprint_push_status.py:74 still asserts the demote behaviour the skill now denies.",
+    "evidence": "the gate names tests/test_skill_contracts.py and tests/test_skill_contract_parity.py and both the logs and my re-run at a29717dd record 71 passed, though the manifest mis-states the base revision its grep control ran at.",
+    "fit": "skills/reckon-sprint/SKILL.md:55 follows the skill's own idiom of bold lead sentences and code spans and introduces no plan identifier, ticket number or version.",
+    "goal_fidelity": "skills/reckon-sprint/SKILL.md:47 rewrites the retired section to the crew-derived definition, but lines 65-68 assert a present-tense interface the tree at this revision does not provide.",
+    "scope_discipline": "both commits' paths (skills/reckon-sprint/SKILL.md, docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html, docs/figures/a-sprint-is-live-while-a-crew-works-it/liveness_derivation.py, docs/plans/a-sprint-is-live-while-a-crew-works-it.html) lie inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to rewrite the reckon-sprint skill's one-pushed-sprint rule to the crew-derived liveness definition, and skills/reckon-sprint/SKILL.md:47 now carries that section against the base's \"One pushed sprint\" heading.\nVERDICT done_when: the done-when is the retired-invariant grep plus every test that greps skills/; the manifest records grep exit 1 at the edited revision against five lines at base e731091f and 71 passed, and my re-run at a29717dd reproduced both results.\nVERDICT write_paths: the declared paths are skills/reckon-sprint/SKILL.md, docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html, docs/figures/a-sprint-is-live-while-a-crew-works-it and docs/plans/a-sprint-is-live-while-a-crew-works-it.html, and every path in the two commits lies inside that set.\nVERDICT manifest: read; it records both test runs with their logs and points at the evidence record, but orientation_base_sha resolves to no object and changed_paths mis-names two files (findings below name the record defects).\nVERDICT diff: read commit by commit against base e731091f; 21077dfa changes only skills/reckon-sprint/SKILL.md (46 insertions, 33 deletions), and a29717dd adds the evidence page, the figure script and PNG and the plan's landed note without touching the plan meta lines.\nCALL_SITES: reckon/cli.py:_skills_source, reckon/agent_context.py:121\nreviewed_base_sha: e731091f0d04055bb3246fb1a9fdcb9b988f23ef\nreviewed_head_sha: a29717dd904715aeed1f13a3681a15db19cb8892\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: skills/reckon-sprint/SKILL.md:47 rewrites the retired section to the crew-derived definition, but lines 65-68 assert a present-tense interface the tree at this revision does not provide.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate names tests/test_skill_contracts.py and tests/test_skill_contract_parity.py and both the logs and my re-run at a29717dd record 71 passed, though the manifest mis-states the base revision its grep control ran at.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits' paths (skills/reckon-sprint/SKILL.md, docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html, docs/figures/a-sprint-is-live-while-a-crew-works-it/liveness_derivation.py, docs/plans/a-sprint-is-live-while-a-crew-works-it.html) lie inside the four declared write paths.\nSCORE durability: 8\nJUSTIFICATION durability: no test fails if the skill text regresses \u2014 tests/test_skill_contracts.py:108 asserts other sentences and tests/test_sprint_push_status.py:74 still asserts the demote behaviour the skill now denies.\nSCORE fit: 18\nJUSTIFICATION fit: skills/reckon-sprint/SKILL.md:55 follows the skill's own idiom of bold lead sentences and code spans and introduces no plan identifier, ticket number or version.\nFINDING skills/reckon-sprint/SKILL.md:68 teaches live_sprint_ids and the liveness-derived active_sprint_id as current behaviour, but at a29717dd neither exists in code \u2014 git grep for live_sprint_ids at a29717dd over reckon/ is empty, reckon/roadmap.py:1188 still makes the unique active row the authority and reckon/mcp.py:1760 still raises multiple-active-sprints \u2014 so the agent-facing doc asserts an interface the tree does not provide until the summary and push nodes land.\nFINDING skills/reckon-sprint/SKILL.md:76 teaches that push leaves every other sprint's status alone, while tests/test_sprint_push_status.py:74 at this same revision asserts push demotes the previous active sprint (result demoted is S1) and passes, so the skill and the committed suite contradict each other until the push node lands.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075707089974-sprint-skill-teaches-liveness/manifest.md:2 orientation_base_sha is e731091f0d04055bb3246fb1a9fdcb83f0b00a0e, which resolves to no object; the true base is e731091f0d04055bb3246fb1a9fdcb9b988f23ef, as the run's own logs/grep-check.log records, so the record cannot name the range it measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075707089974-sprint-skill-teaches-liveness/manifest.md:12 changed_paths names liveness_work.py, committed as liveness_derivation.py, and a mangled plan filename (a-sprint-is-live-while-a-cream-while-a-crew-works-it.html), so the record does not name the files it changed.",
+  "review_run_id": "r-20260925T090127451654-review-of-sprint-skill-teaches-liveness",
+  "reviewed_base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+  "reviewed_head_sha": "a29717dd904715aeed1f13a3681a15db19cb8892",
+  "reviewed_run_id": "r-20260925T075707089974-sprint-skill-teaches-liveness",
+  "scores": {
+    "durability": 8,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T09:48:46.593450+00:00",
+  "total": 77
+}

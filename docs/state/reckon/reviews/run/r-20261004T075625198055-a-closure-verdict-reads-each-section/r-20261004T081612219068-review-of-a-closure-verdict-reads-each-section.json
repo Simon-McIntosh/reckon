@@ -1,0 +1,45 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-04T08:24:37.935Z",
+  "dispatched_at": "2026-10-04T08:16:30Z",
+  "findings": [
+    {
+      "file": "reckon/evidence.py",
+      "line": "275",
+      "severity": "follow-on",
+      "text": "_VERDICT_ROLES re-declares the implement/test role set that reckon/mcp_views.py:1605, :1643 and reckon/crew/promotion.py:6910 also spell inline, so a change to the executable-role vocabulary must be chased in several places; the plan asked the role reading be reused from the section attempt count and no shared constant exists to import, so the copy is understandable but worth centralising."
+    }
+  ],
+  "justifications": {
+    "durability": "the assertion compares the rendered meta against an expected that is independent of the code, the base negative control reddens two of three fixtures, and fixture A's superseded work-rejected failure before a pass plus the review and investigate rows guard both the latest-run and the population clauses.",
+    "evidence": "the gate in tests/test_closure_verdict.py:154-183 asserts the record's plan-verdict meta against the fixture's expected string, I reproduced 43 passed at head and the base negative control's fail-then-qualified reading myself in a scratch tree, and all eight evidence-importing test files are in both arms.",
+    "fit": "the constants (_VERDICT_SEVERITY, _VERDICT_ROLES, _run_verdict) are named by mechanism with no plan label and the change reuses section_record_id, but the implement/test vocabulary is now a fourth copy of a set reckon/mcp_views.py:1605 and reckon/crew/promotion.py:6910 each spell inline.",
+    "goal_fidelity": "reckon/evidence.py:298-323 reads each implement/test section's latest run and maps passed to pass, a pre-existing-failure to qualified and any other failure to fail, reporting the worst across sections, which is the plan's ruling exactly.",
+    "scope_discipline": "git diff --name-only 657e199ba..9ead97121 is exactly reckon/evidence.py and tests/test_closure_verdict.py, HEAD adds only the one per-run fragment, and nothing outside the declared fence is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a synthesized record whose plan-verdict reads each section's final implementing run; reckon/evidence.py:298 _overall_verdict now filters to implement/test rows, addresses each section through reckon.crew.routing.section_record_id, keeps the latest run by (completed_at, run_id) and reports the worst section verdict, which is the goal exactly.\nVERDICT done_when: the measure names a temporary-repository test building two sections \u2014 A with a failed implement, a passed implement and a review, B with one implement failed as pre-existing-failure \u2014 reading qualified, then fail on reclassification and pass when B passes, with the base _overall_verdict as negative control; tests/test_closure_verdict.py builds exactly those three fixtures and I reproduced the base reading of fail on the first and qualified on the third in a scratch tree.\nVERDICT write_paths: the manifest declares four paths; git diff --name-only 657e199ba..9ead97121 lists exactly reckon/evidence.py and tests/test_closure_verdict.py, and HEAD adds only the one per-run fragment, all inside the fence.\nVERDICT manifest: read; it records base 40 passed and head 43 passed with zero added failures, the negative control's 2 failed/1 passed at base, and a read-only probe of the-obligations-hook-reads-a-snapshot reading qualified under the new rule against fail under the old \u2014 each reproduced where I re-ran it.\nVERDICT diff: read commit by commit against 657e199ba \u2014 9ead97121 is the verdict change and its test, d1b8a547c the 54-line per-run fragment \u2014 and the ordering key at reckon/evidence.py:664 is (completed_at, run_id), matching the latest-run order _overall_verdict uses.\nCALL_SITES: reckon/cli.py:7910\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/evidence.py:298-323 reads each implement/test section's latest run and maps passed to pass, a pre-existing-failure to qualified and any other failure to fail, reporting the worst across sections, which is the plan's ruling exactly.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate in tests/test_closure_verdict.py:154-183 asserts the record's plan-verdict meta against the fixture's expected string, I reproduced 43 passed at head and the base negative control's fail-then-qualified reading myself in a scratch tree, and all eight evidence-importing test files are in both arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 657e199ba..9ead97121 is exactly reckon/evidence.py and tests/test_closure_verdict.py, HEAD adds only the one per-run fragment, and nothing outside the declared fence is touched.\nSCORE durability: 19\nJUSTIFICATION durability: the assertion compares the rendered meta against an expected that is independent of the code, the base negative control reddens two of three fixtures, and fixture A's superseded work-rejected failure before a pass plus the review and investigate rows guard both the latest-run and the population clauses.\nSCORE fit: 18\nJUSTIFICATION fit: the constants (_VERDICT_SEVERITY, _VERDICT_ROLES, _run_verdict) are named by mechanism with no plan label and the change reuses section_record_id, but the implement/test vocabulary is now a fourth copy of a set reckon/mcp_views.py:1605 and reckon/crew/promotion.py:6910 each spell inline.\nFINDING reckon/evidence.py:275 follow-on: _VERDICT_ROLES re-declares the implement/test role set that reckon/mcp_views.py:1605, :1643 and reckon/crew/promotion.py:6910 also spell inline, so a change to the executable-role vocabulary must be chased in several places; the plan asked the role reading be reused from the section attempt count and no shared constant exists to import, so the copy is understandable but worth centralising.",
+  "review_run_id": "r-20261004T081612219068-review-of-a-closure-verdict-reads-each-section",
+  "reviewed_base_sha": "657e199ba75b7bcdfc67cadfd37592cecc68a19c",
+  "reviewed_head_sha": "d1b8a547c7b51badbb99921145005708a468f4f8",
+  "reviewed_run_id": "r-20261004T075625198055-a-closure-verdict-reads-each-section",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T081612219068-review-of-a-closure-verdict-reads-each-section",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T08:23:52.494184+00:00",
+  "total": 95
+}

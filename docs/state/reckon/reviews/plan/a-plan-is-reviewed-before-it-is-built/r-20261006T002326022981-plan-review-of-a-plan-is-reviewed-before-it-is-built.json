@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T00:26:34.424Z",
+  "dispatched_at": "2026-10-06T00:23:49Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "reuse_search-1",
+      "reason": "a plan that converges \"one reader of section boundaries\" must name the existing section-text readers it is not reusing, or it rebuilds them unwittingly.",
+      "text": "\u00a716 builds prose extraction from `_TAG_RE` but never cites `reckon/mcp_views.py:2061 authored_plan_text` (\"searchable prose while excluding Reckon's structured collections\") or `reckon/crew/dispatch.py:308 _plan_section_text` (\"Extract one section's visible text without including its successors\"), both of which already do the job the new `strip_tags` + span slice is introduced for",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/dispatch.py:308",
+      "id": "duplicate_owner-1",
+      "reason": "two section-text readers over the same spans drift exactly as the heading walks did before \u00a717, and \u00a716's own premise is that one owner should read section boundaries.",
+      "text": "once \u00a716 is built the package carries two owners of one section's text from a plan document: the new `_authored_prose`-over-spans slicer in `reckon/crew/plan_review.py` and `dispatch._plan_section_text`, which already slices `plan_headings` spans and pulls text the same way; the plan should extend/hoist `reckon/crew/dispatch.py` (or state why a separate reader is required) rather than add a third",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8b7acab6f7d98814a812075a33c963ca3a6ed5c65fc5889b15515b38c5dce765",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 152,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T002326022981-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "802f935d5affb02f0cdda42cb25c30e34d7dbbc9",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 adds one module-private mapping (`_section_digests`), one private coverage predicate and one public pure function (`strip_tags`), while deleting `_AuthoredProseParser` and the gate's duplicate whole-document read, so the added interface is smaller than the behaviour it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a716 lands a section-scoped prose slicer by rewriting `_authored_prose` to slice `structured_section_spans` spans and strip tags, beside the live `reckon/crew/dispatch.py:308 _plan_section_text`, which already extracts one section's visible text from the raw document using the same `plan_headings` spans; the plan names no owner to extend.",
+    "interface_budget": "pass \u2014 public_definitions 1480, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 accounts for its one public addition (`strip_tags`, 1480\u21921481), retires the public `legacy` keyword from `plan_fingerprint`, reuses the plan-review-missing refusal family, and \u00a720 adds nothing.",
+    "reuse_search": "a finding \u2014 \u00a716 adds a per-section prose extractor without citing the two existing extractors that already read authored plan text, `reckon/mcp_views.py:2061 authored_plan_text` and `reckon/crew/dispatch.py:308 _plan_section_text`; the plan cites `_TAG_RE` but names neither, so its reuse map is incomplete for the mechanism it adds.",
+    "thin_wrapper": "pass \u2014 `strip_tags` is not a pass-through (it removes skipped-element interiors, unescapes entities and collapses whitespace), `structured_section_spans(every_marked_element=\u2026)` is a keyword on an existing reader rather than a wrapper, and \u00a716 states in-text why the coverage predicate is not a wrapper over `read_plan_review`."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.743527+00:00"
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/budget.py:1417"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T00:16:16.419751+00:00",
+  "findings": [
+    {
+      "file": "tests/test_paid_lanes_document.py",
+      "line": "364",
+      "text": "the case's argv list (:364-372) invokes only --help while the node's own done_when names -h as well, so dropping -h from the tuple at reckon/crew/paid_lanes.py:525 would leave every assertion green and the guarded thing is one token of the two the measure names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235919418112-paid-lanes-help-prints-usage/test_gate.log",
+      "line": "1",
+      "text": "the header names rev 2a72458c but the run the log records collected 10 tests, which is impossible at that revision (its tests/test_paid_lanes_document.py defines 9), because the measured tree was that base plus the uncommitted change; a reader following the header cannot reproduce the result, so the log's own provenance names the wrong tree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 2a72458c; 4e13061a adds the help branch (reckon/crew/paid_lanes.py:525-535) and one case (tests/test_paid_lanes_document.py:351-389), and 08a8733d appends insertions-only to the plan's landing record and the cumulative evidence archive (0 deleted lines in both).",
+    "done_when": "the done_when names a subprocess case in tests/test_paid_lanes_document.py plus an executed negative control; that case is at tests/test_paid_lanes_document.py:351, the manifest records its 10-passed run, and the reviewer re-ran that file at the reviewed head (10 passed, EXIT=0).",
+    "goal": "the goal is that python -m reckon.crew.paid_lanes --help print usage and publish nothing; reckon/crew/paid_lanes.py:525-535 records the request and returns before any config resolution or compose, and the after-arm at head printed USAGE with exit 0 and wrote nothing for both tokens.",
+    "manifest": "read; it reports the gate at 10 passed, names test_gate.log and negative_control.log, states the mutation and the assertion that reddens, and its one defect is the gate-log header revision recorded below.",
+    "write_paths": "the manifest declares five paths (reckon/crew/paid_lanes.py, tests/test_paid_lanes_document.py, docs/evidence/archive/the-local-lane-is-the-default-landed.html, docs/figures/the-local-lane-is-the-default, docs/plans/the-local-lane-is-the-default.html); git numstat of 4e13061a and 08a8733d shows exactly those five changed and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_paid_lanes_document.py:386 reddens exactly on the declared regression (negative_control.log shows `assert not named.exists()` failing on the pre-fix parse), but the case invokes only --help while the done_when names -h as well (FINDING below).",
+    "evidence": "the gate result is recorded and reproducible (the reviewer's re-run of tests/test_paid_lanes_document.py at head: 10 passed, EXIT=0) and negative_control.log's first line repeats the declared mutation verbatim, but both gate-log headers name a revision the run did not measure (FINDING below).",
+    "fit": "the USAGE constant at reckon/crew/paid_lanes.py:76 follows the module's module-level-constant idiom, the argv loop keeps its shape, ruff check and ruff format --check pass on both changed paths, and no name carries a plan, sprint or version label.",
+    "goal_fidelity": "reckoned at reckon/crew/paid_lanes.py:533-535, the return sits before the flight import so no help token can reach a compose or write, and the reviewer's before/after arms show the pre-fix blob writing the named path and the head printing usage for both --help and -h.",
+    "scope_discipline": "git numstat of 4e13061a and 08a8733d shows all five changed paths inside the manifest's declared write paths, both docs edits add lines with 0 deletions, and no plan-version or plan-modified meta line is touched."
+  },
+  "plan": "the-local-lane-is-the-default",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 2a72458cad5f7843fc2b7637719b8510d0151788\nreviewed_head_sha: 08a8733dcbb8a05db8306535416548e8d79b3b9e\n\nIndependent review of run r-20260924T235919418112-paid-lanes-help-prints-usage\n(node paid-lanes-help-prints-usage), read in the reviewed run's own\nworktree, whose head is not an ancestor of the reviewing worktree's base. What the\nreviewer did beyond reading: re-ran the node's named test at the reviewed head\n(10 passed in 1.78s, EXIT=0, review_gate.log); reproduced the recorded defect\nagainst the blob-identical pre-fix module (5f331eef) in the reviewing worktree's\nown tree (repro.log: wrote the named path, usage never printed); and ran the\nmatching after-arm at head for both tokens (usage printed, EXIT=0, no path\nwritten for --help or -h, review_after_arm.log).\n\nVERDICT goal: the goal is that python -m reckon.crew.paid_lanes --help print usage and publish nothing; reckon/crew/paid_lanes.py:525-535 records the request and returns before any config resolution or compose, and the after-arm at head printed USAGE with exit 0 and wrote nothing for both tokens.\nVERDICT done_when: the done_when names a subprocess case in tests/test_paid_lanes_document.py plus an executed negative control; that case is at tests/test_paid_lanes_document.py:351, the manifest records its 10-passed run, and the reviewer re-ran that file at the reviewed head (10 passed, EXIT=0).\nVERDICT write_paths: the manifest declares five paths (reckon/crew/paid_lanes.py, tests/test_paid_lanes_document.py, docs/evidence/archive/the-local-lane-is-the-default-landed.html, docs/figures/the-local-lane-is-the-default, docs/plans/the-local-lane-is-the-default.html); git numstat of 4e13061a and 08a8733d shows exactly those five changed and nothing else.\nVERDICT manifest: read; it reports the gate at 10 passed, names test_gate.log and negative_control.log, states the mutation and the assertion that reddens, and its one defect is the gate-log header revision recorded below.\nVERDICT diff: read commit by commit against 2a72458c; 4e13061a adds the help branch (reckon/crew/paid_lanes.py:525-535) and one case (tests/test_paid_lanes_document.py:351-389), and 08a8733d appends insertions-only to the plan's landing record and the cumulative evidence archive (0 deleted lines in both).\nCALL_SITES: reckon/budget.py:1417\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckoned at reckon/crew/paid_lanes.py:533-535, the return sits before the flight import so no help token can reach a compose or write, and the reviewer's before/after arms show the pre-fix blob writing the named path and the head printing usage for both --help and -h.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate result is recorded and reproducible (the reviewer's re-run of tests/test_paid_lanes_document.py at head: 10 passed, EXIT=0) and negative_control.log's first line repeats the declared mutation verbatim, but both gate-log headers name a revision the run did not measure (FINDING below).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git numstat of 4e13061a and 08a8733d shows all five changed paths inside the manifest's declared write paths, both docs edits add lines with 0 deletions, and no plan-version or plan-modified meta line is touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_paid_lanes_document.py:386 reddens exactly on the declared regression (negative_control.log shows `assert not named.exists()` failing on the pre-fix parse), but the case invokes only --help while the done_when names -h as well (FINDING below).\nSCORE fit: 19\nJUSTIFICATION fit: the USAGE constant at reckon/crew/paid_lanes.py:76 follows the module's module-level-constant idiom, the argv loop keeps its shape, ruff check and ruff format --check pass on both changed paths, and no name carries a plan, sprint or version label.\n\nFINDING tests/test_paid_lanes_document.py:364 the case's argv list (:364-372) invokes only --help while the node's own done_when names -h as well, so dropping -h from the tuple at reckon/crew/paid_lanes.py:525 would leave every assertion green and the guarded thing is one token of the two the measure names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235919418112-paid-lanes-help-prints-usage/test_gate.log:1 the header names rev 2a72458c but the run the log records collected 10 tests, which is impossible at that revision (its tests/test_paid_lanes_document.py defines 9), because the measured tree was that base plus the uncommitted change; a reader following the header cannot reproduce the result, so the log's own provenance names the wrong tree.",
+  "review_run_id": "r-20260925T001616419751-review-of-paid-lanes-help-prints-usage",
+  "reviewed_base_sha": "2a72458cad5f7843fc2b7637719b8510d0151788",
+  "reviewed_head_sha": "08a8733dcbb8a05db8306535416548e8d79b3b9e",
+  "reviewed_node": "paid-lanes-help-prints-usage",
+  "reviewed_run_id": "r-20260924T235919418112-paid-lanes-help-prints-usage",
+  "reviewer_role": "review",
+  "reviewing_node": "review-of-paid-lanes-help-prints-usage",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "section": "5",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T00:51:28.909566+00:00",
+  "total": 93
+}

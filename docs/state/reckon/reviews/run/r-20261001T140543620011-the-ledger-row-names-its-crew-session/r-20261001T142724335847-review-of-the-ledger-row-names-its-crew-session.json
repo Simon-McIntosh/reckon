@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from two arms I ran over the schema/ledger tests: base a4c312fbe 2 passed 1 skipped EXIT=0 (review-base-arm.log) and head b7a2a47 4 passed 1 skipped EXIT=0 (review-head-arm.log), so head adds no failing test. The reviewed run's own manifest names no baseline_suite/after_suite gate logs (it is not armed; it records a single-file gate), so the count could not be taken from the reviewed run's own arms.",
+  "after_suite": {
+    "command": "env -C /tmp/reckon-crew-scratch/r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session/arms/head PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session/arms/head /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_record_fields_declare_every_key.py tests/test_ledger_declares_the_review_tier.py tests/test_ledger_row_names_its_crew_session.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session/review-head-arm.log",
+    "revision": "b7a2a470f79b0aedba35e35a401db50dbaab05a5"
+  },
+  "baseline_suite": {
+    "command": "env -C /tmp/reckon-crew-scratch/r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session/arms/base PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session/arms/base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_record_fields_declare_every_key.py tests/test_ledger_declares_the_review_tier.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session/review-base-arm.log",
+    "revision": "a4c312fbea80e2990b5781c0ec180f80cc7393d0"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:4525 complete",
+    "reckon/crew/promotion.py:6532 _complete_locked"
+  ],
+  "completed_at": "2026-10-01T14:35:11.883Z",
+  "dispatched_at": "2026-10-01T14:27:40Z",
+  "findings": [
+    {
+      "file": "tests/test_record_fields_declare_every_key.py",
+      "line": "28",
+      "severity": "follow-on",
+      "text": "follow-on: the check that would catch an undeclared promoted row key self-skips under the autouse isolated_reckon_home fixture, so the new session declaration is guarded only by a manual union repro rather than a test that fires; a mount-aware fixture would make the guard fire locally."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base a4c312fbe; 6208811 adds nine lines to reckon/crew/promotion.py plus a 214-line test and a 26-line fragment, and b7a2a47 adds the session key to reckon/ledger.py RECORD_FIELDS and edits one fragment line; nothing else changes.",
+    "done_when": "the done_when's gate is tests/test_ledger_row_names_its_crew_session.py at head ending EXIT=0 with a second absent-key case and a declared mutation; the manifest records 2 passed 1 skipped EXIT=0 at b7a2a47 and I reproduced it in my head arm (4 passed 1 skipped EXIT=0 over that file plus the schema tests).",
+    "goal": "the goal is to copy the dispatching crew session from the live pointer onto the promoted ledger row as session while leaving session_id as the worker's harness session; reckon/crew/promotion.py:6918-6920 reads str(record.get('session') or '').strip() and writes run['session'] only when non-empty, which is the goal.",
+    "manifest": "read; it records status complete, commits 6208811 and b7a2a47, the gate command with 2 passed 1 skipped EXIT=0 at head b7a2a47, a negative_control_log path, the direct union repro for the schema declaration, and a blocker naming the ledger.py scope deviation.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, the naming test, the evidence fragment and a figures dir; commit 6208811 stays inside them, but commit b7a2a47 writes reckon/ledger.py, outside the declared paths and recorded in the manifest's own blockers as a coordinator-granted extension."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger_row_names_its_crew_session.py:182 asserts row.get('session') == 's-test' against a literal the test supplied to the pointer, and the reviewed negative control dropping the copy reddens it (session is None), so the copy is guarded; the RECORD_FIELDS declaration has no firing test because the schema check self-skips.",
+    "evidence": "the done_when's gate tests/test_ledger_row_names_its_crew_session.py records 2 passed 1 skipped EXIT=0 at b7a2a47 and I reproduced it, but the schema-declaration half is verified only by the manifest's manual union repro (repro-record-fields.log/after) because tests/test_record_fields_declare_every_key.py self-skips.",
+    "fit": "the conditional key write and str(... or '').strip() guard at reckon/crew/promotion.py:6918 follow the adjacent job_id and worker_exit key-writes, and reckon/ledger.py:138 declares session beside session_id with a comment distinguishing the two, introducing no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:6918-6920 copies the pointer's session onto the row only when non-empty, leaving session_id as the pointer's harness session, exactly the stated goal.",
+    "scope_discipline": "commit 6208811 stays inside the declared write paths, but b7a2a47 writes reckon/ledger.py outside them, recorded in the manifest's own blockers as a coordinator-granted extension, so the node shipped a file its fence did not name."
+  },
+  "node": "review-of-the-ledger-row-names-its-crew-session",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to copy the dispatching crew session from the live pointer onto the promoted ledger row as session while leaving session_id as the worker's harness session; reckon/crew/promotion.py:6918-6920 reads str(record.get('session') or '').strip() and writes run['session'] only when non-empty, which is the goal.\nVERDICT done_when: the done_when's gate is tests/test_ledger_row_names_its_crew_session.py at head ending EXIT=0 with a second absent-key case and a declared mutation; the manifest records 2 passed 1 skipped EXIT=0 at b7a2a47 and I reproduced it in my head arm (4 passed 1 skipped EXIT=0 over that file plus the schema tests).\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, the naming test, the evidence fragment and a figures dir; commit 6208811 stays inside them, but commit b7a2a47 writes reckon/ledger.py, outside the declared paths and recorded in the manifest's own blockers as a coordinator-granted extension.\nVERDICT manifest: read; it records status complete, commits 6208811 and b7a2a47, the gate command with 2 passed 1 skipped EXIT=0 at head b7a2a47, a negative_control_log path, the direct union repro for the schema declaration, and a blocker naming the ledger.py scope deviation.\nVERDICT diff: read commit by commit against base a4c312fbe; 6208811 adds nine lines to reckon/crew/promotion.py plus a 214-line test and a 26-line fragment, and b7a2a47 adds the session key to reckon/ledger.py RECORD_FIELDS and edits one fragment line; nothing else changes.\nCALL_SITES: reckon/crew/promotion.py:4525 complete, reckon/crew/promotion.py:6532 _complete_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:6918-6920 copies the pointer's session onto the row only when non-empty, leaving session_id as the pointer's harness session, exactly the stated goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done_when's gate tests/test_ledger_row_names_its_crew_session.py records 2 passed 1 skipped EXIT=0 at b7a2a47 and I reproduced it, but the schema-declaration half is verified only by the manifest's manual union repro (repro-record-fields.log/after) because tests/test_record_fields_declare_every_key.py self-skips.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: commit 6208811 stays inside the declared write paths, but b7a2a47 writes reckon/ledger.py outside them, recorded in the manifest's own blockers as a coordinator-granted extension, so the node shipped a file its fence did not name.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_ledger_row_names_its_crew_session.py:182 asserts row.get('session') == 's-test' against a literal the test supplied to the pointer, and the reviewed negative control dropping the copy reddens it (session is None), so the copy is guarded; the RECORD_FIELDS declaration has no firing test because the schema check self-skips.\nSCORE fit: 18\nJUSTIFICATION fit: the conditional key write and str(... or '').strip() guard at reckon/crew/promotion.py:6918 follow the adjacent job_id and worker_exit key-writes, and reckon/ledger.py:138 declares session beside session_id with a comment distinguishing the two, introducing no plan or ticket identifier.\nFINDING tests/test_record_fields_declare_every_key.py:28 follow-on: the check that would catch an undeclared promoted row key self-skips under the autouse isolated_reckon_home fixture, so the new session declaration is guarded only by a manual union repro rather than a test that fires; a mount-aware fixture would make the guard fire locally.",
+  "review_run_id": "r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session",
+  "reviewed_base_sha": "a4c312fbea80e2990b5781c0ec180f80cc7393d0",
+  "reviewed_head_sha": "b7a2a470f79b0aedba35e35a401db50dbaab05a5",
+  "reviewed_run_id": "r-20261001T140543620011-the-ledger-row-names-its-crew-session",
+  "reviewer_run_id": "r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session/review-base-arm.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session/review-head-arm.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T14:34:21.078916+00:00",
+  "total": 84
+}

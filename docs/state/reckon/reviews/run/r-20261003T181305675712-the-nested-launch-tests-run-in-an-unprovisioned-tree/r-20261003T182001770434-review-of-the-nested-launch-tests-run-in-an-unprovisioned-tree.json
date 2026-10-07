@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7dde3c88b6a89d70521b6f304c65827fbd313665",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T18:30:33.667Z",
+  "dispatched_at": "2026-10-03T18:20:18Z",
+  "findings": [
+    {
+      "file": "tests/test_nested_launch.py",
+      "line": "163",
+      "severity": "follow-on",
+      "text": "follow-on: launch_env now sets RECKON_SHIM_PYTHON unconditionally, so the shim's fallback interpreter resolution (repo .venv, then python3.12, then python3 at reckon/host_shims/srun:21-31) is no longer exercised by any test in this file and a regression in that order would not redden here."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T181305675712-the-nested-launch-tests-run-in-an-unprovisioned-tree/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names neither baseline_suite nor after_suite, so review.py's annotate_review_of_run reports the added-failure count unmeasured even though both arms exist on disk (negative-control.log and gate-unprovisioned.log, named only under test_logs at manifest.md:15), so the review done-when's stated derivation by those field names cannot be satisfied for an implement-shaped run."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/the-nested-launch-tests-run-in-an-unprovisioned-tree.html",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the new fragment has no trailing newline, so git reports \"\\ No newline at end of file\" on the added file."
+    }
+  ],
+  "head_log_revision": "fb3fe7873cdae5576e86e03b3e985ca146ba2f1b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 7dde3c88b; fb3fe7873 changes two interpreter references and adds RECKON_SHIM_PYTHON in launch_env, and 6d8c4f3a9 adds the 12-line evidence fragment; no product source changes.",
+    "done_when": "the gate is the unprovisioned extraction the done-when names (gate-unprovisioned.log: 11 passed, EXIT=0) against the parent's red arm (negative-control.log: 10 failed, 1 passed, EXIT=1); I re-ran both arms from fresh git-archive extractions and got identical figures, so the measure is asserted and recorded.",
+    "goal": "the goal is that the nested-launch tests pass in a git-archive extraction with no .venv; tests/test_nested_launch.py:24 takes the shim interpreter from sys.executable and tests/test_nested_launch.py:163 hands it to the shim as RECKON_SHIM_PYTHON, and I reproduced 11 passed / EXIT=0 in a fresh unprovisioned extraction of the reviewed head 6d8c4f3a9.",
+    "manifest": "read; status complete, commits [fb3fe7873, 6d8c4f3a9], arms recorded; its baseline_suite and after_suite fields are empty, so review.py's own read-time derivation reports the added-failure count unmeasured even though both arms exist under test_logs.",
+    "write_paths": "read the manifest's three declared paths (tests/test_nested_launch.py, the evidence fragment, and an unused figure path); the diff touches only the test file and the fragment, both inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the change adds no assertion, and a revert to the repo .venv interpreter reddens only under the unprovisioned measurement, not the routine provisioned suite; launch_env:163 now sets RECKON_SHIM_PYTHON for every launch so no test exercises the shim's fallback interpreter order (reckon/host_shims/srun:21).",
+    "evidence": "the gate is exactly the unprovisioned extraction the done-when names and its log header records revision, module.__file__ and cwd, and I reproduced both arms independently.",
+    "fit": "names follow mechanism and both commits carry conventional subjects with bodies and no AI-attribution trailer, but the new fragment is written with no trailing newline.",
+    "goal_fidelity": "tests/test_nested_launch.py:24 and :163 remove the file's dependence on a repository .venv, and a fresh unprovisioned extraction of head 6d8c4f3a9 passes 11/11 (review-head-arm.log).",
+    "scope_discipline": "the diff touches only tests/test_nested_launch.py and docs/evidence/fragments/the-suite-is-green-at-head/the-nested-launch-tests-run-in-an-unprovisioned-tree.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the nested-launch tests pass in a git-archive extraction with no .venv; tests/test_nested_launch.py:24 takes the shim interpreter from sys.executable and tests/test_nested_launch.py:163 hands it to the shim as RECKON_SHIM_PYTHON, and I reproduced 11 passed / EXIT=0 in a fresh unprovisioned extraction of the reviewed head 6d8c4f3a9.\nVERDICT done_when: the gate is the unprovisioned extraction the done-when names (gate-unprovisioned.log: 11 passed, EXIT=0) against the parent's red arm (negative-control.log: 10 failed, 1 passed, EXIT=1); I re-ran both arms from fresh git-archive extractions and got identical figures, so the measure is asserted and recorded.\nVERDICT write_paths: read the manifest's three declared paths (tests/test_nested_launch.py, the evidence fragment, and an unused figure path); the diff touches only the test file and the fragment, both inside the declared scope.\nVERDICT manifest: read; status complete, commits [fb3fe7873, 6d8c4f3a9], arms recorded; its baseline_suite and after_suite fields are empty, so review.py's own read-time derivation reports the added-failure count unmeasured even though both arms exist under test_logs.\nVERDICT diff: read commit by commit against base 7dde3c88b; fb3fe7873 changes two interpreter references and adds RECKON_SHIM_PYTHON in launch_env, and 6d8c4f3a9 adds the 12-line evidence fragment; no product source changes.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_nested_launch.py:24 and :163 remove the file's dependence on a repository .venv, and a fresh unprovisioned extraction of head 6d8c4f3a9 passes 11/11 (review-head-arm.log).\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is exactly the unprovisioned extraction the done-when names and its log header records revision, module.__file__ and cwd, and I reproduced both arms independently.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only tests/test_nested_launch.py and docs/evidence/fragments/the-suite-is-green-at-head/the-nested-launch-tests-run-in-an-unprovisioned-tree.html, both inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: the change adds no assertion, and a revert to the repo .venv interpreter reddens only under the unprovisioned measurement, not the routine provisioned suite; launch_env:163 now sets RECKON_SHIM_PYTHON for every launch so no test exercises the shim's fallback interpreter order (reckon/host_shims/srun:21).\nSCORE fit: 17\nJUSTIFICATION fit: names follow mechanism and both commits carry conventional subjects with bodies and no AI-attribution trailer, but the new fragment is written with no trailing newline.\nFINDING tests/test_nested_launch.py:163 follow-on: launch_env now sets RECKON_SHIM_PYTHON unconditionally, so the shim's fallback interpreter resolution (repo .venv, then python3.12, then python3 at reckon/host_shims/srun:21-31) is no longer exercised by any test in this file and a regression in that order would not redden here.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T181305675712-the-nested-launch-tests-run-in-an-unprovisioned-tree/manifest.md:20 follow-on: the reviewed manifest names neither baseline_suite nor after_suite, so review.py's annotate_review_of_run reports the added-failure count unmeasured even though both arms exist on disk (negative-control.log and gate-unprovisioned.log, named only under test_logs at manifest.md:15), so the review done-when's stated derivation by those field names cannot be satisfied for an implement-shaped run.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/the-nested-launch-tests-run-in-an-unprovisioned-tree.html:12 follow-on: the new fragment has no trailing newline, so git reports \"\\ No newline at end of file\" on the added file.\n",
+  "review_run_id": "r-20261003T182001770434-review-of-the-nested-launch-tests-run-in-an-unprovisioned-tree",
+  "reviewed_base_sha": "7dde3c88b6a89d70521b6f304c65827fbd313665",
+  "reviewed_head_sha": "6d8c4f3a91260a95dea5a417553c04e546e200e5",
+  "reviewed_run_id": "r-20261003T181305675712-the-nested-launch-tests-run-in-an-unprovisioned-tree",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T18:28:22.697042+00:00",
+  "total": 88
+}

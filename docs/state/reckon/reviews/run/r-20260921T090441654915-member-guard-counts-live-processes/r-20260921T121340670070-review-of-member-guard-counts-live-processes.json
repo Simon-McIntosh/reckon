@@ -1,0 +1,44 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T12:13:40.670070+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3243",
+      "text": "the production member guard tests pointer.get('phase') not in _TERMINAL_RUN_PHASES and never calls it, so the effective predicate is unchanged for every real dispatch; measured 39 of 52 live pointers are non-terminal, so all 39 members stay held."
+    },
+    {
+      "file": "reckon/crew/claims.py",
+      "line": "240",
+      "text": "the host comparison is skipped when launcher_host is absent, so a pointer carrying a pid but no host field can answer gone for a worker alive on another login node; measured 0 of 52 live pointers omit the field, so the premise holds without the writer enforcing it."
+    }
+  ],
+  "justifications": {
+    "durability": "both commits are local with the worktree clean, the reverted node.py is byte-identical at sha256 986ccb35 matching the manifest, and the negative-control log's 8F/5P split is exactly what the declared mutation predicts; every receipt lives under /tmp, so durability rests on the two commits rather than on the logs.",
+    "evidence": "I called each asked-for case directly rather than reading it: foreign host and no-pid both block as unknown, terminal releases with a live pid and with none; the gate re-run at the reviewed head is 13 passed, 19 of 19 cases in /tmp/review-member-guard/gate_after.log.",
+    "fit": "the verdict lives in the module that already owns MemberInFlight, positional compatibility is preserved at reckon/crew/node.py:292, and the liveness judge is delegated at reckon/crew/node.py:225 rather than restated \u2014 but reckon/crew/node.py:268 landed a public refusal with no caller in the shipped tree.",
+    "goal_fidelity": "reckon/crew/node.py:230 returns the three-valued verdict the goal names, but reckon/crew/dispatch.py:3243 still refuses on the phase field alone, so no dispatch consults it and the lane \u00a72e measured stays held \u2014 39 of 52 live pointers hold a non-terminal phase (32 starting, 7 working).",
+    "scope_discipline": "git diff --name-only 39bbc7c9..40df4dfd lists exactly the four declared write paths; no plan state was mutated through the server and the direct plan edit is announced; no review-store or peer path was touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read reckon/crew/node.py:230-282 and called the guard directly with five pointers; it does it \u2014 but only inside node.py, so read the reachability finding first.\nVERDICT done_when: re-ran the gate at the reviewed head (13 passed, 0 failed, /tmp/review-member-guard/gate_after.log); the five liveness states answer every asked-for case; the cohort re-measurement is 18 against a recorded 18.\nVERDICT write_paths: git diff --name-only 39bbc7c9 40df4dfd lists exactly the four declared paths and nothing else; the reviews store was not perturbed.\nVERDICT manifest: every field filled and the one unmet half is declared. Negative-control log /tmp/member-guard-counts-live-processes/negative_control.log exists, its first line repeats the declared mutation verbatim, and its 8F/5P split is exactly what that mutation predicts (8 failures, 5 passes, 13 cases).\nVERDICT diff: read the assembled diff of node.py (+120) and the new test module (+189); the guard is an extraction plus a delegate to claims._worker_liveness, and no production caller was added.\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:230 returns the three-valued verdict the goal names, but reckon/crew/dispatch.py:3243 still refuses on the phase field alone, so no dispatch consults it and the lane \u00a72e measured stays held \u2014 39 of 52 live pointers on this host are non-terminal (32 starting, 7 working).\nSCORE evidence: 19\nJUSTIFICATION evidence: every asked-for case was called directly rather than read \u2014 foreign host and no-pid both block as unknown, terminal releases with a live pid and with none, and the gate re-run is 13 passed at the reviewed head; the only slip is the manifest's \"13 test functions\" for a file holding 12.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff-tree across 39bbc7c9..40df4dfd shows exactly the four declared write paths, no plan-state mutation reached the server, and the direct plan edit is announced in the manifest as its dispatch contract requires.\nSCORE durability: 17\nJUSTIFICATION durability: both commits are local and the worktree is clean, the reverted node.py is byte-identical at sha256 986ccb35 matching the manifest, and the negative control carries the mutation verbatim \u2014 but every receipt lives under /tmp, and a cohort reading of 18 against a recorded 18 is a control, not a demonstration of the release.\nSCORE fit: 18\nJUSTIFICATION fit: the verdict lives in the module that already owns MemberInFlight, positional call compatibility is preserved (reckon/crew/node.py:292), and the liveness judge is delegated rather than restated at reckon/crew/node.py:225 \u2014 but reckon/crew/node.py:268 landed a public refusal with no caller in the shipped tree.\nFINDING reckon/crew/dispatch.py:3243 the production member guard is untouched: the loop still tests pointer.get(\"phase\") not in _TERMINAL_RUN_PHASES, so member_in_flight_verdict and refuse_member_in_flight have no caller outside tests and the effective predicate is unchanged for every real dispatch; measured 39 of 52 live pointers are non-terminal, so all 39 members stay held and allow_forward=0 of 0.\nFINDING reckon/crew/claims.py:240 the host comparison is skipped when launcher_host is absent, so a pointer carrying a pid but no host field is judged against this host's process table and can answer gone for a worker alive on another login node; measured 0 of 52 live pointers omit the field, so the widening's premise holds today without the writer enforcing it.\n",
+  "review_run_id": "r-20260921T121340670070-review-of-member-guard-counts-live-processes",
+  "reviewed_base": "39bbc7c939e3c857c43e4a2d5b96fc9d470815fe",
+  "reviewed_base_sha": "39bbc7c939e3c857c43e4a2d5b96fc9d470815fe",
+  "reviewed_commit": "40df4dfd0314f839714806c77cb00d1d6ea4d67e",
+  "reviewed_head_sha": "40df4dfd0314f839714806c77cb00d1d6ea4d67e",
+  "reviewed_run_id": "r-20260921T090441654915-member-guard-counts-live-processes",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T12:39:28.750537+00:00",
+  "total": 87
+}

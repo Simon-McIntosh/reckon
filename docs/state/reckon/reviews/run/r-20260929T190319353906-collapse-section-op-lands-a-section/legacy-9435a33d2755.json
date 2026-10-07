@@ -1,0 +1,122 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0ed58e2266e9979d9d454023779d5ac2f1407120",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp.py:3420",
+    "reckon/mcp.py:1633",
+    "reckon/_store.py:1289",
+    "reckon/_store.py:1335",
+    "reckon/_store.py:2751",
+    "reckon/_store.py:2843"
+  ],
+  "completed_at": "2026-09-29T20:45:38.487Z",
+  "dispatched_at": "2026-09-29T19:03:43Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-section-op-lands-a-section.html",
+      "line": "50",
+      "text": "the table names the after arm's revision as f3601c02 while the log it cites ran at a0ac166, so a reader reconciling the artifact with its evidence finds two revisions and cannot tell which one the 29-passed figure belongs to."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "937",
+      "text": "the refusal of an ambiguous card span is exercised by no test - the gate's only refusal case is a card with no closing tag at tests/test_edit_plan_collapse_section.py:281 - so a regression deleting this guard leaves the whole gate green."
+    }
+  ],
+  "head_log_revision": "a0ac16602d3d6ea9396f11f5000c787a2cf7e5db",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read all five commits against 0ed58e22 - 4 files, 635 insertions(+), 1 deletion(-); 98df7f327 adds the op and its write-effect collection, f3601c024 the card-span fix that repairs the repeat-collapse corruption the earlier review found at reckon/_store.py:868, and 0b7f23644, f6b02a2fc and a0ac16602 the evidence record; I re-verified the repair clean at head on my own fixture (tests/test_edit_plan_collapse_section.py:252 covers the same case).",
+    "done_when": "every clause of the reviewed node's done-when is met by tests/test_edit_plan_collapse_section.py at head (29 passed across the three gate files, gate-after.log) and the declared mutation is observed red in negative-control.log, whose first line repeats the mutation verbatim.",
+    "goal": "the goal is that edit_plan collapse a landed section's authored body into the landed card and declare the section done in the same write; I drove the op at a0ac166 on a three-section fixture I built myself and all 30 checks pass (review-gate.log, exit 0) - body replaced, h2 and id kept, badge, summary and evidence link carried, declaration done in the same versioned write, missing section refused with the file byte-identical.",
+    "manifest": "read at the reviewed head; it names all five commits, both gate arms with their absolute logs, the declared write paths, two negative controls and a landing line, and its tests line now carries the commands that ran - the placeholder the earlier review recorded at manifest.md:10 is repaired and the after arm's 29-passed figure matches gate-after.log.",
+    "write_paths": "`git diff --name-only 0ed58e22 a0ac166` returns exactly four paths - reckon/_store.py, reckon/mcp.py, tests/test_edit_plan_collapse_section.py and docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-section-op-lands-a-section.html - all inside the reviewed node's declared grant, with the declared docs/figures directory unused and no plan HTML or shared index touched."
+  },
+  "justifications": {
+    "durability": "the gate's assertions read the file back against the fixture's own literals rather than against the value passed in, and the two negative controls redden the declaration case and the one-card count at tests/test_edit_plan_collapse_section.py:252, though the ambiguity refusal at reckon/_store.py:937 is exercised by no test.",
+    "evidence": "both gate logs run to their summary lines carrying revision, tree, command, module.__file__ and cwd headers, and the added-failure count re-derived with the instrument's own function is 0 with no ids, the instrument shown able to see a synthetic addition (added-failures.log) - but the evidence fragment's table names f3601c02 where the log it cites ran at a0ac166.",
+    "fit": "the op follows the write-effect idiom already in _store.py:680 and introduces no forbidden name, though the structural-boundary predicate is now spelled twice - the regex at _store.py:815 beside the BeautifulSoup check in _insert_authored_section.",
+    "goal_fidelity": "my own driver reproduced every clause on an independently built fixture at a0ac166, including the repeat collapse, a neighbour collapse and the audit-doc check after each step (review-gate.log).",
+    "scope_discipline": "every path in the diff is inside the reviewed node's declared write paths and the declared docs/figures directory is unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that edit_plan collapse a landed section's authored body into the landed card and declare the section done in the same write; I drove the op at a0ac166 on a three-section fixture I built myself and all 30 checks pass (review-gate.log, exit 0) - body replaced, h2 and id kept, badge, summary and evidence link carried, declaration done in the same versioned write, missing section refused with the file byte-identical.\nVERDICT done_when: every clause of the reviewed node's done-when is met by tests/test_edit_plan_collapse_section.py at head (29 passed across the three gate files, gate-after.log) and the declared mutation is observed red in negative-control.log, whose first line repeats the mutation verbatim.\nVERDICT write_paths: `git diff --name-only 0ed58e22 a0ac166` returns exactly four paths - reckon/_store.py, reckon/mcp.py, tests/test_edit_plan_collapse_section.py and docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-section-op-lands-a-section.html - all inside the reviewed node's declared grant, with the declared docs/figures directory unused and no plan HTML or shared index touched.\nVERDICT manifest: read at the reviewed head; it names all five commits, both gate arms with their absolute logs, the declared write paths, two negative controls and a landing line, and its tests line now carries the commands that ran - the placeholder the earlier review recorded at manifest.md:10 is repaired and the after arm's 29-passed figure matches gate-after.log.\nVERDICT diff: read all five commits against 0ed58e22 - 4 files, 635 insertions(+), 1 deletion(-); 98df7f327 adds the op and its write-effect collection, f3601c024 the card-span fix that repairs the repeat-collapse corruption the earlier review found at reckon/_store.py:868, and 0b7f23644, f6b02a2fc and a0ac16602 the evidence record; I re-verified the repair clean at head on my own fixture (tests/test_edit_plan_collapse_section.py:252 covers the same case).\nCALL_SITES: reckon/mcp.py:3420, reckon/mcp.py:1633, reckon/_store.py:1289, reckon/_store.py:1335, reckon/_store.py:2751, reckon/_store.py:2843\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: my own driver reproduced every clause on an independently built fixture at a0ac166, including the repeat collapse, a neighbour collapse and the audit-doc check after each step (review-gate.log).\nSCORE evidence: 18\nJUSTIFICATION evidence: both gate logs run to their summary lines carrying revision, tree, command, module.__file__ and cwd headers, and the added-failure count re-derived with the instrument's own function is 0 with no ids, the instrument shown able to see a synthetic addition (added-failures.log) - but the evidence fragment's table names f3601c02 where the log it cites ran at a0ac166.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the reviewed node's declared write paths and the declared docs/figures directory is unused.\nSCORE durability: 18\nJUSTIFICATION durability: the gate's assertions read the file back against the fixture's own literals rather than against the value passed in, and the two negative controls redden the declaration case and the one-card count at tests/test_edit_plan_collapse_section.py:252, though the ambiguity refusal at reckon/_store.py:937 is exercised by no test.\nSCORE fit: 18\nJUSTIFICATION fit: the op follows the write-effect idiom already in _store.py:680 and introduces no forbidden name, though the structural-boundary predicate is now spelled twice - the regex at _store.py:815 beside the BeautifulSoup check in _insert_authored_section.\nFINDING docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-section-op-lands-a-section.html:50 the table names the after arm's revision as f3601c02 while the log it cites ran at a0ac166, so a reader reconciling the artifact with its evidence finds two revisions and cannot tell which one the 29-passed figure belongs to.\nFINDING reckon/_store.py:937 the refusal of an ambiguous card span is exercised by no test - the gate's only refusal case is a card with no closing tag at tests/test_edit_plan_collapse_section.py:281 - so a regression deleting this guard leaves the whole gate green.\n",
+  "review_evidence": {
+    "added_failures": {
+      "count": 0,
+      "derived_with": "reckon.crew.review.annotate_review_of_run",
+      "ids": [],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204546889250-review-of-collapse-section-op-lands-a-section/added-failures.log",
+      "note": "both logs ran to their summary lines with no FAILED or ERROR line; base arm 20 passed, after arm 29 passed; the same function reported 1 and the expected id on a synthetic pair whose head adds one FAILED node id, so the zero is a measurement rather than an empty instrument"
+    },
+    "independent_gate": {
+      "command": "PYTHONPATH=<reviewed tree> /home/ITER/mcintos/Code/reckon/.venv/bin/python <run>/review-driver.py",
+      "fixture_note": "the review worker's own three-section plan, built with _plan_html.write_state, collapsed twice, then a neighbour, then a missing id and a card with no close; audit-doc run on every successful state",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204546889250-review-of-collapse-section-op-lands-a-section/review-gate.log",
+      "result": "30 passed, 0 failed, EXIT=0"
+    },
+    "node_gate_rerun": {
+      "command": "PYTHONPATH=<reviewed tree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_edit_plan_collapse_section.py",
+      "result": "9 passed in 4.35s, EXIT=0"
+    },
+    "prior_review": {
+      "head": "f6b02a2fc247cd67f93447013fc54b277eb151c4",
+      "note": "its repeat-collapse finding is repaired by f3601c024 and re-verified here; its manifest-placeholder finding is repaired in the resumed manifest",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T190319353906-collapse-section-op-lands-a-section.at-f6b02a2fc247cd67f93447013fc54b277eb151c4.json"
+    }
+  },
+  "review_run_id": "legacy-9435a33d2755",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "0ed58e2266e9979d9d454023779d5ac2f1407120",
+  "reviewed_commits": [
+    "98df7f327",
+    "0b7f23644",
+    "f6b02a2fc",
+    "f3601c024",
+    "a0ac16602"
+  ],
+  "reviewed_diffstat": "4 files changed, 635 insertions(+), 1 deletion(-)",
+  "reviewed_done_when": "the body under the section's h2 is replaced by the landed card (badge, summary, evidence link), the h2 and its id are kept, the declaration reads done in the same versioned write, structured-state regions are byte-identical, a missing section is refused with the file unchanged, the result passes reckon audit-doc with no header-duplicate finding, and the declared mutation (leaving the declaration unchanged) is observed to fail with its log recorded",
+  "reviewed_goal": "edit_plan accepts a collapse_section op that replaces a landed section's authored body with the landed card and declares the section done in the same versioned write",
+  "reviewed_head_sha": "a0ac16602d3d6ea9396f11f5000c787a2cf7e5db",
+  "reviewed_manifest": {
+    "bytes": 6122,
+    "last_modified": "2026-09-29T20:44:46.467620+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190319353906-collapse-section-op-lands-a-section/manifest.md",
+    "sha256": "1ff9982f64879af71ea0f2825028d23c1a628f88a6cde729348a4ba200bf65b6"
+  },
+  "reviewed_node": "collapse-section-op-lands-a-section",
+  "reviewed_plan": "a-landing-beat-needs-no-hand-edit",
+  "reviewed_run_id": "r-20260929T190319353906-collapse-section-op-lands-a-section",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/collapse-section-op-lands-a-section",
+  "reviewed_write_paths": [
+    "reckon/_store.py",
+    "reckon/mcp.py",
+    "tests/test_edit_plan_collapse_section.py",
+    "docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-section-op-lands-a-section.html",
+    "docs/figures/a-landing-beat-needs-no-hand-edit/collapse-section-op-lands-a-section"
+  ],
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash",
+    "node": "review-of-collapse-section-op-lands-a-section",
+    "run_id": "r-20260929T204546889250-review-of-collapse-section-op-lands-a-section"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T21:14:11.481605+00:00",
+  "total": 93
+}

@@ -1,0 +1,41 @@
+{
+  "absent": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest names no baseline_suite and no after_suite gate log (the node ran no test, by its brief), so the added-failure count was never taken; this is the value the store's own annotate_review_of_run reader reproduces against the reviewed manifest, and that reader's positive control fires on a known-present added failure (base+failed id in, head adds one more, count 1 returned), so the absence is a measured absence rather than a broken instrument",
+  "backend": "clive",
+  "completed_at": "2026-10-02T08:52:41.733Z",
+  "dispatched_at": "2026-10-02T08:31:21Z",
+  "findings": [
+    {
+      "file": "s22-migration-dispositions.md",
+      "line": "44",
+      "text": "the evidence cells cite absolute line numbers at the report's checked revision 1135b00d9, but two cited files changed before current main (57dfae034): recovery.py moved classify_pointer from 5884 to 5921, so the f-crl-006 cell's 'recovery.py:5884' names a different main line than the one it describes, and dispatch.py's lane-reading region shifted; the report's own closing note asks the reader to re-check cited lines if the checkout has moved, which names the risk but leaves a coordinator applying a MOVE or SECTION row against current main to re-resolve each citation by hand."
+    }
+  ],
+  "justifications": {
+    "durability": "there is no test guard and none is possible for a read-only disposition report, and the brief forbade running a test, so this dimension measures whether the artifact survives and whether its dispositions can be re-derived: the report is a durable file and every row argues from a checkable citation, but nothing mechanically pins it and nothing would catch a later drift in the code it cites, which is what it is docked for.",
+    "evidence": "the claims are checkable and reproduced independently at the report's stated base 1135b00d9 \u2014 f-crpc-a-passed-verdict's None short-circuit at promotion.py:1152-1166, the missing duplicate-id check in mcp.py _append_followup against the sprint-add refusal at mcp.py:2908, classify_pointer reading the manifest's reported status rather than testing for a file, nested_launch.py naming only RECKON-allow as the discharge with no partition route, flight.yaml carrying no gates.suite_command, the north_stars validation, the exemplar-plan pointer in both skills, and project_state focus_sprint_id all confirm \u2014 docked because the line-number citations drift on current main: dispatch.py and recovery.py changed between the checked base and main HEAD (57dfae034), moving classify_pointer from 5884 to 5921, so an evidence cell names a line that no longer holds the fact.",
+    "fit": "the report follows section 4's disposition ways in the brief's six-kind vocabulary, treating an authority-required next step (f-dgs-008, f-ifv-002, f-nso-002, f-pcg-* and f-reoth-002) as the DECISION the section names rather than forcing it into SECTION, keeping followups as pointers by proposing same-plan work as an implementable section instead of a schedulable followup, and carrying each row's host-plan sprint so the S21, S25 and nova sessions dispose their own rows first \u2014 the ordering the section requires.",
+    "goal_fidelity": "the done-when is met exactly \u2014 the report disposes each of the 64 non-skipped worklist rows (the 2 s22-coord rows f-tohras-002 and f-wisnaf-002 skipped as directed), each row carrying the host plan's sprint, a checkable evidence cell and a proposed section title or MOVE target, and a closing count per disposition that arithmetically sums to 64 (41 SECTION, 8 MOVE, 9 DECISION, 4 MET, 1 NEW-PLAN, 1 STALE).",
+    "scope_discipline": "the node wrote exactly its one granted path and nothing else \u2014 the reviewed worktree is clean at 7c1e578 with no commit past base, no plan file changed, and no test run as the brief directed \u2014 so the read-only scope is held precisely."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the done-when is met exactly \u2014 exactly one disposition per non-skipped worklist row (the 2 s22-coord rows f-tohras-002 and f-wisnaf-002 skipped as directed), each row carrying the host plan's sprint, a checkable evidence cell and a proposed section title or MOVE target, and a closing count per disposition that arithmetically sums to 64 (41 SECTION, 8 MOVE, 9 DECISION, 4 MET, 1 NEW-PLAN, 1 STALE).\nSCORE evidence: 18\nJUSTIFICATION evidence: the claims are checkable and reproduced independently at the report's stated base 1135b00d9 \u2014 f-crpc-a-passed-verdict's None short-circuit at promotion.py:1152-1166, the missing duplicate-id check in mcp.py _append_followup against the sprint-add refusal at mcp.py:2908, classify_pointer reading the manifest's reported status rather than testing for a file, nested_launch.py naming only RECKON_ALLOW_NESTED_LAUNCH as the discharge with no partition route, flight.yaml carrying no gates.suite_command, the north_stars validation, the exemplar-plan pointer in both skills, and project_state focus_sprint_id all confirm \u2014 docked because the line-number citations drift on current main: dispatch.py and recovery.py changed between the checked base and main HEAD (57dfae034), moving classify_pointer from 5884 to 5921, so an evidence cell names a line that no longer holds the fact it describes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node wrote exactly its one granted path and nothing else \u2014 the reviewed worktree is clean at 7c1e578 with no commit past base, no plan file changed, and no test run as the brief directed \u2014 so the read-only scope is held precisely.\nSCORE durability: 17\nJUSTIFICATION durability: there is no test guard and none is possible for a read-only disposition report, and the brief forbade running a test, so this dimension measures whether the artifact survives and whether its dispositions can be re-derived: the report is a durable file and every row argues from a checkable citation, but nothing mechanically pins it and nothing would catch a later drift in the code it cites, which is what it is docked for.\nSCORE fit: 19\nJUSTIFICATION fit: the report follows section 4's disposition ways in the brief's six-kind vocabulary, treating an authority-required next step (f-dgs-008, f-ifv-002, f-nso-002, f-pcg-002, f-reoth-002) as the DECISION the section names rather than forcing it into SECTION, keeping followups as pointers by proposing same-plan work as an implementable section instead of a schedulable followup, and carrying each row's host-plan sprint so the S21, S25 and nova sessions dispose their own rows first \u2014 the ordering the section requires.\nFINDING s22-migration-dispositions.md:44 the evidence cells cite absolute line numbers at the report's checked revision 1135b00d9, but two cited files changed before current main (57dfae034): recovery.py moved classify_pointer from 5884 to 5921, so the f-crl-006 cell's 'recovery.py:5884' names a different main line than the one it describes, and dispatch.py's lane-reading region shifted; the report's own closing note asks the reader to re-check cited lines if the checkout has moved, which names the risk but leaves a coordinator applying a MOVE or SECTION row against current main to re-resolve each citation by hand.",
+  "review_run_id": "r-20261002T083055811250-review-of-migration-dispositions",
+  "reviewed_base_sha": "7c1e578da99e4a45ae561b7690024d129318f895",
+  "reviewed_head_sha": "7c1e578da99e4a45ae561b7690024d129318f895",
+  "reviewed_run_id": "r-20261002T074522380140-migration-dispositions",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T08:41:57+00:00",
+  "total": 93
+}

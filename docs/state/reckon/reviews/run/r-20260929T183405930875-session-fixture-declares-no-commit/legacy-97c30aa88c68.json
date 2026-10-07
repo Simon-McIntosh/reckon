@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the reviewed run's own baseline_suite and after_suite logs (arm-base-suite.log, arm-head-suite.log) report the two parametrisations of test_promoted_session_resumes_same_task_without_roster_write and no failures respectively, so the set difference re-derived through reckon.crew.review.added_failures_from_gate_logs is empty",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T18:48:24.159Z",
+  "dispatched_at": "2026-09-29T18:34:20Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "two commits \u2014 1c92d1bee replacing one argument in the fixture with no assertion changed, and d00825411 adding only the evidence fragment \u2014 with no production file touched between 60708b078 and d00825411.",
+    "done_when": "every clause is readable in the run's own artefacts and I reproduced each one in my own scratch trees, the base arm at 60708b078 giving \"2 failed, 11 passed in 68.18s\" EXIT=1 with both parametrisations on the base-citation refusal, the head arm giving \"13 passed in 92.50s\" EXIT=0, the negative-control log repeating the declared mutation verbatim and giving \"2 failed in 10.70s\" EXIT=1, both suite fields carrying completed true with failure_count matching failure_ids, and the derived added-failure count over the run's two logs being 0.",
+    "goal": "the goal asks that the promoted-session fixture declare its synthetic run commitless in place of citing the run's own base so the resume case passes under the base-citation guard, and tests/test_session_lives_on_its_run.py:173 now passes no_commit=\"synthetic session-persistence fixture with no product edits\" where it passed commits=[observed[\"base_sha\"]], with reckon/crew/promotion.py:291-338 the guard it must pass and promotion.py:3777 the parameter that carries the declaration, both unchanged by this node.",
+    "manifest": "read against the artefacts, both suite observations are complete and name the logs I read (arm-base-suite.log, arm-head-suite.log), the headline lines it cites match those logs exactly, negative_control_log names the red log whose first line repeats the declared string verbatim, crew check-manifest for the run returns ok with no findings, and the added-failure derivation over its own two arm logs returns 0 with no ids.",
+    "write_paths": "the fenced paths were the test file, the evidence fragment and a figures directory; the diff between 60708b078 and d00825411 touches exactly the first two \u2014 one line in tests/test_session_lives_on_its_run.py and the 66-line fragment under docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/ \u2014 the figures path was left unused as the gate requires no figure, and the reviewed worktree is clean at d00825411."
+  },
+  "justifications": {
+    "durability": "the fixture's assertion set at tests/test_session_lives_on_its_run.py:176-183 is unchanged and the regression the change answers is caught by production code \u2014 restoring the base citation reddens both parametrisations through the refusal at reckon/crew/promotion.py:332 \u2014 which the run's negative-control.log and my own re-run of that mutation (review-negative-control.log, 2 failed, EXIT=1) both demonstrate.",
+    "evidence": "both arms are retained as logs whose headers name revision, tree, command, module-under-test path and resolved cwd (arm-base-suite.log, arm-head-suite.log) and I reproduced both independently in scratch trees \u2014 2 failed, 11 passed, EXIT=1 at 60708b078 and 13 passed, EXIT=0 at the delivered head d00825411 \u2014 so the run's head arm sitting one docs-only commit behind the delivered head (it ran at 1c92d1bee) is closed by measurement rather than assumed.",
+    "fit": "the repair uses the escape the refusal itself names at reckon/crew/promotion.py:338 (\"--no-commit '<why>'\") with a reason matching the review_waiver beside it at tests/test_session_lives_on_its_run.py:174, and the fragment follows the sibling fragments' <section id=...> shape with no plan, sprint or ticket identifier in a symbol or filename.",
+    "goal_fidelity": "tests/test_session_lives_on_its_run.py:173 now passes no_commit=\"synthetic session-persistence fixture with no product edits\" in place of commits=[observed[\"base_sha\"]], which is exactly the commitless declaration the goal names, and the base-citation refusal at reckon/crew/promotion.py:332 is the guard it must pass rather than an assertion weakened to accommodate it.",
+    "scope_discipline": "the diff 60708b078..d00825411 --stat lists only tests/test_session_lives_on_its_run.py (1 insertion, 1 deletion) and the declared evidence fragment (66 insertions), the third declared path docs/figures/a-stalled-row-says-whether-the-worker-lives/session-fixture-declares-no-commit went unused, and no production, plan, state or index file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that the promoted-session fixture declare its synthetic run commitless in place of citing the run's own base so the resume case passes under the base-citation guard, and tests/test_session_lives_on_its_run.py:173 now passes no_commit=\"synthetic session-persistence fixture with no product edits\" where it passed commits=[observed[\"base_sha\"]], with reckon/crew/promotion.py:291-338 the guard it must pass and promotion.py:3777 the parameter that carries the declaration, both unchanged by this node.\nVERDICT done_when: every clause is readable in the run's own artefacts and I reproduced each one in my own scratch trees, the base arm at 60708b078 giving \"2 failed, 11 passed in 68.18s\" EXIT=1 with both parametrisations on the base-citation refusal, the head arm giving \"13 passed in 92.50s\" EXIT=0, the negative-control log repeating the declared mutation verbatim and giving \"2 failed in 10.70s\" EXIT=1, both suite fields carrying completed true with failure_count matching failure_ids and no FINDING-worthy gap, and the derived added-failure count over the run's two logs being 0.\nVERDICT write_paths: the fenced paths were the test file, the evidence fragment and a figures directory; the diff between 60708b078 and d00825411 touches exactly the first two \u2014 one line in tests/test_session_lives_on_its_run.py and the 66-line fragment under docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/ \u2014 the figures path was left unused as the gate requires no figure, and the reviewed worktree is clean at d00825411.\nVERDICT manifest: read against the artefacts, both suite observations are complete and name the logs I read (arm-base-suite.log, arm-head-suite.log), the headline lines it cites match those logs exactly, negative_control_log names the red log whose first line repeats the declared string verbatim, crew check-manifest for the run returns ok with no findings, and the added-failure derivation over its own two arm logs returns 0 with no ids.\nVERDICT diff: two commits \u2014 1c92d1bee replacing one argument in the fixture with no assertion changed, and d00825411 adding only the evidence fragment \u2014 with no production file touched between 60708b078 and d00825411.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_session_lives_on_its_run.py:173 now passes no_commit=\"synthetic session-persistence fixture with no product edits\" in place of commits=[observed[\"base_sha\"]], which is exactly the commitless declaration the goal names, and the base-citation refusal at reckon/crew/promotion.py:332 is the guard it must pass rather than an assertion weakened to accommodate it.\nSCORE evidence: 20\nJUSTIFICATION evidence: both arms are retained as logs whose headers name revision, tree, command, module-under-test path and resolved cwd (arm-base-suite.log, arm-head-suite.log) and I reproduced both independently in scratch trees \u2014 2 failed, 11 passed, EXIT=1 at 60708b078 and 13 passed, EXIT=0 at the delivered head d00825411 \u2014 so the run's head arm sitting one docs-only commit behind the delivered head (it ran at 1c92d1bee) is closed by measurement rather than assumed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 60708b078..d00825411 --stat lists only tests/test_session_lives_on_its_run.py (1 insertion, 1 deletion) and the declared evidence fragment (66 insertions), the third declared path docs/figures/a-stalled-row-says-whether-the-worker-lives/session-fixture-declares-no-commit went unused, and no production, plan, state or index file is touched.\nSCORE durability: 20\nJUSTIFICATION durability: the fixture's assertion set at tests/test_session_lives_on_its_run.py:176-183 is unchanged and the regression the change answers is caught by production code \u2014 restoring the base citation reddens both parametrisations through the refusal at reckon/crew/promotion.py:332 \u2014 which the run's negative-control.log and my own re-run of that mutation (review-negative-control.log, 2 failed, EXIT=1) both demonstrate.\nSCORE fit: 20\nJUSTIFICATION fit: the repair uses the escape the refusal itself names at reckon/crew/promotion.py:338 (\"--no-commit '<why>'\") with a reason matching the review_waiver beside it at tests/test_session_lives_on_its_run.py:174, and the fragment follows the sibling fragments' <section id=...> shape with no plan, sprint or ticket identifier in a symbol or filename.\n",
+  "review_run_id": "legacy-97c30aa88c68",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "60708b078c03a99e1c9d45504b7693483704dc9d",
+  "reviewed_commits": [
+    "1c92d1bee3c53402b38d6e90c08e716adf8d6bf6",
+    "d00825411315ffa585f33a7c94f3442b6e4a995c"
+  ],
+  "reviewed_head_sha": "d00825411315ffa585f33a7c94f3442b6e4a995c",
+  "reviewed_manifest": {
+    "bytes": 5451,
+    "last_modified": "2026-09-29T18:47:15.422267+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183405930875-session-fixture-declares-no-commit/manifest.md",
+    "sha256": "57176dcab8992879388dc6c5dda28d645aebcff48611c12a6135a2128a0bd42e"
+  },
+  "reviewed_run_id": "r-20260929T183405930875-session-fixture-declares-no-commit",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/session-fixture-declares-no-commit",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T19:07:25.764310+00:00",
+  "total": 100
+}

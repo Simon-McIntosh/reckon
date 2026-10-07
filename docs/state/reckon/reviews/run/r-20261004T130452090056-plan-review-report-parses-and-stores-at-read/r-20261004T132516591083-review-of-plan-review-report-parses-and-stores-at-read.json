@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not taken",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/routing.py:_store_delivered_plan_review"
+  ],
+  "completed_at": "2026-10-04T13:42:03.890Z",
+  "dispatched_at": "2026-10-04T13:25:41Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-orchestrator-orchestrates/plan-review-report-parses-and-stores-at-read.html",
+      "line": "33",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment records the gate at revision aba2f8d3c, but the gate.log it cites opens \"revision 14e314a146e21b4f296c12b00dd800d9b063e5e1\" \u2014 the base revision, where tests/test_plan_review_dispatch.py does not exist (git cat-file -e 14e314a1:tests/test_plan_review_dispatch.py \u2192 absent), so the very command in that log could not have collected 46 tests there; the log's own first line misattributes the measurement to a revision it did not run at, which the promotion replay and the added-failure annotation read via recorded_log_revision."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "552",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest carries no baseline_suite and no after_suite (reckon/crew/review.py:552-553), so review.annotate_review_of_run derives the run's added-failure count as unmeasured \u2014 \"unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken\" \u2014 and the promotion suite-delta check reads the same absent fields; the review cannot reconcile its verdict with a base-arm comparison because the run's own evidence names no baseline arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 14e314a1: aba2f8d3 adds the parser, the sidecar/store functions and the store-at-read branch with 238 lines of tests; 54593fb adds the evidence fragment",
+    "done_when": "the brief's cases and negative control are met: four cases in tests/test_plan_review_dispatch.py, the store-at-read branch removed reddens the enforce case, and the head gate reproduces 46 passed, EXIT=0",
+    "goal": "the goal is to parse a delivered plan-review report into the store's record shape and store it at read; plan_review.parse_review_report and store_delivered_report plus the require_plan_reviewed branch",
+    "manifest": "read; it states the gate result and names gate.log and negative_control.log, but carries no baseline_suite or after_suite JSON, so the reviewed run's added-failure count is unmeasured",
+    "write_paths": "the diff touches exactly the four declared paths and nothing else"
+  },
+  "justifications": {
+    "durability": "the new surface is guarded: _load swallows a missing or unreadable sidecar, delivered_reports skips a directory missing either file, store_delivered_report raises on a missing report or plan_version, and the store-at-read caller passes over a report the store refuses rather than raising. The one soft spot is that delivered_reports computes each entry's review_run_id from the sidecar's own review_run_id when present while store_delivered_report always writes the report directory's name, so a future sidecar that carries a differing review_run_id would re-store the same report on every read; the current writer never writes that key, so it does not bite today.",
+    "evidence": "the four dispatch cases are present and the negative control is real: removing the store-at-read branch reddens test_enforce_mode_stores_a_delivered_report_then_refuses_by_the_finding (negative_control.log, 1 failed, EXIT=1), and re-running the gate in this node's replay of the reviewed worktree reproduces 46 passed, EXIT=0. Two gaps lower it below full: the reviewed manifest carries no baseline_suite or after_suite, so the run's added-failure count reads unmeasured, and gate.log's first line names the base revision rather than the revision it ran at.",
+    "fit": "the additions extend the owners the brief names rather than creating beside them, follow the module's existing record and store idiom (write_json_atomically, store_plan_review, read_plan_review), and carry no plan labels, ticket numbers or changelog prose in any new symbol or comment.",
+    "goal_fidelity": "the change implements the plan's record side under the names the brief fixes \u2014 parse_review_report, review_report_directory, write_review_sidecar, delivered_reports and store_delivered_report \u2014 and adds the store-at-read branch the plan names at reckon/crew/routing.py:2585, so a build dispatch with no stored review stores the delivered report whose sidecar carries the plan's fingerprint and judges the result.",
+    "scope_discipline": "the diff 14e314a1..54593fb touches exactly the four declared write paths \u2014 reckon/crew/plan_review.py, reckon/crew/routing.py, tests/test_plan_review_dispatch.py and the evidence fragment \u2014 556 insertions, no file outside the scope."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 14e314a146e21b4f296c12b00dd800d9b063e5e1\nreviewed_head_sha: 54593fb63f2b814b15f55ea165e25110b988af62\nVERDICT goal: the goal is to parse a delivered plan-review report into the store's record shape and store it at read; plan_review.parse_review_report and store_delivered_report plus the require_plan_reviewed branch\nVERDICT done_when: the brief's cases and negative control are met: four cases in tests/test_plan_review_dispatch.py, the store-at-read branch removed reddens the enforce case, and the head gate reproduces 46 passed, EXIT=0\nVERDICT write_paths: the diff touches exactly the four declared paths and nothing else\nVERDICT manifest: read; it states the gate result and names gate.log and negative_control.log, but carries no baseline_suite or after_suite JSON, so the reviewed run's added-failure count is unmeasured\nVERDICT diff: read commit by commit against 14e314a1: aba2f8d3 adds the parser, the sidecar/store functions and the store-at-read branch with 238 lines of tests; 54593fb adds the evidence fragment\nCALL_SITES: reckon/crew/routing.py:_store_delivered_plan_review\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the change implements the plan's record side under the names the brief fixes \u2014 parse_review_report, review_report_directory, write_review_sidecar, delivered_reports and store_delivered_report \u2014 and adds the store-at-read branch the plan names at reckon/crew/routing.py:2585, so a build dispatch with no stored review stores the delivered report whose sidecar carries the plan's fingerprint and judges the result.\nSCORE evidence: 15\nJUSTIFICATION evidence: the four dispatch cases are present and the negative control is real: removing the store-at-read branch reddens test_enforce_mode_stores_a_delivered_report_then_refuses_by_the_finding (negative_control.log, 1 failed, EXIT=1), and re-running the gate in this node's replay of the reviewed worktree reproduces 46 passed, EXIT=0. Two gaps lower it below full: the reviewed manifest carries no baseline_suite or after_suite, so the run's added-failure count reads unmeasured, and gate.log's first line names the base revision rather than the revision it ran at.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 14e314a1..54593fb touches exactly the four declared write paths \u2014 reckon/crew/plan_review.py, reckon/crew/routing.py, tests/test_plan_review_dispatch.py and the evidence fragment \u2014 556 insertions, no file outside the scope.\nSCORE durability: 16\nJUSTIFICATION durability: the new surface is guarded: _load swallows a missing or unreadable sidecar, delivered_reports skips a directory missing either file, store_delivered_report raises on a missing report or plan_version, and the store-at-read caller passes over a report the store refuses rather than raising. The one soft spot is that delivered_reports computes each entry's review_run_id from the sidecar's own review_run_id when present while store_delivered_report always writes the report directory's name, so a future sidecar that carries a differing review_run_id would re-store the same report on every read; the current writer never writes that key, so it does not bite today.\nSCORE fit: 18\nJUSTIFICATION fit: the additions extend the owners the brief names rather than creating beside them, follow the module's existing record and store idiom (write_json_atomically, store_plan_review, read_plan_review), and carry no plan labels, ticket numbers or changelog prose in any new symbol or comment.\nFINDING docs/evidence/fragments/the-orchestrator-orchestrates/plan-review-report-parses-and-stores-at-read.html:33 follow-on: follow-on: the fragment records the gate at revision aba2f8d3c, but the gate.log it cites opens \"revision 14e314a146e21b4f296c12b00dd800d9b063e5e1\" \u2014 the base revision, where tests/test_plan_review_dispatch.py does not exist (git cat-file -e 14e314a1:tests/test_plan_review_dispatch.py \u2192 absent), so the very command in that log could not have collected 46 tests there; the log's own first line misattributes the measurement to a revision it did not run at, which the promotion replay and the added-failure annotation read via recorded_log_revision.\nFINDING reckon/crew/review.py:552 follow-on: follow-on: the reviewed manifest carries no baseline_suite and no after_suite (reckon/crew/review.py:552-553), so review.annotate_review_of_run derives the run's added-failure count as unmeasured \u2014 \"unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken\" \u2014 and the promotion suite-delta check reads the same absent fields; the review cannot reconcile its verdict with a base-arm comparison because the run's own evidence names no baseline arm.\n",
+  "review_run_id": "r-20261004T132516591083-review-of-plan-review-report-parses-and-stores-at-read",
+  "reviewed_base_sha": "14e314a146e21b4f296c12b00dd800d9b063e5e1",
+  "reviewed_head_sha": "54593fb63f2b814b15f55ea165e25110b988af62",
+  "reviewed_run_id": "r-20261004T130452090056-plan-review-report-parses-and-stores-at-read",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T132516591083-review-of-plan-review-report-parses-and-stores-at-read",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T13:39:12.958922+00:00",
+  "total": 88
+}

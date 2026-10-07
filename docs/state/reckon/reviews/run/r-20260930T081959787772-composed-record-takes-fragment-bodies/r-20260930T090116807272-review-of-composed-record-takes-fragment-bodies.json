@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two arm gate logs, named under its tests and test_logs fields (gate-base.log and gate-head.log; the manifest carries no armed baseline_suite or after_suite, because the live record's suite_command is null): 232 passed at the base arm and 234 at the head arm, no FAILED or ERROR node id in either, so the set difference over node ids is a measured 0; the repair arm (gate-repair.log, 3 passed) adds none either. The instrument is not blind: substituting the reviewed run's own negative_control.log as the head arm returns (1, ['tests/test_composed_record_takes_fragment_bodies.py::test_the_record_keeps_one_of_each_scalar_over_a_fragment'])",
+  "base_log_revision": "10ccd91a4e81e929df2906b483784599e4e21430",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2214",
+    "reckon/mcp.py:1142",
+    "reckon/doccheck.py:1235"
+  ],
+  "completed_at": "2026-09-30T09:15:55.568Z",
+  "dispatched_at": "2026-09-30T09:01:39Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T081959787772-composed-record-takes-fragment-bodies/gate-head.log",
+      "line": "3",
+      "text": "the 23-file head arm the done_when names was taken at revision 10ccd91a4 with the change uncommitted and before the repair commit 998f6e2e0 changed reckon/evidence.py, so its 234-passed result is evidence about a tree that is not the reviewed head; the repair's own arm covers only tests/test_composed_record_takes_fragment_bodies.py (3 passed)."
+    }
+  ],
+  "head_log_revision": "10ccd91a4e81e929df2906b483784599e4e21430",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 10ccd91a4; 54e90f119 drops the document wrapper for the body path, 998f6e2e0 adds the bodyless full-document branch and its case, both conventional subjects with bodies, no path outside the fence, and no plan, ticket or version label in the new names, docstrings or comments.",
+    "done_when": "read clause by clause; the main-else-body extraction is reckon/evidence.py:471-474, the bodyless full-document branch arrived at 998f6e2e0 (reckon/evidence.py:476-487), the bare-fragment clause returns raw at :479, the no-fragment early return is reckon/evidence.py:547-548, and the three cases at tests/test_composed_record_takes_fragment_bodies.py:100,113,116 assert both scalars, the fragment's section id once and the duplicate-plan-scalar audit; the two arm logs carry -n 4, a distinct /tmp basetemp, the file list and an EXIT= tail, and their 22- and 23-file lists equal my own AST scan of tests/ exactly - but the head arm's own header names revision 10ccd91a4 with the change uncommitted and predates the repair commit, which changed reckon/evidence.py after it, so the 234-passed result does not cover the reviewed head.",
+    "goal": "the goal is that compose_landed_record append only each fragment's readable content so the fragment's head, doctype and html wrapper never enter the record; reckon/evidence.py:461 adds _fragment_body_bytes, reckon/evidence.py:580 is the only append site, and at head the plan a-landing-record-never-conflicts composes to 47623 bytes holding exactly 1 plan-slug, 1 plan-evidence-for and 1 doctype, the record's own.",
+    "manifest": "read; status complete, two commits, gate arms and the declared negative control named with their exit codes; baseline_suite and after_suite are absent and legitimately so, because the run's live record carries suite_command null so it was never armed, and the reviewed run's own two arm logs are named under tests and test_logs instead.",
+    "write_paths": "the fence grants reckon/evidence.py, tests/test_composed_record_takes_fragment_bodies.py, the node's own evidence fragment and a figure directory; git diff 10ccd91a4..998f6e2e0 changes exactly the first three (255 insertions, 2 deletions), the figure directory is unused as the brief directs, the worktree is clean at head and no /tmp/crtfb-* directory survives."
+  },
+  "justifications": {
+    "durability": "with _fragment_body_bytes mutated back to fragment.read_bytes() in a scratch tree the file goes 2 failed / 1 passed, EXIT=1 - test_the_record_keeps_one_of_each_scalar_over_a_fragment and test_a_bodyless_full_document_keeps_only_the_records_scalar both redden, so each wrapper-drop assertion names the code change that breaks it, while test_a_fragments_section_id_appears_once passes under that mutation and guards double-append rather than the wrapper.",
+    "evidence": "the arms' file lists equal my AST scan of tests/ (22 base, 23 head, both EXIT=0) and the repair arm is recorded, but gate-head.log:3 pins revision 10ccd91a4 with the change uncommitted and was taken before 998f6e2e0, so the done_when's head clause is measured on a tree that is not the reviewed head; I re-measured that risk as absent - the repair is a no-op over all 108 corpus fragments and over the plan's composed record - but the log itself does not carry it.",
+    "fit": "_fragment_body_bytes and _carries_doctype sit beside the composer they serve at reckon/evidence.py:461-505, reuse the module's BeautifulSoup import and add bs4.element.Doctype, and none of the new names, docstrings or comments carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/evidence.py:471-487 drops the wrapper for every fragment shape - 108 corpus fragments compose with 0 authored ids lost - and the input the first review found unguarded, '<!doctype html><html lang=\"en\"><head><meta name=\"plan-slug\" content=\"demo\"></head><section id=\"anchor\">x</section></html>', returns '<section id=\"anchor\">x</section>' at head where it returned 121 raw bytes at 54e90f119.",
+    "scope_discipline": "commit 54e90f119 and 998f6e2e0 touch only reckon/evidence.py, tests/test_composed_record_takes_fragment_bodies.py and the node's own fragment, all inside the four declared write paths."
+  },
+  "log_revision_note": "both arm logs name revision 10ccd91a4 on their own header lines; recorded_log_revision returns None for them because their first line is 'arm: base' / 'arm: head' rather than a revision line",
+  "node": "review-of-composed-record-takes-fragment-bodies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that compose_landed_record append only each fragment's readable content so the fragment's head, doctype and html wrapper never enter the record; reckon/evidence.py:461 adds _fragment_body_bytes, reckon/evidence.py:580 is the only append site, and at head the plan a-landing-record-never-conflicts composes to 47623 bytes holding exactly 1 plan-slug, 1 plan-evidence-for and 1 doctype, the record's own.\nVERDICT done_when: read clause by clause; the main-else-body extraction is reckon/evidence.py:471-474, the bodyless full-document branch arrived at 998f6e2e0 (reckon/evidence.py:476-487), the bare-fragment clause returns raw at :479, the no-fragment early return is reckon/evidence.py:547-548, and the three cases at tests/test_composed_record_takes_fragment_bodies.py:100,113,116 assert both scalars, the fragment's section id once and the duplicate-plan-scalar audit; the two arm logs carry -n 4, a distinct /tmp basetemp, the file list and an EXIT= tail, and their 22- and 23-file lists equal my own AST scan of tests/ exactly - but the head arm's own header names revision 10ccd91a4 with the change uncommitted and predates the repair commit, which changed reckon/evidence.py after it, so the 234-passed result does not cover the reviewed head.\nVERDICT write_paths: the fence grants reckon/evidence.py, tests/test_composed_record_takes_fragment_bodies.py, the node's own evidence fragment and a figure directory; git diff 10ccd91a4..998f6e2e0 changes exactly the first three (255 insertions, 2 deletions), the figure directory is unused as the brief directs, the worktree is clean at head and no /tmp/crtfb-* directory survives.\nVERDICT manifest: read; status complete, two commits, gate arms and the declared negative control named with their exit codes; baseline_suite and after_suite are absent and legitimately so, because the run's live record carries suite_command null so it was never armed, and the reviewed run's own two arm logs are named under tests and test_logs instead.\nVERDICT diff: read commit by commit against 10ccd91a4; 54e90f119 drops the document wrapper for the body path, 998f6e2e0 adds the bodyless full-document branch and its case, both conventional subjects with bodies, no path outside the fence, and no plan, ticket or version label in the new names, docstrings or comments.\nCALL_SITES: reckon/serve.py:2214, reckon/mcp.py:1142, reckon/doccheck.py:1235\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/evidence.py:471-487 drops the wrapper for every fragment shape - 108 corpus fragments compose with 0 authored ids lost - and the input the first review found unguarded, '<!doctype html><html lang=\"en\"><head><meta name=\"plan-slug\" content=\"demo\"></head><section id=\"anchor\">x</section></html>', returns '<section id=\"anchor\">x</section>' at head where it returned 121 raw bytes at 54e90f119.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms' file lists equal my AST scan of tests/ (22 base, 23 head, both EXIT=0) and the repair arm is recorded, but gate-head.log:3 pins revision 10ccd91a4 with the change uncommitted and was taken before 998f6e2e0, so the done_when's head clause is measured on a tree that is not the reviewed head; I re-measured that risk as absent - the repair is a no-op over all 108 corpus fragments and over the plan's composed record - but the log itself does not carry it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 54e90f119 and 998f6e2e0 touch only reckon/evidence.py, tests/test_composed_record_takes_fragment_bodies.py and the node's own fragment, all inside the four declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: with _fragment_body_bytes mutated back to fragment.read_bytes() in a scratch tree the file goes 2 failed / 1 passed, EXIT=1 - test_the_record_keeps_one_of_each_scalar_over_a_fragment and test_a_bodyless_full_document_keeps_only_the_records_scalar both redden, so each wrapper-drop assertion names the code change that breaks it, while test_a_fragments_section_id_appears_once passes under that mutation and guards double-append rather than the wrapper.\nSCORE fit: 20\nJUSTIFICATION fit: _fragment_body_bytes and _carries_doctype sit beside the composer they serve at reckon/evidence.py:461-505, reuse the module's BeautifulSoup import and add bs4.element.Doctype, and none of the new names, docstrings or comments carries a plan, sprint or ticket label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T081959787772-composed-record-takes-fragment-bodies/gate-head.log:3 the 23-file head arm the done_when names was taken at revision 10ccd91a4 with the change uncommitted and before the repair commit 998f6e2e0 changed reckon/evidence.py, so its 234-passed result is evidence about a tree that is not the reviewed head; the repair's own arm covers only tests/test_composed_record_takes_fragment_bodies.py (3 passed).",
+  "review_run_id": "r-20260930T090116807272-review-of-composed-record-takes-fragment-bodies",
+  "reviewed_base_sha": "10ccd91a4e81e929df2906b483784599e4e21430",
+  "reviewed_head_sha": "998f6e2e0617f5c1a8ef606e2d9dd6b0a84d021d",
+  "reviewed_run_id": "r-20260930T081959787772-composed-record-takes-fragment-bodies",
+  "reviewer_run_id": "r-20260930T090116807272-review-of-composed-record-takes-fragment-bodies",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T09:13:10.580460+00:00",
+  "total": 95
+}

@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/roadmap.py:1480",
+    "reckon/project_state.py:1411",
+    "reckon/project_state.py:1483"
+  ],
+  "completed_at": "2026-09-26T12:03:55.240Z",
+  "dispatched_at": "2026-09-26T10:54:44Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103242220473-roadmap-docstring-names-the-focus-home/base-tests.log",
+      "line": "4",
+      "text": "the base-arm command as recorded is not the command that ran \u2014 the interpreter path is truncated to `/../... ` and the remaining `.venv python` reads as separate arguments, so a reader cannot re-run the base arm from the record; the same file's :5-:6 do pin module.__file__ and cwd inside the scratch tree, so only the command record is lost."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103242220473-roadmap-docstring-names-the-focus-home/manifest.md",
+      "line": "9",
+      "text": "the tests field carries an unsubstituted <venv> placeholder in place of the interpreter path, so the manifest's gate-command field names no runnable command and a reader must open the named log to recover it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read at d055e80c against base 9fafad1f; one code line changed at reckon/roadmap.py:1273 and the two records receive additive text, no deletions (numstat 1/1, 17/0, 20/0), so the corrected line is the whole code change and the retired spelling survives only where the records quote it as the defect.",
+    "done_when": "the done_when asks for three things \u2014 the docstring names reckon.project_state.focus_sprint_id, the import succeeds, and tests/test_roadmap.py adds no failures against base; gate.log:7 is the grep hit, gate.log:12 the import exit 0, gate.log:15 and base-tests.log:10 the 41 passed at each arm, and I reproduced 41 passed at d055e80c myself (recheck-roadmap-head.log, run from the reviewed tree); gate.log:2 records the head arm at a dirty pre-commit tree, so the receipt for the measured content is the printed line, which matches the committed blob I read.",
+    "goal": "read the node's goal (correct the cross-reference at reckon/roadmap.py around line 1273 so the reference resolves); at head d055e80c line 1273 reads :func:`reckon.project_state.focus_sprint_id`, focus_sprint_id is defined at reckon/project_state.py:1246 and imported into roadmap.py at :43, reckon/sprint_liveness.py carries no such name at head, and I re-ran `from reckon.project_state import focus_sprint_id` from the reviewed tree with exit 0.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103242220473-roadmap-docstring-names-the-focus-home/manifest.md \u2014 status complete, one commit d055e80c, three changed paths, both arms' results stated; its tests field at manifest.md:9 leaves <venv> unsubstituted in place of the interpreter path.",
+    "write_paths": "the node declared four paths (reckon/roadmap.py, docs/plans/a-sprint-is-live-while-a-crew-works-it.html, docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html and an unused figures directory); the diff touches exactly three of them and nothing else."
+  },
+  "justifications": {
+    "durability": "no assertion anywhere in tests/ reddens if reckon/roadmap.py:1273 reverts to reckon.sprint_liveness.focus_sprint_id \u2014 the only check is the one-off grep printed at gate.log:7, a receipt rather than a guard.",
+    "evidence": "each done_when clause is asserted by the gate and reproduced by me at d055e80c, but base-tests.log:4 records a mangled command and manifest.md:9 a placeholder, so the command field of both records names no runnable command.",
+    "fit": "the corrected line keeps the file's fully-qualified :func: idiom (the only such reference in reckon/roadmap.py) and the plan note uses the established r-note data-reckon=\"landed\" data-node/data-when shape.",
+    "goal_fidelity": "reckon/roadmap.py:1273 now names the module that defines the symbol at reckon/project_state.py:1246 and the import resolves from the reviewed tree.",
+    "scope_discipline": "numstat over d055e80c shows one changed line in reckon/roadmap.py and additive-only records in the two docs, all inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node's goal (correct the cross-reference at reckon/roadmap.py around line 1273 so the reference resolves); at head d055e80c line 1273 reads :func:`reckon.project_state.focus_sprint_id`, focus_sprint_id is defined at reckon/project_state.py:1246 and imported into roadmap.py at :43, reckon/sprint_liveness.py carries no such name at head, and I re-ran `from reckon.project_state import focus_sprint_id` from the reviewed tree with exit 0.\nVERDICT done_when: the done_when asks for three things \u2014 the docstring names reckon.project_state.focus_sprint_id, the import succeeds, and tests/test_roadmap.py adds no failures against base; gate.log:7 is the grep hit, gate.log:12 the import exit 0, gate.log:15 and base-tests.log:10 the 41 passed at each arm, and I reproduced 41 passed at d055e80c myself (recheck-roadmap-head.log, run from the reviewed tree); gate.log:2 records the head arm at a dirty pre-commit tree, so the receipt for the measured content is the printed line, which matches the committed blob I read.\nVERDICT write_paths: the node declared four paths (reckon/roadmap.py, docs/plans/a-sprint-is-live-while-a-crew-works-it.html, docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html and an unused figures directory); the diff touches exactly three of them and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103242220473-roadmap-docstring-names-the-focus-home/manifest.md \u2014 status complete, one commit d055e80c, three changed paths, both arms' results stated; its tests field at manifest.md:9 leaves <venv> unsubstituted in place of the interpreter path.\nVERDICT diff: read at d055e80c against base 9fafad1f; one code line changed at reckon/roadmap.py:1273 and the two records receive additive text, no deletions (numstat 1/1, 17/0, 20/0), so the corrected line is the whole code change and the retired spelling survives only where the records quote it as the defect.\nCALL_SITES: reckon/roadmap.py:1480, reckon/project_state.py:1411, reckon/project_state.py:1483\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1273 now names the module that defines the symbol at reckon/project_state.py:1246 and the import resolves from the reviewed tree.\nSCORE evidence: 16\nJUSTIFICATION evidence: each done_when clause is asserted by the gate and reproduced by me at d055e80c, but base-tests.log:4 records a mangled command and manifest.md:9 a placeholder, so the command field of both records names no runnable command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: numstat over d055e80c shows one changed line in reckon/roadmap.py and additive-only records in the two docs, all inside the four declared write paths.\nSCORE durability: 5\nJUSTIFICATION durability: no assertion anywhere in tests/ reddens if reckon/roadmap.py:1273 reverts to reckon.sprint_liveness.focus_sprint_id \u2014 the only check is the one-off grep printed at gate.log:7, a receipt rather than a guard.\nSCORE fit: 18\nJUSTIFICATION fit: the corrected line keeps the file's fully-qualified :func: idiom (the only such reference in reckon/roadmap.py) and the plan note uses the established r-note data-reckon=\"landed\" data-node/data-when shape.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103242220473-roadmap-docstring-names-the-focus-home/base-tests.log:4 the base-arm command as recorded is not the command that ran \u2014 the interpreter path is truncated to `/../... ` and the remaining `.venv python` reads as separate arguments, so a reader cannot re-run the base arm from the record; the same file's :5-:6 do pin module.__file__ and cwd inside the scratch tree, so only the command record is lost.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103242220473-roadmap-docstring-names-the-focus-home/manifest.md:9 the tests field carries an unsubstituted <venv> placeholder in place of the interpreter path, so the manifest's gate-command field names no runnable command and a reader must open the named log to recover it.\n",
+  "review_run_id": "r-20260926T105423525068-review-of-roadmap-docstring-names-the-focus-home",
+  "reviewed_base_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_head_sha": "d055e80c11f530a8f9b7c19477d288f656f66ee7",
+  "reviewed_run_id": "r-20260926T103242220473-roadmap-docstring-names-the-focus-home",
+  "role": "review",
+  "scores": {
+    "durability": 5,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T11:30:37.398269+00:00",
+  "total": 79
+}

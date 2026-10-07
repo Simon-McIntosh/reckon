@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py::_complete_locked"
+  ],
+  "completed_at": "2026-10-03T14:45:28.103Z",
+  "dispatched_at": "2026-10-03T14:30:46Z",
+  "findings": [
+    {
+      "file": "logs/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's log names the base revision 44f2adc5 rather than the reviewed head 490282a0, so the 62-passed count cannot be tied to the promoted commit from the log alone; the manifest artifact line repeats the same base sha."
+    },
+    {
+      "file": "manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest records neither baseline_suite nor after_suite, so the added-failure derivation and any promotion suite-delta check read unmeasured rather than a measured count."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read against base 44f2adc5; three files changed - promotion.py passes cause=exc on the outer except and rewrites the docstring sentence, and the two test files add the pre-pointer case and pin the cause exactly.",
+    "done_when": "the done_when asks that every unmeasured reading carry unmeasured['cause'] bounded by _FLEET_UNMEASURED_CAUSE_LIMIT and that the head arm of the four named test files run with -n 8 and log its revision and EXIT=; logs/gate-head.log records 62 passed EXIT=0 and logs/negative-control.log records 1 failed EXIT=1.",
+    "goal": "the node's goal was to make a fleet reading that fails before reading the pointers name its cause as the per-pointer failure does; reckon/crew/promotion.py:6634 (the _fleet_state_reading outer except) returns _unavailable_fleet_reading(observed_at, cause=exc), so a list_live failure now carries the cause.",
+    "manifest": "read; status complete, commit 490282a0, the head arm and the negative control are recorded with log paths, and the declared mutation string matches the negative control's message.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, the two test files, an evidence fragment and a figures dir; git diff 44f2adc5..490282a0 names exactly the three code/test paths and the reviewed worktree is clean."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unmeasured_fleet_reading_names_its_cause.py:190 asserts the cause equals the exception the test's own list_live stub raises in the type-and-message form, and logs/negative-control.log shows the case fails when the cause is dropped, so the guard fails on the regression it names.",
+    "evidence": "logs/gate-head.log records 62 passed EXIT=0 and logs/negative-control.log records 1 failed EXIT=1, but logs/gate-head.log:1 names revision 44f2adc5 (the base) rather than the head 490282a0, and the reviewed manifest records neither baseline_suite nor after_suite so the added-failure derivation reads unmeasured.",
+    "fit": "the change reuses the existing _unavailable_fleet_reading(observed_at, cause=...) signature and its bounded-cause idiom at reckon/crew/promotion.py:6637, and commit 490282a0 carries a conventional subject with a body and no plan identifiers.",
+    "goal_fidelity": "reckon/crew/promotion.py:6634 now passes the caught exception to _unavailable_fleet_reading on the added outer handler covering list_live, so the pre-pointer failure names its cause as the per-pointer path at promotion.py:6623 already does.",
+    "scope_discipline": "git diff --name-only 44f2adc5..490282a0 returns exactly reckon/crew/promotion.py, tests/test_promotion_beat_carries_fleet_state.py and tests/test_an_unmeasured_fleet_reading_names_its_cause.py, all inside the declared write paths, and the reviewed worktree is clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal was to make a fleet reading that fails before reading the pointers name its cause as the per-pointer failure does; reckon/crew/promotion.py:6634 (the _fleet_state_reading outer except) returns _unavailable_fleet_reading(observed_at, cause=exc), so a list_live failure now carries the cause.\nVERDICT done_when: the done_when asks that every unmeasured reading carry unmeasured['cause'] bounded by _FLEET_UNMEASURED_CAUSE_LIMIT and that the head arm of the four named test files run with -n 8 and log its revision and EXIT=; logs/gate-head.log records 62 passed EXIT=0 and logs/negative-control.log records 1 failed EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, the two test files, an evidence fragment and a figures dir; git diff 44f2adc5..490282a0 names exactly the three code/test paths and the reviewed worktree is clean.\nVERDICT manifest: read; status complete, commit 490282a0, the head arm and the negative control are recorded with log paths, and the declared mutation string matches the negative control's message.\nVERDICT diff: read against base 44f2adc5; three files changed - promotion.py passes cause=exc on the outer except and rewrites the docstring sentence, and the two test files add the pre-pointer case and pin the cause exactly.\nCALL_SITES: reckon/crew/promotion.py::_complete_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:6634 now passes the caught exception to _unavailable_fleet_reading on the added outer handler covering list_live, so the pre-pointer failure names its cause as the per-pointer path at promotion.py:6623 already does.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log records 62 passed EXIT=0 and logs/negative-control.log records 1 failed EXIT=1, but logs/gate-head.log:1 names revision 44f2adc5 (the base) rather than the head 490282a0, and the reviewed manifest records neither baseline_suite nor after_suite so the added-failure derivation reads unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 44f2adc5..490282a0 returns exactly reckon/crew/promotion.py, tests/test_promotion_beat_carries_fleet_state.py and tests/test_an_unmeasured_fleet_reading_names_its_cause.py, all inside the declared write paths, and the reviewed worktree is clean.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_unmeasured_fleet_reading_names_its_cause.py:190 asserts the cause equals the exception the test's own list_live stub raises in the type-and-message form, and logs/negative-control.log shows the case fails when the cause is dropped, so the guard fails on the regression it names.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the existing _unavailable_fleet_reading(observed_at, cause=...) signature and its bounded-cause idiom at reckon/crew/promotion.py:6637, and commit 490282a0 carries a conventional subject with a body and no plan identifiers.\nFINDING logs/gate-head.log:1 follow-on: the head arm's log names the base revision 44f2adc5 rather than the reviewed head 490282a0, so the 62-passed count cannot be tied to the promoted commit from the log alone; the manifest artifact line repeats the same base sha.\nFINDING manifest.md:10 follow-on: the reviewed manifest records neither baseline_suite nor after_suite, so the added-failure derivation and any promotion suite-delta check read unmeasured rather than a measured count.",
+  "review_run_id": "r-20261003T143027530170-review-of-an-unreadable-fleet-names-its-cause-too",
+  "reviewed_base_sha": "44f2adc567d87aebfa1169e03ebe9beeacdc2e4c",
+  "reviewed_head_sha": "490282a017023e3c7b4dbf6f0a90fbae18edaa86",
+  "reviewed_run_id": "r-20261003T141433100653-an-unreadable-fleet-names-its-cause-too",
+  "reviewer_run_id": "r-20261003T143027530170-review-of-an-unreadable-fleet-names-its-cause-too",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T14:44:48.058213+00:00",
+  "total": 91
+}

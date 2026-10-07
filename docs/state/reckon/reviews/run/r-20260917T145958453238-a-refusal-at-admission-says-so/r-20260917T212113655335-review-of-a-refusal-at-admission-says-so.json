@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "base_sha": "b5d298c2a402b9f2c9a32cf73c4670ae43773585",
+  "commits": [
+    "1f51933339ea7a67195e2ec843941ab8fa75a641",
+    "f81b5a1e53665ae3039228570ce54ad725095dde"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T21:21:13.655335+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2472",
+      "text": "the watch-state reducer's alive-is-False fallback maps a refused-at-admission row to state 'abandoned', so the pane's state column and the fleet buckets still carry the word the typed classification was introduced to replace; the surface files that would carry a new watch state sit outside this node's declared write paths, so it is a follow-on rather than an omission here."
+    }
+  ],
+  "head_sha": "f81b5a1e53665ae3039228570ce54ad725095dde",
+  "justifications": {
+    "durability": "tests/test_admission_refusal_is_named.py adds eight cases and the arm's symbols are absent from reckon/crew/recovery.py at base b5d298c2 (grep count 0), so removing or narrowing the arm reverts the classification and fails tests/test_admission_refusal_is_named.py:102.",
+    "evidence": "I reproduced the node cohort at f81b5a1e as 1 failed, 129 passed, and the manifest's 121-passing base reconciles because git diff b5d298c2..HEAD changed none of the three pre-existing cohort files (130 head total minus the new file's 8 cases), with the single failure also reproduced without the change; the positive control at tests/test_admission_refusal_is_named.py:244 covers five neighbour shapes and two recorded fixtures rather than every other classification the done-when names.",
+    "fit": "the label joins the module's own vocabulary at reckon/crew/recovery.py:124 and its actionable set at :139, the measured ruff delta is zero (8 findings at both the base and head copies of recovery.py; the new file reports none), and the naming checks over both changed paths are clean; one position is left unrevised: the watch-state reducer at reckon/crew/recovery.py:2472 still maps a refused-at-admission row into the abandoned state.",
+    "goal_fidelity": "classify_pointer at reckon/crew/recovery.py:1808 returns refused-at-admission with recovery 'resume' for a pointer built from the recorded stream r-20260917T103829858481-evidence-record-row-coverage when run at the landed head, while the same pointer against the pre-change tree returns 'abandoned'.",
+    "scope_discipline": "git diff --numstat b5d298c2..f81b5a1e measures 547 insertions across exactly the four declared write paths with zero deletions, and git status --porcelain at the worktree head is empty."
+  },
+  "measured_diff": {
+    "command": "git diff --numstat b5d298c2..f81b5a1e",
+    "deletions": 0,
+    "files": {
+      "docs/evidence/archive/crew-observability-truth-landed.html": 76,
+      "docs/plans/crew-observability-truth.html": 20,
+      "reckon/crew/recovery.py": 151,
+      "tests/test_admission_refusal_is_named.py": 300
+    },
+    "insertions": 547
+  },
+  "measurements": [
+    "cohort at f81b5a1e: 1 failed, 129 passed (4 declared files)",
+    "control without the change: same single failure reproduces on test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion",
+    "real recorded instance, landed module: refused-at-admission / resume; pre-change module: abandoned",
+    "test_recovery_state_typing.py 19 passed; test_live_process_outranks_classification.py + test_crew_finished_display.py: 2 failed, 16 passed, both failures pre-existing (same two reproduce without the change)"
+  ],
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260917T145958453238-a-refusal-at-admission-says-so (node a-refusal-at-admission-says-so, plan section 12).\n\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: classify_pointer at reckon/crew/recovery.py:1808 returns refused-at-admission with recovery 'resume' for a pointer built from the recorded stream r-20260917T103829858481-evidence-record-row-coverage when run at the landed head, while the same pointer against the pre-change tree returns 'abandoned'.\nSCORE evidence: 17\nJUSTIFICATION evidence: I reproduced the node cohort at f81b5a1e as 1 failed, 129 passed, and the manifest's 121-passing base reconciles because git diff b5d298c2..HEAD changed none of the three pre-existing cohort files (130 head total minus the new file's 8 cases), with the single failure also reproduced without the change; the positive control at tests/test_admission_refusal_is_named.py:244 covers five neighbour shapes and two recorded fixtures rather than every other classification the done-when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat b5d298c2..f81b5a1e measures 547 insertions across exactly the four declared write paths with zero deletions, and git status --porcelain at the worktree head is empty.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat b5d298c2..f81b5a1e measures 547 insertions across exactly the four declared write paths with zero deletions, and git status --porcelain at the worktree head is empty.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_admission_refusal_is_named.py adds eight cases and the arm's symbols are absent from reckon/crew/recovery.py at base b5d298c2 (grep count 0), so removing or narrowing the arm reverts the classification and fails tests/test_admission_refusal_is_named.py:102.\nSCORE fit: 17\nJUSTIFICATION fit: the label joins the module's own vocabulary at reckon/crew/recovery.py:124 and its actionable set at :139, the measured ruff delta is zero (8 findings at both the base and head copies of recovery.py; the new file reports none), and the naming checks over both changed paths are clean; one position is left unrevised: the watch-state reducer at reckon/crew/recovery.py:2472 still maps a refused-at-admission row into the abandoned state.\nFINDING reckon/crew/recovery.py:2472 the watch-state reducer's alive-is-False fallback maps a refused-at-admission row to state 'abandoned', so the pane's state column and the fleet buckets still carry the word the typed classification was introduced to replace; the surface files that would carry a new watch state sit outside this node's declared write paths, so it is a follow-on rather than an omission here.\n",
+  "review_run_id": "r-20260917T212113655335-review-of-a-refusal-at-admission-says-so",
+  "reviewed_node": "a-refusal-at-admission-says-so",
+  "reviewed_run_id": "r-20260917T145958453238-a-refusal-at-admission-says-so",
+  "reviewer_node": "review-of-a-refusal-at-admission-says-so",
+  "reviewer_run_id": "r-20260917T212113655335-review-of-a-refusal-at-admission-says-so",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T22:16:29.455115+00:00",
+  "total": 90,
+  "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/a-refusal-at-admission-says-so"
+}

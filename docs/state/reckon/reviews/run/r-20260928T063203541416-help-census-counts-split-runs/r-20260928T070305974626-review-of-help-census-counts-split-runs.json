@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063203541416-help-census-counts-split-runs/logs/base-arm-5665e64b.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063203541416-help-census-counts-split-runs/logs/gate-head-990df10b.log"
+  ],
+  "added_failures_note": "measured by this reviewing run through the production derivation review.added_failures_from_gate_logs over the two gate logs the reviewed run kept and named under test_logs (its base arm shows 1 failed at 5665e64b and its head arm 4 passed at 990df10b, so the run added no failing test and its single base failure was retired); the reviewed manifest's arm-only baseline_suite and after_suite fields read none because the node was not armed with a suite sweep, so the store's read-time annotation reports the count unmeasured rather than this measured zero, and both readings stand above so a reader can reconcile them",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:4745",
+    "reckon/cli.py:4752",
+    "reckon/ledger.py:2211"
+  ],
+  "completed_at": "2026-09-28T08:24:23.903Z",
+  "dispatched_at": "2026-09-28T07:03:19Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html",
+      "line": "953",
+      "text": "the negative-control paragraph justifies the mutant as supplying a reading the base arm alone cannot show \"since a census asserting equality fails identically whether the verb is unregistered or uncovered\", but the assertion's own output is directional, the recorded base failure reading \"Extra items in the left set\" names the walked CLI side as the one holding the row the census lacks, where an unregistered verb would read \"Extra items in the right set\"; the arms and their receipts are sound and the stated reason for the mutant overstates what the base arm withholds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit: 78b229df touches only the census file (one table row with its three comment lines and the counted leaves moving 28 to 29) and 990df10b appends the landing-record section id=\"help-census\", the plan aside id=\"help-census-landing\" and the 1000x470 figure, which parses as XML and names the three arms; every cited anchor resolves, including 33def709 as the prior census alignment, 98ac4ced and 59d7c339 as the verb's commit and merge, and reckon/cli.py:4745 as the registration line at both revisions.",
+    "done_when": "the measure is a base arm showing the failure, a green head gate, and a negative control whose red log's first line repeats the declared mutation; all three are on disk under the reviewed run's logs/ with headers naming revision, tree, command, module and cwd, the declared mutation string stands verbatim on the negative control log's first line, and my own re-runs give 4 passed EXIT=0 at 990df10b and 1 failed, 3 passed, EXIT=1 naming ('split-runs',) on the surviving mutant.",
+    "goal": "the node's goal is the census row the reachable verb `split-runs` is owed, and the landed change adds exactly that row at tests/test_crew_help_names_its_state.py:43, which is the repair the dispatch base's red census demands since reckon/cli.py:4745 registers the verb while the expected-verb table carries no row for it.",
+    "manifest": "read; it names both commits, the five test logs, the negative control path and note, and the two documents' audit result, and each claim I checked holds: the reviewed worktree is at 990df10b with no uncommitted change, the census file's sha256 is 129b42a3, plan-version 42 and plan-modified 2026-09-26 are identical at base and head, and /tmp/help-census-nc still holds the mutant whose sha256 91dd1b9f differs from the head file by exactly the four added lines; its arm-only baseline_suite and after_suite fields read none, so the store's read-time annotation reports the added-failure count unmeasured, which this record's own note and the two named gate logs compensate for.",
+    "write_paths": "the declared fence is the census test, the landing record, the plan HTML and the figures directory; the changed set over 5665e64b..990df10b is tests/test_crew_help_names_its_state.py, docs/plans/the-ledger-is-one-file-per-run.html, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html and docs/figures/the-ledger-is-one-file-per-run/help-census-arms.svg, with nothing inside it outside the fence."
+  },
+  "justifications": {
+    "durability": "the row is guarded by the exact-set assertion at tests/test_crew_help_names_its_state.py:117 with the phrase loop at :124, which my re-run of the mutant reddens by name, while the count literal at :118 restates what the set equality already implies and guards nothing of its own.",
+    "evidence": "the three gate logs carry headers naming revision, tree, command, module and cwd, the base log's quoted assertion is entailed by the base revision, and my own re-runs reproduce the head green (4 passed, EXIT=0) and the mutant red naming ('split-runs',).",
+    "fit": "the row's shape at tests/test_crew_help_names_its_state.py:43 matches its neighbours in the table, the landing-record section and the figure follow that document's existing idiom, and no added name in the diff carries a plan label or a revision tag.",
+    "goal_fidelity": "tests/test_crew_help_names_its_state.py:43 adds the expected row the reachable verb at reckon/cli.py:4745 owes, which is the goal's repair, and the reproduction the goal names is recorded rather than only claimed.",
+    "scope_discipline": "5665e64b..990df10b changes four files with 143 insertions and 1 deletion, set-equal to the declared write paths with nothing outside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the census row the reachable verb `split-runs` is owed, and the landed change adds exactly that row at tests/test_crew_help_names_its_state.py:43, which is the repair the dispatch base's red census demands since reckon/cli.py:4745 registers the verb while the expected-verb table carries no row for it.\nVERDICT done_when: the measure is a base arm showing the failure, a green head gate, and a negative control whose red log's first line repeats the declared mutation; all three are on disk under the reviewed run's logs/ with headers naming revision, tree, command, module and cwd, the declared mutation string stands verbatim on the negative control log's first line, and my own re-runs give 4 passed EXIT=0 at 990df10b and 1 failed, 3 passed, EXIT=1 naming ('split-runs',) on the surviving mutant.\nVERDICT write_paths: the declared fence is the census test, the landing record, the plan HTML and the figures directory; the changed set over 5665e64b..990df10b is tests/test_crew_help_names_its_state.py, docs/plans/the-ledger-is-one-file-per-run.html, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html and docs/figures/the-ledger-is-one-file-per-run/help-census-arms.svg, with nothing inside it outside the fence.\nVERDICT manifest: read; it names both commits, the five test logs, the negative control path and note, and the two documents' audit result, and each claim I checked holds: the reviewed worktree is at 990df10b with no uncommitted change, the census file's sha256 is 129b42a3, plan-version 42 and plan-modified 2026-09-26 are identical at base and head, and /tmp/help-census-nc still holds the mutant whose sha256 91dd1b9f differs from the head file by exactly the four added lines; its arm-only baseline_suite and after_suite fields read none, so the store's read-time annotation reports the added-failure count unmeasured, which this record's own note and the two named gate logs compensate for.\nVERDICT diff: read commit by commit: 78b229df touches only the census file (one table row with its three comment lines and the counted leaves moving 28 to 29) and 990df10b appends the landing-record section id=\"help-census\", the plan aside id=\"help-census-landing\" and the 1000x470 figure, which parses as XML and names the three arms; every cited anchor resolves, including 33def709 as the prior census alignment, 98ac4ced and 59d7c339 as the verb's commit and merge, and reckon/cli.py:4745 as the registration line at both revisions.\nCALL_SITES: reckon/cli.py:4745, reckon/cli.py:4752, reckon/ledger.py:2211\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_help_names_its_state.py:43 adds the expected row the reachable verb at reckon/cli.py:4745 owes, which is the goal's repair, and the reproduction the goal names is recorded rather than only claimed.\nSCORE evidence: 20\nJUSTIFICATION evidence: the three gate logs carry headers naming revision, tree, command, module and cwd, the base log's quoted assertion is entailed by the base revision, and my own re-runs reproduce the head green (4 passed, EXIT=0) and the mutant red naming ('split-runs',).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: 5665e64b..990df10b changes four files with 143 insertions and 1 deletion, set-equal to the declared write paths with nothing outside the fence.\nSCORE durability: 19\nJUSTIFICATION durability: the row is guarded by the exact-set assertion at tests/test_crew_help_names_its_state.py:117 with the phrase loop at :124, which my re-run of the mutant reddens by name, while the count literal at :118 restates what the set equality already implies and guards nothing of its own.\nSCORE fit: 20\nJUSTIFICATION fit: the row's shape at tests/test_crew_help_names_its_state.py:43 matches its neighbours in the table, the landing-record section and the figure follow that document's existing idiom, and no added name in the diff carries a plan label or a revision tag.\nFINDING docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html:953 the negative-control paragraph justifies the mutant as supplying a reading the base arm alone cannot show \"since a census asserting equality fails identically whether the verb is unregistered or uncovered\", but the assertion's own output is directional, the recorded base failure reading \"Extra items in the left set\" names the walked CLI side as the one holding the row the census lacks, where an unregistered verb would read \"Extra items in the right set\"; the arms and their receipts are sound and the stated reason for the mutant overstates what the base arm withholds.\n",
+  "review_run_id": "r-20260928T070305974626-review-of-help-census-counts-split-runs",
+  "reviewed_base_sha": "5665e64ba70579628d94a611d45b43cee5091fc0",
+  "reviewed_head_sha": "990df10b3c4e14762d0b3ae42823ee4de9d185a8",
+  "reviewed_run_id": "r-20260928T063203541416-help-census-counts-split-runs",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T07:58:39.023315+00:00",
+  "total": 99
+}

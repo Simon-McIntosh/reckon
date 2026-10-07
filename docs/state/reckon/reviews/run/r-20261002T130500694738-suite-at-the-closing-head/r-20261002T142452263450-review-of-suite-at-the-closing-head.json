@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 17,
+  "added_failure_ids": [
+    "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition",
+    "tests/test_dispatch_records_the_pace_row.py::test_a_held_lane_is_recorded_with_the_evidence_that_held_it",
+    "tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row",
+    "tests/test_dispatch_records_the_pace_row.py::test_a_row_recomputes_its_own_allowance",
+    "tests/test_dispatch_records_the_pace_row.py::test_a_sequence_of_rows_replays_the_week_without_a_stream",
+    "tests/test_dispatch_records_the_pace_row.py::test_an_open_dispatch_records_the_score_its_bar_was_drawn_against",
+    "tests/test_landing_write_races_every_writer.py::test_each_writer_racing_a_landing_write_commutes_or_is_refused[followup-append]",
+    "tests/test_landing_write_races_every_writer.py::test_each_writer_racing_a_landing_write_commutes_or_is_refused[section-append]",
+    "tests/test_landing_write_races_every_writer.py::test_each_writer_racing_a_landing_write_commutes_or_is_refused[state-set]",
+    "tests/test_obligations_snapshot_is_published.py::test_a_slice_equals_the_derivation_over_the_same_files",
+    "tests/test_obligations_snapshot_is_published.py::test_the_snapshot_carries_the_derivation_over_unmodified_files",
+    "tests/test_pace_replay.py::test_a_damaged_field_marks_its_row_and_never_the_week",
+    "tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it",
+    "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+    "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source",
+    "tests/test_worker_digest.py::test_committed_digests_regenerate_byte_identically",
+    "tests/test_worker_digest.py::test_the_committed_digests_are_current_on_this_host"
+  ],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite records: baseline_suite (903f6e991, failure_count 1) and after_suite (ca630c06e, failure_count 17); added ids = head_ids - base_ids = the 17 listed, none of which is the base's single id. The base arm's raw log is absent from the manifest (log_path empty, digest only), so the log-text derivation reads unmeasured; the count rests on the failure_ids each arm's record carries.",
+  "backend": "sonnet",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T14:48:17.181Z",
+  "dispatched_at": "2026-10-02T14:25:21Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_records_the_pace_row.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the six pace ids (five in this file plus tests/test_pace_replay.py::test_a_damaged_field_marks_its_row_and_never_the_week) are each attributed to 8f0025cee, but that commit's diff touches only reckon/cli.py, reckon/crew/picker/*, tests/test_picker.py, pyproject.toml and uv.lock - not reckon/budget.py, reckon/crew/dispatch.py or the failing tests - and the manifest's own note places burn_multiple on the earlier prototype chain; the commits that changed reckon/budget.py in 903f6e991..ca630c06e are 43ab5d69e and 9bb5a4c68, so the candidate for those six ids is unsupported by reading 8f0025cee and should be re-derived."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm of baseline_suite records log_path \"\" with command \"unrecorded - the base record names no command\", so the read-path added_failure_count derived from the two gate logs would read unmeasured for this review even though the recorded failure_ids support 17; a reader reconciling the count against the arms' logs has the digest but not the base text."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no commit to read - the node is measure-only and its deliverable is the report pair plus the two logs - so the artefact reviewed is suite-closing.json against the base record suite-final.json, whose shape it reuses field for field.",
+    "done_when": "the done_when's four steps are each recorded on disk rather than claimed - suite-closing.log carries the revision, wall time, pass/fail/skip counts and every one of the 17 FAILED ids with a first error line; solo-rerun.log carries 14 EXIT=1 and 3 EXIT=0 solo classifications; suite-closing.json records the per-id attribution and the comparison against 903f6e991; and suite-closing.md and .json are copied to the reports directory.",
+    "goal": "the node's goal is that the whole suite is measured once at the merged head after every repair; the manifest records one pytest run over tests/ at ca630c06e894d95111a8627b11d02a023aa270dd, a commit dated 2026-10-02T13:04:07Z that is an ancestor of main's tip and predates the run's 13:19:28Z start, reporting \"17 failed, 10078 passed, 76 skipped, 62 warnings in 1455.13s\" with EXIT=1.",
+    "manifest": "read; status complete with commits \"none - measure-only node\", baseline_suite and after_suite both populated with completed true, and a landing line stating 17 failed / 10078 passed / 76 skipped in \u8247 1455.13 s.",
+    "write_paths": "the manifest declares /home/ITER/mcintos/.config/reckon/crew/reports/reckon/suite-closing.md and .json, and git -C <the reviewed worktree> status --porcelain at ca630c06e is empty, so the node changed no tracked file and wrote only the declared reports and run-directory logs."
+  },
+  "justifications": {
+    "durability": "the measurement is reproducible from the recorded command and revision (suite-closing.log:1 names the interpreter, PYTHONPATH, -n 8, -p no:cacheprovider and basetemp) and both reports are durable copies under the reports directory, so a later reader re-derives the figures without the run id.",
+    "evidence": "both arms are on disk and reproduce - I re-ran tests/test_worker_digest.py::test_the_committed_digests_are_current_on_this_host at ca630c06e (1 failed) and tests/test_landing_write_races_every_writer.py::test_each_writer_racing_a_landing_write_commutes_or_is_refused[state-set] (1 passed) - but the manifest's baseline_suite log_path is empty so the read-path log-text derivation reads unmeasured, and six pace ids are attributed to a commit that does not touch their code path.",
+    "fit": "suite-closing.json reuses the base record suite-final.json's shape (revision, wall_seconds, counts, deterministic, load_only, fixed_since_<sha>, new) exactly and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "suite-closing.log:1 records revision ca630c06e894d95111a8627b11d02a023aa270dd and its tail records \"17 failed, 10078 passed, 76 skipped, 62 warnings in 1455.13s\", matching the goal's single whole-suite measurement at the merged head.",
+    "scope_discipline": "git -C <the reviewed worktree> status --porcelain is empty and the manifest writes only the two declared report paths and the run-directory logs, so nothing outside the declared write paths was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the whole suite is measured once at the merged head after every repair; the manifest records one pytest run over tests/ at ca630c06e894d95111a8627b11d02a023aa270dd, a commit dated 2026-10-02T13:04:07Z that is an ancestor of main's tip and predates the run's 13:19:28Z start, reporting \"17 failed, 10078 passed, 76 skipped, 62 warnings in 1455.13s\" with EXIT=1.\nVERDICT done_when: the done_when's four steps are each recorded on disk rather than claimed - suite-closing.log carries the revision, wall time, pass/fail/skip counts and every one of the 17 FAILED ids with a first error line; solo-rerun.log carries 14 EXIT=1 and 3 EXIT=0 solo classifications; suite-closing.json records the per-id attribution and the comparison against 903f6e991; and suite-closing.md and .json are copied to the reports directory.\nCALL_SITES: none\nVERDICT write_paths: the manifest declares /home/ITER/mcintos/.config/reckon/crew/reports/reckon/suite-closing.md and .json, and git -C <the reviewed worktree> status --porcelain at ca630c06e is empty, so the node changed no tracked file and wrote only the declared reports and run-directory logs.\nVERDICT manifest: read; status complete with commits \"none - measure-only node\", baseline_suite and after_suite both populated with completed true, and a landing line stating 17 failed / 10078 passed / 76 skipped in  1455.13 s.\nVERDICT diff: there is no commit to read - the node is measure-only and its deliverable is the report pair plus the two logs - so the artefact reviewed is suite-closing.json against the base record suite-final.json, whose shape it reuses field for field.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: suite-closing.log:1 records revision ca630c06e894d95111a8627b11d02a023aa270dd and its tail records \"17 failed, 10078 passed, 76 skipped, 62 warnings in 1455.13s\", matching the goal's single whole-suite measurement at the merged head.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arms are on disk and reproduce - I re-ran tests/test_worker_digest.py::test_the_committed_digests_are_current_on_this_host at ca630c06e (1 failed) and tests/test_landing_write_races_every_writer.py::test_each_writer_racing_a_landing_write_commutes_or_is_refused[state-set] (1 passed) - but the manifest's baseline_suite log_path is empty so the read-path log-text derivation reads unmeasured, and six pace ids are attributed to a commit that does not touch their code path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git -C <the reviewed worktree> status --porcelain is empty and the manifest writes only the two declared report paths and the run-directory logs, so nothing outside the declared write paths was touched.\nSCORE durability: 18\nJUSTIFICATION durability: the measurement is reproducible from the recorded command and revision (suite-closing.log:1 names the interpreter, PYTHONPATH, -n 8, -p no:cacheprovider and basetemp) and both reports are durable copies under the reports directory, so a later reader re-derives the figures without the run id.\nSCORE fit: 18\nJUSTIFICATION fit: suite-closing.json reuses the base record suite-final.json's shape (revision, wall_seconds, counts, deterministic, load_only, fixed_since_<sha>, new) exactly and introduces no name the repository naming rules forbid.\nFINDING tests/test_dispatch_records_the_pace_row.py:1 follow-on: the six pace ids (five in this file plus tests/test_pace_replay.py::test_a_damaged_field_marks_its_row_and_never_the_week) are each attributed to 8f0025cee, but that commit's diff touches only reckon/cli.py, reckon/crew/picker/*, tests/test_picker.py, pyproject.toml and uv.lock - not reckon/budget.py, reckon/crew/dispatch.py or the failing tests - and the manifest's own note places burn_multiple on the earlier prototype chain; the commits that changed reckon/budget.py in 903f6e991..ca630c06e are 43ab5d69e and 9bb5a4c68, so the candidate for those six ids is unsupported by reading 8f0025cee and should be re-derived.\nFINDING manifest.md:1 follow-on: the base arm of baseline_suite records log_path \"\" with command \"unrecorded - the base record names no command\", so the read-path added_failure_count derived from the two gate logs would read unmeasured for this review even though the recorded failure_ids support 17; a reader reconciling the count against the arms' logs has the digest but not the base text.",
+  "review_run_id": "r-20261002T142452263450-review-of-suite-at-the-closing-head",
+  "reviewed_base_sha": "903f6e9911d87b94f28f2b05b7c125973b65a0cc",
+  "reviewed_head_sha": "ca630c06e894d95111a8627b11d02a023aa270dd",
+  "reviewed_run_id": "r-20261002T130500694738-suite-at-the-closing-head",
+  "reviewer": {
+    "backend": "sonnet",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T14:41:55.962449+00:00",
+  "total": 92
+}

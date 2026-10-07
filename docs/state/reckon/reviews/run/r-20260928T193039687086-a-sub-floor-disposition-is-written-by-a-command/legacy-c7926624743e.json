@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:crew_dispose",
+    "reckon/crew/obligations.py:_sub_floor_items",
+    "reckon/crew/recovery.py:select_review_for_head"
+  ],
+  "completed_at": "2026-09-28T22:12:43.399Z",
+  "dispatched_at": "2026-09-28T19:31:00Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "3847",
+      "text": "the command writes through the head-less selection (newest record) while reckon/crew/recovery.py:select_review_for_head reads back the first candidate carrying the head, so a store holding both the legacy and the revision-keyed record for one head answers ok: true and leaves the sub-floor row standing \u2014 reproduced with a live pointer in review-reproduction.log, where shapes B and C report exit=0 with the disposition present only in the .at- file and the durability row still listed, against shape A which clears it; the store on this workstation holds that shape for 343 of its 570 runs, and r-20260928T180802952100 already carries an exempted durability disposition in its .at- file alone, which the reader that reports the row does not see."
+    },
+    {
+      "file": "docs/figures/crew-observability-truth/a-sub-floor-disposition-is-written-by-a-command/disposition_lifecycle_and_arm_outcomes.py",
+      "line": "164",
+      "text": "plots the base arm as \"0 passed, 8 failed\" and the fragment's alt text repeats that reading, while arms/baseline_suite.log reads \"8 failed, 40 passed\" and the fragment's own table three lines above says the same \u2014 a reader of the figure or of the alt text alone is told the base gate was 8 cases, not the 48 the other two arms are measured over, so the population the change is compared against is misstated."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "3811",
+      "text": "a --reason supplied with --kind folded, or a --node supplied with --kind exempted, is accepted and silently dropped: reckon/cli.py:3847 hands both to a writer whose predicate reads only the one its kind needs, so the operator's text is discarded while the receipt still reads ok: true."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; 857e514c adds the subcommand, the ten cases and the two documents, and 96ab817c replaces the writer's second copy of the closed set with dimension_disposition_valid and corrects the floor-of-zero comment at reckon/crew/review.py:1166.",
+    "done_when": "the done-when's measure is tests/test_sub_floor_disposition_has_a_writer.py, whose ten cases assert the row's return through the obligations read-back after driving the CLI; its arms are logged at arms/baseline_suite.log (8 failed, 40 passed, EXIT=1 at 5636e306, the failures exactly the new module's command cases) and arms/after_suite.log (48 passed, EXIT=0), and I reproduced the head arm independently at 96ab817c.",
+    "goal": "the goal is that a coordinator retires a sub-floor review dimension through a crew command instead of editing the review store by hand; reckon/cli.py:3793 adds `crew dispose` and reckon/crew/review.py:1329 makes the writer's gate the reader's own predicate, and the command retires the row on a store holding only the revision-keyed record \u2014 but where the store also holds the legacy record for the same head it exits ok: true and the row stands, which is the shape 343 of the 570 runs in ~/.config/reckon/crew/reviews/reckon already have.",
+    "manifest": "read; its commits, changed_paths, test_logs, baseline_suite and after_suite records and the bare negative_control_log path all match the logs and the diff, and the commits it names are the commits the fragment's evidence anchor cites.",
+    "write_paths": "the node was fenced to reckon/cli.py, reckon/crew/review.py, tests/test_sub_floor_disposition_has_a_writer.py, the fragment and the figure directory; `git diff --stat 5636e306 96ab817c` lists six files and every one is inside that fence."
+  },
+  "justifications": {
+    "durability": "removing the kind check from dimension_disposition_valid reddens exactly the two unknown-kind cases and the refusals are asserted through the obligations read-back rather than the command's own receipt, but no case builds a store holding both records, so nothing fails if the write-path divergence regresses.",
+    "evidence": "the gate measures what the done-when asserts and each arm ends in an EXIT= line (arms/after_suite.log 48 passed EXIT=0, arms/baseline_suite.log 8 failed 40 passed EXIT=1), but the delivered figure and its alt text misstate the base arm against that log.",
+    "fit": "making the writer's gate the reader's own predicate at reckon/crew/review.py:1329 matches the module's idiom and the refusing refusals reuse the store's own messages, though the write-back-path claim at reckon/cli.py:3840 and reckon/crew/review.py:1314 is not what the code does when the newest record is not the one a head-named reader selects.",
+    "goal_fidelity": "reckon/cli.py:3847 records the disposition through a head-less selection (the newest record) while the obligation row is read back by a head-named one, so on the dual-record store the goal's retire-by-command does not happen and the coordinator is back to hand-editing, as review-reproduction.log shapes B and C show.",
+    "scope_discipline": "`git diff --stat 5636e306 96ab817c` touches exactly the six files under the five declared write paths, and the review.py comment correction is the one the goal names."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 5636e30629cb0ad1830bf9a93eb59a20bd22283f\nreviewed_head_sha: 96ab817c004bdfd2a075ffe65901780794857396\n\nVERDICT goal: the goal is that a coordinator retires a sub-floor review dimension through a crew command instead of editing the review store by hand; reckon/cli.py:3793 adds `crew dispose` and reckon/crew/review.py:1329 makes the writer's gate the reader's own predicate, and the command retires the row on a store holding only the revision-keyed record \u2014 but where the store also holds the legacy record for the same head it exits ok: true and the row stands, which is the shape 343 of the 570 runs in ~/.config/reckon/crew/reviews/reckon already have.\nVERDICT done_when: the done-when's measure is tests/test_sub_floor_disposition_has_a_writer.py, whose ten cases assert the row's return through the obligations read-back after driving the CLI; its arms are logged at arms/baseline_suite.log (8 failed, 40 passed, EXIT=1 at 5636e306, the failures exactly the new module's command cases) and arms/after_suite.log (48 passed, EXIT=0), and I reproduced the head arm independently at 96ab817c.\nVERDICT write_paths: the node was fenced to reckon/cli.py, reckon/crew/review.py, tests/test_sub_floor_disposition_has_a_writer.py, the fragment and the figure directory; `git diff --stat 5636e306 96ab817c` lists six files and every one is inside that fence.\nVERDICT manifest: read; its commits, changed_paths, test_logs, baseline_suite and after_suite records and the bare negative_control_log path all match the logs and the diff, and the commits it names are the commits the fragment's evidence anchor cites.\nVERDICT diff: read commit by commit; 857e514c adds the subcommand, the ten cases and the two documents, and 96ab817c replaces the writer's second copy of the closed set with dimension_disposition_valid and corrects the floor-of-zero comment at reckon/crew/review.py:1166.\nCALL_SITES: reckon/cli.py:crew_dispose, reckon/crew/obligations.py:_sub_floor_items, reckon/crew/recovery.py:select_review_for_head\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/cli.py:3847 records the disposition through a head-less selection (the newest record) while the obligation row is read back by a head-named one, so on the dual-record store the goal's retire-by-command does not happen and the coordinator is back to hand-editing, as review-reproduction.log shapes B and C show.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate measures what the done-when asserts and each arm ends in an EXIT= line (arms/after_suite.log 48 passed EXIT=0, arms/baseline_suite.log 8 failed 40 passed EXIT=1), but the delivered figure and its alt text misstate the base arm against that log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 5636e306 96ab817c` touches exactly the six files under the five declared write paths, and the review.py comment correction is the one the goal names.\nSCORE durability: 15\nJUSTIFICATION durability: removing the kind check from dimension_disposition_valid reddens exactly the two unknown-kind cases and the refusals are asserted through the obligations read-back rather than the command's own receipt, but no case builds a store holding both records, so nothing fails if the write-path divergence regresses.\nSCORE fit: 18\nJUSTIFICATION fit: making the writer's gate the reader's own predicate at reckon/crew/review.py:1329 matches the module's idiom and the refusing refusals reuse the store's own messages, though the write-back-path claim at reckon/cli.py:3840 and reckon/crew/review.py:1314 is not what the code does when the newest record is not the one a head-named reader selects.\nFINDING reckon/cli.py:3847 the command writes through the head-less selection (newest record) while reckon/crew/recovery.py:select_review_for_head reads back the first candidate carrying the head, so a store holding both the legacy and the revision-keyed record for one head answers ok: true and leaves the sub-floor row standing \u2014 reproduced with a live pointer in review-reproduction.log, where shapes B and C report exit=0 with the disposition present only in the .at- file and the durability row still listed, against shape A which clears it; the store on this workstation holds that shape for 343 of its 570 runs, and r-20260928T180802952100 already carries an exempted durability disposition in its .at- file alone, which the reader that reports the row does not see.\nFINDING docs/figures/crew-observability-truth/a-sub-floor-disposition-is-written-by-a-command/disposition_lifecycle_and_arm_outcomes.py:164 plots the base arm as \"0 passed, 8 failed\" and the fragment's alt text repeats that reading, while arms/baseline_suite.log reads \"8 failed, 40 passed\" and the fragment's own table three lines above says the same \u2014 a reader of the figure or of the alt text alone is told the base gate was 8 cases, not the 48 the other two arms are measured over, so the population the change is compared against is misstated.\nFINDING reckon/cli.py:3811 a --reason supplied with --kind folded, or a --node supplied with --kind exempted, is accepted and silently dropped: reckon/cli.py:3847 hands both to a writer whose predicate reads only the one its kind needs, so the operator's text is discarded while the receipt still reads ok: true.\n",
+  "review_run_id": "legacy-c7926624743e",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "5636e30629cb0ad1830bf9a93eb59a20bd22283f",
+  "reviewed_head_sha": "96ab817c004bdfd2a075ffe65901780794857396",
+  "reviewed_run_id": "r-20260928T193039687086-a-sub-floor-disposition-is-written-by-a-command",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T20:30:35.106139+00:00",
+  "total": 83
+}

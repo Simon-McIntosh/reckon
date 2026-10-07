@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:_watch_verdict (line 4766)",
+    "reckon/crew/recovery.py:watch_follow (line 5562)"
+  ],
+  "completed_at": "2026-09-25T17:53:52.038Z",
+  "dispatched_at": "2026-09-25T17:04:19Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T151555002150-stall-clock-starts-at-the-attempt/manifest.md",
+      "line": "19",
+      "text": "the evidence_inputs line claims recovery.py carries 9 pre-existing findings, but the pinned ruff 0.16.4 reports 8 at both 311bfc62 and 299dac8a, so the number a reader would re-run does not reproduce even though the load-bearing zero delta does."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 311bfc62; 40102f8b adds the attempt-clock helper, the quiet-time cap and four cases, and 299dac8a appends the landing record, the evidence section and one XML-valid figure, with nothing outside the five fenced paths.",
+    "done_when": "the done-when's four cases are the four tests in tests/test_stall_clock_starts_at_the_attempt.py (fresh attempt, stale attempt, no attempt clock, attempt-record fallback), the declared negative control is recorded in the run's negative-control.log, and the no-added-failures half is recorded in base-arm.log and after-suite.log.",
+    "goal": "the goal asks the stall verdict to read quiet time from the later of the last stream record and the current attempt's start; reckon/crew/recovery.py:2856 caps quiet time at now minus the attempt start, which is that same value, and reckon/crew/recovery.py:2812 reads the pointer field a resume writes at reckon/crew/dispatch.py:7025.",
+    "manifest": "read; it records 112 passed at base and at head, 116 at the gate, the declared red control, and consumers unchanged, but its lint claim of 9 pre-existing findings in recovery.py does not reproduce (see the FINDING below).",
+    "write_paths": "the five fenced paths are named in the reviewed run's prompt; both commits' files (reckon/crew/recovery.py, the new test module, the landed evidence page, one figure under docs/figures/a-crew-process-ends-with-its-owner and the plan page) all sit inside them."
+  },
+  "justifications": {
+    "durability": "deleting the cap at reckon/crew/recovery.py:2857-2858 makes tests/test_stall_clock_starts_at_the_attempt.py:128 read 1919 instead of 30, which is exactly what negative-control.log shows, and no added assertion compares a value against the input the test itself supplied.",
+    "evidence": "the four done_when cases are asserted at tests/test_stall_clock_starts_at_the_attempt.py:104-176, gate.log records 116 passed at 40102f8b, base-arm.log records 112 passed at 311bfc62 in a scratch tree naming its module and cwd, and negative-control.log reddens the resumed case at 1919 against the injected 30.",
+    "fit": "_attempt_started_seconds at reckon/crew/recovery.py:2803 mirrors the fall-back-to-record idiom of _run_stream_mtime at reckon/crew/recovery.py:2783, and the local ATTEMPT_RECORD_NAME at reckon/crew/recovery.py:2800 avoids a module cycle because reckon/crew/dispatch.py imports recovery.",
+    "goal_fidelity": "reckon/crew/recovery.py:2856 computes min(stream silence, now minus attempt start), which is now minus max(last stream record, attempt start), and the live pointer of r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom carries attempt 2 at 15:13:20Z, six seconds before the recorded false stall.",
+    "scope_discipline": "every path in 40102f8b and 299dac8a lies inside the five fenced paths, the plan-version and plan-modified meta lines are untouched, and the out-of-scope unwritten verdict is reported under follow_ons rather than changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the stall verdict to read quiet time from the later of the last stream record and the current attempt's start; reckon/crew/recovery.py:2856 caps quiet time at now minus the attempt start, which is that same value, and reckon/crew/recovery.py:2812 reads the pointer field a resume writes at reckon/crew/dispatch.py:7025.\nVERDICT done_when: the done-when's four cases are the four tests in tests/test_stall_clock_starts_at_the_attempt.py (fresh attempt, stale attempt, no attempt clock, attempt-record fallback), the declared negative control is recorded in the run's negative-control.log, and the no-added-failures half is recorded in base-arm.log and after-suite.log.\nVERDICT write_paths: the five fenced paths are named in the reviewed run's prompt; both commits' files (reckon/crew/recovery.py, the new test module, the landed evidence page, one figure under docs/figures/a-crew-process-ends-with-its-owner and the plan page) all sit inside them.\nVERDICT manifest: read; it records 112 passed at base and at head, 116 at the gate, the declared red control, and consumers unchanged, but its lint claim of 9 pre-existing findings in recovery.py does not reproduce (see the FINDING below).\nVERDICT diff: read commit by commit against 311bfc62; 40102f8b adds the attempt-clock helper, the quiet-time cap and four cases, and 299dac8a appends the landing record, the evidence section and one XML-valid figure, with nothing outside the five fenced paths.\nCALL_SITES: reckon/crew/recovery.py:_watch_verdict (line 4766), reckon/crew/recovery.py:watch_follow (line 5562)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2856 computes min(stream silence, now minus attempt start), which is now minus max(last stream record, attempt start), and the live pointer of r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom carries attempt 2 at 15:13:20Z, six seconds before the recorded false stall.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four done_when cases are asserted at tests/test_stall_clock_starts_at_the_attempt.py:104-176, gate.log records 116 passed at 40102f8b, base-arm.log records 112 passed at 311bfc62 in a scratch tree naming its module and cwd, and negative-control.log reddens the resumed case at 1919 against the injected 30.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 40102f8b and 299dac8a lies inside the five fenced paths, the plan-version and plan-modified meta lines are untouched, and the out-of-scope unwritten verdict is reported under follow_ons rather than changed.\nSCORE durability: 19\nJUSTIFICATION durability: deleting the cap at reckon/crew/recovery.py:2857-2858 makes tests/test_stall_clock_starts_at_the_attempt.py:128 read 1919 instead of 30, which is exactly what negative-control.log shows, and no added assertion compares a value against the input the test itself supplied.\nSCORE fit: 18\nJUSTIFICATION fit: _attempt_started_seconds at reckon/crew/recovery.py:2803 mirrors the fall-back-to-record idiom of _run_stream_mtime at reckon/crew/recovery.py:2783, and the local ATTEMPT_RECORD_NAME at reckon/crew/recovery.py:2800 avoids a module cycle because reckon/crew/dispatch.py imports recovery.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T151555002150-stall-clock-starts-at-the-attempt/manifest.md:19 the evidence_inputs line claims recovery.py carries 9 pre-existing findings, but the pinned ruff 0.16.4 reports 8 at both 311bfc62 and 299dac8a, so the number a reader would re-run does not reproduce even though the load-bearing zero delta does.",
+  "review_run_id": "r-20260925T170405763940-review-of-stall-clock-starts-at-the-attempt",
+  "reviewed_base_sha": "311bfc6256b029cafd9934a013452d41c192ea48",
+  "reviewed_head_sha": "299dac8a3d14ff3f3569f291b26d22797cb66810",
+  "reviewed_run_id": "r-20260925T151555002150-stall-clock-starts-at-the-attempt",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T17:44:17.626120+00:00",
+  "total": 92
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "008a18f121e0f1c4ad32d8b96964acdbad7f9c12",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T06:38:46.960Z",
+  "dispatched_at": "2026-09-30T18:25:16Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: negative_control_log names logs/negative-control-guard-test.log, whose first line paraphrases a different mutation, while the declared mutation is evidenced by logs/negative-control.log, so the declaration and the log a reader compares against it describe two different experiments."
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": "103",
+      "severity": "follow-on",
+      "text": "follow-on: the guard fails only the allocation verbs, so a test reaching squeue, scontrol or scancel is recorded but not failed, narrower than the goal's \"fails any test that reaches a scheduler verb it did not provide\"; the narrowing answers a prior finding that a liveness probe was turned red, but leaves tests/test_crew_placed_liveness.py::test_the_payload_log_decides_that_the_work_ran still reaching the host's real squeue."
+    },
+    {
+      "file": "manifest.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: changed_paths omits tests/test_concurrency_bound_refuses_by_name.py, which the diff changes at lines 44-128."
+    }
+  ],
+  "head_log_revision": "9457ce8af80551e0b922e62ac8ff2e48e8bcb3c4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 008a18f12; b62d9fde adds the guard and the recording scheduler, aa1ce2bab narrows it and adds the committed check, 5ab11b97 and 9457ce8a add evidence prose, nothing outside the scope.",
+    "done_when": "the done-when asks for like-for-like whole-suite arms, a shim log with no salloc or sbatch, and a negative control naming salloc; logs/suite-head2.log records 137 failed / 9008 passed at 9457ce8af and logs/reach-head.tsv holds no salloc for reckon-reservation, but the log named at manifest.md:11 evidences a different mutation than the declaration.",
+    "goal": "the goal names the tests whose dispatch reaches a real salloc through ensure_reservation, gives each a full scheduler it provides, and adds a guard failing a test that reaches an unprovided verb; tests/conftest.py:376 adds the guard and tests/test_concurrency_bound_refuses_by_name.py:124 gives the one reaching test a recording scheduler.",
+    "manifest": "read; it records the head arm 137 failed / 9008 passed EXIT=1 at 9457ce8af, the base arm 157 failed plus 4 errors at 008a18f12, added failure ids 0, and a negative-control log path.",
+    "write_paths": "the manifest declares ten test paths plus the evidence fragment; the diff touches tests/conftest.py, tests/test_concurrency_bound_refuses_by_name.py, tests/test_dispatch_places_into_the_shared_reservation.py and the fragment, all inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_places_into_the_shared_reservation.py:244 runs a child pytest whose probe passes once the session guard is removed, so the committed check reddens on that mutation.",
+    "evidence": "logs/suite-head2.log records 137 failed and 9008 passed at 9457ce8af and logs/suite-base2.log 157 failed plus 4 errors, giving 0 added ids, but manifest.md:11 names a control log evidencing a different mutation than the declaration.",
+    "fit": "tests/conftest.py:92 names the guard by mechanism (_SCHEDULER_VERBS, reached_allocation_verbs) with no plan or ticket label, matching the module's existing style.",
+    "goal_fidelity": "tests/conftest.py:376 refuses and records every scheduler verb, but only _ALLOCATION_VERBS at tests/conftest.py:103 fail a test, so a squeue, scontrol or scancel reach is not failed as the goal states.",
+    "scope_discipline": "the four diff paths are all inside the manifest's declared write paths, but manifest.md:8 omits tests/test_concurrency_bound_refuses_by_name.py from changed_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal names the tests whose dispatch reaches a real salloc through ensure_reservation, gives each a full scheduler it provides, and adds a guard failing a test that reaches an unprovided verb; tests/conftest.py:376 adds the guard and tests/test_concurrency_bound_refuses_by_name.py:124 gives the one reaching test a recording scheduler.\nVERDICT done_when: the done-when asks for like-for-like whole-suite arms, a shim log with no salloc or sbatch, and a negative control naming salloc; logs/suite-head2.log records 137 failed / 9008 passed at 9457ce8af and logs/reach-head.tsv holds no salloc for reckon-reservation, but the log named at manifest.md:11 evidences a different mutation than the declaration.\nVERDICT write_paths: the manifest declares ten test paths plus the evidence fragment; the diff touches tests/conftest.py, tests/test_concurrency_bound_refuses_by_name.py, tests/test_dispatch_places_into_the_shared_reservation.py and the fragment, all inside the declared set.\nVERDICT manifest: read; it records the head arm 137 failed / 9008 passed EXIT=1 at 9457ce8af, the base arm 157 failed plus 4 errors at 008a18f12, added failure ids 0, and a negative-control log path.\nVERDICT diff: read commit by commit against 008a18f12; b62d9fde adds the guard and the recording scheduler, aa1ce2bab narrows it and adds the committed check, 5ab11b97 and 9457ce8a add evidence prose, nothing outside the scope.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/conftest.py:376 refuses and records every scheduler verb, but only _ALLOCATION_VERBS at tests/conftest.py:103 fail a test, so a squeue, scontrol or scancel reach is not failed as the goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/suite-head2.log records 137 failed and 9008 passed at 9457ce8af and logs/suite-base2.log 157 failed plus 4 errors, giving 0 added ids, but manifest.md:11 names a control log evidencing a different mutation than the declaration.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the four diff paths are all inside the manifest's declared write paths, but manifest.md:8 omits tests/test_concurrency_bound_refuses_by_name.py from changed_paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_dispatch_places_into_the_shared_reservation.py:244 runs a child pytest whose probe passes once the session guard is removed, so the committed check reddens on that mutation.\nSCORE fit: 19\nJUSTIFICATION fit: tests/conftest.py:92 names the guard by mechanism (_SCHEDULER_VERBS, reached_allocation_verbs) with no plan or ticket label, matching the module's existing style.\nFINDING manifest.md:11 follow-on: negative_control_log names logs/negative-control-guard-test.log, whose first line paraphrases a different mutation, while the declared mutation is evidenced by logs/negative-control.log, so the declaration and the log a reader compares against it describe two different experiments.\nFINDING tests/conftest.py:103 follow-on: the guard fails only the allocation verbs, so a test reaching squeue, scontrol or scancel is recorded but not failed, narrower than the goal's \"fails any test that reaches a scheduler verb it did not provide\"; the narrowing answers a prior finding that a liveness probe was turned red, but leaves tests/test_crew_placed_liveness.py::test_the_payload_log_decides_that_the_work_ran still reaching the host's real squeue.\nFINDING manifest.md:8 follow-on: changed_paths omits tests/test_concurrency_bound_refuses_by_name.py, which the diff changes at lines 44-128.",
+  "review_run_id": "legacy-888df097367e",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "008a18f121e0f1c4ad32d8b96964acdbad7f9c12",
+  "reviewed_head_sha": "9457ce8af80551e0b922e62ac8ff2e48e8bcb3c4",
+  "reviewed_run_id": "r-20260930T182503034181-the-suite-cannot-reach-a-real-scheduler",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T06:50:20.835631+00:00",
+  "total": 89
+}

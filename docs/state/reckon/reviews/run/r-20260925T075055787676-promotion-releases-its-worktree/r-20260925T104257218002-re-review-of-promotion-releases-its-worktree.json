@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:crew_complete",
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion.py:_release_after_promotion",
+    "reckon/crew/promotion.py:_release_run_workspace"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T10:42:57.218002+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2924",
+      "text": "prior finding one (release unreachable for runs holding a live session) \u2014 CLOSED at 5069a24d. The withholding condition at promotion.py:2819-2827 now requires a non-passing gate or a manifest that is not a fresh complete, so a passing complete run with a resolvable session falls through to the removal branch, and _release_run_workspace removes the tree when the classification is integrated or disposable. My probe released such a tree at head and reproduced the prior behaviour at c676b011, where the gate parameter did not exist."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3013",
+      "text": "prior finding two (dropped failed-promotion cleanup signalling) \u2014 CLOSED at 5069a24d. The failed-verdict branch at promotion.py:3030-3048 now calls _release_run_workspace with release_worktree=False, so the terminal-manifest gate, the process-group signal (promotion.py:3012-3019) and the worktree_audit assignment (promotion.py:3021) all run; the withheld tree is named by worktree_withheld instead of being skipped. At c676b011 the same probe recorded process_signalled False, no worktree_audit key and a writer still alive."
+    },
+    {
+      "file": "tests/test_crew_promotion.py",
+      "line": "1144",
+      "text": "three legacy assertions are red at the reviewed head because they encode the superseded retention rule \u2014 measured by me at head: 3 failed, 46 passed (legacy-promotion-tests.log), the failures being test_a_recoverable_session_retains_its_worktree_as_a_distinct_audit_state (both parameters) and test_promotion_audits_only_its_own_worktree, each asserting a passing resolvable session retains its tree. The file is outside this node's declared write paths, so the expectation update belongs to the coordinator, as the implementer's follow_ons entry already states."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read hunk by hunk against c676b011; the three changes are the complete-manifest gate in _resume_worktree_retention (promotion.py:2821-2827), the release_worktree/worktree_withheld parameters that let a failed verdict reach the release without removing the tree (promotion.py:2939-2942), and the failed-verdict branch that now calls the release instead of returning early (promotion.py:3030-3048).",
+    "done_when": "the node's gate is green at the reviewed head by my own re-run from the reviewed tree (4 passed, exit 0, rereview-gate.log), and the module covers the two claims the prior review found unmeasured: the resolvable-session release (four cases drive the production crew.complete) and the failed-verdict signalling with a live pid whose death is asserted.",
+    "goal": "both prior findings are closed on the real promotion path at 5069a24d. Finding one: a complete run holding a resolvable session now releases an integrated clean tree \u2014 reproduced independently with a pointer-named session and an integrated divergent tree, released at head and retained at c676b011 with \"retained as the working directory of recoverable session\" (probe-head.log / probe-base.log, ARM_A). Finding two: a failed promotion again signals the leftover writer's process group and carries worktree_audit \u2014 the same probe records process_signalled False and no worktree_audit key at c676b011, and True with one audit row at head, the stub writer dead only at head (ARM_B).",
+    "manifest": "read in full; both suite arms carry revisions and existing log paths, the declared mutation negative-retention.log is red on the complete-real-session case, and the follow_ons entry names the three legacy assertions I measured red.",
+    "write_paths": "four paths declared and four touched \u2014 reckon/crew/promotion.py (16+/5- at ed020ee5 and 33+/13- at c35d6f7e, both hunks read), tests/test_promotion_releases_its_worktree.py (98+ and 94+ additions), and the two cumulative documents appended to at 5069a24d (16+ evidence, 9+ plan); the declared figures directory is untouched and nothing outside the declared list changes."
+  },
+  "justifications": {
+    "durability": "four cases drive the production path and assert on-disk state, the stored row and a real process's death, and two mutations are executed and red; withheld are the legacy file's three red assertions, which the node's own arms did not measure, and the blocked-verdict arm, which remains unreachable through the CLI.",
+    "evidence": "the gate is green at the reviewed head by my own re-run from the reviewed tree, both declared controls are executed and red in the implementer's logs, and my independent two-arm probe reproduces both prior findings at c676b011 and shows them closed at head with the production entry point; withheld is that the implementer's own arms never measured the three legacy assertions the change reddens.",
+    "fit": "the added gate parameter and the release_worktree/worktree_withheld keywords follow the module's private-helper and docstring idiom, the retained-withheld wording reuses worktree_withheld rather than inventing a second field, and no added name carries a plan or version label.",
+    "goal_fidelity": "the pass-resolution case the prior review called unreachable is reachable and reachable on the real crew.complete path with a resolvable session, and the failed-promotion signalling is restored; withheld is the blocked verdict, which ledger.GATE_VERDICTS still cannot produce through the CLI, and a stale-manifest complete run stays retained by design but untested.",
+    "scope_discipline": "the three commits touch only promotion.py, the new test module and the two cumulative documents (evidence insertions only), no path outside the declared list moves, subjects are conventional with bodies and no attribution or plan identifiers appear."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: both prior findings are closed on the real promotion path at 5069a24d. Finding one: a complete run holding a resolvable session now releases an integrated clean tree \u2014 reproduced independently with a pointer-named session and an integrated divergent tree, released at head and retained at c676b011 with \"retained as the working directory of recoverable session\" (probe-head.log / probe-base.log, ARM_A). Finding two: a failed promotion again signals the leftover writer's process group and carries worktree_audit \u2014 the same probe records process_signalled False and no worktree_audit key at c676b011, and True with one audit row at head, the stub writer dead only at head (ARM_B).\nVERDICT done_when: the node's gate is green at the reviewed head by my own re-run from the reviewed tree (4 passed, exit 0, rereview-gate.log), and the module covers the two claims the prior review found unmeasured: the resolvable-session release (four cases drive the production crew.complete) and the failed-verdict signalling with a live pid whose death is asserted.\nVERDICT write_paths: four paths declared and four touched \u2014 reckon/crew/promotion.py (16+/5- at ed020ee5 and 33+/13- at c35d6f7e, both hunks read), tests/test_promotion_releases_its_worktree.py (98+ and 94+ additions), and the two cumulative documents appended to at 5069a24d (16+ evidence, 9+ plan); the declared figures directory is untouched and nothing outside the declared list changes.\nVERDICT manifest: read in full; both suite arms carry revisions and existing log paths, the declared mutation negative-retention.log is red on the complete-real-session case, and the follow_ons entry names the three legacy assertions I measured red.\nVERDICT diff: read hunk by hunk against c676b011; the three changes are the complete-manifest gate in _resume_worktree_retention (promotion.py:2821-2827), the release_worktree/worktree_withheld parameters that let a failed verdict reach the release without removing the tree (promotion.py:2939-2942), and the failed-verdict branch that now calls the release instead of returning early (promotion.py:3030-3048).\nCALL_SITES: reckon/cli.py:crew_complete, reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion.py:_release_after_promotion, reckon/crew/promotion.py:_release_run_workspace\nFINDING reckon/crew/promotion.py:2924 prior finding one (release unreachable for runs holding a live session) \u2014 CLOSED at 5069a24d. The withholding condition at promotion.py:2819-2827 now requires a non-passing gate or a manifest that is not a fresh complete, so a passing complete run with a resolvable session falls through to the removal branch, and _release_run_workspace removes the tree when the classification is integrated or disposable. My probe released such a tree at head and reproduced the prior behaviour at c676b011, where the gate parameter did not exist.\nFINDING reckon/crew/promotion.py:3013 prior finding two (dropped failed-promotion cleanup signalling) \u2014 CLOSED at 5069a24d. The failed-verdict branch at promotion.py:3030-3048 now calls _release_run_workspace with release_worktree=False, so the terminal-manifest gate, the process-group signal (promotion.py:3012-3019) and the worktree_audit assignment (promotion.py:3021) all run; the withheld tree is named by worktree_withheld instead of being skipped. At c676b011 the same probe recorded process_signalled False, no worktree_audit key and a writer still alive.\nFINDING tests/test_crew_promotion.py:1144 three legacy assertions are red at the reviewed head because they encode the superseded retention rule \u2014 measured by me at head: 3 failed, 46 passed (legacy-promotion-tests.log), the failures being test_a_recoverable_session_retains_its_worktree_as_a_distinct_audit_state (both parameters) and test_promotion_audits_only_its_own_worktree, each asserting a passing resolvable session retains its tree. The file is outside this node's declared write paths, so the expectation update belongs to the coordinator, as the implementer's follow_ons entry already states.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the pass-resolution case the prior review called unreachable is reachable and reachable on the real crew.complete path with a resolvable session, and the failed-promotion signalling is restored; withheld is the blocked verdict, which ledger.GATE_VERDICTS still cannot produce through the CLI, and a stale-manifest complete run stays retained by design but untested.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate is green at the reviewed head by my own re-run from the reviewed tree, both declared controls are executed and red in the implementer's logs, and my independent two-arm probe reproduces both prior findings at c676b011 and shows them closed at head with the production entry point; withheld is that the implementer's own arms never measured the three legacy assertions the change reddens.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three commits touch only promotion.py, the new test module and the two cumulative documents (evidence insertions only), no path outside the declared list moves, subjects are conventional with bodies and no attribution or plan identifiers appear.\nSCORE durability: 18\nJUSTIFICATION durability: four cases drive the production path and assert on-disk state, the stored row and a real process's death, and two mutations are executed and red; withheld are the legacy file's three red assertions, which the node's own arms did not measure, and the blocked-verdict arm, which remains unreachable through the CLI.\nSCORE fit: 19\nJUSTIFICATION fit: the added gate parameter and the release_worktree/worktree_withheld keywords follow the module's private-helper and docstring idiom, the retained-withheld wording reuses worktree_withheld rather than inventing a second field, and no added name carries a plan or version label.",
+  "review_run_id": "r-20260925T104257218002-re-review-of-promotion-releases-its-worktree",
+  "reviewed_base_sha": "6daecfc17f00ad90153ea988761b6dfd54150145",
+  "reviewed_head_sha": "5069a24d3f01abdfc95d2516525e620f74c1d453",
+  "reviewed_run_id": "r-20260925T075055787676-promotion-releases-its-worktree",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:19:42.849942+00:00",
+  "total": 95
+}

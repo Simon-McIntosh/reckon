@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:3856 _edit_plan_tool",
+    "reckon/mcp.py:5346 tool registration"
+  ],
+  "completed_at": "2026-10-03T11:45:52.146Z",
+  "dispatched_at": "2026-10-03T11:39:39Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base 67b7db2d3; no reckon/mcp.py change (it is byte-identical base..head), the new test file, and the evidence fragment.",
+    "done_when": "the done-when asks for a per-op-kind stale-version test, 20 consecutive race-file runs at -n 8 under load, and a negative control; the manifest records all three and the test file drives followup append, section append, state set and comment append.",
+    "goal": "the goal is to remove the recorded escape where section-append and state-set let the store's VersionConflict raise; the run re-measured, found all four op kinds already refuse in one shape, and added the absent guard at tests/test_every_edit_path_refuses_one_shape.py.",
+    "manifest": "read; it records base arm 668 passed/1 failed/1 error, head arm 668 passed/1 failed (same id), race 20/20 EXIT=0, and the negative control 6 failed EXIT=1, naming a log for each.",
+    "write_paths": "read the manifest's four declared paths; the diff touches only tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/plan-writes-are-not-fenced/every-edit-path-refuses-one-shape.html, both inside them."
+  },
+  "justifications": {
+    "durability": "the guard is verified by reinstating the regression - removing the state-mode conversion at reckon/mcp.py:3737 makes tests/test_every_edit_path_refuses_one_shape.py:159-211 fail (6 failed, EXIT=1), so the assertion is independent of the code under test rather than moving with it.",
+    "evidence": "the gate measures the done-when and its result is recorded - gate/negative-control-section-append-raises-again.log shows 6 failed EXIT=1, I reproduced 6 passed unmutated and 6 failed with the reckon/mcp.py:3737 conversion removed, and gate/twenty/race-run-01..20.log are 20/20 EXIT=0; the base arm carries a self-inflicted conftest collection error and the suite arm ran at 223cfbcca rather than the reviewed head 53bbb966a.",
+    "fit": "the test uses the repository's tmp_path/RECKON_HOME/monkeypatch fixture idiom and carries no plan, ticket or version label; the evidence fragment at docs/evidence/fragments/plan-writes-are-not-fenced/every-edit-path-refuses-one-shape.html:17 loosely says the section-append and state-set cases fail where the control fails all six.",
+    "goal_fidelity": "the CONTRACT for an already-correct guard is met exactly - reckon/mcp.py:3727-3744 already converts the store's VersionConflict on the shared write_plan call for every state op kind, and tests/test_every_edit_path_refuses_one_shape.py:159 supplies the missing guard rather than reimplementing it.",
+    "scope_discipline": "git diff --stat 67b7db2d3..53bbb966a is exactly the two declared paths (tests/... and docs/evidence/fragments/...) with no reckon/mcp.py change, and the docs/figures path was correctly left unwritten."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to remove the recorded escape where section-append and state-set let the store's VersionConflict raise; the run re-measured, found all four op kinds already refuse in one shape, and added the absent guard at tests/test_every_edit_path_refuses_one_shape.py.\nVERDICT done_when: the done-when asks for a per-op-kind stale-version test, 20 consecutive race-file runs at -n 8 under load, and a negative control; the manifest records all three and the test file drives followup append, section append, state set and comment append.\nVERDICT write_paths: read the manifest's four declared paths; the diff touches only tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/plan-writes-are-not-fenced/every-edit-path-refuses-one-shape.html, both inside them.\nVERDICT manifest: read; it records base arm 668 passed/1 failed/1 error, head arm 668 passed/1 failed (same id), race 20/20 EXIT=0, and the negative control 6 failed EXIT=1, naming a log for each.\nVERDICT diff: read both commits against base 67b7db2d3; no reckon/mcp.py change (it is byte-identical base..head), the new test file, and the evidence fragment.\nCALL_SITES: reckon/mcp.py:3856 _edit_plan_tool, reckon/mcp.py:5346 tool registration\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the CONTRACT for an already-correct guard is met exactly - reckon/mcp.py:3727-3744 already converts the store's VersionConflict on the shared write_plan call for every state op kind, and tests/test_every_edit_path_refuses_one_shape.py:159 supplies the missing guard rather than reimplementing it.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate measures the done-when and its result is recorded - gate/negative-control-section-append-raises-again.log shows 6 failed EXIT=1, I reproduced 6 passed unmutated and 6 failed with the reckon/mcp.py:3737 conversion removed, and gate/twenty/race-run-01..20.log are 20/20 EXIT=0; the base arm carries a self-inflicted conftest collection error and the suite arm ran at 223cfbcca rather than the reviewed head 53bbb966a.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 67b7db2d3..53bbb966a is exactly the two declared paths (tests/... and docs/evidence/fragments/...) with no reckon/mcp.py change, and the docs/figures path was correctly left unwritten.\nSCORE durability: 20\nJUSTIFICATION durability: the guard is verified by reinstating the regression - removing the state-mode conversion at reckon/mcp.py:3737 makes tests/test_every_edit_path_refuses_one_shape.py:159-211 fail (6 failed, EXIT=1), so the assertion is independent of the code under test rather than moving with it.\nSCORE fit: 19\nJUSTIFICATION fit: the test uses the repository's tmp_path/RECKON_HOME/monkeypatch fixture idiom and carries no plan, ticket or version label; the evidence fragment at docs/evidence/fragments/plan-writes-are-not-fenced/every-edit-path-refuses-one-shape.html:17 loosely says the section-append and state-set cases fail where the control fails all six.\n",
+  "review_run_id": "r-20261003T113909106161-review-of-every-edit-path-refuses-one-shape",
+  "reviewed_base_sha": "67b7db2d3856880efc5fffabe5ed50c92b846115",
+  "reviewed_commits": [
+    "223cfbcca1f7014d4ae73b0112f66acdf0626a1c",
+    "53bbb966a553734c978ccd1c0e3ca1e2bf52f605"
+  ],
+  "reviewed_head_sha": "53bbb966a553734c978ccd1c0e3ca1e2bf52f605",
+  "reviewed_run_id": "r-20261003T110041571435-every-edit-path-refuses-one-shape",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T113909106161-review-of-every-edit-path-refuses-one-shape",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T11:44:47Z",
+  "total": 97
+}

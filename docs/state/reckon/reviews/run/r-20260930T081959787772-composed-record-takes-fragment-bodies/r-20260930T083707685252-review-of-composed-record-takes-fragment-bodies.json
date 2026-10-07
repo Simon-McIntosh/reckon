@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed manifest's own two gate logs (gate-base.log and gate-head.log, named under its test_logs field): 232 passed at the base arm and 234 at the head arm, no FAILED or ERROR node id in either, so the set difference over node ids is a measured 0",
+  "base_log_revision": "10ccd91a4e81e929df2906b483784599e4e21430",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2214",
+    "reckon/mcp.py:1154",
+    "reckon/doccheck.py:1235"
+  ],
+  "completed_at": "2026-09-30T08:58:28.589Z",
+  "dispatched_at": "2026-09-30T08:38:20Z",
+  "findings": [
+    {
+      "file": "reckon/evidence.py",
+      "line": "480",
+      "text": "a full-document fragment carrying content but no body and no main element falls through to return raw, so its doctype and head plan-* metas re-enter the composed record - the duplicate this change exists to remove; _fragment_body_bytes returns '<!doctype html><html lang=\"en\"><head><meta name=\"plan-slug\" content=\"demo\"></head><section id=\"anchor\">x</section></html>' byte-identical (127 bytes in, 127 out), and no fragment in the current corpus has that shape."
+    }
+  ],
+  "head_log_revision": "10ccd91a4e81e929df2906b483784599e4e21430",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 10ccd91a4; one commit, three files, 193 insertions and 2 deletions, no path outside the fence, and no plan, ticket or version label in the new names, docstrings or comments.",
+    "done_when": "read clause by clause; the main-else-body extraction is reckon/evidence.py:476-482, the bare-fragment clause is pinned byte-exactly by tests/test_evidence_record_composition.py:88-91 against bare article fixtures, the no-fragment clause by tests/test_evidence_record_composition.py:102, and both arms' logs each carry -n 4, a distinct /tmp basetemp, the file list and an EXIT= tail, their 22- and 23-file lists matching my own AST scan of tests/ exactly.",
+    "goal": "the goal is that compose_landed_record append only each fragment's body content, so a fragment's head, doctype and html wrapper never enter the composed record; reckon/evidence.py:460 adds _fragment_body_bytes and :557 is the only append site, and over the plan a-landing-record-never-conflicts the composed bytes drop from 6 doctypes and 3 plan-slug metas (the record plus whole fragments) to 1 and 1, re-measured at head.",
+    "manifest": "read; status complete, one commit, both gate logs and the declared negative control named with their results; baseline_suite and after_suite are absent and legitimately so, because the live record's suite_command is null so the run was not armed; its added-failure count re-derives as 0 from its own two gate logs.",
+    "write_paths": "the fence grants four paths (reckon/evidence.py, tests/test_composed_record_takes_fragment_bodies.py, the node's fragment, the figure directory); commit 54e90f119 changes exactly the first three, the figure directory is unused as the brief's no-artifact clause directs, the worktree is clean at head and no /tmp/crtfb-* directory survives."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens tests/test_composed_record_takes_fragment_bodies.py:92 exactly as negative_control.log records, and the duplicate-plan-scalar half at :98 is discriminating - an audit over the whole-document composition reports 2 such findings where the head composition reports 0 - but the control stops at :92 and leaves it unshown, and the shape at reckon/evidence.py:480 is unguarded.",
+    "evidence": "gate-base.log and gate-head.log assert every clause of the done_when and their file lists match my AST scan, but the head arm's own revision line names the tree's commit 10ccd91a4 with the change uncommitted, so the log pins the tree rather than the commit reviewed.",
+    "fit": "_fragment_body_bytes sits beside the composition it serves, reuses the module's existing BeautifulSoup import at reckon/evidence.py:13, and introduces no plan, ticket or version name.",
+    "goal_fidelity": "the extraction at reckon/evidence.py:476-482 drops the wrapper for every shape the fragment writer produces - measured across all 108 fragments under docs/evidence/fragments, none loses an authored id and no fragment's body holds content outside its main element - but a full document with content and no body or main element is returned whole at :480.",
+    "scope_discipline": "commit 54e90f119 touches only reckon/evidence.py, tests/test_composed_record_takes_fragment_bodies.py and the node's own fragment, all inside the four declared write paths."
+  },
+  "node": "review-of-composed-record-takes-fragment-bodies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that compose_landed_record append only each fragment's body content, so a fragment's head, doctype and html wrapper never enter the composed record; reckon/evidence.py:460 adds _fragment_body_bytes and :557 is the only append site, and over the plan a-landing-record-never-conflicts the composed bytes drop from 6 doctypes and 3 plan-slug metas (the record plus whole fragments) to 1 and 1, re-measured at head.\nVERDICT done_when: read clause by clause; the main-else-body extraction is reckon/evidence.py:476-482, the bare-fragment clause is pinned byte-exactly by tests/test_evidence_record_composition.py:88-91 against bare article fixtures, the no-fragment clause by tests/test_evidence_record_composition.py:102, and both arms' logs each carry -n 4, a distinct /tmp basetemp, the file list and an EXIT= tail, their 22- and 23-file lists matching my own AST scan of tests/ exactly.\nVERDICT write_paths: the fence grants four paths (reckon/evidence.py, tests/test_composed_record_takes_fragment_bodies.py, the node's fragment, the figure directory); commit 54e90f119 changes exactly the first three, the figure directory is unused as the brief's no-artifact clause directs, the worktree is clean at head and no /tmp/crtfb-* directory survives.\nVERDICT manifest: read; status complete, one commit, both gate logs and the declared negative control named with their results; baseline_suite and after_suite are absent and legitimately so, because the live record's suite_command is null so the run was not armed; its added-failure count re-derives as 0 from its own two gate logs.\nVERDICT diff: read commit by commit against 10ccd91a4; one commit, three files, 193 insertions and 2 deletions, no path outside the fence, and no plan, ticket or version label in the new names, docstrings or comments.\nCALL_SITES: reckon/serve.py:2214, reckon/mcp.py:1154, reckon/doccheck.py:1235\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the extraction at reckon/evidence.py:476-482 drops the wrapper for every shape the fragment writer produces - measured across all 108 fragments under docs/evidence/fragments, none loses an authored id and no fragment's body holds content outside its main element - but a full document with content and no body or main element is returned whole at :480.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log and gate-head.log assert every clause of the done_when and their file lists match my AST scan, but the head arm's own revision line names the tree's commit 10ccd91a4 with the change uncommitted, so the log pins the tree rather than the commit reviewed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 54e90f119 touches only reckon/evidence.py, tests/test_composed_record_takes_fragment_bodies.py and the node's own fragment, all inside the four declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation reddens tests/test_composed_record_takes_fragment_bodies.py:92 exactly as negative_control.log records, and the duplicate-plan-scalar half at :98 is discriminating - an audit over the whole-document composition reports 2 such findings where the head composition reports 0 - but the control stops at :92 and leaves it unshown, and the shape at reckon/evidence.py:480 is unguarded.\nSCORE fit: 20\nJUSTIFICATION fit: _fragment_body_bytes sits beside the composition it serves, reuses the module's existing BeautifulSoup import at reckon/evidence.py:13, and introduces no plan, ticket or version name.\nFINDING reckon/evidence.py:480 a full-document fragment carrying content but no body and no main element falls through to return raw, so its doctype and head plan-* metas re-enter the composed record - the duplicate this change exists to remove; _fragment_body_bytes returns '<!doctype html><html lang=\"en\"><head><meta name=\"plan-slug\" content=\"demo\"></head><section id=\"anchor\">x</section></html>' byte-identical (127 bytes in, 127 out), and no fragment in the current corpus has that shape.",
+  "review_run_id": "r-20260930T083707685252-review-of-composed-record-takes-fragment-bodies",
+  "reviewed_base_sha": "10ccd91a4e81e929df2906b483784599e4e21430",
+  "reviewed_head_sha": "54e90f119ca7a7690171359fdd8af1021d0fa18c",
+  "reviewed_run_id": "r-20260930T081959787772-composed-record-takes-fragment-bodies",
+  "reviewer_run_id": "r-20260930T083707685252-review-of-composed-record-takes-fragment-bodies",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T08:53:53.482870+00:00",
+  "total": 92
+}

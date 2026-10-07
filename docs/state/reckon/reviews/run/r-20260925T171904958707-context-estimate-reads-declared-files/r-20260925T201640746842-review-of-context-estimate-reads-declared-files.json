@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3027",
+    "reckon/crew/dispatch.py:3529",
+    "reckon/crew/dispatch.py:6806",
+    "reckon/cli.py:1261",
+    "reckon/cli.py:1277"
+  ],
+  "completed_at": "2026-09-25T21:01:21.524Z",
+  "dispatched_at": "2026-09-25T20:16:50Z",
+  "findings": [
+    {
+      "file": "tests/test_context_estimate_reads_declared_files.py",
+      "line": "119",
+      "text": "tokens is assigned at :116 from _file_tokens(tmp_path, declared) and compared at :119 against a second call with the same arguments, so the assertion moves with the code under test and can fail only if the function is nondeterministic."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T171904958707-context-estimate-reads-declared-files/manifest.md",
+      "line": "9",
+      "text": "the done_when requires the gate to add no failures over tests/test_crew_dispatch_guard.py and tests/test_crew_routing_visibility.py against the base, but the manifest records only the head arm; the base arm measures 16 passed at 5bdf4f56, so that clause is unrecorded rather than false."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T171904958707-context-estimate-reads-declared-files/logs/gate-context-estimate.log",
+      "line": "3",
+      "text": "the logged command names tests/test_context_measure_landing_reads_declared_files.py, which the delivered tree does not contain, so the recorded gate cannot be re-run as logged, though the manifest's three-file command reproduces its 20 passed."
+    },
+    {
+      "file": "tests/test_context_estimate_reads_declared_files.py",
+      "line": "3",
+      "text": "the docstring carries \"(reckon-bc)\", an author attribution in source that the repository naming rules ban, since provenance belongs in the commit message or the plan record rather than the module."
+    },
+    {
+      "file": "docs/plans/the-local-lane-is-the-default.html",
+      "line": "456",
+      "text": "data-when=\"2026-09-25T18:0:00Z\" gives an unpadded minute field, so the landing record's instant differs from every zero-padded sibling comment and fails a two-digit instant pattern."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the four-file landed change at 318ec2b6, the integration commit of the worker's unchanged diff: routing.py at +85 lines, the new 162-line test file, and the two docs pages carrying the landing comment and the evidence anchor.",
+    "done_when": "four of the five done_when's clauses are asserted by tests/test_context_estimate_reads_declared_files.py \u2014 the prose-mention case at :104, the declared-write-path case at :118, the declared-input case at :139, and the refusal detail at :159 \u2014 while the base-delta clause is not measured anywhere in the reviewed manifest.",
+    "goal": "the node goal is that the dispatch context estimate charge only the repository files a node will read and that a context-window-exceeded refusal answer on its top level; reckon/crew/routing.py:1580 charges named_files from _declared_input_files and reckon/crew/routing.py:1729 supplies the refusal detail, so both halves are present in the landed diff.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T171904958707-context-estimate-reads-declared-files/manifest.md; it records 20 passed for its three-file command and names both the gate log and the negative-control log.",
+    "write_paths": "read the five exclusive paths from the reviewed node's own record \u2014 reckon/crew/routing.py, tests/test_context_estimate_reads_declared_files.py, docs/evidence/archive/the-local-lane-is-the-default-landed.html, docs/figures/the-local-lane-is-the-default and docs/plans/the-local-lane-is-the-default.html \u2014 and every path the diff touches is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_context_estimate_reads_declared_files.py:104 and :140 redden under the declared mutation, falsified in memory against the reviewed head, while :119 compares the value under test against a repeat of the same call.",
+    "evidence": "the manifest's own three-file gate command reproduces at 20 passed, but the done_when's base-delta clause carries no recorded base arm and logs/gate-context-estimate.log:3 names a test file the delivered tree does not contain.",
+    "fit": "routing.py follows the module's helper idiom, but tests/test_context_estimate_reads_declared_files.py:3 carries a parenthesised author attribution the repository naming rules forbid in source.",
+    "goal_fidelity": "routing.py:1580 charges only what _declared_input_files at routing.py:1495 returns, and the prose-mention node estimates 0 where the pre-change sweep charged 1,142,858 tokens.",
+    "scope_discipline": "every path in the diff at 318ec2b6 lies inside the five write paths declared in the reviewed manifest, and nothing outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 5bdf4f56a30a1eeda93c96da711010a9b6c76721\nreviewed_head_sha: 318ec2b6a0a439f9ff152d89b93cac3f4e678f60\nVERDICT goal: the node goal is that the dispatch context estimate charge only the repository files a node will read and that a context-window-exceeded refusal answer on its top level; reckon/crew/routing.py:1580 charges named_files from _declared_input_files and reckon/crew/routing.py:1729 supplies the refusal detail, so both halves are present in the landed diff.\nVERDICT done_when: four of the five done_when's clauses are asserted by tests/test_context_estimate_reads_declared_files.py \u2014 the prose-mention case at :104, the declared-write-path case at :118, the declared-input case at :139, and the refusal detail at :159 \u2014 while the base-delta clause is not measured anywhere in the reviewed manifest.\nVERDICT write_paths: read the five exclusive paths from the reviewed node's own record \u2014 reckon/crew/routing.py, tests/test_context_estimate_reads_declared_files.py, docs/evidence/archive/the-local-lane-is-the-default-landed.html, docs/figures/the-local-lane-is-the-default and docs/plans/the-local-lane-is-the-default.html \u2014 and every path the diff touches is inside them.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T171904958707-context-estimate-reads-declared-files/manifest.md; it records 20 passed for its three-file command and names both the gate log and the negative-control log.\nVERDICT diff: read the four-file landed change at 318ec2b6, the integration commit of the worker's unchanged diff: routing.py at +85 lines, the new 162-line test file, and the two docs pages carrying the landing comment and the evidence anchor.\nCALL_SITES: reckon/crew/dispatch.py:3027, reckon/crew/dispatch.py:3529, reckon/crew/dispatch.py:6806, reckon/cli.py:1261, reckon/cli.py:1277\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: routing.py:1580 charges only what _declared_input_files at routing.py:1495 returns, and the prose-mention node estimates 0 where the pre-change sweep charged 1,142,858 tokens.\nSCORE evidence: 13\nJUSTIFICATION evidence: the manifest's own three-file gate command reproduces at 20 passed, but the done_when's base-delta clause carries no recorded base arm and logs/gate-context-estimate.log:3 names a test file the delivered tree does not contain.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff at 318ec2b6 lies inside the five write paths declared in the reviewed manifest, and nothing outside them is touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_context_estimate_reads_declared_files.py:104 and :140 redden under the declared mutation, falsified in memory against the reviewed head, while :119 compares the value under test against a repeat of the same call.\nSCORE fit: 16\nJUSTIFICATION fit: routing.py follows the module's helper idiom, but tests/test_context_estimate_reads_declared_files.py:3 carries a parenthesised author attribution the repository naming rules forbid in source.\nFINDING tests/test_context_estimate_reads_declared_files.py:119 tokens is assigned at :116 from _file_tokens(tmp_path, declared) and compared at :119 against a second call with the same arguments, so the assertion moves with the code under test and can fail only if the function is nondeterministic.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T171904958707-context-estimate-reads-declared-files/manifest.md:9 the done_when requires the gate to add no failures over tests/test_crew_dispatch_guard.py and tests/test_crew_routing_visibility.py against the base, but the manifest records only the head arm; the base arm measures 16 passed at 5bdf4f56, so that clause is unrecorded rather than false.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T171904958707-context-estimate-reads-declared-files/logs/gate-context-estimate.log:3 the logged command names tests/test_context_measure_landing_reads_declared_files.py, which the delivered tree does not contain, so the recorded gate cannot be re-run as logged, though the manifest's three-file command reproduces its 20 passed.\nFINDING tests/test_context_estimate_reads_declared_files.py:3 the docstring carries \"(reckon-bc)\", an author attribution in source that the repository naming rules ban, since provenance belongs in the commit message or the plan record rather than the module.\nFINDING docs/plans/the-local-lane-is-the-default.html:456 data-when=\"2026-09-25T18:0:00Z\" gives an unpadded minute field, so the landing record's instant differs from every zero-padded sibling comment and fails a two-digit instant pattern.\n",
+  "review_run_id": "r-20260925T201640746842-review-of-context-estimate-reads-declared-files",
+  "reviewed_base_sha": "5bdf4f56a30a1eeda93c96da711010a9b6c76721",
+  "reviewed_head_note": "The reviewed content is the worker's delivered change, uncommitted when read and then committed unchanged by the coordinator on the worker's behalf as 318ec2b6, a child of this review's base 5bdf4f56. The granting dispatch was composed at 22:16:50, before that commit, so its head-keyed path names the pre-commit head 5bdf4f56 while this record names the integration commit it describes; both granted paths hold these bytes.",
+  "reviewed_head_sha": "318ec2b6a0a439f9ff152d89b93cac3f4e678f60",
+  "reviewed_run_id": "r-20260925T171904958707-context-estimate-reads-declared-files",
+  "reviewed_tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/context-estimate-reads-declared-files",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T20:50:36.131086+00:00",
+  "total": 81
+}

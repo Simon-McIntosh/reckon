@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-07T02:24:56Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/picker/lane_context.py:288",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's own followup `f-otmp-dispatch-prebuild` names `capabilities.cached_pick_input` as the cache to key on, so \u00a78's landed summary should cite that owner and the profile reader should call it rather than fork it.",
+      "text": "the run-time-profile cache re-implements the pick-input cache owner: `_read_persisted_profile` (lane_context.py:288), `_write_persisted_profile` (:310), `_profile_key` (:273), `_stat_stamp` (:237), `_ledger_stamp` (:252) and `_cached_run_time_profile` (:337) hand-roll a schema-marked, atomic, stamp-keyed persisted cache that `reckon/capabilities.py:1193 cached_pick_input` (with `capabilities.file_stamp` at :1149) already provides, using a second `_store.cache_root` kind (`run-time-profile`) beside the `pick-input` kind, so the version-mismatch and corrupt-entry handling now has two implementations that must stay in step.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/picker/lane_context.py:76",
+      "id": "duplicate_owner-2",
+      "reason": "extend `run_time_profile._size_class` and `local_lane_load` as the single owner of size classification and lane reading and delete the re-derived copies, so one threshold change has one site.",
+      "text": "`_bucket` duplicates `reckon/crew/run_time_profile.py:172 _size_class`: both classify a node by the same declared-budget thresholds (30/60 min) falling back to output tokens (<20k/<=100k) and return the same `BUDGET_KEY`/`OUTPUT_SIZE_KEY` bucket names imported from `run_time_profile`; the same census covers `_number` at lane_context.py:65, run_time_profile.py:79 and picker/outcomes.py:39, `_percentile` at run_time_profile.py:100 and picker/outcomes.py:46, and `reckon/crew/picker/lane_context.py:464`, which re-reads the lane document that `run_time_profile.local_lane_load()` (run_time_profile.py:382), which it already calls, has just read (`snapshot._lane` is a third reader of the same document).",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/one-typesafe-model-picker.html#s6",
+      "id": "interface_budget-1",
+      "reason": "the section must state, in its own text, which option, view, definition or refusal family the new picker surface retires or merges, or why nothing can be.",
+      "text": "the section adds interface surface without accounting for it: the picker ships the `crew pick` verb (`reckon/cli.py:1433`, fifteen options including `--replay`, `--outcomes`, `--all-projects`) and adds `--route` and `--comment` to `crew dispatch` (`reckon/cli.py:1664`), a real addition to the cli_options family (317), while \u00a75 and \u00a76 name no CLI option, MCP view, public definition or refusal family they retire or merge and give no reason none can be; no picker view was added to the mcp_views family (stays 33) and no new refusal family was added (refusal_families stays 23, `D01`\u2013`D23`), and \u00a71's merge of backend definitions (claude with `claude-opus`/`claude-haiku`, the codex variants) belongs to none of the four counted families.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "00a91ca7887f11fd498b292d753218c9e78178d1997c4f4e742afb00f670f8b0",
+  "plan_slug": "one-typesafe-model-picker",
+  "plan_version": 149,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "crew pick and dispatch --route/--comment are the picker's whole interface and no existing surface does what they do: the deterministic route stays as the picker's fallback, so nothing can be retired. The surface does shrink in the locked lane-and-model redesign, which folds per-model backends such as claude-opus into one lane per subscription.",
+      "when": "2026-10-07T04:40:34.026721+00:00"
+    }
+  ],
+  "responses": {
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "crew pick and dispatch --route/--comment are the picker's whole interface and no existing surface does what they do: the deterministic route stays as the picker's fallback, so nothing can be retired. The surface does shrink in the locked lane-and-model redesign, which folds per-model backends such as claude-opus into one lane per subscription.",
+      "when": "2026-10-07T04:40:34.026721+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-one-typesafe-model-picker.v149.json",
+  "review_run_id": "r-20261007T022426882870-plan-review-of-one-typesafe-model-picker",
+  "reviewed_blob_sha": "497a1ed65d5d4351914a5d5df7b51df991c8ffe3",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `pick()` at `reckon/crew/picker/__init__.py:47` is one entry point hiding the candidate snapshot, the Jev call, the Jinja state render, the answer validation and the fallback behind a `PickRequest`\u2192`Selection` interface (`types.py`), so substantial behaviour sits behind a small surface.",
+    "duplicate_owner": "a finding \u2014 `reckon/crew/picker/lane_context.py` forks the picker-input cache and the run-time-profile reader that `reckon/capabilities.py` and `reckon/crew/run_time_profile.py` already own.",
+    "interface_budget": "a finding \u2014 public_definitions 1489, cli_options 317, mcp_views 33, refusal_families 23; \u00a75 and \u00a76 add the `crew pick` verb and the `dispatch --route` and `--comment` options (cli_options) and the picker package's public definitions without either section naming what it retires or merges, or stating why nothing can be.",
+    "reuse_search": "pass \u2014 \u00a74's `picker-reuse-map` node mapped 28 base-revision functions before building, and the implementation honours it: `reckon/crew/picker/snapshot.py` adapts the existing hard gates (`budget.preflight`, `_lane_worker_allowance`, `_dispatch_lane_gate`, `routing._competence_verdict`, `recovery._review_excluded_backends`, `resumption.probe_lane_availability`, `_store.cache_root`) rather than re-deriving eligibility.",
+    "thin_wrapper": "pass \u2014 the picker is not a thin layer over an existing selector; it adds the Jev judgment (\u00a710) that deterministic `routing.resolve_role_override` does not carry, and reuses the deterministic gates rather than re-implementing them."
+  },
+  "section_digests": {
+    "_document": "c1d05bb4fdf732c49eadcbd5adf2284e29540025c8f895f804cd3d7d1cce9df5",
+    "s1": "0106d68d58d60a21eb06926f50f3877778bf717c284b3619f01ec4d16b69a18c",
+    "s10": "f8cea7db03e6ce1a59ee44f2b9bafe7cdd9ef466468807c3d5318193033ccbc9",
+    "s11": "1d394a8f1735f908f234eebae944b87de35bf29d61262044f141232459adc254",
+    "s2": "eacf32d1b5ac595aa7c3d40ee1b27dd2d2950ad725cff0f6d45bcd2ffe6f12bd",
+    "s3": "73993936e3a3367541ef63991298fd7d60aa3f241a9f1d68739b3cd180903ed2",
+    "s4": "3261b375216071d2db98d8de24e80697fd3d9d749a2e1fe7039eb2b09042d16f",
+    "s5": "bdd5ce075a9b03d3484f04421703d7210a276d0a6d8bd81ff277a411b0b6f6ac",
+    "s6": "1165482cbe98832408cc4d70e2324421e85cdc1d710cca0eff7ffa780d159838",
+    "s7": "6708dba8a743eb29f1233c04ff4d9cffe1b0db6f989cfa377622eb4ead6f8f65",
+    "s8": "02a3718052487fea0ed2e112ef68038773eae6a9ea8287e9dbd31e00b39bde71",
+    "s9": "9fdaa963d17c4033bdace1de49ee9b3f118e183f06473d4c47bf74e2c24cdbc1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:40:05.268292+00:00"
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:4783 crew gc entry",
+    "reckon/crew/routing.py:602 _repository_tree_snapshot",
+    "reckon/crew/routing.py:880 garbage_collect calls _inspect_workspace",
+    "reckon/crew/promotion.py:4280 and :4397 _inspect_workspace",
+    "reckon/crew/promotion.py:2301 status_digest comparison"
+  ],
+  "completed_at": "2026-09-30T22:53:52.791Z",
+  "dispatched_at": "2026-09-30T22:45:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "514",
+      "severity": "follow-on",
+      "text": "follow-on: the exclusion is name-based and root-anchored, so an untracked top-level harness/ or codex-home/ directory that a run genuinely delivered without committing is dropped from the tree state and crew gc --apply would reclaim it as scratch; the constant assumes a reserved name that nothing enforces where the directory is created."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "622",
+      "severity": "follow-on",
+      "text": "follow-on: _inspect_workspace now derives its dirty list from _tree_state, which reads git status --porcelain=v1 -z --untracked-files=all, so an untracked directory is reported per file (?? notes/x) rather than as one collapsed entry (?? notes/); the reported dirty shape changes for every untracked directory, broader than the harness-scratch goal, and the manifest does not disclose it."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 27c67a3a; one source file, one test file and one evidence fragment, 235 insertions and 5 deletions, every changed path inside the declared scope.",
+    "done_when": "the done-when names a base reproduction, a named-constant exclusion, three tests/test_crew_gc.py cases, a declared negative control and base and head gate arms; the manifest records each and the logs on disk bear out base 3 failed / 28 passed versus head 31 passed.",
+    "goal": "the node goal is to stop crew gc reading a worker's harness scratch as uncommitted work so an integrated worktree classifies integrated; reckon/crew/routing.py:514 leaves exactly the top-level untracked codex-home/ and harness/ out of _tree_state, and the reproduction at logs/base_repro.log and logs/head_repro.log shows classification dirty to integrated and reclaimable 0 to 1.",
+    "manifest": "read at the run directory; status is complete, two commits are named, both gate logs are named, baseline_suite and after_suite carry completed true with literal commands, and the negative-control path and declared string are recorded.",
+    "write_paths": "read the manifest's four declared paths; the two commits touch reckon/crew/routing.py, tests/test_crew_gc.py and the evidence fragment, all inside the grant, and nothing outside it."
+  },
+  "justifications": {
+    "durability": "the three cases added at tests/test_crew_gc.py:253, :275 and :298 each redden when the exclusion is removed \u2014 the base arm shows all three failing and the negative control shows the scratch-only case reddening alone \u2014 and none compares a value against the same input the test itself passed in.",
+    "evidence": "logs/base_gate.log and logs/head_gate.log name their revision on line 1 and end EXIT=1 and EXIT=0 with 3 failed / 31 passed, and logs/negative_control.log repeats the declared mutation verbatim; docked one because the manifest quotes ruff as 11 findings base and 11 head while the changed source and test files measure 9 each, the 11 counting the run-directory driver, so the delta still holds but the figure is not over the changed paths alone.",
+    "fit": "one named constant and one predicate at reckon/crew/routing.py:514 and :517 follow the surrounding style and describe their mechanism, and the commit subjects and bodies carry no plan labels or attribution.",
+    "goal_fidelity": "reckon/crew/routing.py:514 excludes the harness scratch from _tree_state, and the base and head reproduction shows classification dirty to integrated and reclaimable 0 to 1, so the stated goal is met at the changed revision.",
+    "scope_discipline": "the diff touches only the three written declared paths (reckon/crew/routing.py, tests/test_crew_gc.py, the evidence fragment) and nothing outside them, though routing.py:622 _inspect_workspace's refactor to read _tree_state is broader than the goal strictly requires."
+  },
+  "node": "review-of-worker-scratch-is-not-dirt",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to stop crew gc reading a worker's harness scratch as uncommitted work so an integrated worktree classifies integrated; reckon/crew/routing.py:514 leaves exactly the top-level untracked codex-home/ and harness/ out of _tree_state, and the reproduction at logs/base_repro.log and logs/head_repro.log shows classification dirty to integrated and reclaimable 0 to 1.\nVERDICT done_when: the done-when names a base reproduction, a named-constant exclusion, three tests/test_crew_gc.py cases, a declared negative control and base and head gate arms; the manifest records each and the logs on disk bear out base 3 failed / 28 passed versus head 31 passed.\nVERDICT write_paths: read the manifest's four declared paths; the two commits touch reckon/crew/routing.py, tests/test_crew_gc.py and the evidence fragment, all inside the grant, and nothing outside it.\nVERDICT manifest: read at the run directory; status is complete, two commits are named, both gate logs are named, baseline_suite and after_suite carry completed true with literal commands, and the negative-control path and declared string are recorded.\nVERDICT diff: read commit by commit against 27c67a3a; one source file, one test file and one evidence fragment, 235 insertions and 5 deletions, every changed path inside the declared scope.\nCALL_SITES: reckon/cli.py:4783 crew gc entry, reckon/crew/routing.py:602 _repository_tree_snapshot, reckon/crew/routing.py:880 garbage_collect calls _inspect_workspace, reckon/crew/promotion.py:4280 and :4397 _inspect_workspace, reckon/crew/promotion.py:2301 status_digest comparison\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:514 excludes the harness scratch from _tree_state, and the base and head reproduction shows classification dirty to integrated and reclaimable 0 to 1, so the stated goal is met at the changed revision.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base_gate.log and logs/head_gate.log name their revision on line 1 and end EXIT=1 and EXIT=0 with 3 failed / 31 passed, and logs/negative_control.log repeats the declared mutation verbatim; docked one because the manifest quotes ruff as 11 findings base and 11 head while the changed source and test files measure 9 each, the 11 counting the run-directory driver, so the delta still holds but the figure is not over the changed paths alone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only the three written declared paths (reckon/crew/routing.py, tests/test_crew_gc.py, the evidence fragment) and nothing outside them, though routing.py:622 _inspect_workspace's refactor to read _tree_state is broader than the goal strictly requires.\nSCORE durability: 19\nJUSTIFICATION durability: the three cases added at tests/test_crew_gc.py:253, :275 and :298 each redden when the exclusion is removed \u2014 the base arm shows all three failing and the negative control shows the scratch-only case reddening alone \u2014 and none compares a value against the same input the test itself passed in.\nSCORE fit: 19\nJUSTIFICATION fit: one named constant and one predicate at reckon/crew/routing.py:514 and :517 follow the surrounding style and describe their mechanism, and the commit subjects and bodies carry no plan labels or attribution.\nFINDING reckon/crew/routing.py:514 follow-on: the exclusion is name-based and root-anchored, so an untracked top-level harness/ or codex-home/ directory that a run genuinely delivered without committing is dropped from the tree state and crew gc --apply would reclaim it as scratch; the constant assumes a reserved name that nothing enforces where the directory is created.\nFINDING reckon/crew/routing.py:622 follow-on: _inspect_workspace now derives its dirty list from _tree_state, which reads git status --porcelain=v1 -z --untracked-files=all, so an untracked directory is reported per file (?? notes/x) rather than as one collapsed entry (?? notes/); the reported dirty shape changes for every untracked directory, broader than the harness-scratch goal, and the manifest does not disclose it.",
+  "review_run_id": "r-20260930T224454095792-review-of-worker-scratch-is-not-dirt",
+  "reviewed_base_sha": "27c67a3a56b0773d9e80d90a1f62a8c6807fd8df",
+  "reviewed_head_sha": "9a0138ab3111549b5c409bcebff5d21db73316fa",
+  "reviewed_run_id": "r-20260930T222043832987-worker-scratch-is-not-dirt",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T22:52:51.065225+00:00",
+  "total": 95
+}

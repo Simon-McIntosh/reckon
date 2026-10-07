@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4059 dispatch passes fence=FENCE_WORKERS",
+    "reckon/crew/dispatch.py:6579 resume_plan passes fence=FENCE_WORKERS",
+    "reckon/crew/dispatch.py:6935 change_lane passes fence=FENCE_WORKERS",
+    "reckon/_backends.py:2284 launch_plan fence parameter",
+    "reckon/_backends.py:2195 fence_argv"
+  ],
+  "completed_at": "2026-09-26T15:05:58.527Z",
+  "dispatched_at": "2026-09-26T14:18:38Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-worker-cannot-write-your-home/gate-fence-is-on-again-head.txt",
+      "line": "1",
+      "text": "the head gate log records only its revision and omits the tree, the module under test and the command or file set its base arm records, so a reader cannot confirm from the log alone that the same seven files ran and the 39-to-41 delta rests on the manifest's prose."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "127",
+      "text": "the rewritten comment says every launch sits behind the overlay, but reckon/crew/resumption.py:248 composes the lane-availability probe with fence=False, so the sentence holds for worker launches only and a reader auditing the guarantee cannot tell from the comment that the probe is exempt deliberately."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against b11cf190 - d7ba7433 carries the flag, its rewritten guarantee comment and the new test, and 01327c5b the landing record, archive anchor, figure and logs; the diff is eight files, all inside the declared scope, including a disclosed repair of an unclosed paragraph tag in the archive, which I confirmed was open at base around its line 1379.",
+    "done_when": "the done_when names seven test files and two arms; I re-ran tests/test_fence_is_on_again.py at the reviewed head (2 passed) and read both recorded arms - gate-fence-is-on-again-head.txt (41 passed at d7ba7433) and gate-fence-is-on-again-base.txt (39 passed at b11cf190 with the flag forced false) - and the new default is asserted through the composed dispatch path, not only on the constant.",
+    "goal": "the node's goal is to launch crew workers fenced again by setting FENCE_WORKERS true; reckon/crew/dispatch.py:135 carries FENCE_WORKERS = True at the reviewed head, and I confirmed each of the four preconditions it names (80d55621, 29a30fb1, 3db08a97, e562d32e) is an ancestor of the base b11cf190.",
+    "manifest": "read; it names both commits, the two gate arms, the turned-off disclosure and three follow-ons, and every log it names resolves in both the run directory and docs/figures.",
+    "write_paths": "I read the eight declared paths from the node prompt; all eight files of the diff lie inside them, the six pre-existing section 2 test files are byte-identical to base, and no path outside the declaration was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_fence_is_on_again.py:126 fails if the flag returns to False, and the composed-argv case at lines 151, 155 and 161 reddens with the flag off as the executed control shows; the harness-home assertion at :155 is measured against the run directory the same composition supplies, so that one line is internally consistent rather than absolute.",
+    "evidence": "the two arms and the control are recorded at docs/figures/a-worker-cannot-write-your-home/ with the control's first line repeating the declared string verbatim, and I re-ran tests/test_fence_is_on_again.py at the reviewed head (2 passed); the head arm's log omits the tree and file set its base arm records.",
+    "fit": "tests/test_fence_is_on_again.py follows the surrounding idiom (pytest_plugins from tests.test_crew, a synthetic operator home and repository, a __main__ control block) and introduces no plan, sprint or version identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:135 sets FENCE_WORKERS to True at the head and the four precondition commits the goal names all resolve as ancestors of b11cf190, so a worker launch composes through the fence as the goal states.",
+    "scope_discipline": "git diff --name-status b11cf190..01327c5b lists only the declared paths - dispatch.py, the new test, the plan page, the archive and the figures directory - and the six other section 2 test files are byte-identical to base."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to launch crew workers fenced again by setting FENCE_WORKERS true; reckon/crew/dispatch.py:135 carries FENCE_WORKERS = True at the reviewed head, and I confirmed each of the four preconditions it names (80d55621, 29a30fb1, 3db08a97, e562d32e) is an ancestor of the base b11cf190.\nVERDICT done_when: the done_when names seven test files and two arms; I re-ran tests/test_fence_is_on_again.py at the reviewed head (2 passed) and read both recorded arms - gate-fence-is-on-again-head.txt (41 passed at d7ba7433) and gate-fence-is-on-again-base.txt (39 passed at b11cf190 with the flag forced false) - and the new default is asserted through the composed dispatch path, not only on the constant.\nVERDICT write_paths: I read the eight declared paths from the node prompt; all eight files of the diff lie inside them, the six pre-existing section 2 test files are byte-identical to base, and no path outside the declaration was touched.\nVERDICT manifest: read; it names both commits, the two gate arms, the turned-off disclosure and three follow-ons, and every log it names resolves in both the run directory and docs/figures.\nVERDICT diff: read commit by commit against b11cf190 - d7ba7433 carries the flag, its rewritten guarantee comment and the new test, and 01327c5b the landing record, archive anchor, figure and logs; the diff is eight files, all inside the declared scope, including a disclosed repair of an unclosed paragraph tag in the archive, which I confirmed was open at base around its line 1379.\nCALL_SITES: reckon/crew/dispatch.py:4059 dispatch passes fence=FENCE_WORKERS, reckon/crew/dispatch.py:6579 resume_plan passes fence=FENCE_WORKERS, reckon/crew/dispatch.py:6935 change_lane passes fence=FENCE_WORKERS, reckon/_backends.py:2284 launch_plan fence parameter, reckon/_backends.py:2195 fence_argv\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:135 sets FENCE_WORKERS to True at the head and the four precondition commits the goal names all resolve as ancestors of b11cf190, so a worker launch composes through the fence as the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the two arms and the control are recorded at docs/figures/a-worker-cannot-write-your-home/ with the control's first line repeating the declared string verbatim, and I re-ran tests/test_fence_is_on_again.py at the reviewed head (2 passed); the head arm's log omits the tree and file set its base arm records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status b11cf190..01327c5b lists only the declared paths - dispatch.py, the new test, the plan page, the archive and the figures directory - and the six other section 2 test files are byte-identical to base.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_fence_is_on_again.py:126 fails if the flag returns to False, and the composed-argv case at lines 151, 155 and 161 reddens with the flag off as the executed control shows; the harness-home assertion at :155 is measured against the run directory the same composition supplies, so that one line is internally consistent rather than absolute.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_fence_is_on_again.py follows the surrounding idiom (pytest_plugins from tests.test_crew, a synthetic operator home and repository, a __main__ control block) and introduces no plan, sprint or version identifier.\nFINDING docs/figures/a-worker-cannot-write-your-home/gate-fence-is-on-again-head.txt:1 the head gate log records only its revision and omits the tree, the module under test and the command or file set its base arm records, so a reader cannot confirm from the log alone that the same seven files ran and the 39-to-41 delta rests on the manifest's prose.\nFINDING reckon/crew/dispatch.py:127 the rewritten comment says every launch sits behind the overlay, but reckon/crew/resumption.py:248 composes the lane-availability probe with fence=False, so the sentence holds for worker launches only and a reader auditing the guarantee cannot tell from the comment that the probe is exempt deliberately.\n",
+  "review_run_id": "r-20260926T141819057783-review-of-fence-is-on-again",
+  "reviewed_base_sha": "b11cf190caea9bd843451293957772c38aa0ddd9",
+  "reviewed_head_sha": "01327c5bcd45a44fb0ef2b25c9d29fb71d825298",
+  "reviewed_run_id": "r-20260926T112214291185-fence-is-on-again",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T14:51:55.654042+00:00",
+  "total": 93
+}

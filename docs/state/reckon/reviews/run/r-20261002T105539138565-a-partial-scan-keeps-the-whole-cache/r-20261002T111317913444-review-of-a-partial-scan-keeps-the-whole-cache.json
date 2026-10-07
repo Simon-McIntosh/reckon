@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "80e60ab02921867be837147ea775bdd1a453ab30",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:7343 calls clones.promotion_clone_matches",
+    "which calls clone_matches at reckon/clones.py:589; that production caller passes the whole tree",
+    "so today's promotion sees no subset cap. No other runtime caller of clone_matches exists."
+  ],
+  "completed_at": "2026-10-02T11:20:04.503Z",
+  "dispatched_at": "2026-10-02T11:13:43Z",
+  "findings": [
+    {
+      "file": "reckon/clones.py",
+      "line": "479",
+      "severity": "follow-on",
+      "text": "follow-on: counting _cached_paths into the cap lets a path whose file was removed or renamed from the corpus keep its entry indefinitely \u2014 the deleted path's own cache entry re-supplies it to known_paths, so the cap it sets prevents the eviction that used to drop it, and corpus.json can grow with the union of every path ever scanned rather than the current corpus size, weakening the bound the module docstring at reckon/clones.py:44 promises. It is not reachable in production today, since promotion_clone_matches passes the whole tree, so this is recorded rather than blocking."
+    }
+  ],
+  "head_log_revision": "fde9af37b34221998156bf60aee4e92bc88a59ba",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit fde9af37b against base 80e60ab02; it adds _entry_path and _cached_paths, records each entry's path, and unions corpus_paths with _cached_paths at the cap site \u2014 no product code outside the declared paths changed.",
+    "done_when": "the measure's reproduction is tests/test_a_partial_scan_keeps_the_whole_cache.py, re-run green at head (4 passed, EXIT=0); the manifest records the base arm (17 passed, 0 failed) and head arm (21 passed, 0 failed) with their logs, and the declared negative control reverts the cap to the subset and reddening two cases (negative-control.log: 2 failed, EXIT=1).",
+    "goal": "the goal is that a clone scan over part of the corpus does not shrink the shared cache to that part's size; reckon/clones.py:479 now derives the prune cap from this scan's paths unioned with the paths the cache already holds, so a one-file scan leaves the other four warm entries in place.",
+    "manifest": "read in full; it states the cap change, the new test file, the base/head arms with paths, the declared mutation and its two failing cases, and reports the defect as latent in production because promotion passes the whole tree.",
+    "write_paths": "the manifest declares reckon/clones.py, tests/test_a_partial_scan_keeps_the_whole_cache.py and two evidence paths; the single commit fde9af37b touches only reckon/clones.py and the test file, both inside that scope."
+  },
+  "justifications": {
+    "durability": "the two retained-corpus cases fail if the cap reverts to the subset, shown in the run's negative-control.log (2 failed, EXIT=1); test_scans_over_many_revisions_hold_one_entry_per_path at tests/test_a_partial_scan_keeps_the_whole_cache.py:161 guards the one-entry-per-path bound, and every added assertion compares against a fixture constant or a separate cold cache, not the value under test.",
+    "evidence": "done_when is measured \u2014 I re-ran tests/test_a_partial_scan_keeps_the_whole_cache.py at fde9af37b (4 passed) and read the run's own gate/base-arm.log (17 passed, EXIT=0) and gate/head-arm.log (21 passed, EXIT=0).",
+    "fit": "_entry_path and _cached_paths follow the module's private-helper and docstring idiom at reckon/clones.py:234, the docstrings state the mechanism and its reason, and the four naming checks over the diff's added lines find nothing banned.",
+    "goal_fidelity": "the landed change at reckon/clones.py:479 is exactly the goal \u2014 the cap is one entry per known file, so a subset scan no longer prunes to the subset, and the test drives five, then one, then five files and re-parses nothing.",
+    "scope_discipline": "commit fde9af37b changes exactly reckon/clones.py and tests/test_a_partial_scan_keeps_the_whole_cache.py, both declared in the manifest's write paths, with nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a clone scan over part of the corpus does not shrink the shared cache to that part's size; reckon/clones.py:479 now derives the prune cap from this scan's paths unioned with the paths the cache already holds, so a one-file scan leaves the other four warm entries in place.\nVERDICT done_when: the measure's reproduction is tests/test_a_partial_scan_keeps_the_whole_cache.py, re-run green at head (4 passed, EXIT=0); the manifest records the base arm (17 passed, 0 failed) and head arm (21 passed, 0 failed) with their logs, and the declared negative control reverts the cap to the subset and reddening two cases (negative-control.log: 2 failed, EXIT=1).\nVERDICT write_paths: the manifest declares reckon/clones.py, tests/test_a_partial_scan_keeps_the_whole_cache.py and two evidence paths; the single commit fde9af37b touches only reckon/clones.py and the test file, both inside that scope.\nVERDICT manifest: read in full; it states the cap change, the new test file, the base/head arms with paths, the declared mutation and its two failing cases, and reports the defect as latent in production because promotion passes the whole tree.\nVERDICT diff: read commit fde9af37b against base 80e60ab02; it adds _entry_path and _cached_paths, records each entry's path, and unions corpus_paths with _cached_paths at the cap site \u2014 no product code outside the declared paths changed.\nCALL_SITES: reckon/crew/promotion.py:7343 calls clones.promotion_clone_matches, which calls clone_matches at reckon/clones.py:589; that production caller passes the whole tree, so today's promotion sees no subset cap. No other runtime caller of clone_matches exists.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the landed change at reckon/clones.py:479 is exactly the goal \u2014 the cap is one entry per known file, so a subset scan no longer prunes to the subset, and the test drives five, then one, then five files and re-parses nothing.\nSCORE evidence: 19\nJUSTIFICATION evidence: done_when is measured \u2014 I re-ran tests/test_a_partial_scan_keeps_the_whole_cache.py at fde9af37b (4 passed) and read the run's own gate/base-arm.log (17 passed, EXIT=0) and gate/head-arm.log (21 passed, EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit fde9af37b changes exactly reckon/clones.py and tests/test_a_partial_scan_keeps_the_whole_cache.py, both declared in the manifest's write paths, with nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the two retained-corpus cases fail if the cap reverts to the subset, shown in the run's negative-control.log (2 failed, EXIT=1); test_scans_over_many_revisions_hold_one_entry_per_path at tests/test_a_partial_scan_keeps_the_whole_cache.py:161 guards the one-entry-per-path bound, and every added assertion compares against a fixture constant or a separate cold cache, not the value under test.\nSCORE fit: 19\nJUSTIFICATION fit: _entry_path and _cached_paths follow the module's private-helper and docstring idiom at reckon/clones.py:234, the docstrings state the mechanism and its reason, and the four naming checks over the diff's added lines find nothing banned.\nFINDING reckon/clones.py:479 follow-on: counting _cached_paths into the cap lets a path whose file was removed or renamed from the corpus keep its entry indefinitely \u2014 the deleted path's own cache entry re-supplies it to known_paths, so the cap it sets prevents the eviction that used to drop it, and corpus.json can grow with the union of every path ever scanned rather than the current corpus size, weakening the bound the module docstring at reckon/clones.py:44 promises. It is not reachable in production today, since promotion_clone_matches passes the whole tree, so this is recorded rather than blocking.\n",
+  "review_run_id": "r-20261002T111317913444-review-of-a-partial-scan-keeps-the-whole-cache",
+  "reviewed_base_sha": "80e60ab02921867be837147ea775bdd1a453ab30",
+  "reviewed_head_sha": "fde9af37b34221998156bf60aee4e92bc88a59ba",
+  "reviewed_run_id": "r-20261002T105539138565-a-partial-scan-keeps-the-whole-cache",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T11:18:33.904678+00:00",
+  "total": 97
+}

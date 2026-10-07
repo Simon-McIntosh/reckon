@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T190311718261-follower-survives-a-host-change/base_suite.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T190311718261-follower-survives-a-host-change/after_suite.log"
+  ],
+  "added_failures_note": "measured by the reviewing run through the production path: annotate_review_of_run over the reviewed run's own manifest names baseline_suite=base_suite.log and after_suite=after_suite.log, and added_failures_from_gate_logs reads both texts (22 passed at c3d1db19, 22 passed at 68723fdb) and returns (0, []) \u2014 a set difference over pytest node ids, so the zero is a measurement, not an absence. The three behaviours this review was fenced to answer are recorded under evidence_checks with the command and output that answered each.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:_follow_resume_plan (calls follow_checkpoint.continues at :2197)",
+    "reckon/cli.py:_follow_watch_lines (calls _follow_resume_plan at :2518)"
+  ],
+  "completed_at": "2026-09-28T06:12:13.382Z",
+  "dispatched_at": "2026-09-28T05:27:56Z",
+  "evidence_checks": [
+    {
+      "check": "a checkpoint whose recorded st_dev differs while the inode matches continues",
+      "command": "PYTHONPATH=<reviewed-worktree> <venv>/python probe_host_change.py",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052741130452-review-of-follower-survives-a-host-change/probe_host_change.log",
+      "output": [
+        "recorded stream_identity: {'dev': 64774, 'ino': 100985872}",
+        "current  stream_identity: {'dev': 64772, 'ino': 100985872}",
+        "dev differs: True",
+        "continues(record, stream) -> True"
+      ]
+    },
+    {
+      "check": "a replaced stream still falls back",
+      "command": "same probe, section (2)",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052741130452-review-of-follower-survives-a-host-change/probe_host_change.log",
+      "output": [
+        "inode before: 100985872",
+        "inode after : 100985880 | changed: True",
+        "continues(record, stream) -> False"
+      ]
+    },
+    {
+      "check": "an arm with no continuable checkpoint emits zero transition rows and zero rows for another session",
+      "command": "same probe, section (3); cross-checked end to end by probe_continue_end_to_end.py",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052741130452-review-of-follower-survives-a-host-change/probe_host_change.log",
+      "output": [
+        "checkpoint exists before arming: False",
+        "fleet events emitted: 1",
+        "{'event': 'baseline', 'run_id': 'r-host-change-mine', 'session': 's-mine', 'from_state': None, 'to_state': 'working'}",
+        "transitions emitted: 0",
+        "rows for the other session: 0",
+        "baseline rows for this session: 1"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "file": "tests/test_follower_survives_a_host_change.py",
+      "line": "193",
+      "text": "the two all() assertions (lines 193 and 196) hold vacuously over an empty emitted list and nothing in the test asserts the baseline row the done-when names, so a regression that stops the first arm emitting anything \u2014 or that silently drops the derived fleet \u2014 leaves this test green; my probe shows the healthy arm emits exactly one baseline row (probe_host_change.log, \"baseline rows for this session: 1\"), so one presence assertion would close the gap."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T190311718261-follower-survives-a-host-change/manifest.md",
+      "line": "24",
+      "text": "the artifacts line states \"1 failed / 2 passed at base c3d1db19\" as the headline metric, but the run directory holds no single-invocation log of the whole test file at base \u2014 control-dev-and-ino.log records only the one host-change test (\"1 failed in 0.49s\") \u2014 so the two-passed half of the figure is unverifiable from the run's own evidence (I reproduced the figure independently in base-arm-new-tests.log, \"1 failed, 2 passed in 1.09s\", but that log is not the run's)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "four commits span c3d1db19..dd121d36: 0867a75e fix(crew): continue a follower across a host change on a shared mount drops the recorded dev from continues()'s comparison (the line becomes an inode-only test) and rewrites the stream_identity and continues docstrings to say the device is carried beside the inode but not part of the answer; 68723fdb tidies the new test file; e0bc5bd5 and dd121d36 touch docs only (3 changed lines across the evidence and plan HTML), and none of the four commits changes a plan-* meta line.",
+    "done_when": "the done-when is three quantitative claims \u2014 a checkpoint whose recorded st_dev differs while the inode matches continues, a replaced stream still falls back, and an arm with no continuable checkpoint emits zero transition rows and zero rows for another session \u2014 the gate in tests/test_follower_survives_a_host_change.py:98,128,154 asserts all three and gate.log records \"3 passed\" at code head 68723fdb, while my own base arm at c3d1db19 (base-arm-new-tests.log) records \"1 failed, 2 passed in 1.09s\" with the host-change test failing at line 123 on \"assert False is True\", and my head-arm re-run (head-arm-new-tests.log) records \"3 passed in 1.29s\"; the third claim is asserted only as two all() over the emitted rows (:193, :196), which an empty emission would also satisfy.",
+    "goal": "the reviewed goal is that a follower re-armed after a host change on the shared filesystem continues from its checkpoint instead of replaying the whole stream, and reckon/crew/follow_checkpoint.py:120 continues() now decides the stream identity on the inode alone, which my probe at head dd121d36 (probe_host_change.log, scratch RECKON_HOME under /tmp) measures directly: a checkpoint recorded with identity {'dev': 64774, 'ino': 100985872} against a stream that now stats as {'dev': 64772, 'ino': 100985872} prints \"continues(record, stream) -> True\", and the end-to-end probe (probe_continue_end_to_end.log) shows the same divergence making _follow_resume_plan choose \"continue\" at head where the base-arm source chooses \"restart\".",
+    "manifest": "the manifest names four gate logs with their counts (gate.log \"3 passed\", control-dev-and-ino.log \"1 failed\", base_suite.log and after_suite.log \"22 passed\" each), states the head gate with its command and revision, and names its negative control log whose first line repeats the declared string verbatim; the one figure it carries that no log on disk spans is manifest.md:24, the full-file base arm \"1 failed / 2 passed at base c3d1db19\", whose recorded provenance control-dev-and-ino.log covers only the single red test (tail: \"1 failed in 0.49s\") \u2014 I reproduced the full-file figure myself, so it is true, but a reader of the run's own evidence cannot check it.",
+    "write_paths": "the declared fence is seven paths (reckon/crew/follow_checkpoint.py, reckon/cli.py, reckon/crew/runs.py, tests/test_follower_survives_a_host_change.py, the landing-record HTML, docs/figures/the-fleet-counters-count-the-fleet, the plan HTML) and git diff --name-only c3d1db19 dd121d36 lists exactly five files \u2014 reckon/crew/follow_checkpoint.py, tests/test_follower_survives_a_host_change.py, and the three docs paths \u2014 all inside the fence and set-equal to the manifest's changed_paths, with reckon/cli.py and reckon/crew/runs.py untouched as the node's evidence_inputs says was not needed."
+  },
+  "justifications": {
+    "durability": "the foreign-device test (tests/test_follower_survives_a_host_change.py:98) fails on the unmodified base source at line 123, which is precisely the regression it guards, and the replaced-stream test (:128) names its failing condition; but the arm test's two all() assertions (:193, :196) also pass over an empty emitted list and nothing asserts the baseline row the done-when names, so a regression that emits nothing at all leaves this file green.",
+    "evidence": "the three claims are asserted by tests/test_follower_survives_a_host_change.py:98,128,154 and every recorded result is reproduced by arms I ran myself at both revisions (base-arm-new-tests.log \"1 failed, 2 passed\"; head-arm-new-tests.log \"3 passed\"), with the declared negative-control string verbatim on line 1 of control-dev-and-ino.log; the withheld points are the base-arm full-file figure having no covering log in the run directory and the zero-transition claim resting on assertions an empty emission satisfies.",
+    "fit": "the change keeps the module's idiom \u2014 a plain identity comparison plus a docstring stating why the device is carried and not compared (reckon/crew/follow_checkpoint.py:104-124) \u2014 reuses the file's existing test helpers, and a check of the five changed paths against the repository naming rules found no banned label or identifier.",
+    "goal_fidelity": "reckon/crew/follow_checkpoint.py:120-124 is exactly the inode-only comparison the goal requires and probe_continue_end_to_end.log shows _follow_resume_plan choosing \"continue\" at head where the same probe over the base source chooses \"restart\"; one point is withheld because \"instead of replaying the whole stream\" is verified at fixture scale only \u2014 the incident's days-of-history replay cannot be reproduced inside this review's budget.",
+    "scope_discipline": "git diff --name-only c3d1db19 dd121d36 is set-equal to the manifest's five changed_paths, each inside the seven-path fence, and the diff carries nothing beyond the inode-only comparison plus its tests and its plan and evidence records."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: c3d1db196b706649e25079b04067050ad7d0afe0\nreviewed_head_sha: dd121d36b940527b772e8c57d02600ed8868c617\nVERDICT goal: the reviewed goal is that a follower re-armed after a host change on the shared filesystem continues from its checkpoint instead of replaying the whole stream, and reckon/crew/follow_checkpoint.py:120 continues() now decides the stream identity on the inode alone, which my probe at head dd121d36 (probe_host_change.log, scratch RECKON_HOME under /tmp) measures directly: a checkpoint recorded with identity {'dev': 64774, 'ino': 100985872} against a stream that now stats as {'dev': 64772, 'ino': 100985872} prints \"continues(record, stream) -> True\", and the end-to-end probe (probe_continue_end_to_end.log) shows the same divergence making _follow_resume_plan choose \"continue\" at head where the base-arm source chooses \"restart\".\nVERDICT done_when: the done-when is three quantitative claims \u2014 a checkpoint whose recorded st_dev differs while the inode matches continues, a replaced stream still falls back, and an arm with no continuable checkpoint emits zero transition rows and zero rows for another session \u2014 the gate in tests/test_follower_survives_a_host_change.py:98,128,154 asserts all three and gate.log records \"3 passed\" at code head 68723fdb, while my own base arm at c3d1db19 (base-arm-new-tests.log) records \"1 failed, 2 passed in 1.09s\" with the host-change test failing at line 123 on \"assert False is True\", and my head-arm re-run (head-arm-new-tests.log) records \"3 passed in 1.29s\"; the third claim is asserted only as two all() over the emitted rows (:193, :196), which an empty emission would also satisfy.\nVERDICT write_paths: the declared fence is seven paths (reckon/crew/follow_checkpoint.py, reckon/cli.py, reckon/crew/runs.py, tests/test_follower_survives_a_host_change.py, the landing-record HTML, docs/figures/the-fleet-counters-count-the-fleet, the plan HTML) and git diff --name-only c3d1db19 dd121d36 lists exactly five files \u2014 reckon/crew/follow_checkpoint.py, tests/test_follower_survives_a_host_change.py, and the three docs paths \u2014 all inside the fence and set-equal to the manifest's changed_paths, with reckon/cli.py and reckon/crew/runs.py untouched as the node's evidence_inputs says was not needed.\nVERDICT manifest: the manifest names four gate logs with their counts (gate.log \"3 passed\", control-dev-and-ino.log \"1 failed\", base_suite.log and after_suite.log \"22 passed\" each), states the head gate with its command and revision, and names its negative control log whose first line repeats the declared string verbatim; the one figure it carries that no log on disk spans is manifest.md:24, the full-file base arm \"1 failed / 2 passed at base c3d1db19\", whose recorded provenance control-dev-and-ino.log covers only the single red test (tail: \"1 failed in 0.49s\") \u2014 I reproduced the full-file figure myself, so it is true, but a reader of the run's own evidence cannot check it.\nVERDICT diff: four commits span c3d1db19..dd121d36: 0867a75e fix(crew): continue a follower across a host change on a shared mount drops the recorded dev from continues()'s comparison (the line becomes an inode-only test) and rewrites the stream_identity and continues docstrings to say the device is carried beside the inode but not part of the answer; 68723fdb tidies the new test file; e0bc5bd5 and dd121d36 touch docs only (3 changed lines across the evidence and plan HTML), and none of the four commits changes a plan-* meta line.\nCALL_SITES: reckon/cli.py:_follow_resume_plan (calls follow_checkpoint.continues at :2197), reckon/cli.py:_follow_watch_lines (calls _follow_resume_plan at :2518)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/follow_checkpoint.py:120-124 is exactly the inode-only comparison the goal requires and probe_continue_end_to_end.log shows _follow_resume_plan choosing \"continue\" at head where the same probe over the base source chooses \"restart\"; one point is withheld because \"instead of replaying the whole stream\" is verified at fixture scale only \u2014 the incident's days-of-history replay cannot be reproduced inside this review's budget.\nSCORE evidence: 18\nJUSTIFICATION evidence: the three claims are asserted by tests/test_follower_survives_a_host_change.py:98,128,154 and every recorded result is reproduced by arms I ran myself at both revisions (base-arm-new-tests.log \"1 failed, 2 passed\"; head-arm-new-tests.log \"3 passed\"), with the declared negative-control string verbatim on line 1 of control-dev-and-ino.log; the withheld points are the base-arm full-file figure having no covering log in the run directory and the zero-transition claim resting on assertions an empty emission satisfies.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only c3d1db19 dd121d36 is set-equal to the manifest's five changed_paths, each inside the seven-path fence, and the diff carries nothing beyond the inode-only comparison plus its tests and its plan and evidence records.\nSCORE durability: 17\nJUSTIFICATION durability: the foreign-device test (tests/test_follower_survives_a_host_change.py:98) fails on the unmodified base source at line 123, which is precisely the regression it guards, and the replaced-stream test (:128) names its failing condition; but the arm test's two all() assertions (:193, :196) also pass over an empty emitted list and nothing asserts the baseline row the done-when names, so a regression that emits nothing at all leaves this file green.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the module's idiom \u2014 a plain identity comparison plus a docstring stating why the device is carried and not compared (reckon/crew/follow_checkpoint.py:104-124) \u2014 reuses the file's existing test helpers, and a check of the five changed paths against the repository naming rules found no banned label or identifier.\nFINDING tests/test_follower_survives_a_host_change.py:193 the two all() assertions (lines 193 and 196) hold vacuously over an empty emitted list and nothing in the test asserts the baseline row the done-when names, so a regression that stops the first arm emitting anything \u2014 or that silently drops the derived fleet \u2014 leaves this test green; my probe shows the healthy arm emits exactly one baseline row (probe_host_change.log, \"baseline rows for this session: 1\"), so one presence assertion would close the gap.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T190311718261-follower-survives-a-host-change/manifest.md:24 the artifacts line states \"1 failed / 2 passed at base c3d1db19\" as the headline metric, but the run directory holds no single-invocation log of the whole test file at base \u2014 control-dev-and-ino.log records only the one host-change test (\"1 failed in 0.49s\") \u2014 so the two-passed half of the figure is unverifiable from the run's own evidence (I reproduced the figure independently in base-arm-new-tests.log, \"1 failed, 2 passed in 1.09s\", but that log is not the run's).",
+  "review_run_id": "r-20260928T052741130452-review-of-follower-survives-a-host-change",
+  "reviewed_base_sha": "c3d1db196b706649e25079b04067050ad7d0afe0",
+  "reviewed_head_sha": "dd121d36b940527b772e8c57d02600ed8868c617",
+  "reviewed_run_id": "r-20260927T190311718261-follower-survives-a-host-change",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T05:59:14.923477+00:00",
+  "total": 93
+}

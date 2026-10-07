@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "codex",
+  "commits_read": [
+    "8d3ca874bfe859b4a9d0827146619bc63e5dfc40",
+    "e7d0d2d85565219c3882d5cbb354676c46245ff2"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T13:45:58.966551+00:00",
+  "findings": [
+    {
+      "file": "tests/test_append_decision_keeps_its_question.py",
+      "line": "47",
+      "text": "the promised real-state untouched guard fingerprints only relative paths and byte counts, so a same-size rewrite compares equal and the assertion can report untouched after content changed."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "1540",
+      "text": "an option object carrying JSON null as value is stringified to the literal \"None\" before the empty-value check, so malformed input is stored as a selectable option instead of being refused as the helper and landing record promise."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against base 26d6df25680ac385446f9db0c86f339ddb57fece; 8d3ca874 changes reckon/_store.py and adds the focused test, while e7d0d2d8 adds only the plan landing summary and cumulative evidence anchor.",
+    "done_when": "tests/test_append_decision_keeps_its_question.py:126-172 covers question and both values, raw written question versus key, no-options success and an autouse real-state check; the named focused gate passed 3/3 and the recorded declared mutation failed all 3, though the real-state fingerprint is incomplete as finding one states.",
+    "goal": "the goal requires an appended decision to preserve its question and every option value; reckon/_store.py:1566-1582 maps question/options onto title/choices, and the independent read-back cases pass.",
+    "manifest": "the source manifest records both commits, all four changed paths, focused green and mutation-red logs, identical 3-failure baseline/after populations for tests/test_edit_plan.py, and the three out-of-scope create failures as follow-ons.",
+    "write_paths": "the source run declares five write paths, while commits 8d3ca874 and e7d0d2d8 change four of them and no path outside the fence; reckon/_plan_html.py was granted but not changed after the reproduction located the loss at append."
+  },
+  "justifications": {
+    "durability": "tests/test_append_decision_keeps_its_question.py:126-172 guards all three required behaviours, and the recorded declared mutation reddens all three rather than merely leaving a passing suite.",
+    "evidence": "the recorded mutation log fails all three named cases and the independent run passes 3/3, but tests/test_append_decision_keeps_its_question.py:43-50 cannot detect a same-size rewrite of live state.",
+    "fit": "reckon/_store.py:1518-1582 uses capability-named helpers and the existing OpError refusal idiom, but line 1540 stringifies null before validation and thereby admits a malformed option as the literal value None.",
+    "goal_fidelity": "reckon/_store.py:1566-1582 preserves question and options under the stored title and choices spelling, and tests/test_append_decision_keeps_its_question.py:126-172 exercises every required result.",
+    "scope_discipline": "the diff from 26d6df25680ac385446f9db0c86f339ddb57fece through e7d0d2d85565219c3882d5cbb354676c46245ff2 touches only four paths listed in the source run's declared write_paths."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260921T123854882600-appended-decision-keeps-its-question (reckon, section 12 of the crew-runtime-positive-controls plan). Read: the source run record, goal, done_when, write paths, manifest, both commits against base 26d6df25680ac385446f9db0c86f339ddb57fece, the green and red logs, and the named focused gate independently at source-identical worktree head 68ecceb4b7434f2f32e843c863b0d038e107acdb.\n\nVERDICT goal: the goal requires an appended decision to preserve its question and every option value; reckon/_store.py:1566-1582 maps question/options onto title/choices, and the independent read-back cases pass.\nVERDICT done_when: tests/test_append_decision_keeps_its_question.py:126-172 covers question and both values, raw written question versus key, no-options success and an autouse real-state check; the named focused gate passed 3/3 and the recorded declared mutation failed all 3, though the real-state fingerprint is incomplete as finding one states.\nVERDICT write_paths: the source run declares five write paths, while commits 8d3ca874 and e7d0d2d8 change four of them and no path outside the fence; reckon/_plan_html.py was granted but not changed after the reproduction located the loss at append.\nVERDICT manifest: the source manifest records both commits, all four changed paths, focused green and mutation-red logs, identical 3-failure baseline/after populations for tests/test_edit_plan.py, and the three out-of-scope create failures as follow-ons.\nVERDICT diff: read commit by commit against base 26d6df25680ac385446f9db0c86f339ddb57fece; 8d3ca874 changes reckon/_store.py and adds the focused test, while e7d0d2d8 adds only the plan landing summary and cumulative evidence anchor.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_store.py:1566-1582 preserves question and options under the stored title and choices spelling, and tests/test_append_decision_keeps_its_question.py:126-172 exercises every required result.\nSCORE evidence: 18\nJUSTIFICATION evidence: the recorded mutation log fails all three named cases and the independent run passes 3/3, but tests/test_append_decision_keeps_its_question.py:43-50 cannot detect a same-size rewrite of live state.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from 26d6df25680ac385446f9db0c86f339ddb57fece through e7d0d2d85565219c3882d5cbb354676c46245ff2 touches only four paths listed in the source run's declared write_paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_append_decision_keeps_its_question.py:126-172 guards all three required behaviours, and the recorded declared mutation reddens all three rather than merely leaving a passing suite.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_store.py:1518-1582 uses capability-named helpers and the existing OpError refusal idiom, but line 1540 stringifies null before validation and thereby admits a malformed option as the literal value None.\nFINDING tests/test_append_decision_keeps_its_question.py:47 the promised real-state untouched guard fingerprints only relative paths and byte counts, so a same-size rewrite compares equal and the assertion can report untouched after content changed.\nFINDING reckon/_store.py:1540 an option object carrying JSON null as value is stringified to the literal \"None\" before the empty-value check, so malformed input is stored as a selectable option instead of being refused as the helper and landing record promise.\n",
+  "review_run_id": "r-20260921T134558966551-review-of-appended-decision-keeps-its-question",
+  "reviewed_base_sha": "26d6df25680ac385446f9db0c86f339ddb57fece",
+  "reviewed_head_sha": "e7d0d2d85565219c3882d5cbb354676c46245ff2",
+  "reviewed_run_id": "r-20260921T123854882600-appended-decision-keeps-its-question",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T15:32:00.471065+00:00",
+  "total": 96
+}

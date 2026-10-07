@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "62a16a7443b6267a6e58719687f06443b65762ca",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:5780 (garbage_collect called with run_id)",
+    "reckon/crew/routing.py:1065 (residue-release guard reads the wider claim)",
+    "reckon/crew/routing.py:1438 (garbage_collect claim read before classification)",
+    "reckon/crew/routing.py:1484 (apply-loop re-read)",
+    "reckon/crew/obligations.py:839 (held-worktree remedy reaches the hook)"
+  ],
+  "completed_at": "2026-10-03T13:12:16.346Z",
+  "dispatched_at": "2026-10-03T13:03:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/gc-spares-a-live-pointers-worktree.html",
+      "line": "67",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate arm ran at 5a104bb4e but the reviewed head is 5582727a, so after_suite.revision is not the reviewed head; the intervening commit adds only the evidence fragment, which cannot affect the pytest suite, so the evidence stands, but the recorded head pair names a revision the gate did not run at."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2034",
+      "severity": "follow-on",
+      "text": "follow-on: _remove_worktree still reads the phase-gated _live_worktree_claims, so this removal path can force-remove a worktree a parked live pointer names while _live_pointer_worktrees' docstring asserts that every removal path reads the wider claim; the section's first clause names garbage_collect, so this is a follow-on rather than a blocker."
+    }
+  ],
+  "head_log_revision": "5a104bb4e62ef8d51e1555d9e8524eef1ab6785b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 62a16a744; 5a104bb4e adds the routing.py guard and run scoping, the cli --run option, the obligations remedy and the new test file, and updates two obligation test files whose expectations the per-run remedy makes stale; 5582727a adds only the 142-line evidence fragment.",
+    "done_when": "the measure is a base arm red only on the new file's three cases and a head arm green with no added failing id, plus an executed negative control; the manifest records both arms as JSON with revisions, literal absolute-path commands, completed true and log paths, names the negative-control log with its mutation, and I independently reproduced the mutation (2 failed, 1 passed, EXIT=1) and the head run (3 passed).",
+    "goal": "the section's one goal is that a sweep never removes a worktree a live pointer names and that a held-tree duty never prescribes a repository-wide sweep; the diff replaces the phase-gated _live_worktree_claims with a new _live_pointer_worktrees in every removal path of garbage_collect and in the residue-release guard, adds crew gc --run RUN_ID which confines classification, removal, pointer reaping and run-directory retention to that run's own tree, and makes the worktree-held remedy name that run-scoped command; the read-time existence check the section also names was already present at the base and is verified rather than reimplemented, asserted by the new test's third case.",
+    "manifest": "read; status complete, two commits (5a104bb4e and 5582727a), baseline_suite and after_suite recorded as JSON with revision, literal command, exit_status, log_path, completed true and failure ids, negative_control_log named with its mutation and a second removal demonstration; docked because the head-arm revision (5a104bb4e) is one docs-only commit below the reviewed head (5582727a).",
+    "write_paths": "the six granted paths are routing.py, cli.py, obligations.py, the new test file, the evidence fragment and a figures directory; the diff touches the first five plus two obligation test files (tests/test_crew_obligations.py and tests/test_coordinator_obligations_hook.py) that lie outside the grant, which the manifest discloses and the coordinator accepted by status-repair; the figures directory is declared and unused."
+  },
+  "justifications": {
+    "durability": "the change IS the guard and its load-bearing condition is demonstrated rather than claimed -- restoring the phase-gated claim on the three removal paths reddens test_a_sweep_spares_a_parked_runs_worktree and test_run_scope_touches_only_the_named_runs_tree in my own scratch run (2 failed, 1 passed, EXIT=1), so the guard fails if the wider claim regresses; one residual removal path (_remove_worktree) still reads the narrower claim.",
+    "evidence": "both arms are recorded at their own revisions with literal absolute-path commands and completed true (base 62a16a744 3 failed / 113 passed EXIT=1, head 5a104bb4e 116 passed EXIT=0 -- 0 added ids), I independently ran the new test file at the reviewed head (3 passed) and reproduced the phase-gated mutation (2 failed, 1 passed, EXIT=1) with both failing ids absent from the head; docked because after_suite.revision 5a104bb4e is not the reviewed head 5582727a, whose only intervening commit is docs-only.",
+    "fit": "names are mechanism-based (_live_pointer_worktrees, run_id, --run) with no plan or version label, the test follows the repo idiom (temp RECKON_HOME, synthesised mount and repository, CliRunner) and asserts the real fleet is untouched, and the two obligation test files are updated to the new per-run line rather than deleted; not 20 because _live_pointer_worktrees' docstring claims every removal path reads it while _remove_worktree still does not.",
+    "goal_fidelity": "all three done-when clauses are present and reachable -- the wider claim at routing.py:1438 and :1484 is read before any classification or removal and the residue guard at :1065 uses it, crew gc --run is threaded from cli.py:5731 through garbage_collect and confines the worktree candidates, pointer reaping and run-directory retention, and the remedy at obligations.py:625 names crew gc --run <run id>; not 20 because the manifest does not enumerate which other callers of _pointer_claims_worktree were considered, which the section's first clause asks it to say.",
+    "scope_discipline": "the diff spans exactly the seven paths the manifest lists as changed and mutates no shared index or plan state, but two of those paths (tests/test_crew_obligations.py, tests/test_coordinator_obligations_hook.py) lie outside the six granted write paths; the excursion is disclosed in evidence_inputs and blockers and the coordinator accepted it by status-repair, so the work is sound but the fence was crossed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section's one goal is that a sweep never removes a worktree a live pointer names and that a held-tree duty never prescribes a repository-wide sweep; the diff replaces the phase-gated _live_worktree_claims with a new _live_pointer_worktrees in every removal path of garbage_collect and in the residue-release guard, adds crew gc --run RUN_ID which confines classification, removal, pointer reaping and run-directory retention to that run's own tree, and makes the worktree-held remedy name that run-scoped command; the read-time existence check the section also names was already present at the base and is verified rather than reimplemented, asserted by the new test's third case.\nVERDICT done_when: the measure is a base arm red only on the new file's three cases and a head arm green with no added failing id, plus an executed negative control; the manifest records both arms as JSON with revisions, literal absolute-path commands, completed true and log paths, names the negative-control log with its mutation, and I independently reproduced the mutation (2 failed, 1 passed, EXIT=1) and the head run (3 passed).\nVERDICT write_paths: the six granted paths are routing.py, cli.py, obligations.py, the new test file, the evidence fragment and a figures directory; the diff touches the first five plus two obligation test files (tests/test_crew_obligations.py and tests/test_coordinator_obligations_hook.py) that lie outside the grant, which the manifest discloses and the coordinator accepted by status-repair; the figures directory is declared and unused.\nVERDICT manifest: read; status complete, two commits (5a104bb4e and 5582727a), baseline_suite and after_suite recorded as JSON with revision, literal command, exit_status, log_path, completed true and failure ids, negative_control_log named with its mutation and a second removal demonstration; docked because the head-arm revision (5a104bb4e) is one docs-only commit below the reviewed head (5582727a).\nVERDICT diff: read commit by commit against base 62a16a744; 5a104bb4e adds the routing.py guard and run scoping, the cli --run option, the obligations remedy and the new test file, and updates two obligation test files whose expectations the per-run remedy makes stale; 5582727a adds only the 142-line evidence fragment.\nCALL_SITES: reckon/cli.py:5780 (garbage_collect called with run_id), reckon/crew/routing.py:1065 (residue-release guard reads the wider claim), reckon/crew/routing.py:1438 (garbage_collect claim read before classification), reckon/crew/routing.py:1484 (apply-loop re-read), reckon/crew/obligations.py:839 (held-worktree remedy reaches the hook)\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 17\nSCORE durability: 19\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: all three done-when clauses are present and reachable -- the wider claim at routing.py:1438 and :1484 is read before any classification or removal and the residue guard at :1065 uses it, crew gc --run is threaded from cli.py:5731 through garbage_collect and confines the worktree candidates, pointer reaping and run-directory retention, and the remedy at obligations.py:625 names crew gc --run <run id>; not 20 because the manifest does not enumerate which other callers of _pointer_claims_worktree were considered, which the section's first clause asks it to say.\nJUSTIFICATION evidence: both arms are recorded at their own revisions with literal absolute-path commands and completed true (base 62a16a744 3 failed / 113 passed EXIT=1, head 5a104bb4e 116 passed EXIT=0 -- 0 added ids), I independently ran the new test file at the reviewed head (3 passed) and reproduced the phase-gated mutation (2 failed, 1 passed, EXIT=1) with both failing ids absent from the head; docked because after_suite.revision 5a104bb4e is not the reviewed head 5582727a, whose only intervening commit is docs-only.\nJUSTIFICATION scope_discipline: the diff spans exactly the seven paths the manifest lists as changed and mutates no shared index or plan state, but two of those paths (tests/test_crew_obligations.py, tests/test_coordinator_obligations_hook.py) lie outside the six granted write paths; the excursion is disclosed in evidence_inputs and blockers and the coordinator accepted it by status-repair, so the work is sound but the fence was crossed.\nJUSTIFICATION durability: the change IS the guard and its load-bearing condition is demonstrated rather than claimed -- restoring the phase-gated claim on the three removal paths reddens test_a_sweep_spares_a_parked_runs_worktree and test_run_scope_touches_only_the_named_runs_tree in my own scratch run (2 failed, 1 passed, EXIT=1), so the guard fails if the wider claim regresses; one residual removal path (_remove_worktree) still reads the narrower claim.\nJUSTIFICATION fit: names are mechanism-based (_live_pointer_worktrees, run_id, --run) with no plan or version label, the test follows the repo idiom (temp RECKON_HOME, synthesised mount and repository, CliRunner) and asserts the real fleet is untouched, and the two obligation test files are updated to the new per-run line rather than deleted; not 20 because _live_pointer_worktrees' docstring claims every removal path reads it while _remove_worktree still does not.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/gc-spares-a-live-pointers-worktree.html:67 follow-on: the head gate arm ran at 5a104bb4e but the reviewed head is 5582727a, so after_suite.revision is not the reviewed head; the intervening commit adds only the evidence fragment, which cannot affect the pytest suite, so the evidence stands, but the recorded head pair names a revision the gate did not run at.\nFINDING reckon/crew/routing.py:2034 follow-on: _remove_worktree still reads the phase-gated _live_worktree_claims, so this removal path can force-remove a worktree a parked live pointer names while _live_pointer_worktrees' docstring asserts that every removal path reads the wider claim; the section's first clause names garbage_collect, so this is a follow-on rather than a blocker.\nreviewed_base_sha: 62a16a7443b6267a6e58719687f06443b65762ca\nreviewed_head_sha: 5582727a766555262b3e7c2348b02d4109e0927a",
+  "review_run_id": "r-20261003T130235411478-review-of-gc-spares-a-live-pointers-worktree",
+  "reviewed_base_sha": "62a16a7443b6267a6e58719687f06443b65762ca",
+  "reviewed_head_sha": "5582727a766555262b3e7c2348b02d4109e0927a",
+  "reviewed_run_id": "r-20261003T122021873891-gc-spares-a-live-pointers-worktree",
+  "reviewer": {
+    "backend": "local",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T13:10:59.571587+00:00",
+  "total": 91
+}

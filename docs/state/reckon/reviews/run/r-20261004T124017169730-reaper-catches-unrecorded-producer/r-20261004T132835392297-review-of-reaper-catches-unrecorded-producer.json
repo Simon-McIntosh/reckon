@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (revision 0d5701202, logs/gate_base.log) reports 2 failed, 17 passed, 1 skipped EXIT=1 with failure_ids [tests/test_reaper_catches_unrecorded_producer.py::test_the_per_test_reap_signals_a_producer_that_never_wrote_a_seat_record, tests/test_reaper_catches_unrecorded_producer.py::test_the_named_half_runs_only_for_a_test_that_arms_a_producer]; after_suite (revision 4216f508f, logs/gate_head.log) reports 19 passed, 1 skipped EXIT=0 with failure_ids []. The head failure set is empty, so the set difference against the base arm is empty: added_failure_count 0, added_failure_ids []. This review covers the commits the run gained since it was last reviewed (prior head 954de5488 -> 4216f508f) within the run's base-to-head range.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T13:44:01.538Z",
+  "dispatched_at": "2026-10-04T13:28:51Z",
+  "findings": [
+    {
+      "file": "tests/conftest.py:381",
+      "text": "reapable_watch_pids now defaults include_named_half=True, so its two existing call sites \u2014 tests/test_the_session_reap_signals_a_pruned_producer.py:112 and :155, and tests/test_test_watchers_are_reaped.py:248 \u2014 silently gain the whole-host /proc environ scan they were written without, and the session-reap test's docstring ('what reapable_watch_pids returns is what reaped_watch_producers sends SIGTERM to') no longer matches the fixture, which passes include_named_half=False. They pass today only because their stub producers' argv lacks 'watch'/'--project', so unrecorded_watch_producers_naming matches none of them; a stub with a watch-shaped argv would silently change their result sets and could make the pruned-home test pass through the environ path rather than the mirrored record it exists to prove. The records-only path should be expressed at those call sites (include_named_half=False) rather than inherited from a default the per-test reap now overrides by passing armed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "done_when": "The node's done-when requires the per-test reaper to reach a producer that never wrote a seat record, the record path and foreign-home refusal to stay covered, and the base arm to carry a signal. At head the named half reaches the unrecorded stand-in (verified); the foreign-home refusal and pruned-mirror session-reap tests keep the record half because their stubs' argv lacks 'watch'/'--project' (verified by reading _live_watch_producers, which requires both); the session-end scan is unchanged (include_named_half=False); and the base arm is behavioural. The base arm's second test still fails on an ImportError of per_test_reap_pids, which the manifest attributes as scaffolding.",
+    "goal": "The repair round's aim is two corrections: give the base arm a behavioural signal and scope the whole-host /proc scan to tests that arm. Both hold at 4216f508f. The test now calls reapable_watch_pids, which exists at base, so my independent base-arm run (base conftest 0d5701202 + head test file) fails behaviourally \u2014 assert <pid> in [] \u2014 while the stand-in is live; my independent head run of the file is green (3 passed). The scan is scoped through per_test_reap_pids(root, armed=...) read from the arms_watch_producer marker, and the session-end reap keeps include_named_half=False."
+  },
+  "justifications": {
+    "durability": "The repair is committed at 4216f508f with a conventional subject and a body naming both corrections; the manifest lists commits, changed_paths, gate and both negative-control logs; gate logs name revision and command on their header lines. The two negative controls are on disk and one (scoping) is independently reproduced.",
+    "evidence": "The head gate is readable and independently reproduced: my run of the reviewed file at 4216f508f is 3 passed. The base arm is now behavioural (assert <pid> in []), the prior review's chief evidence objection. The declared scoping control reproduces discriminating red: reverting per_test_reap_pids to ignore 'armed' leaves the scoping test failing on assert 223339 in [], EXIT=1. The remaining base-arm failure (test_the_named_half_runs_only_for_a_test_that_arms_a_producer) is an ImportError of per_test_reap_pids and is correctly recorded under failure_attribution as scaffolding. Three adjacent tests in the gate file set (test_a_review_never_runs_in_harness.py x2, test_test_watchers_are_reaped.py x1) fail identically in my scratch tree at both 954de5488 and 4216f508f \u2014 environmental, not introduced by this commit.",
+    "fit": "The split into _recorded_watch_pids / reapable_watch_pids / unrecorded_watch_producers_naming / per_test_reap_pids follows the file's existing reap helpers and preserves the record path's proof standard. The one wart is that reapable_watch_pids's default flipped to include_named_half=True, silently broadening its two existing call sites and detaching the session-reap test's stated call from the fixture's (include_named_half=False) \u2014 see the finding.",
+    "goal_fidelity": "The repair round's stated aim, and the node goal read at this head, is that the per-test reaper reaches a producer that never wrote its seat record and that the base arm carries a behavioural signal rather than an import error. reapable_watch_pids(root) now unions the seat records under root with unrecorded_watch_producers_naming(root) (live crew watch producers whose own /proc/<pid>/environ names a RECKON_HOME under root, using the record path's proof standard: an unreadable environ or any other home is left unsignalled). My independent base-arm run \u2014 base conftest at 0d5701202 overlaid with the head test file \u2014 fails behaviourally: assert 222709 in [] while the stand-in producer is live, so the red now rests on the reaper's behaviour, not on importing a helper the base tree lacks. My independent head run of the file is green (3 passed in 0.31s).",
+    "scope_discipline": "Commit 4216f508f changes exactly the three declared paths and nothing else: tests/conftest.py (the include_named_half/armed split and the rewired fixtures), tests/test_reaper_catches_unrecorded_producer.py (renamed behavioural test plus the scoping test) and docs/evidence/fragments/one-typesafe-model-picker/reaper-catches-unrecorded-producer.html \u2014 +119/-57. No product source, no other test file, no plan file and no plan-version/plan-modified meta was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The repair round's aim is two corrections: give the base arm a behavioural signal and scope the whole-host /proc scan to tests that arm. Both hold at 4216f508f. The test now calls reapable_watch_pids, which exists at base, so my independent base-arm run (base conftest 0d5701202 + head test file) fails behaviourally \u2014 assert <pid> in [] \u2014 while the stand-in is live; my independent head run of the file is green (3 passed). The scan is scoped through per_test_reap_pids(root, armed=...) read from the arms_watch_producer marker, and the session-end reap keeps include_named_half=False.\nVERDICT done_when: The node's done-when requires the per-test reaper to reach a producer that never wrote a seat record, the record path and foreign-home refusal to stay covered, and the base arm to carry a signal. At head the named half reaches the unrecorded stand-in (verified); the foreign-home refusal and pruned-mirror session-reap tests keep the record half because their stubs' argv lacks 'watch'/'--project' (verified by reading _live_watch_producers, which requires both); the session-end scan is unchanged (include_named_half=False); and the base arm is behavioural. The base arm's second test still fails on an ImportError of per_test_reap_pids, which the manifest attributes as scaffolding.",
+  "review_run_id": "r-20261004T132835392297-review-of-reaper-catches-unrecorded-producer",
+  "reviewed_base_sha": "0d5701202a92e1efa73647ff5bdcf13ff3415fd0",
+  "reviewed_head_sha": "4216f508f5775ba3c226007c3be632de2c34225a",
+  "reviewed_run_id": "r-20261004T124017169730-reaper-catches-unrecorded-producer",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T132835392297-review-of-reaper-catches-unrecorded-producer",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T13:42:46+00:00",
+  "total": 92
+}

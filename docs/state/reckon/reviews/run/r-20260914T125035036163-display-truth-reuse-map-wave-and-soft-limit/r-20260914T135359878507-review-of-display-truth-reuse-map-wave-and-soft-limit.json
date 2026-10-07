@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T13:53:59.878507+00:00",
+  "findings": [
+    {
+      "file": "crew/reports/display-truth-reuse-wave-soft-limit.md",
+      "line": "1",
+      "text": "the map's content is unguarded \u2014 no test reads it and the crew/reports directory is not a git repository (rev-parse refuses), so a later edit to a verdict or a citation can silently contradict the tree it describes; the same weakness was recorded for docs/evidence/archive/ in the review of r-20260914T094316532378 and this record is weaker still because it lacks even git history."
+    },
+    {
+      "file": "crew/reports/display-truth-reuse-wave-soft-limit.md",
+      "line": "41",
+      "text": "the section heading reads \"\u00a717 \u2014 runtime gate (7 rows)\" while the table below it delivers 6 rows and the report's own count line and manifest both say 6, a residual of the earlier 18-count miscount the report itself describes; a reader could mistake it for a dropped row."
+    }
+  ],
+  "justifications": {
+    "durability": "nothing reads this record \u2014 no test asserts over the crew/reports directory (the only test references to that path touch review-staging JSON at tests/test_review_composition.py:205 and a browser probe, not this map) and the directory has no git repository, so an edited verdict or a citation pointing at a line that no longer exists fails nothing.",
+    "evidence": "independently reproduced against the base \u2014 every sampled citation resolved to its claimed content (reckon/cli.py:966 and :1297 the two --wave surfaces, reckon/crew/dispatch.py:2373 _resolved_wave_id with the call at :2768 and the pointer field at :2833, reckon/crew/runs.py:1218-1261 watch-seat trio with no callers for replace_stale_watch_seat, reckon/crew/recovery.py:280 the token budget and :2579 the exported spend fields, reckon/crew/metering.py:233 the named-exclusion is_durable, reckon/_backends.py:464 the retry discriminator), all six absence greps reproduced empty (wave in reckon/crew/ticker.py, seal, worker message, soft threshold, wave in promotion/ledger, rendered overrun), the plan tables count 11+6=17, and every cited test line resolves and matches the report's description.",
+    "fit": "the map follows the reuse-map idiom of its precedent crew/reports/display-reuse-map.md, uses a settled satisfied/partial/absent verdict vocabulary and per-section write-path tables with asserting tests beside each source, and introduces no plan, sprint or ticket label into the filename or content; it is docked for internal inconsistencies \u2014 the \u00a717 heading names 7 rows while delivering 6, and the retracted-mechanism paragraph at crew-observability-truth.html:827 is attributed to the fourth row when it sits in the third row's cell.",
+    "goal_fidelity": "the report maps all 17 measure rows verified in the plan tables at the base revision (docs/plans/crew-observability-truth.html:650-665 spans \u00a713's 11 rows, :820-832 \u00a717's 6), one row per measure row with a satisfied/partial/absent verdict, a file:line citation on every satisfied and partial row, the 17-count stated explicitly when found, and a proposed exclusive write-path set per section with the asserting test files named beside each source, meeting every clause of the done-when.",
+    "scope_discipline": "the node wrote exactly one path, its declared write path /home/ITER/mcintos/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md, made no commit because that directory is not a git repository, and said so in the manifest rather than claiming or inventing one."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the report maps all 17 measure rows verified in the plan tables at the base revision (docs/plans/crew-observability-truth.html:650-665 spans \u00a713's 11 rows, :820-832 \u00a717's 6), one row per measure row with a satisfied/partial/absent verdict, a file:line citation on every satisfied and partial row, the 17-count stated explicitly when found, and a proposed exclusive write-path set per section with the asserting test files named beside each source, meeting every clause of the done-when.\nSCORE evidence: 19\nJUSTIFICATION evidence: independently reproduced against the base \u2014 every sampled citation resolved to its claimed content (reckon/cli.py:966 and :1297 the two --wave surfaces, reckon/crew/dispatch.py:2373 _resolved_wave_id with the call at :2768 and the pointer field at :2833, reckon/crew/runs.py:1218-1261 watch-seat trio with no callers for replace_stale_watch_seat, reckon/crew/recovery.py:280 the token budget and :2579 the exported spend fields, reckon/crew/metering.py:233 the named-exclusion is_durable, reckon/_backends.py:464 the retry discriminator), all six absence greps reproduced empty (wave in reckon/crew/ticker.py, seal, worker message, soft threshold, wave in promotion/ledger, rendered overrun), the plan tables count 11+6=17, and every cited test line resolves and matches the report's description.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node wrote exactly one path, its declared write path /home/ITER/mcintos/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md, made no commit because that directory is not a git repository, and said so in the manifest rather than claiming or inventing one.\nSCORE durability: 5\nJUSTIFICATION durability: nothing reads this record \u2014 no test asserts over the crew/reports directory (the only test references to that path touch review-staging JSON at tests/test_review_composition.py:205 and a browser probe, not this map) and the directory has no git repository, so an edited verdict or a citation pointing at a line that no longer exists fails nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the map follows the reuse-map idiom of its precedent crew/reports/display-reuse-map.md, uses a settled satisfied/partial/absent verdict vocabulary and per-section write-path tables with asserting tests beside each source, and introduces no plan, sprint or ticket label into the filename or content; it is docked for internal inconsistencies \u2014 the \u00a717 heading names 7 rows while delivering 6, and the retracted-mechanism paragraph at crew-observability-truth.html:827 is attributed to the fourth row when it sits in the third row's cell.\nFINDING crew/reports/display-truth-reuse-wave-soft-limit.md:1 the map's content is unguarded \u2014 no test reads it and the crew/reports directory is not a git repository (rev-parse refuses), so a later edit to a verdict or a citation can silently contradict the tree it describes; the same weakness was recorded for docs/evidence/archive/ in the review of r-20260914T094316532378 and this record is weaker still because it lacks even git history.\nFINDING crew/reports/display-truth-reuse-wave-soft-limit.md:41 the section heading reads \"\u00a717 \u2014 runtime gate (7 rows)\" while the table below it delivers 6 rows and the report's own count line and manifest both say 6, a residual of the earlier 18-count miscount the report itself describes; a reader could mistake it for a dropped row.",
+  "review_run_id": "r-20260914T135359878507-review-of-display-truth-reuse-map-wave-and-soft-limit",
+  "reviewed_base": "5384182abc14ee26159c13769f3eadb81ccf296c",
+  "reviewed_commit": null,
+  "reviewed_run_id": "r-20260914T125035036163-display-truth-reuse-map-wave-and-soft-limit",
+  "scores": {
+    "durability": 5,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T14:32:10.000000+00:00",
+  "total": 79
+}

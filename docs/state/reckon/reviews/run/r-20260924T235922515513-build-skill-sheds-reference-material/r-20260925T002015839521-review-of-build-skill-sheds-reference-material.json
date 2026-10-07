@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "none \u2014 the change is a skill document",
+    "a conditional reference",
+    "its contract test",
+    "and landing records; no production module reaches the moved text."
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T00:20:15.839521+00:00",
+  "findings": [
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "645",
+      "text": "\"No dependent node builds on unverified work\" is written twice in one sentence (lines 644-646), an editor's duplication introduced here in the file the whole node exists to shrink."
+    },
+    {
+      "file": "skills/reckon-build/references/conditional-guidance.md",
+      "line": "19",
+      "text": "the pointer \"sprint-orchestration.md \u00a7Role of stopping\" names no section: the section is \"Stop discipline: these are not valid reasons to stop\" at references/sprint-orchestration.md:701, so newly authored material inherits a stale pointer from the base SKILL.md."
+    },
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "638",
+      "text": "the skill keeps telling the coordinator to raise concurrency by registering members (\"registers enough members to meet it\", line 643), while the binding workstation rule in ~/.agents/AGENTS.md (lead ruling 2026-09-24) forbids exactly that; the base carried a weaker form and this change strengthens it."
+    },
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "770",
+      "text": "the rewritten section drops the mandatory step \"Dispatch a test worker and audit its compact result manifest\" without restoring it in the conditional reference, so the rule survives only at references/sprint-orchestration.md:480, which no pointer from the skill reaches."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit; 11348097 moves the passages into references/conditional-guidance.md and lowers the bound, 65724950 adds the plan landing comment and the cumulative evidence anchor, and nothing lands outside the declared paths.",
+    "done_when": "it names the estimate from test_engine_generated_dispatch_*; the estimate is asserted by test_engine_generated_dispatch_keeps_fixed_read_set_bounded at tests/test_skill_contracts.py:583, resolving links by tests/test_skill_contracts.py:598, the manifest states 18,670 to 14,339 against a 15,000 bound, and the declared control ran red at 18,670 against 15,000; I re-ran the named test at 65724950 (1 passed).",
+    "goal": "the goal is that the reckon-build skill's fixed read set shrinks by moving explanatory passages into its references directory; skills/reckon-build/SKILL.md drops 3,248 words (18,670 to 14,339 estimated tokens) and six pointers at SKILL.md:86,289,491,612,628,776 hand the moved material to references/conditional-guidance.md.",
+    "manifest": "read; it records 55 passed at 65724950 with its log named, the base arm at 52 passed / 2 failed, the restored-base control failing at 18,670 against 15,000, and the estimate pair.",
+    "write_paths": "the six declared paths are skills/reckon-build/SKILL.md, skills/reckon-build/references, tests/test_skill_contracts.py and three docs paths; `git diff --stat 2a72458c..65724950` changes five files, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_skill_contracts.py:598 reddens if a linked file disappears or one of its five named sections is renamed, but the anchor half of each pointer is unchecked.",
+    "evidence": "tests/test_skill_contracts.py:583 asserts only estimate < FIXED_READ_SET_TOKEN_BUDGET, so the at-least-3,000 fall and the at-most-1,500 headroom rest on the manifest and my own recount rather than on the gate.",
+    "fit": "references/conditional-guidance.md:1-6 states its read-when rule in the reference set's idiom and the filename names no version, but SKILL.md:645 duplicates a rule sentence and references/conditional-guidance.md:19 points at no existing section.",
+    "goal_fidelity": "the extraction is real at skills/reckon-build/SKILL.md:86 and the moved material stands at references/conditional-guidance.md:8-196, though two moved passages carry the defects counted under fit.",
+    "scope_discipline": "every changed path in the diff lies inside the declared write paths, and the added CLI rows at tests/test_*:859,889,900 are what \"passes at your head\" requires against the registered verbs."
+  },
+  "node": "review-of-build-skill-sheds-reference-material",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260924T235922515513-build-skill-sheds-reference-material,\nread at its landed commit 65724950 against base 2a72458c.\n\nVERDICT goal: the goal is that the reckon-build skill's fixed read set shrinks by moving explanatory passages into its references directory; skills/reckon-build/SKILL.md drops 3,248 words (18,670 to 14,339 estimated tokens) and six pointers at SKILL.md:86,289,491,612,628,776 hand the moved material to references/conditional-guidance.md.\nVERDICT done_when: it names the estimate from test_engine_generated_dispatch_*; the estimate is asserted by test_engine_generated_dispatch_keeps_fixed_read_set_bounded at tests/test_skill_contracts.py:583, resolving links by tests/test_skill_contracts.py:598, the manifest states 18,670 to 14,339 against a 15,000 bound, and the declared control ran red at 18,670 against 15,000; I re-ran the named test at 65724950 (1 passed).\nVERDICT write_paths: the six declared paths are skills/reckon-build/SKILL.md, skills/reckon-build/references, tests/test_skill_contracts.py and three docs paths; `git diff --stat 2a72458c..65724950` changes five files, all inside them.\nVERDICT manifest: read; it records 55 passed at 65724950 with its log named, the base arm at 52 passed / 2 failed, the restored-base control failing at 18,670 against 15,000, and the estimate pair.\nVERDICT diff: read commit by commit; 11348097 moves the passages into references/conditional-guidance.md and lowers the bound, 65724950 adds the plan landing comment and the cumulative evidence anchor, and nothing lands outside the declared paths.\nCALL_SITES: none \u2014 the change is a skill document, a conditional reference, its contract test, and landing records; no production module reaches the moved text.\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the extraction is real at skills/reckon-build/SKILL.md:86 and the moved material stands at references/conditional-guidance.md:8-196, though two moved passages carry the defects counted under fit.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_skill_contracts.py:583 asserts only estimate < FIXED_READ_SET_TOKEN_BUDGET, so the at-least-3,000 fall and the at-most-1,500 headroom rest on the manifest and my own recount rather than on the gate.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path in the diff lies inside the declared write paths, and the added CLI rows at tests/test_*:859,889,900 are what \"passes at your head\" requires against the registered verbs.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_skill_contracts.py:598 reddens if a linked file disappears or one of its five named sections is renamed, but the anchor half of each pointer is unchecked.\nSCORE fit: 17\nJUSTIFICATION fit: references/conditional-guidance.md:1-6 states its read-when rule in the reference set's idiom and the filename names no version, but SKILL.md:645 duplicates a rule sentence and references/conditional-guidance.md:19 points at no existing section.\nFINDING skills/reckon-build/SKILL.md:645 \"No dependent node builds on unverified work\" is written twice in one sentence (lines 644-646), an editor's duplication introduced here in the file the whole node exists to shrink.\nFINDING skills/reckon-build/references/conditional-guidance.md:19 the pointer \"sprint-orchestration.md \u00a7Role of stopping\" names no section: the section is \"Stop discipline: these are not valid reasons to stop\" at references/sprint-orchestration.md:701, so newly authored material inherits a stale pointer from the base SKILL.md.\nFINDING skills/reckon-build/SKILL.md:638 the skill keeps telling the coordinator to raise concurrency by registering members (\"registers enough members to meet it\", line 643), while the binding workstation rule in ~/.agents/AGENTS.md (lead ruling 2026-09-24) forbids exactly that; the base carried a weaker form and this change strengthens it.\nFINDING skills/reckon-build/SKILL.md:770 the rewritten section drops the mandatory step \"Dispatch a test worker and audit its compact result manifest\" without restoring it in the conditional reference, so the rule survives only at references/sprint-orchestration.md:480, which no pointer from the skill reaches.\n",
+  "review_run_id": "r-20260925T002015839521-review-of-build-skill-sheds-reference-material",
+  "reviewed_base_sha": "2a72458cad5f7843fc2b7637719b8510d0151788",
+  "reviewed_head_sha": "65724950dd9771f4eb42ad779e1837f934bc0417",
+  "reviewed_run_id": "r-20260924T235922515513-build-skill-sheds-reference-material",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T00:50:43.423274+00:00",
+  "total": 83
+}

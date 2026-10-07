@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_ensure_watch_producer",
+    "reckon/crew/runs.py:_arm_watcher_as_process",
+    "reckon/crew/dispatch.py:_start_watch_producer",
+    "reckon/crew/runs.py:_adopt_watch_log"
+  ],
+  "completed_at": "2026-09-26T12:41:03.311Z",
+  "dispatched_at": "2026-09-26T10:41:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091519576079-unmanaged-producer-log-covers-every-arming/head-gate.log",
+      "line": "1",
+      "text": "the log opens with pytest's progress row and names no revision, tree or command, so the 48-passed result cannot be tied to 44477d81 from the log alone."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091519576079-unmanaged-producer-log-covers-every-arming/base-gate.log",
+      "line": "1",
+      "text": "the base arm ran against a scratch tree (/tmp/basearm) and the log names neither that tree, the resolved working directory nor the command that pinned it, so its three red results are evidence about 7ddc2a4b only by reconstruction from the manifest."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091519576079-unmanaged-producer-log-covers-every-arming/manifest.md",
+      "line": "17",
+      "text": "measurement_module names the test file relative and measurement_cwd names only the worktree, so neither records the imported module's absolute path, and a reader cannot see from the record that both arms imported the tree each claims."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091519576079-unmanaged-producer-log-covers-every-arming/negative-control.log",
+      "line": "1",
+      "text": "the control names no revision and its traceback numbering (tests/test_unmanaged_producer_keeps_a_log.py:420) sits two lines off head's :422, so a reader must reconstruct from the diff that the mutation site (reckon/crew/runs.py, blob f83be7ae) is identical at head and the test file's only later change is the rewrap of _wait_for_marker."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the three commits against 7ddc2a4b \u2014 dispatch.py replaces the direct Popen with the supervisor argv that exports the log variable (reckon/crew/dispatch.py:787), runs.py adopts the log in the producer and re-points the descriptors inside rotation (reckon/crew/runs.py:2861), the test file adds the three checks plus its two drivers, and the docs commit lands the plan article, the evidence section and the figure.",
+    "done_when": "the gate asserts every clause of the measure \u2014 tests/test_unmanaged_producer_keeps_a_log.py:295 drives the real dispatch._ensure_watch_producer to a marker in runs.watch_log_path, :305 asserts the seat's own log_path equals that written path, :308 runs the delegated argv with WATCH_LOG_ENV deleted from the environment, :387 checks a post-rotation write through fd 1 and through the stream object, and the base arm records all three red at 7ddc2a4b (3 failed, 45 passed, no other failure added).",
+    "goal": "read the goal's three clauses against the landed diff and found each present \u2014 reckon/crew/dispatch.py:781 builds the producer argv that carries WATCH_LOG_ENV and the log path, both spawn forms start from that one argv (reckon/crew/dispatch.py:822 for the direct route and the fleet spec for the delegated one), and reckon/crew/runs.py:1629 records the same watch_log_path(project) in the seat while reckon/crew/runs.py:2907 adopts it and re-points descriptors 1 and 2 after every rotation at reckon/crew/runs.py:2875.",
+    "manifest": "read the manifest, which reports status complete with three commit shas that resolve, an after_suite result (exit 0, 48 passed, revision 44477d81) and a base suite red on exactly the three added tests at manifest.md:21-23 \u2014 its account matches the artefacts, but the provenance headers its own test_logs contract requires are absent from the gate logs (see findings).",
+    "write_paths": "read the manifest's declared write paths against the diff's file set \u2014 git diff 7ddc2a4b..df7e400d --stat lists exactly six paths that all fall inside the declaration (reckon/crew/dispatch.py, reckon/crew/runs.py, tests/test_unmanaged_producer_keeps_a_log.py, the plan HTML, the landed-evidence HTML and docs/figures/the-fleet-counters-count-the-fleet/arming-routes-carry-the-log.svg), and no hunk touches anything else."
+  },
+  "justifications": {
+    "durability": "tests/test_unmanaged_producer_keeps_a_log.py:422 reddens both at base and under the declared mutation that removes the re-point at reckon/crew/runs.py:2875, so the guard measures the descriptor path rather than the code's own output, though the four pre-existing tests now take the log path from their fixture's WATCH_LOG_ENV and leave the naming contract to the two new tests.",
+    "evidence": "the gate names the measurement file and records revision, exit status and failure ids at manifest.md:21-22, and its base failures are exactly the assertions the done_when names \u2014 four points off for the provenance defects in the findings below.",
+    "fit": "reckon/crew/dispatch.py:781 keeps the log path on the argv the fleet spec already carries, the added names in the diff are mechanism prose with no plan label or author attribution, and docs/figures/the-fleet-counters-count-the-fleet/arming-routes-carry-the-log.svg parses as XML under its declared directory and is referenced project-absolutely from the evidence section, matching the repo's figure idiom.",
+    "goal_fidelity": "reckon/crew/dispatch.py:781 and reckon/crew/runs.py:2907 carry one log path from the argv into the adopted stream and the same path is written to the seat at reckon/crew/runs.py:1629, so all three unmanaged arming routes write the log the seat names and the redirect survives rotation.",
+    "scope_discipline": "the six paths in git diff 7ddc2a4b..df7e400d --stat are all inside the declared write paths and the docs commit adds a landing article only, with no plan-meta or shared-state mutation."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal's three clauses against the landed diff and found each present \u2014 reckon/crew/dispatch.py:781 builds the producer argv that carries WATCH_LOG_ENV and the log path, both spawn forms start from that one argv (reckon/crew/dispatch.py:822 for the direct route and the fleet spec for the delegated one), and reckon/crew/runs.py:1629 records the same watch_log_path(project) in the seat while reckon/crew/runs.py:2907 adopts it and re-points descriptors 1 and 2 after every rotation at reckon/crew/runs.py:2875.\nVERDICT done_when: the gate asserts every clause of the measure \u2014 tests/test_unmanaged_producer_keeps_a_log.py:295 drives the real dispatch._ensure_watch_producer to a marker in runs.watch_log_path, :305 asserts the seat's own log_path equals that written path, :308 runs the delegated argv with WATCH_LOG_ENV deleted from the environment, :387 checks a post-rotation write through fd 1 and through the stream object, and the base arm records all three red at 7ddc2a4b (3 failed, 45 passed, no other failure added).\nVERDICT write_paths: read the manifest's declared write paths against the diff's file set \u2014 git diff 7ddc2a4b..df7e400d --stat lists exactly six paths that all fall inside the declaration (reckon/crew/dispatch.py, reckon/crew/runs.py, tests/test_unmanaged_producer_keeps_a_log.py, the plan HTML, the landed-evidence HTML and docs/figures/the-fleet-counters-count-the-fleet/arming-routes-carry-the-log.svg), and no hunk touches anything else.\nVERDICT manifest: read the manifest, which reports status complete with three commit shas that resolve, an after_suite result (exit 0, 48 passed, revision 44477d81) and a base suite red on exactly the three added tests at manifest.md:21-23 \u2014 its account matches the artefacts, but the provenance headers its own test_logs contract requires are absent from the gate logs (see findings).\nVERDICT diff: read the three commits against 7ddc2a4b \u2014 dispatch.py replaces the direct Popen with the supervisor argv that exports the log variable (reckon/crew/dispatch.py:787), runs.py adopts the log in the producer and re-points the descriptors inside rotation (reckon/crew/runs.py:2861), the test file adds the three checks plus its two drivers, and the docs commit lands the plan article, the evidence section and the figure.\nCALL_SITES: reckon/crew/dispatch.py:_ensure_watch_producer, reckon/crew/runs.py:_arm_watcher_as_process, reckon/crew/dispatch.py:_start_watch_producer, reckon/crew/runs.py:_adopt_watch_log\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:781 and reckon/crew/runs.py:2907 carry one log path from the argv into the adopted stream and the same path is written to the seat at reckon/crew/runs.py:1629, so all three unmanaged arming routes write the log the seat names and the redirect survives rotation.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate names the measurement file and records revision, exit status and failure ids at manifest.md:21-22, and its base failures are exactly the assertions the done_when names \u2014 four points off for the provenance defects in the findings below.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the six paths in git diff 7ddc2a4b..df7e400d --stat are all inside the declared write paths and the docs commit adds a landing article only, with no plan-meta or shared-state mutation.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_unmanaged_producer_keeps_a_log.py:422 reddens both at base and under the declared mutation that removes the re-point at reckon/crew/runs.py:2875, so the guard measures the descriptor path rather than the code's own output, though the four pre-existing tests now take the log path from their fixture's WATCH_LOG_ENV and leave the naming contract to the two new tests.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch.py:781 keeps the log path on the argv the fleet spec already carries, the added names in the diff are mechanism prose with no plan label or author attribution, and docs/figures/the-fleet-counters-count-the-fleet/arming-routes-carry-the-log.svg parses as XML under its declared directory and is referenced project-absolutely from the evidence section, matching the repo's figure idiom.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091519576079-unmanaged-producer-log-covers-every-arming/head-gate.log:1 the log opens with pytest's progress row and names no revision, tree or command, so the 48-passed result cannot be tied to 44477d81 from the log alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091519576079-unmanaged-producer-log-covers-every-arming/base-gate.log:1 the base arm ran against a scratch tree (/tmp/basearm) and the log names neither that tree, the resolved working directory nor the command that pinned it, so its three red results are evidence about 7ddc2a4b only by reconstruction from the manifest.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091519576079-unmanaged-producer-log-covers-every-arming/manifest.md:17 measurement_module names the test file relative and measurement_cwd names only the worktree, so neither records the imported module's absolute path, and a reader cannot see from the record that both arms imported the tree each claims.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091519576079-unmanaged-producer-log-covers-every-arming/negative-control.log:1 the control names no revision and its traceback numbering (tests/test_unmanaged_producer_keeps_a_log.py:420) sits two lines off head's :422, so a reader must reconstruct from the diff that the mutation site (reckon/crew/runs.py, blob f83be7ae) is identical at head and the test file's only later change is the rewrap of _wait_for_marker.",
+  "review_run_id": "r-20260926T104055321448-review-of-unmanaged-producer-log-covers-every-arming",
+  "reviewed_base_sha": "7ddc2a4b72143e0bc3772331453647a7348d8c47",
+  "reviewed_head_sha": "df7e400d04a013268ce2d568399dc9f0abcf3292",
+  "reviewed_run_id": "r-20260926T091519576079-unmanaged-producer-log-covers-every-arming",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T12:31:32.706679+00:00",
+  "total": 94
+}

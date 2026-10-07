@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T06:08:01.349606+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/crew-observability-truth-landed.html",
+      "line": "875",
+      "text": "the recorded base figure for the gate is wrong - a faithful rerun over the same two files at base 7efeeb77 gives 6 failed 70 passed, the three extra failures being exactly the new quoted cases, against the recorded \"same 3 failed 70 passed\"; the row's own counts sum to 73 where 76 cases were collected, so it hides that the new gate cases fail at base."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "118",
+      "text": "an empty quoted scalar now parses where it used to refuse: _strip_matching_quotes maps \"\" and '' to an empty string, so 'status: \"\"' yields status '' instead of the base ManifestParseError, and _refuse_undetermined_status neither refuses the empty word (line 376 needs a truthy status) nor reaches the missing-status refusal (line 369 sees the key as present) - an unasserted behaviour change on the refusal axis this plan treats as load-bearing."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "309",
+      "text": "a quoted scalar does not decode when it is a continuation list item: changed_paths: \"a.py\" followed by - \"b.py\" parses to ['a.py', '\"b.py\"'] on the head reader, so the same quoting habit still costs a wrong value one line below the fix, and no case in tests/test_manifest_parse_format.py covers the continuation branch."
+    }
+  ],
+  "justifications": {
+    "durability": "the new cases are load-bearing falsifiers - the same 76 cases over the same two files give 6 failed 70 passed against the base reader versus 3 failed 73 passed at head, the three extra being exactly the quoted cases - so removing the strip is caught by tests/test_manifest_parse_format.py:592.",
+    "evidence": "tests/test_manifest_parse_format.py:592 and :619 assert the measure and its result is recorded, and I reproduced the defect independently (both quoted forms raise ManifestParseError at base and parse at head), but the archive's base figure is mis-recorded as the first finding states.",
+    "fit": "the helper, its comment block and its name sit beside the existing guards at reckon/crew/reports.py:99-103 in the same style, and no symbol, path or comment carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/reports.py:295 strips one matching pair where a top-level text scalar is read, so status: \"complete\" and status: 'complete' parse to the verdict the worker wrote while the unquoted, apostrophe and lone-quote shapes keep base behaviour.",
+    "scope_discipline": "every path in the diff (reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/plans/crew-observability-truth.html and the evidence archive) is inside the node's declared write paths, and the worktree is clean with nothing outside the fence touched."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:295 strips one matching pair where a top-level text scalar is read, so status: \"complete\" and status: 'complete' parse to the verdict the worker wrote while the unquoted, apostrophe and lone-quote shapes keep base behaviour.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_manifest_parse_format.py:592 and :619 assert the measure and its result is recorded, and I reproduced the defect independently (both quoted forms raise ManifestParseError at base and parse at head), but the archive's base figure is mis-recorded as the first finding states.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/plans/crew-observability-truth.html and the evidence archive) is inside the node's declared write paths, and the worktree is clean with nothing outside the fence touched.\nSCORE durability: 19\nJUSTIFICATION durability: the new cases are load-bearing falsifiers - the same 76 cases over the same two files give 6 failed 70 passed against the base reader versus 3 failed 73 passed at head, the three extra being exactly the quoted cases - so removing the strip is caught by tests/test_manifest_parse_format.py:592.\nSCORE fit: 19\nJUSTIFICATION fit: the helper, its comment block and its name sit beside the existing guards at reckon/crew/reports.py:99-103 in the same style, and no symbol, path or comment carries a plan or ticket identifier.\nFINDING docs/evidence/archive/crew-observability-truth-landed.html:875 the recorded base figure for the gate is wrong - a faithful rerun over the same two files at base 7efeeb77 gives 6 failed 70 passed, the three extra failures being exactly the new quoted cases, against the recorded \"same 3 failed 70 passed\"; the row's own counts sum to 73 where 76 cases were collected, so it hides that the new gate cases fail at base.\nFINDING reckon/crew/reports.py:118 an empty quoted scalar now parses where it used to refuse: _strip_matching_quotes maps \"\" and '' to an empty string, so 'status: \"\"' yields status '' instead of the base ManifestParseError, and _refuse_undetermined_status neither refuses the empty word (line 376 needs a truthy status) nor reaches the missing-status refusal (line 369 sees the key as present) - an unasserted behaviour change on the refusal axis this plan treats as load-bearing.\nFINDING reckon/crew/reports.py:309 a quoted scalar does not decode when it is a continuation list item: changed_paths: \"a.py\" followed by - \"b.py\" parses to ['a.py', '\"b.py\"'] on the head reader, so the same quoting habit still costs a wrong value one line below the fix, and no case in tests/test_manifest_parse_format.py covers the continuation branch.\n",
+  "review_run_id": "r-20260917T060801349606-review-of-a-quoted-scalar-costs-one-field-not-the-manifest",
+  "reviewed_base_sha": "7efeeb7739b01368936246291627fb6141849549",
+  "reviewed_commits": [
+    "9bb8b7c700c9ba7a6bea326418d85f552f9dc404",
+    "60e9913b8a5c653e221c5dbd39d0f34a160a5f3a"
+  ],
+  "reviewed_head_sha": "60e9913b8a5c653e221c5dbd39d0f34a160a5f3a",
+  "reviewed_run_id": "r-20260917T045830452259-a-quoted-scalar-costs-one-field-not-the-manifest",
+  "reviewer_run_id": "r-20260917T060801349606-review-of-a-quoted-scalar-costs-one-field-not-the-manifest",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T06:41:07.380934+00:00",
+  "total": 93
+}

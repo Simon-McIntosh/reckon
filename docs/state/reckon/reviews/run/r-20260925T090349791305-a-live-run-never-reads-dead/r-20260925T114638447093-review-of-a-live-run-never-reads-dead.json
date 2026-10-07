@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py",
+    "reckon/mcp_views.py",
+    "reckon/sprint_liveness.py",
+    "reckon/crew/query.py",
+    "reckon/crew/promotion.py",
+    "reckon/crew/recovery.py:watch_ticker"
+  ],
+  "completed_at": "2026-09-25T12:29:56.952Z",
+  "dispatched_at": "2026-09-25T11:46:51Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "146",
+      "text": "test_ticker_emits_only_changes_and_ends_after_the_last_promotion is a failure the head adds: at base 6ead2696 the file is green (195 passed, 0 failed across the measured set), at head 95044f7d it fails because the fixture expects a vanished pointer with no ledger row to end ('new-node','completed_unpromoted','promoted') while the change now reads it withdrawn; the file is peer-owned (ticker-row-reads-cleanly) so repairing it is out of this node's fence, but the added failure must be named."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "4588",
+      "text": "the stored phase is read but never written: the effective-phase reduction fixes the row a classifier consumer sees, while every other consumer of pointer[\"phase\"] - and the pointer itself - still carries the pre-spawn label that case 8 asked to restore, measured 26 of 41 live pointers at phase=starting; the writer side (dispatch.py's observe fold or the backend log observer) is untouched by this diff."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read all 12 commits commit by commit; the substance is in reckon/crew/recovery.py - a worker.json liveness probe with a start-time guard (case 1/4 at recovery.py:2755), the pre-spawn effective phase (case 8), orientation and template manifests steered to running (cases 5/9), the effective-phase reduction in _watch_snapshot (recovery.py:4588), the ledger-gated departure word (case 6, recovery.py:4970) and the ended-without-manifest reading, with tests and docs around it.",
+    "done_when": "the done_when names one test module driving the producer's classification over stub runs with a negative control per case; tests/test_a_live_run_never_reads_dead.py delivers 12 cases and the eight mutations in the run's negative-controls-final-3.log each exit 1, and I re-ran the module at head (12 passed, exit 0); the second half of the done_when - the enlisted suite delta - was not delivered by the worker and is measured independently in this review (see the recorded suite_delta).",
+    "goal": "the node goal is that no live run reads as dead or finished (c-20260925T092500-liveness-gate cases 1-4, c-20260925T1025 cases 5-7, c-20260925T1056 cases 8-9); driven against the real producer path, head corrects every misread it was dispatched for - of 41 real live pointers, 26 change reading at head and every change moves a run from a pre-spawn or unpromoted word to working/complete, never the other way, and 17 of the 36 runs carrying a worker.json have a dead pointer pid with a live worker pid (the fused-launch case of case 1) and now read working or complete.",
+    "manifest": "read at the run directory; it records the final scoped gate (116 passed in 12.38s) with its logs, the eight negative controls, measurement_module and measurement_cwd for the scratch-tree base arm, and a follow_ons entry that correctly owns the ticker fixture conflict to the peer node rather than to itself; baseline_suite is recorded complete and after_suite is recorded completed=false, which is the gap this review was dispatched to close.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, tests/test_a_live_run_never_reads_dead.py, tests/test_death_row_reads_any_final_record.py and three docs paths; the whole diff 6ead2696812637c05a758598ee7c0650b321cefd..95044f7df10852a8ec3d46a5c542e95ecefc5eb3 is six files and every one is inside that list."
+  },
+  "justifications": {
+    "durability": "durability rests on tests/test_a_live_run_never_reads_dead.py:644 (every emitted state/classification pair maps to exactly one bucket) and the per-case controls, whose mutations are named and executed at 9f55e200 with all eight exiting 1 - including the bucket control that reddens on ('blocked','ended-without-manifest'), ('blocked','interrupted') and ('blocked','refused-at-admission').",
+    "evidence": "the final scoped gate is real and its negative controls are executed and logged (all eight red in negative-controls-final-3.log), and I reproduced a 195-test base and 194-passed head measurement myself; the one deduction is that the worker's own after_suite was recorded incomplete (exit 124 under its 45s cap) and the delta it was asked for arrived only through this review.",
+    "fit": "the new helpers follow the module's own idiom (private, docstringed, mechanism-explaining comments) and introduce no version or ticket identifiers - WORKER_RECORD_NAME, _observed_phase, _carries_orientation_write and the ended-without-manifest state word all name what they do.",
+    "goal_fidelity": "case 8's remedy was to restore the advance lost in the supervisor or pointer writer, and the landed change compensates in the reader only at reckon/crew/recovery.py:2678 - measured on the real fleet the stored pointer phase is still never advanced (26 of 41 live pointers read phase=starting while their workers run), so the advance is restored on the row every watch/ticker reader consumes, which is what the reported misread was, but a reader of the raw pointer phase still sees the stale label.",
+    "scope_discipline": "every changed path is inside the declared write_paths and the code change stays inside reckon/crew/recovery.py; the docs/plans edit is the node's own plan section where the dispatch contract permits landing evidence, and no file outside the fence is touched."
+  },
+  "node": "review-of-a-live-run-never-reads-dead",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that no live run reads as dead or finished (c-20260925T092500-liveness-gate cases 1-4, c-20260925T1025 cases 5-7, c-20260925T1056 cases 8-9); driven against the real producer path, head corrects every misread it was dispatched for - of 41 real live pointers, 26 change reading at head and every change moves a run from a pre-spawn or unpromoted word to working/complete, never the other way, and 17 of the 36 runs carrying a worker.json have a dead pointer pid with a live worker pid (the fused-launch case of case 1) and now read working or complete.\nVERDICT done_when: the done_when names one test module driving the producer's classification over stub runs with a negative control per case; tests/test_a_live_run_never_reads_dead.py delivers 12 cases and the eight mutations in the run's negative-controls-final-3.log each exit 1, and I re-ran the module at head (12 passed, exit 0); the second half of the done_when - the enlisted suite delta - was not delivered by the worker and is measured independently in this review (see the recorded suite_delta).\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, tests/test_a_live_run_never_reads_dead.py, tests/test_death_row_reads_any_final_record.py and three docs paths; the whole diff 6ead2696812637c05a758598ee7c0650b321cefd..95044f7df10852a8ec3d46a5c542e95ecefc5eb3 is six files and every one is inside that list.\nVERDICT manifest: read at the run directory; it records the final scoped gate (116 passed in 12.38s) with its logs, the eight negative controls, measurement_module and measurement_cwd for the scratch-tree base arm, and a follow_ons entry that correctly owns the ticker fixture conflict to the peer node rather than to itself; baseline_suite is recorded complete and after_suite is recorded completed=false, which is the gap this review was dispatched to close.\nVERDICT diff: read all 12 commits commit by commit; the substance is in reckon/crew/recovery.py - a worker.json liveness probe with a start-time guard (case 1/4 at recovery.py:2755), the pre-spawn effective phase (case 8), orientation and template manifests steered to running (cases 5/9), the effective-phase reduction in _watch_snapshot (recovery.py:4588), the ledger-gated departure word (case 6, recovery.py:4970) and the ended-without-manifest reading, with tests and docs around it.\nCALL_SITES: reckon/cli.py, reckon/mcp_views.py, reckon/sprint_liveness.py, reckon/crew/query.py, reckon/crew/promotion.py, reckon/crew/recovery.py:watch_ticker\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: case 8's remedy was to restore the advance lost in the supervisor or pointer writer, and the landed change compensates in the reader only at reckon/crew/recovery.py:2678 - measured on the real fleet the stored pointer phase is still never advanced (26 of 41 live pointers read phase=starting while their workers run), so the advance is restored on the row every watch/ticker reader consumes, which is what the reported misread was, but a reader of the raw pointer phase still sees the stale label.\nSCORE evidence: 16\nJUSTIFICATION evidence: the final scoped gate is real and its negative controls are executed and logged (all eight red in negative-controls-final-3.log), and I reproduced a 195-test base and 194-passed head measurement myself; the one deduction is that the worker's own after_suite was recorded incomplete (exit 124 under its 45s cap) and the delta it was asked for arrived only through this review.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is inside the declared write_paths and the code change stays inside reckon/crew/recovery.py; the docs/plans edit is the node's own plan section where the dispatch contract permits landing evidence, and no file outside the fence is touched.\nSCORE durability: 18\nJUSTIFICATION durability: durability rests on tests/test_a_live_run_never_reads_dead.py:644 (every emitted state/classification pair maps to exactly one bucket) and the per-case controls, whose mutations are named and executed at 9f55e200 with all eight exiting 1 - including the bucket control that reddens on ('blocked','ended-without-manifest'), ('blocked','interrupted') and ('blocked','refused-at-admission').\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow the module's own idiom (private, docstringed, mechanism-explaining comments) and introduce no version or ticket identifiers - WORKER_RECORD_NAME, _observed_phase, _carries_orientation_write and the ended-without-manifest state word all name what they do.\nFINDING tests/test_crew_ticker.py:146 test_ticker_emits_only_changes_and_ends_after_the_last_promotion is a failure the head adds: at base 6ead2696 the file is green (195 passed, 0 failed across the measured set), at head 95044f7d it fails because the fixture expects a vanished pointer with no ledger row to end ('new-node','completed_unpromoted','promoted') while the change now reads it withdrawn; the file is peer-owned (ticker-row-reads-cleanly) so repairing it is out of this node's fence, but the added failure must be named.\nFINDING reckon/crew/recovery.py:4588 the stored phase is read but never written: the effective-phase reduction fixes the row a classifier consumer sees, while every other consumer of pointer[\"phase\"] - and the pointer itself - still carries the pre-spawn label that case 8 asked to restore, measured 26 of 41 live pointers at phase=starting; the writer side (dispatch.py's observe fold or the backend log observer) is untouched by this diff.\n\nSuite delta, measured independently by this review (no 45s cap; the repository's own 300s per-test bound in pyproject.toml applies), files tests/test_crew_recovery.py tests/test_crew_watch_stream.py tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_death_row_reads_any_final_record.py, both arms run in scratch trees with module.__file__ verified:\n- base 6ead2696812637c05a758598ee7c0650b321cefd: 195 passed, 0 failed, exit 0, 10.60s\n- head 95044f7df10852a8ec3d46a5c542e95ecefc5eb3: 194 passed, 1 failed, exit 1, 9.29s\n- added failures by test id: tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion\nThe three colour failures the worker saw at base in its own environment (test_follow_emit_path_preserves_painted_escape_codes, test_cli_watch_follow_emit_site_preserves_painted_escape_codes, test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier) do not reproduce at either arm here, so they are environment-dependent and are not added failures; the worker's recorded head arm (exit 124 at 8e22b2b8) also does not reproduce - at the final head these files complete in 9.29s with no hang.",
+  "real_path_probe": {
+    "base_module": "/tmp/reckon-review-live/base/reckon/crew/recovery.py",
+    "dead_pointer_live_worker_rows": 17,
+    "head_module": "/tmp/reckon-review-live/head/reckon/crew/recovery.py",
+    "live_pointers_probed": 41,
+    "rows_changed_by_head": 26
+  },
+  "review_run_id": "r-20260925T114638447093-review-of-a-live-run-never-reads-dead",
+  "reviewed_base_sha": "6ead2696812637c05a758598ee7c0650b321cefd",
+  "reviewed_head_sha": "95044f7df10852a8ec3d46a5c542e95ecefc5eb3",
+  "reviewed_run_id": "r-20260925T090349791305-a-live-run-never-reads-dead",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "suite_delta": {
+    "added_failures": [
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion"
+    ],
+    "after": {
+      "exit_status": 1,
+      "failed": 1,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T114638447093-review-of-a-live-run-never-reads-dead/review-head-suite.log",
+      "passed": 194,
+      "revision": "95044f7df10852a8ec3d46a5c542e95ecefc5eb3"
+    },
+    "baseline": {
+      "exit_status": 0,
+      "failed": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T114638447093-review-of-a-live-run-never-reads-dead/review-base-suite.log",
+      "passed": 195,
+      "revision": "6ead2696812637c05a758598ee7c0650b321cefd"
+    },
+    "environment_note": "three colour-environment failures present in the worker's base arm do not reproduce at either arm in this environment; not added failures",
+    "files": [
+      "tests/test_crew_recovery.py",
+      "tests/test_crew_watch_stream.py",
+      "tests/test_crew_ticker.py",
+      "tests/test_crew_ticker_layout.py",
+      "tests/test_death_row_reads_any_final_record.py"
+    ]
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T12:22:59.248407+00:00",
+  "total": 85
+}

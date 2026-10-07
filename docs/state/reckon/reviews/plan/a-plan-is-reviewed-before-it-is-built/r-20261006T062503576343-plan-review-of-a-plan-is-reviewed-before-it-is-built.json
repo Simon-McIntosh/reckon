@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:29:46.269Z",
+  "dispatched_at": "2026-10-06T06:25:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s22",
+      "id": "reuse_search-1",
+      "reason": "the author must either say why a plan-prose word-share is a different instrument from the run-diff line count (and why it cannot compose with `review_tiers`), or merge them; either answer edits the section's config accounting.",
+      "text": "\u00a722 declares `review.plan_change_threshold` in the same `review` config block that already carries `review.tiers.light_changed_lines` (read by `reckon/review_tiers.py:review_tier` to size a run's review), so two change-significance thresholds will sit under one key with no statement of how they relate, and the section cites only the settle-window path, never the existing instrument",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s22",
+      "id": "interface_budget-1",
+      "reason": "the section must add the one clause the rule demands, stating what the added public name replaces or why nothing can be retired.",
+      "text": "the section's interface accounting adds one public definition (the `plan_change_threshold` accessor, public_definitions 1481 to 1482) and states that the measure, the done-when locator and the declaration comparison are private, but names no definition it retires or merges and gives no reason none can be, which the budget rule requires of every section that adds to a counted family",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ef9245f3a20266f4bb3c01ad0d4d5f655c101fbb51738304f9913918c03a7fc1",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 174,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T062503576343-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "5916b47c74ffe0c5f2ecbfb0b944b50cae1e9ea9",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716's `section_prose` on `reckon/_plan_html.py` hides section identity, boundary spans, landed-card handling and tag stripping behind one reader that every prose consumer calls.",
+    "duplicate_owner": "pass \u2014 the duplicates the sections touch are each routed to their owner: \u00a721 gives the report snapshot's file name one constant beside `_REVIEW_SIDECAR_NAME`, and \u00a723 hoists `routing._store_delivered_plan_review` to `reckon/crew/plan_review.py` beside `store_delivered_report` rather than forking it.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a722 adds one public definition without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a722 adds a plan-change significance threshold beside the run-review change-size instrument already owned by `reckon/review_tiers.py` and `review.tiers.light_changed_lines`, and cites neither.",
+    "thin_wrapper": "pass \u2014 each new surface names why it is added rather than layered: \u00a722's flight accessor is public because the crew-layer review module reads it, and \u00a723's `store_delivered_reviews` hoists the gate's one store step to the module that owns the store."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "a85d3d5b6115911cebee511fc8dcb878e34525faa6ed760e6c6d5e252a745c18",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "72ad92b52a650ea1abc0d70ca740ce40c853d798c5dfe84f0dbac9cac2368b92",
+    "s22": "00656446ff1e50b9624784166aada29afc7c7d5e1e59f935806a601f1ab45aab",
+    "s23": "d5923a18f9f600d2f9d1b10ce797bf2b5ce80a57c5b5544c167824fd936b4515",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:22:13.028132+00:00"
+}

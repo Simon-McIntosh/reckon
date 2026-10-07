@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs, per the module's own derivation: baseline_suite = sibling-suites.log (9 follower/watch/recovery modules, 4095a2b0, 146 passed, EXIT=0) and after_suite = after-gate-at-head.log (tests/test_follower_settles_a_promoted_row.py, 36411ca54, 3 passed, EXIT=0); added ids = head_ids - base_ids = empty, count 0. Both arms reproduced independently in scratch trees under this reviewer's TMPDIR (head 3 passed EXIT=0; base arm 2 failed/1 passed EXIT=1).",
+  "backend": "sonnet",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T14:07:00.891Z",
+  "dispatched_at": "2026-10-02T13:36:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8283",
+      "severity": "follow-on",
+      "text": "follow-on: the third latched-memory branch's body (recovery.py:8283-8288) is not reached by any of the three new tests and cannot be reached by reading, because every run whose memory reads promoted already continues in the departures loop (recovery.py:8222) or the state-change loop (recovery.py:8246), so no change carrying that run is appended for the final loop to hold; the guard is therefore harmless redundant code, not a working protection, and a future reader should not read it as load-bearing."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8283",
+      "severity": "follow-on",
+      "text": "follow-on: the new guard's condition is written across two lines but ruff format at the reviewed head collapses it to one (ruff format --diff hunk @@ -8280,8 +8273,7 @@), so the commit introduces one formatting finding against the repository's declared ruff-format target even though ruff check adds none (11 findings at both base and head); a one-line format divergence, not a behavioural defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the single commit 36411ca54 against its parent 4095a2b0, 187 insertions and 10 deletions across recovery.py and the new test file; the tests are a real guard because the un-latched base module fails two of the three.",
+    "done_when": "the manifest records tests/test_follower_settles_a_promoted_row.py 3 passed and a named negative-control log; the done_when's tests are at tests/test_follower_settles_a_promoted_row.py:81 (six polls, promoted asserted exactly once), :120 (reap emits nothing), :137 (re-dispatch reads as an arrival).",
+    "goal": "the node's goal is that a terminal ledger row settles a run's follower row once; reckon/crew/recovery.py:8246 latches the promoted word in fleet_transitions so a later pointer reading cannot move it back to dispatched, and the reap guard at :8281 gives up the slot without a second row.",
+    "manifest": "read; status complete with commits 36411ca54, landing, tests, test_logs and populated baseline_suite/after_suite, both exit_status 0 with failure_count 0.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py and tests/test_follower_settles_a_promoted_row.py; git diff --name-only 4095a2b0..36411ca5 lists exactly those two paths."
+  },
+  "justifications": {
+    "durability": "the new test reddens against the un-latched base module at 2 failed/3 (tests/test_follower_settles_a_promoted_row.py:105,:120) and its assertions compare the fold's emitted states against the literal promoted list rather than against the dispatched reading the test supplied, so reverting the latch re-opens the alternation the assertion pins.",
+    "evidence": "the manifest names both gate logs, after-gate-at-head.log (36411ca54, 3 passed, EXIT=0) and sibling-suites.log (4095a2b0, 146 passed, EXIT=0); both arms were re-run here in scratch trees (head 3 passed, base 2 failed/1 passed) and the added-failure derivation over the run's own logs gives 0.",
+    "fit": "the guard follows the surrounding comment-and-continue idiom at reckon/crew/recovery.py:8212 and adds no plan label, but it introduces one ruff-format finding (recovery.py:8283) and its third branch is dead code (recovery.py:8283-8288).",
+    "goal_fidelity": "the latch at reckon/crew/recovery.py:8246 holds the promoted word where the base module let a pointer reading dispatched overwrite it, and tests/test_follower_settles_a_promoted_row.py:113 shows the single promoted emission against the base alternation.",
+    "scope_discipline": "git diff --name-only 4095a2b0..36411ca5 lists exactly reckon/crew/recovery.py and tests/test_follower_settles_a_promoted_row.py, the two declared write paths, with no other file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a terminal ledger row settles a run's follower row once; reckon/crew/recovery.py:8246 latches the promoted word in fleet_transitions so a later pointer reading cannot move it back to dispatched, and the reap guard at :8281 gives up the slot without a second row.\nVERDICT done_when: the manifest records tests/test_follower_settles_a_promoted_row.py 3 passed and a named negative-control log; the done_when's tests are at tests/test_follower_settles_a_promoted_row.py:81 (six polls, promoted asserted exactly once), :120 (reap emits nothing), :137 (re-dispatch reads as an arrival).\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py and tests/test_follower_settles_a_promoted_row.py; git diff --name-only 4095a2b0..36411ca5 lists exactly those two paths.\nVERDICT manifest: read; status complete with commits 36411ca54, landing, tests, test_logs and populated baseline_suite/after_suite, both exit_status 0 with failure_count 0.\nVERDICT diff: read the single commit 36411ca54 against its parent 4095a2b0, 187 insertions and 10 deletions across recovery.py and the new test file; the tests are a real guard because the un-latched base module fails two of the three.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the latch at reckon/crew/recovery.py:8246 holds the promoted word where the base module let a pointer reading dispatched overwrite it, and tests/test_follower_settles_a_promoted_row.py:113 shows the single promoted emission against the base alternation.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest names both gate logs, after-gate-at-head.log (36411ca54, 3 passed, EXIT=0) and sibling-suites.log (4095a2b0, 146 passed, EXIT=0); both arms were re-run here in scratch trees (head 3 passed, base 2 failed/1 passed) and the added-failure derivation over the run's own logs gives 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 4095a2b0..36411ca5 lists exactly reckon/crew/recovery.py and tests/test_follower_settles_a_promoted_row.py, the two declared write paths, with no other file touched.\nSCORE durability: 18\nJUSTIFICATION durability: the new test reddens against the un-latched base module at 2 failed/3 (tests/test_follower_settles_a_promoted_row.py:105,:120) and its assertions compare the fold's emitted states against the literal promoted list rather than against the dispatched reading the test supplied, so reverting the latch re-opens the alternation the assertion pins.\nSCORE fit: 17\nJUSTIFICATION fit: the guard follows the surrounding comment-and-continue idiom at reckon/crew/recovery.py:8212 and adds no plan label, but it introduces one ruff-format finding (recovery.py:8283) and its third branch is dead code (recovery.py:8283-8288).\nFINDING reckon/crew/recovery.py:8283 follow-on: the third latched-memory branch's body (recovery.py:8283-8288) is not reached by any of the three new tests and cannot be reached by reading, because every run whose memory reads promoted already continues in the departures loop (recovery.py:8222) or the state-change loop (recovery.py:8246), so no change carrying that run is appended for the final loop to hold; the guard is therefore harmless redundant code, not a working protection, and a future reader should not read it as load-bearing.\nFINDING reckon/crew/recovery.py:8283 follow-on: the new guard's condition is written across two lines but ruff format at the reviewed head collapses it to one (ruff format --diff hunk @@ -8280,8 +8273,7 @@), so the commit introduces one formatting finding against the repository's declared ruff-format target even though ruff check adds none (11 findings at both base and head); a one-line format divergence, not a behavioural defect.",
+  "review_run_id": "r-20261002T133550833496-review-of-follower-reads-current-state",
+  "reviewed_base_sha": "4095a2b0d51f542fa252c85e047a5e5f7fd37c4f",
+  "reviewed_head_sha": "36411ca54ba18d9e93bf7845158dc57261b819b5",
+  "reviewed_run_id": "r-20261002T123453435484-follower-reads-current-state",
+  "reviewer": {
+    "backend": "sonnet",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T13:56:30Z",
+  "total": 93
+}

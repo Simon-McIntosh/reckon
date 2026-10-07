@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:11:26.421Z",
+  "dispatched_at": "2026-10-05T01:08:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/crew-runtime-positive-controls.html#\u00a722",
+      "id": "reuse_search-1",
+      "reason": "the section should be collapsed to a landed/verified claim against `reckon/crew/reports.py`, or its premise re-measured, rather than released as a node that rebuilds a check that runs.",
+      "text": "\u00a722 is authored as open work (\"check-manifest \u2026 does not look\") but the reader it asks for already exists: `_commit_citation_findings` in `reckon/crew/reports.py:1576`, wired into `audit_manifest` at `reckon/crew/reports.py:2033`, with `tests/test_check_manifest_resolves_named_commits.py` already on disk, so the section re-specifies machinery the codebase holds",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/reports.py:1526",
+      "id": "duplicate_owner-1",
+      "reason": "a duplicated resolver is the two-readers defect the plan's own \u00a716/\u00a738 exist to remove, so the section should route both surfaces through one resolver and name it, which changes the Files stanza and the done-when.",
+      "text": "the resolution predicate the plan has `check-manifest` perform ships twice: `_commit_resolves_in` in `reckon/crew/promotion.py:477` and a second, independent implementation in `reckon/crew/reports.py:1526`, each running its own `git rev-parse` probe, and the plan's \u00a718/\u00a722 text names neither as the owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/crew-runtime-positive-controls.html#\u00a77",
+      "id": "interface_budget-1",
+      "reason": "the item's own rule requires each surface-adding section to name its retirement or say why none can be, and adding that sentence to \u00a73 and \u00a77 is a text change the plan can make without touching the shipped behaviour.",
+      "text": "\u00a77 grants the dispatch surface a new CLI option `--negative-control` (present at `reckon/cli.py:1677`) and states only that it \"documents the field\"; \u00a73 likewise adds `crew watch --ensure` (present at `reckon/cli.py:5109`) with no statement of what either retires or merges, against cli_options 317",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0fd3694f1f0876f33097de94be1c71734d2a43aff6eb5f8f0ad71beea1f1368d",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 350,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-05T01:12:46.967502+00:00"
+    },
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "sections 3 and 7 are done and their options shipped before the interface-budget rule; retiring --negative-control or crew watch --ensure is a new design question for a future section, not a change to these landed ones",
+      "when": "2026-10-05T01:12:47.708223+00:00"
+    },
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 22 is done; the reader this finding cites, _commit_citation_findings wired into audit_manifest with its test, is that section's landing",
+      "when": "2026-10-05T01:12:46.144035+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T010828314978-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "6fb57b5371e784f9f9f154cf7c1bc336e1a43d79",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the one new module it commissions, `reckon/crew/serving_origin.py`, hides launcher query, HTTP probe and a shared wall-clock budget behind the single `check_serving_origin` call; the rest of the plan deepens existing modules rather than spreading surface.",
+    "duplicate_owner": "a finding \u2014 the plan's \u00a718/\u00a722 land a second commit resoler beside the one the audit path owns; two implementations of `_commit_resolves_in` now ship (`reckon/crew/promotion.py:477`, `reckon/crew/reports.py:1526`), and the plan names neither.",
+    "interface_budget": "a finding \u2014 public_definitions 1469, cli_options 317, mcp_views 33, refusal_families 23; \u00a77 adds the `--negative-control` CLI option and \u00a73 adds `crew watch --ensure`, and neither section names what it retires or merges, or states why nothing can be.",
+    "reuse_search": "pass \u2014 the plan names prior art where a new subsystem is proposed (\u00a713 names `reckon/flight.py`'s endpoints reader and requires a node to justify not reusing it), and \u00a716 names the two wait-probe readers before touching either; only \u00a722 adds a check whose reader already exists, emitted as a finding below.",
+    "thin_wrapper": "a finding \u2014 \u00a722 adds commit-resolution to `check-manifest` as new work while the same resolution already exists as a reader on the manifest-audit path, without saying why that reader could not simply be exercised."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T01:12:16.598194+00:00"
+}

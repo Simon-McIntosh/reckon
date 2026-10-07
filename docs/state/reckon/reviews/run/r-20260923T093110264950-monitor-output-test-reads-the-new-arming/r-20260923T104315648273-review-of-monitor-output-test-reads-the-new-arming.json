@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T10:43:15.648273+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base 2a895ef3, 8587710c is +8/-2 inside the arming guard alone, 724d116a adds the plan landing record and the cumulative evidence anchor before the s7 heading; every path inside the declared fence.",
+    "done_when": "the done_when names the arming test at a scratch merge of head with 82411f0c plus added failures 0 stated as counts; logs/head-scratch-merge-final.log shows 1 failed, 6 passed at that merge with the arming test among the green, base-revision.log the same counts at base 2a895ef3, and I reproduced the named test green at the merged head 7b97437b (logs/recheck-merged-head.log, 1 passed).",
+    "goal": "the node goal is that tests/test_crew_monitor_output.py asserts the reference's corrected arming example rather than the removed persistent flag; tests/test_crew_monitor_output.py:175-177 asserts `--lifetime 29m`, `persistent` absent, and the verbatim attach instruction, and no `persistent: true` assertion remains.",
+    "manifest": "read; it states 1 failed, 6 passed at base and at the scratch merge, names its four logs, and its tests line names the scratch merge by description rather than a path, which is what remains after the dispatch ordered that worktree discarded.",
+    "write_paths": "the manifest declares four paths; `git diff --name-status 2a895ef3 724d116a` lists three files, tests/test_crew_monitor_output.py and the two docs, all inside the fence, and the declared figures directory carries no file."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_monitor_output.py:175-177 reads the reference file rather than a value the test supplies, and the declared negative control reddens line 176 with `persistent` restored; my re-run reddens line 175 against the uncorrected reference (logs/recheck-reviewed-tree-uncorrected-ref.log), so both new positive pins are falsifiable.",
+    "evidence": "logs/head-scratch-merge-final.log records the named test green at the scratch merge with 82411f0c and base-revision.log the same 1 failed, 6 passed at base 2a895ef3; I reproduced the pre-repair defect red at `assert \"persistent: true\" in words` (logs/recheck-old-check-vs-corrected-reference.log) and the corrected test green at the merged head (logs/recheck-merged-head.log).",
+    "fit": "tests/test_crew_monitor_output.py:172-179 follows the file's word-pin idiom and adds no ruff finding (2 at base, 2 at head; `ruff format --check` clean), but the landing commit subject names the plan section, which the rule against plan identifiers in commit messages forbids.",
+    "goal_fidelity": "tests/test_crew_monitor_output.py:175-177 replaces the removed `persistent: true` pin with `--lifetime 29m`, `persistent` absent and the verbatim attach instruction, which is the arming example skills/reckon-ship/references/orchestrator-harness/claude-code.md:20 carries.",
+    "scope_discipline": "`git diff --name-status 2a895ef3 724d116a` lists exactly the three declared files that carry content and nothing outside the fence."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_crew_monitor_output.py asserts the reference's corrected arming example rather than the removed persistent flag; tests/test_crew_monitor_output.py:175-177 asserts `--lifetime 29m`, `persistent` absent, and the verbatim attach instruction, and no `persistent: true` assertion remains.\nVERDICT done_when: the done_when names the arming test at a scratch merge of head with 82411f0c plus added failures 0 stated as counts; logs/head-scratch-merge-final.log shows 1 failed, 6 passed at that merge with the arming test among the green, base-revision.log the same counts at base 2a895ef3, and I reproduced the named test green at the merged head 7b97437b (logs/recheck-merged-head.log, 1 passed).\nVERDICT write_paths: the manifest declares four paths; `git diff --name-status 2a895ef3 724d116a` lists three files, tests/test_crew_monitor_output.py and the two docs, all inside the fence, and the declared figures directory carries no file.\nVERDICT manifest: read; it states 1 failed, 6 passed at base and at the scratch merge, names its four logs, and its tests line names the scratch merge by description rather than a path, which is what remains after the dispatch ordered that worktree discarded.\nVERDICT diff: read both commits against base 2a895ef3, 8587710c is +8/-2 inside the arming guard alone, 724d116a adds the plan landing record and the cumulative evidence anchor before the s7 heading; every path inside the declared fence.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_monitor_output.py:175-177 replaces the removed `persistent: true` pin with `--lifetime 29m`, `persistent` absent and the verbatim attach instruction, which is the arming example skills/reckon-ship/references/orchestrator-harness/claude-code.md:20 carries.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-scratch-merge-final.log records the named test green at the scratch merge with 82411f0c and base-revision.log the same 1 failed, 6 passed at base 2a895ef3; I reproduced the pre-repair defect red at `assert \"persistent: true\" in words` (logs/recheck-old-check-vs-corrected-reference.log) and the corrected test green at the merged head (logs/recheck-merged-head.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-status 2a895ef3 724d116a` lists exactly the three declared files that carry content and nothing outside the fence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_crew_monitor_output.py:175-177 reads the reference file rather than a value the test supplies, and the declared negative control reddens line 176 with `persistent` restored; my re-run reddens line 175 against the uncorrected reference (logs/recheck-reviewed-tree-uncorrected-ref.log), so both new positive pins are falsifiable.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_crew_monitor_output.py:172-179 follows the file's word-pin idiom and adds no ruff finding (2 at base, 2 at head; `ruff format --check` clean), but the landing commit subject names the plan section, which the rule against plan identifiers in commit messages forbids.",
+  "review_run_id": "r-20260923T104315648273-review-of-monitor-output-test-reads-the-new-arming",
+  "reviewed_base_sha": "2a895ef308595241dd0635306b599998d626b6da",
+  "reviewed_head_sha": "724d116af98cd74b884e5316242583f598773ad6",
+  "reviewed_run_id": "r-20260923T093110264950-monitor-output-test-reads-the-new-arming",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T11:21:46.667676+00:00",
+  "total": 96
+}

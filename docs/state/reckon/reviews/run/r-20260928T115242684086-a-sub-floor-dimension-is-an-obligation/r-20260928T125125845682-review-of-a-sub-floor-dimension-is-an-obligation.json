@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T115242684086-a-sub-floor-dimension-is-an-obligation/logs/after-gate.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T115242684086-a-sub-floor-dimension-is-an-obligation/logs/baseline-gate.log",
+    "count_derivation": "read through reckon.crew.review.annotate_review_of_run, the production path: the reviewed manifest's baseline_suite and after_suite fields are JSON naming their logs, both resolve through _gate_log_path, and the base arm's FAILED set (the six new-test ids) minus the head arm's (empty) is zero ids and an empty id list."
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:3896",
+    "reckon/crew/obligations.py:374"
+  ],
+  "completed_at": "2026-09-28T13:33:09.233Z",
+  "dispatched_at": "2026-09-28T12:51:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1166",
+      "text": "the rationale comment says a floor of zero would report every dimension of every review, but the comparison at reckon/crew/review.py:1281 is score below floor, so a declared floor of 0 reports nothing at all: measured at the head tree with all five scores 0 and floor 0 on every dimension, the result is an empty list, which makes a declared zero observationally identical to an absent floor rather than its opposite; the code choice stands, the stated reason does not, and the same false claim ships in reckon/schema/flight.yaml:716 and both regenerated artefacts."
+    },
+    {
+      "file": "reckon/schema/flight-defaults.yaml",
+      "line": "109",
+      "text": "the shipped default is the only floor a fresh install reads, and no test fails if it is removed: dimension_floors is named in the suite only by the new test's own host-layer fixture (tests/test_sub_floor_dimension_is_an_obligation.py:222), tests/test_flight.py:160 asserts only the shipped version and default_backend, and resolving the shipped layer with the block dropped succeeds, so a silent deletion would leave every install reading no floors with the suite green."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1289",
+      "text": "record_dimension_disposition is called only from the new test; nothing in reckon/crew/prompts/review.md or any production surface writes a dimension_dispositions entry, so a sub-floor row produced in production can be retired only by hand-editing the stored review JSON - the promotion and bookkeeping verb the run declares as its follow-on, which keeps this a declared gap rather than a surprise."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit: the schema source with both regenerated artefacts, the review reader and its disposition helpers, the obligations row, the shipped floor default, the new test, and the plan, evidence and figure docs.",
+    "done_when": "the done-when names tests/test_sub_floor_dimension_is_an_obligation.py; the run's own arms show 6 failed at the base and 7 passed at the head, and my independent re-run of the gate target at 916de8b6 passed 103 of 103.",
+    "goal": "the section asks that a stored review dimension below its declared floor stay visible as an obligation rather than averaged into a passing total; at the reviewed head reckon/crew/review.py:1251 sub_floor_dimensions feeds reckon/crew/obligations.py:270 _sub_floor_items, the row is extended into obligations() at obligations.py:374, and the floors it reads resolve from the shipped default to five floors of 10.",
+    "manifest": "read; it records fixed gate commands with log digests, a declared mutation that removes the row mechanism and turns four of seven tests red, and three follow-ons that match what the code leaves out.",
+    "write_paths": "read the manifest's declared paths; the diff 9a7b5386..916de8b6 touches ten paths, every one inside the eleven declared, and the reviewed worktree carries no dirty tracked file."
+  },
+  "justifications": {
+    "durability": "the new test pins the mechanism and 6 of its 7 cases go red under the run's declared mutation, but the shipped floors have no guard: tests/test_sub_floor_dimension_is_an_obligation.py:222 is the only test naming dimension_floors, tests/test_flight.py:160 asserts only the shipped version and default_backend, and resolving the shipped layer with the block dropped succeeds, so the shipped standard can vanish with the suite green.",
+    "evidence": "at 916de8b6 the committed artefacts regenerate byte-identically from the committed LinkML source (sha256 d0bf98626bd47d02 and 20c4b9fcee538b01) while my base-source control differs by 33 and 82 diff lines naming DimensionFloor, the gate target re-run passes 103 of 103, and added_failure_count 0 with an empty id list re-derives through reckon/crew/review.py:954 annotate_review_of_run from the run's own baseline and after gate logs.",
+    "fit": "the reader, the row and the test sit in the established places and reuse the schema's own dimension order, but the rationale at reckon/crew/review.py:1166 states the inverted consequence of a zero floor, and the same claim ships in the schema description at reckon/schema/flight.yaml:716 and in both regenerated artefacts.",
+    "goal_fidelity": "the floor, the row and the closed disposition set are all present and wired at the reviewed head, and the shipped default resolves through the production path to five floors of 10, but reckon/crew/review.py:1289 record_dimension_disposition has no production caller, so retiring a row is the run's declared follow-on rather than a delivered path.",
+    "scope_discipline": "git diff --name-status 9a7b5386..916de8b6 lists ten changed paths, all inside the eleven declared write paths, with no stray edit and no uncommitted tracked change in the reviewed worktree."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section asks that a stored review dimension below its declared floor stay visible as an obligation rather than averaged into a passing total; at the reviewed head reckon/crew/review.py:1251 sub_floor_dimensions feeds reckon/crew/obligations.py:270 _sub_floor_items, the row is extended into obligations() at obligations.py:374, and the floors it reads resolve from the shipped default to five floors of 10.\nVERDICT done_when: the done-when names tests/test_sub_floor_dimension_is_an_obligation.py; the run's own arms show 6 failed at the base and 7 passed at the head, and my independent re-run of the gate target at 916de8b6 passed 103 of 103.\nVERDICT write_paths: read the manifest's declared paths; the diff 9a7b5386..916de8b6 touches ten paths, every one inside the eleven declared, and the reviewed worktree carries no dirty tracked file.\nVERDICT manifest: read; it records fixed gate commands with log digests, a declared mutation that removes the row mechanism and turns four of seven tests red, and three follow-ons that match what the code leaves out.\nVERDICT diff: read commit by commit: the schema source with both regenerated artefacts, the review reader and its disposition helpers, the obligations row, the shipped floor default, the new test, and the plan, evidence and figure docs.\nCALL_SITES: reckon/mcp.py:3896, reckon/crew/obligations.py:374\nSCORE goal_fidelity: 19\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: the floor, the row and the closed disposition set are all present and wired at the reviewed head, and the shipped default resolves through the production path to five floors of 10, but reckon/crew/review.py:1289 record_dimension_disposition has no production caller, so retiring a row is the run's declared follow-on rather than a delivered path.\nJUSTIFICATION evidence: at 916de8b6 the committed artefacts regenerate byte-identically from the committed LinkML source (sha256 d0bf98626bd47d02 and 20c4b9fcee538b01) while my base-source control differs by 33 and 82 diff lines naming DimensionFloor, the gate target re-run passes 103 of 103, and added_failure_count 0 with an empty id list re-derives through reckon/crew/review.py:954 annotate_review_of_run from the run's own baseline and after gate logs.\nJUSTIFICATION scope_discipline: git diff --name-status 9a7b5386..916de8b6 lists ten changed paths, all inside the eleven declared write paths, with no stray edit and no uncommitted tracked change in the reviewed worktree.\nJUSTIFICATION durability: the new test pins the mechanism and 6 of its 7 cases go red under the run's declared mutation, but the shipped floors have no guard: tests/test_sub_floor_dimension_is_an_obligation.py:222 is the only test naming dimension_floors, tests/test_flight.py:160 asserts only the shipped version and default_backend, and resolving the shipped layer with the block dropped succeeds, so the shipped standard can vanish with the suite green.\nJUSTIFICATION fit: the reader, the row and the test sit in the established places and reuse the schema's own dimension order, but the rationale at reckon/crew/review.py:1166 states the inverted consequence of a zero floor, and the same claim ships in the schema description at reckon/schema/flight.yaml:716 and in both regenerated artefacts.\nFINDING reckon/crew/review.py:1166 the rationale comment says a floor of zero would report every dimension of every review, but the comparison at reckon/crew/review.py:1281 is score below floor, so a declared floor of 0 reports nothing at all: measured at the head tree with all five scores 0 and floor 0 on every dimension, the result is an empty list, which makes a declared zero observationally identical to an absent floor rather than its opposite; the code choice stands, the stated reason does not, and the same false claim ships in reckon/schema/flight.yaml:716 and both regenerated artefacts.\nFINDING reckon/schema/flight-defaults.yaml:109 the shipped default is the only floor a fresh install reads, and no test fails if it is removed: dimension_floors is named in the suite only by the new test's own host-layer fixture (tests/test_sub_floor_dimension_is_an_obligation.py:222), tests/test_flight.py:160 asserts only the shipped version and default_backend, and resolving the shipped layer with the block dropped succeeds, so a silent deletion would leave every install reading no floors with the suite green.\nFINDING reckon/crew/review.py:1289 record_dimension_disposition is called only from the new test; nothing in reckon/crew/prompts/review.md or any production surface writes a dimension_dispositions entry, so a sub-floor row produced in production can be retired only by hand-editing the stored review JSON - the promotion and bookkeeping verb the run declares as its follow-on, which keeps this a declared gap rather than a surprise.\nREVISION reviewed_base_sha: 9a7b53860d8830236acc37ed8439b02279b8b772\nREVISION reviewed_head_sha: 916de8b6291cd8a02a6e0ab1f4b41989b051fc06",
+  "review_run_id": "r-20260928T125125845682-review-of-a-sub-floor-dimension-is-an-obligation",
+  "reviewed_base_sha": "9a7b53860d8830236acc37ed8439b02279b8b772",
+  "reviewed_head_sha": "916de8b6291cd8a02a6e0ab1f4b41989b051fc06",
+  "reviewed_run_id": "r-20260928T115242684086-a-sub-floor-dimension-is-an-obligation",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T13:26:49.413410+00:00",
+  "total": 94
+}

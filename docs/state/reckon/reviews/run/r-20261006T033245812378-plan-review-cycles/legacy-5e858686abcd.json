@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T05:06:56.079Z",
+  "dispatched_at": "2026-10-06T03:33:08Z",
+  "findings": [
+    {
+      "file": "docs/figures/plan-review-cycles/measure_review_cycles.py",
+      "line": "857",
+      "severity": "follow-on",
+      "text": "follow-on: the M4 lost count mixes two referents in one column, because at the 600 s row any actual review whose fingerprint the replay did not re-review contributes (the calibration gap, 123 findings) while at 1800 s and 3600 s a finding is counted only when the 600 s replay read it and this window did not (a marginal loss, 97 and 117), so the section 5 table's lost column is not comparable across the M4 rows and reads as if a longer settle window loses fewer findings than the 600 s baseline."
+    },
+    {
+      "file": "docs/figures/plan-review-cycles/measure_review_cycles.py",
+      "line": "128",
+      "severity": "follow-on",
+      "text": "follow-on: the module assigns plan_review._digest_state = _memo_digest_state at import with no restore, mutating an imported module's private state process-wide; harmless for the standalone __main__ script but a hazard if the module is ever imported, since a future test collecting it would silently change plan_review's digest behaviour for the whole process."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against bd43be35; 2307f318b authors the first measurement and doc, and 4822c4ddb rewrites the time source to run-id stamps, bounds every replay to a per-plan window and calibrates the settle replay, all five files inside the declared scope.",
+    "done_when": "the done_when requires the doc to carry a table for each of questions 1-5 and its figures to be those the committed script regenerates with exit 0; re-running the committed script at 4822c4ddb in a scratch tree exits 0 and reproduces the recorded gate's mechanism numbers exactly, and docs/research/plan-review-cycles.html carries the five tables.",
+    "goal": "the node goal is to measure why plan-review re-review cycles do not converge and replay five damping mechanisms; the diff lands docs/research/plan-review-cycles.html with one section and table per question 1-5, docs/figures/plan-review-cycles/measure_review_cycles.py, two PNGs and review-cycles-data.json (95 KB), so every stated deliverable is present.",
+    "manifest": "read; it reads complete, names commits 2307f318b and 4822c4ddb, states the script run EXIT=0, and carries no baseline_suite or after_suite, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "read the reviewed manifest; every path the diff touches (docs/research/plan-review-cycles.html and the five files under docs/figures/plan-review-cycles/) is inside the declared write paths, and no production file changed."
+  },
+  "justifications": {
+    "durability": "no test guards docs/research/plan-review-cycles.html; the script's own invariant (measure_review_cycles.py:955 exits 2 when a bounded mechanism outruns the actual count) is a guard nothing in the repository runs, and the committed numbers move with the live review store.",
+    "evidence": "re-running docs/figures/plan-review-cycles/measure_review_cycles.py at 4822c4ddb in a scratch tree exits 0 and its mechanism lines reproduce the reviewed gate.log at the 312-review store (M2 261, M3 190/224/238, M4 59/35, M5 269).",
+    "fit": "the doc follows the reckon research template and the figures use the data-ink style, but measure_review_cycles.py:128 mutates a library module's private state at import, which reads against the idiomatic reuse elsewhere in the file.",
+    "goal_fidelity": "docs/research/plan-review-cycles.html carries the five question tables and docs/figures/plan-review-cycles/measure_review_cycles.py produces every number quoted, matching the goal's deliverables.",
+    "reuse": "measure_review_cycles.py:48-49 and 362-411 extend plan_review's _section_digests, _digest_state, plan_fingerprint and _prose_slices and _plan_html.section_record_id rather than re-implementing the fingerprint.",
+    "scope_discipline": "the cumulative diff bd43be35..4822c4ddb touches only docs/research/plan-review-cycles.html and docs/figures/plan-review-cycles/, all four data and figure artifacts inside the declared scope, with no production change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to measure why plan-review re-review cycles do not converge and replay five damping mechanisms; the diff lands docs/research/plan-review-cycles.html with one section and table per question 1-5, docs/figures/plan-review-cycles/measure_review_cycles.py, two PNGs and review-cycles-data.json (95 KB), so every stated deliverable is present.\nVERDICT done_when: the done_when requires the doc to carry a table for each of questions 1-5 and its figures to be those the committed script regenerates with exit 0; re-running the committed script at 4822c4ddb in a scratch tree exits 0 and reproduces the recorded gate's mechanism numbers exactly, and docs/research/plan-review-cycles.html carries the five tables.\nVERDICT write_paths: read the reviewed manifest; every path the diff touches (docs/research/plan-review-cycles.html and the five files under docs/figures/plan-review-cycles/) is inside the declared write paths, and no production file changed.\nVERDICT manifest: read; it reads complete, names commits 2307f318b and 4822c4ddb, states the script run EXIT=0, and carries no baseline_suite or after_suite, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: read commit by commit against bd43be35; 2307f318b authors the first measurement and doc, and 4822c4ddb rewrites the time source to run-id stamps, bounds every replay to a per-plan window and calibrates the settle replay, all five files inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/research/plan-review-cycles.html carries the five question tables and docs/figures/plan-review-cycles/measure_review_cycles.py produces every number quoted, matching the goal's deliverables.\nSCORE evidence: 18\nJUSTIFICATION evidence: re-running docs/figures/plan-review-cycles/measure_review_cycles.py at 4822c4ddb in a scratch tree exits 0 and its mechanism lines reproduce the reviewed gate.log at the 312-review store (M2 261, M3 190/224/238, M4 59/35, M5 269).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the cumulative diff bd43be35..4822c4ddb touches only docs/research/plan-review-cycles.html and docs/figures/plan-review-cycles/, all four data and figure artifacts inside the declared scope, with no production change.\nSCORE durability: 15\nJUSTIFICATION durability: no test guards docs/research/plan-review-cycles.html; the script's own invariant (measure_review_cycles.py:955 exits 2 when a bounded mechanism outruns the actual count) is a guard nothing in the repository runs, and the committed numbers move with the live review store.\nSCORE fit: 19\nJUSTIFICATION fit: the doc follows the reckon research template and the figures use the data-ink style, but measure_review_cycles.py:128 mutates a library module's private state at import, which reads against the idiomatic reuse elsewhere in the file.\nSCORE reuse: 19\nJUSTIFICATION reuse: measure_review_cycles.py:48-49 and 362-411 extend plan_review's _section_digests, _digest_state, plan_fingerprint and _prose_slices and _plan_html.section_record_id rather than re-implementing the fingerprint.\nFINDING docs/figures/plan-review-cycles/measure_review_cycles.py:857 follow-on: the M4 lost count mixes two referents in one column, because at the 600 s row any actual review whose fingerprint the replay did not re-review contributes (the calibration gap, 123 findings) while at 1800 s and 3600 s a finding is counted only when the 600 s replay read it and this window did not (a marginal loss, 97 and 117), so the section 5 table's lost column is not comparable across the M4 rows and reads as if a longer settle window loses fewer findings than the 600 s baseline.\nFINDING docs/figures/plan-review-cycles/measure_review_cycles.py:128 follow-on: the module assigns plan_review._digest_state = _memo_digest_state at import with no restore, mutating an imported module's private state process-wide; harmless for the standalone __main__ script but a hazard if the module is ever imported, since a future test collecting it would silently change plan_review's digest behaviour for the whole process.\n\nreviewed_base_sha: bd43be358ece86ff7d7088471a0b5fe98ea11597\nreviewed_head_sha: 4822c4ddb165602d2688ab6faeae04c64306686f\n",
+  "review_run_id": "legacy-5e858686abcd",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "bd43be358ece86ff7d7088471a0b5fe98ea11597",
+  "reviewed_head_sha": "4822c4ddb165602d2688ab6faeae04c64306686f",
+  "reviewed_run_id": "r-20261006T033245812378-plan-review-cycles",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T05:18:44.210027+00:00",
+  "total": 110
+}

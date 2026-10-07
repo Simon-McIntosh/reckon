@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2bc3b8ca31527feae317ca4f92a9747e26ee2104",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:Handler.do_GET /_index route",
+    "reckon/serve.py:_row_times",
+    "reckon/serve.py:_FleetChangeWatch._run",
+    "reckon/serve.py:_walk_discovery_signature"
+  ],
+  "completed_at": "2026-09-30T22:22:16.721Z",
+  "dispatched_at": "2026-09-30T22:14:57Z",
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "162",
+      "severity": "follow-on",
+      "text": "follow-on: on a stat-identity match build_index appends the persisted entry's stored fields without recomputing the stamp, so a persisted index written by the pre-repair rule or by any build without repo_dir keeps serving stat-derived created/edited while the discovery payload computes git-derived values, and because build.changed is false on a pure-reuse build the store is never rewritten (scratch probe: reused 1 row, created 1790806704, stamps_for 1577836800)."
+    },
+    {
+      "file": "tests/test_metadata_index_survives_restart.py",
+      "line": "310",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares the endpoint row against serve._row_times, which now delegates to the same metadata_index.stamps_for, so its two sides move together and it holds under the very regression it was added to catch; the independent anchor is the literal at line 309."
+    }
+  ],
+  "head_log_revision": "5518b727fe10590cd64ef9ef40a5c70dff5bbbcb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit over 2bc3b8ca; the production commit replaces the inode stamp rule with metadata_index.stamps_for and _make_stamp, folds three watch-invalidation calls into serve._invalidate_tree_views, and makes _walk_discovery_signature sweep metadata_index._covered_files, while the test commit adds the three guards.",
+    "done_when": "the done_when asks that a commit answer each of the three findings and that the manifest name each by id; the manifest records acted f5cfa64ecda: 5fec6333, acted f0b9a6ce8a4: 5fec6333 and acted f4adbddeeed is not the id, with none unanswered, and logs/gate-head.log reads 28 passed 1 skipped EXIT=0 against logs/gate-base.log 25 passed 1 skipped EXIT=0.",
+    "goal": "the node's goal is to repair three findings on the metadata-index run; at 5fec6333 the single stamp rule moves to metadata_index.stamps_for (reckon/metadata_index.py:326) with serve._row_times delegating to it (reckon/serve.py:1336), the /_index endpoint supplies the repository (reckon/serve.py:2758-2760), discovery's sweep reuses metadata_index._covered_files (reckon/serve.py:1379), and the watch invalidation folds into one serve._invalidate_tree_views (reckon/serve.py:1489).",
+    "manifest": "read as manifest.md, status complete; baseline_suite and after_suite carry completed true, failure_count 0 and literal absolute-path commands, negative_control_log names logs/negative-control-red.log whose first line repeats the declared string verbatim and whose last line is EXIT=1, and measurement_module and measurement_cwd are recorded for the scratch base arm.",
+    "write_paths": "the grant is tests/test_metadata_index_survives_restart.py, reckon/metadata_index.py, reckon/serve.py and the node's fragment and figures paths; the two commits touch exactly the three source/test files (247 insertions, 75 deletions), the fragment and figures paths are correctly unused because the done-when names no artifact, and no peer or plan path is touched."
+  },
+  "justifications": {
+    "durability": "each added check fails when the production commit is reverted, confirmed by logs/negative-control-red.log (3 failed EXIT=1), so the guards are real, but the decisive stamp assertion at tests/test_metadata_index_survives_restart.py:310 compares the row against serve._row_times, which delegates to the same stamps_for, so that line moves with the code and only the independent literal at :309 anchors it.",
+    "evidence": "the gate logs are header-stamped with revision, tree and command and end on bare EXIT= lines, and the declared negative control was executed and reddens all three checks (logs/negative-control-red.log, 3 failed EXIT=1), but the stamp check builds fresh and so never exercises the reuse path where the residual divergence lives.",
+    "fit": "the change follows the module's own idiom and the new names state the mechanism, though _stat_stamps at reckon/metadata_index.py:314 keeps a path parameter it never reads, present only to satisfy the StampFn signature.",
+    "goal_fidelity": "all three findings are answered at source, but the index and the discovery payload agree on a document's stamps only for freshly computed rows: build_index reuses a persisted row's stored fields without re-stamping (reckon/metadata_index.py:158-162), so a store written with the stat rule keeps serving it.",
+    "scope_discipline": "the diff touches only reckon/metadata_index.py, reckon/serve.py and tests/test_metadata_index_survives_restart.py, all inside the grant, with the fragment and figures paths unused and no peer or plan path touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to repair three findings on the metadata-index run; at 5fec6333 the single stamp rule moves to metadata_index.stamps_for (reckon/metadata_index.py:326) with serve._row_times delegating to it (reckon/serve.py:1336), the /_index endpoint supplies the repository (reckon/serve.py:2758-2760), discovery's sweep reuses metadata_index._covered_files (reckon/serve.py:1379), and the watch invalidation folds into one serve._invalidate_tree_views (reckon/serve.py:1489).\nVERDICT done_when: the done_when asks that a commit answer each of the three findings and that the manifest name each by id; the manifest records acted f5cfa64ecda: 5fec6333, acted f0b9a6ce8a4: 5fec6333 and acted f4adbddeeed is not the id, with none unanswered, and logs/gate-head.log reads 28 passed 1 skipped EXIT=0 against logs/gate-base.log 25 passed 1 skipped EXIT=0.\nVERDICT write_paths: the grant is tests/test_metadata_index_survives_restart.py, reckon/metadata_index.py, reckon/serve.py and the node's fragment and figures paths; the two commits touch exactly the three source/test files (247 insertions, 75 deletions), the fragment and figures paths are correctly unused because the done-when names no artifact, and no peer or plan path is touched.\nVERDICT manifest: read as manifest.md, status complete; baseline_suite and after_suite carry completed true, failure_count 0 and literal absolute-path commands, negative_control_log names logs/negative-control-red.log whose first line repeats the declared string verbatim and whose last line is EXIT=1, and measurement_module and measurement_cwd are recorded for the scratch base arm.\nVERDICT diff: read commit by commit over 2bc3b8ca; the production commit replaces the inode stamp rule with metadata_index.stamps_for and _make_stamp, folds three watch-invalidation calls into serve._invalidate_tree_views, and makes _walk_discovery_signature sweep metadata_index._covered_files, while the test commit adds the three guards.\nCALL_SITES: reckon/serve.py:Handler.do_GET /_index route, reckon/serve.py:_row_times, reckon/serve.py:_FleetChangeWatch._run, reckon/serve.py:_walk_discovery_signature\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all three findings are answered at source, but the index and the discovery payload agree on a document's stamps only for freshly computed rows: build_index reuses a persisted row's stored fields without re-stamping (reckon/metadata_index.py:158-162), so a store written with the stat rule keeps serving it.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate logs are header-stamped with revision, tree and command and end on bare EXIT= lines, and the declared negative control was executed and reddens all three checks (logs/negative-control-red.log, 3 failed EXIT=1), but the stamp check builds fresh and so never exercises the reuse path where the residual divergence lives.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/metadata_index.py, reckon/serve.py and tests/test_metadata_index_survives_restart.py, all inside the grant, with the fragment and figures paths unused and no peer or plan path touched.\nSCORE durability: 17\nJUSTIFICATION durability: each added check fails when the production commit is reverted, confirmed by logs/negative-control-red.log (3 failed EXIT=1), so the guards are real, but the decisive stamp assertion at tests/test_metadata_index_survives_restart.py:310 compares the row against serve._row_times, which delegates to the same stamps_for, so that line moves with the code and only the independent literal at :309 anchors it.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's own idiom and the new names state the mechanism, though _stat_stamps at reckon/metadata_index.py:314 keeps a path parameter it never reads, present only to satisfy the StampFn signature.\nFINDING reckon/metadata_index.py:162 follow-on: on a stat-identity match build_index appends the persisted entry's stored fields without recomputing the stamp, so a persisted index written by the pre-repair rule or by any build without repo_dir keeps serving stat-derived created/edited while the discovery payload computes git-derived values, and because build.changed is false on a pure-reuse build the store is never rewritten (scratch probe: reused 1 row, created 1790806704, stamps_for 1577836800).\nFINDING tests/test_metadata_index_survives_restart.py:310 follow-on: the assertion compares the endpoint row against serve._row_times, which now delegates to the same metadata_index.stamps_for, so its two sides move together and it holds under the very regression it was added to catch; the independent anchor is the literal at line 309.",
+  "review_run_id": "r-20260930T221427948179-review-of-repair-of-metadata-index-survives-restart-2bc3b8ca3152",
+  "reviewed_base_sha": "2bc3b8ca31527feae317ca4f92a9747e26ee2104",
+  "reviewed_head_sha": "5518b727fe10590cd64ef9ef40a5c70dff5bbbcb",
+  "reviewed_run_id": "r-20260930T215545877861-repair-of-metadata-index-survives-restart-2bc3b8ca3152",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:03.791007+00:00",
+  "total": 93
+}

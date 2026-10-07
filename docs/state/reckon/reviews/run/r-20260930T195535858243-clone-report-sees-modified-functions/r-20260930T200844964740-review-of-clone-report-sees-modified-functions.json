@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite \u2014 its brief armed a single named check \u2014 so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:5815 the clones.promotion_clone_matches caller the promoted row is built from"
+  ],
+  "completed_at": "2026-09-30T20:20:58.524Z",
+  "dispatched_at": "2026-09-30T20:09:08Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195535858243-clone-report-sees-modified-functions/gate-modified-case.log",
+      "line": "1",
+      "text": "the manifest names this file as the node's gate log, but its header stamps revision 84b6364f, the parent the test file sits at, while test_a_modified_function_becoming_a_copy_is_reported exists only in the node's own 1a3df759 (0 occurrences in the base file, 1 at the head), so the run's own passing 4-passed arm identifies a revision that does not contain the test it exercised; my own replay at the reviewed head reads 4 passed, so the substance holds and only the cited evidence's provenance is wrong."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site the new test drives",
+    "diff": "one commit: STAMP_MODULE/STAMP_MODULE_COPIED constants, one new test in the existing idiom, and a four-line fragment; reckon/clones.py unchanged.",
+    "done_when": "the named check passes at the reviewed head in this reviewer's replay (4 passed, EXIT=0) and reddens under the declared mutation (1 failed, 3 passed, EXIT=1); the wider population is the coordinator's.",
+    "goal": "\u00a74's open half is a test proving promotion reports a copy from a function modified inside a base-carried file; tests/test_promotion_reports_clones.py:215 does this against reckon/_timestamps.py:parse_utc and the detector needed no change.",
+    "manifest": "read; complete with the gate at 4 passed EXIT=0 and a verbatim negative control, but it names no baseline_suite or after_suite (its brief armed a single check) and its cited gate log stamps the base revision.",
+    "write_paths": "git diff --stat 84b6364f..1a3df759 lists exactly the two declared paths (tests/test_promotion_reports_clones.py, the evidence fragment); reckon/clones.py and the figures directory are untouched."
+  },
+  "justifications": {
+    "durability": "the new test reddens under the declared mutation while the added-file case stays green, so a regression narrowing the detector to added files is caught, and it compares the reported line against an ast parse of the fixture rather than against the value under test.",
+    "evidence": "the named check is green in this reviewer's independent replay at the reviewed head (review-gate-head.log, 4 passed, EXIT=0) and the declared negative control is red for the right reason, but the run's own cited arm at gate-modified-case.log:1 stamps revision 84b6364f while the test it exercised exists only in 1a3df759, so its evidence identifies a revision that does not contain the code measured.",
+    "fit": "the test shares the file's fixtures and helpers (_git, _detached_tree, _pointer, _promoted_row, _parse_utc_line), its constants sit beside the existing ones, and no changed file carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_promotion_reports_clones.py:215 exercises the modified-in-place half the predecessor review found untested and asserts the recorded match by parse_utc's own ast-derived line, the exact outcome the goal names, and the detector it depends on needs no change because reckon/clones.py:204-206 already treats a rewritten body as a copy.",
+    "scope_discipline": "git diff --stat 84b6364f..1a3df759 lists exactly the two declared paths and no others, and the declared paths it leaves unused \u2014 reckon/clones.py and the figures directory \u2014 are unused as the landing states."
+  },
+  "node": "review-of-clone-report-sees-modified-functions",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a74's open half, named both in the plan's followup and in the review of promotion-reports-private-copies, is a test proving promotion reports a copy when a run modifies an existing function inside a file the base already carries. tests/test_promotion_reports_clones.py:215 test_a_modified_function_becoming_a_copy_is_reported seeds reckon/stamps.py at the base commit, rewrites format_stamp's body in the run tree to match reckon/_timestamps.py:parse_utc, and asserts the promoted row's clone_matches names reckon/_timestamps.py:parse_utc at its own ast-derived line and the run function at reckon/stamps.py; the detector is changed nowhere and needs no change because reckon/clones.py:204-206 skips a changed-path function only when its base tokens are identical, so a rewritten body is exactly a copy it reports.\nVERDICT done_when: the node's named check passes \u2014 I replayed tests/test_promotion_reports_clones.py at the reviewed head 1a3df759 and read 4 passed in 48.93s, EXIT=0 (review-gate-head.log) \u2014 and the declared mutation \"make the clone detector consider only functions in files added by the run\" reddens this test and only this test (negative-control.log:1 repeats the declared string verbatim; 1 failed, 3 passed, EXIT=1), so the new case measures the modified path rather than a path already covered; the wider population is the coordinator's, as the brief states.\nVERDICT write_paths: git diff --stat 84b6364f..1a3df759 lists exactly two paths \u2014 tests/test_promotion_reports_clones.py (+68) and docs/evidence/fragments/a-worker-reuses-before-it-writes/clone-report-sees-modified-functions.html (+4) \u2014 both declared; reckon/clones.py is untouched as the landing claims, the figures directory is unused because the done-when names no artifact, and no plan meta line is edited.\nVERDICT manifest: read; it states complete with the gate cited at 4 passed EXIT=0, a negative control whose red log's first line repeats the declared string verbatim, and the /tmp scratch it reports removing; it records neither baseline_suite nor after_suite \u2014 its brief arming a single named check \u2014 so the store's own annotate_review_of_run reads its added-failure count as unmeasured, and its cited gate log's header names the base revision rather than the reviewed head.\nVERDICT diff: one commit; it adds STAMP_MODULE and STAMP_MODULE_COPIED beside PARSE_UTC_COPY and UNRELATED, one new test in the existing suite's idiom, and a four-line evidence fragment; the detector in reckon/clones.py is unchanged because it already reports a function whose base tokens differ.\nCALL_SITES: reckon/crew/promotion.py:5815 the clones.promotion_clone_matches caller the promoted row is built from\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_promotion_reports_clones.py:215 exercises the modified-in-place half the predecessor review found untested and asserts the recorded match by parse_utc's own ast-derived line, the exact outcome the goal names, and the detector it depends on needs no change because reckon/clones.py:204-206 already treats a rewritten body as a copy.\nSCORE evidence: 16\nJUSTIFICATION evidence: the named check is green in this reviewer's independent replay at the reviewed head (review-gate-head.log, 4 passed, EXIT=0) and the declared negative control is red for the right reason, but the run's own cited arm at gate-modified-case.log:1 stamps revision 84b6364f while the test it exercised exists only in 1a3df759, so its evidence identifies a revision that does not contain the code measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 84b6364f..1a3df759 lists exactly the two declared paths and no others, and the declared paths it leaves unused \u2014 reckon/clones.py and the figures directory \u2014 are unused as the landing states.\nSCORE durability: 19\nJUSTIFICATION durability: the new test reddens under the declared mutation while the added-file case stays green, so a regression narrowing the detector to added files is caught, and it compares the reported line against an ast parse of the fixture rather than against the value under test.\nSCORE fit: 19\nJUSTIFICATION fit: the test shares the file's fixtures and helpers (_git, _detached_tree, _pointer, _promoted_row, _parse_utc_line), its constants sit beside the existing ones, and no changed file carries a plan, sprint or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195535858243-clone-report-sees-modified-functions/gate-modified-case.log:1 the manifest names this file as the node's gate log, but its header stamps revision 84b6364f, the parent the test file sits at, while test_a_modified_function_becoming_a_copy_is_reported exists only in the node's own 1a3df759 (0 occurrences in the base file, 1 at the head), so the run's own passing 4-passed arm identifies a revision that does not contain the test it exercised; my own replay at the reviewed head reads 4 passed, so the substance holds and only the cited evidence's provenance is wrong.\n",
+  "review_run_id": "r-20260930T200844964740-review-of-clone-report-sees-modified-functions",
+  "reviewed_base_sha": "84b6364f162c8a4a04b430f191db7fe34a610e76",
+  "reviewed_head_sha": "1a3df75958011bfe48f220f4bc9bdce5a047cc56",
+  "reviewed_run_id": "r-20260930T195535858243-clone-report-sees-modified-functions",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T20:20:00+00:00",
+  "total": 94
+}

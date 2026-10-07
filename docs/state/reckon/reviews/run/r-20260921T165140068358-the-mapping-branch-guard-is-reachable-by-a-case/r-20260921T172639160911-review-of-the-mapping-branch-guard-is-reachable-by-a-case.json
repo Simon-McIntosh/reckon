@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "local",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:_apply_append",
+    "reckon/_store.py:_OP_DISPATCH",
+    "reckon/mcp.py:_edit_plan"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T17:26:39.160911+00:00",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "1542",
+      "text": "the object branch still stringifies an explicit null label while the mapping branch falls back to the value, so {\"value\": \"x\", \"label\": null} stores the option labelled with the literal \"None\" while {\"x\": null} stores it labelled with its own value; the node touched this exact branch and covered the null label only on the mapping side, and the defect is the same one the earlier repair names in its own docstring, read at f16342a4 and at head as (['x'], {'x': 'None'})."
+    },
+    {
+      "file": "manifest.md",
+      "line": "evidence_inputs",
+      "text": "the evidence_inputs sentence \"re-measured before repair, _decision_options_as_choices({None: \\\"unix socket\\\"}) returned (['None'], {'None': 'unix socket'})\" is true only of a tree with the mapping refusal removed: at the reviewed base f16342a4 that call raises OpError \"decision option None carries a null 'value'\", measured with the module path printed, so a reader taking the sentence as the base state would mis-place the gap in the guard rather than in the coverage."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against f16342a4; c5668e1e requires a value key in the object branch of reckon/_store.py:1539, ef963dff records the landing in the plan and the evidence anchor, four files and 171 insertions, all inside the declared scope.",
+    "done_when": "the measure is three reaches with the declared mutation reddening the mapping null-value case and no new suite failures; re-run independently in a git-archive tree the mutation gives 1 failed, 8 passed with exactly test_a_mapping_option_with_a_null_value_side_is_refused red, and the recorded population diff is identical FAILED ids at 3-failed-136-passed base and 3-failed-139-passed head, so the gate asserts the measure.",
+    "goal": "the node's goal is to bring the mapping branch of the decision-option normalisation under test coverage and to repair the label-only option object; the diff adds three cases and one refusal to reckon/_store.py:1539, which is that goal.",
+    "manifest": "read; it records the three reaches, the repair, the mutation with its red run quoted verbatim on the log's first line, and the population counts, and it leaves the object-branch null label open under follow_ons rather than claiming it repaired.",
+    "write_paths": "the manifest declares five paths (reckon/_store.py, the new test file, the plan HTML, the evidence anchor, docs/figures); the diff touches the first four and nothing else, so every landed path is inside the scope."
+  },
+  "justifications": {
+    "durability": "deleting the mapping-branch null refusal in reckon/_store.py:1560 reddens test_a_mapping_option_with_a_null_value_side_is_refused (reproduced independently, 1 failed 8 passed) and the base tree reddens the value-key case, so both halves of the change have a case that fails on regression + but the object branch's explicit null label at reckon/_store.py:1542 stays uncovered.",
+    "evidence": "the gate names tests/test_append_decision_keeps_its_question.py and its result is recorded, and re-running the node's own new cases against an extracted f16342a4 tree reddens exactly test_an_option_object_carrying_no_value_key_is_refused_as_missing while the two mapping cases pass there, so the repair is load-bearing + but the manifest's re-measurement sentence cites a behaviour that belongs to the guard-removed tree, not the reviewed base.",
+    "fit": "the refusal at reckon/_store.py:1539 follows the surrounding OpError idiom that names the offending option with !r, its comment states the mechanism rather than the fix, and no name or comment carries a plan label + but the landing commit's subject scopes to the plan slug rather than the repo's docs(plan) form.",
+    "goal_fidelity": "reckon/_store.py:1539 now refuses an option object with no value key and the three new cases in tests/test_append_decision_keeps_its_question.py reach both branches of the mapping guard, which is the delivered goal + measured at base the mapping-shaped options value is reached by no other case.",
+    "scope_discipline": "the diff of f16342a4..ef963dff touches reckon/_store.py, tests/test_append_decision_keeps_its_question.py, docs/plans/crew-runtime-positive-controls.html and docs/evidence/archive/crew-runtime-positive-controls-landed.html, every one inside the manifest's declared write paths, with no lifecycle or status write."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bring the mapping branch of the decision-option normalisation under test coverage and to repair the label-only option object; the diff adds three cases and one refusal to reckon/_store.py:1539, which is that goal.\nVERDICT done_when: the measure is three reaches with the declared mutation reddening the mapping null-value case and no new suite failures; re-run independently in a git-archive tree the mutation gives 1 failed, 8 passed with exactly test_a_mapping_option_with_a_null_value_side_is_refused red, and the recorded population diff is identical FAILED ids at 3-failed-136-passed base and 3-failed-139-passed head, so the gate asserts the measure.\nVERDICT write_paths: the manifest declares five paths (reckon/_store.py, the new test file, the plan HTML, the evidence anchor, docs/figures); the diff touches the first four and nothing else, so every landed path is inside the scope.\nVERDICT manifest: read; it records the three reaches, the repair, the mutation with its red run quoted verbatim on the log's first line, and the population counts, and it leaves the object-branch null label open under follow_ons rather than claiming it repaired.\nVERDICT diff: read commit by commit against f16342a4; c5668e1e requires a value key in the object branch of reckon/_store.py:1539, ef963dff records the landing in the plan and the evidence anchor, four files and 171 insertions, all inside the declared scope.\nCALL_SITES: reckon/_store.py:_apply_append, reckon/_store.py:_OP_DISPATCH, reckon/mcp.py:_edit_plan\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_store.py:1539 now refuses an option object with no value key and the three new cases in tests/test_append_decision_keeps_its_question.py reach both branches of the mapping guard, which is the delivered goal + measured at base the mapping-shaped options value is reached by no other case.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate names tests/test_append_decision_keeps_its_question.py and its result is recorded, and re-running the node's own new cases against an extracted f16342a4 tree reddens exactly test_an_option_object_carrying_no_value_key_is_refused_as_missing while the two mapping cases pass there, so the repair is load-bearing + but the manifest's re-measurement sentence cites a behaviour that belongs to the guard-removed tree, not the reviewed base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of f16342a4..ef963dff touches reckon/_store.py, tests/test_append_decision_keeps_its_question.py, docs/plans/crew-runtime-positive-controls.html and docs/evidence/archive/crew-runtime-positive-controls-landed.html, every one inside the manifest's declared write paths, with no lifecycle or status write.\nSCORE durability: 19\nJUSTIFICATION durability: deleting the mapping-branch null refusal in reckon/_store.py:1560 reddens test_a_mapping_option_with_a_null_value_side_is_refused (reproduced independently, 1 failed 8 passed) and the base tree reddens the value-key case, so both halves of the change have a case that fails on regression + but the object branch's explicit null label at reckon/_store.py:1542 stays uncovered.\nSCORE fit: 19\nJUSTIFICATION fit: the refusal at reckon/_store.py:1539 follows the surrounding OpError idiom that names the offending option with !r, its comment states the mechanism rather than the fix, and no name or comment carries a plan label + but the landing commit's subject scopes to the plan slug rather than the repo's docs(plan) form.\nFINDING reckon/_store.py:1542 the object branch still stringifies an explicit null label while the mapping branch falls back to the value, so {\"value\": \"x\", \"label\": null} stores the option labelled with the literal \"None\" while {\"x\": null} stores it labelled with its own value; the node touched this exact branch and covered the null label only on the mapping side, and the defect is the same one the earlier repair names in its own docstring, read at f16342a4 and at head as (['x'], {'x': 'None'}).\nFINDING manifest.md:evidence_inputs the evidence_inputs sentence \"re-measured before repair, _decision_options_as_choices({None: \\\"unix socket\\\"}) returned (['None'], {'None': 'unix socket'})\" is true only of a tree with the mapping refusal removed: at the reviewed base f16342a4 that call raises OpError \"decision option None carries a null 'value'\", measured with the module path printed, so a reader taking the sentence as the base state would mis-place the gap in the guard rather than in the coverage.",
+  "review_run_id": "r-20260921T172639160911-review-of-the-mapping-branch-guard-is-reachable-by-a-case",
+  "reviewed_base": "f16342a45a6bfbf50c798cebdf2eb6994e466689",
+  "reviewed_commit": "ef963dff52c99a6f3305a2f5241aae1943f113cc",
+  "reviewed_run_id": "r-20260921T165140068358-the-mapping-branch-guard-is-reachable-by-a-case",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:40:39.486471+00:00",
+  "total": 96
+}

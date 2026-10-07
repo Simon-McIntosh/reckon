@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/_backends.py:760",
+    "reckon/_backends.py:764",
+    "reckon/_backends.py:2840",
+    "reckon/budget.py:274",
+    "reckon/crew/budget_group.py:373",
+    "reckon/crew/budget_group.py:378",
+    "reckon/crew/metering.py:553",
+    "reckon/crew/metering.py:576",
+    "reckon/crew/ticker.py:511",
+    "reckon/crew/ticker.py:1140"
+  ],
+  "completed_at": "2026-09-29T04:22:59.876Z",
+  "dispatched_at": "2026-09-29T03:50:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1143",
+      "text": "the _NAMED_ZONE guard misses the offset spellings fromisoformat accepts (+00, -05, +000000), so row_moment reads such a stamp as the local wall clock: under TZ=Europe/Paris the -05 input returns 1790654523.0 where base cea6da07 returned 1790661723.0, a silent 7200-second shift for a stamp that names its zone, and no in-repo writer emits those spellings today so the change is invisible to the recorded pin."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "762",
+      "text": "the _CACHED_STAMP_ZONE guard refuses +00, -05 and +000000, which base cea6da07 parsed to aware datetimes, so a cache stamp carrying one of those zones now reads as no stamp and returns None instead of the instant it names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit 273164a1 against base cea6da07: 681 insertions and 50 deletions across exactly the eight declared paths, under one conventional subject with a body that states the shared-parser migration and the per-caller behaviour preserved.",
+    "done_when": "the done-when names the eight callers over one shared input list recorded by running the base code, and tests/test_timestamp_callers_batch_c.py pins all 144 cells (nine rows by sixteen inputs) to values whose base provenance I reproduced from an independently rebuilt base tree at cea6da07, with the manifest recording both gate arms and no added failing id.",
+    "goal": "the node's goal is to stop eight timestamp readers parsing their own text and route them through reckon._timestamps.parse_utc, and the diff at 273164a1 does exactly that at all ten delegation sites (reckon/_backends.py:760,764,2840; reckon/budget.py:274; reckon/crew/budget_group.py:373,378; reckon/crew/metering.py:553,576; reckon/crew/ticker.py:511,1140) with no fromisoformat call left in the five touched modules.",
+    "manifest": "read; both gate arms are recorded as armed JSON at 2 failed / 208 passed with the identical two pre-existing ids, added_failure_ids [] is stored beside the failure_attribution, and the negative-control note names the mutation, its first red id and its EXIT=1 log.",
+    "write_paths": "read the manifest's eight declared paths; the diff's eight files sit inside them (five modules, one test file, one evidence fragment, one figure) and no path outside the declared scope is touched."
+  },
+  "justifications": {
+    "durability": "the pinned 144-cell table and the ast walk in tests/test_timestamp_callers_batch_c.py are independent of the code under test and the negative control reddens them, but the sixteen inputs omit the +HH-only and +HHMMSS offset spellings the two new guards narrow, so a regression of that exact class would pass the pin.",
+    "evidence": "tests/test_timestamp_callers_batch_c.py records each caller's output by running the base code before editing, the declared mutation reddens it at 8 failed / 139 passed EXIT=1, and I reproduced all 144 cells and canon_base.json from a separately rebuilt base tree.",
+    "fit": "the guards match the surrounding strict-spelling idiom, but the same zone regex is written twice (reckon/_backends.py:741 and reckon/crew/ticker.py:1126) and each is narrower than the fromisoformat call it replaces.",
+    "goal_fidelity": "all eight named callers reach parse_utc (reckon/_backends.py:2840, reckon/crew/ticker.py:1140 among them), with only the two guard findings below diverging from base on spellings the recorded inputs do not cover.",
+    "scope_discipline": "git show --stat 273164a1 lists exactly the eight declared paths, and ruff findings on the five touched modules fall from 11 at base to 6 at head, adding none."
+  },
+  "node": "review-of-timestamp-callers-batch-c",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T030516526491-timestamp-callers-batch-c\n(plan a-worker-reuses-before-it-writes, section 2; node timestamp-callers-batch-c; role review; spec guided)\nreviewed_base_sha: cea6da07b60e6bf92e7476e52b4c52d8e114ebb0\nreviewed_head_sha: 273164a1436b579b0ce4e80e8050e673d1d94928\nVERDICT goal: the node's goal is to stop eight timestamp readers parsing their own text and route them through reckon._timestamps.parse_utc, and the diff at 273164a1 does exactly that at all ten delegation sites (reckon/_backends.py:760,764,2840; reckon/budget.py:274; reckon/crew/budget_group.py:373,378; reckon/crew/metering.py:553,576; reckon/crew/ticker.py:511,1140) with no fromisoformat call left in the five touched modules.\nVERDICT done_when: the done-when names the eight callers over one shared input list recorded by running the base code, and tests/test_timestamp_callers_batch_c.py pins all 144 cells (nine rows by sixteen inputs) to values whose base provenance I reproduced from an independently rebuilt base tree at cea6da07, with the manifest recording both gate arms and no added failing id.\nVERDICT write_paths: read the manifest's eight declared paths; the diff's eight files sit inside them (five modules, one test file, one evidence fragment, one figure) and no path outside the declared scope is touched.\nVERDICT manifest: read; both gate arms are recorded as armed JSON at 2 failed / 208 passed with the identical two pre-existing ids, added_failure_ids [] is stored beside the failure_attribution, and the negative-control note names the mutation, its first red id and its EXIT=1 log.\nVERDICT diff: read commit 273164a1 against base cea6da07: 681 insertions and 50 deletions across exactly the eight declared paths, under one conventional subject with a body that states the shared-parser migration and the per-caller behaviour preserved.\nCALL_SITES: reckon/_backends.py:760, reckon/_backends.py:764, reckon/_backends.py:2840, reckon/budget.py:274, reckon/crew/budget_group.py:373, reckon/crew/budget_group.py:378, reckon/crew/metering.py:553, reckon/crew/metering.py:576, reckon/crew/ticker.py:511, reckon/crew/ticker.py:1140\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all eight named callers reach parse_utc (reckon/_backends.py:2840, reckon/crew/ticker.py:1140 among them), with only the two guard findings below diverging from base on spellings the recorded inputs do not cover.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_timestamp_callers_batch_c.py records each caller's output by running the base code before editing, the declared mutation reddens it at 8 failed / 139 passed EXIT=1, and I reproduced all 144 cells and canon_base.json from a separately rebuilt base tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 273164a1 lists exactly the eight declared paths, and ruff findings on the five touched modules fall from 11 at base to 6 at head, adding none.\nSCORE durability: 18\nJUSTIFICATION durability: the pinned 144-cell table and the ast walk in tests/test_timestamp_callers_batch_c.py are independent of the code under test and the negative control reddens them, but the sixteen inputs omit the +HH-only and +HHMMSS offset spellings the two new guards narrow, so a regression of that exact class would pass the pin.\nSCORE fit: 18\nJUSTIFICATION fit: the guards match the surrounding strict-spelling idiom, but the same zone regex is written twice (reckon/_backends.py:741 and reckon/crew/ticker.py:1126) and each is narrower than the fromisoformat call it replaces.\nFINDING reckon/crew/ticker.py:1143 the _NAMED_ZONE guard misses the offset spellings fromisoformat accepts (+00, -05, +000000), so row_moment reads such a stamp as the local wall clock: under TZ=Europe/Paris the -05 input returns 1790654523.0 where base cea6da07 returned 1790661723.0, a silent 7200-second shift for a stamp that names its zone, and no in-repo writer emits those spellings today so the change is invisible to the recorded pin.\nFINDING reckon/_backends.py:762 the _CACHED_STAMP_ZONE guard refuses +00, -05 and +000000, which base cea6da07 parsed to aware datetimes, so a cache stamp carrying one of those zones now reads as no stamp and returns None instead of the instant it names.",
+  "review_run_id": "r-20260929T035009445631-review-of-timestamp-callers-batch-c",
+  "reviewed_base_sha": "cea6da07b60e6bf92e7476e52b4c52d8e114ebb0",
+  "reviewed_head_sha": "273164a1436b579b0ce4e80e8050e673d1d94928",
+  "reviewed_run_id": "r-20260929T030516526491-timestamp-callers-batch-c",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T035009445631-review-of-timestamp-callers-batch-c",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T04:18:32.743557+00:00",
+  "total": 94
+}

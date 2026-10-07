@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest's baseline_suite and after_suite fields are prose, not the armed JSON shape the store's read-path annotation resolves a log path from, so a read-time annotation reports this count unmeasured; the count above was taken by reading the logs the manifest names under test_logs directly",
+  "added_failures_source": "by-id set difference (head minus base) over pytest node ids read from the reviewed run's own gate logs: gate-logs/new-tests-base.log vs gate-logs/new-tests-head.log and gate-logs/state-typing-base.log vs gate-logs/state-typing-head.log; the head reports no FAILED or ERROR ids in the new-test pair and the same three ids as the base in the state-typing pair, so the difference is empty in both",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:3384",
+    "reckon/crew/directory.py:70",
+    "reckon/crew/runs.py:1019",
+    "reckon/mcp_views.py:1356",
+    "reckon/crew/resumption.py:1113"
+  ],
+  "completed_at": "2026-09-26T23:45:55.417Z",
+  "dispatched_at": "2026-09-26T23:18:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3399",
+      "text": "verified at head dc236dc9, not a defect: a manifest that was once larger, is now smaller and unparseable with its mtime settled past the mid-rewrite window reads unwritten once the read that recorded the larger size is itself outside the same window - command PYTHONPATH=<reviewed-worktree> python3 /tmp/review-driver/measure.py <scratch> head-dc236dc9 (log review-measure-head.log) printed \"Q1 read 2 at now+2s (recorded size is 2s old): running\" then \"Q1 read 3 at now+30s (recorded size is 30s old): unwritten\", where the parent 3f4881dc printed \"running\" at now+30s (review-measure-parent.log), so the round-2 time bound closes the unbounded suppression the prior review found."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3434",
+      "text": "verified at head dc236dc9, not a defect: the remembered-size memory is bounded at MANIFEST_SIZE_MEMORY_MAX = 256 by evicting the least recently touched entry - the same driver classified 512 distinct runs at head and printed \"len(_MANIFEST_SIZES_READ) = 256\" (review-measure-head.log) against \"= 20001\" for 20000 runs at the parent 3f4881dc (review-measure-parent.log)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the four commits against base 99455576 - 77f56a7c adds the launch window, the rewrite window, the size memory and the deferral gate, 3f4881dc lands the record, figure and plan note, 9fd65818 bounds the size memory in time and keys it by run and attempt under a 256-entry cap, dc236dc9 records it; the classifier is the only production file touched.",
+    "done_when": "the fence names tests/test_a_run_in_motion_is_not_unwritten.py, whose six cases at head cover both transient states, the past-grace case, the settled shrink, the retry and the memory bound, and whose result the manifest records; my independent re-run of that file at the reviewed head reproduced it, 6 passed in 1.36s (review-head-gate-rerun.log).",
+    "goal": "the node's goal is to stop the classifier reporting unwritten for a live run inside its launch window or mid-rewrite of its manifest, and at head dc236dc9 the word is held back at reckon/crew/recovery.py:3721 through _absence_of_a_verdict_is_transient (:3439) before the unwritten arm publishes it; my own two-arm driver read \"running\" at now+2s and \"unwritten\" at now+30s for one live run whose manifest had settled at 4 unparseable bytes.",
+    "manifest": "read; it records the head gate (6 passed), the base arm (4 failed, 2 passed at 3f4881dc), 92 passed in tests/test_crew_recovery.py, the sibling set's 3 pre-existing failures with 0 added, two negative controls whose first lines repeat their declarations verbatim, and it discloses under blockers that the absent-manifest case is deliberately not pulled into the new reading; its baseline_suite and after_suite fields are prose rather than the armed JSON shape, so the store's read-path annotation finds no log path there and reports the added-failure count unmeasured, and I read gate-logs directly instead.",
+    "write_paths": "the manifest declares five paths and \"git diff --name-only 99455576 dc236dc9\" returns exactly those five and nothing else."
+  },
+  "justifications": {
+    "durability": "each added or changed assertion compares the classifier's returned classification to a literal rather than to the value the test fed in, and both round-2 behaviours redden at the parent revision - gate-logs/new-tests-base.log records 4 failed at 3f4881dc and my parent arm read \"running\" where head reads \"unwritten\" - with the deduction that the bound test's \"<=\" shape would also pass on a memory that stored nothing.",
+    "evidence": "the done_when's cases are asserted in tests/test_a_run_in_motion_is_not_unwritten.py against literal classifications and recorded in gate-logs/new-tests-head.log (6 passed), which my re-run at the reviewed head reproduced, with the deduction that the manifest's prose suite fields leave the store's own by-id annotation reporting the count unmeasured in the reviewed run's evidence.",
+    "fit": "the constants and helpers sit in the module's existing idiom at reckon/crew/recovery.py:119-122 and :3408-3437, and the capped least-recently-touched map at :3423-3436 documents its own policy rather than growing an unbounded process global.",
+    "goal_fidelity": "the launch window and the rewrite tolerance at reckon/crew/recovery.py:3370-3455 hold the word back exactly where the goal names it, and the round-2 time bound at :3399-3407 keeps that tolerance from becoming a permanent suppression.",
+    "scope_discipline": "\"git diff --name-only 99455576 dc236dc9\" lists only the five declared paths, and the round-2 commit adds no path the fence did not already declare."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to stop the classifier reporting unwritten for a live run inside its launch window or mid-rewrite of its manifest, and at head dc236dc9 the word is held back at reckon/crew/recovery.py:3721 through _absence_of_a_verdict_is_transient (:3439) before the unwritten arm publishes it; my own two-arm driver read \"running\" at now+2s and \"unwritten\" at now+30s for one live run whose manifest had settled at 4 unparseable bytes.\nVERDICT done_when: the fence names tests/test_a_run_in_motion_is_not_unwritten.py, whose six cases at head cover both transient states, the past-grace case, the settled shrink, the retry and the memory bound, and whose result the manifest records; my independent re-run of that file at the reviewed head reproduced it, 6 passed in 1.36s (review-head-gate-rerun.log).\nVERDICT write_paths: the manifest declares five paths and \"git diff --name-only 99455576 dc236dc9\" returns exactly those five and nothing else.\nVERDICT manifest: read; it records the head gate (6 passed), the base arm (4 failed, 2 passed at 3f4881dc), 92 passed in tests/test_crew_recovery.py, the sibling set's 3 pre-existing failures with 0 added, two negative controls whose first lines repeat their declarations verbatim, and it discloses under blockers that the absent-manifest case is deliberately not pulled into the new reading; its baseline_suite and after_suite fields are prose rather than the armed JSON shape, so the store's read-path annotation finds no log path there and reports the added-failure count unmeasured, and I read gate-logs directly instead.\nVERDICT diff: read the four commits against base 99455576 - 77f56a7c adds the launch window, the rewrite window, the size memory and the deferral gate, 3f4881dc lands the record, figure and plan note, 9fd65818 bounds the size memory in time and keys it by run and attempt under a 256-entry cap, dc236dc9 records it; the classifier is the only production file touched.\nCALL_SITES: reckon/cli.py:3384, reckon/crew/directory.py:70, reckon/crew/runs.py:1019, reckon/mcp_views.py:1356, reckon/crew/resumption.py:1113\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: the launch window and the rewrite tolerance at reckon/crew/recovery.py:3370-3455 hold the word back exactly where the goal names it, and the round-2 time bound at :3399-3407 keeps that tolerance from becoming a permanent suppression.\nJUSTIFICATION evidence: the done_when's cases are asserted in tests/test_a_run_in_motion_is_not_unwritten.py against literal classifications and recorded in gate-logs/new-tests-head.log (6 passed), which my re-run at the reviewed head reproduced, with the deduction that the manifest's prose suite fields leave the store's own by-id annotation reporting the count unmeasured in the reviewed run's evidence.\nJUSTIFICATION scope_discipline: \"git diff --name-only 99455576 dc236dc9\" lists only the five declared paths, and the round-2 commit adds no path the fence did not already declare.\nJUSTIFICATION durability: each added or changed assertion compares the classifier's returned classification to a literal rather than to the value the test fed in, and both round-2 behaviours redden at the parent revision - gate-logs/new-tests-base.log records 4 failed at 3f4881dc and my parent arm read \"running\" where head reads \"unwritten\" - with the deduction that the bound test's \"<=\" shape would also pass on a memory that stored nothing.\nJUSTIFICATION fit: the constants and helpers sit in the module's existing idiom at reckon/crew/recovery.py:119-122 and :3408-3437, and the capped least-recently-touched map at :3423-3436 documents its own policy rather than growing an unbounded process global.\nFINDING reckon/crew/recovery.py:3399 verified at head dc236dc9, not a defect: a manifest that was once larger, is now smaller and unparseable with its mtime settled past the mid-rewrite window reads unwritten once the read that recorded the larger size is itself outside the same window - command PYTHONPATH=<reviewed-worktree> python3 /tmp/review-driver/measure.py <scratch> head-dc236dc9 (log review-measure-head.log) printed \"Q1 read 2 at now+2s (recorded size is 2s old): running\" then \"Q1 read 3 at now+30s (recorded size is 30s old): unwritten\", where the parent 3f4881dc printed \"running\" at now+30s (review-measure-parent.log), so the round-2 time bound closes the unbounded suppression the prior review found.\nFINDING reckon/crew/recovery.py:3434 verified at head dc236dc9, not a defect: the remembered-size memory is bounded at MANIFEST_SIZE_MEMORY_MAX = 256 by evicting the least recently touched entry - the same driver classified 512 distinct runs at head and printed \"len(_MANIFEST_SIZES_READ) = 256\" (review-measure-head.log) against \"= 20001\" for 20000 runs at the parent 3f4881dc (review-measure-parent.log).",
+  "review_run_id": "r-20260926T231814014755-review-of-a-run-in-motion-is-not-unwritten",
+  "reviewed_base_sha": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "reviewed_head_sha": "dc236dc960e03a4c2e74a41940e52ea2252582fb",
+  "reviewed_run_id": "r-20260926T205139085963-a-run-in-motion-is-not-unwritten",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T23:39:11.971234+00:00",
+  "total": 92
+}

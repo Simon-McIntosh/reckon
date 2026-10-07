@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:1805 the crew dispatch click command's dry-run BudgetHold handler (the only production path reaching the repaired emission; _with_resolved_overrides at reckon/cli.py:1005 is a cli-local helper with no callers outside reckon/cli.py)"
+  ],
+  "completed_at": "2026-10-03T03:30:43.465Z",
+  "dispatched_at": "2026-10-03T03:19:17Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "1820",
+      "severity": "follow-on",
+      "text": "follow-on: the plan-unavailable dry-run refusal carries the override echo but omits dry_run: true; the same holds for plan-review-missing (reckon/cli.py:1829) and the CompetenceLimit branch (reckon/cli.py:1842). The comment at :1830 says these deliberately reuse the launching path's document shape, so this may be by design, but the node goal's literal text requires dry_run: true on every dry-run refusal document and these are emitted on the dry-run path; carried forward unchanged by this delta, as the prior review recorded it."
+    }
+  ],
+  "head_log_revision": "d21d94bff7ed2eb3b50350d5d417601b59c32a80",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit from baddc6cef: d21d94bff wraps the dry-run BudgetHold emission (reckon/cli.py:1805) in _with_resolved_overrides and adds tests/test_every_dry_run_refusal_carries_the_echo.py:195 driving it; 2fb76078b records the repair in the evidence fragment. Only reckon/cli.py changes behaviour.",
+    "done_when": "the done-when is universal -- every dry-run refusal document carries dry_run: true and the override echo; the budget-hold case is now driven and asserted by tests/test_every_dry_run_refusal_carries_the_echo.py:195, but the clause is still unmet at plan-unavailable (reckon/cli.py:1820), plan-review-missing (:1829) and the CompetenceLimit branch (:1842), which carry the echo yet omit dry_run: true.",
+    "goal": "the node goal is that every dry-run refusal document carries dry_run true and the --set echo; the landed delta (baddc6cef..2fb76078b) wraps the budget-hold dry-run refusal at reckon/cli.py:1805-1818 in _with_resolved_overrides, closing the blocking finding the prior review recorded at cli.py:1782, and I re-ran the node's refusal test file at head (3 passed, EXIT=0).",
+    "manifest": "read at head; the repaired arms are recorded as JSON with revisions, literal absolute commands, readable logs and EXIT codes (base 41e6fc48f 6 failed/494 passed, head d21d94bff 5 failed/498 passed), the negative control names its log and its designed failing case (KeyError 'overrides' with the wrapper reverted), added_failure_count is 0, and the round-1 added id is held for adjudication rather than erased.",
+    "write_paths": "the manifest declares tests/test_every_dry_run_refusal_carries_the_echo.py, tests/test_a_brief_points_rather_than_quotes.py, docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/every-dry-run-refusal-carries-the-echo.html, reckon/cli.py and the node's figures dir; git diff --stat baddc6cef..2fb76078b names only reckon/cli.py, the refusal test file and the fragment, all inside them, and git status is clean at head."
+  },
+  "justifications": {
+    "durability": "the added test at tests/test_every_dry_run_refusal_carries_the_echo.py:195 asserts an independently-written expected echo literal and reddens on the reverted wrapper (KeyError 'overrides'), so it catches the regression it was added for; one point withheld only because the sibling universal clause has no such guard.",
+    "evidence": "both gate arms are recorded with revisions, literal absolute commands, readable logs and EXIT codes; added_failure_count is 0 with no added ids; the negative control at logs/negative-control-repair.log is a real red (KeyError 'overrides', EXIT=1) and I re-ran the named file (3 passed); one point withheld because the arms measure at d21d94bf while the reviewed head is the docs-only 2fb76078b.",
+    "fit": "the fix wraps the refusal payload exactly as its siblings in the same handler (reckon/cli.py:1822, :1835) and the added test name states what it asserts; no version, plan label or ticket reference appears.",
+    "goal_fidelity": "the delta closes the prior blocking finding -- the budget-hold dry-run refusal at reckon/cli.py:1805 now carries the echo -- but the universal goal is still short: plan-unavailable (reckon/cli.py:1820), plan-review-missing (:1829) and the CompetenceLimit branch (:1842) omit dry_run: true, so three points are withheld.",
+    "scope_discipline": "every path in git diff --stat baddc6cef..2fb76078b is inside the node's declared write paths and git status is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every dry-run refusal document carries dry_run true and the --set echo; the landed delta (baddc6cef..2fb76078b) wraps the budget-hold dry-run refusal at reckon/cli.py:1805-1818 in _with_resolved_overrides, closing the blocking finding the prior review recorded at cli.py:1782, and I re-ran the node's refusal test file at head (3 passed, EXIT=0).\nVERDICT done_when: the done-when is universal -- every dry-run refusal document carries dry_run: true and the override echo; the budget-hold case is now driven and asserted by tests/test_every_dry_run_refusal_carries_the_echo.py:195, but the clause is still unmet at plan-unavailable (reckon/cli.py:1820), plan-review-missing (:1829) and the CompetenceLimit branch (:1842), which carry the echo yet omit dry_run: true.\nVERDICT write_paths: the manifest declares tests/test_every_dry_run_refusal_carries_the_echo.py, tests/test_a_brief_points_rather_than_quotes.py, docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/every-dry-run-refusal-carries-the-echo.html, reckon/cli.py and the node's figures dir; git diff --stat baddc6cef..2fb76078b names only reckon/cli.py, the refusal test file and the fragment, all inside them, and git status is clean at head.\nVERDICT manifest: read at head; the repaired arms are recorded as JSON with revisions, literal absolute commands, readable logs and EXIT codes (base 41e6fc48f 6 failed/494 passed, head d21d94bff 5 failed/498 passed), the negative control names its log and its designed failing case (KeyError 'overrides' with the wrapper reverted), added_failure_count is 0, and the round-1 added id is held for adjudication rather than erased.\nVERDICT diff: read commit by commit from baddc6cef: d21d94bff wraps the dry-run BudgetHold emission (reckon/cli.py:1805) in _with_resolved_overrides and adds tests/test_every_dry_run_refusal_carries_the_echo.py:195 driving it; 2fb76078b records the repair in the evidence fragment. Only reckon/cli.py changes behaviour.\nCALL_SITES: reckon/cli.py:1805 the crew dispatch click command's dry-run BudgetHold handler (the only production path reaching the repaired emission; _with_resolved_overrides at reckon/cli.py:1005 is a cli-local helper with no callers outside reckon/cli.py)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the delta closes the prior blocking finding -- the budget-hold dry-run refusal at reckon/cli.py:1805 now carries the echo -- but the universal goal is still short: plan-unavailable (reckon/cli.py:1820), plan-review-missing (:1829) and the CompetenceLimit branch (:1842) omit dry_run: true, so three points are withheld.\nSCORE evidence: 18\nJUSTIFICATION evidence: both gate arms are recorded with revisions, literal absolute commands, readable logs and EXIT codes; added_failure_count is 0 with no added ids; the negative control at logs/negative-control-repair.log is a real red (KeyError 'overrides', EXIT=1) and I re-ran the named file (3 passed); one point withheld because the arms measure at d21d94bf while the reviewed head is the docs-only 2fb76078b.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat baddc6cef..2fb76078b is inside the node's declared write paths and git status is clean at head.\nSCORE durability: 19\nJUSTIFICATION durability: the added test at tests/test_every_dry_run_refusal_carries_the_echo.py:195 asserts an independently-written expected echo literal and reddens on the reverted wrapper (KeyError 'overrides'), so it catches the regression it was added for; one point withheld only because the sibling universal clause has no such guard.\nSCORE fit: 20\nJUSTIFICATION fit: the fix wraps the refusal payload exactly as its siblings in the same handler (reckon/cli.py:1822, :1835) and the added test name states what it asserts; no version, plan label or ticket reference appears.\nFINDING reckon/cli.py:1820 follow-on: the plan-unavailable dry-run refusal carries the override echo but omits dry_run: true; the same holds for plan-review-missing (reckon/cli.py:1829) and the CompetenceLimit branch (reckon/cli.py:1842). The comment at :1830 says these deliberately reuse the launching path's document shape, so this may be by design, but the node goal's literal text requires dry_run: true on every dry-run refusal document and these are emitted on the dry-run path; carried forward unchanged by this delta, as the prior review recorded it.\nREVIEWED_BASE_SHA: baddc6cef37d5fee913ca844a825c3bcc844daaa\nREVIEWED_HEAD_SHA: 2fb76078b735869223c4c0d3d68d788d3dc9daee\n",
+  "review_run_id": "r-20261003T031838905998-review-of-every-dry-run-refusal-carries-the-echo",
+  "reviewed_base_sha": "baddc6cef37d5fee913ca844a825c3bcc844daaa",
+  "reviewed_head_sha": "2fb76078b735869223c4c0d3d68d788d3dc9daee",
+  "reviewed_run_id": "r-20261003T014604919126-every-dry-run-refusal-carries-the-echo",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T03:28:14+00:00",
+  "total": 94
+}

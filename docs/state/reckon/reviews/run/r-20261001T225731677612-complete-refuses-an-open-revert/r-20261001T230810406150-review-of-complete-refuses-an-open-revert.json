@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:6480",
+    "reckon/crew/promotion.py:6679",
+    "reckon/crew/promotion.py:3214"
+  ],
+  "completed_at": "2026-10-01T23:29:10.988Z",
+  "dispatched_at": "2026-10-01T23:08:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225731677612-complete-refuses-an-open-revert/manifest.md",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the run manifest's orientation_base_sha (line 2) reads df6a40b5c8e747c9f74517ff52f1858bac2c6011, which does not resolve as a git object (git cat-file -> could not get object info); the true base is df6a40b5c8e077c9f74517ff52f1858bac2c6011, the parent of the reviewed head and the revision the baseline_arm.log header names. A reader resolving the stated base finds nothing, so the base the review was taken over is only discoverable from the gate log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225731677612-complete-refuses-an-open-revert/head_arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm gate log's first line names revision df6a40b5c8e077c9f74517ff52f1858bac2c6011, the base, not the reviewed head 2175ba3edaebc129b6f02724e80283786dc3968f it ran at. The tree and command are the head worktree and 7 tests passed against the base arm's 6, so the gate did run at the head, but the log's own header does not establish which revision it measured; the manifest's after_suite JSON is the only field naming the head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified promotion._require_committable_checkout is called at reckon/crew/promotion.py:6480 and :6679, and _open_operation_state at :3214, so the marker tuple drives both promotion entry points.",
+    "diff": "read commit 2175ba3edaebc129b6f02724e80283786dc3968f against base df6a40b5c8e077c9f74517ff52f1858bac2c6011; three files, 30 insertions and 4 deletions, with no unrelated source edited.",
+    "done_when": "the run's own gate tests/test_complete_refuses_an_open_merge.py carries the revert parametrisation at :35 and asserts the refusal names 'revert' and that no ledger row, pointer removal or plan comment was written (:162-:173); the head arm is 7 passed and the base arm 6 passed, and an independent re-run at the merged head is 7 passed.",
+    "goal": "the node goal is that crew complete refuses promotion while a git revert is open; reckon/crew/promotion.py:3163 adds the REVERT_HEAD marker, resolved by _open_operation_state (:3178) through git rev-parse --git-path, so a mid-revert checkout refuses before either store is written.",
+    "manifest": "read; it names head 2175ba3edaebc129b6f02724e80283786dc3968f, base-arm 6 passed, head-arm 7 passed, a negative control at EXIT=1, and the commit; its orientation_base_sha on line 2 does not resolve (see findings).",
+    "write_paths": "git diff df6a40b5c8e077..2175ba3 touches exactly three files (reckon/crew/promotion.py +4/-3, tests/test_complete_refuses_an_open_merge.py +2/-1, docs/evidence/fragments/a-crew-process-ends-with-its-owner/complete-refuses-an-open-revert.html +24), all inside the manifest's declared orientation_write_paths; no other source changed."
+  },
+  "justifications": {
+    "durability": "the declared negative control removes the REVERT_HEAD marker and the revert parametrisation then promotes and fails (DID NOT RAISE CrewError, 1 failed, EXIT=1); independently reproduced in a scratch copy of the head tree with the same failing id, so the guard is one the regression can drive.",
+    "evidence": "the base arm (baseline_arm.log, 6 passed) and head arm (head_arm.log, 7 passed) are recorded, and negative_control.log reddens the revert case (EXIT=1); an independent re-run at the merged head is 7 passed and the control re-fails, but the head-arm log's header names the base revision and the manifest's orientation_base_sha does not resolve.",
+    "fit": "REVERT_HEAD joins the existing _OPEN_OPERATION_MARKERS tuple beside MERGE_HEAD, CHERRY_PICK_HEAD and the rebase state dirs, resolved through git rev-parse --git-path like its siblings, and the guard, module docstrings and the parametrised test are updated in step.",
+    "goal_fidelity": "reckon/crew/promotion.py:3163 adds (\"REVERT_HEAD\", \"revert\") to _OPEN_OPERATION_MARKERS, which _open_operation_state (:3178) resolves through git rev-parse --git-path so a linked worktree reads it at its own git dir; a checkout with REVERT_HEAD present refuses before either store is written.",
+    "scope_discipline": "git diff df6a40b5c8e077..2175ba3 touches exactly three files, all inside the declared write paths, 30 insertions and 4 deletions, and nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reckon/crew/promotion.py:3163 adds (\"REVERT_HEAD\", \"revert\") to _OPEN_OPERATION_MARKERS, which _open_operation_state (:3178) resolves through git rev-parse --git-path, so a checkout with REVERT_HEAD present refuses before either store is written.\nVERDICT done_when: the run's own gate tests/test_complete_refuses_an_open_merge.py carries the revert parametrisation (:35) and asserts the refusal names 'revert' and that no store was written; head arm 7 passed, base arm 6 passed, independent re-run 7 passed.\nVERDICT write_paths: git diff df6a40b5c8e077..2175ba3 touches exactly three files, all inside the declared write paths.\nVERDICT manifest: read; names head 2175ba3, base-arm 6 passed, head-arm 7 passed, negative control EXIT=1; its orientation_base_sha on line 2 does not resolve.\nVERDICT diff: read 2175ba3 against df6a40b5c8e077; three files, 30 insertions and 4 deletions, no unrelated source edited.\nCALL_SITES: reckon/crew/promotion.py:6480, reckon/crew/promotion.py:6679, reckon/crew/promotion.py:3214\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: REVERT_HEAD joins the open-operation marker set so complete refuses a mid-revert checkout before writing, exactly what the fold asked; the marker resolves correctly in a linked worktree (verified git rev-parse --git-path REVERT_HEAD returns the worktree-private path here).\nSCORE evidence: 16\nJUSTIFICATION evidence: base and head arm logs and a red negative control are recorded and independently reproduced, but the head-arm log's header names the base revision and the manifest's orientation_base_sha does not resolve, so the record's own revision labels are not all trustworthy.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly three files, all inside the declared write paths, with no unrelated change.\nSCORE durability: 19\nJUSTIFICATION durability: dropping the marker reddens the revert parametrisation (DID NOT RAISE CrewError, 1 failed) both in the run's control and in an independent scratch re-run, so the guard has a firing regression.\nSCORE fit: 19\nJUSTIFICATION fit: the marker sits beside its merge, cherry-pick and rebase siblings and is resolved the same way; guard, docstrings and test move together.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225731677612-complete-refuses-an-open-revert/manifest.md:2 follow-on: orientation_base_sha does not resolve; the true base df6a40b5c8e077 is named only in the gate log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225731677612-complete-refuses-an-open-revert/head_arm.log:1 follow-on: the head-arm log header names the base revision, not the head, so the log alone does not establish the revision it measured.",
+  "review_run_id": "r-20261001T230810406150-review-of-complete-refuses-an-open-revert",
+  "reviewed_base_sha": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "reviewed_head_sha": "2175ba3edaebc129b6f02724e80283786dc3968f",
+  "reviewed_run_id": "r-20261001T225731677612-complete-refuses-an-open-revert",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T230810406150-review-of-complete-refuses-an-open-revert",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T01:22:00.000000+00:00",
+  "total": 93
+}

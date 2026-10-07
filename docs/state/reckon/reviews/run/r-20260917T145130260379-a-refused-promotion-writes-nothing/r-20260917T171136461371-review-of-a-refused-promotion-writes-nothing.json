@@ -1,0 +1,42 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T17:11:36.461371+00:00",
+  "findings": [
+    {
+      "file": "docs/figures/refused-promotion/ordering.png",
+      "line": "1",
+      "text": "the change lands this figure while the node's declared write paths are the four in its manifest and on the live pointer, so the diff carries one path outside the exclusive fence and no scope change is recorded for it, which is how a file lands unowned in a checkout other workers hold."
+    }
+  ],
+  "justifications": {
+    "durability": "the three falsifiers fail on the pre-repair ordering at base 09615744 and pass at head, so a later edit to _complete_locked that lets a refusal follow the comment write trips them rather than passing a suite that only exercises the path where the comment is already recorded.",
+    "evidence": "the done-when's measure is the falsifier file, whose base and head results the manifest records in baseline_suite and after_suite rather than claiming them, and the outcome coupling the reordering could have broken is confirmed by promoting one well-formed run in a base shadow tree and again at the head and diffing the committed ledger rows field by field, which differ in observed_at alone.",
+    "fit": "the repair is the same call with the same arguments at promotion.py:2934 moved rather than a new guard, and the comment above it states the ordering constraint in mechanism terms, so no plan, ticket or stage identifier enters the source.",
+    "goal_fidelity": "promotion.py:2934 moves the landing-comment call below ledger.build_record and every refusal it raises, and my own run of tests/test_refused_promotion_leaves_no_trace.py gives 3 failed and 3 passed at base 09615744 against 6 passed at head 7f7541d3, the base failure being the plan bytes differing at index 342 (b'1' != b'0', plan-version 0 to 1) with the head leaving bytes and version unmoved.",
+    "scope_discipline": "git diff --stat 09615744..7f7541d3 changes exactly the four declared write paths plus docs/figures/refused-promotion/ordering.png, which is not among the write paths declared on the live pointer's node.write_paths and for which no scope change is recorded."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion.py:2934 moves the landing-comment call below ledger.build_record and every refusal it raises, and my own run of tests/test_refused_promotion_leaves_no_trace.py gives 3 failed and 3 passed at base 09615744 against 6 passed at head 7f7541d3, the base failure being the plan bytes differing at index 342 (b'1' != b'0', plan-version 0 to 1) with the head leaving bytes and version unmoved.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done-when's measure is the falsifier file, whose base and head results the manifest records in baseline_suite and after_suite rather than claiming them, and the outcome coupling the reordering could have broken is confirmed by promoting one well-formed run in a base shadow tree and again at the head and diffing the committed ledger rows field by field, which differ in observed_at alone.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff --stat 09615744..7f7541d3 changes exactly the four declared write paths plus docs/figures/refused-promotion/ordering.png, which is not among the write paths declared on the live pointer's node.write_paths and for which no scope change is recorded.\nSCORE durability: 20\nJUSTIFICATION durability: the three falsifiers fail on the pre-repair ordering at base 09615744 and pass at head, so a later edit to _complete_locked that lets a refusal follow the comment write trips them rather than passing a suite that only exercises the path where the comment is already recorded.\nSCORE fit: 19\nJUSTIFICATION fit: the repair is the same call with the same arguments at promotion.py:2934 moved rather than a new guard, and the comment above it states the ordering constraint in mechanism terms, so no plan, ticket or stage identifier enters the source.\nFINDING docs/figures/refused-promotion/ordering.png:1 the change lands this figure while the node's declared write paths are the four in its manifest and on the live pointer, so the diff carries one path outside the exclusive fence and no scope change is recorded for it, which is how a file lands unowned in a checkout other workers hold.\n",
+  "review_run_id": "r-20260917T171136461371-review-of-a-refused-promotion-writes-nothing",
+  "reviewed_base_sha": "0961574462cb18d561046ba851c0c2f2df83a6b2",
+  "reviewed_commits": [
+    "7f7541d3d3c058b5a39f9660ca75af6354808837"
+  ],
+  "reviewed_head_sha": "7f7541d3d3c058b5a39f9660ca75af6354808837",
+  "reviewed_run_id": "r-20260917T145130260379-a-refused-promotion-writes-nothing",
+  "reviewer_run_id": "r-20260917T171136461371-review-of-a-refused-promotion-writes-nothing",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T18:40:31.666945+00:00",
+  "total": 94
+}

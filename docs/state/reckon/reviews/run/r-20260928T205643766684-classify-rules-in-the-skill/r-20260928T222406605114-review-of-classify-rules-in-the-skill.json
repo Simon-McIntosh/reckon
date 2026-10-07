@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_derivation": {
+    "production_derivation": {
+      "count": null,
+      "ids": []
+    },
+    "reviewed_manifest_names_suite_pair": false,
+    "reviewer_derivation": {
+      "base_failed_ids": [
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+        "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source",
+        "tests/test_skill_contracts.py::test_ship_dispatch_exit_table_matches_cli_branches"
+      ],
+      "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T222406605114-review-of-classify-rules-in-the-skill/logs/base-arm-skill-contracts.log",
+      "count": 0,
+      "head_failed_ids": [
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+        "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source",
+        "tests/test_skill_contracts.py::test_ship_dispatch_exit_table_matches_cli_branches"
+      ],
+      "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T205643766684-classify-rules-in-the-skill/logs/gate-refusals.log",
+      "ids": []
+    }
+  },
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite pair, so the production read path annotates this count as unmeasured; this stored pair is the reviewer's own measurement through the production function added_failures_from_gate_logs: head = the reviewed run's own logs/gate-refusals.log (3 FAILED), base = the same test file run at f66c3ae0's base revision 7c25dee788bd668dfbfd36624f8ec590e9dba129 (logs/base-arm-skill-contracts.log, 3 failed / 53 passed, the same 3 node ids), so the set difference is 0",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:460",
+    "reckon/serve.py:2106",
+    "reckon/mcp.py:1139",
+    "reckon/doccheck.py:1230"
+  ],
+  "completed_at": "2026-09-28T23:29:30.497Z",
+  "dispatched_at": "2026-09-28T22:24:22Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/classify-rules-in-the-skill/docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html",
+      "line": "27",
+      "text": "claims 182 rows are all candidates after excluding 15, but at least two rule-stating sentences in the source carry no row: SKILL.md:156-158 (Every routine question about plans, runs, sprints or budgets is an MCP read; Reaching for bash is almost always a sign) and SKILL.md:169 (When a shell command genuinely is the right tool, name its target) - none of MCP read, Reaching for bash or genuinely appears anywhere in the fragment while all are present in skills/reckon-build/SKILL.md at 7c25dee788bd668dfbfd36624f8ec590e9dba129, so the coverage claim is contradicted by a reproducible counterexample."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T205643766684-classify-rules-in-the-skill/manifest.md",
+      "line": "1",
+      "text": "names no baseline_suite/after_suite gate-log pair, so the production read path annotates added_failure_count as unmeasured rather than zero; the run's own gate logs exist (logs/gate-enforced-rules.log 68 passed exit 0; logs/gate-refusals.log 138 passed / 3 failed exit 1) and the reviewer measured 0 added against the same test file at 7c25dee788bd668dfbfd36624f8ec590e9dba129."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T205643766684-classify-rules-in-the-skill/logs/gate-refusals.log",
+      "line": "1",
+      "text": "names revision f601d79a on its header line while the reviewed head is f66c3ae034e120e368bc50571b2312866cf43e5a (the commit landed at 23:50:50, after the 23:49/23:50 reruns), so a reader checking the cited log against the manifest head finds a different sha; harmless for this docs-only change but reader-visible."
+    },
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/classify-rules-in-the-skill/docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html",
+      "line": "741",
+      "text": "cites tests/test_crew_refusal_visibility.py by file alone and row 108 cites tests/test_member_guard_counts_live_processes.py by file alone, while the arm's own log carries 34 and 13 node ids for those files; a file-level citation does not name the test that makes the refusal fire."
+    },
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/classify-rules-in-the-skill/docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html",
+      "line": "345",
+      "text": "quotes a sentence starting more than three lines from its cited line (row 34 cites 219 and quotes the sentence at 224; row 54 cites 308 and quotes 300), part of 16 rows with an offset beyond three lines against 113 exact, so a reader jumping to the cited line sees a different sentence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Two new files with no deletions; the fragment parses as HTML with 182 seven-column rows in contiguous order and the figure parses as SVG whose three bar labels read 143 / 13 / 26, matching the table and the alt text.",
+    "done_when": "Answerable and mostly answered - the row count is stated beside the file's 550 prose sentences and 197 candidates, all 13 merge rows name a surviving target row and their quotations match the named target's rule text (13 of 13), and the arms were rerun in the foreground with explicit test ids (68 passed exit 0; 138 passed / 3 failed exit 1, the 3 ids named in the manifest and follow_ons); the two unrowed sentences are the gap.",
+    "goal": "The table delivers one row per candidate sentence with its rule text, a SKILL.md locator, an enforcement kind, a driving test, a disposition and a reason - 182 rows, contiguously numbered, keep 143 / merge 13 / delete as enforced 26 - and every one of the 182 quoted openings exists in skills/reckon-build/SKILL.md at 7c25dee788bd668dfbfd36624f8ec590e9dba129; but the coverage claim at line 27 is contradicted: at least two rule-stating sentences carry no row.",
+    "manifest": "Complete on revision, commits, paths, tests and follow_ons; it names no baseline_suite/after_suite gate-log pair, so the production read path annotates the added-failure count as unmeasured - the reviewer measured 0 added by running the same test file at 7c25dee788bd668dfbfd36624f8ec590e9dba129 and applying added_failures_from_gate_logs to the two logs.",
+    "write_paths": "Exactly the declared pair and nothing else - git diff --name-status 7c25dee788bd668dfbfd36624f8ec590e9dba129 f66c3ae034e120e368bc50571b2312866cf43e5a reports the fragment and the figure added, 1706 insertions and 0 deletions, with no source, test, skill or plan path touched."
+  },
+  "justifications": {
+    "durability": "Nothing reddens if the classification drifts from the source: the row counts and the alt text disagreed across the previous commit round and no test caught it, the repair is a hand check rather than a guard, and the two unrowed sentences would not fail any check in the repository.",
+    "evidence": "The arms were rerun with explicit test ids and file lists (68 passed exit 0; 138 passed and 3 failed exit 1) and all 13 cited test targets are present in the enforced log, but the log headers name f601d79a while the reviewed head is f66c3ae0 and the manifest names no baseline_suite/after_suite pair, so the added-failure count reads unmeasured on the production path.",
+    "fit": "The fragment follows the evidence-fragment idiom (plan-evidence-for and plan-verifies meta, per-row loc markers) and each merge cell names the surviving target row with a matching quotation, but three enforced rows cite a test file without a node id and 16 rows anchor their quote more than three lines from the cited sentence.",
+    "goal_fidelity": "The artifact classifies 182 rows with rule text, locator, enforcement kind, driving test and disposition, and every quoted opening exists in the source, but the coverage claim at line 27 is contradicted by at least two unrowed rule sentences, so the deliverable's central promise is not met as stated.",
+    "scope_discipline": "The diff from 7c25dee788bd668dfbfd36624f8ec590e9dba129 to f66c3ae034e120e368bc50571b2312866cf43e5a is exactly the two declared docs paths, 1706 insertions and 0 deletions, with no source, test, skill or plan file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The table delivers one row per candidate sentence with its rule text, a SKILL.md locator, an enforcement kind, a driving test, a disposition and a reason - 182 rows, contiguously numbered, keep 143 / merge 13 / delete as enforced 26 - and every one of the 182 quoted openings exists in skills/reckon-build/SKILL.md at 7c25dee788bd668dfbfd36624f8ec590e9dba129; but the coverage claim at line 27 is contradicted: at least two rule-stating sentences carry no row.\nVERDICT done_when: Answerable and mostly answered - the row count is stated beside the file's 550 prose sentences and 197 candidates, all 13 merge rows name a surviving target row and their quotations match the named target's rule text (13 of 13), and the arms were rerun in the foreground with explicit test ids (68 passed exit 0; 138 passed / 3 failed exit 1, the 3 ids named in the manifest and follow_ons); the two unrowed sentences are the gap.\nVERDICT write_paths: Exactly the declared pair and nothing else - git diff --name-status 7c25dee788bd668dfbfd36624f8ec590e9dba129 f66c3ae034e120e368bc50571b2312866cf43e5a reports the fragment and the figure added, 1706 insertions and 0 deletions, with no source, test, skill or plan path touched.\nVERDICT manifest: Complete on revision, commits, paths, tests and follow_ons; it names no baseline_suite/after_suite gate-log pair, so the production read path annotates the added-failure count as unmeasured - the reviewer measured 0 added by running the same test file at 7c25dee788bd668dfbfd36624f8ec590e9dba129 and applying added_failures_from_gate_logs to the two logs.\nVERDICT diff: Two new files with no deletions; the fragment parses as HTML with 182 seven-column rows in contiguous order and the figure parses as SVG whose three bar labels read 143 / 13 / 26, matching the table and the alt text.\nSCORE goal_fidelity: 15\nSCORE evidence: 15\nSCORE scope_discipline: 20\nSCORE durability: 13\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: The artifact classifies 182 rows with rule text, locator, enforcement kind, driving test and disposition, and every quoted opening exists in the source, but the coverage claim at line 27 is contradicted by at least two unrowed rule sentences, so the deliverable's central promise is not met as stated.\nJUSTIFICATION evidence: The arms were rerun with explicit test ids and file lists (68 passed exit 0; 138 passed and 3 failed exit 1) and all 13 cited test targets are present in the enforced log, but the log headers name f601d79a while the reviewed head is f66c3ae0 and the manifest names no baseline_suite/after_suite pair, so the added-failure count reads unmeasured on the production path.\nJUSTIFICATION scope_discipline: The diff from 7c25dee788bd668dfbfd36624f8ec590e9dba129 to f66c3ae034e120e368bc50571b2312866cf43e5a is exactly the two declared docs paths, 1706 insertions and 0 deletions, with no source, test, skill or plan file touched.\nJUSTIFICATION durability: Nothing reddens if the classification drifts from the source: the row counts and the alt text disagreed across the previous commit round and no test caught it, the repair is a hand check rather than a guard, and the two unrowed sentences would not fail any check in the repository.\nJUSTIFICATION fit: The fragment follows the evidence-fragment idiom (plan-evidence-for and plan-verifies meta, per-row loc markers) and each merge cell names the surviving target row with a matching quotation, but three enforced rows cite a test file without a node id and 16 rows anchor their quote more than three lines from the cited sentence.\nCALL_SITES: reckon/evidence.py:460, reckon/serve.py:2106, reckon/mcp.py:1139, reckon/doccheck.py:1230\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/classify-rules-in-the-skill/docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html:27 claims 182 rows are all candidates after excluding 15, but at least two rule-stating sentences in the source carry no row: SKILL.md:156-158 (Every routine question about plans, runs, sprints or budgets is an MCP read; Reaching for bash is almost always a sign) and SKILL.md:169 (When a shell command genuinely is the right tool, name its target) - none of MCP read, Reaching for bash or genuinely appears anywhere in the fragment while all are present in skills/reckon-build/SKILL.md at 7c25dee788bd668dfbfd36624f8ec590e9dba129, so the coverage claim is contradicted by a reproducible counterexample.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T205643766684-classify-rules-in-the-skill/manifest.md:1 names no baseline_suite/after_suite gate-log pair, so the production read path annotates added_failure_count as unmeasured rather than zero; the run's own gate logs exist (logs/gate-enforced-rules.log 68 passed exit 0; logs/gate-refusals.log 138 passed / 3 failed exit 1) and the reviewer measured 0 added against the same test file at 7c25dee788bd668dfbfd36624f8ec590e9dba129.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T205643766684-classify-rules-in-the-skill/logs/gate-refusals.log:1 names revision f601d79a on its header line while the reviewed head is f66c3ae034e120e368bc50571b2312866cf43e5a (the commit landed at 23:50:50, after the 23:49/23:50 reruns), so a reader checking the cited log against the manifest head finds a different sha; harmless for this docs-only change but reader-visible.\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/classify-rules-in-the-skill/docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html:741 cites tests/test_crew_refusal_visibility.py by file alone and row 108 cites tests/test_member_guard_counts_live_processes.py by file alone, while the arm's own log carries 34 and 13 node ids for those files; a file-level citation does not name the test that makes the refusal fire.\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/classify-rules-in-the-skill/docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-the-skill.html:345 quotes a sentence starting more than three lines from its cited line (row 34 cites 219 and quotes the sentence at 224; row 54 cites 308 and quotes 300), part of 16 rows with an offset beyond three lines against 113 exact, so a reader jumping to the cited line sees a different sentence.\n",
+  "review_run_id": "r-20260928T222406605114-review-of-classify-rules-in-the-skill",
+  "reviewed_base_sha": "7c25dee788bd668dfbfd36624f8ec590e9dba129",
+  "reviewed_head_sha": "f66c3ae034e120e368bc50571b2312866cf43e5a",
+  "reviewed_run_id": "r-20260928T205643766684-classify-rules-in-the-skill",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T23:21:16.080000+00:00",
+  "total": 81
+}

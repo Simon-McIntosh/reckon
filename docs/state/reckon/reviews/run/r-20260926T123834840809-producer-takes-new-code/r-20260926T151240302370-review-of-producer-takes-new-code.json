@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:3146 crew_watch arms _FollowerReloader and _StampPoll (the change)",
+    "reckon/cli.py:1979 prepare_watch_seat_reexec carries the seat descriptor across the exec",
+    "reckon/crew/recovery.py:4553 _watch_registration reaches the changed _project_watch_claim",
+    "reckon/crew/runs.py:1267 watch_stream_cursor carries watch_producer_identity"
+  ],
+  "completed_at": "2026-09-26T15:49:19.143Z",
+  "dispatched_at": "2026-09-26T15:13:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1295",
+      "text": "the code_stamp and stale fields are reported into watch_stream_cursor's producer key (reckon/crew/runs.py:1267) whose only production consumer (reckon/cli.py:2451) reads stream_path and baseline and never the producer key, so no surface renders the staleness verdict \u2014 the goal's \"a reader can see a stale producer\" is met only by opening the seat's lock file and comparing the stamp by hand."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1690",
+      "text": "started_at is now taken from whatever record already sits in the seat file, so a fresh producer that arms over an un-erased dead predecessor's record reports that predecessor's start time as its own; the carry is correct for the reload case where the same process continues, but the two cases are not distinguished and the identity line is the only reader of the field."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against a5a76ef2; 01c6f3a8 carries the mechanism in reckon/cli.py and reckon/crew/runs.py plus the new test file, and e7c31ab7 carries only the plan comment, the evidence section and the figure, with 547 insertions and 26 deletions across exactly the declared paths.",
+    "done_when": "the done_when names a new test file whose three checks are red at base and green at head, the seat record carrying the running stamp, the declared mutation, and the logs under the run directory; logs/head-gate.log reads 3 passed and logs/base-gate.log reads 3 failed, and my own re-run at head read 3 passed in 22.62s (logs/review-head-gate.log).",
+    "goal": "the goal is that the watch producer takes changed follower-side modules the way the follower does and that its seat records the code stamp it runs; reckon/cli.py:3146 arms the shared _FollowerReloader from crew_watch with seat=True behind the same follower_code_stamp trigger, and reckon/crew/runs.py:1701 writes code_stamp into the seat record.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T123834840809-producer-takes-new-code/manifest.md; it states the three checks, both arms, the negative control with its log path, the intermittency (exit -14 in five of eight runs) and its repair, and it reports its own time fence as exceeded rather than hiding it.",
+    "write_paths": "the declared six paths are reckon/crew/runs.py, reckon/cli.py, tests/test_producer_takes_new_code.py, the plan page, the cumulative evidence page and the figures directory; every path in the diff sits inside them."
+  },
+  "justifications": {
+    "durability": "deleting the code_stamp write reddens all three checks in tests/test_producer_takes_new_code.py through _await_seat, the declared mutation reddens test_a_producer_reexecutes_onto_changed_code on its own observable \"the producer never re-executed onto the new image\", and the stamps compared are computed by an independent subprocess rather than by the code under test; two points withheld because the new stale and code_stamp fields of watch_producer_identity carry no test of their own.",
+    "evidence": "logs/head-gate.log reads 3 passed in 8.18s and logs/base-gate.log reads 3 failed in 77.65s at a5a76ef2, the negative control log repeats its declared string verbatim and failed on \"the producer never re-executed onto the new image\", and my independent re-run in the reviewed worktree read 3 passed in 22.62s; one point withheld because the base arm's second and third checks redden at the absent stamp rather than at the re-exec and deferral observables they exist to measure.",
+    "fit": "reckon/cli.py:3146 reuses _FollowerReloader with label and seat flags instead of forking a second reloader, and reckon/crew/runs.py:1652 documents why the descriptor must cross the exec; the carried started_at at runs.py:1690 arrives without a comment saying why the fresh-arm case is treated as a reload.",
+    "goal_fidelity": "reckon/crew/runs.py:1701 records follower_code_stamp() in the seat record and runs.py:1295 computes stale beside it, but the clause \"so a reader can see a stale producer\" reaches no rendered surface (FINDING reckon/crew/runs.py:1295), leaving the record itself as the only place the stamp is met.",
+    "scope_discipline": "git diff --stat a5a76ef2..e7c31ab7 lists exactly the six declared paths (547 insertions, 26 deletions) and git status in the reviewed worktree is clean at the head the review read."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the watch producer takes changed follower-side modules the way the follower does and that its seat records the code stamp it runs; reckon/cli.py:3146 arms the shared _FollowerReloader from crew_watch with seat=True behind the same follower_code_stamp trigger, and reckon/crew/runs.py:1701 writes code_stamp into the seat record.\nVERDICT done_when: the done_when names a new test file whose three checks are red at base and green at head, the seat record carrying the running stamp, the declared mutation, and the logs under the run directory; logs/head-gate.log reads 3 passed and logs/base-gate.log reads 3 failed, and my own re-run at head read 3 passed in 22.62s (logs/review-head-gate.log).\nVERDICT write_paths: the declared six paths are reckon/crew/runs.py, reckon/cli.py, tests/test_producer_takes_new_code.py, the plan page, the cumulative evidence page and the figures directory; every path in the diff sits inside them.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T123834840809-producer-takes-new-code/manifest.md; it states the three checks, both arms, the negative control with its log path, the intermittency (exit -14 in five of eight runs) and its repair, and it reports its own time fence as exceeded rather than hiding it.\nVERDICT diff: read commit by commit against a5a76ef2; 01c6f3a8 carries the mechanism in reckon/cli.py and reckon/crew/runs.py plus the new test file, and e7c31ab7 carries only the plan comment, the evidence section and the figure, with 547 insertions and 26 deletions across exactly the declared paths.\nCALL_SITES: reckon/cli.py:3146 crew_watch arms _FollowerReloader and _StampPoll (the change), reckon/cli.py:1979 prepare_watch_seat_reexec carries the seat descriptor across the exec, reckon/crew/recovery.py:4553 _watch_registration reaches the changed _project_watch_claim, reckon/crew/runs.py:1267 watch_stream_cursor carries watch_producer_identity\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1701 records follower_code_stamp() in the seat record and runs.py:1295 computes stale beside it, but the clause \"so a reader can see a stale producer\" reaches no rendered surface (FINDING reckon/crew/runs.py:1295), leaving the record itself as the only place the stamp is met.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-gate.log reads 3 passed in 8.18s and logs/base-gate.log reads 3 failed in 77.65s at a5a76ef2, the negative control log repeats its declared string verbatim and failed on \"the producer never re-executed onto the new image\", and my independent re-run in the reviewed worktree read 3 passed in 22.62s; one point withheld because the base arm's second and third checks redden at the absent stamp rather than at the re-exec and deferral observables they exist to measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a5a76ef2..e7c31ab7 lists exactly the six declared paths (547 insertions, 26 deletions) and git status in the reviewed worktree is clean at the head the review read.\nSCORE durability: 18\nJUSTIFICATION durability: deleting the code_stamp write reddens all three checks in tests/test_producer_takes_new_code.py through _await_seat, the declared mutation reddens test_a_producer_reexecutes_onto_changed_code on its own observable \"the producer never re-executed onto the new image\", and the stamps compared are computed by an independent subprocess rather than by the code under test; two points withheld because the new stale and code_stamp fields of watch_producer_identity carry no test of their own.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/cli.py:3146 reuses _FollowerReloader with label and seat flags instead of forking a second reloader, and reckon/crew/runs.py:1652 documents why the descriptor must cross the exec; the carried started_at at runs.py:1690 arrives without a comment saying why the fresh-arm case is treated as a reload.\nFINDING reckon/crew/runs.py:1295 the code_stamp and stale fields are reported into watch_stream_cursor's producer key (reckon/crew/runs.py:1267) whose only production consumer (reckon/cli.py:2451) reads stream_path and baseline and never the producer key, so no surface renders the staleness verdict \u2014 the goal's \"a reader can see a stale producer\" is met only by opening the seat's lock file and comparing the stamp by hand.\nFINDING reckon/crew/runs.py:1690 started_at is now taken from whatever record already sits in the seat file, so a fresh producer that arms over an un-erased dead predecessor's record reports that predecessor's start time as its own; the carry is correct for the reload case where the same process continues, but the two cases are not distinguished and the identity line is the only reader of the field.",
+  "review_run_id": "r-20260926T151240302370-review-of-producer-takes-new-code",
+  "reviewed_base_sha": "a5a76ef254fe52dd28313c1f6c38754be6cfdb81",
+  "reviewed_head_sha": "e7c31ab775f2729802c5ea4de901e4e0c8a89226",
+  "reviewed_run_id": "r-20260926T123834840809-producer-takes-new-code",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260926T151240302370-review-of-producer-takes-new-code",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T15:40:44.432867+00:00",
+  "total": 93
+}

@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T10:49:48.989Z",
+  "dispatched_at": "2026-10-01T10:43:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-1c/the-fence-followups-are-triaged/report.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: row 3 cites the fence comment at `reckon/crew/dispatch.py:189-194`, but the phrase it quotes \u2014 \"Every launch sits behind a read-only overlay\" \u2014 is at `dispatch.py:182`, the first line of that comment block; line 189 is the block's last line and 190-194 fall outside it, so a reader following the citation lands past the quoted text. The substantive verdict (the comment does not name the exemption) is correct at both base 4406a8d02 and current main; only the line reference should read :182."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node is read-only and records no commits; its worktree HEAD equals its base 4406a8d02 with a clean status, so there is no diff against a base, and the deliverable is the report file outside any repository.",
+    "done_when": "the measure is the report itself; this reviewer independently reproduced its citation checks (nine followup ids once each, 12/12 cited commits resolving via git cat-file -e, and report.md's sha256 matching the value in report-verify.log) and spot-checked rows 4, 5, 6, 8 and 9 at their cited lines, so the triage's claims are checkable rather than asserted.",
+    "goal": "the node's goal is to triage the open followups of a-worker-cannot-write-your-home at base 4406a8d02; report.md delivers exactly that, classifying all nine with a quoted done-when, a verdict, a file:line basis, the smallest remaining change and a worker-hour estimate.",
+    "manifest": "read; it declares status complete, names report.md as the deliverable, records that this node's writes all lie outside every git repository (report and log under ~/.config/reckon/crew/reports, manifest under ~/.config/reckon/crew/runs), and carries the nine verdicts, the citation-resolution gate and its report-verify.log path.",
+    "write_paths": "the node's declared write path is reports/reckon/s21-1c/the-fence-followups-are-triaged/report.md; the reviewed worktree is clean at its base 4406a8d02 with no status entries, its deliverable directory holds report.md and report-verify.log only, and no path under /home/ITER/mcintos/Code was written."
+  },
+  "justifications": {
+    "durability": "a triage node changes no code and adds no test, so nothing reddens when a followup it marked unmet is later closed or a cited line drifts; what stands in its place is the reproducibility of the findings, and the recorded base revision, the per-row citations and the verify log make each verdict re-derivable, though the report is a snapshot that reads stale as the followups land.",
+    "evidence": "every cited commit resolves (12/12, MISSING_COUNT=0 re-run by this reviewer), report.md's sha256 a75a28065c430d74c9c7b3c28792f08566f54a4e08598836dba0eb38adee395f matches report-verify.log, and this reviewer reproduced rows 4 (_backends.py:2031-2034), 5 (row4/row5b/row6/row6b logs hold zero \"Read-only\"; stream.jsonl holds 17; .worker_stop_blocks holds 1), 6 (dispatch.py:8835, :9223), 8 (worker_git_shim.py refuses, no scratch/TMPDIR admission) and 9 (dispatch.py:5407/5598/5648) at their cited lines; row 3's comment citation does not contain the phrase it quotes.",
+    "fit": "the report follows the triage idiom with one row per followup, a quoted done-when, a file:line basis and a ranked verdict, and introduces no plan label, ticket, version name or author attribution in its citations beyond the f-awcwyh-* followup identifiers that are the data itself.",
+    "goal_fidelity": "report.md:3-12 and :11-12 classify all nine followups against the plan's own done-when text, each row quoting the done-when verbatim and naming a verdict, a path:line basis, a smallest remaining change and a worker-hour estimate, with the summary \"1 met, 8 unmet, 0 superseded\" matching the rows.",
+    "scope_discipline": "the reviewed worktree sits at 4406a8d02 with an empty git status, and the node's writes are report.md, report-verify.log and the run manifest, all under ~/.config/reckon/crew; no file under /home/ITER/mcintos/Code was written, matching its manifest's stated fence."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to triage the open followups of a-worker-cannot-write-your-home at base 4406a8d02; report.md delivers exactly that, classifying all nine with a quoted done-when, a verdict, a file:line basis, the smallest remaining change and a worker-hour estimate.\nVERDICT done_when: the measure is the report itself; this reviewer independently reproduced its citation checks (nine followup ids once each, 12/12 cited commits resolving via git cat-file -e, and report.md's sha256 matching the value in report-verify.log) and spot-checked rows 4, 5, 6, 8 and 9 at their cited lines, so the triage's claims are checkable rather than asserted.\nVERDICT write_paths: the node's declared write path is reports/reckon/s21-1c/the-fence-followups-are-triaged/report.md; the reviewed worktree is clean at its base 4406a8d02 with no status entries, its deliverable directory holds report.md and report-verify.log only, and no path under /home/ITER/mcintos/Code was written.\nVERDICT manifest: read; it declares status complete, names report.md as the deliverable, records that this node's writes all lie outside every git repository (report and log under ~/.config/reckon/crew/reports, manifest under ~/.config/reckon/crew/runs), and carries the nine verdicts, the citation-resolution gate and its report-verify.log path.\nVERDICT diff: the node is read-only and records no commits; its worktree HEAD equals its base 4406a8d02 with a clean status, so there is no diff against a base, and the deliverable is the report file outside any repository.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:3-12 and :11-12 classify all nine followups against the plan's own done-when text, each row quoting the done-when verbatim and naming a verdict, a path:line basis, a smallest remaining change and a worker-hour estimate, with the summary \"1 met, 8 unmet, 0 superseded\" matching the rows.\nSCORE evidence: 17\nJUSTIFICATION evidence: every cited commit resolves (12/12, MISSING_COUNT=0 re-run by this reviewer), report.md's sha256 a75a28065c430d74c9c7b3c28792f08566f54a4e08598836dba0eb38adee395f matches report-verify.log, and this reviewer reproduced rows 4 (_backends.py:2031-2034), 5 (row4/row5b/row6/row6b logs hold zero \"Read-only\"; stream.jsonl holds 17; .worker_stop_blocks holds 1), 6 (dispatch.py:8835, :9223), 8 (worker_git_shim.py refuses, no scratch/TMPDIR admission) and 9 (dispatch.py:5407/5598/5648) at their cited lines; row 3's comment citation does not contain the phrase it quotes.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the reviewed worktree sits at 4406a8d02 with an empty git status, and the node's writes are report.md, report-verify.log and the run manifest, all under ~/.config/reckon/crew; no file under /home/ITER/mcintos/Code was written, matching its manifest's stated fence.\nSCORE durability: 16\nJUSTIFICATION durability: a triage node changes no code and adds no test, so nothing reddens when a followup it marked unmet is later closed or a cited line drifts; what stands in its place is the reproducibility of the findings, and the recorded base revision, the per-row citations and the verify log make each verdict re-derivable, though the report is a snapshot that reads stale as the followups land.\nSCORE fit: 18\nJUSTIFICATION fit: the report follows the triage idiom with one row per followup, a quoted done-when, a file:line basis and a ranked verdict, and introduces no plan label, ticket, version name or author attribution in its citations beyond the f-awcwyh-* followup identifiers that are the data itself.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-1c/the-fence-followups-are-triaged/report.md:11 follow-on: row 3 cites the fence comment at `reckon/crew/dispatch.py:189-194`, but the phrase it quotes \u2014 \"Every launch sits behind a read-only overlay\" \u2014 is at `dispatch.py:182`, the first line of that comment block; line 189 is the block's last line and 190-194 fall outside it, so a reader following the citation lands past the quoted text. The substantive verdict (the comment does not name the exemption) is correct at both base 4406a8d02 and current main; only the line reference should read :182.",
+  "review_run_id": "r-20261001T104309280198-review-of-the-fence-followups-are-triaged",
+  "reviewed_base_sha": "4406a8d02c9b5c8bc88a50790281748aad649106",
+  "reviewed_head_sha": "4406a8d02c9b5c8bc88a50790281748aad649106",
+  "reviewed_run_id": "r-20261001T102510917236-the-fence-followups-are-triaged",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.519736+00:00",
+  "total": 89
+}

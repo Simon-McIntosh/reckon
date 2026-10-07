@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite arm; its head gate log (logs/gate-20-of-20-n8.log, revision 10a5d8bf5) reports \"15 passed\" on each of 20 runs at EXIT=0 and no FAILED or ERROR id, so the reviewed run's head arm carries an empty failure set and the added-failure count is zero",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T20:42:17.265Z",
+  "dispatched_at": "2026-10-04T20:36:19Z",
+  "findings": [],
+  "head_log_revision": "10a5d8bf5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against ec539b5be; 487f0b9a9 replaced os.waitpid(-1, os.WNOHANG) in _no_defunct_child_under_self with a per-pid helper and two cases, 10a5d8bf5 deleted the copied helpers and imported _no_defunct_launched_child and _pid_defunct_within from tests.test_resume_reaps_its_child, and 4d0d5f3cf and 1c92320a5 add and refine only the evidence fragment.",
+    "done_when": "the done-when names both assertions waiting on their own pids, a new case leaving an exited unreaped child of its own that still passes, the file still failing when the re-exec leaves its own child defunct, and 20 of 20 runs at -n 8; the manifest records all four, logs/gate-20-of-20-n8.log shows 20 invocations of \"15 passed\" each at EXIT=0, logs/control-replacement-left-defunct.log shows the no-op reaper reddening the file (\"4 failed, 11 passed\"), and logs/negative-control-restored-whole-process-wait.log shows the paired case red under the restored waitpid(-1) (\"1 failed, 14 passed\").",
+    "goal": "the node's goal is to make the defunct-child assertions in tests/test_a_reexec_keeps_its_children.py ask only about the pids their own case launched, reusing the per-pid shape section 58 landed; tests/test_a_reexec_keeps_its_children.py:212 and :238 now call the imported _no_defunct_launched_child with [first, second] and [pid], and tests/test_a_reexec_keeps_its_children.py:52-54 imports that helper and _pid_defunct_within from tests.test_resume_reaps_its_child.",
+    "manifest": "read; it records commits 487f0b9a9, 4d0d5f3cf, 10a5d8bf5 and 1c92320a5, the 20-of-20 gate, the control arm (4 failed, 11 passed), the negative control (1 failed, 14 passed) and a scaffolding false-green under retry_failures and failure_attribution.",
+    "write_paths": "the manifest declares tests/test_a_reexec_keeps_its_children.py, docs/evidence/fragments/crew-runtime-positive-controls/the-reexec-test-asks-about-its-own-children.html and a figures directory; the diff against ec539b5be adds only that fragment and modifies only the test file, both inside the declared scope, and no figure was written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reexec_keeps_its_children.py:458 reddens when _no_defunct_launched_child is restored to os.waitpid(-1, os.WNOHANG) (logs/negative-control-restored-whole-process-wait.log), and tests/test_a_reexec_keeps_its_children.py:506 shows a genuinely defunct launched worker is still reported rather than passed over.",
+    "evidence": "the gate the done-when names is logs/gate-20-of-20-n8.log, whose 20 runs each read \"15 passed\" at EXIT=0, and its two sibling control logs record the file's own red state when the re-exec leaves a child defunct (logs/control-replacement-left-defunct.log) and when the helper is reverted (logs/negative-control-restored-whole-process-wait.log).",
+    "fit": "tests/test_a_reexec_keeps_its_children.py:52-54 imports the sibling helpers from tests.test_resume_reaps_its_child, the repository idiom for shared test helpers (tests/test_a_lane_event_groups_by_cause.py:9 imports _terminal), which resolves the earlier duplication instead of extending it.",
+    "goal_fidelity": "tests/test_a_reexec_keeps_its_children.py:212 and :238 assert on the pids each case itself launched, so another case's corpse can neither be reaped nor reported, which is the goal exactly.",
+    "scope_discipline": "the diff against ec539b5be adds only docs/evidence/fragments/crew-runtime-positive-controls/the-reexec-test-asks-about-its-own-children.html and modifies only tests/test_a_reexec_keeps_its_children.py, both inside the manifest's declared write paths and nothing else in the tree."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the defunct-child assertions in tests/test_a_reexec_keeps_its_children.py ask only about the pids their own case launched, reusing the per-pid shape section 58 landed; tests/test_a_reexec_keeps_its_children.py:212 and :238 now call the imported _no_defunct_launched_child with [first, second] and [pid], and tests/test_a_reexec_keeps_its_children.py:52-54 imports that helper and _pid_defunct_within from tests.test_resume_reaps_its_child.\nVERDICT done_when: the done-when names both assertions waiting on their own pids, a new case leaving an exited unreaped child of its own that still passes, the file still failing when the re-exec leaves its own child defunct, and 20 of 20 runs at -n 8; the manifest records all four, logs/gate-20-of-20-n8.log shows 20 invocations of \"15 passed\" each at EXIT=0, logs/control-replacement-left-defunct.log shows the no-op reaper reddening the file (\"4 failed, 11 passed\"), and logs/negative-control-restored-whole-process-wait.log shows the paired case red under the restored waitpid(-1) (\"1 failed, 14 passed\").\nVERDICT write_paths: the manifest declares tests/test_a_reexec_keeps_its_children.py, docs/evidence/fragments/crew-runtime-positive-controls/the-reexec-test-asks-about-its-own-children.html and a figures directory; the diff against ec539b5be adds only that fragment and modifies only the test file, both inside the declared scope, and no figure was written.\nVERDICT manifest: read; it records commits 487f0b9a9, 4d0d5f3cf, 10a5d8bf5 and 1c92320a5, the 20-of-20 gate, the control arm (4 failed, 11 passed), the negative control (1 failed, 14 passed) and a scaffolding false-green under retry_failures and failure_attribution.\nVERDICT diff: read commit by commit against ec539b5be; 487f0b9a9 replaced os.waitpid(-1, os.WNOHANG) in _no_defunct_child_under_self with a per-pid helper and two cases, 10a5d8bf5 deleted the copied helpers and imported _no_defunct_launched_child and _pid_defunct_within from tests.test_resume_reaps_its_child, and 4d0d5f3cf and 1c92320a5 add and refine only the evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_reexec_keeps_its_children.py:212 and :238 assert on the pids each case itself launched, so another case's corpse can neither be reaped nor reported, which is the goal exactly.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate the done-when names is logs/gate-20-of-20-n8.log, whose 20 runs each read \"15 passed\" at EXIT=0, and its two sibling control logs record the file's own red state when the re-exec leaves a child defunct (logs/control-replacement-left-defunct.log) and when the helper is reverted (logs/negative-control-restored-whole-process-wait.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff against ec539b5be adds only docs/evidence/fragments/crew-runtime-positive-controls/the-reexec-test-asks-about-its-own-children.html and modifies only tests/test_a_reexec_keeps_its_children.py, both inside the manifest's declared write paths and nothing else in the tree.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_reexec_keeps_its_children.py:458 reddens when _no_defunct_launched_child is restored to os.waitpid(-1, os.WNOHANG) (logs/negative-control-restored-whole-process-wait.log), and tests/test_a_reexec_keeps_its_children.py:506 shows a genuinely defunct launched worker is still reported rather than passed over.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_reexec_keeps_its_children.py:52-54 imports the sibling helpers from tests.test_resume_reaps_its_child, the repository idiom for shared test helpers (tests/test_a_lane_event_groups_by_cause.py:9 imports _terminal), which resolves the earlier duplication instead of extending it.\n",
+  "review_run_id": "r-20261004T203554524413-review-of-the-reexec-test-asks-about-its-own-children",
+  "reviewed_base_sha": "ec539b5bef24c6a54eb8beb4a3fdf85c5cad25ca",
+  "reviewed_commits": [
+    "487f0b9a9ba27ecb29c31b323bbfe1d5cb475c84",
+    "4d0d5f3cfeb58f55556e40924f25d82c370e6133",
+    "10a5d8bf5390307dbb8eaf4015ee044ab8875367",
+    "1c92320a5682faddc414205cb9bacd910c6324"
+  ],
+  "reviewed_head_sha": "1c92320a5682faddc414205cb9bacd910c6324",
+  "reviewed_run_id": "r-20261004T200417066991-the-reexec-test-asks-about-its-own-children",
+  "reviewer_run_id": "r-20261004T203554524413-review-of-the-reexec-test-asks-about-its-own-children",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T20:41:00+00:00",
+  "total": 98
+}

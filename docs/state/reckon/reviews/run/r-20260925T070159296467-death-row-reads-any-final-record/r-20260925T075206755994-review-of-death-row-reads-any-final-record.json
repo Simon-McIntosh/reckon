@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:4525 _watch_snapshot composes the death clause from the reader",
+    "reckon/crew/recovery.py:2645 _process_exit_reason consumes the type",
+    "reckon/crew/recovery.py:4430 the snapshot each watcher poll runs",
+    "reckon/crew/runs.py:1016 and reckon/cli.py:1851 reach the same snapshot from the runs view and the CLI."
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:52:06.755994+00:00",
+  "findings": [
+    {
+      "file": "tests/test_death_row_reads_any_final_record.py",
+      "line": "11",
+      "text": "the module docstring describes the stop rule as the read extending \"until the chunk holds a record boundary\" and gives the common case as \"a chunk holding a newline holds every complete record that ends in it\", which is the containment test the reader deliberately does not make, since the 65.5 KiB case's first window holds the file's final newline and no complete record, so a maintainer following that wording could simplify the loop and reinstate the None reading this node repaired."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 3162211a; c5b2e184 replaces the fixed seek with the boundary-window loop and extracts _last_record_type_in with the parse behaviour unchanged, and 7db40838 appends the landed record, the evidence anchor, a figure generated from the reader and its generator.",
+    "done_when": "done_when names tests/test_death_row_reads_any_final_record.py and the reader at reckon/crew/recovery.py:2599, the file kills a real process with an in-progress manifest at four record sizes and asserts each yields its type and the death clause, its result is recorded in the manifest's test_logs, and my own recheck at the head passed 5 of 5 in 0.36 s with reckon imported from the reviewed tree.",
+    "goal": "the goal is that the death row reads the last complete stream record whatever its size, and reckon/crew/recovery.py:2572 states the 64 KiB window as a floor while :2621-2641 walks backwards in geometric steps until the chunk begins where a record begins, with the sole production consumer at :4525 unchanged.",
+    "manifest": "read; it names commits c5b2e184 and 7db40838, five log paths that all exist on disk, the 89-file recovery slice at 1440 passed and 4 skipped with exit 0, and the node file's 5 passed, and its statement that the control log's first line repeats the declared mutation verbatim holds when read against that command's block.",
+    "write_paths": "all six files in the diff against 3162211a lie inside the five declared write paths, and the plan page's plan-version and plan-modified meta lines are identical to the base's, so no lifecycle metadata was touched."
+  },
+  "justifications": {
+    "durability": "restoring the fixed window reddens tests/test_death_row_reads_any_final_record.py:196 for the two sizes past the window (the executed control shows 2 failed, 3 passed), :207 makes the size list report itself if the window constant moves past it, and :250 fails if the reader reverts to reading the whole stream, though the fixture's records all carry the type assistant, so the four-size cases pin that the last parseable record wins rather than which record is last.",
+    "evidence": "tests/test_death_row_reads_any_final_record.py:196, :199, :204 and :250 assert the type, the blocked row, the death clause and the one-window cost, the base-head reproduction is logged at 3162211a and my recheck of the file at 7db40838 passed 5 of 5, with the slice run green rather than paired against a base arm.",
+    "fit": "the new names and the constant's updated comment follow the module's private-helper idiom and carry no version, plan or ticket identifier, but the test file's module docstring at line 11 describes the stop rule as chunk containment where reckon/crew/recovery.py:2638 tests where the chunk begins.",
+    "goal_fidelity": "reckon/crew/recovery.py:2621-2641 returns the record ending the file at any size and has no size at which it answers None for a parseable final record, and the death-row path at :4525 is the only production reader of it, so a huge final record now names the death instead of leaving the row working.",
+    "scope_discipline": "all six changed paths are inside the declared write paths, the evidence record's earlier sections and meta lines are extended in place rather than rewritten, and nothing in the diff touches a concurrent node's paths."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260925T070159296467-death-row-reads-any-final-record, node death-row-reads-any-final-record, read at base 3162211ad3d6405843dd21fb801fa7a8078d17b8 and head 7db4083899846e6873bce2092595ebf639951a92.\n\nVERDICT goal: the goal is that the death row reads the last complete stream record whatever its size, and reckon/crew/recovery.py:2572 states the 64 KiB window as a floor while :2621-2641 walks backwards in geometric steps until the chunk begins where a record begins, with the sole production consumer at :4525 unchanged.\nVERDICT done_when: done_when names tests/test_death_row_reads_any_final_record.py and the reader at reckon/crew/recovery.py:2599, the file kills a real process with an in-progress manifest at four record sizes and asserts each yields its type and the death clause, its result is recorded in the manifest's test_logs, and my own recheck at the head passed 5 of 5 in 0.36 s with reckon imported from the reviewed tree.\nVERDICT write_paths: all six files in the diff against 3162211a lie inside the five declared write paths, and the plan page's plan-version and plan-modified meta lines are identical to the base's, so no lifecycle metadata was touched.\nVERDICT manifest: read; it names commits c5b2e184 and 7db40838, five log paths that all exist on disk, the 89-file recovery slice at 1440 passed and 4 skipped with exit 0, and the node file's 5 passed, and its statement that the control log's first line repeats the declared mutation verbatim holds when read against that command's block.\nVERDICT diff: read commit by commit against 3162211a; c5b2e184 replaces the fixed seek with the boundary-window loop and extracts _last_record_type_in with the parse behaviour unchanged, and 7db40838 appends the landed record, the evidence anchor, a figure generated from the reader and its generator.\nCALL_SITES: reckon/crew/recovery.py:4525 _watch_snapshot composes the death clause from the reader, reckon/crew/recovery.py:2645 _process_exit_reason consumes the type, reckon/crew/recovery.py:4430 the snapshot each watcher poll runs, reckon/crew/runs.py:1016 and reckon/cli.py:1851 reach the same snapshot from the runs view and the CLI.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2621-2641 returns the record ending the file at any size and has no size at which it answers None for a parseable final record, and the death-row path at :4525 is the only production reader of it, so a huge final record now names the death instead of leaving the row working.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_death_row_reads_any_final_record.py:196, :199, :204 and :250 assert the type, the blocked row, the death clause and the one-window cost, the base-head reproduction is logged at 3162211a and my recheck of the file at 7db40838 passed 5 of 5, with the slice run green rather than paired against a base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all six changed paths are inside the declared write paths, the evidence record's earlier sections and meta lines are extended in place rather than rewritten, and nothing in the diff touches a concurrent node's paths.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the fixed window reddens tests/test_death_row_reads_any_final_record.py:196 for the two sizes past the window (the executed control shows 2 failed, 3 passed), :207 makes the size list report itself if the window constant moves past it, and :250 fails if the reader reverts to reading the whole stream, though the fixture's records all carry the type assistant, so the four-size cases pin that the last parseable record wins rather than which record is last.\nSCORE fit: 18\nJUSTIFICATION fit: the new names and the constant's updated comment follow the module's private-helper idiom and carry no version, plan or ticket identifier, but the test file's module docstring at line 11 describes the stop rule as chunk containment where reckon/crew/recovery.py:2638 tests where the chunk begins.\nFINDING tests/test_death_row_reads_any_final_record.py:11 the module docstring describes the stop rule as the read extending \"until the chunk holds a record boundary\" and gives the common case as \"a chunk holding a newline holds every complete record that ends in it\", which is the containment test the reader deliberately does not make, since the 65.5 KiB case's first window holds the file's final newline and no complete record, so a maintainer following that wording could simplify the loop and reinstate the None reading this node repaired.",
+  "review_run_id": "r-20260925T075206755994-review-of-death-row-reads-any-final-record",
+  "reviewed_base_sha": "3162211ad3d6405843dd21fb801fa7a8078d17b8",
+  "reviewed_head_sha": "7db4083899846e6873bce2092595ebf639951a92",
+  "reviewed_run_id": "r-20260925T070159296467-death-row-reads-any-final-record",
+  "reviewer": "review-of-death-row-reads-any-final-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T09:00:51.999015+00:00",
+  "total": 96
+}

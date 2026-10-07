@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/pace.py:128 policy",
+    "reckon/crew/pace.py:174 allowance_for_group",
+    "reckon/budget.py:672 budget policy_block",
+    "reckon/crew/budget_group.py:270 allowance_for_group",
+    "reckon/crew/staleness.py:84 policy(resolved)",
+    "reckon/flight.py:65 FlightConfigError"
+  ],
+  "completed_at": "2026-09-26T14:47:44.063Z",
+  "dispatched_at": "2026-09-26T13:30:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-window-paces-the-lane-landed.html",
+      "line": "617",
+      "text": "the added paragraph breaks after \"failing in production\" and resumes at line 618 with \". Three assertions\", so the delivered evidence record renders a stray space before the period; the same insertion leaves line 610's continuation flush against column zero and drops two blank-line-only formatting gaps, which is a cosmetic defect in a record later readers quote."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base 6b8decd9; 41706dc0 declares the two slots and ships the pair with the regenerated model and JSON schema, a003a2d2 folds a formatter-unstable helper expression, and b18b6ce7 appends the plan record, the evidence anchor and one figure.",
+    "done_when": "the done_when names a layer carrying budget.pace_multiple 2.2 and budget.drain_lead_hours 24.0 resolving through the project's own resolver, the shipped pair, script-regenerated artifacts, a temp config home, an assertion red at base, and zero added failures over the measured files; the manifest records all of them and I reproduced the gate (21 passed, exit 0 at the reviewed head) and the reviewed node's declared mutation independently (9 failed, 12 passed, exit 1).",
+    "goal": "the node's goal is that both pace tunables become operator-settable in the flight config's budget block and that pace's key-change assertions read them from resolved config; reckon/schema/flight.yaml:543 declares drain_lead_hours (and pace_multiple beside it) as minimum-zero floats, reckon/schema/flight-defaults.yaml:124 ships pace_multiple 1.1 beside drain_lead_hours 12.0, and tests/test_pace.py:266 resolves a real project layer carrying 24.0 and 2.2 through flight.resolve and asserts pace reports both.",
+    "manifest": "read at ~/.config/reckon/crew/reports/reckon/s22-coord/pace-keys-are-declarable/manifest.md; status complete, three commits named, four logs named, and its base/head arms and failure attribution match the logs it names.",
+    "write_paths": "read the manifest's orientation_write_paths against git diff --stat 6b8decd9..b18b6ce7; all eight changed paths fall inside the declared list and nothing outside it changed."
+  },
+  "justifications": {
+    "durability": "I falsified the reviewed node's declared mutation independently in a scratch tree of the reviewed head \u2014 removing the two slots and regenerating reddens tests/test_pace.py:266-294 with Extra inputs are not permitted at 9 failed, 12 passed, exit 1 \u2014 so the assertion added for this change is the assertion that fails when the declaration is withdrawn.",
+    "evidence": "the manifest's four logs carry the claims it makes and I reproduced the gate and the mutation, but the head the gate measured is a003a2d2 while the delivered head b18b6ce7 is the docs commit, so the plan and evidence records' \"at the head\" naming is one commit wider than the run, and the \"real config home asserted untouched\" sub-claim rests on the worker's own check rather than a line in any recorded log.",
+    "fit": "reckon/schema/flight.yaml:543 follows the neighbouring slot idiom and the generated files were regenerated rather than hand-edited (my scratch regen is byte-identical to the committed pair), though regeneration adds two UP045 findings the manifest discloses and the evidence record's insertion carries a wrap defect.",
+    "goal_fidelity": "reckon/schema/flight.yaml:543 makes both keys slots of the budget block and tests/test_pace.py:266-294 pin a resolved layer's pair reaching pace.policy at reckon/crew/pace.py:131, which is the operator-settable path the goal names; my own scratch-tree run of tests/test_pace.py at the reviewed head is 21 passed, exit 0.",
+    "scope_discipline": "every path in git diff --stat 6b8decd9..b18b6ce7 is inside the manifest's orientation_write_paths, the docs and figure additions are pure insertions, and no path outside the fence appears."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that both pace tunables become operator-settable in the flight config's budget block and that pace's key-change assertions read them from resolved config; reckon/schema/flight.yaml:543 declares drain_lead_hours (and pace_multiple beside it) as minimum-zero floats, reckon/schema/flight-defaults.yaml:124 ships pace_multiple 1.1 beside drain_lead_hours 12.0, and tests/test_pace.py:266 resolves a real project layer carrying 24.0 and 2.2 through flight.resolve and asserts pace reports both.\nVERDICT done_when: the done_when names a layer carrying budget.pace_multiple 2.2 and budget.drain_lead_hours 24.0 resolving through the project's own resolver, the shipped pair, script-regenerated artifacts, a temp config home, an assertion red at base, and zero added failures over the measured files; the manifest records all of them and I reproduced the gate (21 passed, exit 0 at the reviewed head) and the reviewed node's declared mutation independently (9 failed, 12 passed, exit 1).\nVERDICT write_paths: read the manifest's orientation_write_paths against git diff --stat 6b8decd9..b18b6ce7; all eight changed paths fall inside the declared list and nothing outside it changed.\nVERDICT manifest: read at ~/.config/reckon/crew/reports/reckon/s22-coord/pace-keys-are-declarable/manifest.md; status complete, three commits named, four logs named, and its base/head arms and failure attribution match the logs it names.\nVERDICT diff: read commit by commit against base 6b8decd9; 41706dc0 declares the two slots and ships the pair with the regenerated model and JSON schema, a003a2d2 folds a formatter-unstable helper expression, and b18b6ce7 appends the plan record, the evidence anchor and one figure.\nCALL_SITES: reckon/crew/pace.py:128 policy, reckon/crew/pace.py:174 allowance_for_group, reckon/budget.py:672 budget policy_block, reckon/crew/budget_group.py:270 allowance_for_group, reckon/crew/staleness.py:84 policy(resolved), reckon/flight.py:65 FlightConfigError\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/schema/flight.yaml:543 makes both keys slots of the budget block and tests/test_pace.py:266-294 pin a resolved layer's pair reaching pace.policy at reckon/crew/pace.py:131, which is the operator-settable path the goal names; my own scratch-tree run of tests/test_pace.py at the reviewed head is 21 passed, exit 0.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's four logs carry the claims it makes and I reproduced the gate and the mutation, but the head the gate measured is a003a2d2 while the delivered head b18b6ce7 is the docs commit, so the plan and evidence records' \"at the head\" naming is one commit wider than the run, and the \"real config home asserted untouched\" sub-claim rests on the worker's own check rather than a line in any recorded log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 6b8decd9..b18b6ce7 is inside the manifest's orientation_write_paths, the docs and figure additions are pure insertions, and no path outside the fence appears.\nSCORE durability: 20\nJUSTIFICATION durability: I falsified the reviewed node's declared mutation independently in a scratch tree of the reviewed head \u2014 removing the two slots and regenerating reddens tests/test_pace.py:266-294 with Extra inputs are not permitted at 9 failed, 12 passed, exit 1 \u2014 so the assertion added for this change is the assertion that fails when the declaration is withdrawn.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/schema/flight.yaml:543 follows the neighbouring slot idiom and the generated files were regenerated rather than hand-edited (my scratch regen is byte-identical to the committed pair), though regeneration adds two UP045 findings the manifest discloses and the evidence record's insertion carries a wrap defect.\nFINDING docs/evidence/archive/a-window-paces-the-lane-landed.html:617 the added paragraph breaks after \"failing in production\" and resumes at line 618 with \". Three assertions\", so the delivered evidence record renders a stray space before the period; the same insertion leaves line 610's continuation flush against column zero and drops two blank-line-only formatting gaps, which is a cosmetic defect in a record later readers quote.\n",
+  "review_run_id": "r-20260926T133020576148-review-of-pace-keys-are-declarable",
+  "reviewed_base_sha": "6b8decd9ea4bb9a68eade43bdc15a15de03fdcee",
+  "reviewed_head_sha": "b18b6ce75c267603a32da389f99bae291366a1f0",
+  "reviewed_run_id": "r-20260926T095357592985-pace-keys-are-declarable",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T14:40:24.882406+00:00",
+  "total": 96
+}

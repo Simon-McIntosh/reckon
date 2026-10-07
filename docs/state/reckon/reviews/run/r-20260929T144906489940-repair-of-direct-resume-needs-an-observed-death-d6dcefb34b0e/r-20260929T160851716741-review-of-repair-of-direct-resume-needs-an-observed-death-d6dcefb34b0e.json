@@ -1,0 +1,105 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]",
+    "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]"
+  ],
+  "added_failures_source": {
+    "base_failure_ids": [
+      "rcq2-base/tests/test_crew_lane_change.py::test_resume_backend_override_reports_a_cross_harness_fresh_start",
+      "rcq2-base/tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]",
+      "rcq2-base/tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]"
+    ],
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/logs/lane-fixture-base.log",
+    "head_failure_ids": [
+      "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]",
+      "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]"
+    ],
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/logs/lane-fixture-head.log"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:4776",
+    "reckon/cli.py:4874"
+  ],
+  "completed_at": "2026-09-29T16:37:23.240Z",
+  "control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/logs/negative-control.log",
+  "control_log_facts": {
+    "declared_string": "revert each answering commit in turn and confirm the check the finding names fails without it",
+    "declared_string_present_verbatim": true,
+    "failing_test": "tests/test_direct_resume_needs_an_observed_death.py::test_a_lane_change_of_unknown_liveness_is_refused",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/logs/negative-control.log",
+    "recorded_exit_status": 1
+  },
+  "dispatched_at": "2026-09-29T16:09:04Z",
+  "findings": [
+    {
+      "file": "tests/test_direct_resume_needs_an_observed_death.py",
+      "line": "367",
+      "text": "the observed-death case asserts moved[\"backend\"] == \"beta\" and moved[\"launch\"] == \"in-harness\", both supplied by the test's own stub at lines 285-295, so the pair moves with the stub and holds whatever change_lane does with a plan it was handed; reverting the guard leaves this case green, and only the unknown-liveness case at line 327 guards the change."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/logs/lane-fixture-base.log",
+      "line": "222",
+      "text": "the base arm ran from /tmp/rcq2-base, so its pytest node ids carry a rcq2-base/ prefix that reckon/crew/review.py canonical_node_id does not reduce, and the store's own derivation from the two named logs therefore reads the two pre-existing tests/test_session_lives_on_its_run.py failures as added at this run's head (added_failure_count 2, added_failures_note \"total capped at 5\"), capping the stored review's total at 5 for a change whose code-level delta is zero."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "8245",
+      "text": "the guard sits below the preview return, so crew resume --print-only and crew redispatch --print-only still report a lane change that the real call refuses, where the sweep places its own gate ahead of its dry_run branch (reckon/crew/resumption.py:1244 before the branch at 1248) so that a preview reports the refusal a real run would raise."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/manifest.md",
+      "line": "18",
+      "text": "the artifacts line states 2 findings in each changed test file and 9 in reckon/crew/dispatch.py, but measured with the pinned ruff 0.16.4 under the declared rule set both test files report all checks passed and dispatch.py reports 7 findings at both revisions, so the delta-zero claim holds while the figures a reader would quote do not reproduce."
+    }
+  ],
+  "findings_count": 4,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 9c2daf02, 4abe6395 adds the observed-end refusal and the two lane-change cases while f86b93f4 adds a supervisor exit record to one blocked-run fixture with no assertion changed, and reckon/crew/dispatch.py is sha1 19a8f9aa at both arms.",
+    "done_when": "the done-when requires each finding answered by a commit and named by id with none unanswered, and the manifest satisfies it at line 19 with `acted ff72960759b: 4abe6395`, whose diff is the guard; the two pre-existing session failures the fence asks be reported under follow_ons are named under tests: instead, while follow_ons reads \"none outstanding\".",
+    "goal": "the reviewed goal is to repair the single finding ff72960759b, the lane-change door that started a second worker over a run whose end nothing observed, and at head reckon/crew/dispatch.py:8257-8273 change_lane consults the sweep's own observed-end helper for every reading that is not a proven-live.",
+    "manifest": "read in full, it records status complete, the commit pair 4abe6395 and f86b93f4, both arm results, the declared mutation string and the negative-control log, but two of its figures do not reconcile with the artefacts they cite (see the arm-log and manifest findings below).",
+    "write_paths": "read the reviewed manifest line 5, whose declared paths include all three changed files, so reckon/crew/dispatch.py, tests/test_direct_resume_needs_an_observed_death.py and tests/test_crew_lane_change.py are each inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_direct_resume_needs_an_observed_death.py:327 is a true guard, failing without the observed-end refusal, while the positive case's pair at lines 367-368 rest on values the test itself stubs.",
+    "evidence": "the gate is real, the negative control reproduces the defect at logs/negative-control.log, and both arms are recorded, but the base arm's node-id spelling at logs/lane-fixture-base.log:222 makes the store derive two added failures for a zero-delta change and the manifest's lint figures do not reproduce.",
+    "fit": "reckon/crew/dispatch.py:8269 imports the sweep's own helper rather than composing a second reading, matching the shared-idiom rule the two doors now hold to.",
+    "goal_fidelity": "the launching path is closed at reckon/crew/dispatch.py:8260-8273, but the preview return at reckon/crew/dispatch.py:8245-8246 sits ahead of the guard, so a --print-only lane change is still reported as available.",
+    "scope_discipline": "every path in changed_paths (reviewed manifest line 5) is inside the declared write paths, and the one widened behaviour, the blocked-run fixture in f86b93f4, is disclosed on that same line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal is to repair the single finding ff72960759b, the lane-change door that started a second worker over a run whose end nothing observed, and at head reckon/crew/dispatch.py:8257-8273 change_lane consults the sweep's own observed-end helper for every reading that is not a proven-live.\nVERDICT done_when: the done-when requires each finding answered by a commit and named by id with none unanswered, and the manifest satisfies it at line 19 with `acted ff72960759b: 4abe6395`, whose diff is the guard; the two pre-existing session failures the fence asks be reported under follow_ons are named under tests: instead, while follow_ons reads \"none outstanding\".\nVERDICT write_paths: read the reviewed manifest line 5, whose declared paths include all three changed files, so reckon/crew/dispatch.py, tests/test_direct_resume_needs_an_observed_death.py and tests/test_crew_lane_change.py are each inside the fence.\nVERDICT manifest: read in full, it records status complete, the commit pair 4abe6395 and f86b93f4, both arm results, the declared mutation string and the negative-control log, but two of its figures do not reconcile with the artefacts they cite (see the arm-log and manifest findings below).\nVERDICT diff: read commit by commit against base 9c2daf02, 4abe6395 adds the observed-end refusal and the two lane-change cases while f86b93f4 adds a supervisor exit record to one blocked-run fixture with no assertion changed, and reckon/crew/dispatch.py is sha1 19a8f9aa at both arms.\nCALL_SITES: reckon/cli.py:4776, reckon/cli.py:4874\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the launching path is closed at reckon/crew/dispatch.py:8260-8273, but the preview return at reckon/crew/dispatch.py:8245-8246 sits ahead of the guard, so a --print-only lane change is still reported as available.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate is real, the negative control reproduces the defect at logs/negative-control.log, and both arms are recorded, but the base arm's node-id spelling at logs/lane-fixture-base.log:222 makes the store derive two added failures for a zero-delta change and the manifest's lint figures do not reproduce.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in changed_paths (reviewed manifest line 5) is inside the declared write paths, and the one widened behaviour, the blocked-run fixture in f86b93f4, is disclosed on that same line.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_direct_resume_needs_an_observed_death.py:327 is a true guard, failing without the observed-end refusal, while the positive case's pair at lines 367-368 rest on values the test itself stubs.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch.py:8269 imports the sweep's own helper rather than composing a second reading, matching the shared-idiom rule the two doors now hold to.\nFINDING tests/test_direct_resume_needs_an_observed_death.py:367 the observed-death case asserts moved[\"backend\"] == \"beta\" and moved[\"launch\"] == \"in-harness\", both supplied by the test's own stub at lines 285-295, so the pair moves with the stub and holds whatever change_lane does with a plan it was handed; reverting the guard leaves this case green, and only the unknown-liveness case at line 327 guards the change.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/logs/lane-fixture-base.log:222 the base arm ran from /tmp/rcq2-base, so its pytest node ids carry a rcq2-base/ prefix that reckon/crew/review.py canonical_node_id does not reduce, and the store's own derivation from the two named logs therefore reads the two pre-existing tests/test_session_lives_on_its_run.py failures as added at this run's head (added_failure_count 2, added_failures_note \"total capped at 5\"), capping the stored review's total at 5 for a change whose code-level delta is zero.\nFINDING reckon/crew/dispatch.py:8245 the guard sits below the preview return, so crew resume --print-only and crew redispatch --print-only still report a lane change that the real call refuses, where the sweep places its own gate ahead of its dry_run branch (reckon/crew/resumption.py:1244 before the branch at 1248) so that a preview reports the refusal a real run would raise.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/manifest.md:18 the artifacts line states 2 findings in each changed test file and 9 in reckon/crew/dispatch.py, but measured with the pinned ruff 0.16.4 under the declared rule set both test files report all checks passed and dispatch.py reports 7 findings at both revisions, so the delta-zero claim holds while the figures a reader would quote do not reproduce.",
+  "review_run_id": "r-20260929T160851716741-review-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e",
+  "reviewed_base_sha": "9c2daf02fb698893ed51ae85ebd6d86b3f8d1641",
+  "reviewed_commits": [
+    "4abe6395",
+    "f86b93f4"
+  ],
+  "reviewed_head_sha": "f86b93f4b71dfaa3b85d769147e73d31c870e23b",
+  "reviewed_manifest": {
+    "bytes": 8637,
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/manifest.md",
+    "sha256": "843593f78ac6ac1f0da7532265dadd355732bd420d18cc59ab79cb6cb4850829"
+  },
+  "reviewed_run_id": "r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e",
+  "reviewer_node": "review-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e",
+  "reviewer_run_id": "r-20260929T160851716741-review-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T16:32:59.192249+00:00",
+  "total": 86
+}

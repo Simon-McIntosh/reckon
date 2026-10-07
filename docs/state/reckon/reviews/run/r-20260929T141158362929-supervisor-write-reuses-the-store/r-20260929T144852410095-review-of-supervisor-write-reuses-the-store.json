@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_prepare_attempt_records (the attempt record at :6279 and the archived canonical receipt at :6301)",
+    "reckon/crew/dispatch.py:_write_attempt_artifact (the immutable attempt receipt at :6328 and the canonical name at :6332)",
+    "reckon/crew/dispatch.py:_write_boundary_tree_snapshot (the boundary tree snapshot at :6819) \u2014 these are the only production callers; a grep over reckon/ and tests/ outside the definition and the node's own test file finds none."
+  ],
+  "completed_at": "2026-09-29T15:20:23.270Z",
+  "dispatched_at": "2026-09-29T14:49:10Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141158362929-supervisor-write-reuses-the-store/manifest.md",
+      "line": "12",
+      "text": "changed_paths lists only the code and the test, but line 3 of the same manifest declares docs/evidence/fragments/a-worker-reuses-before-it-writes/supervisor-write-reuses-the-store.html as a write path, the prompt's landing contract asks a non-small node to commit that anchor, and the file exists in neither the commit nor the worktree while every sibling node in the section landed one (for example docs/evidence/fragments/a-worker-reuses-before-it-writes/runs-pointer-writer-reuses-the-store.html), so the plan's evidence index and any promotion record built from it have no anchor for this node."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "6217",
+      "text": "the delegated writer applies the requested 0o600 with os.chmod after an umask-filtered create (reckon/_store.py:371-411), where the previous writer let its temporary file's 0o600 be filtered by the umask; measured at umask 0o277 the pre-migration function leaves 0o400 and the migrated one leaves 0o600, so the manifest line 13 statement that the bytes and the 0o600 mode are unchanged holds at the umask the test pins and at ordinary umasks but not at one that clears owner-write bits; the file remains owner-private with no group or other bit set either way."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base fdb116e212e915cd96cb02835abc98a80f103c26 \u2014 one commit, 2eda3920, changing the body of _supervisor_write and removing one now-unused import in reckon/crew/dispatch.py plus a new 156-line test file; the reviewed worktree is clean at head and no other path changed.",
+    "done_when": "the done_when names the four rows of tests/test_supervisor_write_reuses_the_store.py and a two-arm gate whose added failing ids must be empty; the manifest records both arms with revision, tree, command and EXIT= headers, I re-derived 0 added and 1 removed id from the two logs myself with an independent reader, and I re-ran the gate's single test file at both revisions (head 4 passed; base 1 failed, 3 passed) rather than the suite.",
+    "goal": "the node's goal is to move the supervisor's JSON writes onto the shared atomic writer without giving up the property that a discarded run's directory is never recreated; commit 2eda3920 keeps the guard at reckon/crew/dispatch.py:6214, delegates at reckon/crew/dispatch.py:6217 with create_parents=False, and still returns False on OSError at reckon/crew/dispatch.py:6218, so every path that returned False before still does.",
+    "manifest": "read in full; it records one commit 2eda3920 on base fdb116e2 with both gate arms carrying matching failure counts and full failure ids, a negative_control.log whose first line states the declared mutation verbatim, and a measurement_module at /tmp/sw-base-tree/reckon/crew/dispatch.py that is byte-identical to git show fdb116e212e915cd96cb02835abc98a80f103c26:reckon/crew/dispatch.py; every id in each arm's failure list appears in the corresponding log and the log holds no id the manifest omits.",
+    "write_paths": "read the run's manifest lines 3 and 12; the commit touches only reckon/crew/dispatch.py and tests/test_supervisor_write_reuses_the_store.py, both inside the declared paths, but the path declared at manifest line 3 as docs/evidence/fragments/a-worker-reuses-before-it-writes/supervisor-write-reuses-the-store.html was never written (see the FINDING below)."
+  },
+  "justifications": {
+    "durability": "tests/test_supervisor_write_reuses_the_store.py:121-145 reddens when the declared mutation is applied \u2014 I reproduced it, create_parents=True resurrects the removed directory and the is-False assertion fails \u2014 but no added assertion would redden if the shared writer's fsync default changed, so the durability half the migration inherits is unguarded.",
+    "evidence": "both arm logs under the reviewed run's logs/ carry revision, tree, command, module and cwd headers and end in EXIT=, I re-derived 0 added and 1 removed id from them, and the only gap is that the landing anchor declared at the manifest's line 3 is absent, so the plan's evidence index holds no anchor for this node.",
+    "fit": "the new test file follows the surrounding idiom (a module docstring, an autouse umask-pinning fixture, monkeypatch on the imported module attribute, an independent replica of the pre-migration writer for the bytes comparison) and neither the diff, the commit message nor the test carries a forbidden plan label or a version name.",
+    "goal_fidelity": "the delegation at reckon/crew/dispatch.py:6217 reproduces the previous writer's bytes, its refusal to create the directory and its OSError-to-False return for every case I measured, with the one mode divergence recorded in the FINDING at that line.",
+    "scope_discipline": "every path in the commit is inside the four paths declared at the run's manifest line 3, and the base arm was built outside the repository at /tmp/sw-base-tree, so nothing outside the declared scope changed."
+  },
+  "node": "review-of-supervisor-write-reuses-the-store",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to move the supervisor's JSON writes onto the shared atomic writer without giving up the property that a discarded run's directory is never recreated; commit 2eda3920 keeps the guard at reckon/crew/dispatch.py:6214, delegates at reckon/crew/dispatch.py:6217 with create_parents=False, and still returns False on OSError at reckon/crew/dispatch.py:6218, so every path that returned False before still does.\nVERDICT done_when: the done_when names the four rows of tests/test_supervisor_write_reuses_the_store.py and a two-arm gate whose added failing ids must be empty; the manifest records both arms with revision, tree, command and EXIT= headers, I re-derived 0 added and 1 removed id from the two logs myself with an independent reader, and I re-ran the gate's single test file at both revisions (head 4 passed; base 1 failed, 3 passed) rather than the suite.\nVERDICT write_paths: read the run's manifest lines 3 and 12; the commit touches only reckon/crew/dispatch.py and tests/test_supervisor_write_reuses_the_store.py, both inside the declared paths, but the path declared at manifest line 3 as docs/evidence/fragments/a-worker-reuses-before-it-writes/supervisor-write-reuses-the-store.html was never written (see the FINDING below).\nVERDICT manifest: read in full; it records one commit 2eda3920 on base fdb116e2 with both gate arms carrying matching failure counts and full failure ids, a negative_control.log whose first line states the declared mutation verbatim, and a measurement_module at /tmp/sw-base-tree/reckon/crew/dispatch.py that is byte-identical to git show fdb116e212e915cd96cb02835abc98a80f103c26:reckon/crew/dispatch.py; every id in each arm's failure list appears in the corresponding log and the log holds no id the manifest omits.\nVERDICT diff: read commit by commit against base fdb116e212e915cd96cb02835abc98a80f103c26 \u2014 one commit, 2eda3920, changing the body of _supervisor_write and removing one now-unused import in reckon/crew/dispatch.py plus a new 156-line test file; the reviewed worktree is clean at head and no other path changed.\nCALL_SITES: reckon/crew/dispatch.py:_prepare_attempt_records (the attempt record at :6279 and the archived canonical receipt at :6301), reckon/crew/dispatch.py:_write_attempt_artifact (the immutable attempt receipt at :6328 and the canonical name at :6332), reckon/crew/dispatch.py:_write_boundary_tree_snapshot (the boundary tree snapshot at :6819) \u2014 these are the only production callers; a grep over reckon/ and tests/ outside the definition and the node's own test file finds none.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delegation at reckon/crew/dispatch.py:6217 reproduces the previous writer's bytes, its refusal to create the directory and its OSError-to-False return for every case I measured, with the one mode divergence recorded in the FINDING at that line.\nSCORE evidence: 19\nJUSTIFICATION evidence: both arm logs under the reviewed run's logs/ carry revision, tree, command, module and cwd headers and end in EXIT=, I re-derived 0 added and 1 removed id from them, and the only gap is that the landing anchor declared at the manifest's line 3 is absent, so the plan's evidence index holds no anchor for this node.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the commit is inside the four paths declared at the run's manifest line 3, and the base arm was built outside the repository at /tmp/sw-base-tree, so nothing outside the declared scope changed.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_supervisor_write_reuses_the_store.py:121-145 reddens when the declared mutation is applied \u2014 I reproduced it, create_parents=True resurrects the removed directory and the is-False assertion fails \u2014 but no added assertion would redden if the shared writer's fsync default changed, so the durability half the migration inherits is unguarded.\nSCORE fit: 20\nJUSTIFICATION fit: the new test file follows the surrounding idiom (a module docstring, an autouse umask-pinning fixture, monkeypatch on the imported module attribute, an independent replica of the pre-migration writer for the bytes comparison) and neither the diff, the commit message nor the test carries a forbidden plan label or a version name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141158362929-supervisor-write-reuses-the-store/manifest.md:12 changed_paths lists only the code and the test, but line 3 of the same manifest declares docs/evidence/fragments/a-worker-reuses-before-it-writes/supervisor-write-reuses-the-store.html as a write path, the prompt's landing contract asks a non-small node to commit that anchor, and the file exists in neither the commit nor the worktree while every sibling node in the section landed one (for example docs/evidence/fragments/a-worker-reuses-before-it-writes/runs-pointer-writer-reuses-the-store.html), so the plan's evidence index and any promotion record built from it have no anchor for this node.\nFINDING reckon/crew/dispatch.py:6217 the delegated writer applies the requested 0o600 with os.chmod after an umask-filtered create (reckon/_store.py:371-411), where the previous writer let its temporary file's 0o600 be filtered by the umask; measured at umask 0o277 the pre-migration function leaves 0o400 and the migrated one leaves 0o600, so the manifest line 13 statement that the bytes and the 0o600 mode are unchanged holds at the umask the test pins and at ordinary umasks but not at one that clears owner-write bits; the file remains owner-private with no group or other bit set either way.",
+  "review_run_id": "r-20260929T144852410095-review-of-supervisor-write-reuses-the-store",
+  "reviewed_base_sha": "fdb116e212e915cd96cb02835abc98a80f103c26",
+  "reviewed_head_sha": "2eda39203b794a5535b4f7ca44aa3f17cec8abd5",
+  "reviewed_run_id": "r-20260929T141158362929-supervisor-write-reuses-the-store",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T144852410095-review-of-supervisor-write-reuses-the-store",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T15:17:35.978111+00:00",
+  "total": 96
+}

@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:crew_check_manifest",
+    "reckon/crew/reports.py:audit_manifest"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "tests/test_manifest_check_command.py",
+      "line": "41",
+      "text": "the fixture redirects RECKON_HOME to a test-config home but never asserts the live crew home was left untouched, so a broken home resolution would write a fixture pointer into the real directory; the repository test rule names that assertion for every write-shaped test."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read the two commits against base 6eda430c; the combined diff is 263 insertions and 1 deletion across exactly the four declared paths, the deletion being the revised plan-verifies meta line.",
+    "done_when": "read tests/test_manifest_check_command.py lines 70-117; all four assertions drive CliRunner over crew check-manifest, and negative-control.txt:1 carries the declared mutation verbatim with the out-of-fence case observed red.",
+    "goal": "read reckon/cli.py crew check-manifest; it reads the run's live pointer, rebuilds the node it records through the resumption helper, delegates to audit_manifest with that node and exits 1 on any finding, which creates the first production caller.",
+    "manifest": "read the manifest; it records 5 passed for the named file, the four-file cohort at 2 failed 118 passed attributed to tests/test_removed_flag_migration.py as out of scope, the red log path, and no blockers.",
+    "write_paths": "the diffstat 6eda430c..HEAD lists exactly the four declared paths, reckon/cli.py, tests/test_manifest_check_command.py and the two docs pages, with nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_manifest_check_command.py:109 fails if a second production caller of audit_manifest appears, and line 86 fails if the fence comparison stops reaching the command.",
+    "evidence": "negative-control.txt:20 shows the mutated build reporting findings [] and ok true at exit 0 for a path outside the fence, against four tests still passing.",
+    "fit": "reckon/cli.py imports the private helper _recorded_task_node across a module boundary, while otherwise matching the surface's lazy-import idiom.",
+    "goal_fidelity": "reckon/cli.py crew check-manifest performs exactly the delegation the goal names, and its census test proves the caller relation rather than describing it.",
+    "scope_discipline": "every path the change touches is inside the declared fence, and the two doc edits are the landing record the plan itself requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read reckon/cli.py crew check-manifest; it reads the run's live pointer, rebuilds the node it records through the resumption helper, delegates to audit_manifest with that node and exits 1 on any finding, which creates the first production caller.\nVERDICT done_when: read tests/test_manifest_check_command.py lines 70-117; all four assertions drive CliRunner over crew check-manifest, and negative-control.txt:1 carries the declared mutation verbatim with the out-of-fence case observed red.\nVERDICT write_paths: the diffstat 6eda430c..HEAD lists exactly the four declared paths, reckon/cli.py, tests/test_manifest_check_command.py and the two docs pages, with nothing else.\nVERDICT manifest: read the manifest; it records 5 passed for the named file, the four-file cohort at 2 failed 118 passed attributed to tests/test_removed_flag_migration.py as out of scope, the red log path, and no blockers.\nVERDICT diff: read the two commits against base 6eda430c; the combined diff is 263 insertions and 1 deletion across exactly the four declared paths, the deletion being the revised plan-verifies meta line.\nCALL_SITES: reckon/cli.py:crew_check_manifest, reckon/crew/reports.py:audit_manifest\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/cli.py crew check-manifest performs exactly the delegation the goal names, and its census test proves the caller relation rather than describing it.\nSCORE evidence: 19\nJUSTIFICATION evidence: negative-control.txt:20 shows the mutated build reporting findings [] and ok true at exit 0 for a path outside the fence, against four tests still passing.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path the change touches is inside the declared fence, and the two doc edits are the landing record the plan itself requires.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_manifest_check_command.py:109 fails if a second production caller of audit_manifest appears, and line 86 fails if the fence comparison stops reaching the command.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/cli.py imports the private helper _recorded_task_node across a module boundary, while otherwise matching the surface's lazy-import idiom.\nFINDING tests/test_manifest_check_command.py:41 the fixture redirects RECKON_HOME to a test-config home but never asserts the live crew home was left untouched, so a broken home resolution would write a fixture pointer into the real directory; the repository test rule names that assertion for every write-shaped test.",
+  "review_run_id": "legacy-c2478a14c775",
+  "review_run_id_source": "derived",
+  "reviewed_run_id": "r-20260921T134412356114-the-manifest-check-is-reachable-before-promotion",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-21T15:37:41.074589+00:00",
+  "total": 95
+}

@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs: baseline_suite log_path .../repro/population-base.log (revision e49e4731a) names no FAILED or ERROR id and reads '7 passed' EXIT=0; after_suite log_path .../repro/population-head.log (revision 89e4c221c) names no FAILED or ERROR id and reads '7 passed' EXIT=0; the set difference is empty, so added_failure_count is 0 and added_failure_ids is [].",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T13:25:40.874Z",
+  "dispatched_at": "2026-10-04T13:06:24Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "1199",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed node's sibling claim does not hold at higher contention. In my contended reproduction (8 CPU spinners, 10 runs at -n 3, loadavg ~75) test_a_discarded_run_is_not_recreated fails 6 of 10 at line 1199 ('the supervisor wrote a pointer for a run that was discarded'), the same assertion the base arm fails at line 1196. The manifest reports this sibling's head arm as 20 pass / 0 fail, which held at its own lower load (~27) but is not robust; the change fixes the pid-read race (line 1145) but not the discard race at line 1199, which the node itself documents as a product-side lost update in follow_ons. This does not block landing, which is correct for the node's named target test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "base e49e4731a..head 89e4c221c, +17/-5 in one file; swaps pointer-pid reads for output.get('pid') in both supervisor-waiting cases and bounds the exit-record wait by max(EXIT_RECORD_BOUND, launch_seconds * DRIVER_EXIT_SLACK).",
+    "done_when": "base fails under contention (run's base-20: 13 pass / 7 fail; my base: 7 pass / 1 fail) and head passes (run's head-20: 20 pass / 0 fail; my head: 8 pass / 0 fail) for the named test; the sibling clause is weaker -- head 6 of 10 fail at line 1199 in my contended run.",
+    "goal": "the timing is named with file and line and both supervisor-waiting cases take the pid from the record dispatch returned; the primary case passes 8/8 in my own contended reproduction.",
+    "manifest": "read; one commit 89e4c221c, changed_paths correct, base/head contended figures present, negative_control_log names base-20/logs/run-7.log (valid: FAILED id and EXIT=1); negative_control_note cites a wrong base sha 6926b382d.",
+    "write_paths": "exactly one committed file, tests/test_dispatch_returns_without_worker.py, inside the declared path; the declared fragment/figure paths legitimately unused under the small-node rule."
+  },
+  "justifications": {
+    "durability": "the fix is committed test code and removes the load-sensitive race at its source, so the guard no longer depends on a timing window; the completion wait is bounded by a measured figure. Not higher because the sibling case reading the same pointer still fails at head under contention and the underlying product-side lost update in _mutate_pointer/_publish_stored_phase is deliberately left unfixed (the node documents it as a follow-on).",
+    "evidence": "the primary evidence is strong and independently reproduced: from the reviewed run's own base-20 logs (13 pass / 7 fail, two failure modes matching the attribution at lines 1359 and 1369) and by my own contended runs (named test base 7/1, head 8/0); but the manifest's sibling claim 'head 20 of 20' does not reproduce -- at loadavg ~75 test_a_discarded_run_is_not_recreated fails 6 of 10 at line 1199, the same assertion base fails at line 1196 -- and the negative_control_note cites base sha 6926b382d, which is not the reviewed base nor an ancestor of head (the base arm logs name e49e4731a).",
+    "fit": "the change reuses the dispatch contract's returned record (pid, dispatch_seconds) rather than adding a new source, reuses the existing DRIVER_EXIT_SLACK constant (line 106), and touches only the two cases that wait on the supervisor; minimal diff, each comment names the race it closes.",
+    "goal_fidelity": "the goal is met for the named test: the timing is named with file and line (SUPERVISOR_SURVIVAL_SECONDS = 2.0 at reckon/crew/dispatch.py:9212; EXIT_RECORD_BOUND = 10.0 at tests/test_dispatch_returns_without_worker.py:96), the base arm fails under contention (reproduced 7 pass / 1 fail) and the head arm is robust (reproduced 8 pass / 0 fail at loadavg 75); one point off because the exit-record wait remains a wall-clock window, bounded from the launch dispatch's own measured dispatch_seconds rather than the event itself.",
+    "scope_discipline": "only tests/test_dispatch_returns_without_worker.py is changed, +17/-5, inside the declared write path; one commit 89e4c221c with a conventional subject and a body; no plan, state, index or sprint file touched; the declared fragment and figure paths are correctly left unwritten under the small-node landing rule (22 changed lines, done-when names no artifact)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node names the timing tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch depends on -- SUPERVISOR_SURVIVAL_SECONDS = 2.0 (reckon/crew/dispatch.py:9212) and its own EXIT_RECORD_BOUND = 10.0 (tests/test_dispatch_returns_without_worker.py:96) -- and makes both supervisor-waiting cases take the pid from the record dispatch returned rather than from the concurrently-written live pointer, bounding the completion-exit wait by max(EXIT_RECORD_BOUND, launch_seconds * DRIVER_EXIT_SLACK); the primary case passes 8/8 under my own contended reproduction.\nVERDICT done_when: section 12 asks the test to fail under contention at base and pass 20 of 20 at head; the reviewed run's base-20 logs reproduce 13 pass / 7 fail (two failure modes: pointer pid null at line 1359, runs 7/9/10; exit record late at line 1369, runs 17-20) and the head-20-finished logs read 20 pass / 0 fail, and I reproduced base 7 pass / 1 fail and head 8 pass / 0 fail on the named test at loadavg 63-75; the sibling clause is weaker, see findings.\nVERDICT write_paths: exactly one file changed, tests/test_dispatch_returns_without_worker.py, inside the declared write path; the manifest's declared fragment and figure paths were correctly left unwritten because the diff is 22 changed lines and the done-when names no artifact (small-node landing rule).\nVERDICT manifest: read; it records one commit 89e4c221c (conventional subject and body), changed_paths [tests/test_dispatch_returns_without_worker.py], the base/head contended figures, and a negative_control_log naming base-20/logs/run-7.log; its negative_control_note cites base 6926b382d, which is neither the reviewed base nor an ancestor of head, so that sha is wrong (the base arm logs name e49e4731a).\nVERDICT diff: read base e49e4731a..head 89e4c221c, +17/-5 over one file; it swaps run.pointer.get('pid') for output.get('pid') in both cases that wait on the supervisor and replaces the fixed timeout=EXIT_RECORD_BOUND with timeout=max(EXIT_RECORD_BOUND, launch_seconds * DRIVER_EXIT_SLACK); the constants DRIVER_EXIT_SLACK (1.5, line 106), SUPERVISOR_SURVIVAL_SECONDS and the driver's pid/dispatch_seconds output keys (lines 216-218) all exist at head.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is met for the named test -- the timing is named with file and line, the base arm fails under contention (reproduced: 7 pass / 1 fail, failing 'the dispatch process named no supervisor for a launch that completed'), and the head arm is robust (reproduced 8 pass / 0 fail at loadavg 75); one point off because the exit-record wait is still a wall-clock window, albeit one bounded from the launch dispatch's own measured dispatch_seconds rather than fixed.\nSCORE evidence: 16\nJUSTIFICATION evidence: the primary evidence is strong and independently reproduced from the run's own logs and by my own contended runs; but the manifest's sibling claim 'head 20 of 20' does not reproduce -- at loadavg ~75 the sibling test_a_discarded_run_is_not_recreated fails 6 of 10 at line 1199 ('the supervisor wrote a pointer for a run that was discarded'), the same assertion the base fails at line 1196 -- and the negative_control_note cites a base sha (6926b382d) that is not the reviewed base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only tests/test_dispatch_returns_without_worker.py is changed, 17 insertions and 5 deletions, all inside the declared write path; one commit with a conventional subject and a body; no plan HTML, plan state, index or sprint file touched; the two unused write-path declarations (fragment, figure) are required by the dispatch template and correctly left unwritten under the small-node rule.\nSCORE durability: 18\nJUSTIFICATION durability: the fix is committed test code and removes a load-sensitive race at its source, so the regression guard no longer depends on winning a timing window; the completion wait is bounded by a measured figure. Not scored higher because the sibling case that reads the same pointer still fails at head under contention and the change deliberately leaves the underlying product-side lost update in _mutate_pointer/_publish_stored_phase unfixed (documented by the node as a follow-on).\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the dispatch contract's returned record (pid, dispatch_seconds) rather than adding a new source, reuses the existing DRIVER_EXIT_SLACK constant, and touches only the two cases that wait on the supervisor; the diff is minimal and each comment explains the race it closes.\n",
+  "review_run_id": "r-20261004T130603601328-review-of-the-supervisor-launch-test-holds-under-load",
+  "reviewed_base_sha": "e49e4731a1a2849ac2a3cc8b1aec295c1be8f811",
+  "reviewed_head_sha": "89e4c221c49afe53f2356f636462007a4ea6d28a",
+  "reviewed_run_id": "r-20261004T121207607289-the-supervisor-launch-test-holds-under-load",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T130603601328-review-of-the-supervisor-launch-test-holds-under-load",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T13:21:00+00:00",
+  "total": 92
+}

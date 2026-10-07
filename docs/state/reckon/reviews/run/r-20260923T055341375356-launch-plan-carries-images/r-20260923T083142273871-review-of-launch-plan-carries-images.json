@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T08:31:42.273871+00:00",
+  "findings": [
+    {
+      "file": "tests/test_launch_plan_attaches_images.py",
+      "line": "100",
+      "text": "the native-harness parameter here passes because launch_plan refuses every in-harness backend at reckon/_backends.py:1787 before images are ever read, so this parameter would stay green even if the figure-handling change were reverted; it guards the refusal-by-name contract but not the attachment, and only the claude and clive parameters exercise the image path."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/dispatch.py as the production launcher that will supply figures to launch_plan; it does not yet pass a node's images, which the source manifest declares as a follow-on fenced to another node.",
+    "diff": "read commit ce5081a6 against base 1866e3b3; five paths, 302 insertions and no deletions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_launch_plan_attaches_images.py with per-case assertions on launch_plan argv; the diff adds that file with eight cases; the manifest records the gate green.",
+    "goal": "the source goal is to make the launch plan the launcher runs carry a node's images or refuse them; reckon/_backends.py:1781 adds images to launch_plan and the codex dialect at line 1024 emits one -i flag per figure, while claude refuses at line 1328.",
+    "manifest": "read; it records the gate green at 8 passed exit 0, the negative-control log path, and a base/after pair of runs over the affected selection.",
+    "write_paths": "the manifest declares five paths; the manifest's diff of ce5081a6 against 1866e3b3 changes exactly those five."
+  },
+  "justifications": {
+    "durability": "the declared negative control, the codex dialect ignoring its images argument, is recorded as reddening the flag-count assertion at tests/test_launch_plan_attaches_images.py:54 and raising for the resume-ordering case while the empty-tuple test stayed green, so the guard fires; independent assertions on flag count, pair order and resume order exist.",
+    "evidence": "tests/test_launch_plan_attaches_images.py:54 reads the produced argv and the manifest records the gate green with its log, but the refusal test's native-harness parameter at line 100 reddens on a condition the image change does not touch, so that one parameter is not evidence about the attachment.",
+    "fit": "reckon/_backends.py:1781 extends launch_plan with images in the surrounding kwargs idiom, the helpers _lane and _refuse_images are named by mechanism, and the codex comment at line 1022 explains why -i must precede resume; no banned name or plan identifier appears.",
+    "goal_fidelity": "reckon/_backends.py:1024 appends an -i flag followed by the certificate per figure before the resume subcommand, and line 1328 raises by lane name, so the plan carries the figures or refuses; the launcher's own dispatch wiring is fenced to another node.",
+    "scope_discipline": "the diff ce5081a6 against 1866e3b3 changes exactly the five declared write paths with 302 insertions and no deletions; no path outside the fence appears in the diff stat."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is to make the launch plan the launcher runs carry a node's images or refuse them; reckon/_backends.py:1781 adds images to launch_plan and the codex dialect at line 1024 emits one -i flag per figure, while claude refuses at line 1328.\nVERDICT done_when: the done_when names tests/test_launch_plan_attaches_images.py with per-case assertions on launch_plan argv; the diff adds that file with eight cases; the manifest records the gate green.\nVERDICT write_paths: the manifest declares five paths; the diff ce5081a6 against 1866e3b3 changes exactly those five.\nVERDICT manifest: read; it records the gate green at 8 passed exit 0, the negative-control log path, and a base/after pair of runs over the affected selection.\nVERDICT diff: read commit ce5081a6 against base 1866e3b3; five paths, 302 insertions and no deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:1024 appends an -i flag followed by the path per figure before the resume subcommand, and line 1328 raises by lane name, so the plan carries the figures or refuses.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_launch_plan_attaches_images.py:54 reads the produced argv and the manifest records the gate green with its log, but the refusal test's native-harness parameter at line 100 reddens on a condition the image change does not touch.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff ce5081a6 against 1866e3b3 changes exactly the five declared write paths with 302 insertions and no deletions.\nSCORE durability: 17\nJUSTIFICATION durability: the declared negative control, the codex dialect ignoring its images argument, is recorded as reddening the flag-count assertion at tests/test_launch_plan_attaches_images.py:54 and raising for the resume-ordering case while the empty-tuple test stayed green, so the guard fires.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_backends.py:1781 extends launch_plan with images in the surrounding kwargs idiom, the helpers _lane and _refuse_images are named by mechanism, and the codex comment at line 1022 explains why -i must precede resume; no banned name appears.\nFINDING tests/test_launch_plan_attaches_images.py:100 the native-harness parameter passes because launch_plan refuses every in-harness backend at reckon/_backends.py:1787 before images are ever read, so this parameter would stay green even if the figure-handling change were reverted and is not a guard for the attachment; only the claude and clive parameters exercise the image path.\n",
+  "review_run_id": "r-20260923T083142273871-review-of-launch-plan-carries-images",
+  "reviewed_base_sha": "1866e3b3233ebca5e7a6c8ef9a9cc18996fca186",
+  "reviewed_head_sha": "ce5081a606acdb5502e6773f50f5f5d14fbaf2e0",
+  "reviewed_run_id": "r-20260923T055341375356-launch-plan-carries-images",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260923T083142273871-review-of-launch-plan-carries-images",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T08:55:00.000000+00:00",
+  "total": 91
+}

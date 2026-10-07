@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_one_automatic_repair_round_per_run.py::test_the_in_round_retry_still_works_in_round_one"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own gate logs and confirmed by independent re-run. baseline_suite (gate-base.log, revision 5f9d2bbb2) 27 passed EXIT=0; after_suite (gate-head.log, revision 01d1e10c) 1 failed, 30 passed EXIT=1. The one added failure is test_one_automatic_repair_round_per_run.py::test_the_in_round_retry_still_works_in_round_one, which passes at base and fails at the delivered head. The reviewer re-ran both arms from clean git-archive exports: base 27 passed EXIT=0 (gate-base-reviewer.log), delivered head 1 failed/30 passed EXIT=1 (gate-head-reviewer.log). The delivered change therefore adds one failure, against the done-when clause that the focused gate add no failure against the base.",
+  "backend": "local",
+  "base_log_revision": "5f9d2bbb2af386810d5b039dc1dac3ee3e80de43",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery.py:2175 _reviewed_run_refused_the_round: reads a refusal from the manifest's terminal status and its write time against the round's start, with the round token as corroboration",
+    "reckon/crew/recovery.py:2219 return written >= started.timestamp(): the freshness comparison, using a second-resolution start and a >= test, that misreads a pre-existing terminal manifest written in the same wall-clock second as the round's opening",
+    "reckon/crew/recovery.py:2146 return parse_utc(recorded.get(\"at\")): the second-resolution round start the comparison is made against",
+    "reckon/crew/recovery.py:2130 _repair_round_recorded_start: returns the round's recorded start or None for a record naming another round",
+    "reckon/crew/recovery.py:2149 _manifest_reports_round: token corroboration - this round's token, another round's, or none",
+    "reckon/crew/recovery.py:2904 the retry gate call site that reaches the guard only for a same-round, head-unmoved match"
+  ],
+  "completed_at": "2026-10-03T00:22:10.388Z",
+  "dispatched_at": "2026-10-03T00:06:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2219",
+      "severity": "blocking",
+      "text": "blocking: The delivered commit 01d1e10c fails its own focused gate. The freshness test compares the manifest mtime against the round's recorded start at second resolution (parse_utc(at).timestamp()) with a >= test, so a pre-existing terminal manifest written in the same wall-clock second as the round's opening reads as fresh and is misclassified as this round's refusal. tests/test_one_automatic_repair_round_per_run.py::test_the_in_round_retry_still_works_in_round_one creates a completed run (terminal manifest) and dispatches twice in round one; the second dispatch must resume again (resumed == 2) but the guard suppresses it (resumed == 1). Independently reproduced from a clean git-archive export: base 5f9d2bbb2 27 passed EXIT=0; delivered head 01d1e10c 1 failed, 30 passed, EXIT=1 (gate-head-reviewer.log). This violates the done-when clause that the focused gate add no failure against the base. The fix exists in the run's worktree but was never committed: replacing the second-resolution start with a nanosecond manifest baseline and a strict > comparison makes the full gate 31 passed EXIT=0 (gate-wt-recovery.log). The delivered artifact does not carry it."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2219",
+      "severity": "blocking",
+      "text": "blocking: The manifest's after_suite does not describe the delivered commit. It records exit_status 0, failure_count 0 and completed true with log_path gate-head.log, and its artifacts line quotes the gateway summary as '31 passed in 189.38s'. The file at the cited path reads '1 failed, 30 passed in 60.17s' with EXIT=1 and names the failing test; the quoted summary line appears nowhere in that log. The green figure corresponds to the run's uncommitted working-tree recovery.py, not to commit 01d1e10c: applying that uncommitted file to a clean head export yields 31 passed EXIT=0 (gate-wt-recovery.log), whereas the committed tree yields 1 failed EXIT=1 (gate-head-reviewer.log). A reader taking the manifest at face value would promote a commit whose own gate is red."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2130",
+      "severity": "follow-on",
+      "text": "follow-on: The reviewed run was killed mid-work (exit.json: exit_code 137, ended_during 'working, exited 2026-10-03T00:04:45Z) after its manifest was already written as complete at 01:59:41 local. Its worktree at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/a-refused-round-is-read-from-its-manifest carries an uncommitted 25-insertion/13-deletion edit to reckon/crew/recovery.py that reworks the freshness test onto a nanosecond manifest baseline (manifest_baseline_mtime_ns, falling back to the pointer's mtime, with a strict > test). That undelivered edit is the one that turns the delivered gate green. It is outside this review node's write scope; flagged under follow_ons so the coordinator can decide whether to resume the run, commit the fix, or redispatch."
+    }
+  ],
+  "head_log_revision": "01d1e10c638419a6147bb2e757731d9e4a5f09ec",
+  "item_verdicts": {
+    "diff": "Read the single commit 01d1e10c end to end. The change adds _manifest_reports_round and the freshness branch to _reviewed_run_refused_the_round, keeps the token as corroboration, and adds the four-case test file. No format sweep, no unrelated churn. The logic is sound except for the second-resolution >= comparison at recovery.py:2219, which is the regression.",
+    "done_when": "Not met. Clause 1 (guard reads terminal status + write time, no literal token) holds. Clause 2 (four cases covered) holds - the new file's four tests pass at head. Clause 3 (declared negative control turns the paraphrased case red) holds - reproduced, 1 failed / 3 passed EXIT=1, the paraphrased case red (negative-control-reviewer.log). Clause 4 (focused gate adds no failure against base) FAILS - base 27 passed EXIT=0, delivered head 1 failed / 30 passed EXIT=1. Clause 5 (manifest status complete) reads complete, but the manifest's head-arm evidence does not describe the delivered commit.",
+    "goal": "Partially met at the delivered head. _reviewed_run_refused_the_round (recovery.py:2175) no longer requires the literal token: it reads the manifest's terminal status and its write time against the round's recorded start, with _manifest_reports_round keeping the token as corroboration (a manifest quoting this round's token is a refusal; one quoting another round's is not). The four required cases in tests/test_a_refused_round_is_read_from_its_manifest.py pass at head. But the freshness comparison at recovery.py:2219 uses a second-resolution start and a >= test, which misclassifies a pre-existing terminal manifest written in the same second as the round's opening, regressing a neighbouring case the brief required to stay green.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T234029466224-a-refused-round-is-read-from-its-manifest/manifest.md: status complete, one commit (01d1e10c), baseline_suite and after_suite present as well-formed JSON with log paths, measurement_module and measurement_cwd recorded. baseline_suite matches its log (27 passed, 0 failures). after_suite does NOT match its log: it claims exit_status 0 and failure_count 0 while gate-head.log reads EXIT=1 with 1 failed / 30 passed, and its artifacts summary line is not in the cited log.",
+    "write_paths": "Only the two declared paths changed against the run's base: reckon/crew/recovery.py (+85/-12) and the new tests/test_a_refused_round_is_read_from_its_manifest.py (+248). No plan, sprint, or shared index file is touched. The run's worktree also holds an uncommitted edit to recovery.py that is not part of the delivered commit and is disclosed in the manifest's context only by its absence, not by a comment."
+  },
+  "justifications": {
+    "durability": "The four new tests plus the negative control are durable and reproduce, and the guard degrades toward the retry on an unreadable manifest. Deducted because the delivered commit is red on the suite that guards it, because a wall-clock second-resolution comparison is a fragile basis for a durable signal, and because the repair for that fragility sits uncommitted in the worktree.",
+    "evidence": "The run produced a base log, a head log, a negative-control log, and well-formed baseline_suite/after_suite JSON, and the negative control reproduces (1 failed / 3 passed EXIT=1). Deducted heavily because the headline evidence is false: after_suite claims a green head arm that the log at its own cited path shows to be red, and the green figure belongs to the run's uncommitted working tree rather than the delivered commit.",
+    "fit": "Reuses the module's own vocabulary and helpers (REPAIR_ROUND_TOKEN_LINE, parse_manifest, manifest_status_is_terminal, REPAIR_DISPATCH_FIELD), places the freshness branch beside the existing token corroboration, and comments state mechanism. No plan or ticket identifiers in code, names or comments.",
+    "goal_fidelity": "The wording-independent reading is implemented and its four cases pass, but its freshness comparison (recovery.py:2219) is wrong at second resolution and regresses the in-round retry, so the delivered artifact does not hold: the change reaches the goal's mechanism while breaking a behaviour the brief required to remain green.",
+    "scope_discipline": "Only the two declared paths changed and no shared state is touched; the change is free of unrelated churn. Deducted for the uncommitted recovery.py edit left in the worktree - undelivered work that is the difference between the manifest's claim and the delivered commit."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: partially met - refusal read from terminal status and write time with the token as corroboration (recovery.py:2175), but the freshness comparison at recovery.py:2219 uses a second-resolution start and >= and regresses the in-round retry.\nVERDICT done_when: NOT met - clause 4 fails; base 27 passed EXIT=0, delivered head 1 failed/30 passed EXIT=1 (test_the_in_round_retry_still_works_in_round_one); clauses 1, 2, 3 hold (four cases pass; negative control 1 failed/3 passed EXIT=1, paraphrased case red).\nVERDICT write_paths: only recovery.py and the new test file; no shared state; an uncommitted recovery.py edit left undelivered in the worktree.\nVERDICT manifest: read; status complete, one commit, well-formed suite JSON - but after_suite contradicts its own gate-head.log (claims exit 0 / 0 failures; log shows EXIT=1 / 1 failed).\nVERDICT diff: read end to end; clean, no churn; the single defect is the second-resolution >= freshness test.\nCALL_SITES: reckon/crew/recovery.py:2175, reckon/crew/recovery.py:2219, reckon/crew/recovery.py:2146, reckon/crew/recovery.py:2130, reckon/crew/recovery.py:2149, reckon/crew/recovery.py:2904\nSCORE goal_fidelity: 10\nJUSTIFICATION goal_fidelity: mechanism implemented and four cases pass, but the freshness comparison is wrong at second resolution and regresses the in-round retry.\nSCORE evidence: 6\nJUSTIFICATION evidence: base log, negative control and suite JSON present and reproducible, but after_suite misrepresents the delivered head and the quoted summary line is absent from its cited log.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: only the two declared paths changed, no shared state and no churn; deducted for the undelivered uncommitted edit.\nSCORE durability: 7\nJUSTIFICATION durability: durable tests and negative control, but the delivered commit is red on its own guard and rests on a fragile wall-clock comparison whose repair is uncommitted.\nSCORE fit: 13\nJUSTIFICATION fit: reuses module helpers and constant, placement and comments state mechanism.\nFINDING reckon/crew/recovery.py:2219 blocking: second-resolution >= freshness test misreads a same-second pre-existing terminal manifest as a refusal, failing test_the_in_round_retry_still_works_in_round_one (base 27 passed, head 1 failed/30 passed EXIT=1); the nanosecond-baseline fix is uncommitted.\nFINDING reckon/crew/recovery.py:2219 blocking: manifest after_suite claims exit 0 / 0 failures at gate-head.log, which reads EXIT=1 / 1 failed/30 passed; the green figure belongs to the uncommitted working tree, not the delivered commit.\nFINDING reckon/crew/recovery.py:2130 follow-on: the run was killed mid-work (exit 137) leaving an uncommitted recovery.py edit that turns the gate green; outside this node's write scope.",
+  "review_run_id": "r-20261003T000528520994-review-of-a-refused-round-is-read-from-its-manifest",
+  "reviewed_base_sha": "5f9d2bbb2af386810d5b039dc1dac3ee3e80de43",
+  "reviewed_head_sha": "01d1e10c638419a6147bb2e757731d9e4a5f09ec",
+  "reviewed_run_id": "r-20261002T234029466224-a-refused-round-is-read-from-its-manifest",
+  "reviewer": "review-of-a-refused-round-is-read-from-its-manifest",
+  "scores": {
+    "durability": 7,
+    "evidence": 6,
+    "fit": 13,
+    "goal_fidelity": 10,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.720414+00:00",
+  "total": 49
+}

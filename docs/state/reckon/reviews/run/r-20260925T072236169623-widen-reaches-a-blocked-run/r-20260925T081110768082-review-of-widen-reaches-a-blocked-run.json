@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:2980",
+    "reckon/cli.py:3027",
+    "reckon/cli.py:3049"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T08:11:10.768082+00:00",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "2975",
+      "text": "the comment at :2908-2910 and the docstring at :2967-2969 state that only a run that has stopped and stated a block may be widened, but the predicate widens whenever the fresh manifest reports blocked even with the phase still reading working, a combination no case covers, so either the stated invariant or the predicate needs the other's wording."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit at the reviewed head; bd10fb72 changes only widen eligibility and its comments in reckon/cli.py, 98 insertions against 20 deletions, and adds the 419-line test file, and 21f5c334 adds the plan paragraph, the evidence anchor and the figure with zero deletions in the two documents and no path outside the declared scope.",
+    "done_when": "the done_when names manifest-status eligibility, refusal of complete and failed manifests, an unchanged session id, an untouched pointer directory, a reddening mutation, and zero added failures; the six cases at tests/test_widen_reaches_a_blocked_run.py:291,316,342,363,382,399 assert those halves, and the two arm logs record 99 passed then 105 passed at exit 0.",
+    "goal": "the goal asks that crew widen accept a run whose manifest reports blocked after observe folded its pointer phase to complete; reckon/cli.py:2975 reads both accounts and tests/test_widen_reaches_a_blocked_run.py:291 drives the folded-phase state to acceptance with the declared write path landing on disk.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072236169623-widen-reaches-a-blocked-run/manifest.md; it reports the two commits, both gate arms with their logs, the declared mutation and its red log, 3 failed and 3 passed at exit 1, and the byte-identical restore of reckon/cli.py at a named sha256, and it carries status complete as a recognised word.",
+    "write_paths": "the manifest declares five paths and git diff --numstat against cdd0a1b0 lists exactly those five, the two commits bd10fb72 and 21f5c334 between them covering every changed line."
+  },
+  "justifications": {
+    "durability": "negative-control.log opens with the declared mutation verbatim and the run reddens exactly the named cases, 3 failed and 3 passed at exit 1, the acceptance case compares the run directory's bytes on disk rather than the payload it passed in, and the manifest records the byte-identical restore of reckon/cli.py at a named sha256.",
+    "evidence": "base-arm.log and after-arm.log each open with revision, tree, command, module file and cwd lines, and my independent re-run of the new test file at the reviewed head reproduced 6 passed at exit 0 with the reviewed worktree's own reckon module resolved, so the evidence a reader would rely on is real rather than asserted.",
+    "fit": "WIDENABLE_PHASE at :2911 and WIDEN_REFUSING_MANIFEST_STATUSES at :2915 name the mechanism rather than an incident, the private helpers at :2918 and :2953 match the widen command's surrounding idiom, and the one point where the stated invariant and the predicate disagree is recorded as the finding below.",
+    "goal_fidelity": "reckon/cli.py:2973 refuses a complete or failed manifest on its own and :2975 accepts the measured state, a phase folded to complete beside a fresh manifest reporting blocked, which is exactly the compound condition the goal names.",
+    "scope_discipline": "git diff against the base revision lists five files, all inside the write paths the manifest declares, and the cumulative evidence record gained 76 lines with zero deletions, so no peer's landed record was replaced."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: cdd0a1b069132a33951546213d40cdb34bb6a315\nreviewed_head_sha: 21f5c3348f3a1f73585895314e0cffd1a925a1af\n\nVERDICT goal: the goal asks that crew widen accept a run whose manifest reports blocked after observe folded its pointer phase to complete; reckon/cli.py:2975 reads both accounts and tests/test_widen_reaches_a_blocked_run.py:291 drives the folded-phase state to acceptance with the declared write path landing on disk.\nVERDICT done_when: the done_when names manifest-status eligibility, refusal of complete and failed manifests, an unchanged session id, an untouched pointer directory, a reddening mutation, and zero added failures; the six cases at tests/test_widen_reaches_a_blocked_run.py:291,316,342,363,382,399 assert those halves, and the two arm logs record 99 passed then 105 passed at exit 0.\nVERDICT write_paths: the manifest declares five paths and git diff --numstat against cdd0a1b0 lists exactly those five, the two commits bd10fb72 and 21f5c334 between them covering every changed line.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072236169623-widen-reaches-a-blocked-run/manifest.md; it reports the two commits, both gate arms with their logs, the declared mutation and its red log, 3 failed and 3 passed at exit 1, and the byte-identical restore of reckon/cli.py at a named sha256, and it carries status complete as a recognised word.\nVERDICT diff: read commit by commit at the reviewed head; bd10fb72 changes only widen eligibility and its comments in reckon/cli.py, 98 insertions against 20 deletions, and adds the 419-line test file, and 21f5c334 adds the plan paragraph, the evidence anchor and the figure with zero deletions in the two documents and no path outside the declared scope.\nCALL_SITES: reckon/cli.py:2980, reckon/cli.py:3027, reckon/cli.py:3049\nSCORE goal_fidelity: 19\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:2973 refuses a complete or failed manifest on its own and :2975 accepts the measured state, a phase folded to complete beside a fresh manifest reporting blocked, which is exactly the compound condition the goal names.\nJUSTIFICATION evidence: base-arm.log and after-arm.log each open with revision, tree, command, module file and cwd lines, and my independent re-run of the new test file at the reviewed head reproduced 6 passed at exit 0 with the reviewed worktree's own reckon module resolved, so the evidence a reader would rely on is real rather than asserted.\nJUSTIFICATION scope_discipline: git diff against the base revision lists five files, all inside the write paths the manifest declares, and the cumulative evidence record gained 76 lines with zero deletions, so no peer's landed record was replaced.\nJUSTIFICATION durability: negative-control.log opens with the declared mutation verbatim and the run reddens exactly the named cases, 3 failed and 3 passed at exit 1, the acceptance case compares the run directory's bytes on disk rather than the payload it passed in, and the manifest records the byte-identical restore of reckon/cli.py at a named sha256.\nJUSTIFICATION fit: WIDENABLE_PHASE at :2911 and WIDEN_REFUSING_MANIFEST_STATUSES at :2915 name the mechanism rather than an incident, the private helpers at :2918 and :2953 match the widen command's surrounding idiom, and the one point where the stated invariant and the predicate disagree is recorded as the finding below.\nFINDING reckon/cli.py:2975 the comment at :2908-2910 and the docstring at :2967-2969 state that only a run that has stopped and stated a block may be widened, but the predicate widens whenever the fresh manifest reports blocked even with the phase still reading working, a combination no case covers, so either the stated invariant or the predicate needs the other's wording.",
+  "review_run_id": "r-20260925T081110768082-review-of-widen-reaches-a-blocked-run",
+  "reviewed_base_sha": "cdd0a1b069132a33951546213d40cdb34bb6a315",
+  "reviewed_head_sha": "21f5c3348f3a1f73585895314e0cffd1a925a1af",
+  "reviewed_run_id": "r-20260925T072236169623-widen-reaches-a-blocked-run",
+  "reviewer": "review-of-widen-reaches-a-blocked-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T10:11:03.454636+00:00",
+  "total": 96
+}

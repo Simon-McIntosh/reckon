@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "none added: the reviewed run's base arm lists 4 failures, all of them the node's own new cases, and the head arm lists none.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1885",
+    "reckon/crew/promotion.py:3273",
+    "reckon/crew/promotion.py:3460"
+  ],
+  "completed_at": "2026-09-29T08:27:29.656Z",
+  "dispatched_at": "2026-09-29T07:09:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 1884,
+      "text": "the file-existence check this module promises is unreachable for the value that triggers it: parse_manifest turns the exact scalar changed_paths: none (or nil) into [], so the guard returns at its not-manifest.get(changed_paths) clause before _changed_paths_declare_no_paths (:1885) ever reaches _first_changed_path_is_a_file (:1757), whose docstring says a run that really changed a file called none or nil keeps the path and the run keeps the commit it names; four crew.complete arms over a repository that really changed a file named none, nil, n/a or -, with manifest changed_paths: <name> and commits: none, each promoted with no commit (DID NOT RAISE)."
+    },
+    {
+      "file": "gate-head.log",
+      "line": 5,
+      "text": "the command receipt names only tests/test_a_discard_never_reads_promoted.py and lets the remaining files follow as bare continuation lines, while the reviewed manifest's tests line (manifest.md:10) carries an angle-bracket placeholder around the same list (25 tests/test_*promot*.py + tests/test_cited_identifier_resolves.py), so the runnable command behind the recorded 249-passed gate is not reconstructible from either record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 658ba243: 046b3ae0 and 93edeb54 carry the promotion.py boundary split and its new cases in tests/test_commitless_review_promotes.py; be777cea adds the evidence fragment and its first figure; b8e7d1a9 reworks the fragment and replaces the figure with absence-boundaries-by-field.png.",
+    "done_when": "all four clauses hold through crew.complete in scratch copies: none.txt, nil.rs and -x.csv are each refused at head and at the dispatch base; the prose and punctuation shapes (none. review only; none, no repository change; the full-stop and comma cases) promote at head where they are red at base; a review declaring commits: none while changing nothing still promotes; and the declared mutation reddens the none.txt case first, then nil.rs (2 failed, 4 passed, 21 deselected).",
+    "goal": "the goal is to keep a commitless review's declaration reading safe: a changed_paths field that names a real repository file must be refused for the absent commit, while the word none followed by prose must still promote on a review. At head the reading is split into a path-shaped boundary (reckon/crew/promotion.py:503) and a file-existence check (:1757), composed by _changed_paths_declare_no_paths (:1786) and reached from _require_commit_for_changed_manifest (:1885) with its two further call sites at :3273 and :3460. My own crew.complete arms in copies of the head tree and of the dispatch base reproduce all four clauses of the brief.",
+    "manifest": "read whole at head: commits, changed_paths, landing, both gate logs, the negative control log and its note are present, and the control log's first line repeats the declared mutation verbatim; its tests line (manifest.md:10) carries an angle-bracket placeholder around the cited test files where the gate logs carry the real set.",
+    "write_paths": "git diff --name-status 658ba243..b8e7d1a9 lists exactly the four paths the manifest declares and no others: docs/evidence/fragments/the-audit-agrees-with-the-skill/commitless-changed-paths-reads-the-declaration.html and docs/figures/the-audit-agrees-with-the-skill/commitless-changed-paths-reads-the-declaration/absence-boundaries-by-field.png added, reckon/crew/promotion.py and tests/test_commitless_review_promotes.py modified."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens the none.txt and nil.rs cases (2 failed, 4 passed among the 6 targeted), so the tightened boundary is held by tests; the file-existence half of the fix is dead for the exact scalar form (finding 1), so that half of its stated behaviour is unproven.",
+    "evidence": "the gate reproduces: 27 passed on the node's own test file at head (23 passed, 4 failed with the dispatch-base source), 249 passed over the node's 26-file cited set, the declared mutation reddens none.txt first, and the store's own derivation over the run's two gate logs (added_failures_from_gate_logs) is 0 added failures against a base text that lists the node's 4 own cases; deduction: the receipt defects in finding 2.",
+    "fit": "the change follows the module's helper-and-docstring idiom and the helpers are named by mechanism (_opens_with_a_path_absence_word, _first_changed_path_is_a_file, _changed_paths_declare_no_paths, _commitless_raw_field); the commit subjects are type(scope) with bodies and the added source and cases carry no plan or ticket label.",
+    "goal_fidelity": "the three ordered readings at reckon/crew/promotion.py:1803-1807 put the file-existence evidence first and keep the commits field on its own permissive boundary (:585), which is the brief's intent; the deduction is that the first reading cannot fire for the exact value it names (finding 1).",
+    "scope_discipline": "git diff --name-status 658ba243..b8e7d1a9 is four paths and all four are declared; the figure replacement stays inside the declared figure directory for the same fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to keep a commitless review's declaration reading safe: a changed_paths field that names a real repository file must be refused for the absent commit, while the word none followed by prose must still promote on a review. At head the reading is split into a path-shaped boundary (reckon/crew/promotion.py:503) and a file-existence check (:1757), composed by _changed_paths_declare_no_paths (:1786) and reached from _require_commit_for_changed_manifest (:1885) with its two further call sites at :3273 and :3460. My own crew.complete arms in copies of the head tree and of the dispatch base reproduce all four clauses of the brief.\nVERDICT done_when: all four clauses hold through crew.complete in scratch copies: none.txt, nil.rs and -x.csv are each refused at head and at the dispatch base; the prose and punctuation shapes (none. review only; none, no repository change; the full-stop and comma cases) promote at head where they are red at base; a review declaring commits: none while changing nothing still promotes; and the declared mutation reddens the none.txt case first, then nil.rs (2 failed, 4 passed, 21 deselected).\nVERDICT write_paths: git diff --name-status 658ba243..b8e7d1a9 lists exactly the four paths the manifest declares and no others: docs/evidence/fragments/the-audit-agrees-with-the-skill/commitless-changed-paths-reads-the-declaration.html and docs/figures/the-audit-agrees-with-the-skill/commitless-changed-paths-reads-the-declaration/absence-boundaries-by-field.png added, reckon/crew/promotion.py and tests/test_commitless_review_promotes.py modified.\nVERDICT manifest: read whole at head: commits, changed_paths, landing, both gate logs, the negative control log and its note are present, and the control log's first line repeats the declared mutation verbatim; its tests line (manifest.md:10) carries an angle-bracket placeholder around the cited test files where the gate logs carry the real set.\nVERDICT diff: read commit by commit against 658ba243: 046b3ae0 and 93edeb54 carry the promotion.py boundary split and its new cases in tests/test_commitless_review_promotes.py; be777cea adds the evidence fragment and its first figure; b8e7d1a9 reworks the fragment and replaces the figure with absence-boundaries-by-field.png.\nCALL_SITES: reckon/crew/promotion.py:1885, reckon/crew/promotion.py:3273, reckon/crew/promotion.py:3460\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the three ordered readings at reckon/crew/promotion.py:1803-1807 put the file-existence evidence first and keep the commits field on its own permissive boundary (:585), which is the brief's intent; the deduction is that the first reading cannot fire for the exact value it names (finding 1).\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate reproduces: 27 passed on the node's own test file at head (23 passed, 4 failed with the dispatch-base source), 249 passed over the node's 26-file cited set, the declared mutation reddens none.txt first, and the store's own derivation over the run's two gate logs (added_failures_from_gate_logs) is 0 added failures against a base text that lists the node's 4 own cases; deduction: the receipt defects in finding 2.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-status 658ba243..b8e7d1a9 is four paths and all four are declared; the figure replacement stays inside the declared figure directory for the same fragment.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation reddens the none.txt and nil.rs cases (2 failed, 4 passed among the 6 targeted), so the tightened boundary is held by tests; the file-existence half of the fix is dead for the exact scalar form (finding 1), so that half of its stated behaviour is unproven.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's helper-and-docstring idiom and the helpers are named by mechanism (_opens_with_a_path_absence_word, _first_changed_path_is_a_file, _changed_paths_declare_no_paths, _commitless_raw_field); the commit subjects are type(scope) with bodies and the added source and cases carry no plan or ticket label.\nFINDING reckon/crew/promotion.py:1884 the file-existence check this module promises is unreachable for the value that triggers it: parse_manifest turns the exact scalar changed_paths: none (or nil) into [], so the guard returns at its not-manifest.get(changed_paths) clause before _changed_paths_declare_no_paths (:1885) ever reaches _first_changed_path_is_a_file (:1757), whose docstring says a run that really changed a file called none or nil keeps the path and the run keeps the commit it names; four crew.complete arms over a repository that really changed a file named none, nil, n/a or -, with manifest changed_paths: <name> and commits: none, each promoted with no commit (DID NOT RAISE).\nFINDING gate-head.log:5 the command receipt names only tests/test_a_discard_never_reads_promoted.py and lets the remaining files follow as bare continuation lines, while the reviewed manifest's tests line (manifest.md:10) carries an angle-bracket placeholder around the same list (25 tests/test_*promot*.py + tests/test_cited_identifier_resolves.py), so the runnable command behind the recorded 249-passed gate is not reconstructible from either record.",
+  "review_run_id": "r-20260929T070921196727-review-of-commitless-changed-paths-reads-the-declaration",
+  "reviewed_base_sha": "658ba2434729579b3c48d5476bedddf779fbc9c4",
+  "reviewed_head_sha": "b8e7d1a952083aa68ebce35fac82952832f65683",
+  "reviewed_run_id": "r-20260929T050438982778-commitless-changed-paths-reads-the-declaration",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T08:16:20.755261+00:00",
+  "total": 89
+}

@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken; left unmeasured rather than zero because that is what the reviewed run's own suite fields support, but the same question was measured directly on the run's own two arm gate logs, which agree: the base arm gate-bd231eff.log at bd231eff (6 passed, EXIT=0) and the after arm gate.log at fafbbe1f (6 passed, EXIT=0) differ by zero node ids. The reader was shown to see a failure known to be present before that zero was reported: it returns the two ids negative-control.log reports FAILED, and on synthesised pairs an added id gives count 1, a green pair 0 and a one-sided pair None. Script and log: added_failures_check.py, added_failures_check.log.",
+  "added_failures_source": {
+    "arm_logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101006957060-expired-follower-keeps-dispatching/gate-bd231eff.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101006957060-expired-follower-keeps-dispatching/gate.log"
+    ],
+    "direct_count": 0,
+    "direct_ids": [],
+    "known_present_control_ids": [
+      "tests/test_expired_follower_keeps_dispatching.py::test_dispatch_admits_a_released_follower_with_a_rearm_warning",
+      "tests/test_expired_follower_keeps_dispatching.py::test_dry_run_reports_the_released_follower_proceeding"
+    ],
+    "manifest_fields": {
+      "after_suite": "present and empty (manifest.md:22)",
+      "baseline_suite": "present and empty (manifest.md:21)"
+    }
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:1493",
+    "reckon/cli.py:1618",
+    "reckon/crew/recovery.py:1245",
+    "reckon/crew/dispatch.py:4365",
+    "reckon/crew/dispatch.py:3435"
+  ],
+  "completed_at": "2026-09-28T11:23:43.195Z",
+  "dispatched_at": "2026-09-28T10:58:05Z",
+  "findings": [
+    {
+      "file": "tests/test_expired_follower_keeps_dispatching.py",
+      "line": "248",
+      "text": "the file this change creates ends without a trailing newline, so it is the one new lint finding (W292) and the one new ruff-format failure at the reviewed head: with the repository's own configuration the three touched source and test paths report 7 findings at bd231eff and 8 at fafbbe1f, and `ruff format --check` reports 2 files to reformat at base against 3 at head, which the repository's stated rule that a commit adds no finding on its staged paths forbids; the fix is one appended newline (reproduce: `ruff check --no-cache --config <repo>/pyproject.toml` and `ruff format --check` on that path at fafbbe1f, log ruff-delta.log)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against bd231eff \u2014 ee6fb313 adds `_released_follower_warning` and `_watcher_delivery_admission`, wires the launching path at reckon/crew/dispatch.py:4365 and the validating path at :3435, adds `released`/`session_follower_released` to reckon/crew/runs.py, and adds the four-case test file; fafbbe1f appends the section landing record, the cumulative evidence entry and one figure, with `grep -c '^-[^-]'` over the evidence page at fafbbe1f returning 0 deletions.",
+    "done_when": "the done-when names the released case proceeding with the attach command in its warning and the never-registered case refused, each through a real dispatch and through plan_dispatch; tests/test_expired_follower_keeps_dispatching.py:133 and :170 assert the pair through `dispatch` with a genuinely running registered watcher process, :200 and :227 the same pair through `plan_dispatch`, the manifest records the gate at fafbbe1f as 6 passed exit 0, and my own re-run at the reviewed head reproduced 6 passed EXIT=0; the one caveat is that \"a dry run\" is satisfied at the plan_dispatch level the done-when names, not through `reckon crew dispatch --dry-run`, whose call site forwards neither session nor watch_required.",
+    "goal": "the node's goal is that a session whose follower expired keeps dispatching with a re-arm warning, and the landed change is exactly that split \u2014 reckon/crew/runs.py:2143 reports `released` only where a registration file survives with a free advisory lock, reckon/crew/dispatch.py:985 `_watcher_delivery_admission` admits that case while refusing the never-registered one, and reckon/crew/dispatch.py:970 puts the paste-ready attach command in the warning text.",
+    "manifest": "read; it records the gate command, its log paths, the module and cwd of the scratch base-arm run, the reason cli.py was left to its owning node, the pre-existing follow-session failure reproduced identically at base bd231eff in a scratch tree, and a declared negative control whose log's first line repeats the mutation verbatim.",
+    "write_paths": "the manifest declares seven paths and `git diff --name-only bd231eff..fafbbe1f` names six, every one inside the declaration, with the declared tests/test_crew_dispatch_watcher_required.py left untouched as it was already green."
+  },
+  "justifications": {
+    "durability": "reinstating the regression twice reddens exactly the two released cases and no others \u2014 the node's own mutation at reckon/crew/dispatch.py:1010 (negative-control.log, 2 failed) and mine on the flag at reckon/crew/runs.py:2298 (mutation-control-released-flag.log, 2 failed / 2 passed) \u2014 so the two cases that carry the clause each have an assertion that fires.",
+    "evidence": "the gate is recorded with revision, command, module and cwd and reproduced here at 6 passed EXIT=0, but the expected attach line the assertion compares against is produced by the same function the warning text came from (reckon/crew/runs.py:2161 `_watch_attach_line`), so a defect there would keep both sides green.",
+    "fit": "the names are mechanism-named and the two helpers sit beside the watcher code they serve, but the file the change adds ends without a trailing newline at tests/test_expired_follower_keeps_dispatching.py:248 and is the single new lint finding and format failure the reviewed head carries.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1010 refuses only a session with no registration to release, so a released session proceeds while the never-registered one is still refused, which is the section's deliverable, though the dry-run half stays unreachable from the command at reckon/cli.py:1425.",
+    "scope_discipline": "all six paths in the diff are inside the declared write paths and the concurrent node's reckon/cli.py was left alone rather than edited outside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a session whose follower expired keeps dispatching with a re-arm warning, and the landed change is exactly that split \u2014 reckon/crew/runs.py:2143 reports `released` only where a registration file survives with a free advisory lock, reckon/crew/dispatch.py:985 `_watcher_delivery_admission` admits that case while refusing the never-registered one, and reckon/crew/dispatch.py:970 puts the paste-ready attach command in the warning text.\nVERDICT done_when: the done-when names the released case proceeding with the attach command in its warning and the never-registered case refused, each through a real dispatch and through plan_dispatch; tests/test_expired_follower_keeps_dispatching.py:133 and :170 assert the pair through `dispatch` with a genuinely running registered watcher process, :200 and :227 the same pair through `plan_dispatch`, the manifest records the gate at fafbbe1f as 6 passed exit 0, and my own re-run at the reviewed head reproduced 6 passed EXIT=0; the one caveat is that \"a dry run\" is satisfied at the plan_dispatch level the done-when names, not through `reckon crew dispatch --dry-run`, whose call site forwards neither session nor watch_required.\nVERDICT write_paths: the manifest declares seven paths and `git diff --name-only bd231eff..fafbbe1f` names six, every one inside the declaration, with the declared tests/test_crew_dispatch_watcher_required.py left untouched as it was already green.\nVERDICT manifest: read; it records the gate command, its log paths, the module and cwd of the scratch base-arm run, the reason cli.py was left to its owning node, the pre-existing follow-session failure reproduced identically at base bd231eff in a scratch tree, and a declared negative control whose log's first line repeats the mutation verbatim.\nVERDICT diff: read commit by commit against bd231eff \u2014 ee6fb313 adds `_released_follower_warning` and `_watcher_delivery_admission`, wires the launching path at reckon/crew/dispatch.py:4365 and the validating path at :3435, adds `released`/`session_follower_released` to reckon/crew/runs.py, and adds the four-case test file; fafbbe1f appends the section landing record, the cumulative evidence entry and one figure, with `grep -c '^-[^-]'` over the evidence page at fafbbe1f returning 0 deletions.\nCALL_SITES: reckon/cli.py:1493, reckon/cli.py:1618, reckon/crew/recovery.py:1245, reckon/crew/dispatch.py:4365, reckon/crew/dispatch.py:3435\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1010 refuses only a session with no registration to release, so a released session proceeds while the never-registered one is still refused, which is the section's deliverable, though the dry-run half stays unreachable from the command at reckon/cli.py:1425.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded with revision, command, module and cwd and reproduced here at 6 passed EXIT=0, but the expected attach line the assertion compares against is produced by the same function the warning text came from (reckon/crew/runs.py:2161 `_watch_attach_line`), so a defect there would keep both sides green.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all six paths in the diff are inside the declared write paths and the concurrent node's reckon/cli.py was left alone rather than edited outside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression twice reddens exactly the two released cases and no others \u2014 the node's own mutation at reckon/crew/dispatch.py:1010 (negative-control.log, 2 failed) and mine on the flag at reckon/crew/runs.py:2298 (mutation-control-released-flag.log, 2 failed / 2 passed) \u2014 so the two cases that carry the clause each have an assertion that fires.\nSCORE fit: 17\nJUSTIFICATION fit: the names are mechanism-named and the two helpers sit beside the watcher code they serve, but the file the change adds ends without a trailing newline at tests/test_expired_follower_keeps_dispatching.py:248 and is the single new lint finding and format failure the reviewed head carries.\nFINDING tests/test_expired_follower_keeps_dispatching.py:248 the file this change creates ends without a trailing newline, so it is the one new lint finding (W292) and the one new ruff-format failure at the reviewed head: with the repository's own configuration the three touched source and test paths report 7 findings at bd231eff and 8 at fafbbe1f, and `ruff format --check` reports 2 files to reformat at base against 3 at head, which the repository's stated rule that a commit adds no finding on its staged paths forbids; the fix is one appended newline (reproduce: `ruff check --no-cache --config <repo>/pyproject.toml` and `ruff format --check` on that path at fafbbe1f, log ruff-delta.log).",
+  "review_run_id": "r-20260928T105748972956-review-of-expired-follower-keeps-dispatching",
+  "reviewed_base_sha": "bd231eff5e9a20879e5a8ea54094cfd46ffe79c0",
+  "reviewed_head_sha": "fafbbe1f8ac8ef3e51bdb7747957183baddc8c79",
+  "reviewed_run_id": "r-20260928T101006957060-expired-follower-keeps-dispatching",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T11:17:03.945133+00:00",
+  "total": 90
+}

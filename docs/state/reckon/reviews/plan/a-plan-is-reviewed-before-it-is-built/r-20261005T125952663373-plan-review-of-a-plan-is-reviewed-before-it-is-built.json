@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:03:44.958Z",
+  "dispatched_at": "2026-10-05T13:00:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:932",
+      "id": "duplicate_owner-1",
+      "reason": "without naming the body-extent owner, the design's central guarantee (digest span equals collapse span) is unverifiable and the walk risks a second definition of where an authored section ends.",
+      "text": "\u00a716's premise is that \"a section's digest covers exactly the span the collapse replaces\", but it names `_section_heading` (which returns the heading extent, not the body end) and `landed_section_ids` (the landed-card recogniser) as the pair the per-section walk reuses. The owner of an authored section's body end is `_section_body_end`; `_collapse_authored_section` derives the replaced span as `(open_start, _section_body_end(html_text, body_start))`. A per-section digest built on the named pair will end at the heading or at a naive next-heading scan, not at the collapse's span, so the digest can move on a landing it was meant to ignore \u2014 the exact failure \u00a716 exists to repair. The plan should name and extend `_section_body_end` as the extent owner rather than leave the boundary to be re-derived.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0dff146270c364cc2db1e12b06e324d2a2407f00f432416cd2f573462edb7816",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T125952663373-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "14f5617b1aa72d4052a3112c77156f3756aaf38f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design hides per-section digesting, the coverage question and the legacy-form widening behind the existing `plan_fingerprint` identity and one new coverage predicate, which the gate and the sweep both read rather than each re-deriving.",
+    "duplicate_owner": "a finding \u2014 the plan names `_section_heading` and `landed_section_ids` as the extent recognisers, but the span a landing collapse actually replaces for an authored section is computed by `_section_body_end`, which the plan does not name.",
+    "interface_budget": "public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23 \u2014 pass. \u00a716 states in its own text that one public definition is added (the coverage predicate), that nothing is retired because the identity digest and the prose walk keep their names and gain a mode, and that the refusal reuses the existing plan-review-missing family, so no refusal family is added. It accounts for its added surface as the item requires.",
+    "reuse_search": "pass \u2014 \u00a716 names the existing owners it extends and every one resolves: `plan_fingerprint` and `_authored_prose` in `reckon/crew/plan_review.py`, `_authored_section_headings` in `reckon/mcp_views.py`, `_section_heading`/`landed_section_ids` in `reckon/_store.py`, and `_fingerprint_forms` as the legacy-form mechanism it widens.",
+    "thin_wrapper": "pass \u2014 the change is an extension (a mode and an added form) of machinery that already owns the digest and the extent recognisers, not a parallel layer over it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.936431+00:00"
+}

@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger"
+  ],
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_claim_node_dispatch"
+  ],
+  "completed_at": "2026-10-03T09:38:39.755Z",
+  "dispatched_at": "2026-10-03T09:32:21Z",
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": "999",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded head arm adds tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger over base; it passes serially at head and is not attributable to this node's commits, but it makes the -n 8 gate noisy enough that the done_when's no-added-id clause cannot be met there."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against c7664e4; 44 lines in dispatch.py, 84 in the test file, 29 in the fragment, all inside the declared scope.",
+    "done_when": "the done_when names three cases in tests/test_concurrent_dispatch_of_one_node.py plus no added head-arm failure id; the manifest records both gate arms and the negative control.",
+    "goal": "the node's goal is that a corrupt or empty node claim refuses rather than crashes or wedges; reckon/crew/dispatch.py:1656 now catches OverflowError and :1664 adds _empty_claim_is_stale.",
+    "manifest": "read; it records the base arm (902 passed, 1 skipped, 4 failed) and the head arm (903 passed, 1 skipped, 3 failed) with one added id named.",
+    "write_paths": "read the manifest's declared paths; the diff's three files are all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_concurrent_dispatch_of_one_node.py:400, :444 and :465 redden when the OverflowError catch or the staleness bound is reverted, and the declared mutation reddens the fresh case with 1 failed EXIT=1 in logs/negative-control.log.",
+    "evidence": "both gate arms are recorded with literal commands and completed true in logs/base-arm.log and logs/head-arm-extraction.log, but the recorded head arm adds one id over base (tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger), so the done_when's no-added-id clause is unmet under -n 8.",
+    "fit": "the new constant and helper at reckon/crew/dispatch.py:1601 and :1664 follow the module's named-constant and mechanism-comment idiom with no banned name.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1656 treats an out-of-range pid as an unanswerable record and :1664 reclaims an aged empty claim so neither crashes nor wedges.",
+    "scope_discipline": "the diff touches only reckon/crew/dispatch.py, tests/test_concurrent_dispatch_of_one_node.py and the node's evidence fragment, all listed in the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a corrupt or empty node claim refuses rather than crashes or wedges; reckon/crew/dispatch.py:1656 now catches OverflowError and :1664 adds _empty_claim_is_stale.\nVERDICT done_when: the done_when names three cases in tests/test_concurrent_dispatch_of_one_node.py plus no added head-arm failure id; the manifest records both gate arms and the negative control.\nVERDICT write_paths: read the manifest's declared paths; the diff's three files are all inside them.\nVERDICT manifest: read; it records the base arm (902 passed, 1 skipped, 4 failed) and the head arm (903 passed, 1 skipped, 3 failed) with one added id named.\nVERDICT diff: read commit by commit against c7664e4; 44 lines in dispatch.py, 84 in the test file, 29 in the fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:_claim_node_dispatch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1656 treats an out-of-range pid as an unanswerable record and :1664 reclaims an aged empty claim so neither crashes nor wedges.\nSCORE evidence: 16\nJUSTIFICATION evidence: both gate arms are recorded with literal commands and completed true in logs/base-arm.log and logs/head-arm-extraction.log, but the recorded head arm adds one id over base (tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger), so the done_when's no-added-id clause is unmet under -n 8.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/dispatch.py, tests/test_concurrent_dispatch_of_one_node.py and the node's evidence fragment, all listed in the manifest's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_concurrent_dispatch_of_one_node.py:400, :444 and :465 redden when the OverflowError catch or the staleness bound is reverted, and the declared mutation reddens the fresh case with 1 failed EXIT=1 in logs/negative-control.log.\nSCORE fit: 20\nJUSTIFICATION fit: the new constant and helper at reckon/crew/dispatch.py:1601 and :1664 follow the module's named-constant and mechanism-comment idiom with no banned name.\nFINDING tests/test_crew.py:999 follow-on: the recorded head arm adds tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger over base; it passes serially at head and is not attributable to this node's commits, but it makes the -n 8 gate noisy enough that the done_when's no-added-id clause cannot be met there.\n",
+  "review_run_id": "r-20261003T093152303778-review-of-node-claim-survives-a-corrupt-record",
+  "reviewed_base": "c7664e486029b91ee215b0598e9bce9787652c9f",
+  "reviewed_base_sha": "c7664e486029b91ee215b0598e9bce9787652c9f",
+  "reviewed_commit": "209942ea8cb87db657e695be845b63c107a686a5",
+  "reviewed_head_sha": "209942ea8cb87db657e695be845b63c107a686a5",
+  "reviewed_run_id": "r-20261003T083128518544-node-claim-survives-a-corrupt-record",
+  "scores": {
+    "durability": 20,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T09:37:32.501435+00:00",
+  "total": 96
+}

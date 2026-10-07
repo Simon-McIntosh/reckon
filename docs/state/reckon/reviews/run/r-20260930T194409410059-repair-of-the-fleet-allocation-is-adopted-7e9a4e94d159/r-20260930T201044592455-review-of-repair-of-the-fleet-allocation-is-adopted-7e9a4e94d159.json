@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived by the review from the reviewed run's own two retained gate logs \u2014 the base-state arm (negative-control-unrunnable-client.log, where the new case reddens with FileNotFoundError once the guard is reverted) and the after arm (focused.log, 5 passed, 0 failed) \u2014 so added = 0 with no ids; the reviewed manifest names no baseline_suite/after_suite field, so reckon.crew.review.read_review will re-derive the count as unmeasured unless the reviewed manifest is repaired.",
+  "added_failures_source": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159/negative-control-unrunnable-client.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159/focused.log"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/placement.py:545"
+  ],
+  "completed_at": "2026-09-30T20:27:15.371Z",
+  "dispatched_at": "2026-09-30T20:11:00Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159/manifest.md",
+      "line": "11",
+      "text": "the reviewed manifest names no baseline_suite or after_suite field, so the store's read-time added-failure derivation (keyed on those fields) reports the count unmeasured for this run; the two arm logs appear only under test_logs."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159/focused.log",
+      "line": "1",
+      "text": "the head-arm gate log's first line reads `revision: 7e9a4e94d159...` while the tree it measured held the new case the head adds (5 tests exist only at head), so the arm log's recorded revision does not name the tree it measured and a reader cannot tie the count to a commit."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-shares-one-allocation/the-fleet-allocation-is-adopted.html",
+      "line": "24",
+      "text": "the committed landing fragment states the population as \"base 247 passed and 1 pre-existing failure ... head 251 passed and the same 1\", contradicted by the reviewed run's own retained logs and the source run's baseline_suite/after_suite (population-base-n8.log 248 passed 0 failed, population-head-n8.log 252 passed 0 failed); this is finding f52548ef35a, declined by this repair as outside its write scope and still unfixed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the pair at head 1d7d0d0 against base 7e9a4e94d: 9a1e6b4d6 (2 files, +38/-2) widens the adoption except clause at placement.py:494 and adds one case to tests/test_the_fleet_allocation_is_adopted.py that drives an unrunnable squeue through an injected runner; 1d7d0d0 (1 file, +28) adds the landing fragment. No unrelated edits.",
+    "done_when": "the declared measure is that the new case reddens without the fix and the focused file is green at head. Reproduced independently in scratch tree /tmp/rv-head (module under test /tmp/rv-head/reckon/crew/placement.py): the head arm, tests/test_the_fleet_allocation_is_adopted.py, reads \"5 passed\" EXIT=0, and the negative control (the adoption except narrowed back to FleetNodeError only) fails the new case with FileNotFoundError escaping query_jobs, EXIT=1. The manifest names every finding by id: `acted f1c8d42239a: 9a1e6b4d6...` and `declined f52548ef35a: <reason>`. Met.",
+    "goal": "the reviewed node was dispatched to repair two findings on r-20260930T183252811855 (f1c8d42239a, f52548ef35a). It acts on f1c8d42239a by widening the adoption guard at reckon/crew/placement.py:494 to catch (FleetNodeError, OSError, SubprocessError), so a missing or unrunnable squeue reads as no adoption and the mint branch holds the reservation, matching the wrap the adjacent mint call already applies at placement.py:558; and it declines f52548ef35a because the fragment it names is outside this node's declared write scope, which the node's own done_when permits (a finding answered by id, or declined with a reason). The goal is met.",
+    "manifest": "read; it names the commits, the mechanism, the focused-gate and negative-control figures, and every finding by id. It names no `baseline_suite` or `after_suite` field \u2014 the gate logs appear only under test_logs \u2014 so the store's read-time added-failure derivation (reckon.crew.review.read_review) reports the count unmeasured for this run; recorded below as a finding.",
+    "write_paths": "the manifest declares four write paths; the change touches three \u2014 reckon/crew/placement.py, tests/test_the_fleet_allocation_is_adopted.py, and the new evidence fragment docs/evidence/fragments/the-fleet-shares-one-allocation/repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159.html \u2014 all inside the grant; the figures path is unused, which is not a violation. The manifest records that an out-of-scope edit to the adoption fragment was made and then undone with the history rewritten to two commits; the net diff at 1d7d0d0 carries only the three in-scope paths, and no plan, index or sprint file is edited."
+  },
+  "justifications": {
+    "durability": "the change is a one-clause widening of the guard that mirrors the mint branch's own exception set, adds no state, and is pinned by a case that drives the unrunnable client through the same injected runner seam the other cases use; the new case isolates crew and fleet state under tmp_path.",
+    "evidence": "both arms and the declared mutation reproduce independently, but the manifest names no baseline_suite/after_suite so the store's read-time derivation reports the added-failure count unmeasured, and the head-arm log focused.log's first line names a revision the tree it measured did not hold.",
+    "fit": "the change and its docstring are named by mechanism with no plan or version token, and the new case follows the file's injected-runner pattern; one point off because the answering commit's body names `ensure_resources`, a function that does not exist where the guarded call is ensure_reservation.",
+    "goal_fidelity": "the fix does what f1c8d42239a asked \u2014 placement.py:494 now catches (FleetNodeError, OSError, SubprocessError) beside FleetNodeError, the same set the mint branch wraps at placement.py:558, verified red at the pre-fix state and green at head \u2014 and f52548ef35a is declined with a correct scope reason; one point off because the section's landing fragment still carries population figures the retained logs contradict, left unfixed for want of a grant covering that path.",
+    "scope_discipline": "the net diff is three files, all inside the declared grant, with no plan, index or sprint edit \u2014 but the record shows an out-of-scope write to the adoption fragment was made and then undone with the history rewritten to two commits, an excursion the node self-reported."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 7e9a4e94d159092cc0b6a66d1eb83248ba105c91\nreviewed_head_sha: 1d7d0d0cae00218c1d48059ccf38f1e2d0b92f19\nVERDICT goal: the reviewed node was dispatched to repair two findings on r-20260930T183252811855 (f1c8d42239a, f52548ef35a). It acts on f1c8d42239a by widening the adoption guard at reckon/crew/placement.py:494 to catch (FleetNodeError, OSError, SubprocessError), so a missing or unrunnable squeue reads as no adoption and the mint branch holds the reservation, matching the wrap the adjacent mint call already applies at placement.py:558; and it declines f52548ef35a because the fragment it names is outside this node's declared write scope, which the node's own done_when permits (a finding answered by id, or declined with a reason). The goal is met.\nVERDICT done_when: the declared measure is that the new case reddens without the fix and the focused file is green at head. Reproduced independently in scratch tree /tmp/rv-head (module under test /tmp/rv-head/reckon/crew/placement.py): the head arm, tests/test_the_fleet_allocation_is_adopted.py, reads \"5 passed\" EXIT=0, and the negative control (the adoption except narrowed back to FleetNodeError only) fails the new case with FileNotFoundError escaping query_jobs, EXIT=1. The manifest names every finding by id: `acted f1c8d42239a: 9a1e6b4d6...` and `declined f52548ef35a: <reason>`. Met.\nVERDICT write_paths: the manifest declares four write paths; the change touches three \u2014 reckon/crew/placement.py, tests/test_the_fleet_allocation_is_adopted.py, and the new evidence fragment docs/evidence/fragments/the-fleet-shares-one-allocation/repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159.html \u2014 all inside the grant; the figures path is unused, which is not a violation. The manifest records that an out-of-scope edit to the adoption fragment was made and then undone with the history rewritten to two commits; the net diff at 1d7d0d0 carries only the three in-scope paths, and no plan, index or sprint file is edited.\nVERDICT manifest: read; it names the commits, the mechanism, the focused-gate and negative-control figures, and every finding by id. It names no `baseline_suite` or `after_suite` field \u2014 the gate logs appear only under test_logs \u2014 so the store's read-time added-failure derivation (reckon.crew.review.read_review) reports the count unmeasured for this run; recorded below as a finding.\nVERDICT diff: read the pair at head 1d7d0d0 against base 7e9a4e94d: 9a1e6b4d6 (2 files, +38/-2) widens the adoption except clause at placement.py:494 and adds one case to tests/test_the_fleet_allocation_is_adopted.py that drives an unrunnable squeue through an injected runner; 1d7d0d0 (1 file, +28) adds the landing fragment. No unrelated edits.\nCALL_SITES: reckon/crew/placement.py:545\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the fix does what f1c8d42239a asked \u2014 placement.py:494 now catches (FleetNodeError, OSError, SubprocessError) beside FleetNodeError, the same set the mint branch wraps at placement.py:558, verified red at the pre-fix state and green at head \u2014 and f52548ef35a is declined with a correct scope reason; one point off because the section's landing fragment still carries population figures the retained logs contradict, left unfixed for want of a grant covering that path.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms and the declared mutation reproduce independently, but the manifest names no baseline_suite/after_suite so the store's read-time derivation reports the added-failure count unmeasured, and the head-arm log focused.log's first line names a revision the tree it measured did not hold.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the net diff is three files, all inside the declared grant, with no plan, index or sprint edit \u2014 but the record shows an out-of-scope write to the adoption fragment was made and then undone with the history rewritten to two commits, an excursion the node self-reported.\nSCORE durability: 18\nJUSTIFICATION durability: the change is a one-clause widening of the guard that mirrors the mint branch's own exception set, adds no state, and is pinned by a case that drives the unrunnable client through the same injected runner seam the other cases use; the new case isolates crew and fleet state under tmp_path.\nSCORE fit: 19\nJUSTIFICATION fit: the change and its docstring are named by mechanism with no plan or version token, and the new case follows the file's injected-runner pattern; one point off because the answering commit's body names `ensure_resources`, a function that does not exist where the guarded call is ensure_reservation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159/manifest.md:11 the reviewed manifest names no baseline_suite or after_suite field, so the store's read-time added-failure derivation (keyed on those fields) reports the count unmeasured for this run; the two arm logs appear only under test_logs.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159/focused.log:1 the head-arm gate log's first line reads `revision: 7e9a4e94d159...` while the tree it measured held the new case the head adds (5 tests exist only at head), so the arm log's recorded revision does not name the tree it measured and a reader cannot tie the count to a commit.\nFINDING docs/evidence/fragments/the-fleet-shares-one-allocation/the-fleet-allocation-is-adopted.html:24 the committed landing fragment states the population as \"base 247 passed and 1 pre-existing failure ... head 251 passed and the same 1\", contradicted by the reviewed run's own retained logs and the source run's baseline_suite/after_suite (population-base-n8.log 248 passed 0 failed, population-head-n8.log 252 passed 0 failed); this is finding f52548ef35a, declined by this repair as outside its write scope and still unfixed.\n",
+  "review_run_id": "r-20260930T201044592455-review-of-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159",
+  "reviewed_base_sha": "7e9a4e94d159092cc0b6a66d1eb83248ba105c91",
+  "reviewed_head_sha": "1d7d0d0cae00218c1d48059ccf38f1e2d0b92f19",
+  "reviewed_run_id": "r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260930T201044592455-review-of-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T20:26:02.637425+00:00",
+  "total": 90
+}

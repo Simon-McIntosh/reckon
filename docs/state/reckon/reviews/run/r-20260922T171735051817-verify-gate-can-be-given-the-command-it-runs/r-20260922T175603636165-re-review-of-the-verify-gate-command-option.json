@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 2,
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:3225",
+    "reckon/crew/promotion.py:794"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T17:56:03.636165+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 37de7907; e4209d1a adds the option, the selection with gate_command_source, the four CLI cases and the figure, b4dcb3de adds the plan landing comment and the anchor section with one plan-verifies meta line extended rather than trimmed, and bb6f6735 corrects the two docs receipts keeping each original sentence beside its correction, touching no code or test.",
+    "done_when": "every clause holds at the corrected head \u2014 I re-ran tests/test_verify_gate_command_option.py against the reviewed worktree myself (4 passed, EXIT=0, with the interpreter's cwd neutralised and reckon.__file__ printed from that tree), the five failure ids in cohort-base.log and cohort-head.log match one for one once the base tree's /tmp prefix is normalised, my own scratch reproduction of the declared mutation reddens exactly the three option-dependent cases (3 failed, 1 passed, EXIT=1), and negative-control.log:1 is byte-equal to the run's declared mutation.",
+    "goal": "the goal is a crew verify-gate option supplying the command it runs; reckon/cli.py:3195 declares --command, reckon/cli.py:3225 hands it to record_gate_rerun_at_integrated_revision and reckon/crew/promotion.py:794 forwards it into rerun_gate_at_integrated_revision, where promotion.py:672 selects `command = supplied or stored_command`, and at bb6f6735 `crew verify-gate --help` invoked through CliRunner lists --command.",
+    "manifest": "read at the corrected state; status complete with commits e4209d1a, b4dcb3de and bb6f6735; its negative_control_note now describes the corrected receipt and agrees with the log's own bytes, and baseline_suite and after_suite carry identical five-id failure sets at 102 and 106 passes.",
+    "write_paths": "git diff --numstat 37de7907..bb6f6735 lists exactly the six declared paths \u2014 reckon/cli.py 19/1, reckon/crew/promotion.py 20/1, tests/test_verify_gate_command_option.py 188/0, docs/plans/work-does-not-fall-to-the-coordinator.html 3/0, docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html 100/1, docs/figures/work-does-not-fall-to-the-coordinator/verify-gate-command-selection.svg 52/0 \u2014 and the corrected head differs from the previously reviewed b4dcb3de only in the two docs files."
+  },
+  "justifications": {
+    "durability": "the four cases enter through CliRunner at the verb and prove execution by marker files (tests/test_verify_gate_command_option.py:128) rather than by the report's own fields, and the mutation reddens exactly the three option-dependent cases; a supplied empty string falling back to the stored command remains the one path unasserted.",
+    "evidence": "I reproduced both halves of the measure at bb6f6735 \u2014 the gate green (4 passed) and the declared mutation red (3 failed, 1 passed) \u2014 and promotion's own _require_declared_negative_control on this run's pointer and parsed manifest returns matched against a log whose first line is byte-equal to node.negative_control, while the same guard refuses a scratch log whose first line differs.",
+    "fit": "the option follows the verb's existing @click.option idiom (reckon/cli.py:3195), the selection carries a mechanism docstring (reckon/crew/promotion.py:657) and the new names and comments carry no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:672 runs `command = supplied or stored_command`, so the submitted command wins when non-empty, and reckon/cli.py:3195 declares the option the verb's help lists at bb6f6735.",
+    "scope_discipline": "git diff --numstat 37de7907..bb6f6735 lists exactly the six declared paths, the correction confined to the two docs files and the base log's failure ids untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "prior_findings": [
+    {
+      "dispositions": [
+        {
+          "claim": "the first line is a code-level restatement while the node declares a prose mutation, so promotion's guard would refuse the log as a failure for some other reason",
+          "disposition": "cleared",
+          "evidence": "at bb6f6735 negative-control.log:1 compares equal as an exact string to node.negative_control on this run's live pointer, and promotion._require_declared_negative_control over that pointer and the parsed manifest returns verdict matched with resolved_log naming the run-directory log; the same guard raises CrewError against a scratch copy whose first line is an unrelated MUTATION line, so the clearing rests on a check shown to fire, and the code-level restatement is retained beneath the declaration, where it names the exact edit the red run exercised",
+          "finding": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T171735051817-verify-gate-can-be-given-the-command-it-runs/negative-control.log:1"
+        },
+        {
+          "claim": "the landing comment claims the mutation is stated verbatim on the log's first line, which was false on the log's own bytes",
+          "disposition": "cleared",
+          "evidence": "at bb6f6735 the comment keeps the original sentence and states beside it that it was false when written, naming the withheld declaration and the resumed repair; the sentence is now true as written because the log's first line holds the declared string, compared byte-for-byte rather than by eye (docs/plans/work-does-not-fall-to-the-coordinator.html:831)",
+          "finding": "docs/plans/work-does-not-fall-to-the-coordinator.html:1041"
+        },
+        {
+          "claim": "the cumulative anchor repeats the same false claim beside a table recording the mutation as a passed measure",
+          "disposition": "cleared",
+          "evidence": "at bb6f6735 the sentence reads 'reckon/crew/promotion.py was restored byte-identically afterwards (empty diff), and the selection line reads command = supplied or stored_command again at promotion.py:672', followed by a correction paragraph recording that the receipt named a property it did not hold (docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1914-1937); the committed head carries zero matches for the bare mutated form and promotion.py:672 reads the selection again",
+          "finding": "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1917"
+        },
+        {
+          "claim": "the dispatched contract requires the red log's first line to repeat the declared mutation verbatim while the declaration was never supplied to the worker, making the clause unsatisfiable as dispatched",
+          "disposition": "cleared",
+          "evidence": "the section 11 landing now interpolates the declaration \u2014 reckon/crew/prompts.py:157 _negative_control_declaration renders it verbatim at prompts.py:347 \u2014 measured two-sided across the eight live runs that declare a mutation: exactly the two dispatched after the landing carry their declared string in prompt.txt (r-20260922T174207473018, r-20260922T175926155312) and the six earlier ones do not, this run's own prompt.txt among them at zero occurrences, which is the pre-landing artefact the finding named and is not repairable in place",
+          "finding": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T171735051817-verify-gate-can-be-given-the-command-it-runs/prompt.txt:106"
+        }
+      ],
+      "scores": {
+        "durability": 18,
+        "evidence": 12,
+        "fit": 20,
+        "goal_fidelity": 20,
+        "scope_discipline": 20
+      },
+      "source": "review-of-the-verify-gate-command-option, stored 2026-09-22T17:50:35Z against revision b4dcb3de",
+      "total": 90
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "Second independent review of this run, attached at the corrected state. It\nsupersedes the review stored 2026-09-22T17:50:35Z against b4dcb3de, whose four\nfindings are carried under prior_findings with a disposition for each. The\ncorrections landed as bb6f6735 (the two docs receipts) and the \u00a711 landing\nthat supplied the declaration; no code or test file differs from the revision\nthat review read, and I re-measured the code myself rather than inheriting it.\n\nVERDICT goal: the goal is a crew verify-gate option supplying the command it runs; reckon/cli.py:3195 declares --command, reckon/cli.py:3225 hands it to record_gate_rerun_at_integrated_revision and reckon/crew/promotion.py:794 forwards it into rerun_gate_at_integrated_revision, where promotion.py:672 selects `command = supplied or stored_command`, and at bb6f6735 `crew verify-gate --help` invoked through CliRunner lists --command.\nVERDICT done_when: every clause holds at the corrected head \u2014 I re-ran tests/test_verify_gate_command_option.py against the reviewed worktree myself (4 passed, EXIT=0, with the interpreter's cwd neutralised and reckon.__file__ printed from that tree), the five failure ids in cohort-base.log and cohort-head.log match one for one once the base tree's /tmp prefix is normalised, my own scratch reproduction of the declared mutation reddens exactly the three option-dependent cases (3 failed, 1 passed, EXIT=1), and negative-control.log:1 is byte-equal to the run's declared mutation.\nVERDICT write_paths: git diff --numstat 37de7907..bb6f6735 lists exactly the six declared paths \u2014 reckon/cli.py 19/1, reckon/crew/promotion.py 20/1, tests/test_verify_gate_command_option.py 188/0, docs/plans/work-does-not-fall-to-the-coordinator.html 3/0, docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html 100/1, docs/figures/work-does-not-fall-to-the-coordinator/verify-gate-command-selection.svg 52/0 \u2014 and the corrected head differs from the previously reviewed b4dcb3de only in the two docs files.\nVERDICT manifest: read at the corrected state; status complete with commits e4209d1a, b4dcb3de and bb6f6735; its negative_control_note now describes the corrected receipt and agrees with the log's own bytes, and baseline_suite and after_suite carry identical five-id failure sets at 102 and 106 passes.\nVERDICT diff: read commit by commit against 37de7907; e4209d1a adds the option, the selection with gate_command_source, the four CLI cases and the figure, b4dcb3de adds the plan landing comment and the anchor section with one plan-verifies meta line extended rather than trimmed, and bb6f6735 corrects the two docs receipts keeping each original sentence beside its correction, touching no code or test.\nCALL_SITES: reckon/cli.py:3225, reckon/crew/promotion.py:794\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:672 runs `command = supplied or stored_command`, so the submitted command wins when non-empty, and reckon/cli.py:3195 declares the option the verb's help lists at bb6f6735.\nSCORE evidence: 20\nJUSTIFICATION evidence: I reproduced both halves of the measure at bb6f6735 \u2014 the gate green (4 passed) and the declared mutation red (3 failed, 1 passed) \u2014 and promotion's own _require_declared_negative_control on this run's pointer and parsed manifest returns matched against a log whose first line is byte-equal to node.negative_control, while the same guard refuses a scratch log whose first line differs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 37de7907..bb6f6735 lists exactly the six declared paths, the correction confined to the two docs files and the base log's failure ids untouched.\nSCORE durability: 18\nJUSTIFICATION durability: the four cases enter through CliRunner at the verb and prove execution by marker files (tests/test_verify_gate_command_option.py:128) rather than by the report's own fields, and the mutation reddens exactly the three option-dependent cases; a supplied empty string falling back to the stored command remains the one path unasserted.\nSCORE fit: 20\nJUSTIFICATION fit: the option follows the verb's existing @click.option idiom (reckon/cli.py:3195), the selection carries a mechanism docstring (reckon/crew/promotion.py:657) and the new names and comments carry no plan or ticket identifier.\nREVISION: bb6f6735a68c90f6604d6410a978c3878249ad35",
+  "review_run_id": "r-20260922T175603636165-re-review-of-the-verify-gate-command-option",
+  "reviewed_base_sha": "37de79079cc1887f153db6043175cabf10e162aa",
+  "reviewed_head_sha": "bb6f6735a68c90f6604d6410a978c3878249ad35",
+  "reviewed_revision": "bb6f6735a68c90f6604d6410a978c3878249ad35",
+  "reviewed_run_id": "r-20260922T171735051817-verify-gate-can-be-given-the-command-it-runs",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T18:07:27.051392+00:00",
+  "total": 98
+}

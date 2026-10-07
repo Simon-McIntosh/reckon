@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest carries no baseline_suite or after_suite arm (both null in its manifest and its classification.json), so an added-failure count is not derivable from the reviewed run's own gate logs",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T14:10:37.516Z",
+  "dispatched_at": "2026-10-06T14:03:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1313",
+      "severity": "follow-on",
+      "text": "follow-on: review_path's committed branch defaults a missing review_run_id to reviewed_run_id (name = str(review_run_id or \"\").strip() or reviewed_run_id) where its sibling plan_review_path refuses an empty review run id outright (reckon/crew/plan_review.py:383). The two owners of \"a committed path\" therefore disagree, and the default is the wrong one for a run review: a re-review is a new review run, so a caller that omits the id names the file after the reviewed run and a second review run of the same run overwrites the first rather than adding the new file the plan's rule intends. store_committed_review always supplies the id, so no production path hits it today, and the refusal case covers only the plan owner (tests/test_review_records_have_a_committed_root.py:130)."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1737",
+      "severity": "follow-on",
+      "text": "follow-on: run_record_times' live-pointer fallback \u2014 the branch taken when the run has no committed per-run record \u2014 is exercised by no test case, so the shape it assumes of the live pointer (created_at for dispatch, completed_at for completion) is unverified; a pointer carrying neither yields (\"\",\"\") and the committed record then silently drops both stamps, which is exactly the store-clock substitution the committed tree exists to remove."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "store_committed_review has no production caller yet \u2014 the wiring is owned by the sibling node state-write-commits-a-set-of-paths and the reviewed manifest discloses it; the pre-existing review_path/plan_review_path callers (reckon/cli.py:5529, reckon/crew/recovery.py:612/615/1018) are unchanged and omit committed_root, so they keep the staging path.",
+    "diff": "Read commit by commit against base 3c7a3f36a \u2014 2e05df719 alone adds the committed path branches on review_path and plan_review_path, committed_review_root, run_record_times, store_committed_review, RESPONSE_EVENTS_KEY and the six-case test module plus the evidence fragment; the tests prove the staging path each owner returns is byte-identical when committed_root is omitted.",
+    "done_when": "The EVIDENCE measure names the four-module gate; I re-ran the new module at the reviewed head (6 passed, EXIT=0) and the full four-module gate (36 passed, EXIT=0), reproducing the recorded figure, and I reproduced the declared mutation in a scratch copy \u2014 dropping the response_events append reddens test_record_response_appends_events_and_keeps_the_body with 1 failed, EXIT=1.",
+    "goal": "The node's goal \u2014 a review record can be written to the project's committed docs/state reviews tree and its answers appended as events \u2014 is met: review_path (reckon/crew/review.py:1288) and plan_review_path (reckon/crew/plan_review.py:355) each gain a committed branch resolving docs/state/<project>/reviews/run/<reviewed-run-id>/<review-id>.json and \u2026/plan/<slug>/<review-id>.json beside the unchanged staging path, store_committed_review (reckon/crew/review.py:1751) writes into that tree, and record_response appends to RESPONSE_EVENTS_KEY (reckon/crew/plan_review.py:960).",
+    "manifest": "Read at the run's manifest.md; it declares status complete, commit 2e05df719, the four-module gate with 36 passed EXIT=0, the response_events negative control (1 failed, EXIT=1), and discloses that the reader repointing, the ledger set-commit and the recovery hash-object -w remain owned by other nodes; its tests line names no baseline_suite or after_suite arm.",
+    "write_paths": "git diff --stat 3c7a3f36a 2e05df719 is exactly the four paths the manifest declares \u2014 reckon/crew/review.py, reckon/crew/plan_review.py, tests/test_review_records_have_a_committed_root.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/review-records-have-a-committed-root.html \u2014 518 insertions against 4 deletions; no plan meta line or shared index is touched."
+  },
+  "justifications": {
+    "durability": "the response_events half is guarded \u2014 I reproduced the declared mutation and it reddens test_record_response_appends_events_and_keeps_the_body (1 failed, EXIT=1) \u2014 and the committed path and time halves are held by exact-value assertions that fail on a wrong path or a defaulted clock, but no mutation arm covers those halves, run_record_times' live-pointer fallback is untested, and review_path's committed branch carries no refusal case.",
+    "evidence": "the gate is recorded (gate.log, 36 passed in 32.01s, EXIT=0) and I reproduced both the four-module gate (36 passed) and the negative control (1 failed, EXIT=1) at the reviewed head; but the reviewed manifest carries no baseline_suite or after_suite arm, so added failures are unmeasured and the new checks are not shown to discriminate beyond the one declared mutation.",
+    "fit": "the change extends the existing path owners (review_path, plan_review_path), the docs-dir resolver (_store._docs_dir_for_project) and the existing store, and the new symbols are named by behaviour (committed_review_root, run_record_times, store_committed_review, RESPONSE_EVENTS_KEY) with no plan, ticket or version label in the diff.",
+    "goal_fidelity": "the three claims the goal names all hold at head \u2014 both path owners resolve the committed tree beside the staging path, a committed record carries the run's dispatch and completion times rather than the store clock, and a response appends an event while the responses map keeps the latest answer \u2014 matching the goal as stated.",
+    "reuse": "committed_review_root reuses _store._docs_dir_for_project rather than inventing a docs lookup, the committed branch lives on the existing review_path/plan_review_path rather than a second path rule, and store_committed_review reuses _write_record; grep finds no forked path owner or second writer.",
+    "scope_discipline": "git diff --stat 3c7a3f36a 2e05df719 is four files and 518 insertions against 4 deletions, every one inside the declared write paths, with no plan meta line or shared index touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal \u2014 a review record can be written to the project's committed docs/state reviews tree and its answers appended as events \u2014 is met: review_path (reckon/crew/review.py:1288) and plan_review_path (reckon/crew/plan_review.py:355) each gain a committed branch resolving docs/state/<project>/reviews/run/<reviewed-run-id>/<review-id>.json and \u2026/plan/<slug>/<review-id>.json beside the unchanged staging path, store_committed_review (reckon/crew/review.py:1751) writes into that tree, and record_response appends to RESPONSE_EVENTS_KEY (reckon/crew/plan_review.py:960).\nVERDICT done_when: The EVIDENCE measure names the four-module gate; I re-ran the new module at the reviewed head (6 passed, EXIT=0) and the full four-module gate (36 passed, EXIT=0), reproducing the recorded figure, and I reproduced the declared mutation in a scratch copy \u2014 dropping the response_events append reddens test_record_response_appends_events_and_keeps_the_body with 1 failed, EXIT=1.\nVERDICT write_paths: git diff --stat 3c7a3f36a 2e05df719 is exactly the four paths the manifest declares \u2014 reckon/crew/review.py, reckon/crew/plan_review.py, tests/test_review_records_have_a_committed_root.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/review-records-have-a-committed-root.html \u2014 518 insertions against 4 deletions; no plan meta line or shared index is touched.\nVERDICT manifest: Read at the run's manifest.md; it declares status complete, commit 2e05df719, the four-module gate with 36 passed EXIT=0, the response_events negative control (1 failed, EXIT=1), and discloses that the reader repointing, the ledger set-commit and the recovery hash-object -w remain owned by other nodes; its tests line names no baseline_suite or after_suite arm.\nVERDICT diff: Read commit by commit against base 3c7a3f36a \u2014 2e05df719 alone adds the committed path branches on review_path and plan_review_path, committed_review_root, run_record_times, store_committed_review, RESPONSE_EVENTS_KEY and the six-case test module plus the evidence fragment; the tests prove the staging path each owner returns is byte-identical when committed_root is omitted.\nCALL_SITES: (none \u2014 store_committed_review has no production caller yet)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the three claims the goal names all hold at head \u2014 both path owners resolve the committed tree beside the staging path, a committed record carries the run's dispatch and completion times rather than the store clock, and a response appends an event while the responses map keeps the latest answer \u2014 matching the goal as stated.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is recorded (gate.log, 36 passed in 32.01s, EXIT=0) and I reproduced both the four-module gate (36 passed) and the negative control (1 failed, EXIT=1) at the reviewed head; but the reviewed manifest carries no baseline_suite or after_suite arm, so added failures are unmeasured and the new checks are not shown to discriminate beyond the one declared mutation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3c7a3f36a 2e05df719 is four files and 518 insertions against 4 deletions, every one inside the declared write paths, with no plan meta line or shared index touched.\nSCORE durability: 16\nJUSTIFICATION durability: the response_events half is guarded \u2014 I reproduced the declared mutation and it reddens test_record_response_appends_events_and_keeps_the_body (1 failed, EXIT=1) \u2014 and the committed path and time halves are held by exact-value assertions that fail on a wrong path or a defaulted clock, but no mutation arm covers those halves, run_record_times' live-pointer fallback is untested, and review_path's committed branch carries no refusal case.\nSCORE fit: 20\nJUSTIFICATION fit: the change extends the existing path owners (review_path, plan_review_path), the docs-dir resolver (_store._docs_dir_for_project) and the existing store, and the new symbols are named by behaviour (committed_review_root, run_record_times, store_committed_review, RESPONSE_EVENTS_KEY) with no plan, ticket or version label in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: committed_review_root reuses _store._docs_dir_for_project rather than inventing a docs lookup, the committed branch lives on the existing review_path/plan_review_path rather than a second path rule, and store_committed_review reuses _write_record; grep finds no forked path owner or second writer.\nFINDING reckon/crew/review.py:1313 follow-on: review_path's committed branch defaults a missing review_run_id to reviewed_run_id (name = str(review_run_id or \"\").strip() or reviewed_run_id) where its sibling plan_review_path refuses an empty review run id outright (reckon/crew/plan_review.py:383). The two owners of \"a committed path\" therefore disagree, and the default is the wrong one for a run review: a re-review is a new review run, so a caller that omits the id names the file after the reviewed run and a second review run of the same run overwrites the first rather than adding the new file the plan's rule intends. store_committed_review always supplies the id, so no production path hits it today, and the refusal case covers only the plan owner (tests/test_review_records_have_a_committed_root.py:130).\nFINDING reckon/crew/review.py:1737 follow-on: run_record_times' live-pointer fallback \u2014 the branch taken when the run has no committed per-run record \u2014 is exercised by no test case, so the shape it assumes of the live pointer (created_at for dispatch, completed_at for completion) is unverified; a pointer carrying neither yields (\"\",\"\") and the committed record then silently drops both stamps, which is exactly the store-clock substitution the committed tree exists to remove.\n",
+  "review_run_id": "r-20261006T140311245358-review-of-review-records-have-a-committed-root",
+  "reviewed_base_sha": "3c7a3f36abd0ffc6546bc3f893db8c004b698886",
+  "reviewed_head_sha": "2e05df7191c5413efcfb9f3cc40b5f18b1f7a0bc",
+  "reviewed_run_id": "r-20261006T134946510136-review-records-have-a-committed-root",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:09:13.790394+00:00",
+  "total": 112
+}

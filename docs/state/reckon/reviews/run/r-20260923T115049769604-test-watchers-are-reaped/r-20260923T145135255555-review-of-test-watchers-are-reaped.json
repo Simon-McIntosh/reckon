@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T14:51:35.255555+00:00",
+  "findings": [
+    {
+      "file": "tests/test_watch_arming_isolation.py",
+      "line": "268",
+      "text": "the landed change removes watch_producers_under from tests/conftest.py while this module still imports it, so test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into fails with ImportError; re-run in the reviewed tree at 86dd5d57 it reports 1 failed in 1.40s, and 86dd5d57 is already an ancestor of main where the same import at line 293 still has no provider."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T115049769604-test-watchers-are-reaped/manifest.md",
+      "line": "15",
+      "text": "the tests: line records the gate as \"PYTHONPATH=$PWD <venv>/bin/python -m pytest ...\" with a literal placeholder instead of the interpreter path, so the command as reported cannot be re-run and a reader cannot tell which environment produced the recorded 3 passed 1 skipped."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against f7f9e13f \u2014 7c5f69b9 rewrites the conftest fixture and adds the measure module, 86dd5d57 adds the landed record, the figure and the plan's section 10 note, touching no plan meta; the deletion of watch_producers_under leaves an import of it in tests/test_watch_arming_isolation.py:268.",
+    "done_when": "the done_when names the fixture, the subprocess-pytest measure, the executed negative control and the foreign-home refusal; the manifest records the gate at 3 passed 1 skipped and negative-control.log shows 1 failed with both survivors named by pid.",
+    "goal": "the node goal is that a watcher started under a test session's temporary RECKON_HOME is terminated at teardown; tests/conftest.py:104 now resolves pids from the seat record's own crew/watch directory and tests/conftest.py:137 signals them, and the child-session measure shows the armed producer gone.",
+    "manifest": "read; it states the gate ran at 7c5f69b9 with 3 passed 1 skipped, names its logs and quotes the executed negative control, but its tests: line carries a literal placeholder in place of the interpreter path.",
+    "write_paths": "the declared fence lists tests/conftest.py, tests/test_test_watchers_are_reaped.py, the landed evidence record, docs/figures/a-follower-outlives-its-monitor and docs/plans/a-follower-outlives-its-monitor.html, and every path in both commits lies inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the command-line pattern reddens the foreign-home assertion at tests/test_test_watchers_are_reaped.py:232 and removing the fixture's signal loop reddens the measure at tests/test_test_watchers_are_reaped.py:197, though the positive half of that pair echoes a pid the test itself wrote and the detector's sensitivity rests on the one recorded negative control rather than a control inside the measure.",
+    "evidence": "the gate and the negative control are recorded in the run directory (gate-test-watchers.log at 7c5f69b9: 3 passed 1 skipped; negative-control.log: 1 failed naming pids 396241 and 396308) and the measure carries a record-based positive control at tests/test_test_watchers_are_reaped.py:190, but the manifest's recorded command is not runnable as written.",
+    "fit": "the helpers at tests/conftest.py:48, tests/conftest.py:63 and tests/conftest.py:104 follow the module's existing idiom and introduce no name carrying a plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/conftest.py:137 signals each pid reapable_watch_pids returns, and tests/test_test_watchers_are_reaped.py:197 shows the producer armed under the child's home is gone one second after that session ended, with the negative control naming what survives when the loop is removed.",
+    "scope_discipline": "every path in the two commits lies inside the declared write paths, but the change deletes watch_producers_under from tests/conftest.py while tests/test_watch_arming_isolation.py:268 still imports it, so the consequence escapes the fenced surface."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a watcher started under a test session's temporary RECKON_HOME is terminated at teardown; tests/conftest.py:104 now resolves pids from the seat record's own crew/watch directory and tests/conftest.py:137 signals them, and the child-session measure shows the armed producer gone.\nVERDICT done_when: the done_when names the fixture, the subprocess-pytest measure, the executed negative control and the foreign-home refusal; the manifest records the gate at 3 passed 1 skipped and negative-control.log shows 1 failed with both survivors named by pid.\nVERDICT write_paths: the declared fence lists tests/conftest.py, tests/test_test_watchers_are_reaped.py, the landed evidence record, docs/figures/a-follower-outlives-its-monitor and docs/plans/a-follower-outlives-its-monitor.html, and every path in both commits lies inside them.\nVERDICT manifest: read; it states the gate ran at 7c5f69b9 with 3 passed 1 skipped, names its logs and quotes the executed negative control, but its tests: line carries a literal placeholder in place of the interpreter path.\nVERDICT diff: read both commits against f7f9e13f \u2014 7c5f69b9 rewrites the conftest fixture and adds the measure module, 86dd5d57 adds the landed record, the figure and the plan's section 10 note, touching no plan meta; the deletion of watch_producers_under leaves an import of it in tests/test_watch_arming_isolation.py:268.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/conftest.py:137 signals each pid reapable_watch_pids returns, and tests/test_test_watchers_are_reaped.py:197 shows the producer armed under the child's home is gone one second after that session ended, with the negative control naming what survives when the loop is removed.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate and the negative control are recorded in the run directory (gate-test-watchers.log at 7c5f69b9: 3 passed 1 skipped; negative-control.log: 1 failed naming pids 396241 and 396308) and the measure carries a record-based positive control at tests/test_test_watchers_are_reaped.py:190, but the manifest's recorded command is not runnable as written.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: every path in the two commits lies inside the declared write paths, but the change deletes watch_producers_under from tests/conftest.py while tests/test_watch_arming_isolation.py:268 still imports it, so the consequence escapes the fenced surface.\nSCORE durability: 15\nJUSTIFICATION durability: reinstating the command-line pattern reddens the foreign-home assertion at tests/test_test_watchers_are_reaped.py:232 and removing the fixture's signal loop reddens the measure at tests/test_test_watchers_are_reaped.py:197, though the positive half of that pair echoes a pid the test itself wrote and the detector's sensitivity rests on the one recorded negative control rather than a control inside the measure.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers at tests/conftest.py:48, tests/conftest.py:63 and tests/conftest.py:104 follow the module's existing idiom and introduce no name carrying a plan, sprint or ticket identifier.\nFINDING tests/test_watch_arming_isolation.py:268 the landed change removes watch_producers_under from tests/conftest.py while this module still imports it, so test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into fails with ImportError; re-run in the reviewed tree at 86dd5d57 it reports 1 failed in 1.40s, and 86dd5d57 is already an ancestor of main where the same import at line 293 still has no provider.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T115049769604-test-watchers-are-reaped/manifest.md:15 the tests: line records the gate as \"PYTHONPATH=$PWD <venv>/bin/python -m pytest ...\" with a literal placeholder instead of the interpreter path, so the command as reported cannot be re-run and a reader cannot tell which environment produced the recorded 3 passed 1 skipped.",
+  "review_run_id": "r-20260923T145135255555-review-of-test-watchers-are-reaped",
+  "reviewed_base_sha": "f7f9e13fada12697a45f392bca6fe7184f4052cb",
+  "reviewed_head_sha": "86dd5d5785d5c751a8c79d74d7f36444401ffed9",
+  "reviewed_run_id": "r-20260923T115049769604-test-watchers-are-reaped",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T15:18:38.155751+00:00",
+  "total": 80
+}

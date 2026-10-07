@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4127",
+    "reckon/crew/dispatch.py:5585",
+    "reckon/crew/dispatch.py:6924",
+    "reckon/crew/dispatch.py:6967",
+    "reckon/crew/dispatch.py:7080",
+    "reckon/cli.py:3856",
+    "reckon/cli.py:3952",
+    "reckon/hooks/native_agent_guard.py:148"
+  ],
+  "completed_at": "2026-09-26T13:41:33.232Z",
+  "dispatched_at": "2026-09-26T11:56:25Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit \u2014 bd63ba2b is the fix, its test and one figure over four files (117 insertions, 3 deletions), c9207ed3 is documentation additions only (23 and 2 insertions, no deletions); both in-harness directive construction sites carry the same environment value, and the added test exercises both the returned preview and the persisted pointer record.",
+    "done_when": "the done_when asks for a test red at base and green at head over the two named files with no added failures, and I reproduced all three clauses myself \u2014 tests/test_worker_env_export.py:195 is red at the base source (KeyError: 'environment' at :226, exit 1), green at the committed head, and the base source run of both named files is 17 passed with the added test the only failure.",
+    "goal": "the goal is to close the three prior review findings, and all three are closed at this head \u2014 reckon/hooks/worker_stop.py:15-19 states the third refusal case, reckon/crew/dispatch.py:6924 composes one directive_environment that is attached at :6967 and :7080, and reckon/crew/dispatch.py:4819 restores the possessive.",
+    "manifest": "honest, with one label defect \u2014 its gate result (18 passed at head, 17 passed at base) and both mutation claims reproduce in my own runs, its declared control string matches negative-control-in-harness-env.log line 1 verbatim, its ruff claim (7 findings at base and at head, none on an added line) and its format claim (proposed hunks identical to base) reproduce on complete archive trees, and base-newtest.log's first line spells its revision key \"rew=\" rather than \"rev=\".",
+    "write_paths": "every path in 9fafad1..c9207ed3 is inside the declared fence \u2014 three source/test files plus one figure and two docs \u2014 and none is outside it; reckon/crew/dispatch.py also appears in the declared paths of the concurrent node dispatch-records-the-pace-row, an overlap in the dispatch itself that the worker neither widened nor could have avoided from its own prompt."
+  },
+  "justifications": {
+    "durability": "stripping both environment lines reds the test at tests/test_worker_env_export.py:226 and stripping only the persisted line reds it at :240, so each construction site is independently guarded, docked because :246 compares two artefacts of one change_lane call rather than an external clock.",
+    "evidence": "the gate command and its 18-passed result reproduce at this head, the red-at-base claim reproduces against a scratch base tree whose header names module=/tmp/rev-base-arm/reckon/crew/dispatch.py, and the declared mutation reproduces red with the same KeyError, docked for the \"rev=9fafad1\" stamp on logs that measured an uncommitted tree and for base-newtest.log's \"rew=\" header key.",
+    "fit": "the comment at reckon/crew/dispatch.py:6920-6923 states the mechanism rather than a plan item, both docstring corrections read as the module's own contract, and the commit messages carry conventional subjects with bodies and no identifiers.",
+    "goal_fidelity": "every named finding is closed and the environment step matches the launch path's, docked because the lane-change site composes its environment with None as the base where the dispatch-time site at reckon/crew/dispatch.py:4124 overlays the in-allocation PATH shim, so a re-pointed run's directive still differs from a fresh dispatch's on a compute node.",
+    "scope_discipline": "all six changed paths in 9fafad1..c9207ed3 lie inside the declared fence, the two docs files are additions only, and nothing in the diff goes beyond the three findings."
+  },
+  "project": "reckon",
+  "raw_text": "Review of run r-20260926T103141696030-worker-env-review-fixes at head\nc9207ed322072a6accda0d3cb8ff2eb4f1f8c698 over base\n9fafad1fde793b9a0d5bc7ac60114f445359d202.\n\nRead in worktree\n/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/worker-env-review-fixes\n(clean tree, two commits, six changed paths, all inside the declared fence; the\nreviewed worktree was still clean after every check below). Method: read both\ncommits and the touched modules from the committed head blob; re-ran the named\ngate at the committed head; rebuilt the base source in a scratch tree and ran\nthe added test there; re-applied the declared mutation and, separately, a\npersisted-site-only mutation; re-derived the ruff and format deltas on complete\narchive trees; parsed the figure with ElementTree; and compared the declared\ncontrol string against the reviewed run's red log.\n\nVERDICT goal: the goal is to close the three prior review findings, and all three are closed at this head \u2014 reckon/hooks/worker_stop.py:15-19 states the third refusal case, reckon/crew/dispatch.py:6924 composes one directive_environment that is attached at :6967 and :7080, and reckon/crew/dispatch.py:4819 restores the possessive.\nVERDICT done_when: the done_when asks for a test red at base and green at head over the two named files with no added failures, and I reproduced all three clauses myself \u2014 tests/test_worker_env_export.py:195 is red at the base source (KeyError: 'environment' at :226, exit 1), green at the committed head, and the base source run of both named files is 17 passed with the added test the only failure.\nVERDICT write_paths: every path in 9fafad1..c9207ed3 is inside the declared fence \u2014 three source/test files plus one figure and two docs \u2014 and none is outside it; reckon/crew/dispatch.py also appears in the declared paths of the concurrent node dispatch-records-the-pace-row, an overlap in the dispatch itself that the worker neither widened nor could have avoided from its own prompt.\nVERDICT manifest: honest, with one label defect \u2014 its gate result (18 passed at head, 17 passed at base) and both mutation claims reproduce in my own runs, its declared control string matches negative-control-in-harness-env.log line 1 verbatim, its ruff claim (7 findings at base and at head, none on an added line) and its format claim (proposed hunks identical to base) reproduce on complete archive trees, and base-newtest.log's first line spells its revision key \"rew=\" rather than \"rev=\".\nVERDICT diff: read commit by commit \u2014 bd63ba2b is the fix, its test and one figure over four files (117 insertions, 3 deletions), c9207ed3 is documentation additions only (23 and 2 insertions, no deletions); both in-harness directive construction sites carry the same environment value, and the added test exercises both the returned preview and the persisted pointer record.\nCALL_SITES: reckon/crew/dispatch.py:4127, reckon/crew/dispatch.py:5585, reckon/crew/dispatch.py:6924, reckon/crew/dispatch.py:6967, reckon/crew/dispatch.py:7080, reckon/cli.py:3856, reckon/cli.py:3952, reckon/hooks/native_agent_guard.py:148\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every named finding is closed and the environment step matches the launch path's, docked because the lane-change site composes its environment with None as the base where the dispatch-time site at reckon/crew/dispatch.py:4124 overlays the in-allocation PATH shim, so a re-pointed run's directive still differs from a fresh dispatch's on a compute node.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate command and its 18-passed result reproduce at this head, the red-at-base claim reproduces against a scratch base tree whose header names module=/tmp/rev-base-arm/reckon/crew/dispatch.py, and the declared mutation reproduces red with the same KeyError, docked for the \"rev=9fafad1\" stamp on logs that measured an uncommitted tree and for base-newtest.log's \"rew=\" header key.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all six changed paths in 9fafad1..c9207ed3 lie inside the declared fence, the two docs files are additions only, and nothing in the diff goes beyond the three findings.\nSCORE durability: 19\nJUSTIFICATION durability: stripping both environment lines reds the test at tests/test_worker_env_export.py:226 and stripping only the persisted line reds it at :240, so each construction site is independently guarded, docked because :246 compares two artefacts of one change_lane call rather than an external clock.\nSCORE fit: 20\nJUSTIFICATION fit: the comment at reckon/crew/dispatch.py:6920-6923 states the mechanism rather than a plan item, both docstring corrections read as the module's own contract, and the commit messages carry conventional subjects with bodies and no identifiers.\n\nNo further defects found. The residual asymmetry named under goal_fidelity\n(the in-allocation PATH overlay absent from the lane-change environment) is\nlatent: the one in-repo reader of an in-harness directive,\nreckon/hooks/native_agent_guard.py:148, reads attach_with alone, as the finding\nitself recorded. The reviewed run's own follow_on names that uneaten reader.",
+  "review_run_id": "r-20260926T115604766949-review-of-worker-env-review-fixes",
+  "reviewed_base_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_head_sha": "c9207ed322072a6accda0d3cb8ff2eb4f1f8c698",
+  "reviewed_run_id": "r-20260926T103141696030-worker-env-review-fixes",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T13:11:06.611631+00:00",
+  "total": 97
+}

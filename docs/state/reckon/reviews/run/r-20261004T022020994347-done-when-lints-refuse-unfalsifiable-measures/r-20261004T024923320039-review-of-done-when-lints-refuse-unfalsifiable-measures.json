@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "556e5b6f5e5dd6e2e92d4972f12edcb99c2bfd6c",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5147",
+    "reckon/crew/dispatch.py:5166"
+  ],
+  "completed_at": "2026-10-04T02:55:13.381Z",
+  "dispatched_at": "2026-10-04T02:49:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "line": "123",
+      "severity": "follow-on",
+      "text": "follow-on: _NUMERIC_AGREEMENT recognises the spelling family agree/agrees/agreement but not the gerund agreeing, so a done-when that both declares an independent reading and phrases its agreement as 'agreeing to 0.5%' is refused although it names a tolerance; the unit alternation likewise admits only %/percent/seconds/ms/milliseconds, so 'agree within 0.5s' is refused. This is the over-refusal direction the census warns against (one false refusal teaches coordinators to stop running the check) and no test covers these spellings."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1017",
+      "severity": "follow-on",
+      "text": "follow-on: _red_base_gate_finding runs the named pytest target under a 10-second timeout and turns a timeout (:1023) or an exited run with no readable FAILED lines (:1037) into a refusal, so a green named check that is merely slow, or that errors during collection without emitting FAILED ids, is refused, and dispatch validation now executes repository test code as a side effect."
+    }
+  ],
+  "head_log_revision": "7aaad17f26142f22c621a02826f1b107dcdb3cf5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 556e5b6f; f2f9d04 adds the three lints and the test file, and 7aaad17 adds twelve lines that put the validated checkout ahead of inherited import paths for the base pytest subprocess.",
+    "done_when": "the done_when names tests/test_done_when_lints.py's three cases plus the paired test_crew_node/test_crew_dryrun records; the manifest records baseline_suite with 3 failures (exactly the three new cases) and after_suite with 24 passed, and the declared negative control at EXIT=1.",
+    "goal": "the goal is three dispatch done-when lints drawn from the section-15 census; reckon/crew/node.py:1232 and :1240 add the agreement and absence refusals inside validate_node, and node.py:969 _red_base_gate_finding adds the red-base refusal administered from gate_population_finding.",
+    "manifest": "read; it carries the two commits, changed_paths, flat baseline_suite and after_suite JSON with log_paths, the negative_control_log path, and measurement_cwd of the base scratch arm at /tmp/done-when-base.IyFwYv.",
+    "write_paths": "the manifest declares reckon/crew/node.py, reckon/crew/dispatch.py, tests/test_done_when_lints.py, an evidence fragment and a figures directory; the diff touches only node.py and the test file, both inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_done_when_lints.py:124 reddens when the agreement clause is removed (shown by the negative-control log at EXIT=1), and :168 proves both directions of the red-base path, but no test covers the agreement spellings _NUMERIC_AGREEMENT fails to recognise, so the guard's over-refusal is unguarded.",
+    "evidence": "the paired gate the manifest records is the done_when's own gate and its log reconciles with the baseline_suite/after_suite fields (3 failing ids at base, 24 passed at head), with the negative control at tests/test_done_when_lints.py EXIT=1.",
+    "fit": "the new patterns follow the module-level regex idiom of _EVIDENCE_SIGNALS and _GATE_POPULATION and the refusal uses the existing fail('demonstrable', ...) form, with no plan or ticket label introduced.",
+    "goal_fidelity": "reckon/crew/node.py:1232 refuses an independent reading that carries only a plausibility band, :1240 refuses measured-or-unmeasured evidence without a positive coverage floor and base count, and :969 reads a named base check for an absolute-green demand, matching all three clauses of the goal.",
+    "scope_discipline": "the whole diff is reckon/crew/node.py and tests/test_done_when_lints.py, both inside the declared write paths, and carries nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is three dispatch done-when lints drawn from the section-15 census; reckon/crew/node.py:1232 and :1240 add the agreement and absence refusals inside validate_node, and node.py:969 _red_base_gate_finding adds the red-base refusal administered from gate_population_finding.\nVERDICT done_when: the done_when names tests/test_done_when_lints.py's three cases plus the paired test_crew_node/test_crew_dryrun records; the manifest records baseline_suite with 3 failures (exactly the three new cases) and after_suite with 24 passed, and the declared negative control at EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/node.py, reckon/crew/dispatch.py, tests/test_done_when_lints.py, an evidence fragment and a figures directory; the diff touches only node.py and the test file, both inside the declared set.\nVERDICT manifest: read; it carries the two commits, changed_paths, flat baseline_suite and after_suite JSON with log_paths, the negative_control_log path, and measurement_cwd of the base scratch arm at /tmp/done-when-base.IyFwYv.\nVERDICT diff: read commit by commit against 556e5b6f; f2f9d04 adds the three lints and the test file, and 7aaad17 adds twelve lines that put the validated checkout ahead of inherited import paths for the base pytest subprocess.\nCALL_SITES: reckon/crew/dispatch.py:5147, reckon/crew/dispatch.py:5166\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1232 refuses an independent reading that carries only a plausibility band, :1240 refuses measured-or-unmeasured evidence without a positive coverage floor and base count, and :969 reads a named base check for an absolute-green demand, matching all three clauses of the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the paired gate the manifest records is the done_when's own gate and its log reconciles with the baseline_suite/after_suite fields (3 failing ids at base, 24 passed at head), with the negative control at tests/test_done_when_lints.py EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the whole diff is reckon/crew/node.py and tests/test_done_when_lints.py, both inside the declared write paths, and carries nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_done_when_lints.py:124 reddens when the agreement clause is removed (shown by the negative-control log at EXIT=1), and :168 proves both directions of the red-base path, but no test covers the agreement spellings _NUMERIC_AGREEMENT fails to recognise, so the guard's over-refusal is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: the new patterns follow the module-level regex idiom of _EVIDENCE_SIGNALS and _GATE_POPULATION and the refusal uses the existing fail('demonstrable', ...) form, with no plan or ticket label introduced.\nFINDING reckon/crew/node.py:123 follow-on: _NUMERIC_AGREEMENT recognises the spelling family agree/agrees/agreement but not the gerund agreeing, so a done-when that both declares an independent reading and phrases its agreement as 'agreeing to 0.5%' is refused although it names a tolerance; the unit alternation likewise admits only %/percent/seconds/ms/milliseconds, so 'agree within 0.5s' is refused. This is the over-refusal direction the census warns against (one false refusal teaches coordinators to stop running the check) and no test covers these spellings.\nFINDING reckon/crew/node.py:1017 follow-on: _red_base_gate_finding runs the named pytest target under a 10-second timeout and turns a timeout (:1023) or an exited run with no readable FAILED lines (:1037) into a refusal, so a green named check that is merely slow, or that errors during collection without emitting FAILED ids, is refused, and dispatch validation now executes repository test code as a side effect.",
+  "review_run_id": "r-20261004T024923320039-review-of-done-when-lints-refuse-unfalsifiable-measures",
+  "reviewed_base_sha": "556e5b6f5e5dd6e2e92d4972f12edcb99c2bfd6c",
+  "reviewed_head_sha": "7aaad17f26142f22c621a02826f1b107dcdb3cf5",
+  "reviewed_run_id": "r-20261004T022020994347-done-when-lints-refuse-unfalsifiable-measures",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T02:53:54.279935+00:00",
+  "total": 91
+}

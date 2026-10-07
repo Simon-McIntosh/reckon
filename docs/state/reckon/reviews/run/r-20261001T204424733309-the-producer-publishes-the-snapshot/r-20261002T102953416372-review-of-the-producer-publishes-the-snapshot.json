@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:536 (_publish_watch_stream from list_live)",
+    "reckon/crew/runs.py:2191 (producer publish path)",
+    "reckon/crew/runs.py:1552 (_run_obligation_sweep -> _publish_obligation_snapshots -> obligation_snapshot.sweep)"
+  ],
+  "completed_at": "2026-10-02T10:46:13.086Z",
+  "dispatched_at": "2026-10-02T10:30:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "220",
+      "severity": "follow-on",
+      "text": "follow-on: the change renames _held_worktrees to _held_worktrees_by_session and _sub_floor_items to _sub_floor_items_by_session in a file outside the declared fence and absent from the manifest's changed_paths, so the run's exclusive-scope record does not match what it landed (the coordinator's resume advice directed the change but did not widen the fence)."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1580",
+      "severity": "follow-on",
+      "text": "follow-on: the new _publish_obligation_snapshots(...) call is left wrapped where ruff format collapses it to one line and tests/test_obligations_snapshot_is_published.py:464 carries a stray extra blank line, so ruff format --check reports both files would be reformatted, contradicting the manifest's claim that the three changed paths are formatted."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit over eleven commits; it adds obligation_snapshot.py, wires the producer sweep in runs.py, refactors obligations.py to slice per session, and adds the evidence fragment.",
+    "done_when": "plan \u00a72 names three tests (a pointer transition in the snapshot by the next sweep, parity with obligations() over unmodified files, and a writer stopped between temp file and rename leaving the prior snapshot whole); tests/test_obligations_snapshot_is_published.py:163, :194 and :229 each assert one, and the manifest records the gate.",
+    "goal": "the node goal (plan \u00a72) is that the watch producer publishes each live session's obligations snapshot; reckon/crew/obligation_snapshot.py:580 sweep() plus reckon/crew/runs.py:1547 _publish_watch_stream publish per live registration over the derived fleet state.",
+    "manifest": "read; it states the gate command, both arms' summary lines and logs, the negative-control log, and added-failure delta zero, but its lint claim (all three changed paths formatted, base runs.py clean) does not hold at the head.",
+    "write_paths": "manifest declares four paths (obligation_snapshot.py, runs.py, the snapshot test, the evidence fragment); git diff --name-only 3fadeb60e..b63843328a2d65d262c9cd9ccc96fdb75720b997 lists a fifth, reckon/crew/obligations.py, which the fence did not declare."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_snapshot_is_published.py:229 injects a raising replace to make the guarded interruption happen and asserts both the intact prior snapshot and the left temp, :194 compares the stored snapshot to the independent obligations() derivation, and :56 is the negative-control import-surface case.",
+    "evidence": "the gate ran both arms with xdist at base 3fadeb60e (8 failed, 637 passed) and head b589b9476 (7 failed, 649 passed), the head adds no failing id and clears the producer-loop deferral id, and each \u00a72 done-when has a dedicated case, but the manifest's after_suite.failure_ids is prose rather than the armed list and its lint statement is inaccurate.",
+    "fit": "the module and the runs.py wiring follow the surrounding idiom (dataclass state, Mapping/Path, module docstrings, \"from __future__ import annotations\") and introduce no version or plan identifier, though two changed paths are left unformatted.",
+    "goal_fidelity": "plan \u00a72's snapshot shape, atomic rename (obligation_snapshot.py:371 write_snapshot via os.replace), computed_at/stream_offset/producer identity, instant ages and the three triggers are all present, and the live-registration-only and once-per-sweep bounds are the coordinator's amended intent.",
+    "scope_discipline": "the diff writes reckon/crew/obligations.py:220 (_held_worktrees_by_session and _sub_floor_items_by_session), a file outside the four-path fence and omitted from the manifest's changed_paths, though the change is implied by the goal and directed by the coordinator's resume advice."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (plan \u00a72) is that the watch producer publishes each live session's obligations snapshot; reckon/crew/obligation_snapshot.py:580 sweep() plus reckon/crew/runs.py:1547 _publish_watch_stream publish per live registration over the derived fleet state.\nVERDICT done_when: plan \u00a72 names three tests (a pointer transition in the snapshot by the next sweep, parity with obligations() over unmodified files, and a writer stopped between temp file and rename leaving the prior snapshot whole); tests/test_obligations_snapshot_is_published.py:163, :194 and :229 each assert one, and the manifest records the gate.\nVERDICT write_paths: manifest declares four paths (obligation_snapshot.py, runs.py, the snapshot test, the evidence fragment); git diff --name-only 3fadeb60e..b63843328a2d65d262c9cd9ccc96fdb75720b997 lists a fifth, reckon/crew/obligations.py, which the fence did not declare.\nVERDICT manifest: read; it states the gate command, both arms' summary lines and logs, the negative-control log, and added-failure delta zero, but its lint claim (all three changed paths formatted, base runs.py clean) does not hold at the head.\nVERDICT diff: read commit by commit over eleven commits; it adds obligation_snapshot.py, wires the producer sweep in runs.py, refactors obligations.py to slice per session, and adds the evidence fragment.\nCALL_SITES: reckon/crew/runs.py:536 (_publish_watch_stream from list_live), reckon/crew/runs.py:2191 (producer publish path), reckon/crew/runs.py:1552 (_run_obligation_sweep -> _publish_obligation_snapshots -> obligation_snapshot.sweep)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: plan \u00a72's snapshot shape, atomic rename (obligation_snapshot.py:371 write_snapshot via os.replace), computed_at/stream_offset/producer identity, instant ages and the three triggers are all present, and the live-registration-only and once-per-sweep bounds are the coordinator's amended intent.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate ran both arms with xdist at base 3fadeb60e (8 failed, 637 passed) and head b589b9476 (7 failed, 649 passed), the head adds no failing id and clears the producer-loop deferral id, and each \u00a72 done-when has a dedicated case, but the manifest's after_suite.failure_ids is prose rather than the armed list and its lint statement is inaccurate.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the diff writes reckon/crew/obligations.py:220 (_held_worktrees_by_session and _sub_floor_items_by_session), a file outside the four-path fence and omitted from the manifest's changed_paths, though the change is implied by the goal and directed by the coordinator's resume advice.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_obligations_snapshot_is_published.py:229 injects a raising replace to make the guarded interruption happen and asserts both the intact prior snapshot and the left temp, :194 compares the stored snapshot to the independent obligations() derivation, and :56 is the negative-control import-surface case.\nSCORE fit: 18\nJUSTIFICATION fit: the module and the runs.py wiring follow the surrounding idiom (dataclass state, Mapping/Path, module docstrings, \"from __future__ import annotations\") and introduce no version or plan identifier, though two changed paths are left unformatted.\nFINDING reckon/crew/obligations.py:220 follow-on: the change renames _held_worktrees to _held_worktrees_by_session and _sub_floor_items to _sub_floor_items_by_session in a file outside the declared fence and absent from the manifest's changed_paths, so the run's exclusive-scope record does not match what it landed (the coordinator's resume advice directed the change but did not widen the fence).\nFINDING reckon/crew/runs.py:1580 follow-on: the new _publish_obligation_snapshots(...) call is left wrapped where ruff format collapses it to one line and tests/test_obligations_snapshot_is_published.py:464 carries a stray extra blank line, so ruff format --check reports both files would be reformatted, contradicting the manifest's claim that the three changed paths are formatted.\n",
+  "review_run_id": "r-20261002T102953416372-review-of-the-producer-publishes-the-snapshot",
+  "reviewed_base_sha": "3fadeb60e5d96c0ec4009c570947145937abbc59",
+  "reviewed_head_sha": "b63843328a2d65d262c9cd9ccc96fdb75720b997",
+  "reviewed_run_id": "r-20261001T204424733309-the-producer-publishes-the-snapshot",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T10:44:53.865324+00:00",
+  "total": 88
+}

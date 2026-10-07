@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "825bf5bc8d9fb4b1f269ec8712392eda0085a8ef",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:6217 (dispatch-rollback)",
+    "reckon/crew/dispatch.py:10091 (lane-change)",
+    "reckon/crew/dispatch.py:10221 (run-stop)",
+    "reckon/crew/promotion.py:3789 (promotion-settle)",
+    "reckon/crew/promotion.py:5572 (promotion-release)",
+    "reckon/crew/recovery.py:3042 (budget-watchdog)",
+    "reckon/crew/routing.py:1549 (definition)"
+  ],
+  "completed_at": "2026-10-02T04:42:11.469Z",
+  "dispatched_at": "2026-10-02T04:36:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T040631202720-signal-fakes-take-the-caller-arguments/logs/base-arm.log",
+      "line": "1019",
+      "severity": "follow-on",
+      "text": "follow-on: the assembled base-arm log ends each file section with a bare EXIT=0 while the base arm's real per-file exit codes are all 1 (recorded in base-arms.summ and as the manifest's baseline_suite.exit_status=1), so a reader who checks the log's terminal sentinel rather than its FAILED ids would read the base arm as green."
+    }
+  ],
+  "head_log_revision": "82ee9f444a8da629b6898030adff148a6b2bcb59",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit; 82ee9f444 widens each stand-in's signature to accept the keyword-only reason/run_dir/project and, where the test already asserts the signal, pins the reason literal, and 2e1dfcd31 adds the landing fragment; no product source changed.",
+    "done_when": "the done_when requires the base and head arms over the six files to show zero added failures; logs/base-arm.log lists exactly the eleven named FAILED ids and logs/head-arm.log lists none, matching the manifest's baseline_suite/after_suite records.",
+    "goal": "the node goal is \"The eleven ids red since signal callers began passing run_dir and reason pass at head\"; git diff 825bf5bc8..2e1dfcd31 updates exactly the eleven named stand-ins across the six files, and the head arm logs/head-arm.log reports the six files green.",
+    "manifest": "read; it records status complete, the commit pair 82ee9f444/2e1dfcd31, base 11 failed/305 passed, head 316 passed/0 failed, and the negative-control log.",
+    "write_paths": "the declared write paths are the six test files plus the landing fragment; git diff --name-only 825bf5bc8 2e1dfcd31 lists exactly those seven paths and no reckon/ product file."
+  },
+  "justifications": {
+    "durability": "the updated stand-ins assert independent reason literals, such as tests/test_crew_recovery.py:2863 asserting signalled == [(4242, \"budget-watchdog\")] against the value recovery.py:3042 supplies, and logs/negative-control.log shows reinstating one (pid, start_time) signature reddens that test again.",
+    "evidence": "the base and head gate logs log the eleven named ids failing at base and none at head, exactly the done_when's zero-added-failure measure, but the assembled logs/base-arm.log prints a per-file sentinel of EXIT=0 while the arm's recorded exit is 1.",
+    "fit": "the edits follow the surrounding monkeypatch idiom and the existing signalled-list pattern in tests/test_crew.py:2691, introduce no name the naming rules forbid, and ruff format --check reports the six files already formatted.",
+    "goal_fidelity": "git diff 825bf5bc8..2e1dfcd31 touches the eleven named stand-ins in tests/test_crew.py, tests/test_crew_lane_change.py, tests/test_crew_recovery.py, tests/test_receipt_after_release.py, tests/test_terminal_run_elapsed.py and tests/test_worker_env_export.py, and logs/head-arm.log shows all six files passing.",
+    "scope_discipline": "git diff --name-only 825bf5bc8 2e1dfcd31 lists only the six declared test files and docs/evidence/fragments/the-suite-is-green-at-head/signal-fakes-take-the-caller-arguments.html, with no product file under reckon/ touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"The eleven ids red since signal callers began passing run_dir and reason pass at head\"; git diff 825bf5bc8..2e1dfcd31 updates exactly the eleven named stand-ins across the six files, and the head arm logs/head-arm.log reports the six files green.\nVERDICT done_when: the done_when requires the base and head arms over the six files to show zero added failures; logs/base-arm.log lists exactly the eleven named FAILED ids and logs/head-arm.log lists none, matching the manifest's baseline_suite/after_suite records.\nVERDICT write_paths: the declared write paths are the six test files plus the landing fragment; git diff --name-only 825bf5bc8 2e1dfcd31 lists exactly those seven paths and no reckon/ product file.\nVERDICT manifest: read; it records status complete, the commit pair 82ee9f444/2e1dfcd31, base 11 failed/305 passed, head 316 passed/0 failed, and the negative-control log.\nVERDICT diff: read commit by commit; 82ee9f444 widens each stand-in's signature to accept the keyword-only reason/run_dir/project and, where the test already asserts the signal, pins the reason literal, and 2e1dfcd31 adds the landing fragment; no product source changed.\nCALL_SITES: reckon/crew/dispatch.py:6217 (dispatch-rollback), reckon/crew/dispatch.py:10091 (lane-change), reckon/crew/dispatch.py:10221 (run-stop), reckon/crew/promotion.py:3789 (promotion-settle), reckon/crew/promotion.py:5572 (promotion-release), reckon/crew/recovery.py:3042 (budget-watchdog), reckon/crew/routing.py:1549 (definition)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: git diff 825bf5bc8..2e1dfcd31 touches the eleven named stand-ins in tests/test_crew.py, tests/test_crew_lane_change.py, tests/test_crew_recovery.py, tests/test_receipt_after_release.py, tests/test_terminal_run_elapsed.py and tests/test_worker_env_export.py, and logs/head-arm.log shows all six files passing.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base and head gate logs log the eleven named ids failing at base and none at head, exactly the done_when's zero-added-failure measure, but the assembled logs/base-arm.log prints a per-file sentinel of EXIT=0 while the arm's recorded exit is 1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 825bf5bc8 2e1dfcd31 lists only the six declared test files and docs/evidence/fragments/the-suite-is-green-at-head/signal-fakes-take-the-caller-arguments.html, with no product file under reckon/ touched.\nSCORE durability: 19\nJUSTIFICATION durability: the updated stand-ins assert independent reason literals, such as tests/test_crew_recovery.py:2863 asserting signalled == [(4242, \"budget-watchdog\")] against the value recovery.py:3042 supplies, and logs/negative-control.log shows reinstating one (pid, start_time) signature reddens that test again.\nSCORE fit: 20\nJUSTIFICATION fit: the edits follow the surrounding monkeypatch idiom and the existing signalled-list pattern in tests/test_crew.py:2691, introduce no name the naming rules forbid, and ruff format --check reports the six files already formatted.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T040631202720-signal-fakes-take-the-caller-arguments/logs/base-arm.log:1019 follow-on: the assembled base-arm log ends each file section with a bare EXIT=0 while the base arm's real per-file exit codes are all 1 (recorded in base-arms.summ and as the manifest's baseline_suite.exit_status=1), so a reader who checks the log's terminal sentinel rather than its FAILED ids would read the base arm as green.",
+  "review_run_id": "r-20261002T043541521798-review-of-signal-fakes-take-the-caller-arguments",
+  "reviewed_base_sha": "825bf5bc8d9fb4b1f269ec8712392eda0085a8ef",
+  "reviewed_head_sha": "2e1dfcd315e0a2298c89994a722d4fabba652456",
+  "reviewed_run_id": "r-20261002T040631202720-signal-fakes-take-the-caller-arguments",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T04:41:15.040129+00:00",
+  "total": 97
+}

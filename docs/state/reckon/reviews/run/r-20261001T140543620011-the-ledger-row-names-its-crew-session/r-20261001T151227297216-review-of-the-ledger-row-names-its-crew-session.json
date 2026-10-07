@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from two arms I ran over the promotion/ledger tests: base a4c312fbe 117 passed 1 skipped EXIT=0 (review-base-arm.log) and head 8edc383f0 119 passed 1 skipped EXIT=0 (review-head-arm.log), so head adds no failing test (the +2 are the reviewed node's own new passing cases). The reviewed run's own manifest names no baseline_suite/after_suite gate logs (it is not armed; it records a single head-only gate), so the count could not be taken from the reviewed run's own arms.",
+  "after_suite": {
+    "command": "env -C /tmp/reckon-crew-scratch/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/arms/head PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/arms/head /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/reckon-crew-scratch/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/arms/head/bt tests/test_ledger_row_names_its_crew_session.py tests/test_record_fields_declare_every_key.py tests/test_ledger.py tests/test_routing_evidence_fields.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/review-head-arm.log",
+    "revision": "8edc383f0d79c60c916c2a346508fea8187a3148"
+  },
+  "baseline_suite": {
+    "command": "env -C /tmp/reckon-crew-scratch/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/arms/base PYTHONPATH=/tmp/reckon-crew-scratch/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/arms/base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/reckon-crew-scratch/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/arms/base/bt tests/test_record_fields_declare_every_key.py tests/test_ledger.py tests/test_routing_evidence_fields.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/review-base-arm.log",
+    "revision": "a4c312fbea80e2990b5781c0ec180f80cc7393d0"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/ledger.py:build_record"
+  ],
+  "completed_at": "2026-10-01T15:38:39.777Z",
+  "dispatched_at": "2026-10-01T15:12:46Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger_row_names_its_crew_session.py",
+      "line": "215",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's second case is implemented as the key being present and null for a pointer naming no session, not the brief's literal \"records no session key\"; the deviation is required because adding session to RECORD_FIELDS makes the set(RECORD_FIELDS) <= set(row) assertions fail on any row that omits it, and the node documented it, so the brief's wording rather than the code is superseded."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "138",
+      "severity": "follow-on",
+      "text": "follow-on: commit b7a2a47 declares session in RECORD_FIELDS and 8edc383f0 fills it in build_record, both outside the node's declared write paths (promotion.py, the test, the fragment, figures); the manifest records it as a blocker needing the node definition's write_paths extended before promotion reads ok:true."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base a4c312fbe; 6208811 adds the promotion copy plus a 214-line test and a fragment, b7a2a47 declares session in reckon/ledger.py RECORD_FIELDS, 834a2c64 makes the row always carry the key, and 8edc383f0 moves the fill into build_record so rows a caller builds directly also carry it; only the two product files, the test and the fragment change.",
+    "done_when": "the done-when's gate is tests/test_ledger_row_names_its_crew_session.py at head ending EXIT=0, plus a second case for a pointer naming no session; the manifest records 119 passed 1 skipped EXIT=0 at 8edc383f0 and my independent head arm over the same four files reproduces it, but the second case asserts the key is present and null, not the brief's literal \"no session key\".",
+    "goal": "the node goal is to copy the dispatching crew session from the live pointer onto the promoted ledger row as session while leaving session_id as the worker's own harness session; reckon/crew/promotion.py:6857 reads the pointer's session and passes it at :6891 to ledger.build_record, which writes the row's session beside session_id.",
+    "manifest": "read; it records status complete, the four commits, the gate command with 119 passed 1 skipped EXIT=0 at 8edc383f0, a negative_control_log path, the direct union repro for the schema declaration, and a blocker naming the reckon/ledger.py scope deviation.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, tests/test_ledger_row_names_its_crew_session.py, the evidence fragment and a figures dir; commits 6208811, b7a2a47, 834a2c64 and 8edc383f0 stay inside them except reckon/ledger.py, written by b7a2a47 and 8edc383f0 outside the declared paths and recorded in the manifest's own blockers as needing a coordinator-granted extension."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger_row_names_its_crew_session.py:182 asserts row.get(\"session\") == \"s-test\" against the literal the test wrote to the pointer, and the reviewed run's declared mutation dropping the copy reddens it (negative-control.log, 1 failed 1 passed EXIT=1); the key's presence on every row is further guarded by the set(RECORD_FIELDS) <= set(row) assertions in tests/test_ledger.py and tests/test_routing_evidence_fields.py.",
+    "evidence": "the gate tests/test_ledger_row_names_its_crew_session.py records 119 passed 1 skipped EXIT=0 at 8edc383f0 and my head arm over the same four files reproduces it, but the done-when's stated second-case assertion (\"no session key\") is not the one implemented, so the gate asserts a different second case than the brief named.",
+    "fit": "the new session parameter and RECORD_FIELDS entry at reckon/ledger.py:138 follow the adjacent scope_acceptances and session_id entries, and the comment distinguishes session from session_id without a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:6857-6891 copies the pointer's session onto the row and leaves session_id as the pointer's harness session, exactly the goal; only the no-session case differs from the brief's literal wording, and that difference is forced by the RECORD_FIELDS subset invariant.",
+    "scope_discipline": "commits b7a2a47 and 8edc383f0 write reckon/ledger.py, outside the node's declared write paths, disclosed in the manifest's blockers as needing a granted extension; the declaration there is what makes the row's new key schema-complete, so the expansion is load-bearing rather than incidental."
+  },
+  "node": "review-of-the-ledger-row-names-its-crew-session",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to copy the dispatching crew session from the live pointer onto the promoted ledger row as session while leaving session_id as the worker's own harness session; reckon/crew/promotion.py:6857 reads the pointer's session and passes it at :6891 to ledger.build_record, which writes the row's session beside session_id.\nVERDICT done_when: the done-when's gate is tests/test_ledger_row_names_its_crew_session.py at head ending EXIT=0, plus a second case for a pointer naming no session; the manifest records 119 passed 1 skipped EXIT=0 at 8edc383f0 and my independent head arm over the same four files reproduces it, but the second case asserts the key is present and null, not the brief's literal \"no session key\".\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, tests/test_ledger_row_names_its_crew_session.py, the evidence fragment and a figures dir; commits 6208811, b7a2a47, 834a2c64 and 8edc383f0 stay inside them except reckon/ledger.py, written by b7a2a47 and 8edc383f0 outside the declared paths and recorded in the manifest's own blockers as needing a coordinator-granted extension.\nVERDICT manifest: read; it records status complete, the four commits, the gate command with 119 passed 1 skipped EXIT=0 at 8edc383f0, a negative_control_log path, the direct union repro for the schema declaration, and a blocker naming the reckon/ledger.py scope deviation.\nVERDICT diff: read commit by commit against base a4c312fbe; 6208811 adds the promotion copy plus a 214-line test and a fragment, b7a2a47 declares session in reckon/ledger.py RECORD_FIELDS, 834a2c64 makes the row always carry the key, and 8edc383f0 moves the fill into build_record so rows a caller builds directly also carry it; only the two product files, the test and the fragment change.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/ledger.py:build_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:6857-6891 copies the pointer's session onto the row and leaves session_id as the pointer's harness session, exactly the goal; only the no-session case differs from the brief's literal wording, and that difference is forced by the RECORD_FIELDS subset invariant.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate tests/test_ledger_row_names_its_crew_session.py records 119 passed 1 skipped EXIT=0 at 8edc383f0 and my head arm over the same four files reproduces it, but the done-when's stated second-case assertion (\"no session key\") is not the one implemented, so the gate asserts a different second case than the brief named.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: commits b7a2a47 and 8edc383f0 write reckon/ledger.py, outside the node's declared write paths, disclosed in the manifest's blockers as needing a granted extension; the declaration there is what makes the row's new key schema-complete, so the expansion is load-bearing rather than incidental.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_ledger_row_names_its_crew_session.py:182 asserts row.get(\"session\") == \"s-test\" against the literal the test wrote to the pointer, and the reviewed run's declared mutation dropping the copy reddens it (negative-control.log, 1 failed 1 passed EXIT=1); the key's presence on every row is further guarded by the set(RECORD_FIELDS) <= set(row) assertions in tests/test_ledger.py and tests/test_routing_evidence_fields.py.\nSCORE fit: 18\nJUSTIFICATION fit: the new session parameter and RECORD_FIELDS entry at reckon/ledger.py:138 follow the adjacent scope_acceptances and session_id entries, and the comment distinguishes session from session_id without a plan or ticket identifier.\nFINDING tests/test_ledger_row_names_its_crew_session.py:215 follow-on: the done-when's second case is implemented as the key being present and null for a pointer naming no session, not the brief's literal \"records no session key\"; the deviation is required because adding session to RECORD_FIELDS makes the set(RECORD_FIELDS) <= set(row) assertions fail on any row that omits it, and the node documented it, so the brief's wording rather than the code is superseded.\nFINDING reckon/ledger.py:138 follow-on: commit b7a2a47 declares session in RECORD_FIELDS and 8edc383f0 fills it in build_record, both outside the node's declared write paths (promotion.py, the test, the fragment, figures); the manifest records it as a blocker needing the node definition's write_paths extended before promotion reads ok:true.",
+  "review_run_id": "r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session",
+  "reviewed_base_sha": "a4c312fbea80e2990b5781c0ec180f80cc7393d0",
+  "reviewed_head_sha": "8edc383f0d79c60c916c2a346508fea8187a3148",
+  "reviewed_run_id": "r-20261001T140543620011-the-ledger-row-names-its-crew-session",
+  "reviewer_run_id": "r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/review-base-arm.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session/review-head-arm.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T140543620011-the-ledger-row-names-its-crew-session/negative-control.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T15:37:47.840458+00:00",
+  "total": 83
+}

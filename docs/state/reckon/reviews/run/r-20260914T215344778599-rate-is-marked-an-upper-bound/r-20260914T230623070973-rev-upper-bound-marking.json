@@ -1,0 +1,32 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T23:06:23.070973+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "the new case test_every_derived_rate_figure_is_marked_as_an_upper_bound fails against the pre-change crew.jsx (assert 0 == 2 at tests/test_spa_crew_burn.py:322, reproduced independently), so a future removal of the rate-figure marking fails the gate; the companion test_the_meter_position_carries_no_upper_bound_marking asserts positionMarkCounts == [0], so marking the position too also fails, pinning the distinction between the two kinds rather than decoration on both.",
+    "evidence": "independently re-ran the gate at the reviewed head b0ede8b and got 10 passed, 0 failed in 1.00s (tests/test_spa_crew_burn.py, venv-direct invocation), matching the worker's stated after; reproduced the guard fire by running the head test file against the base crew.jsx (assert 0 == 2 at test_spa_crew_burn.py:322), and verified the manifest's three recorded logs (8 pass base / 10 pass head / 1 failed 9 passed guard) all exist and match; verified the base-tree equivalence a76cb93 == dc73720 for every scope file and that a5254ef (meter renderer) is an ancestor of a76cb93, which is an ancestor of b0ede8b, so the stated base is the genuine pre-change tree.",
+    "fit": "the mark rides the established r-crew-* vocabulary (r-crew-figure--rate as a BEM-style modifier on the existing r-crew-figure, .r-crew-quota-row-foot .r-crew-bound beside the other quota-row-foot rules at docs/ui/crew.css:569+) and is presentation-only: the derived figures still come from the Python-read payload (burn_multiple / rate_windows), so the SPA-renders-not-derives invariant holds; docked for surface density rather than a defect, because the visible bound sentence duplicates the title attribute nearly verbatim and reads long inside a meter footer.",
+    "goal_fidelity": "docs/ui/crew.jsx:604 renders every derived rate figure with the r-crew-figure--rate class and an r-crew-bound child (:608-613) whose visible text names the bound and its reason, while the meter position (<i class=r-crew-position> at :585) carries no such mark, so the two kinds read as different rather than decorated alike; each of the done-when's three facts is pinned by the new cases at tests/test_spa_crew_burn.py:314 and :329.",
+    "scope_discipline": "commit b0ede8b touches exactly the three declared write paths (git show --name-only lists only docs/ui/crew.css, docs/ui/crew.jsx, tests/test_spa_crew_burn.py), the reviewed worktree is clean at its head, ruff adds no finding (base and head test files both pass ruff check clean, crew.jsx/crew.css not ruff-lintable), and the message has a body with no plan identifiers and no AI attribution."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/ui/crew.jsx:604 renders every derived rate figure with the r-crew-figure--rate class and an r-crew-bound child (:608-613) whose visible text names the bound and its reason, while the meter position (<i class=r-crew-position> at :585) carries no such mark, so the two kinds read as different rather than decorated alike; each of the done-when's three facts is pinned by the new cases at tests/test_spa_crew_burn.py:314 and :329.\nSCORE evidence: 20\nJUSTIFICATION evidence: independently re-ran the gate at the reviewed head b0ede8b and got 10 passed, 0 failed in 1.00s (tests/test_spa_crew_burn.py, venv-direct invocation), matching the worker's stated after; reproduced the guard fire by running the head test file against the base crew.jsx (assert 0 == 2 at test_spa_crew_burn.py:322), and verified the manifest's three recorded logs (8 pass base / 10 pass head / 1 failed 9 passed guard) all exist and match; verified the base-tree equivalence a76cb93 == dc73720 for every scope file and that a5254ef (meter renderer) is an ancestor of a76cb93, which is an ancestor of b0ede8b, so the stated base is the genuine pre-change tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit b0ede8b touches exactly the three declared write paths (git show --name-only lists only docs/ui/crew.css, docs/ui/crew.jsx, tests/test_spa_crew_burn.py), the reviewed worktree is clean at its head, ruff adds no finding (base and head test files both pass ruff check clean, crew.jsx/crew.css not ruff-lintable), and the message has a body with no plan identifiers and no AI attribution.\nSCORE durability: 20\nJUSTIFICATION durability: the new case test_every_derived_rate_figure_is_marked_as_an_upper_bound fails against the pre-change crew.jsx (assert 0 == 2 at tests/test_spa_crew_burn.py:322, reproduced independently), so a future removal of the rate-figure marking fails the gate; the companion test_the_meter_position_carries_no_upper_bound_marking asserts positionMarkCounts == [0], so marking the position too also fails, pinning the distinction between the two kinds rather than decoration on both.\nSCORE fit: 19\nJUSTIFICATION fit: the mark rides the established r-crew-* vocabulary (r-crew-figure--rate as a BEM-style modifier on the existing r-crew-figure, .r-crew-quota-row-foot .r-crew-bound beside the other quota-row-foot rules at docs/ui/crew.css:569+) and is presentation-only: the derived figures still come from the Python-read payload (burn_multiple / rate_windows), so the SPA-renders-not-derives invariant holds; docked for surface density rather than a defect, because the visible bound sentence duplicates the title attribute nearly verbatim and reads long inside a meter footer.\n",
+  "review_run_id": "r-20260914T230623070973-rev-upper-bound-marking",
+  "reviewed_base": "a76cb931578e615589bacd9874f7e91cee47f3d8",
+  "reviewed_commit": "b0ede8b69f154061c289d5ffb0ac14571fb1619b",
+  "reviewed_run_id": "r-20260914T215344778599-rate-is-marked-an-upper-bound",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T23:27:16+00:00",
+  "total": 99
+}

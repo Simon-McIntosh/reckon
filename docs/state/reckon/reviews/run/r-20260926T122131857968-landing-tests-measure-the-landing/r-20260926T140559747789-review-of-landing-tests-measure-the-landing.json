@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T15:20:20.759Z",
+  "dispatched_at": "2026-09-26T14:06:20Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_promotion.py",
+      "line": "1535",
+      "text": "_landing_commit_paths still defaults revision to HEAD, so a helper named for the landing can silently measure the release receipt again with no test failing if this repair is reverted; making the revision required is the hardening the manifest names as its follow-on."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 355ef453; be2d3c36 rewrites one assertion in tests/test_crew_promotion.py and 47c56c59 appends the plan aside, the landed-record section and the figure, with zero deletions.",
+    "done_when": "the done_when names the :1843 assertion plus a mutation falsifier with both arms logged; the manifest records arm-base.log, arm-mutated-repaired.log and arm-mutated-headform.log, and the focused file's 50 passed in gate-focused-tests/test_crew_promotion.log.",
+    "goal": "the goal is that promotion tests meaning the landing commit measure the located landing commit rather than HEAD; tests/test_crew_promotion.py:1844 binds that, and the two remaining default-revision calls at :2059 and :2104 assert the verify-gate re-run's own commit, which is the commit HEAD names at the point they run.",
+    "manifest": "read; it reports 50 passed on the focused file, names the gate, arm and ruff logs, states the declared negative control, and discloses that the 30m time fence was exceeded while finishing the record.",
+    "write_paths": "the declared write paths are tests/test_crew_promotion.py, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html, docs/figures/the-ledger-is-one-file-per-run and docs/plans/the-ledger-is-one-file-per-run.html; all four paths of 355ef453..47c56c59 lie inside them."
+  },
+  "justifications": {
+    "durability": "the assertion is independent, a git-derived path set against a literal rather than re-reading the run id it passed in, and the declared mutation reddens the pre-repair form while the repaired form holds, but nothing fails if the repair itself is reverted, which the finding at :1535 and the manifest's follow-on name.",
+    "evidence": "the arm logs carry revision, tree, command, imported module and cwd, and the driver and patch that produced them are durable in the run directory, but measurement_module and measurement_cwd name a /tmp scratch that no longer exists and a later reader cannot open.",
+    "fit": "the repaired form matches the sibling calls at tests/test_crew_promotion.py:1592, :1614 and :1880 with no new name introduced, and the new figure parses as XML.",
+    "goal_fidelity": "tests/test_crew_promotion.py:1844 measures _landing_commit_paths at the located promote commit, which is the goal's whole deliverable, and the change does nothing beyond it.",
+    "scope_discipline": "the four paths of 355ef453..47c56c59 all sit inside the declared write paths, the docs edits are pure appends and reckon/crew/promotion is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that promotion tests meaning the landing commit measure the located landing commit rather than HEAD; tests/test_crew_promotion.py:1844 binds that, and the two remaining default-revision calls at :2059 and :2104 assert the verify-gate re-run's own commit, which is the commit HEAD names at the point they run.\nVERDICT done_when: the done_when names the :1843 assertion plus a mutation falsifier with both arms logged; the manifest records arm-base.log, arm-mutated-repaired.log and arm-mutated-headform.log, and the focused file's 50 passed in gate-focused-tests/test_crew_promotion.log.\nVERDICT write_paths: the declared write paths are tests/test_crew_promotion.py, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html, docs/figures/the-ledger-is-one-file-per-run and docs/plans/the-ledger-is-one-file-per-run.html; all four paths of 355ef453..47c56c59 lie inside them.\nVERDICT manifest: read; it reports 50 passed on the focused file, names the gate, arm and ruff logs, states the declared negative control, and discloses that the 30m time fence was exceeded while finishing the record.\nVERDICT diff: read commit by commit against 355ef453; be2d3c36 rewrites one assertion in tests/test_crew_promotion.py and 47c56c59 appends the plan aside, the landed-record section and the figure, with zero deletions.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_promotion.py:1844 measures _landing_commit_paths at the located promote commit, which is the goal's whole deliverable, and the change does nothing beyond it.\nSCORE evidence: 19\nJUSTIFICATION evidence: the arm logs carry revision, tree, command, imported module and cwd, and the driver and patch that produced them are durable in the run directory, but measurement_module and measurement_cwd name a /tmp scratch that no longer exists and a later reader cannot open.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths of 355ef453..47c56c59 all sit inside the declared write paths, the docs edits are pure appends and reckon/crew/promotion is untouched.\nSCORE durability: 17\nJUSTIFICATION durability: the assertion is independent, a git-derived path set against a literal rather than re-reading the run id it passed in, and the declared mutation reddens the pre-repair form while the repaired form holds, but nothing fails if the repair itself is reverted, which the finding at :1535 and the manifest's follow-on name.\nSCORE fit: 19\nJUSTIFICATION fit: the repaired form matches the sibling calls at tests/test_crew_promotion.py:1592, :1614 and :1880 with no new name introduced, and the new figure parses as XML.\nFINDING tests/test_crew_promotion.py:1535 _landing_commit_paths still defaults revision to HEAD, so a helper named for the landing can silently measure the release receipt again with no test failing if this repair is reverted; making the revision required is the hardening the manifest names as its follow-on.\n",
+  "review_run_id": "r-20260926T140559747789-review-of-landing-tests-measure-the-landing",
+  "reviewed_base_sha": "355ef453f0b80758f8f15ca14f49250461aeeb0a",
+  "reviewed_head_sha": "47c56c59102f11f885a433591d66ebc6a4d6a43b",
+  "reviewed_run_id": "r-20260926T122131857968-landing-tests-measure-the-landing",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T15:10:00.545267+00:00",
+  "total": 95
+}

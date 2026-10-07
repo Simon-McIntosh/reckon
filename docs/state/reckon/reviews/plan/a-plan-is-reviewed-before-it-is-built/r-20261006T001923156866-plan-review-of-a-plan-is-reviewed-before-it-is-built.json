@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T00:22:15.855Z",
+  "dispatched_at": "2026-10-06T00:19:46Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name `promotion._plan_remaining_sections` as the existing owner of the outstanding-sections derivation and extend or hoist it (as \u00a716 already hoists `section_anchor` into `_plan_html.py`) rather than spell the landing subtraction a second time inside the coverage predicate, which would drift from the owner as the rule changes.",
+      "text": "the coverage predicate joins the outstanding sections from `roadmap.implementable_sections` (reckon/roadmap.py:107), which selects declared `implementable` sections and does NOT subtract landings, and then applies the landing subtraction itself (\"under the landing rule \u00a718 states\"); that derivation already exists, module-private, as `promotion._plan_remaining_sections` (reckon/crew/promotion.py:7233), which returns declared implementable sections minus `_landed_sections` (reckon/crew/promotion.py:7210) and is the reader \u00a718 specifically routed through `is_implementable_section` \u2014 so \u00a716 forking it re-adds a sixth site of the \"which sections are still work\" rule that \u00a718 consolidated (comparisons 6\u21922)",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0a370ea689449097b43e91dc4834cac690652b9206d4e66cf508d0012960b2ee",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 151,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T001923156866-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "34005c92daa0e88f9adb2f08148e4033efcff21a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 does not add a module; it hides a whole re-architecture of the fingerprint (section-set digest, third recognised form, span-sliced prose) behind one public function (`strip_tags`), one module-private mapping (`_section_digests`), one module-private coverage predicate and one keyword on an existing public name \u2014 an interface far smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a716 re-derives the \"sections that still have work\" set (declared implementable minus landed) that `reckon/crew/promotion.py::_plan_remaining_sections` already owns.",
+    "interface_budget": "pass \u2014 supplied counts public_definitions 1480, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds exactly one public definition (`strip_tags` on `reckon/_plan_html.py`, 1480\u21921481, matching the supplied base), states why nothing is retired (the identity digest and the prose walk keep their names) and reuses the existing plan-review-missing refusal family, so no CLI option, MCP view or refusal family is added; \u00a720 adds and retires nothing (tests only).",
+    "reuse_search": "pass \u2014 the design sections search and cite the machinery they extend: the \u00a717 raw-text reader (`structured_section_spans`, `plan_headings`), the tag expression `_TAG_RE` and its consumer `count_open_decisions` in `reckon/_plan_html.py`, the identity trio `section_record_id`/`section_id_candidates`/`is_section_identity`, `roadmap.implementable_sections`, `list_plan_reviews`, `read_plan_review` and `_fingerprint_forms`; \u00a716 names what it moves (`_PROSE_SKIP_TAGS`, `section_anchor`) versus what it keeps, and measures the reuse gap (128 of 151 plans matched, 23 differed).",
+    "thin_wrapper": "pass \u2014 the design says why the existing machinery is extended rather than wrapped: `strip_tags` is a public function on the module that already owns `_TAG_RE` and does not add a parallel expression (and `count_open_decisions` keeps its bare substitution, with the reason), and \u00a716 argues at length that the coverage predicate is not a wrapper over `read_plan_review` because it joins a section set from one reader to a digest union from another."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.744834+00:00"
+}

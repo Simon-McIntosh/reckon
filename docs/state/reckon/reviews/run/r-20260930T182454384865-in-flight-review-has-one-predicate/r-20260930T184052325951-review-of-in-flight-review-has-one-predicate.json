@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "the reviewed run's own gate-base.log (revision 008a18f121e0f1c4ad32d8b96964acdbad7f9c12, 29 passed) and gate-head.log (revision 69eed5eaf0358e28228d6f2ab5ceaddfeed332c1, 33 passed), named by the manifest's test_logs field; both logs carry zero FAILED/ERROR ids, so the added-failure count is a measured zero",
+  "base_log_revision": "008a18f121e0f1c4ad32d8b96964acdbad7f9c12",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:1007 and reckon/crew/obligations.py:97 call it; recovery.py:1667 remains an exists-then-read check but belongs to _repair_in_flight",
+    "a separate repair predicate outside this node's review path."
+  ],
+  "completed_at": "2026-09-30T19:04:18.560Z",
+  "dispatched_at": "2026-09-30T18:41:11Z",
+  "findings": [],
+  "head_log_revision": "69eed5eaf0358e28228d6f2ab5ceaddfeed332c1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "recovery.py adds _recorded_review_is_live (reads the pointer and fails closed on a missing, malformed, scalar or unreadable file, since read_pointer raises CrewError and OSError is caught) and uses it in _review_in_flight; obligations.py's _reflex_review_in_flight replaces its exists()-only check with the same call.",
+    "done_when": "the measure is that the two readers cannot split on a pointer that exists but is unreadable; tests/test_in_flight_review_has_one_predicate.py drives a readable, an absent, an unreadable and a non-object pointer and asserts reader==reflex on each, and it is red at base (2 failed, a CrewError from runs.read_pointer) and green at head.",
+    "goal": "the node's goal is that the two readers of the reflex's recorded review dispatch decide in-flight from one predicate; at the reviewed head both call recovery._recorded_review_is_live (obligations.py:97 and recovery.py:1007), and grep shows the run's review path keeps no second copy of the exists-only check.",
+    "manifest": "read; the delivery reads status complete, its write_paths match the diff, and its test_logs name the base and head gate logs, which exist on disk and whose first lines name revisions 008a18f121 and 69eed5eaf0.",
+    "write_paths": "the range base..head changes exactly reckon/crew/obligations.py, reckon/crew/recovery.py, tests/test_in_flight_review_has_one_predicate.py and docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/in-flight-review-has-one-predicate.html, +219/-9, and names no path outside them."
+  },
+  "justifications": {
+    "durability": "the tests build a synthesised crew home behind RECKON_HOME and never touch the operator's store, the unreadable and non-object cases bite (mutation reds them, base reds them), and the assertions are built from the fixture rather than from a value the test hardcodes about today \u2014 deducted one point because the two readers are compared to each other rather than each to an independently observed outcome, so a shared wrong answer would read as agreement.",
+    "evidence": "base gate 29 passed and head gate 33 passed over the named files with zero FAILED/ERROR ids on either side (I re-ran the head set: 33 passed), the new file is red at base (2 failed with a CrewError) and green at head, and the declared negative control reds the unreadable and non-object cases (2 failed, EXIT=1) \u2014 deducted because the reviewed manifest records its two arms under tests/test_logs rather than the armed baseline_suite/after_suite fields, so the store's read-time added-failure annotation reports this run's count unmeasured even though the two named gate logs support a measured zero.",
+    "fit": "the new predicate follows the module's long-prose docstring idiom, obligations.py already imports recovery's private readers (_review_in_flight, _review_dispatch_fields, _reviewed_run_head), the commit subjects carry bodies, and the diff carries no AI attribution, plan label or version number.",
+    "goal_fidelity": "both named readers decide in-flight from recovery._recorded_review_is_live at the reviewed head, the pre-existing split (obligations counted an exists-only path; the reflex raised on an unreadable one) is closed, and I reproduced the discriminating case red at the base revision and green at the reviewed head.",
+    "scope_discipline": "the two commits change only the three declared source/test paths and the declared plan fragment, with nothing leaving the declared set and no figure or extra artefact written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the two readers of the reflex's recorded review dispatch decide in-flight from one predicate; at the reviewed head both call recovery._recorded_review_is_live (obligations.py:97 and recovery.py:1007), and grep shows the run's review path keeps no second copy of the exists-only check.\nVERDICT done_when: the measure is that the two readers cannot split on a pointer that exists but is unreadable; tests/test_in_flight_review_has_one_predicate.py drives a readable, an absent, an unreadable and a non-object pointer and asserts reader==reflex on each, and it is red at base (2 failed, a CrewError from runs.read_pointer) and green at head.\nVERDICT write_paths: the range base..head changes exactly reckon/crew/obligations.py, reckon/crew/recovery.py, tests/test_in_flight_review_has_one_predicate.py and docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/in-flight-review-has-one-predicate.html, +219/-9, and names no path outside them.\nVERDICT manifest: read; the delivery reads status complete, its write_paths match the diff, and its test_logs name the base and head gate logs, which exist on disk and whose first lines name revisions 008a18f121 and 69eed5eaf0.\nVERDICT diff: recovery.py adds _recorded_review_is_live (reads the pointer and fails closed on a missing, malformed, scalar or unreadable file, since read_pointer raises CrewError and OSError is caught) and uses it in _review_in_flight; obligations.py's _reflex_review_in_flight replaces its exists()-only check with the same call.\nCALL_SITES: reckon/crew/recovery.py:1007 and reckon/crew/obligations.py:97 call it; recovery.py:1667 remains an exists-then-read check but belongs to _repair_in_flight, a separate repair predicate outside this node's review path.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both named readers decide in-flight from recovery._recorded_review_is_live at the reviewed head, the pre-existing split (obligations counted an exists-only path; the reflex raised on an unreadable one) is closed, and I reproduced the discriminating case red at the base revision and green at the reviewed head.\nSCORE evidence: 18\nJUSTIFICATION evidence: base gate 29 passed and head gate 33 passed over the named files with zero FAILED/ERROR ids on either side (I re-ran the head set: 33 passed), the new file is red at base (2 failed with a CrewError) and green at head, and the declared negative control reds the unreadable and non-object cases (2 failed, EXIT=1) \u2014 deducted because the reviewed manifest records its two arms under tests/test_logs rather than the armed baseline_suite/after_suite fields, so the store's read-time added-failure annotation reports this run's count unmeasured even though the two named gate logs support a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change only the three declared source/test paths and the declared plan fragment, with nothing leaving the declared set and no figure or extra artefact written.\nSCORE durability: 19\nJUSTIFICATION durability: the tests build a synthesised crew home behind RECKON_HOME and never touch the operator's store, the unreadable and non-object cases bite (mutation reds them, base reds them), and the assertions are built from the fixture rather than from a value the test hardcodes about today \u2014 deducted one point because the two readers are compared to each other rather than each to an independently observed outcome, so a shared wrong answer would read as agreement.\nSCORE fit: 20\nJUSTIFICATION fit: the new predicate follows the module's long-prose docstring idiom, obligations.py already imports recovery's private readers (_review_in_flight, _review_dispatch_fields, _reviewed_run_head), the commit subjects carry bodies, and the diff carries no AI attribution, plan label or version number.",
+  "review_run_id": "r-20260930T184052325951-review-of-in-flight-review-has-one-predicate",
+  "reviewed_base_sha": "008a18f121e0f1c4ad32d8b96912acdbad7f9c12",
+  "reviewed_head_sha": "bb1ace4aab24fb33a1677c0f0d970897be6c3c12",
+  "reviewed_run_id": "r-20260930T182454384865-in-flight-review-has-one-predicate",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:03.446944+00:00",
+  "total": 97
+}

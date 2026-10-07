@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "e1e9c9c35fc02b9846e5226b3761208ad752551a",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T07:47:12.612Z",
+  "dispatched_at": "2026-10-04T07:41:51Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "968",
+      "severity": "follow-on",
+      "text": "follow-on: the section's done-when states the recheck costs one stat per row, but recheck_worktree_held_rows resolves each worktree-held row through _run_ledger_record, which opens and json-parses the run's per-run file at reckon/hooks/coordinator_obligations.py:906 before the one stat at :966; the cost is one file read and parse plus one stat per row, not one stat, which the dispatcher's resumed instruction sanctioned but which the recorded done-when overstates in the change's favour. No blocking defect found in the change."
+    }
+  ],
+  "head_log_revision": "ab1a7c0cf59319cdbf2ebe16a3881d39d71bf1fb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site outside the hook: recheck_worktree_held_rows is called only from _prompt and _stop, the two read surfaces the section protects.",
+    "diff": "read commit by commit: de60d639 adds recheck_worktree_held_rows and calls it in both hook paths, ab1a7c0c drops the aggregate fallback so the row resolves through the per-run file alone, 2e63acb5 and c694d0ce record the fragment; no third surface offers a worktree-held row (emit at :1125 takes the already-rechecked payload from _stop).",
+    "done_when": "the plan's done-when names a read-time check costing one stat per row, a test that promotes a run, keeps the pre-promotion snapshot, invokes the stop hook and asserts no worktree-held row, and the current hook as the negative control that offers it; tests/test_a_worktree_held_row_is_rechecked_at_read.py:309 drives a real crew complete and asserts empty stdout, and the base arm reproduces 3 failed EXIT=1 naming the stale-row cases.",
+    "goal": "\u00a721's goal is that the hook rechecks a worktree-held row at read time; reckon/hooks/coordinator_obligations.py:968 recheck_worktree_held_rows filters the live payload in both hook entry points (_prompt at :849 and :865, _stop at :1078), dropping a row whose per-run record shows release.worktree_released true or whose recorded tree is no longer a directory.",
+    "manifest": "read; it names base e1e9c9c35 with the new test copied in at 3 failed/47 passed EXIT=1, head ab1a7c0c at 50 passed EXIT=0, and negative_control_log baseline-suite.log; every log path it names exists and each header names the revision quoted and the tree it resolved from.",
+    "write_paths": "the diff e1e9c9c35..c694d0ce touches exactly three files, each a declared write path: reckon/hooks/coordinator_obligations.py, tests/test_a_worktree_held_row_is_rechecked_at_read.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/a-worktree-held-row-is-rechecked-at-read.html."
+  },
+  "justifications": {
+    "durability": "the aggregate control re-inserting the removed fallback as reachable code fails test_a_row_without_a_per_run_file_is_kept with 'the aggregate ledger was opened' (aggregate-control.log, EXIT=1), so the refusal every case drives under is load-bearing; a regression that reinstates the aggregate read or drops the record check reddens the gate rather than passing silently.",
+    "evidence": "tests/test_a_worktree_held_row_is_rechecked_at_read.py:279 drives a real crew complete, captures the snapshot from inside the promotion at the instant the row is still true (:259), and asserts the released row is dropped (:309); the aggregate trap (:194) is asserted armed before each drive so a case cannot pass by installing nothing. I independently reproduced both arms: at base e1e9c9c35 with the new test copied in, 3 failed 2 passed EXIT=1 naming the same three ids, and at head c694d0ce, 40 passed EXIT=0.",
+    "fit": "recheck_worktree_held_rows recomputes only count and oldest_age_seconds, mirroring the existing reapply_acknowledgements idiom at reckon/hooks/coordinator_obligations.py:1033; every new symbol names its mechanism (_worktree_row_is_stale, _recorded_tree, _run_ledger_record) and carries no plan, section or ticket label.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:968 drops a worktree-held row where it is offered when reckon/hooks/coordinator_obligations.py:949 finds the run's record reports release.worktree_released or the tree it names is no longer a directory, and both read surfaces (:849, :865, :1078) pass through it, so the stale row the section cites is gone at read time rather than at sweep time. One caveat: the section's done-when states the cost as one stat per row, while the per-run resolution costs one small file read and parse plus one stat per row; the dispatcher's resumed instruction explicitly moved the row off the aggregate, so the goal is met even though the stated per-row cost is a little generous.",
+    "scope_discipline": "the diff e1e9c9c35..c694d0ce touches exactly three files, all declared, with 585 insertions and 4 deletions; the declared docs/figures directory was left unused and no change reaches beyond the hook and its test."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a721's goal is that the hook rechecks a worktree-held row at read time; reckon/hooks/coordinator_obligations.py:968 recheck_worktree_held_rows filters the live payload in both hook entry points (_prompt at :849 and :865, _stop at :1078), dropping a row whose per-run record shows release.worktree_released true or whose recorded tree is no longer a directory.\nVERDICT done_when: the plan's done-when names a read-time check costing one stat per row, a test that promotes a run, keeps the pre-promotion snapshot, invokes the stop hook and asserts no worktree-held row, and the current hook as the negative control that offers it; tests/test_a_worktree_held_row_is_rechecked_at_read.py:309 drives a real crew complete and asserts empty stdout, and the base arm reproduces 3 failed EXIT=1 naming the stale-row cases.\nVERDICT write_paths: the diff e1e9c9c35..c694d0ce touches exactly three files, each a declared write path: reckon/hooks/coordinator_obligations.py, tests/test_a_worktree_held_row_is_rechecked_at_read.py, docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/a-worktree-held-row-is-rechecked-at-read.html.\nVERDICT manifest: read; it names base e1e9c9c35 with the new test copied in at 3 failed/47 passed EXIT=1, head ab1a7c0c at 50 passed EXIT=0, and negative_control_log baseline-suite.log; every log path it names exists and each header names the revision quoted and the tree it resolved from.\nVERDICT diff: read commit by commit: de60d639 adds recheck_worktree_held_rows and calls it in both hook paths, ab1a7c0c drops the aggregate fallback so the row resolves through the per-run file alone, 2e63acb5 and c694d0ce record the fragment; no third surface offers a worktree-held row (emit at :1125 takes the already-rechecked payload from _stop).\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:968 drops a worktree-held row where it is offered when reckon/hooks/coordinator_obligations.py:949 finds the run's record reports release.worktree_released or the tree it names is no longer a directory, and both read surfaces (:849, :865, :1078) pass through it, so the stale row the section cites is gone at read time rather than at sweep time. One caveat: the section's done-when states the cost as one stat per row, while the per-run resolution costs one small file read and parse plus one stat per row; the dispatcher's resumed instruction explicitly moved the row off the aggregate, so the goal is met even though the stated per-row cost is a little generous.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_worktree_held_row_is_rechecked_at_read.py:279 drives a real crew complete, captures the snapshot from inside the promotion at the instant the row is still true (:259), and asserts the released row is dropped (:309); the aggregate trap (:194) is asserted armed before each drive so a case cannot pass by installing nothing. I independently reproduced both arms: at base e1e9c9c35 with the new test copied in, 3 failed 2 passed EXIT=1 naming the same three ids, and at head c694d0ce, 40 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff e1e9c9c35..c694d0ce touches exactly three files, all declared, with 585 insertions and 4 deletions; the declared docs/figures directory was left unused and no change reaches beyond the hook and its test.\nSCORE durability: 19\nJUSTIFICATION durability: the aggregate control re-inserting the removed fallback as reachable code fails test_a_row_without_a_per_run_file_is_kept with 'the aggregate ledger was opened' (aggregate-control.log, EXIT=1), so the refusal every case drives under is load-bearing; a regression that reinstates the aggregate read or drops the record check reddens the gate rather than passing silently.\nSCORE fit: 19\nJUSTIFICATION fit: recheck_worktree_held_rows recomputes only count and oldest_age_seconds, mirroring the existing reapply_acknowledgements idiom at reckon/hooks/coordinator_obligations.py:1033; every new symbol names its mechanism (_worktree_row_is_stale, _recorded_tree, _run_ledger_record) and carries no plan, section or ticket label.\nFINDING reckon/hooks/coordinator_obligations.py:968 follow-on: the section's done-when states the recheck costs one stat per row, but recheck_worktree_held_rows resolves each worktree-held row through _run_ledger_record, which opens and json-parses the run's per-run file at reckon/hooks/coordinator_obligations.py:906 before the one stat at :966; the cost is one file read and parse plus one stat per row, not one stat, which the dispatcher's resumed instruction sanctioned but which the recorded done-when overstates in the change's favour. No blocking defect found in the change.\n",
+  "review_run_id": "r-20261004T074134846303-review-of-a-worktree-held-row-is-rechecked-at-read",
+  "reviewed_base_sha": "e1e9c9c35fc02b9846e5226b3761208ad752551a",
+  "reviewed_head_sha": "c694d0ce9e66769eb607a39277cc842dbab83842",
+  "reviewed_run_id": "r-20261004T071744562101-a-worktree-held-row-is-rechecked-at-read",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T07:46:03.608172+00:00",
+  "total": 96
+}

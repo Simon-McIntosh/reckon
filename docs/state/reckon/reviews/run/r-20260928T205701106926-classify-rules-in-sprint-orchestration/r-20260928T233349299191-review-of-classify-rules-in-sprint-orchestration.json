@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/serve.py:2106",
+    "reckon/mcp.py:1139",
+    "reckon/doccheck.py:1230"
+  ],
+  "completed_at": "2026-09-29T00:08:49.525Z",
+  "dispatched_at": "2026-09-28T23:34:05Z",
+  "emission_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T233349299191-review-of-classify-rules-in-sprint-orchestration/review-emission.log",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html",
+      "line": "293",
+      "text": "the row labelled L750 (\"A member is a serial worker; dispatch refuses one with a non-terminal in-flight run\") cites a line that in the same revision carries the tail of the preceding session-identity rule and its rationale, \"completed) is never resumed. **Why the rule:** a member's session used to be\"; the sentence begins at line 756 of skills/reckon-build/references/sprint-orchestration.md, and the very next row cites L756 for that sentence's own tail, so its first half is attributed to the wrong line."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html",
+      "line": "160",
+      "text": "the rules at fragment lines 160 (L295 \"Workers stage explicit paths and make coherent local commits, each carrying a subject and a body\") and 186 (L427, contract rule 6) name \"manifest schema status vocabulary\" and the unknown-status tests in tests/test_manifest_parse_format.py as their enforcement, which fire on the manifest's status word rather than on the guarded commit form, and their reason's clause \"promotion rejects a bodiless or unscoped commit\" has nothing behind the bodiless half: no production code reads a commit message (the promise appears only as prompt prose at reckon/crew/prompts.py:470 and reckon/crew/worker_digest.py:178) and no test asserts such a refusal, while the half that is enforced, promotion's out-of-scope refusal, is cited only in the remedies table."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the five commits (b90891fd, 74a17bc4, 6dd22d11, 9770d630, b2fbbcc1) against base 7c25dee7: they land the fragment and the figure and then repair them (figure pane counts, a remedies-table pairing, the header revision prose) without touching a file outside the two declared paths.",
+    "done_when": "Each row carries the five fields the measure names and the enforced rows cite a driving test with an absolute log under the run directory; the 13 distinct logs cited in the remedies table all exist and each records rev=74a17bc4 in its own first line with the results the manifest states, so the header's revision claim holds at this head, but two enforced rows (the commit-form rules L295 and L427 at fragment lines 160 and 186) name the manifest-status vocabulary and its unknown-status tests, which fire on the manifest's status word rather than on the guarded action, and their reason states a bodiless-commit refusal that no code or test implements.",
+    "goal": "The goal is to classify every binding sentence of skills/reckon-build/references/sprint-orchestration.md at main HEAD 7c25dee7 into a row carrying its rule, line, enforcement, still-wanted and disposition, and the tree at b2fbbcc1 lands docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html with 257 rows (18 delete as enforced, 186 keep, 52 merge into a named surviving row, 1 delete as obsolete), 42 of them naming an enforcement, whose counts match the figure pane at docs/figures/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration/disposition-and-section.svg and the header's 42-enforced / 18-fully-enforced split.",
+    "manifest": "Read line by line; its landing, artifacts and test_logs lines report the 257/42/18 counts and the 13 gate logs, all of which resolve with the stated results, and its follow_ons record the two pre-existing tests/test_role_write_scope.py failures honestly; it names no baseline_suite or after_suite pair, so the added-failure count it can support is unmeasured rather than zero.",
+    "write_paths": "The reviewed manifest fences the fragment and its figure topic directory, and git diff --stat 7c25dee7 b2fbbcc1 lists exactly docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html and docs/figures/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration/disposition-and-section.svg for 391 insertions, with no file under reckon/ or tests/."
+  },
+  "justifications": {
+    "durability": "the figure pane's 18/186/52/1 now matches the table's own counts and every enforced row cites a named test and an absolute log, but no test under tests/ guards the fragment and the 606-sentence denominator is not re-derivable from the delimiter rule the fragment states at :19.",
+    "evidence": "every log path the remedies table cites at .../classify-rules-in-sprint-orchestration.html:49-63 resolves under the reviewed run directory and records rev=74a17bc4 as the header at :29 claims, with the L295/L427 pairing at :160 and :186 the residual gap.",
+    "fit": "the fragment follows the repo's evidence-fragment idiom with a project-absolute figure src at .../classify-rules-in-sprint-orchestration.html:41 and introduces no name the naming rules forbid.",
+    "goal_fidelity": "the fragment at docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html carries one five-field row per binding sentence and its disposition counts sum to its own 257 rows, though the enforcement named at lines 160 and 186 does not guard the rules there.",
+    "scope_discipline": "git diff --stat 7c25dee7 b2fbbcc1 lists only the fragment and disposition-and-section.svg, both inside the manifest's declared write paths."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to classify every binding sentence of skills/reckon-build/references/sprint-orchestration.md at main HEAD 7c25dee7 into a row carrying its rule, line, enforcement, still-wanted and disposition, and the tree at b2fbbcc1 lands docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html with 257 rows (18 delete as enforced, 186 keep, 52 merge into a named surviving row, 1 delete as obsolete), 42 of them naming an enforcement, whose counts match the figure pane at docs/figures/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration/disposition-and-section.svg and the header's 42-enforced / 18-fully-enforced split.\nVERDICT done_when: Each row carries the five fields the measure names and the enforced rows cite a driving test with an absolute log under the run directory; the 13 distinct logs cited in the remedies table all exist and each records rev=74a17bc4 in its own first line with the results the manifest states, so the header's revision claim holds at this head, but two enforced rows (the commit-form rules L295 and L427 at fragment lines 160 and 186) name the manifest-status vocabulary and its unknown-status tests, which fire on the manifest's status word rather than on the guarded action, and their reason states a bodiless-commit refusal that no code or test implements.\nVERDICT write_paths: The reviewed manifest fences the fragment and its figure topic directory, and git diff --stat 7c25dee7 b2fbbcc1 lists exactly docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html and docs/figures/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration/disposition-and-section.svg for 391 insertions, with no file under reckon/ or tests/.\nVERDICT manifest: Read line by line; its landing, artifacts and test_logs lines report the 257/42/18 counts and the 13 gate logs, all of which resolve with the stated results, and its follow_ons record the two pre-existing tests/test_role_write_scope.py failures honestly; it names no baseline_suite or after_suite pair, so the added-failure count it can support is unmeasured rather than zero.\nVERDICT diff: Read the five commits (b90891fd, 74a17bc4, 6dd22d11, 9770d630, b2fbbcc1) against base 7c25dee7: they land the fragment and the figure and then repair them (figure pane counts, a remedies-table pairing, the header revision prose) without touching a file outside the two declared paths.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/serve.py:2106, reckon/mcp.py:1139, reckon/doccheck.py:1230\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the fragment at docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html carries one five-field row per binding sentence and its disposition counts sum to its own 257 rows, though the enforcement named at lines 160 and 186 does not guard the rules there.\nSCORE evidence: 17\nJUSTIFICATION evidence: every log path the remedies table cites at .../classify-rules-in-sprint-orchestration.html:49-63 resolves under the reviewed run directory and records rev=74a17bc4 as the header at :29 claims, with the L295/L427 pairing at :160 and :186 the residual gap.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 7c25dee7 b2fbbcc1 lists only the fragment and disposition-and-section.svg, both inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the figure pane's 18/186/52/1 now matches the table's own counts and every enforced row cites a named test and an absolute log, but no test under tests/ guards the fragment and the 606-sentence denominator is not re-derivable from the delimiter rule the fragment states at :19.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the repo's evidence-fragment idiom with a project-absolute figure src at .../classify-rules-in-sprint-orchestration.html:41 and introduces no name the naming rules forbid.\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html:293 the row labelled L750 (\"A member is a serial worker; dispatch refuses one with a non-terminal in-flight run\") cites a line that in the same revision carries the tail of the preceding session-identity rule and its rationale, \"completed) is never resumed. **Why the rule:** a member's session used to be\"; the sentence begins at line 756 of skills/reckon-build/references/sprint-orchestration.md, and the very next row cites L756 for that sentence's own tail, so its first half is attributed to the wrong line.\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html:160 the rules at fragment lines 160 (L295 \"Workers stage explicit paths and make coherent local commits, each carrying a subject and a body\") and 186 (L427, contract rule 6) name \"manifest schema status vocabulary\" and the unknown-status tests in tests/test_manifest_parse_format.py as their enforcement, which fire on the manifest's status word rather than on the guarded commit form, and their reason's clause \"promotion rejects a bodiless or unscoped commit\" has nothing behind the bodiless half: no production code reads a commit message (the promise appears only as prompt prose at reckon/crew/prompts.py:470 and reckon/crew/worker_digest.py:178) and no test asserts such a refusal, while the half that is enforced, promotion's out-of-scope refusal, is cited only in the remedies table.",
+  "review_run_id": "r-20260928T233349299191-review-of-classify-rules-in-sprint-orchestration",
+  "reviewed_base_sha": "7c25dee788bd668dfbfd36624f8ec590e9dba129",
+  "reviewed_head_sha": "b2fbbcc16f35242ab7be3fa0ff4c5a4fd9102460",
+  "reviewed_run_id": "r-20260928T205701106926-classify-rules-in-sprint-orchestration",
+  "reviewer_run_id": "r-20260928T233349299191-review-of-classify-rules-in-sprint-orchestration",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T00:06:41.887299+00:00",
+  "total": 88
+}

@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:3233 crew_follow",
+    "reckon/cli.py:2443 follower_row_path"
+  ],
+  "completed_at": "2026-09-28T16:13:19.418Z",
+  "dispatched_at": "2026-09-28T15:29:51Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit - be8ffe939 adds the test (+41 lines) and 8fd9d1e4 adds the fragment and figure (+118 lines across two new files) - 159 insertions and zero deletions in the range, and no file under reckon/ touched by either commit.",
+    "done_when": "the reviewed manifest's done_when names red-under-a-pass-through and green-at-head, and I reproduced both in my own scratch extraction of 8fd9d1e4 rather than reading the run's account: stock 2 passed in gate_review_head.log, and the same tree with the site cut to \"yield event\" 1 failed at tests/test_follower_prints_only_policy_rows.py:501 with the row the pane already shows reappearing (gate_review_mutation.log), each logging module.__file__ under its own scratch root; the run's own gate_base.log and gate_head.log carry revision, tree and command headers.",
+    "goal": "read the reviewed node's goal (a committed test covering the resume baseline branch's feed into the follower row policy near reckon/cli.py line 2675) against the diff; tests/test_follower_prints_only_policy_rows.py:466 drives cli._follow_watch_lines with a resume mapping whose stream_path does not name the stream, so _follow_resume_plan returns \"baseline\" and reckon/cli.py:2687-2689 feeds each cursor[\"baseline\"] event through path.feed - the site the goal names, and the one the earlier review at 036eaf3d recorded as untested.",
+    "manifest": "its two armed fields name gate_base.log and gate_head.log, both present and complete with headers and a summary line, each holding the same three pre-existing failure ids, so zero failures are added by id; its recorded narrow run (1 passed, 18 deselected) matches gate_new_test_head.log.",
+    "write_paths": "the reviewed manifest declares three paths and git diff 40d23d9b..8fd9d1e4 --name-status returns exactly those three - tests/test_follower_prints_only_policy_rows.py modified, the fragment and the figure added - with no path outside them."
+  },
+  "justifications": {
+    "durability": "reinstating the defect (yield event at reckon/cli.py:2688) reddens tests/test_follower_prints_only_policy_rows.py:501, though the state the suppressed row carries is read from the code's own first arming rather than an independent literal, so a state-vocabulary regression would not move this assertion.",
+    "evidence": "the reviewed pair's own logs resolve and derive added_failure_count 0 by id through reckon/crew/review.py:954 annotate_review_of_run, with the instrument shown seeing a planted id in scratch/derive_added_failures_control.log.",
+    "fit": "the test reuses the file's own harness (_arm, _live_runs, the project watch claim at tests/test_follower_prints_only_policy_rows.py:466) and names the mechanism rather than the plan, the node or the mutation.",
+    "goal_fidelity": "the mode == \"baseline\" feed at reckon/cli.py:2687 is driven end to end by tests/test_follower_prints_only_policy_rows.py:466 and reddens when that site yields its events unfed.",
+    "scope_discipline": "three paths in the diff against 40d23d9b, all declared, both documents additive (118 insertions, zero deletions) and no product file under reckon/ touched."
+  },
+  "project": "reckon",
+  "raw_text": "review of run r-20260928T144658725827-resume-baseline-feed-is-tested at 8fd9d1e477fdc793a2eb9c713fae9075f39a0e77, read against base 40d23d9bbefd0199d68c74caec573769bed888ff\n\nreviewed_base_sha: 40d23d9bbefd0199d68c74caec573769bed888ff\nreviewed_head_sha: 8fd9d1e477fdc793a2eb9c713fae9075f39a0e77\n\nThis review's own gates live under /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T152931720548-review-of-resume-baseline-feed-is-tested/scratch/: gate_review_head.log, gate_review_mutation.log, derive_added_failures.log, derive_added_failures_control.log, arm_mutation.log.\n\nVERDICT goal: read the reviewed node's goal (a committed test covering the resume baseline branch's feed into the follower row policy near reckon/cli.py line 2675) against the diff; tests/test_follower_prints_only_policy_rows.py:466 drives cli._follow_watch_lines with a resume mapping whose stream_path does not name the stream, so _follow_resume_plan returns \"baseline\" and reckon/cli.py:2687-2689 feeds each cursor[\"baseline\"] event through path.feed - the site the goal names, and the one the earlier review at 036eaf3d recorded as untested.\nVERDICT done_when: the reviewed manifest's done_when names red-under-a-pass-through and green-at-head, and I reproduced both in my own scratch extraction of 8fd9d1e4 rather than reading the run's account: stock 2 passed in gate_review_head.log, and the same tree with the site cut to \"yield event\" 1 failed at tests/test_follower_prints_only_policy_rows.py:501 with the row the pane already shows reappearing (gate_review_mutation.log), each logging module.__file__ under its own scratch root; the run's own gate_base.log and gate_head.log carry revision, tree and command headers.\nVERDICT write_paths: the reviewed manifest declares three paths and git diff 40d23d9b..8fd9d1e4 --name-status returns exactly those three - tests/test_follower_prints_only_policy_rows.py modified, the fragment and the figure added - with no path outside them.\nVERDICT manifest: its two armed fields name gate_base.log and gate_head.log, both present and complete with headers and a summary line, each holding the same three pre-existing failure ids, so zero failures are added by id; its recorded narrow run (1 passed, 18 deselected) matches gate_new_test_head.log.\nVERDICT diff: read commit by commit - be8ffe939 adds the test (+41 lines) and 8fd9d1e4 adds the fragment and figure (+118 lines across two new files) - 159 insertions and zero deletions in the range, and no file under reckon/ touched by either commit.\nCALL_SITES: reckon/cli.py:3233 crew_follow, reckon/cli.py:2443 follower_row_path\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the mode == \"baseline\" feed at reckon/cli.py:2687 is driven end to end by tests/test_follower_prints_only_policy_rows.py:466 and reddens when that site yields its events unfed.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed pair's own logs resolve and derive added_failure_count 0 by id through reckon/crew/review.py:954 annotate_review_of_run, with the instrument shown seeing a planted id in scratch/derive_added_failures_control.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: three paths in the diff against 40d23d9b, all declared, both documents additive (118 insertions, zero deletions) and no product file under reckon/ touched.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the defect (yield event at reckon/cli.py:2688) reddens tests/test_follower_prints_only_policy_rows.py:501, though the state the suppressed row carries is read from the code's own first arming rather than an independent literal, so a state-vocabulary regression would not move this assertion.\nSCORE fit: 19\nJUSTIFICATION fit: the test reuses the file's own harness (_arm, _live_runs, the project watch claim at tests/test_follower_prints_only_policy_rows.py:466) and names the mechanism rather than the plan, the node or the mutation.\n",
+  "review_run_id": "r-20260928T152931720548-review-of-resume-baseline-feed-is-tested",
+  "reviewed_base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "reviewed_head_sha": "8fd9d1e477fdc793a2eb9c713fae9075f39a0e77",
+  "reviewed_run_id": "r-20260928T144658725827-resume-baseline-feed-is-tested",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T16:03:41.968677+00:00",
+  "total": 94
+}

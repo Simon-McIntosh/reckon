@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "0fdfb55702088e3615ce28ce8422cea9b0306153",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:4798",
+    "reckon/crew/promotion.py:5535",
+    "reckon/crew/promotion.py:5614",
+    "reckon/crew/promotion.py:5674",
+    "reckon/crew/promotion.py:5709",
+    "reckon/crew/promotion.py:7828"
+  ],
+  "completed_at": "2026-10-04T11:39:24.806Z",
+  "dispatched_at": "2026-10-04T11:32:58Z",
+  "findings": [],
+  "head_log_revision": "acca0f4eb0977915a162386ea7c18719d90c3462",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read 0fdfb55702088e3615ce28ce8422cea9b0306153..acca0f4eb0977915a162386ea7c18719d90c3462; two files, +367/-23, promotion.py +53/-23 and the new 314-line test file; acca0f4eb carries the tree resolution through _record_tree and _tree_for_measurement, and 0fdfb5570 carries the Path(worktree or '') fallback the change removes.",
+    "done_when": "the source done-when holds and was independently re-run by this reviewer. tests/test_promotion_readers_name_their_tree.py runs each of the four readers from inside an unrelated git repository whose plan and head are adversarial; at head 6 passed (EXIT=0) reproduced here, and at base 0fdfb5570 the same file gives 5 failed, 1 passed (EXIT=1) reproduced here, the two revision-reader tests among the failures as the negative control requires.",
+    "goal": "the delta makes all four section-54 readers resolve the run's tree from its own record: _require_commits_beyond_base and _review_changed_scope now go through _record_tree and measure nothing for a record naming no readable tree, _landing_preconditions refuses through the new _tree_for_measurement when no tree is named, and _complete_locked reads the absence as no measurement; this is the section's done-when, which asks that the two revision readers resolve through _record_tree with a blank-field test each and that the two landing readers' fallback either be replaced the same way or justified in writing.",
+    "manifest": "the run manifest is present and complete: it names the four readers, the head gate, the base-and-head population arms and the negative control, records measurement_cwd and measurement_module for the base arm, and attributes the single head-arm failure to a dispatch survival-window timing test rather than to the changed readers.",
+    "write_paths": "the delta lands only reckon/crew/promotion.py and tests/test_promotion_readers_name_their_tree.py, both named in the run's orientation_write_paths; no path outside the node's declared scope is touched."
+  },
+  "justifications": {
+    "durability": "six tests each synthesise their own temporary git repositories and crew home under tmp_path, run the reader from an unrelated repository made adversarial, and pin both the fixed readers and their positive controls (a named tree still refuses, a named tree still measures); no test reads or writes state outside the repository under test and none encodes a date or external path. The negative control is two-sided across the file, 5 of 6 red at base.",
+    "evidence": "the head gate 6 passed (EXIT=0) and the base negative control 5 failed, 1 passed (EXIT=1) were both independently reproduced by this reviewer at acca0f4eb and 0fdfb5570; the population logs are readable and give base 500 passed / 0 failed and head 499 passed / 1 failed. The one head-arm added failure is real and unretired in the gate logs, so the after-suite is red against a green base; the reviewer verified it is tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch, whose body calls none of the four changed readers or the new helper, and reproduced it green in isolation from the reviewed worktree and red when the ambient cwd was a different tree, which supports the manifest's load/cwd-sensitive attribution while still leaving one added failure the run did not retire by test id.",
+    "fit": "the change follows the pattern section 53 established for its two readers, threading resolution through one _record_tree helper and one refusal helper rather than repeating a guard; the landing readers were given the decision the plan asked for rather than a reflex fallback. It leaves seven other Path(worktree or '') sites unaudited and records them as a follow-on, out of this section's named four.",
+    "goal_fidelity": "every clause of the section's done-when is met by the delta: the two revision readers resolve through _record_tree and each carries a blank-field test run from an unrelated repository, and both landing readers have their current-directory fallback replaced, _landing_preconditions by a named refusal (new _tree_for_measurement) and _complete_locked by reading a missing tree as no measurement, each pinned by a test, which is the option the plan offers.",
+    "scope_discipline": "the delta changes only reckon/crew/promotion.py and tests/test_promotion_readers_name_their_tree.py, both declared write paths; the evidence fragment and figure paths declared on the node are left untouched without harm, and no sibling module, plan or index is modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta makes all four section-54 readers resolve the run's tree from its own record: _require_commits_beyond_base and _review_changed_scope now go through _record_tree and measure nothing for a record naming no readable tree, _landing_preconditions refuses through the new _tree_for_measurement when no tree is named, and _complete_locked reads the absence as no measurement; this is the section's done-when, which asks that the two revision readers resolve through _record_tree with a blank-field test each and that the two landing readers' fallback either be replaced the same way or justified in writing.\nVERDICT done_when: the source done-when holds and was independently re-run by this reviewer. tests/test_promotion_readers_name_their_tree.py runs each of the four readers from inside an unrelated git repository whose plan and head are adversarial; at head 6 passed (EXIT=0) reproduced here, and at base 0fdfb5570 the same file gives 5 failed, 1 passed (EXIT=1) reproduced here, the two revision-reader tests among the failures as the negative control requires.\nVERDICT write_paths: the delta lands only reckon/crew/promotion.py and tests/test_promotion_readers_name_their_tree.py, both named in the run's orientation_write_paths; no path outside the node's declared scope is touched.\nVERDICT manifest: the run manifest is present and complete: it names the four readers, the head gate, the base-and-head population arms and the negative control, records measurement_cwd and measurement_module for the base arm, and attributes the single head-arm failure to a dispatch survival-window timing test rather than to the changed readers.\nVERDICT diff: read 0fdfb55702088e3615ce28ce8422cea9b0306153..acca0f4eb0977915a162386ea7c18719d90c3462; two files, +367/-23, promotion.py +53/-23 and the new 314-line test file; acca0f4eb carries the tree resolution through _record_tree and _tree_for_measurement, and 0fdfb5570 carries the Path(worktree or '') fallback the change removes.\nCALL_SITES: reckon/crew/promotion.py:4798, reckon/crew/promotion.py:5535, reckon/crew/promotion.py:5614, reckon/crew/promotion.py:5674, reckon/crew/promotion.py:5709, reckon/crew/promotion.py:7828\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every clause of the section's done-when is met by the delta: the two revision readers resolve through _record_tree and each carries a blank-field test run from an unrelated repository, and both landing readers have their current-directory fallback replaced, _landing_preconditions by a named refusal (new _tree_for_measurement) and _complete_locked by reading a missing tree as no measurement, each pinned by a test, which is the option the plan offers.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head gate 6 passed (EXIT=0) and the base negative control 5 failed, 1 passed (EXIT=1) were both independently reproduced by this reviewer at acca0f4eb and 0fdfb5570; the population logs are readable and give base 500 passed / 0 failed and head 499 passed / 1 failed. The one head-arm added failure is real and unretired in the gate logs, so the after-suite is red against a green base; the reviewer verified it is tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch, whose body calls none of the four changed readers or the new helper, and reproduced it green in isolation from the reviewed worktree and red when the ambient cwd was a different tree, which supports the manifest's load/cwd-sensitive attribution while still leaving one added failure the run did not retire by test id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta changes only reckon/crew/promotion.py and tests/test_promotion_readers_name_their_tree.py, both declared write paths; the evidence fragment and figure paths declared on the node are left untouched without harm, and no sibling module, plan or index is modified.\nSCORE durability: 19\nJUSTIFICATION durability: six tests each synthesise their own temporary git repositories and crew home under tmp_path, run the reader from an unrelated repository made adversarial, and pin both the fixed readers and their positive controls (a named tree still refuses, a named tree still measures); no test reads or writes state outside the repository under test and none encodes a date or external path. The negative control is two-sided across the file, 5 of 6 red at base.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the pattern section 53 established for its two readers, threading resolution through one _record_tree helper and one refusal helper rather than repeating a guard; the landing readers were given the decision the plan asked for rather than a reflex fallback. It leaves seven other Path(worktree or '') sites unaudited and records them as a follow-on, out of this section's named four.",
+  "review_run_id": "r-20261004T113234297450-review-of-the-remaining-promotion-readers-name-their-tree",
+  "reviewed_base_sha": "0fdfb55702088e3615ce28ce8422cea9b0306153",
+  "reviewed_head_sha": "acca0f4eb0977915a162386ea7c18719d90c3462",
+  "reviewed_run_id": "r-20261004T110130587983-the-remaining-promotion-readers-name-their-tree",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T11:37:57.368571+00:00",
+  "total": 94
+}

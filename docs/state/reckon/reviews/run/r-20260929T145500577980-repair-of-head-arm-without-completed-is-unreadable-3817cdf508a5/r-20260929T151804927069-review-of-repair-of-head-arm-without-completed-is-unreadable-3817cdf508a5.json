@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absent_arm_control": "no base text returns (None, []) - unmeasured, not zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T145500577980-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5/logs/head_arm.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T145500577980-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5/logs/negative_control.log",
+    "count_derivation": "set difference of pytest FAILED/ERROR node ids between the reviewed run's own two arm logs, computed with review.added_failures_from_gate_logs; derivation output: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5/logs/review_probe.out",
+    "manifest_field_note": "the reviewed manifest names its two arms under test_logs (head_arm.log, negative_control.log) rather than baseline_suite/after_suite, so the read-time annotation reports the pair unmeasured; this count is the reviewer's own derivation from those same two logs",
+    "positive_control": {
+      "count": 1,
+      "ids": [
+        "tests/test_reviewer_positive_control.py::test_the_instrument_sees_a_failure"
+      ],
+      "mutation": "append one FAILED line to a copy of the head log text in memory"
+    },
+    "revision_pair": {
+      "after_revision": "09d4deea12b86a52a2e454053a0ffce8a8685917",
+      "baseline_revision": "7e452839's parent (promotion.py reverted, tests unchanged)"
+    }
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_require_declared_negative_control",
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-09-29T16:14:31.154Z",
+  "dispatched_at": "2026-09-29T15:18:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "5074",
+      "text": "the baseline reader iterates a completed mapping's failure_ids without the shape validation its head-arm twin applies at promotion.py:5107, so a baseline whose failure_ids is a JSON string is read as its characters and admits a control the same manifest in list form refuses (probe: ADMITTED verdict=matched), and a non-iterable failure_ids raises TypeError out of the gate; mirror the head reader's isinstance(list) check so an unreadable baseline decides nothing in every shape."
+    },
+    {
+      "file": "tests/test_control_gate_checks_facts.py",
+      "line": "90",
+      "text": "the fixture passes a baseline_suite with no `completed` key, so after 7e452839 it refuses through the no-readable-comparison-arm branch instead of the baseline comparison its name and docstring describe (probe refusal text: \"no readable comparison arm is recorded\"), which leaves the case pinning a rule it no longer exercises; add `\"completed\": True` to that mapping, in a node that holds the file since it is outside the reviewed node's write scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against f459724b: 7e452839 makes the baseline reader strict on `completed` and adds three cases to tests/test_control_is_compared_with_the_head_arm.py, 09d4deea adds the 39-line evidence fragment, and nothing else in the tree changed.",
+    "done_when": "the done-when requires every finding named by id as `acted <id>: <commit>`; the manifest carries \"acted f569d6850d1: 7e452839...\" and the logs it names show the head arm 21 passed EXIT=0, the answer-reverted arm 2 failed with DID NOT RAISE CrewError EXIT=1, and the gate-adjacent population 101 passed EXIT=0; my own re-run of the node's own gate file tests/test_control_is_compared_with_the_head_arm.py at 09d4deea gives 14 passed EXIT=0 (logs/head_arm_rerun.log).",
+    "goal": "the goal is to answer finding f569d6850d1 - a baseline_suite that omits `completed` or carries null must stop deciding a control; reckon/crew/promotion.py:5061 returns None for that form and the caller keeps reference_ids None at promotion.py:5224 and refuses at promotion.py:5256, so the headline ask lands, while the finding's second clause (the fixture at tests/test_control_gate_checks_facts.py:90 must make the key mandatory) is deferred by scope and disclosed in the reviewed manifest's follow_ons.",
+    "manifest": "read; it reports complete at 09d4deea with commits 7e452839 and 09d4deea, names four logs, and its follow_ons discloses the pinned fixture; its lint figures do not reproduce - I measure 4 ruff findings over the two changed paths at both arms where the fragment says 5 against 7 - while its conclusion (zero added findings) and its nine pre-existing format hunks both reproduce.",
+    "write_paths": "the node declared reckon/crew/promotion.py, tests/test_control_is_compared_with_the_head_arm.py and its two fragment/figure roots, and all three files in f459724b..09d4deea sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_control_is_compared_with_the_head_arm.py:300 fails when 7e452839 is reverted, with both forms parametrized over one fixture differing in the key alone, and the only erosion is the sibling fixture at tests/test_control_gate_checks_facts.py:90 that the node disclosed rather than hid.",
+    "evidence": "the receipts are on disk and reproducible - my re-run of tests/test_control_is_compared_with_the_head_arm.py at 09d4deea is 14 passed EXIT=0 and the revert arm reddens exactly the two new cases with DID NOT RAISE CrewError - but the fragment's 5-vs-7 ruff figure does not reproduce (I measure 4 at both arms, so zero added still holds).",
+    "fit": "the strict read at reckon/crew/promotion.py:5061 asks completion exactly as the head reader does at promotion.py:5105, the docstrings and refusal prose are updated with it, and ruff adds no finding at either arm over the changed paths.",
+    "goal_fidelity": "reckon/crew/promotion.py:5061 is the strict read the finding asked for and my probe shows the old reader admitting the control that citation refuses (logs/review_probe.out), so the goal lands, with the fixture clause at tests/test_control_gate_checks_facts.py:90 left to a node that holds that file and named in the manifest.",
+    "scope_discipline": "every file in f459724b..09d4deea (reckon/crew/promotion.py, tests/test_control_is_compared_with_the_head_arm.py, the node's own fragment) is inside the declared write paths and no plan, peer or out-of-scope path was written."
+  },
+  "project": "reckon",
+  "raw_text": "REVIEWED_BASE_SHA: f459724bba2c398fcf1f8a7a058cdbc5c98c5687\nREVIEWED_HEAD_SHA: 09d4deea12b86a52a2e454053a0ffce8a8685917\nVERDICT goal: the goal is to answer finding f569d6850d1 - a baseline_suite that omits `completed` or carries null must stop deciding a control; reckon/crew/promotion.py:5061 returns None for that form and the caller keeps reference_ids None at promotion.py:5224 and refuses at promotion.py:5256, so the headline ask lands, while the finding's second clause (the fixture at tests/test_control_gate_checks_facts.py:90 must make the key mandatory) is deferred by scope and disclosed in the reviewed manifest's follow_ons.\nVERDICT done_when: the done-when requires every finding named by id as `acted <id>: <commit>`; the manifest carries \"acted f569d6850d1: 7e452839...\" and the logs it names show the head arm 21 passed EXIT=0, the answer-reverted arm 2 failed with DID NOT RAISE CrewError EXIT=1, and the gate-adjacent population 101 passed EXIT=0; my own re-run of the node's own gate file tests/test_control_is_compared_with_the_head_arm.py at 09d4deea gives 14 passed EXIT=0 (logs/head_arm_rerun.log).\nVERDICT write_paths: the node declared reckon/crew/promotion.py, tests/test_control_is_compared_with_the_head_arm.py and its two fragment/figure roots, and all three files in f459724b..09d4deea sit inside them.\nVERDICT manifest: read; it reports complete at 09d4deea with commits 7e452839 and 09d4deea, names four logs, and its follow_ons discloses the pinned fixture; its lint figures do not reproduce - I measure 4 ruff findings over the two changed paths at both arms where the fragment says 5 against 7 - while its conclusion (zero added findings) and its nine pre-existing format hunks both reproduce.\nVERDICT diff: read commit by commit against f459724b: 7e452839 makes the baseline reader strict on `completed` and adds three cases to tests/test_control_is_compared_with_the_head_arm.py, 09d4deea adds the 39-line evidence fragment, and nothing else in the tree changed.\nCALL_SITES: reckon/crew/promotion.py:_require_declared_negative_control, reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:5061 is the strict read the finding asked for and my probe shows the old reader admitting the control that citation refuses (logs/review_probe.out), so the goal lands, with the fixture clause at tests/test_control_gate_checks_facts.py:90 left to a node that holds that file and named in the manifest.\nSCORE evidence: 18\nJUSTIFICATION evidence: the receipts are on disk and reproducible - my re-run of tests/test_control_is_compared_with_the_head_arm.py at 09d4deea is 14 passed EXIT=0 and the revert arm reddens exactly the two new cases with DID NOT RAISE CrewError - but the fragment's 5-vs-7 ruff figure does not reproduce (I measure 4 at both arms, so zero added still holds).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every file in f459724b..09d4deea (reckon/crew/promotion.py, tests/test_control_is_compared_with_the_head_arm.py, the node's own fragment) is inside the declared write paths and no plan, peer or out-of-scope path was written.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_control_is_compared_with_the_head_arm.py:300 fails when 7e452839 is reverted, with both forms parametrized over one fixture differing in the key alone, and the only erosion is the sibling fixture at tests/test_control_gate_checks_facts.py:90 that the node disclosed rather than hid.\nSCORE fit: 20\nJUSTIFICATION fit: the strict read at reckon/crew/promotion.py:5061 asks completion exactly as the head reader does at promotion.py:5105, the docstrings and refusal prose are updated with it, and ruff adds no finding at either arm over the changed paths.\nFINDING reckon/crew/promotion.py:5074 the baseline reader iterates a completed mapping's failure_ids without the shape validation its head-arm twin applies at promotion.py:5107, so a baseline whose failure_ids is a JSON string is read as its characters and admits a control the same manifest in list form refuses (probe: ADMITTED verdict=matched), and a non-iterable failure_ids raises TypeError out of the gate; mirror the head reader's isinstance(list) check so an unreadable baseline decides nothing in every shape.\nFINDING tests/test_control_gate_checks_facts.py:90 the fixture passes a baseline_suite with no `completed` key, so after 7e452839 it refuses through the no-readable-comparison-arm branch instead of the baseline comparison its name and docstring describe (probe refusal text: \"no readable comparison arm is recorded\"), which leaves the case pinning a rule it no longer exercises; add `\"completed\": True` to that mapping, in a node that holds the file since it is outside the reviewed node's write scope.\n",
+  "review_run_id": "r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5",
+  "reviewed_base_sha": "f459724bba2c398fcf1f8a7a058cdbc5c98c5687",
+  "reviewed_head_sha": "09d4deea12b86a52a2e454053a0ffce8a8685917",
+  "reviewed_run_id": "r-20260929T145500577980-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5",
+  "reviewer_verification_logs": {
+    "fixture_probe": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5/logs/fixture_probe.out",
+    "gate_file_rerun": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5/logs/head_arm_rerun.log",
+    "lint_compare": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5/logs/lint_compare.log",
+    "probe": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5/logs/review_probe.out"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T16:07:20.016698+00:00",
+  "total": 96
+}

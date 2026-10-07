@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/velocity.py:2657 report() emits summary[\"clones\"]",
+    "reached from reckon/cli.py:5503 (the velocity CLI command) and reckon/serve.py:2375 (the served velocity view)"
+  ],
+  "completed_at": "2026-09-30T20:19:13.916Z",
+  "dispatched_at": "2026-09-30T20:07:18Z",
+  "findings": [
+    {
+      "file": "reckon/velocity.py",
+      "line": "2580",
+      "text": "the else branch counts any falsy clone_matches, including None materialised at reckon/velocity.py:895 for a ledger row that carries no clone_matches key (every row promoted before the field landed), as runs_no_match, reporting a run that was never measured as a run measured with no match, the fold the cell's own docstring (reckon/velocity.py:2556) and the goal forbid."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 84b6364f16: reckon/velocity.py adds \"clone_matches\" to the captured field tuple (reckon/velocity.py:891), adds _clone_week_cells (reckon/velocity.py:2548), the report clones block (reckon/velocity.py:2657) and \"clones\" to OPTIONAL_BLOCKS (reckon/velocity.py:2709); tests/test_velocity_clone_matches.py is new with two tests.",
+    "done_when": "the measure asks for a per-week clones block carrying runs_with_match, matches, runs_no_match and runs_unmeasured kept separate, asserted by tests/test_velocity_clone_matches.py; tests/test_velocity_clone_matches.py:138 asserts the exact two-week dicts and tests/test_velocity_clone_matches.py:172 asserts the state split, and gate-clone-matches.log records \"2 passed\", EXIT=0.",
+    "goal": "the dispatch goal is to report in reckon.velocity the clone matches promotion recorded per ISO week from the ledger's clone field; reckon/velocity.py:2657 emits summary[\"clones\"] from _clone_week_cells (reckon/velocity.py:2548) reading each row's clone_matches (reckon/velocity.py:2574), and the fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-clone-matches.html states the same deliverable.",
+    "manifest": "read; it records the gate (\"2 passed\", EXIT=0) and the neighbouring regression (\"15 passed\", EXIT=0), names its two logs, declares its negative control with the verbatim string and EXIT=1, and names the fragment; it carries no baseline_suite or after_suite arms, so its added-failure count reads unmeasured.",
+    "write_paths": "the declared scope is reckon/velocity.py, tests/test_velocity_clone_matches.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-clone-matches.html and its figures directory; git diff --name-status 84b6364f16 c7f3c69eda changes exactly the first three (326 insertions) and the figures directory stays empty."
+  },
+  "justifications": {
+    "durability": "the negative control genuinely reddens tests/test_velocity_clone_matches.py:172 when the unmeasured branch is folded (negative-control.log, assert 0 == 1, EXIT=1) and the fixture figures are independent literals, but the test exercises only the list and the {\"status\":\"unmeasured\"} marker, not the absent/None shape the else at reckon/velocity.py:2580 mis-folds, so that regression is unguarded.",
+    "evidence": "tests/test_velocity_clone_matches.py:138 asserts the exact per-week figures and gate-clone-matches.log records \"2 passed\", EXIT=0, but that log's own header names rev=84b6364f16 (the base) rather than the promoted head c7f3c69eda, so the gate cannot be tied to the change by revision, and the manifest names no baseline_suite or after_suite arm.",
+    "fit": "_clone_week_cells (reckon/velocity.py:2548) follows the module's weekly-cell idiom beside _interface_week_rows, buckets UTC Monday-start weeks as measure does, carries its definition in the block, and adds \"clones\" to OPTIONAL_BLOCKS (reckon/velocity.py:2709), with no name the naming rules forbid; it is not 20 because the classification leans on isinstance(report, dict) rather than reading the ledger's own unmeasured-marker contract.",
+    "goal_fidelity": "the block reports the matches and the three run states per ISO week at reckon/velocity.py:2657 as the goal asks, but reckon/velocity.py:2580 folds a missing reading into runs_no_match, so a run never measured is reported as measured with no match.",
+    "scope_discipline": "git diff --name-status 84b6364f16 c7f3c69eda lists only reckon/velocity.py, tests/test_velocity_clone_matches.py and the fragment, all three inside the declared fence, with 326 insertions and no out-of-scope file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the dispatch goal is to report in reckon.velocity the clone matches promotion recorded per ISO week from the ledger's clone field; reckon/velocity.py:2657 emits summary[\"clones\"] from _clone_week_cells (reckon/velocity.py:2548) reading each row's clone_matches (reckon/velocity.py:2574), and the fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-clone-matches.html states the same deliverable.\nVERDICT done_when: the measure asks for a per-week clones block carrying runs_with_match, matches, runs_no_match and runs_unmeasured kept separate, asserted by tests/test_velocity_clone_matches.py; tests/test_velocity_clone_matches.py:138 asserts the exact two-week dicts and tests/test_velocity_clone_matches.py:172 asserts the state split, and gate-clone-matches.log records \"2 passed\", EXIT=0.\nVERDICT write_paths: the declared scope is reckon/velocity.py, tests/test_velocity_clone_matches.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-clone-matches.html and its figures directory; git diff --name-status 84b6364f16 c7f3c69eda changes exactly the first three (326 insertions) and the figures directory stays empty.\nVERDICT manifest: read; it records the gate (\"2 passed\", EXIT=0) and the neighbouring regression (\"15 passed\", EXIT=0), names its two logs, declares its negative control with the verbatim string and EXIT=1, and names the fragment; it carries no baseline_suite or after_suite arms, so its added-failure count reads unmeasured.\nVERDICT diff: read commit by commit against 84b6364f16: reckon/velocity.py adds \"clone_matches\" to the captured field tuple (reckon/velocity.py:891), adds _clone_week_cells (reckon/velocity.py:2548), the report clones block (reckon/velocity.py:2657) and \"clones\" to OPTIONAL_BLOCKS (reckon/velocity.py:2709); tests/test_velocity_clone_matches.py is new with two tests.\nCALL_SITES: reckon/velocity.py:2657 report() emits summary[\"clones\"], reached from reckon/cli.py:5503 (the velocity CLI command) and reckon/serve.py:2375 (the served velocity view)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the block reports the matches and the three run states per ISO week at reckon/velocity.py:2657 as the goal asks, but reckon/velocity.py:2580 folds a missing reading into runs_no_match, so a run never measured is reported as measured with no match.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_velocity_clone_matches.py:138 asserts the exact per-week figures and gate-clone-matches.log records \"2 passed\", EXIT=0, but that log's own header names rev=84b6364f16 (the base) rather than the promoted head c7f3c69eda, so the gate cannot be tied to the change by revision, and the manifest names no baseline_suite or after_suite arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 84b6364f16 c7f3c69eda lists only reckon/velocity.py, tests/test_velocity_clone_matches.py and the fragment, all three inside the declared fence, with 326 insertions and no out-of-scope file.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control genuinely reddens tests/test_velocity_clone_matches.py:172 when the unmeasured branch is folded (negative-control.log, assert 0 == 1, EXIT=1) and the fixture figures are independent literals, but the test exercises only the list and the {\"status\":\"unmeasured\"} marker, not the absent/None shape the else at reckon/velocity.py:2580 mis-folds, so that regression is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: _clone_week_cells (reckon/velocity.py:2548) follows the module's weekly-cell idiom beside _interface_week_rows, buckets UTC Monday-start weeks as measure does, carries its definition in the block, and adds \"clones\" to OPTIONAL_BLOCKS (reckon/velocity.py:2709), with no name the naming rules forbid; it is not 20 because the classification leans on isinstance(report, dict) rather than reading the ledger's own unmeasured-marker contract.\nFINDING reckon/velocity.py:2580 the else branch counts any falsy clone_matches, including None materialised at reckon/velocity.py:895 for a ledger row that carries no clone_matches key (every row promoted before the field landed), as runs_no_match, reporting a run that was never measured as a run measured with no match, the fold the cell's own docstring (reckon/velocity.py:2556) and the goal forbid.\nreviewed_base_sha: 84b6364f162c8a4a04b430f191db7fe34a610e76\nreviewed_head_sha: c7f3c69eda30094ccf02b2ed73f9a742c519538f\n",
+  "review_run_id": "r-20260930T200702958356-review-of-velocity-counts-clone-matches",
+  "reviewed_base_sha": "84b6364f162c8a4a04b430f191db7fe34a610e76",
+  "reviewed_commits": [
+    "c7f3c69eda30094ccf02b2ed73f9a742c519538f"
+  ],
+  "reviewed_head_sha": "c7f3c69eda30094ccf02b2ed73f9a742c519538f",
+  "reviewed_run_id": "r-20260930T195500572735-velocity-counts-clone-matches",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/velocity-counts-clone-matches",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:03.687334+00:00",
+  "total": 91
+}

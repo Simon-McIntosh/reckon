@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:5512",
+    "reckon/crew/reports.py:audit_manifest",
+    "reckon/crew/reports.py:_composed_record_id_findings"
+  ],
+  "completed_at": "2026-10-04T08:56:24.228Z",
+  "dispatched_at": "2026-10-04T08:51:00Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; 58512a1e9 adds the check and the brief rule, 4c905d793 adds the recordless fallback, and the two docs commits repair the three colliding fragments by renaming each id under its node id and refresh the landing record.",
+    "done_when": "the done_when names a temporary-repository check-manifest case; tests/test_fragment_ids_are_checked.py:242 holds a plan, its record and a committed fragment, adds a second fragment with the same id and asserts refusal naming the id and both fragments, and the recordless case at :291 asserts the same over fragments when no record exists.",
+    "goal": "the node goal is to catch a fragment element-id collision where the fragment is written; reckon/crew/reports.py:1955 wires _composed_record_id_findings into audit_manifest and reckon/crew/prompts.py:165 states the id-prefix rule in the landing brief.",
+    "manifest": "read; it records base/head arms of 640 passed at 657e199ba and 4c905d793, the focused 140-passed run and the declared negative control, and its test_logs are on disk under the run directory.",
+    "write_paths": "the manifest declares the three Python modules, the three test files, the four fragments and a figures dir; every path in the diff 657e199ba..aad3ce4194 sits inside that scope and the figures dir carries no file."
+  },
+  "justifications": {
+    "durability": "the guard is independent of the value under test \u2014 reinstating the absent audit at base turns tests/test_fragment_ids_are_checked.py:242 and :291 red (2 failed, 3 passed, reproduced), so reverting reckon/crew/reports.py:1955 reddens the suite.",
+    "evidence": "the gate measures the done_when directly through the production CLI at tests/test_fragment_ids_are_checked.py:242 and :291, the base and head arms are recorded at 640 passed with EXIT=0, and an independent re-run of that file at aad3ce4194 gives 5 passed while the same file at 657e199ba gives 2 failed; the declared negative-control log was captured against the earlier four-case file, so it does not exercise the recordless case.",
+    "fit": "reckon/doccheck.py:1458 places audit_composed_record_ids beside _duplicate_element_id_findings and reuses _composed_record_text and _composed_record_sources, the lazy evidence import at reckon/doccheck.py:1492 mirrors audit_file at :1510, and no symbol or comment carries a plan or ticket label.",
+    "goal_fidelity": "all three parts of the ruling land \u2014 the brief at reckon/crew/prompts.py:165, the audit at reckon/crew/reports.py:1955, and the three fragment renames at docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/*.html \u2014 and the composed record of that plan now audits with 0 duplicate-element-id.",
+    "scope_discipline": "git diff --stat 657e199ba aad3ce4194 touches exactly the ten declared paths with no figure added and no deletion outside the renamed ids."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to catch a fragment element-id collision where the fragment is written; reckon/crew/reports.py:1955 wires _composed_record_id_findings into audit_manifest and reckon/crew/prompts.py:165 states the id-prefix rule in the landing brief.\nVERDICT done_when: the done_when names a temporary-repository check-manifest case; tests/test_fragment_ids_are_checked.py:242 holds a plan, its record and a committed fragment, adds a second fragment with the same id and asserts refusal naming the id and both fragments, and the recordless case at :291 asserts the same over fragments when no record exists.\nVERDICT write_paths: the manifest declares the three Python modules, the three test files, the four fragments and a figures dir; every path in the diff 657e199ba..aad3ce4194 sits inside that scope and the figures dir carries no file.\nVERDICT manifest: read; it records base/head arms of 640 passed at 657e199ba and 4c905d793, the focused 140-passed run and the declared negative control, and its test_logs are on disk under the run directory.\nVERDICT diff: read commit by commit; 58512a1e9 adds the check and the brief rule, 4c905d793 adds the recordless fallback, and the two docs commits repair the three colliding fragments by renaming each id under its node id and refresh the landing record.\nCALL_SITES: reckon/cli.py:5512, reckon/crew/reports.py:audit_manifest, reckon/crew/reports.py:_composed_record_id_findings\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all three parts of the ruling land \u2014 the brief at reckon/crew/prompts.py:165, the audit at reckon/crew/reports.py:1955, and the three fragment renames at docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/*.html \u2014 and the composed record of that plan now audits with 0 duplicate-element-id.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate measures the done_when directly through the production CLI at tests/test_fragment_ids_are_checked.py:242 and :291, the base and head arms are recorded at 640 passed with EXIT=0, and an independent re-run of that file at aad3ce4194 gives 5 passed while the same file at 657e199ba gives 2 failed; the declared negative-control log was captured against the earlier four-case file, so it does not exercise the recordless case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 657e199ba aad3ce4194 touches exactly the ten declared paths with no figure added and no deletion outside the renamed ids.\nSCORE durability: 19\nJUSTIFICATION durability: the guard is independent of the value under test \u2014 reinstating the absent audit at base turns tests/test_fragment_ids_are_checked.py:242 and :291 red (2 failed, 3 passed, reproduced), so reverting reckon/crew/reports.py:1955 reddens the suite.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/doccheck.py:1458 places audit_composed_record_ids beside _duplicate_element_id_findings and reuses _composed_record_text and _composed_record_sources, the lazy evidence import at reckon/doccheck.py:1492 mirrors audit_file at :1510, and no symbol or comment carries a plan or ticket label.\n",
+  "review_run_id": "r-20261004T085044698259-review-of-a-fragment-id-collision-is-caught-where-written",
+  "reviewed_base_sha": "657e199ba75b7bcdfc67cadfd37592cecc68a19c",
+  "reviewed_head_sha": "aad3ce4194eb2d688b5f8fe82a5b6e9307cc8902",
+  "reviewed_run_id": "r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T085044698259-review-of-a-fragment-id-collision-is-caught-where-written",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T08:54:26.182794+00:00",
+  "total": 97
+}

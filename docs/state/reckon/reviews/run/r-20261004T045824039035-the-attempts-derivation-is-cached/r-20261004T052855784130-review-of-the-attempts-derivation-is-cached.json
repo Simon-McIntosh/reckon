@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "9a641736ede22800a0da2e21b216810a9da57921",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:2214",
+    "reckon/crew/routing.py:333",
+    "reckon/serve.py:3044",
+    "reckon/mcp_views.py:1671"
+  ],
+  "completed_at": "2026-10-04T05:33:53.453Z",
+  "dispatched_at": "2026-10-04T05:29:17Z",
+  "findings": [
+    {
+      "file": "tests/test_the_attempts_derivation_is_cached.py",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the index-stamp fixture is a one-element list, so the production five-element stamp shape and the before[0][:4] stable-prefix comparison at reckon/mcp_views.py:1540 are never pinned; a regression that narrowed the compared prefix would leave the suite green because the fixture carries no element beyond the first."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "1493",
+      "severity": "follow-on",
+      "text": "follow-on: max() chooses the newest run file by lexicographic path order rather than mtime, correct only because run ids are timestamp-prefixed; the docstring's newest-run claim is stronger than what the stamp proves."
+    }
+  ],
+  "head_log_revision": "5077e68c583b7edc364d0005c20c7b172bddb56f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit (1de54778 source, 5077e68c evidence); the cache wraps both section_attempts_by_plan and section_attempt_count and adds the concurrency and invalidation tests.",
+    "done_when": "the done_when names an input identity, reuse on unchanged inputs, invalidation on launch/promote/discard, a counter test, base/head timings from a read-only script, and a cache-disabled control; the manifest records pytest 106->109 with 0 added failures, measure-base/head logs, and negative-control.log failing both counter assertions at EXIT=1.",
+    "goal": "the node's goal is to make the derived section attempt count cost a read only when its inputs change, guarded by a lock for threaded reads; reckon/mcp_views.py:1520 _cached_attempts reuses the aggregation while the ledger index stamp, the newest run stamp and the live-pointer stamps are unchanged, under _ATTEMPT_CACHE_LOCK at reckon/mcp_views.py:80.",
+    "manifest": "read; it states the base 106 passed and head 109 passed gate, the two counter tests, the cache-disabled control, and the base/head timings with their log paths.",
+    "write_paths": "the diff touches exactly reckon/mcp_views.py, tests/test_the_attempts_derivation_is_cached.py and docs/evidence/fragments/section-contract-and-computed-impl/the-attempts-derivation-is-cached.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_the_attempts_derivation_is_cached.py:22 and :88 patch ledger.index_stamp to a one-element list, so the production five-element stamp and the before[0][:4] stable-prefix comparison at reckon/mcp_views.py:1540 are never exercised, and the deepcopy independence of returned records is not asserted.",
+    "evidence": "tests/test_the_attempts_derivation_is_cached.py:41,52,81 assert reuse and launch/promote/discard invalidation with an installed counter, negative-control.log shows both red at EXIT=1, and measure-base/head.log state roadmap 19.610/3.033 s versus 13.719/1.491 s over the same 1820-run ledger.",
+    "fit": "reckon/mcp_views.py:80 mirrors the existing _PROBE_CACHE lock-and-dict idiom and every helper is named by mechanism, though _attempt_inputs at :1493 calls max() on paths to mean newest.",
+    "goal_fidelity": "reckon/mcp_views.py:1549 caches section_attempts_by_plan and :1679 caches section_attempt_count against the same input identity, and the recomputation is serialized under the RLock at :80 so threaded reads aggregate once.",
+    "scope_discipline": "the diff 9a641736..5077e68c touches only reckon/mcp_views.py, the new test file and the evidence anchor, every one a declared write path, with nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the derived section attempt count cost a read only when its inputs change, guarded by a lock for threaded reads; reckon/mcp_views.py:1520 _cached_attempts reuses the aggregation while the ledger index stamp, the newest run stamp and the live-pointer stamps are unchanged, under _ATTEMPT_CACHE_LOCK at reckon/mcp_views.py:80.\nVERDICT done_when: the done_when names an input identity, reuse on unchanged inputs, invalidation on launch/promote/discard, a counter test, base/head timings from a read-only script, and a cache-disabled control; the manifest records pytest 106->109 with 0 added failures, measure-base/head logs, and negative-control.log failing both counter assertions at EXIT=1.\nVERDICT write_paths: the diff touches exactly reckon/mcp_views.py, tests/test_the_attempts_derivation_is_cached.py and docs/evidence/fragments/section-contract-and-computed-impl/the-attempts-derivation-is-cached.html, all inside the declared scope.\nVERDICT manifest: read; it states the base 106 passed and head 109 passed gate, the two counter tests, the cache-disabled control, and the base/head timings with their log paths.\nVERDICT diff: read commit by commit (1de54778 source, 5077e68c evidence); the cache wraps both section_attempts_by_plan and section_attempt_count and adds the concurrency and invalidation tests.\nCALL_SITES: reckon/roadmap.py:2214, reckon/crew/routing.py:333, reckon/serve.py:3044, reckon/mcp_views.py:1671\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:1549 caches section_attempts_by_plan and :1679 caches section_attempt_count against the same input identity, and the recomputation is serialized under the RLock at :80 so threaded reads aggregate once.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_attempts_derivation_is_cached.py:41,52,81 assert reuse and launch/promote/discard invalidation with an installed counter, negative-control.log shows both red at EXIT=1, and measure-base/head.log state roadmap 19.610/3.033 s versus 13.719/1.491 s over the same 1820-run ledger.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 9a641736..5077e68c touches only reckon/mcp_views.py, the new test file and the evidence anchor, every one a declared write path, with nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_attempts_derivation_is_cached.py:22 and :88 patch ledger.index_stamp to a one-element list, so the production five-element stamp and the before[0][:4] stable-prefix comparison at reckon/mcp_views.py:1540 are never exercised, and the deepcopy independence of returned records is not asserted.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/mcp_views.py:80 mirrors the existing _PROBE_CACHE lock-and-dict idiom and every helper is named by mechanism, though _attempt_inputs at :1493 calls max() on paths to mean newest.\nFINDING tests/test_the_attempts_derivation_is_cached.py:22 follow-on: the index-stamp fixture is a one-element list, so the production five-element stamp shape and the before[0][:4] stable-prefix comparison at reckon/mcp_views.py:1540 are never pinned; a regression that narrowed the compared prefix would leave the suite green because the fixture carries no element beyond the first.\nFINDING reckon/mcp_views.py:1493 follow-on: max() chooses the newest run file by lexicographic path order rather than mtime, correct only because run ids are timestamp-prefixed; the docstring's newest-run claim is stronger than what the stamp proves.\n",
+  "review_run_id": "r-20261004T052855784130-review-of-the-attempts-derivation-is-cached",
+  "reviewed_base_sha": "9a641736ede22800a0da2e21b216810a9da57921",
+  "reviewed_head_sha": "5077e68c583b7edc364d0005c20c7b172bddb56f",
+  "reviewed_run_id": "r-20261004T045824039035-the-attempts-derivation-is-cached",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T05:33:10.678849+00:00",
+  "total": 94
+}

@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T00:07:07.720Z",
+  "dispatched_at": "2026-10-05T00:04:22Z",
+  "findings": [
+    {
+      "anchor": "docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py:163",
+      "id": "reuse_search-1",
+      "reason": "the author must keep a broader pattern and the reader's pattern side by side (or assert against a known-skipped file), otherwise the section converts a measurement into a restatement of the reader it is meant to check.",
+      "text": "\u00a712(a) narrows the census's directory count to the reader's own `plan-*.v*.json` glob, but the count exists precisely so it can differ from the reader's enumeration (a record the reader skips shows as a difference); with the same glob the two counts are equal by construction and the emitted \"equal to the reader's count, so no record was skipped\" claim can never fail",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:1228",
+      "id": "reuse_search-2",
+      "reason": "the section's own requirement that a record stored before the change still be found at the same path cannot hold unless the author parameterises the suffix length or shares only the validation regex; as stated the store's keying silently changes.",
+      "text": "\u00a712(d) states that plan_review_path extends review.py:review_path's \".at-<sha> suffix and its validation\", but review_path mints `.at-{full-sha}` (review.py:1228, `suffix = f\".at-{head_sha.lower()}\"`) while plan_review_path mints `.at-{blob8}` (plan_review.py:349, `f\".at-{blob.lower()[:8]}\"`); the two share only the validation regex `[0-9A-Fa-f]{7,64}`, so extending the rule as written changes the suffix and relocates every stored record",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:2504",
+      "id": "duplicate_owner-1",
+      "reason": "the design should resolve the week through velocity's resolver, or expose a public entry over it for interface_counts to consume, rather than re-deriving the week in the review composer and emitting a count the surface contradicts.",
+      "text": "\u00a713 attributes \"the current week's four interface counts\" to interface_counts.py, which counts one named revision and resolves no week (count_revision_cached takes a sha); the week-to-revision resolution the composer needs is owned by velocity.py (`_first_parent_head` at velocity.py:614, used by `_interface_week_rows` at velocity.py:2504), so a composer that picks its own revision (e.g. main HEAD) cites a figure that disagrees with the weekly number the velocity view publishes",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "21fb4d22cc39f026fbdf1feaff9d51c2d56c3416d156638d1ee013a2d4958188",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 46,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T00:08:58.100969+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T00:08:56.656903+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T00:08:57.185207+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T000408081533-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "a650f7506a0d04349d135c89ca7b1fb5cbf00289",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a712 and \u00a713 extend existing modules (census.py, plan_review.py, review.py, recovery.py) behind their current interfaces; neither adds a module nor spreads new shallow wrappers over the same machinery.",
+    "duplicate_owner": "a finding \u2014 \u00a713 resolves \"the current week's\" interface counts through interface_counts.py, but the week-to-revision resolution it needs is owned by reckon/velocity.py.",
+    "reuse_search": "a finding \u2014 \u00a712(a) reuses the reader's `plan-*.v*.json` glob in census.py where the count must stay broader to remain a cross-check, and \u00a712(d) cites review.py:review_path's sibling rule as shared with plan_review_path although the two mint different suffixes.",
+    "thin_wrapper": "pass \u2014 \u00a713's interface_budget item extends the existing item set and prompt rather than layering a parallel rubric, and \u00a712(d) extends review.py:review_path instead of minting a third path rule, which is the justified direction."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T00:07:44.761578+00:00"
+}

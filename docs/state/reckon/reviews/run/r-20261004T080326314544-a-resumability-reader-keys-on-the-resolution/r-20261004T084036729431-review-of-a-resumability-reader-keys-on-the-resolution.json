@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-04T08:46:32.057Z",
+  "dispatched_at": "2026-10-04T08:41:00Z",
+  "findings": [
+    {
+      "file": "tests/test_resumability_reads_the_resolution.py",
+      "line": "101",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares resolution[\"session_id\"] against THREAD_ID, the same constant the fixture embedded in the stream, so it is not independent of the value under test; the resolved, source and consulted assertions on lines 99, 100 and 102 carry the regression guard, and the negative control reddens them."
+    },
+    {
+      "file": "after-population.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's log names the tracked-tree revision a90a37174 as its first revision token ahead of change-revision: 823cc7629, so a reader of the read-time head_log_revision annotation alone misreads which commit the head arm measured; the header's own wording and the manifest's after_suite.revision (823cc7629) disambiguate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 823cc7629 against base a90a37174; two new files, 139 insertions, no source change \u2014 consistent with the census finding no in-scope reader to repair.",
+    "done_when": "the done_when requires each reader named with file/line, an incident test (a pointer whose session_id is null over a stream naming a thread reads resumable, source stream), and a negative control that must fail; the manifest records both population arms at EXIT=0 and the test passes at head.",
+    "goal": "\u00a736's goal is that resumability readers key on the resolved session rather than the lagging session_id field; the node named every raw-field reader in reckon/crew with file and line and found none remaining inside its scope, where recovery.py:_blocked_session_resolution (recovery.py:4662) delegates to resumption.resolve_session (resumption.py:464).",
+    "manifest": "read; status complete, commits [\"823cc7629\"], the three gate logs and the negative-control log named with paths, and the census recorded with file and line per reader.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, reckon/crew/resumption.py, tests/test_resumability_reads_the_resolution.py, the evidence fragment and a figures directory; the diff touches only the test and the fragment, both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_resumability_reads_the_resolution.py:99-102 redden when _blocked_session_resolution reads the raw field, shown by the negative-control log and an independent scratch mutation.",
+    "evidence": "the manifest's baseline_suite and after_suite name base-population.log and after-population.log, whose own summary lines read \"1520 passed, 1 skipped\" and \"1522 passed, 1 skipped\" with EXIT=0, and the named focused test re-runs green.",
+    "fit": "the test follows the tests/ idiom with a RECKON_HOME-isolating fixture and a dead-pid pointer, and its filename names the mechanism rather than a plan label.",
+    "goal_fidelity": "recovery.py:4673 imports resumption.resolve_session, so recovery.py:4662 keys the blocked classification on the resolution rather than the raw field, matching \u00a736's done-when.",
+    "scope_discipline": "the diff a90a37174..823cc7629 adds only tests/test_resumability_reads_the_resolution.py and the evidence fragment, both inside the manifest's declared write paths, with no deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a736's goal is that resumability readers key on the resolved session rather than the lagging session_id field; the node named every raw-field reader in reckon/crew with file and line and found none remaining inside its scope, where recovery.py:_blocked_session_resolution (recovery.py:4662) delegates to resumption.resolve_session (resumption.py:464).\nVERDICT done_when: the done_when requires each reader named with file/line, an incident test (a pointer whose session_id is null over a stream naming a thread reads resumable, source stream), and a negative control that must fail; the manifest records both population arms at EXIT=0 and the test passes at head.\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, reckon/crew/resumption.py, tests/test_resumability_reads_the_resolution.py, the evidence fragment and a figures directory; the diff touches only the test and the fragment, both inside that scope.\nVERDICT manifest: read; status complete, commits [\"823cc7629\"], the three gate logs and the negative-control log named with paths, and the census recorded with file and line per reader.\nVERDICT diff: read commit 823cc7629 against base a90a37174; two new files, 139 insertions, no source change \u2014 consistent with the census finding no in-scope reader to repair.\nCALL_SITES: reckon/crew/recovery.py:classify_pointer, reckon/crew/recovery.py:_blocked_session_resolution, reckon/crew/resumption.py:resolve_session\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: recovery.py:4673 imports resumption.resolve_session, so recovery.py:4662 keys the blocked classification on the resolution rather than the raw field, matching \u00a736's done-when.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite name base-population.log and after-population.log, whose own summary lines read \"1520 passed, 1 skipped\" and \"1522 passed, 1 skipped\" with EXIT=0, and the named focused test re-runs green.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a90a37174..823cc7629 adds only tests/test_resumability_reads_the_resolution.py and the evidence fragment, both inside the manifest's declared write paths, with no deletions.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_resumability_reads_the_resolution.py:99-102 redden when _blocked_session_resolution reads the raw field, shown by the negative-control log and an independent scratch mutation.\nSCORE fit: 18\nJUSTIFICATION fit: the test follows the tests/ idiom with a RECKON_HOME-isolating fixture and a dead-pid pointer, and its filename names the mechanism rather than a plan label.\nFINDING tests/test_resumability_reads_the_resolution.py:101 follow-on: the assertion compares resolution[\"session_id\"] against THREAD_ID, the same constant the fixture embedded in the stream, so it is not independent of the value under test; the resolved, source and consulted assertions on lines 99, 100 and 102 carry the regression guard, and the negative control reddens them.\nFINDING after-population.log:1 follow-on: the head arm's log names the tracked-tree revision a90a37174 as its first revision token ahead of change-revision: 823cc7629, so a reader of the read-time head_log_revision annotation alone misreads which commit the head arm measured; the header's own wording and the manifest's after_suite.revision (823cc7629) disambiguate.",
+  "review_run_id": "r-20261004T084036729431-review-of-a-resumability-reader-keys-on-the-resolution",
+  "reviewed_base_sha": "a90a37174f9f6be14a49ec8611d6b0e16463ec71",
+  "reviewed_head_sha": "823cc76295e2edf33987a1fa2f97dce2153ce94a",
+  "reviewed_run_id": "r-20261004T080326314544-a-resumability-reader-keys-on-the-resolution",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T084036729431-review-of-a-resumability-reader-keys-on-the-resolution",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T08:45:35.839578+00:00",
+  "total": 92
+}

@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T14:35:29.907Z",
+  "dispatched_at": "2026-10-06T14:26:46Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T141630866731-stale-ticker-and-delivery-tests/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's tests line names neither baseline_suite nor after_suite, so the reviewed run's added-failure count is unmeasured and its gate log's header records only the head arm."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commit e97b4bbf against base 0375c0ac. In the ticker test it widens _reason_cell's width assertion from == room to <= room (the row now ends on its last glyph) and rewrites the helper docstring; in the delivery test it swaps the expected fleet order to [(\"two-node\",\"working\"),(\"one-node\",\"dispatched\")] and documents the 90 s arrival hold. No test's whole-word or fleet-completeness assertion is removed.",
+    "done_when": "The done-when is the gate plus each test's own control. I re-ran the gate at the reviewed head e97b4bbf (review-gate.log, 30 passed, EXIT=0) and reproduced the declared mid-word mutation in a scratch copy of reckon/crew/ticker.py (review-negative-control.log, 3 failed / 1 passed, EXIT=1, failing the three whole-word tests), so the updated width guards still fire.",
+    "goal": "The node's goal \u2014 update the four stale tests that encode ticker behaviour retired by two deliberate changes \u2014 is met: tests/test_ticker_reason_cut_at_a_word.py:107 now asserts the reason cell's room as an at-most bound and tests/test_crew_session_delivery.py:505 asserts the hold's event order, so all four named tests assert the behaviour the two commits left.",
+    "manifest": "Read at the run's manifest.md: status complete, commits e97b4bbf, the tests line with 30 passed EXIT=0, negative_control_log with its note, and changed_paths. Its tests line names no baseline_suite and no after_suite arm, so the reviewed run's added-failure count is unmeasured.",
+    "write_paths": "git diff --stat 0375c0ac e97b4bbf is exactly two files and 15 insertions against 6 deletions \u2014 tests/test_crew_session_delivery.py and tests/test_ticker_reason_cut_at_a_word.py \u2014 both inside the node's two declared write paths, and nothing under reckon/ is touched."
+  },
+  "justifications": {
+    "durability": "the guards fire \u2014 disabling the word-boundary search in reckon/crew/ticker.py reddens the three whole-word tests (review-negative-control.log); it is 19 rather than 20 because _reason_cell's width check is now a one-sided bound and the fitting-clause test asserts the text rather than the width, so a silent shortening of a fitting row is caught only by the kept-word assertions.",
+    "evidence": "the gate is recorded (gate.log, 30 passed, EXIT=0) and I reproduced it at the head (review-gate.log, 30 passed, EXIT=0) plus the declared mutation (review-negative-control.log, 3 failed / 1 passed, EXIT=1); it is 18 rather than 20 because the reviewed manifest names no baseline_suite or after_suite arm, so the added-failure count cannot be derived.",
+    "fit": "the added comment at tests/test_crew_session_delivery.py:501 states the hold mechanism and the helper docstring at tests/test_ticker_reason_cut_at_a_word.py:95 states the at-most bound, with no plan, ticket or version label.",
+    "goal_fidelity": "tests/test_ticker_reason_cut_at_a_word.py:107 asserts the cell's room as an at-most bound and tests/test_crew_session_delivery.py:505 asserts the hold's order, so all four named tests now assert the behaviour the two commits left.",
+    "reuse": "the change adds no production definition; the capabilities it exercises are owned by reckon/crew/ticker.py's _fit_clause, reckon/crew/recovery.py's format_watch_transition and reckon/crew/runs.py's follow path, and the tests extend their coverage rather than duplicating them.",
+    "scope_discipline": "git diff --stat 0375c0ac e97b4bbf changes exactly the two declared test files (15 insertions, 6 deletions) and nothing under reckon/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal \u2014 update the four stale tests that encode ticker behaviour retired by two deliberate changes \u2014 is met: tests/test_ticker_reason_cut_at_a_word.py:107 now asserts the reason cell's room as an at-most bound and tests/test_crew_session_delivery.py:505 asserts the hold's event order, so all four named tests assert the behaviour the two commits left.\nVERDICT done_when: The done-when is the gate plus each test's own control. I re-ran the gate at the reviewed head e97b4bbf (review-gate.log, 30 passed, EXIT=0) and reproduced the declared mid-word mutation in a scratch copy of reckon/crew/ticker.py (review-negative-control.log, 3 failed / 1 passed, EXIT=1, failing the three whole-word tests), so the updated width guards still fire.\nVERDICT write_paths: git diff --stat 0375c0ac e97b4bbf is exactly two files and 15 insertions against 6 deletions \u2014 tests/test_crew_session_delivery.py and tests/test_ticker_reason_cut_at_a_word.py \u2014 both inside the node's two declared write paths, and nothing under reckon/ is touched.\nVERDICT manifest: Read at the run's manifest.md: status complete, commits e97b4bbf, the tests line with 30 passed EXIT=0, negative_control_log with its note, and changed_paths. Its tests line names no baseline_suite and no after_suite arm, so the reviewed run's added-failure count is unmeasured.\nVERDICT diff: Read commit e97b4bbf against base 0375c0ac. In the ticker test it widens _reason_cell's width assertion from == room to <= room (the row now ends on its last glyph) and rewrites the helper docstring; in the delivery test it swaps the expected fleet order to [(\"two-node\",\"working\"),(\"one-node\",\"dispatched\")] and documents the 90 s arrival hold. No test's whole-word or fleet-completeness assertion is removed.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_ticker_reason_cut_at_a_word.py:107 asserts the cell's room as an at-most bound and tests/test_crew_session_delivery.py:505 asserts the hold's order, so all four named tests now assert the behaviour the two commits left.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded (gate.log, 30 passed, EXIT=0) and I reproduced it at the head (review-gate.log, 30 passed, EXIT=0) plus the declared mutation (review-negative-control.log, 3 failed / 1 passed, EXIT=1); it is 18 rather than 20 because the reviewed manifest names no baseline_suite or after_suite arm, so the added-failure count cannot be derived.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 0375c0ac e97b4bbf changes exactly the two declared test files (15 insertions, 6 deletions) and nothing under reckon/.\nSCORE durability: 19\nJUSTIFICATION durability: the guards fire \u2014 disabling the word-boundary search in reckon/crew/ticker.py reddens the three whole-word tests (review-negative-control.log); it is 19 rather than 20 because _reason_cell's width check is now a one-sided bound and the fitting-clause test asserts the text rather than the width, so a silent shortening of a fitting row is caught only by the kept-word assertions.\nSCORE fit: 20\nJUSTIFICATION fit: the added comment at tests/test_crew_session_delivery.py:501 states the hold mechanism and the helper docstring at tests/test_ticker_reason_cut_at_a_word.py:95 states the at-most bound, with no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition; the capabilities it exercises are owned by reckon/crew/ticker.py's _fit_clause, reckon/crew/recovery.py's format_watch_transition and reckon/crew/runs.py's follow path, and the tests extend their coverage rather than duplicating them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T141630866731-stale-ticker-and-delivery-tests/manifest.md:11 follow-on: the reviewed manifest's tests line names neither baseline_suite nor after_suite, so the reviewed run's added-failure count is unmeasured and its gate log's header records only the head arm.\n",
+  "review_run_id": "r-20261006T142630935470-review-of-stale-ticker-and-delivery-tests",
+  "reviewed_base_sha": "0375c0ac7c036c3e6885f1036ecf3339dea2007b",
+  "reviewed_head_sha": "e97b4bbf5180263ab57d74d8de4c0901c5ff664a",
+  "reviewed_run_id": "r-20261006T141630866731-stale-ticker-and-delivery-tests",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:33:00+00:00",
+  "total": 117
+}

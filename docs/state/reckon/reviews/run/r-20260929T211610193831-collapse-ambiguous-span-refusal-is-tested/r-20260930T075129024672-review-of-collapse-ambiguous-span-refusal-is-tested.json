@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:_edit_plan_tool",
+    "reckon/_store.py:_apply_collapse_section",
+    "reckon/_store.py:_collapse_authored_section"
+  ],
+  "completed_at": "2026-09-30T08:11:29.147Z",
+  "dispatched_at": "2026-09-30T07:51:54Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T211610193831-collapse-ambiguous-span-refusal-is-tested/logs/baseline.txt",
+      "line": "1",
+      "text": "the arm's first line spells the revision \"revision=cf729cc7d376ec2ec4a8ed4d52fc4c32b33ac880\" (logs/after.txt:1 likewise for 2659614ad) where reckon/crew/review.py:507 accepts \"revision <sha>\" or \"revision: <sha>\" only, so annotate_review_of_run stores base_log_revision and head_log_revision as null and a stored review can tie its added-failure count to a commit only by opening the manifest's own JSON."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against cf729cc7d; e851a33dd adds the first ambiguity case and 2659614ad splits it into one case per raise site, each fixture carrying a single fault, over the test file and the fragment and nothing else.",
+    "done_when": "the done-when names a case over a plan synthesised under a temporary directory with a mutation deleting the guard, and logs/baseline.txt (29 passed, EXIT=0) and logs/after.txt (31 passed, EXIT=0) record it, with reckon.crew.review.added_failures_from_gate_logs over the manifest's own pair returning (0, []) and a synthetic-id control returning (1, ['tests/synthetic_control.py::test_added_after_base']), so the zero is measured rather than blind.",
+    "goal": "the goal is a test pinning that collapse_section refuses a card span it cannot delimit, leaving the file byte-identical, and tests/test_edit_plan_collapse_section.py:281 and :303 now carry one case per extent check in _landed_card_span, each asserting the op_error, the \"cannot determine the extent of 's2' unambiguously\" detail and a byte-identical file.",
+    "manifest": "read; every key is filled and negative_control_log is a bare absolute path whose first line carries the declared mutation verbatim and whose last line is EXIT=1, but both gate logs spell their header \"revision=<sha>\" where reckon/crew/review.py:507 accepts \"revision <sha>\" or \"revision: <sha>\", so the stored record derives null revisions.",
+    "write_paths": "the declared paths are the collapse test file plus one evidence fragment and one figure directory; both commits change only tests/test_edit_plan_collapse_section.py and docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-ambiguous-span-refusal-is-tested.html, so the figure is correctly unwritten and no production file is touched."
+  },
+  "justifications": {
+    "durability": "deleting the second-heading check at reckon/_store.py:935 reddens only test_a_span_reaching_a_second_heading_is_refused_and_leaves_the_file_unchanged, and deleting the boundary check at :940 reddens only test_a_span_reaching_a_structured_region_is_refused_and_leaves_the_file_unchanged, each reproduced by this review's own mutations (1 failed, 1 passed, EXIT=1 per arm), so each extent rule is pinned alone.",
+    "evidence": "both arms reached their summaries (logs/baseline.txt 29 passed EXIT=0 at cf729cc7, logs/after.txt 31 passed EXIT=0 at 2659614ad) and added_failures_from_gate_logs over them returns (0, []), but their \"revision=<sha>\" headers are unreadable to reckon/crew/review.py:507 so the stored base_log_revision and head_log_revision are null.",
+    "fit": "both cases reuse the plan fixture and the _edit and _collapse_op helpers already in tests/test_edit_plan_collapse_section.py:58 and :156, sit beside the sibling refusal case at :331, add no import, and carry no plan, sprint or ticket label; the region fixture's \"evidence\" is a synthetic data-reckon value, which only makes the case stricter than a real document.",
+    "goal_fidelity": "the re-collapse at tests/test_edit_plan_collapse_section.py:297 and :318 asserts the refusal detail at :299 and :320 and a byte-identical file at :300 and :321 for a second heading and a structured region respectively, which is the goal's refusal clause asserted for both extent checks.",
+    "scope_discipline": "the two commits touch tests/test_edit_plan_collapse_section.py and docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-ambiguous-span-refusal-is-tested.html only, both inside the manifest's declared write paths, the declared figure directory is correctly unwritten, and the reviewed worktree is clean."
+  },
+  "node": "review-of-collapse-ambiguous-span-refusal-is-tested",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a test pinning that collapse_section refuses a card span it cannot delimit, leaving the file byte-identical, and tests/test_edit_plan_collapse_section.py:281 and :303 now carry one case per extent check in _landed_card_span, each asserting the op_error, the \"cannot determine the extent of 's2' unambiguously\" detail and a byte-identical file.\nVERDICT done_when: the done-when names a case over a plan synthesised under a temporary directory with a mutation deleting the guard, and logs/baseline.txt (29 passed, EXIT=0) and logs/after.txt (31 passed, EXIT=0) record it, with reckon.crew.review.added_failures_from_gate_logs over the manifest's own pair returning (0, []) and a synthetic-id control returning (1, ['tests/synthetic_control.py::test_added_after_base']), so the zero is measured rather than blind.\nVERDICT write_paths: the declared paths are the collapse test file plus one evidence fragment and one figure directory; both commits change only tests/test_edit_plan_collapse_section.py and docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-ambiguous-span-refusal-is-tested.html, so the figure is correctly unwritten and no production file is touched.\nVERDICT manifest: read; every key is filled and negative_control_log is a bare absolute path whose first line carries the declared mutation verbatim and whose last line is EXIT=1, but both gate logs spell their header \"revision=<sha>\" where reckon/crew/review.py:507 accepts \"revision <sha>\" or \"revision: <sha>\", so the stored record derives null revisions.\nVERDICT diff: read commit by commit against cf729cc7d; e851a33dd adds the first ambiguity case and 2659614ad splits it into one case per raise site, each fixture carrying a single fault, over the test file and the fragment and nothing else.\nCALL_SITES: reckon/mcp.py:_edit_plan_tool, reckon/_store.py:_apply_collapse_section, reckon/_store.py:_collapse_authored_section\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the re-collapse at tests/test_edit_plan_collapse_section.py:297 and :318 asserts the refusal detail at :299 and :320 and a byte-identical file at :300 and :321 for a second heading and a structured region respectively, which is the goal's refusal clause asserted for both extent checks.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms reached their summaries (logs/baseline.txt 29 passed EXIT=0 at cf729cc7, logs/after.txt 31 passed EXIT=0 at 2659614ad) and added_failures_from_gate_logs over them returns (0, []), but their \"revision=<sha>\" headers are unreadable to reckon/crew/review.py:507 so the stored base_log_revision and head_log_revision are null.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch tests/test_edit_plan_collapse_section.py and docs/evidence/fragments/a-landing-beat-needs-no-hand-edit/collapse-ambiguous-span-refusal-is-tested.html only, both inside the manifest's declared write paths, the declared figure directory is correctly unwritten, and the reviewed worktree is clean.\nSCORE durability: 19\nJUSTIFICATION durability: deleting the second-heading check at reckon/_store.py:935 reddens only test_a_span_reaching_a_second_heading_is_refused_and_leaves_the_file_unchanged, and deleting the boundary check at :940 reddens only test_a_span_reaching_a_structured_region_is_refused_and_leaves_the_file_unchanged, each reproduced by this review's own mutations (1 failed, 1 passed, EXIT=1 per arm), so each extent rule is pinned alone.\nSCORE fit: 19\nJUSTIFICATION fit: both cases reuse the plan fixture and the _edit and _collapse_op helpers already in tests/test_edit_plan_collapse_section.py:58 and :156, sit beside the sibling refusal case at :331, add no import, and carry no plan, sprint or ticket label; the region fixture's \"evidence\" is a synthetic data-reckon value, which only makes the case stricter than a real document.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T211610193831-collapse-ambiguous-span-refusal-is-tested/logs/baseline.txt:1 the arm's first line spells the revision \"revision=cf729cc7d376ec2ec4a8ed4d52fc4c32b33ac880\" (logs/after.txt:1 likewise for 2659614ad) where reckon/crew/review.py:507 accepts \"revision <sha>\" or \"revision: <sha>\" only, so annotate_review_of_run stores base_log_revision and head_log_revision as null and a stored review can tie its added-failure count to a commit only by opening the manifest's own JSON.",
+  "review_run_id": "r-20260930T075129024672-review-of-collapse-ambiguous-span-refusal-is-tested",
+  "reviewed_base_sha": "cf729cc7d376ec2ec4a8ed4d52fc4c32b33ac880",
+  "reviewed_head_sha": "2659614ad3456d5b11d7f0e5ed5b459d5a622a5c",
+  "reviewed_run_id": "r-20260929T211610193831-collapse-ambiguous-span-refusal-is-tested",
+  "reviewer_run_id": "r-20260930T075129024672-review-of-collapse-ambiguous-span-refusal-is-tested",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T08:07:28.498419+00:00",
+  "total": 96
+}

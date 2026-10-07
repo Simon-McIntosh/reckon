@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 8,
+  "added_failure_ids": [
+    "tests/test_one_refusal_on_main.py::test_the_reviewed_head_is_named_as_the_commit_to_cite",
+    "tests/test_promotion_reads_the_matching_review.py::test_a_waiver_still_lands_a_run_whose_review_is_of_an_earlier_head",
+    "tests/test_promotion_reads_the_matching_review.py::test_only_a_review_of_an_earlier_head_refuses_the_promotion",
+    "tests/test_promotion_reads_the_matching_review.py::test_promotion_reads_the_review_of_the_revision_it_promotes",
+    "tests/test_review_store_reads_and_fences_by_head.py::test_a_refusal_names_two_revisions_and_never_one_twice",
+    "tests/test_review_store_reads_and_fences_by_head.py::test_the_classifier_reads_the_review_of_the_head_it_classifies",
+    "tests/test_review_store_reads_and_fences_by_head.py::test_the_promotion_remedy_cites_resolved_commits",
+    "tests/test_review_store_reads_and_fences_by_head.py::test_the_remedy_cites_nothing_for_prose_naming_no_commit"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 8 failing test(s) not retired by name (tests/test_one_refusal_on_main.py::test_the_reviewed_head_is_named_as_the_commit_to_cite, tests/test_promotion_reads_the_matching_review.py::test_a_waiver_still_lands_a_run_whose_review_is_of_an_earlier_head, tests/test_promotion_reads_the_matching_review.py::test_only_a_review_of_an_earlier_head_refuses_the_promotion, tests/test_promotion_reads_the_matching_review.py::test_promotion_reads_the_review_of_the_revision_it_promotes, tests/test_review_store_reads_and_fences_by_head.py::test_a_refusal_names_two_revisions_and_never_one_twice, tests/test_review_store_reads_and_fences_by_head.py::test_the_classifier_reads_the_review_of_the_head_it_classifies, tests/test_review_store_reads_and_fences_by_head.py::test_the_promotion_remedy_cites_resolved_commits, tests/test_review_store_reads_and_fences_by_head.py::test_the_remedy_cites_nothing_for_prose_naming_no_commit)",
+  "backend": "clive",
+  "base_log_revision": "8a04f102f27a2244996d932d62d8dbd08339a763",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:1827",
+    "reckon/cli.py:5764"
+  ],
+  "completed_at": "2026-10-04T21:28:52.615Z",
+  "dimension_dispositions": {
+    "fit": {
+      "kind": "folded",
+      "node": "a-review-records-shas-resolve",
+      "recorded_at": "2026-10-04T21:29:31.578259+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-04T21:22:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "255",
+      "severity": "follow-on",
+      "text": "follow-on: _resolved_commit duplicates recovery._resolve_commit (reckon/crew/recovery.py:378), the same rev-parse-verify-to-commit-else-empty capability; the diff should lift its --verify --quiet --end-of-options and timeout hardening into that owner and import it, as the same function already imports two siblings from recovery."
+    },
+    {
+      "file": "tests/test_review_store_reads_and_fences_by_head.py",
+      "line": "41",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture BASE = \"1\" * 40 is a placeholder reviewed_base_sha that names no commit, so the new refusal reddens this file and two siblings (8 added failures at head); the node was fenced out of these files, so the one-line repair belongs to a follow-on and the section owner must reconcile the done-when's zero-delta population clause with a guard that must refuse any invented revision."
+    }
+  ],
+  "head_log_revision": "f0f47e6d4c94a6b97d63d82ac24044e1053e12de",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 8a04f102f; f0f47e6d4 adds _resolved_commit and unresolved_reviewed_revision to reckon/crew/review.py with the store refusal at :1486-1488, adds _reviewer_store_records and _unresolved_revision_findings to reckon/crew/reports.py and wires the latter into audit_manifest at :2036, and adds the seven-case test file; 7c2bb9638 adds only the evidence fragment.",
+    "done_when": "the done-when has four clauses \u2014 check-manifest refuses a 38-character head naming both shas, store_review refuses the same record, a correct 40-character head passes both, and the population of test files importing reckon.crew.review or reckon.crew.reports adds no failure against base; tests/test_a_review_records_shas_resolve.py:184 and its five sibling cases measure the first three (7 passed at f0f47e6d4, re-run here 7 passed), but the fourth is contradicted by the manifest's own after_suite, which records 8 added failures at head f0f47e6d4 against the clean 8a04f102f base arm (1184 passed -> 1176 passed, 8 failed).",
+    "goal": "the goal is to refuse a review record whose reviewed_base_sha or reviewed_head_sha does not resolve to a commit in the reviewed repository, at the review run's check-manifest and in store_review, naming the stored sha and the reviewed worktree's head, per section 60; at the reviewed head reckon/crew/review.py:305 defines unresolved_reviewed_revision, which resolves each carried half against the reviewed run's tree through _resolved_commit at reckon/crew/review.py:255.",
+    "manifest": "read; its status is complete and it records commits f0f47e6d4 and 7c2bb9638, the 7/7 gate at f0f47e6d4, the two population arms (base 1184 passed/0 failed, head 1176 passed/8 failed) and the negative control (4 failed/3 passed, EXIT=1), with failure_attribution naming the three out-of-scope fixture files behind the eight added failures.",
+    "write_paths": "the node was fenced to reckon/crew/review.py, reckon/crew/reports.py, tests/test_a_review_records_shas_resolve.py, docs/evidence/fragments/crew-runtime-positive-controls/a-review-records-shas-resolve.html and docs/figures/crew-runtime-positive-controls/a-review-records-shas-resolve; the diff 8a04f102f..7c2bb9638 touches exactly the first four and writes no figure."
+  },
+  "justifications": {
+    "durability": "removing both resolution checks in a copy of the head tree reddens four cases (negative-control.log, 4 failed/3 passed, EXIT=1), so tests/test_a_review_records_shas_resolve.py:199 and :245 fail if the refusal regresses and each asserts against the corrupted value and the independent git-resolved head.",
+    "evidence": "the done-when's first three clauses are measured by tests/test_a_review_records_shas_resolve.py (7 passed at f0f47e6d4, re-run here) and the negative control (4 failed/3 passed, EXIT=1) shows the refusal fires, but the fourth clause \u2014 the population adds no failure against base \u2014 is contradicted by the manifest's own after_suite, which records 8 added failures at f0f47e6d4.",
+    "fit": "reckon/crew/review.py:255 adds _resolved_commit, whose capability reckon/crew/recovery.py:378 _resolve_commit already owns, and review.py already imports _review_tree and _run_head_for_review from that module rather than adding a parallel resolver.",
+    "goal_fidelity": "reckon/crew/review.py:1486 refuses before writing and reckon/crew/reports.py:2036 reports at check-manifest, both naming the stored value and the reviewed tree's head, which is the goal exactly.",
+    "scope_discipline": "the diff 8a04f102f..7c2bb9638 touches only reckon/crew/review.py, reckon/crew/reports.py, tests/test_a_review_records_shas_resolve.py and the declared fragment, all inside the node's write paths, and adds no figure."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to refuse a review record whose reviewed_base_sha or reviewed_head_sha does not resolve to a commit in the reviewed repository, at the review run's check-manifest and in store_review, naming the stored sha and the reviewed worktree's head, per section 60; at the reviewed head reckon/crew/review.py:305 defines unresolved_reviewed_revision, which resolves each carried half against the reviewed run's tree through _resolved_commit at reckon/crew/review.py:255.\nVERDICT done_when: the done-when has four clauses \u2014 check-manifest refuses a 38-character head naming both shas, store_review refuses the same record, a correct 40-character head passes both, and the population of test files importing reckon.crew.review or reckon.crew.reports adds no failure against base; tests/test_a_review_records_shas_resolve.py:184 and its five sibling cases measure the first three (7 passed at f0f47e6d4, re-run here 7 passed), but the fourth is contradicted by the manifest's own after_suite, which records 8 added failures at head f0f47e6d4 against the clean 8a04f102f base arm (1184 passed -> 1176 passed, 8 failed).\nVERDICT write_paths: the node was fenced to reckon/crew/review.py, reckon/crew/reports.py, tests/test_a_review_records_shas_resolve.py, docs/evidence/fragments/crew-runtime-positive-controls/a-review-records-shas-resolve.html and docs/figures/crew-runtime-positive-controls/a-review-records-shas-resolve; the diff 8a04f102f..7c2bb9638 touches exactly the first four and writes no figure.\nVERDICT manifest: read; its status is complete and it records commits f0f47e6d4 and 7c2bb9638, the 7/7 gate at f0f47e6d4, the two population arms (base 1184 passed/0 failed, head 1176 passed/8 failed) and the negative control (4 failed/3 passed, EXIT=1), with failure_attribution naming the three out-of-scope fixture files behind the eight added failures.\nVERDICT diff: read commit by commit against 8a04f102f; f0f47e6d4 adds _resolved_commit and unresolved_reviewed_revision to reckon/crew/review.py with the store refusal at :1486-1488, adds _reviewer_store_records and _unresolved_revision_findings to reckon/crew/reports.py and wires the latter into audit_manifest at :2036, and adds the seven-case test file; 7c2bb9638 adds only the evidence fragment.\nCALL_SITES: reckon/crew/recovery.py:1827, reckon/cli.py:5764\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1486 refuses before writing and reckon/crew/reports.py:2036 reports at check-manifest, both naming the stored value and the reviewed tree's head, which is the goal exactly.\nSCORE evidence: 15\nJUSTIFICATION evidence: the done-when's first three clauses are measured by tests/test_a_review_records_shas_resolve.py (7 passed at f0f47e6d4, re-run here) and the negative control (4 failed/3 passed, EXIT=1) shows the refusal fires, but the fourth clause \u2014 the population adds no failure against base \u2014 is contradicted by the manifest's own after_suite, which records 8 added failures at f0f47e6d4.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 8a04f102f..7c2bb9638 touches only reckon/crew/review.py, reckon/crew/reports.py, tests/test_a_review_records_shas_resolve.py and the declared fragment, all inside the node's write paths, and adds no figure.\nSCORE durability: 19\nJUSTIFICATION durability: removing both resolution checks in a copy of the head tree reddens four cases (negative-control.log, 4 failed/3 passed, EXIT=1), so tests/test_a_review_records_shas_resolve.py:199 and :245 fail if the refusal regresses and each asserts against the corrupted value and the independent git-resolved head.\nSCORE fit: 9\nJUSTIFICATION fit: reckon/crew/review.py:255 adds _resolved_commit, whose capability reckon/crew/recovery.py:378 _resolve_commit already owns, and review.py already imports _review_tree and _run_head_for_review from that module rather than adding a parallel resolver.\nFINDING reckon/crew/review.py:255 follow-on: _resolved_commit duplicates recovery._resolve_commit (reckon/crew/recovery.py:378), the same rev-parse-verify-to-commit-else-empty capability; the diff should lift its --verify --quiet --end-of-options and timeout hardening into that owner and import it, as the same function already imports two siblings from recovery.\nFINDING tests/test_review_store_reads_and_fences_by_head.py:41 follow-on: the fixture BASE = \"1\" * 40 is a placeholder reviewed_base_sha that names no commit, so the new refusal reddens this file and two siblings (8 added failures at head); the node was fenced out of these files, so the one-line repair belongs to a follow-on and the section owner must reconcile the done-when's zero-delta population clause with a guard that must refuse any invented revision.\nreviewed_base_sha: 8a04f102f27a2244996d932d62d8dbd08339a763\nreviewed_head_sha: 7c2bb9638a425d03291fb785901fd0618496a8d9",
+  "review_run_id": "r-20261004T212150496644-review-of-a-review-records-shas-resolve",
+  "reviewed_base_sha": "8a04f102f27a2244996d932d62d8dbd08339a763",
+  "reviewed_head_sha": "7c2bb9638a425d03291fb785901fd0618496a8d9",
+  "reviewed_run_id": "r-20261004T204721152768-a-review-records-shas-resolve",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 9,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T21:27:54.526611+00:00",
+  "total": 5
+}

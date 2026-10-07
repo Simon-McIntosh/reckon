@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:_stored_review",
+    "reckon/crew/promotion.py:_review_for_promotion",
+    "reckon/crew/recovery.py:classify_pointer",
+    "reckon/crew/recovery.py:_review_dispatch_argv"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T13:53:37.748351+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2526",
+      "text": "the review tree is resolved inline here, duplicating recovery.py:178 _review_tree, so the rule can drift between the promotion gate and the classifier."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single commit ca15230d against base 35aef068; six files changed, all inside the declared scope.",
+    "done_when": "the done-when names five assertions; tests/test_review_store_reads_and_fences_by_head.py asserts all five and the manifest records the focused gate passing.",
+    "goal": "the node goal is to make the reflex, the classifier and promotion agree on the head-keyed review store; reckon/crew/recovery.py:358 grants both write paths, recovery.py:462 reads the record of the head being classified, and promotion.py:3215 delegates to the same selector.",
+    "manifest": "read; it states the focused gate passed and records the after-suite selection at 52 passed.",
+    "write_paths": "read the manifest's six declared paths; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the declared mutation at reckon/crew/recovery.py:358 by composing the legacy path alone reddens test_the_review_dispatch_grants_the_head_keyed_record_path, as negative-control.log line 1 records.",
+    "evidence": "tests/test_review_store_reads_and_fences_by_head.py:200 asserts all five done-when items; I re-ran that file at ca15230d (6 passed), while the recorded after-suite.log line 1 names neither the revision nor the command it ran.",
+    "fit": "the new helpers reckon/crew/recovery.py:229 same_revision and :238 select_review_for_head follow the module's existing docstring-and-type-hint idiom and carry no plan label.",
+    "goal_fidelity": "reckon/crew/recovery.py:358 grants the head-keyed path beside the legacy one and promotion.py:3215 calls the classifier's own select_review_for_head, so the three surfaces name one head.",
+    "scope_discipline": "the diff's six paths are exactly the declared write paths reckon/crew/recovery.py, reckon/crew/promotion.py, tests/test_review_store_reads_and_fences_by_head.py, docs/plans/scoring-should-stop-a-promotion.html, docs/evidence/archive/scoring-should-stop-a-promotion-landed.html and the figures directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the reflex, the classifier and promotion agree on the head-keyed review store; reckon/crew/recovery.py:358 grants both write paths, recovery.py:462 reads the record of the head being classified, and promotion.py:3215 delegates to the same selector.\nVERDICT done_when: the done-when names five assertions; tests/test_review_store_reads_and_fences_by_head.py asserts all five and the manifest records the focused gate passing.\nVERDICT write_paths: read the manifest's six declared paths; every path in the diff is inside them.\nVERDICT manifest: read; it states the focused gate passed and records the after-suite selection at 52 passed.\nVERDICT diff: read the single commit ca15230d against base 35aef068; six files changed, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery.py:_stored_review, reckon/crew/promotion.py:_review_for_promotion, reckon/crew/recovery.py:classify_pointer, reckon/crew/recovery.py:_review_dispatch_argv\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:358 grants the head-keyed path beside the legacy one and promotion.py:3215 calls the classifier's own select_review_for_head, so the three surfaces name one head.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_review_store_reads_and_fences_by_head.py:200 asserts all five done-when items; I re-ran that file at ca15230d (6 passed), while the recorded after-suite.log line 1 names neither the revision nor the command it ran.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff's six paths are exactly the declared write paths reckon/crew/recovery.py, reckon/crew/promotion.py, tests/test_review_store_reads_and_fences_by_head.py, docs/plans/scoring-should-stop-a-promotion.html, docs/evidence/archive/scoring-should-stop-a-promotion-landed.html and the figures directory.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the declared mutation at reckon/crew/recovery.py:358 by composing the legacy path alone reddens test_the_review_dispatch_grants_the_head_keyed_record_path, as negative-control.log line 1 records.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers reckon/crew/recovery.py:229 same_revision and :238 select_review_for_head follow the module's existing docstring-and-type-hint idiom and carry no plan label.\nFINDING reckon/crew/promotion.py:2526 the review tree is resolved inline here, duplicating recovery.py:178 _review_tree, so the rule can drift between the promotion gate and the classifier.\n",
+  "review_run_id": "r-20260923T135337748351-review-of-review-store-reads-and-fences-by-head",
+  "reviewed_base_sha": "35aef0681a2a7da153be614e39f9405aa125caa3",
+  "reviewed_head_sha": "ca15230d4339abf81b5d1fa93597e45acdec301d",
+  "reviewed_run_id": "r-20260923T114013855846-review-store-reads-and-fences-by-head",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T14:19:47.072246+00:00",
+  "total": 85
+}

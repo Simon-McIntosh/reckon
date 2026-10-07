@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "907596aa0a5438ccb1a7a6258f7a2e378237fb23",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:7662 (a promotion stamps the fleet reading on its row)",
+    "reckon/crew/promotion.py:8157 (the beat writes fleet_state into its result)",
+    "reckon/crew/promotion.py:6574 (_unreconciled_live_runs sums _drain_row per pointer)"
+  ],
+  "completed_at": "2026-10-03T13:21:29.905Z",
+  "dispatched_at": "2026-10-03T13:12:23Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "baseline_suite",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded baseline_suite.command spells the scratch test path as `<scratch>/test_baseline.py` where the dispatch contract requires the literal absolute path, so the command as written cannot be re-run; the persisted baseline-arm.log header carries the literal command and path and agrees with the recorded exit_status and failure id, so the arm's evidence stands."
+    },
+    {
+      "file": "manifest.md",
+      "line": "baseline_suite",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite.failure_count is 1 and failure_ids lists only the FAILED id, while baseline-arm.log reports '1 failed, 11 passed, 2 errors'; the two setup errors are the git-shim refusing `git init` in a scratch tmp (exit 97) and do not appear at head, so the added-failure set is unaffected, but the recorded base arm understates its non-passing tests."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "6612",
+      "severity": "follow-on",
+      "text": "follow-on: _fleet_state_reading's broad `except Exception` turns any composition error in the reading into an unmeasured reading with no live_runs; production pointers cannot trigger it (recovery.classify_pointer returns both keys and reads via .get()), and never blocking landing is by design, but the same silence that hid this stale fixture would hide a future composition break outside the test's reach."
+    }
+  ],
+  "head_log_revision": "25aa22a9d44116a2cb25c21047d3bce3d7e44967",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read against base 907596aa; 25aa22a9 changes 8 lines in one file -- the stub moves from promotion.drain to promotion._drain_row and a four-line explanatory comment is added; no assertion moves.",
+    "done_when": "the done-when is a green head arm and a red base arm on the same file; the manifest records both, the head arm is 14 passed EXIT=0 (I reproduced), the base arm's target test fails with KeyError:'live_runs', and the declared negative control reproduces red.",
+    "goal": "the goal is to repair the failing constant-shape fleet-reading test in the node's owned file without changing behaviour; the diff moves the stub to the seam the reading actually uses and the file passes at head.",
+    "manifest": "read; status complete, a single change at 25aa22a9, baseline_suite/after_suite present with revision, completed true and log_path; negative_control_log named; docked for the <scratch> placeholder in baseline_suite.command and the base failure_count of 1 against a log reading '1 failed, 11 passed, 2 errors'.",
+    "write_paths": "changed_paths names one file, tests/test_promotion_beat_carries_fleet_state.py; git show --stat at 25aa22a9 touches only that file; the declared evidence fragment and figures directory are unused."
+  },
+  "justifications": {
+    "durability": "the repaired test stands on the seam the reading consumes for the count, so a reversion of the reading to the whole-project drain would break it again rather than pass silently; the constant-shape and per-count invariants are asserted, and the real count composition is covered by the sibling test_the_unreconciled_count_has_one_composition; not 20 because the test stubs _drain_row, leaving the real classification path and the reading's broad except-into-unmeasured guard (promotion.py:6612) uncovered.",
+    "evidence": "base and head arms are recorded as JSON with revisions, log paths and completed true, the head arm is 14 passed EXIT=0 (I reproduced it in the reviewed worktree), and I reproduced the declared negative control (dead drain stub restored: 1 failed + 2 setup errors, EXIT=1, the KeyError:'live_runs' id) using a scratch copy; docked because baseline_suite.command carries a <scratch> placeholder where the literal absolute path is required, and baseline_suite.failure_count=1 with failure_ids listing only the FAILED id under-reports the base log's '1 failed, 11 passed, 2 errors'.",
+    "fit": "the added comment is mechanism-based (names the per-pointer step and the seam), carries no plan, sprint or ticket label, and the change follows the file's existing monkeypatch idiom without weakening any assertion; I verified production recovery.classify_pointer returns both 'classification' (recovery.py:8435) and 'recovery_classification' (recovery.py:8439), so no product defect is implied.",
+    "goal_fidelity": "the node repairs one stale fixture in its own file: the reading derives its unreconciled count per pointer from runs._drain_row (promotion.py:6574, read at :6607), so the file's promotion.drain stub was dead and the real step raised KeyError on the classify_pointer stub's missing 'classification'; the stub now stands on promotion._drain_row, the count and constant-shape assertions are unchanged, the file is green at head, and I reproduced head 14 passed; not 20 because the node's own two sibling tests error at setup in its base arm (git-shim refusal), so the file was not fully measured at base.",
+    "scope_discipline": "the diff is 5 insertions / 3 deletions in the single owned test file tests/test_promotion_beat_carries_fleet_state.py, no shared index, sprint state or plan HTML is touched, and the declared evidence-fragment and figures paths are unused; git show at 25aa22a9 confirms exactly one changed file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to repair the failing constant-shape fleet-reading test in the node's owned file without changing behaviour; the diff moves the stub to the seam the reading actually uses and the file passes at head.\nVERDICT done_when: the done-when is a green head arm and a red base arm on the same file; the manifest records both, the head arm is 14 passed EXIT=0 (I reproduced), the base arm's target test fails with KeyError:'live_runs', and the declared negative control reproduces red.\nVERDICT write_paths: changed_paths names one file, tests/test_promotion_beat_carries_fleet_state.py; git show --stat at 25aa22a9 touches only that file; the declared evidence fragment and figures directory are unused.\nVERDICT manifest: read; status complete, a single change at 25aa22a9, baseline_suite/after_suite present with revision, completed true and log_path; negative_control_log named; docked for the <scratch> placeholder in baseline_suite.command and the base failure_count of 1 against a log reading '1 failed, 11 passed, 2 errors'.\nVERDICT diff: read against base 907596aa; 25aa22a9 changes 8 lines in one file -- the stub moves from promotion.drain to promotion._drain_row and a four-line explanatory comment is added; no assertion moves.\nVERDICT call_sites: verified 3 production call site(s)\nCALL_SITES: reckon/crew/promotion.py:7662 (a promotion stamps the fleet reading on its row), reckon/crew/promotion.py:8157 (the beat writes fleet_state into its result), reckon/crew/promotion.py:6574 (_unreconciled_live_runs sums _drain_row per pointer)\nSCORE goal_fidelity: 18\nSCORE evidence: 17\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 19\nJUSTIFICATION goal_fidelity: the node repairs one stale fixture in its own file: the reading derives its unreconciled count per pointer from runs._drain_row (promotion.py:6574, read at :6607), so the file's promotion.drain stub was dead and the real step raised KeyError on the classify_pointer stub's missing 'classification'; the stub now stands on promotion._drain_row, the count and constant-shape assertions are unchanged, the file is green at head, and I reproduced head 14 passed; not 20 because the node's own two sibling tests error at setup in its base arm (git-shim refusal), so the file was not fully measured at base.\nJUSTIFICATION evidence: base and head arms are recorded as JSON with revisions, log paths and completed true, the head arm is 14 passed EXIT=0 (I reproduced it in the reviewed worktree), and I reproduced the declared negative control (dead drain stub restored: 1 failed + 2 setup errors, EXIT=1, the KeyError:'live_runs' id) using a scratch copy; docked because baseline_suite.command carries a <scratch> placeholder where the literal absolute path is required, and baseline_suite.failure_count=1 with failure_ids listing only the FAILED id under-reports the base log's '1 failed, 11 passed, 2 errors'.\nJUSTIFICATION scope_discipline: the diff is 5 insertions / 3 deletions in the single owned test file tests/test_promotion_beat_carries_fleet_state.py, no shared index, sprint state or plan HTML is touched, and the declared evidence-fragment and figures paths are unused; git show at 25aa22a9 confirms exactly one changed file.\nJUSTIFICATION durability: the repaired test stands on the seam the reading consumes for the count, so a reversion of the reading to the whole-project drain would break it again rather than pass silently; the constant-shape and per-count invariants are asserted, and the real count composition is covered by the sibling test_the_unreconciled_count_has_one_composition; not 20 because the test stubs _drain_row, leaving the real classification path and the reading's broad except-into-unmeasured guard (promotion.py:6612) uncovered.\nJUSTIFICATION fit: the added comment is mechanism-based (names the per-pointer step and the seam), carries no plan, sprint or ticket label, and the change follows the file's existing monkeypatch idiom without weakening any assertion; I verified production recovery.classify_pointer returns both 'classification' (recovery.py:8435) and 'recovery_classification' (recovery.py:8439), so no product defect is implied.\nFINDING manifest.md:baseline_suite follow-on: the recorded baseline_suite.command spells the scratch test path as `<scratch>/test_baseline.py` where the dispatch contract requires the literal absolute path, so the command as written cannot be re-run; the persisted baseline-arm.log header carries the literal command and path and agrees with the recorded exit_status and failure id, so the arm's evidence stands.\nFINDING manifest.md:baseline_suite follow-on: baseline_suite.failure_count is 1 and failure_ids lists only the FAILED id, while baseline-arm.log reports '1 failed, 11 passed, 2 errors'; the two setup errors are the git-shim refusing `git init` in a scratch tmp (exit 97) and do not appear at head, so the added-failure set is unaffected, but the recorded base arm understates its non-passing tests.\nFINDING reckon/crew/promotion.py:6612 follow-on: _fleet_state_reading's broad `except Exception` turns any composition error in the reading into an unmeasured reading with no live_runs; production pointers cannot trigger it (recovery.classify_pointer returns both keys and reads via .get()), and never blocking landing is by design, but the same silence that hid this stale fixture would hide a future composition break outside the test's reach.\nreviewed_base_sha: 907596aa0a5438ccb1a7a6258f7a2e378237fb23\nreviewed_head_sha: 25aa22a9d44116a2cb25c21047d3bce3d7e44967",
+  "review_run_id": "r-20261003T131150767670-review-of-the-fleet-reading-test-follows-the-shared-step",
+  "reviewed_base_sha": "907596aa0a5438ccb1a7a6258f7a2e378237fb23",
+  "reviewed_head_sha": "25aa22a9d44116a2cb25c21047d3bce3d7e44967",
+  "reviewed_run_id": "r-20261003T125650772064-the-fleet-reading-test-follows-the-shared-step",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T13:20:32.650984+00:00",
+  "total": 91
+}

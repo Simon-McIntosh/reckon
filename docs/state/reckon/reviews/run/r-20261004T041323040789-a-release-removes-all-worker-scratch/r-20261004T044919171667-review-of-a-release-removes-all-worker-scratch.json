@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "f87d778c9c986d6b55705d3589531fdf8212afc1",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T04:56:39.781Z",
+  "dispatched_at": "2026-10-04T04:49:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "6068",
+      "severity": "follow-on",
+      "text": "follow-on: the sibling fallback _release_scratch_when_release_raised returns scratch_removed, scratch_path, scratch_withheld and scratch_bytes but omits scratch_removed_paths in its except branch, so a release that raises inside the fallback still yields a receipt whose key set disagrees between the two release surfaces, the same consistency this delta just closed elsewhere."
+    }
+  ],
+  "head_log_revision": "c3197094bea1b50ee705f75c0d3a4c702a9b111b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit. af68a79d2 (test only) has parent 11a9a5573; c3197094b (fix only) adds the single whitelist key plus the docstring wording. No unrelated change, no rename, and no plan, sprint or ticket identifier in code, tests or commit messages.",
+    "done_when": "the two commits in scope implement the recorded gap and prove it: af68a79d2 adds tests/test_a_release_removes_all_worker_scratch.py::test_discard_names_each_removed_scratch_directory, which drives crew.discard over a run whose worker left files under both the recorded scratch dir (5 bytes) and a bare-id sibling (6 bytes), and asserts both directories are gone and both named with their sizes in the returned receipt; c3197094b adds \"scratch_removed_paths\" to the discard projection whitelist and widens the function docstring from worktree-only to worktree-and-scratch. The plan section done-when is met by the reviewed run overall across f87d778c..c3197094b; this delta carries the receipt-consistency half the prior review flagged.",
+    "goal": "the reviewed delta closes the one follow-on the prior review recorded for run r-20261004T041323040789: discard and promotion release receipts now agree about removed worker scratch, because _remove_discarded_worktree surfaces scratch_removed_paths from the shared release step (reckon/crew/promotion.py:8366), so a discarded run reports each removed path and its byte count, including a timestamp-stem sibling, exactly as a promoted run does.",
+    "manifest": "read; the reviewed run's manifest records the commit list ending c3197094b, the declared negative control (the base release leaves the bare-id sibling), the discard red arm at 11a9a5573 and the three-file after-suite at c3197094b (57 passed, EXIT=0), and a completed status.",
+    "write_paths": "the diff 11a9a5573..c3197094b touches exactly reckon/crew/promotion.py (4 insertions, 3 deletions) and tests/test_a_release_removes_all_worker_scratch.py (37 insertions), both named in this node's review scope; nothing else in the range changed."
+  },
+  "justifications": {
+    "durability": "the new test exercises the real discard path with real filesystem state under a temporary RECKON_HOME and monkeypatched scratch root, asserts both directories are gone and both named with their byte counts, and reddens at the base revision, so it is a control that fires rather than a demonstration. Docked one point because the release fallback _release_scratch_when_release_raised returns its own receipt without the new key in its except branch, so the surface asymmetry the node set out to close survives in one unexercised path.",
+    "evidence": "both arms reproduce independently here. At base revision 11a9a5573 with the new test overlaid, crew.discard removes both directories (captured stdout names the 5-byte and 6-byte removals) and then fails its receipt assertion with KeyError: 'scratch_removed_paths', EXIT=1; at head c3197094b the same test is 1 passed, EXIT=0, and the reviewed run's own committed after-suite at c3197094b is 57 passed with EXIT=0.",
+    "fit": "the change keeps the module's existing whitelist-projection idiom and dict-result shape, adds no rename, updates the docstring to describe the widened field set, and names nothing by plan, sprint, ticket or author.",
+    "goal_fidelity": "the delta closes precisely the follow-on the prior review stored against this run, namely that the discard receipt's projected key set omitted scratch_removed_paths, and does so through the shared release step rather than a second policy, so discard and promotion cannot disagree about what was removed.",
+    "scope_discipline": "the two commits touch only the two files named as this review's scope; the test-only and fix-only commits are cleanly separated, and there is no in-flight or unrelated edit in the range."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed delta closes the one follow-on the prior review recorded for run r-20261004T041323040789: discard and promotion release receipts now agree about removed worker scratch, because _remove_discarded_worktree surfaces scratch_removed_paths from the shared release step (reckon/crew/promotion.py:8366), so a discarded run reports each removed path and its byte count, including a timestamp-stem sibling, exactly as a promoted run does.\nVERDICT done_when: the two commits in scope implement the recorded gap and prove it: af68a79d2 adds tests/test_a_release_removes_all_worker_scratch.py::test_discard_names_each_removed_scratch_directory, which drives crew.discard over a run whose worker left files under both the recorded scratch dir (5 bytes) and a bare-id sibling (6 bytes), and asserts both directories are gone and both named with their sizes in the returned receipt; c3197094b adds \"scratch_removed_paths\" to the discard projection whitelist and widens the function docstring from worktree-only to worktree-and-scratch. The plan section done-when is met by the reviewed run overall across f87d778c..c3197094b; this delta carries the receipt-consistency half the prior review flagged.\nVERDICT write_paths: the diff 11a9a5573..c3197094b touches exactly reckon/crew/promotion.py (4 insertions, 3 deletions) and tests/test_a_release_removes_all_worker_scratch.py (37 insertions), both named in this node's review scope; nothing else in the range changed.\nVERDICT manifest: read; the reviewed run's manifest records the commit list ending c3197094b, the declared negative control (the base release leaves the bare-id sibling), the discard red arm at 11a9a5573 and the three-file after-suite at c3197094b (57 passed, EXIT=0), and a completed status.\nVERDICT diff: read commit by commit. af68a79d2 (test only) has parent 11a9a5573; c3197094b (fix only) adds the single whitelist key plus the docstring wording. No unrelated change, no rename, and no plan, sprint or ticket identifier in code, tests or commit messages.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the delta closes precisely the follow-on the prior review stored against this run, namely that the discard receipt's projected key set omitted scratch_removed_paths, and does so through the shared release step rather than a second policy, so discard and promotion cannot disagree about what was removed.\nSCORE evidence: 20\nJUSTIFICATION evidence: both arms reproduce independently here. At base revision 11a9a5573 with the new test overlaid, crew.discard removes both directories (captured stdout names the 5-byte and 6-byte removals) and then fails its receipt assertion with KeyError: 'scratch_removed_paths', EXIT=1; at head c3197094b the same test is 1 passed, EXIT=0, and the reviewed run's own committed after-suite at c3197094b is 57 passed with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only the two files named as this review's scope; the test-only and fix-only commits are cleanly separated, and there is no in-flight or unrelated edit in the range.\nSCORE durability: 19\nJUSTIFICATION durability: the new test exercises the real discard path with real filesystem state under a temporary RECKON_HOME and monkeypatched scratch root, asserts both directories are gone and both named with their byte counts, and reddens at the base revision, so it is a control that fires rather than a demonstration. Docked one point because the release fallback _release_scratch_when_release_raised returns its own receipt without the new key in its except branch, so the surface asymmetry the node set out to close survives in one unexercised path.\nSCORE fit: 20\nJUSTIFICATION fit: the change keeps the module's existing whitelist-projection idiom and dict-result shape, adds no rename, updates the docstring to describe the widened field set, and names nothing by plan, sprint, ticket or author.\nFINDING reckon/crew/promotion.py:6068 follow-on: the sibling fallback _release_scratch_when_release_raised returns scratch_removed, scratch_path, scratch_withheld and scratch_bytes but omits scratch_removed_paths in its except branch, so a release that raises inside the fallback still yields a receipt whose key set disagrees between the two release surfaces, the same consistency this delta just closed elsewhere.\n",
+  "review_run_id": "r-20261004T044919171667-review-of-a-release-removes-all-worker-scratch",
+  "reviewed_base_sha": "11a9a55738584aa3f607717837f627b8da1dd7f4",
+  "reviewed_head_sha": "c3197094bea1b50ee705f75c0d3a4c702a9b111b",
+  "reviewed_run_id": "r-20261004T041323040789-a-release-removes-all-worker-scratch",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T04:53:22.039007+00:00",
+  "total": 99
+}

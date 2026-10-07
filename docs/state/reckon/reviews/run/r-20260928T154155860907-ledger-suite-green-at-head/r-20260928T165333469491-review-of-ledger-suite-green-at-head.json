@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T154155860907-ledger-suite-green-at-head/logs/head-arm.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T154155860907-ledger-suite-green-at-head/logs/base-arm.log",
+    "note": "derived with review.added_failures_from_gate_logs over the two logs the reviewed manifest names under its `log` key; the dispatch contract's key is `log_path`, which is why the read-time annotation reports this pair as unmeasured (see the record's finding)"
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:330 _require_commits_beyond_base",
+    "reckon/crew/promotion.py:2911 _require_review_waiver",
+    "reckon/crew/routing.py:1560 the disposable member id",
+    "reckon/crew/node.py:1342 claim_disposition",
+    "reckon/mcp.py:3861 the crew view gate",
+    "reckon/ledger.py:780 ledger.write"
+  ],
+  "completed_at": "2026-09-28T17:45:50.654Z",
+  "dispatched_at": "2026-09-28T16:53:46Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "text": "the reviewed run's manifest names its two gate logs under `log` where the dispatch contract's suite observation prescribes `log_path` (reckon/crew/prompts.py:457) and the reader resolves only `log_path` (reckon/crew/review.py:630), so every read through review.read_review re-annotates this pair as unmeasured although both logs are present and readable, and the count this review derives from them is not what a reader of the record through the read path is shown."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/ledger-suite-green-at-head.html",
+      "line": "6",
+      "text": "the cause paragraph says five ids cite their own base sha as the run's work where the table beneath it lists six (ids 1, 2, 6, 7, 8 and 9) and the base file carries six such citations (tests/test_ledger.py:426, 1341, 1634, 1679, 1720 and 1743 at 1ae39477), so a reader taking the prose as the census of affected ids undercounts by one."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the single commit 7520ec83 against its dispatch base 6c9561c3 \u2014 tests/test_ledger.py gains three documented fixture helpers (_commit_work at :246, _init_ledger at :274, _UNREVIEWED_PROMOTION_WAIVED at :296) and eleven targeted edits, and the fragment and the figure script and png are added inside the fence \u2014 with the fragment's cause paragraph counting one fewer citing id than its own table, recorded as a finding.",
+    "done_when": "every clause of the measure holds \u2014 96 green at exit 0 against eleven reds at 1ae39477, no case skipped, xfailed or deleted, three assertion statements replaced by current-contract statements (the roster-row assertion becoming the disposable identity plus the empty roster, tests/test_ledger.py:480-481), the citation fixtures committing real work through _commit_work with the guard untouched, the second-node fixture stopping its first attempt at tests/test_ledger.py:1647 so a stopped empty claim no longer fences the fragment, the manifest carrying the eleven-row cause table, and added failures re-deriving to zero with the base ids as the control \u2014 the manifest naming each log under `log` rather than the contract's `log_path` being the one deviation, recorded as a finding.",
+    "goal": "the node's goal is to repair the eleven failing cases in tests/test_ledger.py against the current contracts, and at the reviewed head the file passes 96 at exit 0 (logs/head-arm.log) where the base arm at 1ae39477 fails exactly eleven (logs/base-arm.log), every repair asserting a contract that exists in reckon/ at head \u2014 the disposable member id (reckon/crew/routing.py:1560), the review waiver (reckon/crew/promotion.py:2911), the claim disposition that walks past a stopped empty claim (reckon/crew/node.py:1342), the crew view gate (reckon/mcp.py:3861) and the ledger write split (reckon/ledger.py:780) \u2014 with no product file touched by the run's commit.",
+    "manifest": "read; it states complete with one commit, four changed paths, both arms, the eleven-row cause table and no follow-ons, and its numeric claims hold (96 = 11 + 85 across the arms, added failures zero) \u2014 but its suite observations at lines 20-21 name their logs under `log` where the dispatch contract and the reader resolve `log_path` (reckon/crew/review.py:630), so read_review reports this run's added-failure count as unmeasured, recorded as a finding.",
+    "write_paths": "the fence is tests/test_ledger.py, docs/evidence/fragments/the-suite-is-green-at-head/ledger-suite-green-at-head.html and docs/figures/the-suite-is-green-at-head/ledger-suite-green-at-head; the run's own commit names exactly those four paths and nothing else (git diff --name-status 6c9561c3..7520ec83), and the wider span from the base-arm revision adds only peer commits that landed before this node's dispatch base."
+  },
+  "justifications": {
+    "durability": "each repaired case is measured against an observed red at 1ae39477 (logs/diag-11.log) and the fixture now pins the stopped-claim walk at tests/test_ledger.py:1647 and the crew view gate at :2381, while the citation refusal at reckon/crew/promotion.py:330 keeps no test of its own and the vocabulary assertion re-reddens on every addition to the message it copies.",
+    "evidence": "both arms are logged with revision and module-file headers (logs/base-arm.log, logs/head-arm.log) and the added-failure count re-derives to zero with an injected-failure control, but the manifest's `log` key makes the production reader report the count as unmeasured (reckon/crew/review.py:630) and the head arm's header names the pre-commit revision 6c9561c3 rather than the commit 7520ec83 its measured blob became.",
+    "fit": "the helpers keep the file's own fixture idiom with docstrings and conventional commit subjects (tests/test_ledger.py:246-300), the new symbols carry no plan label, and the fragment's plan reference is the evidence genre's own, offset by the cause paragraph's miscount against its table (finding).",
+    "goal_fidelity": "the head arm at logs/head-arm.log ends 96 passed at exit 0 where the base arm ends 11 failed, 85 passed, and every repaired assertion cites a contract that exists in reckon/ at head (routing.py:1560, promotion.py:2911, node.py:1342, mcp.py:3861, ledger.py:780).",
+    "scope_discipline": "git diff --name-status 6c9561c3..7520ec83 names exactly tests/test_ledger.py, the fragment and the figure script and png \u2014 the fence's four paths \u2014 and no product file."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 6c9561c36b8df710c2c7f9f828170ae3c664fcf3\nreviewed_head_sha: 7520ec83e3b2d2972185680bf633892a75646d6d\nVERDICT goal: the node's goal is to repair the eleven failing cases in tests/test_ledger.py against the current contracts, and at the reviewed head the file passes 96 at exit 0 (logs/head-arm.log) where the base arm at 1ae39477 fails exactly eleven (logs/base-arm.log), every repair asserting a contract that exists in reckon/ at head \u2014 the disposable member id (reckon/crew/routing.py:1560), the review waiver (reckon/crew/promotion.py:2911), the claim disposition that walks past a stopped empty claim (reckon/crew/node.py:1342), the crew view gate (reckon/mcp.py:3861) and the ledger write split (reckon/ledger.py:780) \u2014 with no product file touched by the run's commit.\nVERDICT done_when: every clause of the measure holds \u2014 96 green at exit 0 against eleven reds at 1ae39477, no case skipped, xfailed or deleted, three assertion statements replaced by current-contract statements (the roster-row assertion becoming the disposable identity plus the empty roster, tests/test_ledger.py:480-481), the citation fixtures committing real work through _commit_work with the guard untouched, the second-node fixture stopping its first attempt at tests/test_ledger.py:1647 so a stopped empty claim no longer fences the fragment, the manifest carrying the eleven-row cause table, and added failures re-deriving to zero with the base ids as the control \u2014 the manifest naming each log under `log` rather than the contract's `log_path` being the one deviation, recorded as a finding.\nVERDICT write_paths: the fence is tests/test_ledger.py, docs/evidence/fragments/the-suite-is-green-at-head/ledger-suite-green-at-head.html and docs/figures/the-suite-is-green-at-head/ledger-suite-green-at-head; the run's own commit names exactly those four paths and nothing else (git diff --name-status 6c9561c3..7520ec83), and the wider span from the base-arm revision adds only peer commits that landed before this node's dispatch base.\nVERDICT manifest: read; it states complete with one commit, four changed paths, both arms, the eleven-row cause table and no follow-ons, and its numeric claims hold (96 = 11 + 85 across the arms, added failures zero) \u2014 but its suite observations at lines 20-21 name their logs under `log` where the dispatch contract and the reader resolve `log_path` (reckon/crew/review.py:630), so read_review reports this run's added-failure count as unmeasured, recorded as a finding.\nVERDICT diff: read the single commit 7520ec83 against its dispatch base 6c9561c3 \u2014 tests/test_ledger.py gains three documented fixture helpers (_commit_work at :246, _init_ledger at :274, _UNREVIEWED_PROMOTION_WAIVED at :296) and eleven targeted edits, and the fragment and the figure script and png are added inside the fence \u2014 with the fragment's cause paragraph counting one fewer citing id than its own table, recorded as a finding.\nCALL_SITES: reckon/crew/promotion.py:330 _require_commits_beyond_base, reckon/crew/promotion.py:2911 _require_review_waiver, reckon/crew/routing.py:1560 the disposable member id, reckon/crew/node.py:1342 claim_disposition, reckon/mcp.py:3861 the crew view gate, reckon/ledger.py:780 ledger.write\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the head arm at logs/head-arm.log ends 96 passed at exit 0 where the base arm ends 11 failed, 85 passed, and every repaired assertion cites a contract that exists in reckon/ at head (routing.py:1560, promotion.py:2911, node.py:1342, mcp.py:3861, ledger.py:780).\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms are logged with revision and module-file headers (logs/base-arm.log, logs/head-arm.log) and the added-failure count re-derives to zero with an injected-failure control, but the manifest's `log` key makes the production reader report the count as unmeasured (reckon/crew/review.py:630) and the head arm's header names the pre-commit revision 6c9561c3 rather than the commit 7520ec83 its measured blob became.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 6c9561c3..7520ec83 names exactly tests/test_ledger.py, the fragment and the figure script and png \u2014 the fence's four paths \u2014 and no product file.\nSCORE durability: 18\nJUSTIFICATION durability: each repaired case is measured against an observed red at 1ae39477 (logs/diag-11.log) and the fixture now pins the stopped-claim walk at tests/test_ledger.py:1647 and the crew view gate at :2381, while the citation refusal at reckon/crew/promotion.py:330 keeps no test of its own and the vocabulary assertion re-reddens on every addition to the message it copies.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers keep the file's own fixture idiom with docstrings and conventional commit subjects (tests/test_ledger.py:246-300), the new symbols carry no plan label, and the fragment's plan reference is the evidence genre's own, offset by the cause paragraph's miscount against its table (finding).\nFINDING manifest.md:20 the reviewed run's manifest names its two gate logs under `log` where the dispatch contract's suite observation prescribes `log_path` (reckon/crew/prompts.py:457) and the reader resolves only `log_path` (reckon/crew/review.py:630), so every read through review.read_review re-annotates this pair as unmeasured although both logs are present and readable, and the count this review derives from them is not what a reader of the record through the read path is shown.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/ledger-suite-green-at-head.html:6 the cause paragraph says five ids cite their own base sha as the run's work where the table beneath it lists six (ids 1, 2, 6, 7, 8 and 9) and the base file carries six such citations (tests/test_ledger.py:426, 1341, 1634, 1679, 1720 and 1743 at 1ae39477), so a reader taking the prose as the census of affected ids undercounts by one.",
+  "review_run_id": "r-20260928T165333469491-review-of-ledger-suite-green-at-head",
+  "reviewed_base_sha": "6c9561c36b8df710c2c7f9f828170ae3c664fcf3",
+  "reviewed_head_sha": "7520ec83e3b2d2972185680bf633892a75646d6d",
+  "reviewed_run_id": "r-20260928T154155860907-ledger-suite-green-at-head",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:01.911781+00:00",
+  "total": 94
+}

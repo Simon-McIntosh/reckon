@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:637",
+    "reckon/crew/recovery.py:4120"
+  ],
+  "completed_at": "2026-10-03T06:24:06.224Z",
+  "dispatched_at": "2026-10-03T06:15:58Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/resumed-stream-counts-malformed-whole.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the section's done_when has two halves; this run closes the malformed-lines half only, while the misfiled-record in-place-rewrite half is the sibling run r-20261003T054715872465-memo-keys-a-misfiled-record, so the section is complete only once both land."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3471",
+      "severity": "follow-on",
+      "text": "follow-on: malformed_lines still has no reader anywhere in reckon/, so the corrected count is latent \u2014 nothing in the product surfaces it yet."
+    }
+  ],
+  "head_log_revision": "02422a123522ccea81043089d88afb3a71bcfd3a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against 9b66ff8a; reckon/_backends.py carries the malformed total through stream_state via _carried_malformed, tests/ adds the reproduction, docs/ adds the landing fragment.",
+    "done_when": "the malformed half of the section's done_when is implemented by tests/test_resumed_stream_counts_malformed_whole.py:42, whose asserts fix 2 malformed lines over one stream falling before and after the cursor (base read 1, head reads 2).",
+    "goal": "the node goal is that a resumed observation's malformed_lines equals a whole parse's over the same stream; reckon/_backends.py:3471 carries the running total in stream_state so the resumed read adds it to the appended segment's count.",
+    "manifest": "read; it records the 20-file head gate at 2 failed/451 passed, the base arm at 3 failed/450 passed with the new test's failure, and a negative control that reddens it.",
+    "write_paths": "read the manifest's declared paths; both commits touch only reckon/_backends.py, tests/test_resumed_stream_counts_malformed_whole.py and the docs fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log reverts the carry in a head tree and reddens the same test (assert 1 == 2, EXIT=1); independently the test fails against base _backends.py and passes against head.",
+    "evidence": "gate-base-tests.log records 3 failed/450 passed at 9b66ff8a including the new test's failure; an independent extraction of base 9b66ff8a with the test added reproduces assert 1 == 2, and the head tree d114f187 passes.",
+    "fit": "the carry follows the stream_state idiom already used for fold and timestamps; _carried_malformed guards a non-int malformed value, though the guard would read the same inline.",
+    "goal_fidelity": "reckon/_backends.py:3471 sets obs.malformed_lines = malformed + _carried_malformed(carried) and stores the total back into stream_state, matching the section's malformed half exactly.",
+    "scope_discipline": "the two commits touch only reckon/_backends.py, the new test file and the evidence fragment, all within the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a resumed observation's malformed_lines equals a whole parse's over the same stream; reckon/_backends.py:3471 carries the running total in stream_state so the resumed read adds it to the appended segment's count.\nVERDICT done_when: the malformed half of the section's done_when is implemented by tests/test_resumed_stream_counts_malformed_whole.py:42, whose asserts fix 2 malformed lines over one stream falling before and after the cursor (base read 1, head reads 2).\nVERDICT write_paths: read the manifest's declared paths; both commits touch only reckon/_backends.py, tests/test_resumed_stream_counts_malformed_whole.py and the docs fragment, all inside them.\nVERDICT manifest: read; it records the 20-file head gate at 2 failed/451 passed, the base arm at 3 failed/450 passed with the new test's failure, and a negative control that reddens it.\nVERDICT diff: read both commits against 9b66ff8a; reckon/_backends.py carries the malformed total through stream_state via _carried_malformed, tests/ adds the reproduction, docs/ adds the landing fragment.\nCALL_SITES: reckon/serve.py:637, reckon/crew/recovery.py:4120\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3471 sets obs.malformed_lines = malformed + _carried_malformed(carried) and stores the total back into stream_state, matching the section's malformed half exactly.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-base-tests.log records 3 failed/450 passed at 9b66ff8a including the new test's failure; an independent extraction of base 9b66ff8a with the test added reproduces assert 1 == 2, and the head tree d114f187 passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/_backends.py, the new test file and the evidence fragment, all within the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reverts the carry in a head tree and reddens the same test (assert 1 == 2, EXIT=1); independently the test fails against base _backends.py and passes against head.\nSCORE fit: 18\nJUSTIFICATION fit: the carry follows the stream_state idiom already used for fold and timestamps; _carried_malformed guards a non-int malformed value, though the guard would read the same inline.\nFINDING docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/resumed-stream-counts-malformed-whole.html:1 follow-on: the section's done_when has two halves; this run closes the malformed-lines half only, while the misfiled-record in-place-rewrite half is the sibling run r-20261003T054715872465-memo-keys-a-misfiled-record, so the section is complete only once both land.\nFINDING reckon/_backends.py:3471 follow-on: malformed_lines still has no reader anywhere in reckon/, so the corrected count is latent \u2014 nothing in the product surfaces it yet.\nreviewed_base_sha: 9b66ff8a768e734c9e39da17f846cca1ca6c94d6\nreviewed_head_sha: d114f1877dd35ae4f7fee33af34fd9a89059a41e\n",
+  "review_run_id": "r-20261003T061529008343-review-of-resumed-stream-counts-malformed-whole",
+  "reviewed_base_sha": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "reviewed_head_sha": "d114f1877dd35ae4f7fee33af34fd9a89059a41e",
+  "reviewed_run_id": "r-20261003T054805584847-resumed-stream-counts-malformed-whole",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T06:20:56.505870+00:00",
+  "total": 95
+}

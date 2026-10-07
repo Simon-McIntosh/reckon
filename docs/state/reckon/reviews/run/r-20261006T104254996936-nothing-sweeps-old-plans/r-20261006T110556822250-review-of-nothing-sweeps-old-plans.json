@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/resumption.py:1334",
+    "reckon/cli.py:2639"
+  ],
+  "completed_at": "2026-10-06T11:20:41.527Z",
+  "dispatched_at": "2026-10-06T11:06:19Z",
+  "findings": [
+    {
+      "file": "tests/test_a_run_comment_earns_no_plan_review.py",
+      "line": "200",
+      "severity": "follow-on",
+      "text": "follow-on: the test asserts len(calls)==1 after an authored comment, which the retired walk can no longer satisfy, so the assertion is now stale; it fails with the same id at base 64e6b3376 and head 63bb3c22 (both assert 0==1), so the node adds no failure there and the file's owner needs the one-line rewrite the reviewed manifest already records."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T104254996936-nothing-sweeps-old-plans/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest declares neither baseline_suite nor after_suite although its own dispatch contract marks them required for an armed node, so reckon/crew/review.py:annotate_review_of_run can only derive an unmeasured added_failure_count; recording the two suite JSON fields on the tests line would let a reviewer derive the count the done-when asks for."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 64e6b3376; e2716ca4 deletes the 37-line walk block and the 12-line _plan_review_pending from recovery.py, rewrites the sweep tests in tests/test_review_plan_command.py and tests/test_a_section_reviewed_as_authored_stays_reviewed.py, and adds tests/test_nothing_sweeps_old_plans.py; 63bb3c22 adds only the docs fragment, no code hunk.",
+    "done_when": "the plan section's done-when names a follower pass composing no plan review over a synthetic project while a finished run still gets its review, and crew review-plan composing on demand; tests/test_nothing_sweeps_old_plans.py holds all three (test_a_follower_pass_composes_no_plan_review asserts calls==[] and the report root untouched, test_a_finished_run_still_gets_its_review_in_the_same_pass asserts the reflex dispatches the one live run, test_review_plan_still_composes_a_review_on_demand drives crew review-plan --dry-run) and the reviewed manifest records the 80-passed EXIT=0 gate in gate.log.",
+    "goal": "the node goal is to delete the plan walk in dispatch_awaiting_reviews and its _plan_review_pending helper while keeping the run-review reflex and plan_review_subject; the diff base..head removes the block that iterated flight.mounted_project_docs() at reckon/crew/recovery.py:4200 and the helper at recovery.py:490, while plan_review_subject survives at recovery.py:455 and the run-review loop above the deleted block still composes each finished run's review.",
+    "manifest": "read; status complete, commits e2716ca4ff32d9df1c71d00407fb5b19c4d21719 and 63bb3c229bddb77a99cd1f19f503d42fad775568, the tests line and test_logs point at gate.log (80 passed EXIT=0), negative_control_log names negative-control.log whose run reddens tests/test_nothing_sweeps_old_plans.py::test_a_follower_pass_composes_no_plan_review, and it declares no baseline_suite or after_suite, so the added-failure count is unmeasured, never zero.",
+    "write_paths": "the reviewed manifest declares six write paths; the base..head diff touches exactly reckon/crew/recovery.py, tests/test_nothing_sweeps_old_plans.py, tests/test_review_plan_command.py, tests/test_a_section_reviewed_as_authored_stays_reviewed.py and the landing fragment, all inside the declared set, and nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_nothing_sweeps_old_plans.py:test_a_follower_pass_composes_no_plan_review fails on exactly the restored walk, as the reviewed negative-control.log shows with EXIT=1, and its assertions read the monkeypatched dispatch records and the on-disk report root rather than a value the test fed in.",
+    "evidence": "tests/test_nothing_sweeps_old_plans.py asserts both halves of the done-when and the reviewed gate.log records 80 passed EXIT=0 at e2716ca4, but the reviewed manifest declares neither baseline_suite nor after_suite, so reckon/crew/review.py:annotate_review_of_run derives an unmeasured added_failure_count, and the gate log's header names e2716ca4 rather than the reported head 63bb3c22.",
+    "fit": "recovery.py keeps the surrounding private-helper and docstring idiom, the new test module follows tests/test_review_plan_command.py's fixture reuse, and ruff adds no finding (reckon/crew/recovery.py 12 findings at base and 12 at head, tests/test_nothing_sweeps_old_plans.py clean); deducted one because the new fragment file ends without a trailing newline.",
+    "goal_fidelity": "git grep _plan_review_pending finds no reference under reckon/ or tests/ at 63bb3c22 and the mounted_project_docs walk is gone from reckon/crew/recovery.py:4197, while plan_review_subject at recovery.py:455 is still reached by reckon/cli.py:2639, exactly the split the goal states.",
+    "reuse": "the change deletes a capability rather than adding one, retiring the sweep and _plan_review_pending without introducing any definition that re-implements a mechanism the repository already owns, so there is no forked owner to name.",
+    "scope_discipline": "every path in the base..head diff lies inside the six write paths the reviewed manifest declares, including the landing fragment under docs/evidence/fragments, and no path outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to delete the plan walk in dispatch_awaiting_reviews and its _plan_review_pending helper while keeping the run-review reflex and plan_review_subject; the diff base..head removes the block that iterated flight.mounted_project_docs() at reckon/crew/recovery.py:4200 and the helper at recovery.py:490, while plan_review_subject survives at recovery.py:455 and the run-review loop above the deleted block still composes each finished run's review.\nVERDICT done_when: the plan section's done-when names a follower pass composing no plan review over a synthetic project while a finished run still gets its review, and crew review-plan composing on demand; tests/test_nothing_sweeps_old_plans.py holds all three (test_a_follower_pass_composes_no_plan_review asserts calls==[] and the report root untouched, test_a_finished_run_still_gets_its_review_in_the_same_pass asserts the reflex dispatches the one live run, test_review_plan_still_composes_a_review_on_demand drives crew review-plan --dry-run) and the reviewed manifest records the 80-passed EXIT=0 gate in gate.log.\nVERDICT write_paths: the reviewed manifest declares six write paths; the base..head diff touches exactly reckon/crew/recovery.py, tests/test_nothing_sweeps_old_plans.py, tests/test_review_plan_command.py, tests/test_a_section_reviewed_as_authored_stays_reviewed.py and the landing fragment, all inside the declared set, and nothing outside it.\nVERDICT manifest: read; status complete, commits e2716ca4ff32d9df1c71d00407fb5b19c4d21719 and 63bb3c229bddb77a99cd1f19f503d42fad775568, the tests line and test_logs point at gate.log (80 passed EXIT=0), negative_control_log names negative-control.log whose run reddens tests/test_nothing_sweeps_old_plans.py::test_a_follower_pass_composes_no_plan_review, and it declares no baseline_suite or after_suite, so the added-failure count is unmeasured, never zero.\nVERDICT diff: read commit by commit against 64e6b3376; e2716ca4 deletes the 37-line walk block and the 12-line _plan_review_pending from recovery.py, rewrites the sweep tests in tests/test_review_plan_command.py and tests/test_a_section_reviewed_as_authored_stays_reviewed.py, and adds tests/test_nothing_sweeps_old_plans.py; 63bb3c22 adds only the docs fragment, no code hunk.\nCALL_SITES: reckon/crew/resumption.py:1334, reckon/cli.py:2639\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: git grep _plan_review_pending finds no reference under reckon/ or tests/ at 63bb3c22 and the mounted_project_docs walk is gone from reckon/crew/recovery.py:4197, while plan_review_subject at recovery.py:455 is still reached by reckon/cli.py:2639, exactly the split the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_nothing_sweeps_old_plans.py asserts both halves of the done-when and the reviewed gate.log records 80 passed EXIT=0 at e2716ca4, but the reviewed manifest declares neither baseline_suite nor after_suite, so reckon/crew/review.py:annotate_review_of_run derives an unmeasured added_failure_count, and the gate log's header names e2716ca4 rather than the reported head 63bb3c22.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the base..head diff lies inside the six write paths the reviewed manifest declares, including the landing fragment under docs/evidence/fragments, and no path outside them is touched.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_nothing_sweeps_old_plans.py:test_a_follower_pass_composes_no_plan_review fails on exactly the restored walk, as the reviewed negative-control.log shows with EXIT=1, and its assertions read the monkeypatched dispatch records and the on-disk report root rather than a value the test fed in.\nSCORE fit: 19\nJUSTIFICATION fit: recovery.py keeps the surrounding private-helper and docstring idiom, the new test module follows tests/test_review_plan_command.py's fixture reuse, and ruff adds no finding (reckon/crew/recovery.py 12 findings at base and 12 at head, tests/test_nothing_sweeps_old_plans.py clean); deducted one because the new fragment file ends without a trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes a capability rather than adding one, retiring the sweep and _plan_review_pending without introducing any definition that re-implements a mechanism the repository already owns, so there is no forked owner to name.\nFINDING tests/test_a_run_comment_earns_no_plan_review.py:200 follow-on: the test asserts len(calls)==1 after an authored comment, which the retired walk can no longer satisfy, so the assertion is now stale; it fails with the same id at base 64e6b3376 and head 63bb3c22 (both assert 0==1), so the node adds no failure there and the file's owner needs the one-line rewrite the reviewed manifest already records.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T104254996936-nothing-sweeps-old-plans/manifest.md:11 follow-on: the reviewed manifest declares neither baseline_suite nor after_suite although its own dispatch contract marks them required for an armed node, so reckon/crew/review.py:annotate_review_of_run can only derive an unmeasured added_failure_count; recording the two suite JSON fields on the tests line would let a reviewer derive the count the done-when asks for.\n",
+  "review_run_id": "r-20261006T110556822250-review-of-nothing-sweeps-old-plans",
+  "reviewed_base_sha": "64e6b337609d64af4fd463154f1fde2454bab0f1",
+  "reviewed_head_sha": "63bb3c229bddb77a99cd1f19f503d42fad775568",
+  "reviewed_run_id": "r-20261006T104254996936-nothing-sweeps-old-plans",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T11:17:11.814944+00:00",
+  "total": 116
+}

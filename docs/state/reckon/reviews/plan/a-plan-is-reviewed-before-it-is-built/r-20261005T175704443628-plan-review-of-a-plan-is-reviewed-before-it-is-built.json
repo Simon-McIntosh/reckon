@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T18:01:28.439Z",
+  "dispatched_at": "2026-10-05T17:57:23Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:94",
+      "id": "deep_module-1",
+      "reason": "the reader should return a named record (identity, level, text, span, landed) so the module is deep, as \u00a717 claims, and the moved helpers stop depending on arity.",
+      "text": "\u00a717 specifies `plan_headings` as \"one public reader \u2026 exposes its yield\", so the interface is the parser's positional tuple \u2014 the same width as the behaviour it hides \u2014 and callers plus the moved store helpers bind by tuple position rather than by name",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:2080",
+      "id": "duplicate_owner-1",
+      "reason": "name `reckon/_plan_html.py` (after the move) as the owner of element resolution and have the MCP view consume it, or the wrapper-id rule exists in two places and drifts.",
+      "text": "\u00a717 re-homes wrapper-id resolution out of `_store` and calls the MCP view's remaining need \"a single lookup by id on its own soup\", but `_authored_section_headings` must still decide whether an id sits on an `h2` or on a wrapping `<section>` and find that section's heading, so the resolution \u00a717 just centralised is re-expressed here (and `_inside_structured_region` at line 2069 is the third copy of the machinery-element test)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py:616",
+      "id": "duplicate_owner-2",
+      "reason": "the derivation must own section identity alone and the check must scope to section-identity reads, else the node cannot satisfy its own done-when as specified.",
+      "text": "\u00a717's completion check greps `reckon/_plan_html.py` for a raw `id`/`data-id` read \"outside the one derivation\" and requires none, but the module reads `data-id` for typed record collections that are not section identities (`_comment_record` line 447, gates line 616, followups line 690, questions line 730, research line 747), so the check as written reds on correct code",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1edb3f3e6afd4b48c7bdc1943ff328e59cfdbbdcbc05dde76b8918cc3d3e3e74",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 105,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T175704443628-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "4df1ca4125953538102f9dcfbcfba576b66af5fa",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 `plan_headings` is specified to \"expose its yield\", handing callers the span parser's positional tuple (identity, level, text, raw-text offsets, landed flag) instead of hiding it behind a smaller interface.",
+    "duplicate_owner": "a finding \u2014 the plan moves wrapper-vs-heading element resolution into `reckon/_plan_html.py` yet leaves `reckon/mcp_views.py::_authored_section_headings` re-expressing it, and \u00a717's \"one derivation of section identity\" leaves the module's other `data-id` reads outside that derivation.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 is the only section that adds to any family (net +2, `plan_headings` and the machinery predicate), and it names the moves (`landed_section_ids`, `section_record_id`/`section_id_candidates`) and states why nothing public is retired; \u00a716 and \u00a718 add nothing and say so.",
+    "reuse_search": "pass \u2014 the plan searched the package and cites the machinery it extends rather than adding parallel copies: `_StructuredSectionSpanParser` and `structured_section_spans` (reckon/_plan_html.py:44,94), `landed_section_ids` (reckon/_store.py:1075), the AST census `read_trees`/`definitions` (reckon/interface_counts.py:74,441), `section_record_id`/`section_id_candidates` (reckon/crew/routing.py:224,243), `implementable_sections` (reckon/roadmap.py:106), `list_plan_reviews`/`_fingerprint_forms` (reckon/crew/plan_review.py:668,598), and `_inside_structured_region` (reckon/mcp_views.py:2069).",
+    "thin_wrapper": "pass \u2014 the one new layer, `plan_headings`, is justified against the machinery it could have extended: `structured_section_spans` keeps its spans-only contract for the store's boundary protection, and \u00a718 keeps the four landing-rule readers named with their distinct questions stated, so no wrapper is added without cause."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.821160+00:00"
+}

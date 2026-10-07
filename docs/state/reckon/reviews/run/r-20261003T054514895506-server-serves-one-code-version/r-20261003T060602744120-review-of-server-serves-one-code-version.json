@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:2678",
+    "reckon/serve.py:3589"
+  ],
+  "completed_at": "2026-10-03T06:12:49.221Z",
+  "dispatched_at": "2026-10-03T06:06:33Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "2309",
+      "severity": "follow-on",
+      "text": "follow-on: _refuse_stale_code calls served_code.drift with max_age_s=0.0, so every GET and POST re-stats every package file on the shared filesystem, discarding the reuse window served_code.py:53 was added for."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "2309",
+      "severity": "follow-on",
+      "text": "follow-on: the guard's drift covers the whole package while the server's own report deliberately counts only executed files, so editing a module the running process never touches refuses every request until restart."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "2317",
+      "severity": "follow-on",
+      "text": "follow-on: the disk and running stamps both come from follower_code_stamp, whose file set is cli.py plus crew/*.py and narrower than the drift check, so the pair can read equal on a 503 whose changed_files names a non-crew module."
+    }
+  ],
+  "head_log_revision": "99e4b4fb4e44bc2876505ae826024830f2563156",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against 9b66ff8a; reckon/serve.py adds the request guard and code stamp, tests/ adds the reproduction, docs/ adds the landing record.",
+    "done_when": "the done_when names a test that changes a module under a running server and a negative control that reproduces the ImportError; tests/test_server_serves_one_code_version.py:26 implements exactly that pair.",
+    "goal": "the node goal is that a long-running server never serves a mix of old and new modules; reckon/serve.py:2304 refuses each request once the loaded source has moved on disk.",
+    "manifest": "read; it records the 16-file head gate at 1 failed and 194 passed, the base arm at 2 failed, and a negative control that reddens the same test.",
+    "write_paths": "read the manifest's declared paths; every path the two commits touch is inside them."
+  },
+  "justifications": {
+    "durability": "removing the guard in a scratch copy makes tests/test_server_serves_one_code_version.py:88 fail with the 500 ImportError, which is the regression it guards.",
+    "evidence": "base-suite.log records the base ImportError 500 and head-suite.log the 503 at the head revision, and negative-control.log reddens the same test id when the guard is removed.",
+    "fit": "reckon/serve.py:2304 follows the Handler idiom but calls drift without the report reuse served_code.py:53 exists to provide.",
+    "goal_fidelity": "reckon/serve.py:2304 answers HTTP 503 with error stale-code before any handler can lazily import newer source, the named refusal the section permits.",
+    "scope_discipline": "the two commits touch only reckon/serve.py, tests/test_server_serves_one_code_version.py and the evidence fragment, all inside the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a long-running server never serves a mix of old and new modules; reckon/serve.py:2304 refuses each request once the loaded source has moved on disk.\nVERDICT done_when: the done_when names a test that changes a module under a running server and a negative control that reproduces the ImportError; tests/test_server_serves_one_code_version.py:26 implements exactly that pair.\nVERDICT write_paths: read the manifest's declared paths; every path the two commits touch is inside them.\nVERDICT manifest: read; it records the 16-file head gate at 1 failed and 194 passed, the base arm at 2 failed, and a negative control that reddens the same test.\nVERDICT diff: read both commits against 9b66ff8a; reckon/serve.py adds the request guard and code stamp, tests/ adds the reproduction, docs/ adds the landing record.\nCALL_SITES: reckon/serve.py:2678, reckon/serve.py:3589\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:2304 answers HTTP 503 with error stale-code before any handler can lazily import newer source, the named refusal the section permits.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-suite.log records the base ImportError 500 and head-suite.log the 503 at the head revision, and negative-control.log reddens the same test id when the guard is removed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/serve.py, tests/test_server_serves_one_code_version.py and the evidence fragment, all inside the declared scope.\nSCORE durability: 18\nJUSTIFICATION durability: removing the guard in a scratch copy makes tests/test_server_serves_one_code_version.py:88 fail with the 500 ImportError, which is the regression it guards.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/serve.py:2304 follows the Handler idiom but calls drift without the report reuse served_code.py:53 exists to provide.\nFINDING reckon/serve.py:2309 follow-on: _refuse_stale_code calls served_code.drift with max_age_s=0.0, so every GET and POST re-stats every package file on the shared filesystem, discarding the reuse window served_code.py:53 was added for.\nFINDING reckon/serve.py:2309 follow-on: the guard's drift covers the whole package while the server's own report deliberately counts only executed files, so editing a module the running process never touches refuses every request until restart.\nFINDING reckon/serve.py:2317 follow-on: the disk and running stamps both come from follower_code_stamp, whose file set is cli.py plus crew/*.py and narrower than the drift check, so the pair can read equal on a 503 whose changed_files names a non-crew module.\nreviewed_base_sha: 9b66ff8a768e734c9e39da17f846cca1ca6c94d6\nreviewed_head_sha: 810e9a319f689a2b7e94b4265add55242ee6f2bc\n",
+  "review_run_id": "r-20261003T060602744120-review-of-server-serves-one-code-version",
+  "reviewed_base_sha": "9b66ff8a768e734c9e39da17f846cca1ca6c94d6",
+  "reviewed_head_sha": "810e9a319f689a2b7e94b4265add55242ee6f2bc",
+  "reviewed_run_id": "r-20261003T054514895506-server-serves-one-code-version",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T06:11:04.135368+00:00",
+  "total": 91
+}

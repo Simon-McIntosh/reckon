@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "b04701d0ed786a6a7ccecb582c253c136b90417e",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:4293",
+    "reckon/crew/reports.py:1070"
+  ],
+  "completed_at": "2026-09-30T15:30:06.566Z",
+  "dispatched_at": "2026-09-30T15:14:38Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_manifest_passes_its_own_check.py",
+      "line": "262",
+      "text": "the file ends without a newline, so it adds a ruff W292 finding and fails ruff format --check, while reckon/crew/reports.py measures 2 findings at base b04701d0e and 2 at this head, making this new file the commit's entire lint delta against the repository rule that a commit adds no findings."
+    }
+  ],
+  "head_log_revision": "01c66e55f8094a7e050819d8814dd08e11da3e71",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base b04701d0e; d62c8f6ed carries the product change in reckon/crew/reports.py, 01c66e55f carries the seven cases, and 37ed7ae8f, 2a479a2d2 and bd5427442 carry the evidence fragment and its header alone.",
+    "done_when": "the done-when names the whole tests/ directory at base and at head, the new case file's replay of the probe's field cases, and a declared negative control; the manifest records both arms and I re-read gate-base.log and gate-head.log, whose first lines name b04701d0e and 01c66e55f and whose last lines read EXIT=1, with the base arm run in a scratch tree under /tmp that explains its 22 extra environment failures.",
+    "goal": "the goal asks the manifest audit to accept a review's granted store record and its .at-SHA sibling and to ask no commit of a review; reckon/crew/reports.py:1015 waives the commit finding for the review role and reckon/crew/reports.py:1155 admits an out-of-repository declaration as the absolute path it is, so both halves read ok at head.",
+    "manifest": "read; it records the two arms as JSON with completed true and literal commands, names the one head-only id as a follow-on rather than as a regression, and states that the scratch directory was deleted, which I confirmed absent.",
+    "write_paths": "the dispatch granted reckon/crew/reports.py, tests/test_a_review_manifest_passes_its_own_check.py, the evidence fragment and a figures directory; git diff --name-only b04701d0e..bd5427442 lists the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "with the base audit_manifest and path_within_declared_scope restored under the head case file, 6 of 7 cases redden including the refusal at tests/test_a_review_manifest_passes_its_own_check.py:184, so the guard is shown to fire rather than merely to pass.",
+    "evidence": "gate-base.log and gate-head.log reconcile with the manifest's JSON (79 and 57 ids re-read) and the single head-only id is named at follow_ons, so the done-when's \"the head arm adds no failure id\" holds only by exception.",
+    "fit": "the new helpers follow the module's rule-docstring idiom at reckon/crew/reports.py:1094 and no name carries a plan or ticket label, but the new case file adds a ruff finding at tests/test_a_review_manifest_passes_its_own_check.py:262.",
+    "goal_fidelity": "reckon/crew/reports.py:1015 resolves the role from the live pointer and reckon/crew/reports.py:1155 compares the granted declaration as an absolute path, and the deployed check accepts both store paths for a review at head.",
+    "scope_discipline": "the three paths of git diff --name-only b04701d0e..bd5427442 all lie inside the four declared write paths, and the promotion-side mapping the fragment leaves untouched is fenced out of this node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the manifest audit to accept a review's granted store record and its .at-SHA sibling and to ask no commit of a review; reckon/crew/reports.py:1015 waives the commit finding for the review role and reckon/crew/reports.py:1155 admits an out-of-repository declaration as the absolute path it is, so both halves read ok at head.\nVERDICT done_when: the done-when names the whole tests/ directory at base and at head, the new case file's replay of the probe's field cases, and a declared negative control; the manifest records both arms and I re-read gate-base.log and gate-head.log, whose first lines name b04701d0e and 01c66e55f and whose last lines read EXIT=1, with the base arm run in a scratch tree under /tmp that explains its 22 extra environment failures.\nVERDICT write_paths: the dispatch granted reckon/crew/reports.py, tests/test_a_review_manifest_passes_its_own_check.py, the evidence fragment and a figures directory; git diff --name-only b04701d0e..bd5427442 lists the first three and nothing else.\nVERDICT manifest: read; it records the two arms as JSON with completed true and literal commands, names the one head-only id as a follow-on rather than as a regression, and states that the scratch directory was deleted, which I confirmed absent.\nVERDICT diff: read commit by commit against base b04701d0e; d62c8f6ed carries the product change in reckon/crew/reports.py, 01c66e55f carries the seven cases, and 37ed7ae8f, 2a479a2d2 and bd5427442 carry the evidence fragment and its header alone.\nCALL_SITES: reckon/cli.py:4293, reckon/crew/reports.py:1070\nREVIEWED_BASE_SHA: b04701d0ed786a6a7ccecb582c253c136b90417e\nREVIEWED_HEAD_SHA: bd54274421472d586266679ea62e983108fd3da0\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1015 resolves the role from the live pointer and reckon/crew/reports.py:1155 compares the granted declaration as an absolute path, and the deployed check accepts both store paths for a review at head.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log and gate-head.log reconcile with the manifest's JSON (79 and 57 ids re-read) and the single head-only id is named at follow_ons, so the done-when's \"the head arm adds no failure id\" holds only by exception.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three paths of git diff --name-only b04701d0e..bd5427442 all lie inside the four declared write paths, and the promotion-side mapping the fragment leaves untouched is fenced out of this node.\nSCORE durability: 18\nJUSTIFICATION durability: with the base audit_manifest and path_within_declared_scope restored under the head case file, 6 of 7 cases redden including the refusal at tests/test_a_review_manifest_passes_its_own_check.py:184, so the guard is shown to fire rather than merely to pass.\nSCORE fit: 15\nJUSTIFICATION fit: the new helpers follow the module's rule-docstring idiom at reckon/crew/reports.py:1094 and no name carries a plan or ticket label, but the new case file adds a ruff finding at tests/test_a_review_manifest_passes_its_own_check.py:262.\nFINDING tests/test_a_review_manifest_passes_its_own_check.py:262 the file ends without a newline, so it adds a ruff W292 finding and fails ruff format --check, while reckon/crew/reports.py measures 2 findings at base b04701d0e and 2 at this head, making this new file the commit's entire lint delta against the repository rule that a commit adds no findings.\n",
+  "review_run_id": "r-20260930T151422410260-review-of-a-review-manifest-passes-its-own-check",
+  "reviewed_base_sha": "b04701d0ed786a6a7ccecb582c253c136b90417e",
+  "reviewed_head_sha": "bd54274421472d586266679ea62e983108fd3da0",
+  "reviewed_run_id": "r-20260930T140824474288-a-review-manifest-passes-its-own-check",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T15:25:56.874696+00:00",
+  "total": 89
+}

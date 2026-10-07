@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:1437",
+    "reckon/crew/dispatch.py:4133",
+    "reckon/crew/node.py:1144",
+    "reckon/crew/promotion.py:5225"
+  ],
+  "completed_at": "2026-09-29T06:41:46.717Z",
+  "dispatched_at": "2026-09-29T06:06:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4577",
+      "text": "the landing contract is still composed on worktree writability alone, so the writable-sandbox test-role node whose fragment this change withholds is still instructed by PLAN_LANDING_CONTRACT to write docs/evidence/fragments/<plan>/<node-id>.html and the matching figure directory; composed at 6b32f1b3 in a scratch tree the prompt carries the contract while node.write_paths holds only the run directory, so the fence forbids the path the prompt names, and the repair sits in reckon/crew/prompts.py, outside this node's declared write scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 29af302f: 4e82a893 adds the predicate to the node import at dispatch.py:59, the conjunction at dispatch.py:3349 with a comment saying why the grant and the promotion refusal must read one authority, and the test reconciliation with the new writable-sandbox verifier case; a924e1cc and 6b32f1b3 add the evidence fragment and the gate-arm figure, documentation only.",
+    "done_when": "the measure is that tests/test_role_write_scope.py exits 0, the manifest carries armed baseline_suite and after_suite JSON over that file and tests/test_crew.py, the two named ids are fixed at head with no other id added, and the declared negative control is observed to fail; role-scope-file.log opens with revision a924e1cc and ends 22 passed EXIT=0, my own derivation over role-scope-base.log (19 FAILED ids) and role-scope-after.log (16 FAILED ids) is 0 added failures with the head set a strict subset of the base set, and role-scope-negative-control.log opens with the declared mutation and shows 5 FAILED including test_a_verifier_whose_sandbox_can_write_gains_no_landing_paths.",
+    "goal": "the node's goal is to grant the default fragment and figure paths only to roles that land work in the tree and to reconcile the two role-scope tests with section 2's rule; at head reckon/crew/dispatch.py:3349 gates the grant on role_may_write_repository_paths(node.role) together with _can_write_worktree(...), the predicate reckon/crew/node.py:710 already serves to the dispatch validation at node.py:1144 and to the promotion refusal at promotion.py:5225, and the two reconciled cases plus the new verifier case pass at head.",
+    "manifest": "read; status complete, baseline_suite and after_suite are armed JSON naming revisions 29af302f and 4e82a893 with log_path values that exist on disk, negative_control_log is the bare path whose first line repeats the declared mutation, and the landing: line records the fragment-scope grant; the reviewed head 6b32f1b3 differs from the after arm only by the two documentation paths.",
+    "write_paths": "the fence is reckon/crew/dispatch.py, tests/test_role_write_scope.py, docs/evidence/fragments/a-landing-record-never-conflicts/fragment-scope-for-landing-roles-only.html and the docs/figures/a-landing-record-never-conflicts/fragment-scope-for-landing-roles-only directory; git diff --stat 29af302f..6b32f1b3 lists exactly those four paths, 210 insertions and 7 deletions."
+  },
+  "justifications": {
+    "durability": "restoring the pre-fix condition in a scratch copy of 6b32f1b3 reddens tests/test_role_write_scope.py::test_a_verifier_whose_sandbox_can_write_gains_no_landing_paths on 'assert docs/evidence/fragments/plan-a/role-scope-node.html not in [...]' while the unmutated copy passes it, and the reconciled tests assert FRAGMENT and FIGURE in an implement role's scope against module literals rather than against values the tests hand the code.",
+    "evidence": "role-scope-base.log and role-scope-after.log open with revision, tree, module, cwd and command, my derivation over them reports 0 added failures, and role-scope-file.log records 22 passed EXIT=0, though the after arm sits at 4e82a893 and reaches the reviewed head 6b32f1b3 only through the docs-only delta I verified.",
+    "fit": "the change reuses role_may_write_repository_paths instead of introducing a second role list, keeps the import alphabetical at dispatch.py:59, and the naming checks over the changed paths return no hit, but the landing question is now answered by two different predicates inside one subsystem.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3349 withholds the fragment from a verifier's write scope and promotion reads the same predicate at reckon/crew/promotion.py:5225, but the prompt gate at reckon/crew/dispatch.py:4577 still keys the landing contract on sandbox writability alone, so the same writable-sandbox verifier is told to write docs/evidence/fragments/<plan>/<node-id>.html.",
+    "scope_discipline": "git diff --stat 29af302f..6b32f1b3 carries exactly the four declared write paths with 210 insertions and 7 deletions, and the added comment at dispatch.py:3341-3348 names the mechanism without a plan, sprint or ticket reference."
+  },
+  "node": "review-of-fragment-scope-for-landing-roles-only",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T053221615781-fragment-scope-for-landing-roles-only\n(plan a-landing-record-never-conflicts section 2; node fragment-scope-for-landing-roles-only; role implement; spec exact)\nreviewed_base_sha: 29af302ff7707e64d6b003cdceacef620917c03c\nreviewed_head_sha: 6b32f1b377bf1554a7c16bd1f1efd11a7d5056ed\nVERDICT goal: the node's goal is to grant the default fragment and figure paths only to roles that land work in the tree and to reconcile the two role-scope tests with section 2's rule; at head reckon/crew/dispatch.py:3349 gates the grant on role_may_write_repository_paths(node.role) together with _can_write_worktree(...), the predicate reckon/crew/node.py:710 already serves to the dispatch validation at node.py:1144 and to the promotion refusal at promotion.py:5225, and the two reconciled cases plus the new verifier case pass at head.\nVERDICT done_when: the measure is that tests/test_role_write_scope.py exits 0, the manifest carries armed baseline_suite and after_suite JSON over that file and tests/test_crew.py, the two named ids are fixed at head with no other id added, and the declared negative control is observed to fail; role-scope-file.log opens with revision a924e1cc and ends 22 passed EXIT=0, my own derivation over role-scope-base.log (19 FAILED ids) and role-scope-after.log (16 FAILED ids) is 0 added failures with the head set a strict subset of the base set, and role-scope-negative-control.log opens with the declared mutation and shows 5 FAILED including test_a_verifier_whose_sandbox_can_write_gains_no_landing_paths.\nVERDICT write_paths: the fence is reckon/crew/dispatch.py, tests/test_role_write_scope.py, docs/evidence/fragments/a-landing-record-never-conflicts/fragment-scope-for-landing-roles-only.html and the docs/figures/a-landing-record-never-conflicts/fragment-scope-for-landing-roles-only directory; git diff --stat 29af302f..6b32f1b3 lists exactly those four paths, 210 insertions and 7 deletions.\nVERDICT manifest: read; status complete, baseline_suite and after_suite are armed JSON naming revisions 29af302f and 4e82a893 with log_path values that exist on disk, negative_control_log is the bare path whose first line repeats the declared mutation, and the landing: line records the fragment-scope grant; the reviewed head 6b32f1b3 differs from the after arm only by the two documentation paths.\nVERDICT diff: read commit by commit against 29af302f: 4e82a893 adds the predicate to the node import at dispatch.py:59, the conjunction at dispatch.py:3349 with a comment saying why the grant and the promotion refusal must read one authority, and the test reconciliation with the new writable-sandbox verifier case; a924e1cc and 6b32f1b3 add the evidence fragment and the gate-arm figure, documentation only.\nCALL_SITES: reckon/cli.py:1437, reckon/crew/dispatch.py:4133, reckon/crew/node.py:1144, reckon/crew/promotion.py:5225\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3349 withholds the fragment from a verifier's write scope and promotion reads the same predicate at reckon/crew/promotion.py:5225, but the prompt gate at reckon/crew/dispatch.py:4577 still keys the landing contract on sandbox writability alone, so the same writable-sandbox verifier is told to write docs/evidence/fragments/<plan>/<node-id>.html.\nSCORE evidence: 19\nJUSTIFICATION evidence: role-scope-base.log and role-scope-after.log open with revision, tree, module, cwd and command, my derivation over them reports 0 added failures, and role-scope-file.log records 22 passed EXIT=0, though the after arm sits at 4e82a893 and reaches the reviewed head 6b32f1b3 only through the docs-only delta I verified.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 29af302f..6b32f1b3 carries exactly the four declared write paths with 210 insertions and 7 deletions, and the added comment at dispatch.py:3341-3348 names the mechanism without a plan, sprint or ticket reference.\nSCORE durability: 20\nJUSTIFICATION durability: restoring the pre-fix condition in a scratch copy of 6b32f1b3 reddens tests/test_role_write_scope.py::test_a_verifier_whose_sandbox_can_write_gains_no_landing_paths on 'assert docs/evidence/fragments/plan-a/role-scope-node.html not in [...]' while the unmutated copy passes it, and the reconciled tests assert FRAGMENT and FIGURE in an implement role's scope against module literals rather than against values the tests hand the code.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses role_may_write_repository_paths instead of introducing a second role list, keeps the import alphabetical at dispatch.py:59, and the naming checks over the changed paths return no hit, but the landing question is now answered by two different predicates inside one subsystem.\nFINDING reckon/crew/dispatch.py:4577 the landing contract is still composed on worktree writability alone, so the writable-sandbox test-role node whose fragment this change withholds is still instructed by PLAN_LANDING_CONTRACT to write docs/evidence/fragments/<plan>/<node-id>.html and the matching figure directory; composed at 6b32f1b3 in a scratch tree the prompt carries the contract while node.write_paths holds only the run directory, so the fence forbids the path the prompt names, and the repair sits in reckon/crew/prompts.py, outside this node's declared write scope.",
+  "review_run_id": "r-20260929T060550970177-review-of-fragment-scope-for-landing-roles-only",
+  "reviewed_base_sha": "29af302ff7707e64d6b003cdceacef620917c03c",
+  "reviewed_head_sha": "6b32f1b377bf1554a7c16bd1f1efd11a7d5056ed",
+  "reviewed_run_id": "r-20260929T053221615781-fragment-scope-for-landing-roles-only",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T060550970177-review-of-fragment-scope-for-landing-roles-only",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T06:30:54.548918+00:00",
+  "total": 97
+}

@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_derivation": "count and ids computed by reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own armed gate logs: baseline_suite -> logs/fix-red.log at 988c2a46b5ec6ea5f098c14363aa91fe0a0da693 (2 FAILED node ids), after_suite -> logs/fix-green.log at 80f6a59b59355e645c50fdebcc34633b018e1bef (no FAILED or ERROR id printed); the node-id set difference is empty. Both logs head with their own revision and end EXIT=, and the reviewed manifest carries both fields, so the store's read-time annotation resolves the same count without a re-run.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T07:31:12.755Z",
+  "dispatched_at": "2026-09-30T07:16:16Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T195747885388-follow-lifetime-reads-only-its-own-traces/manifest.md",
+      "line": "10",
+      "text": "the tests: line carries <worktree>, <root> and <NN> placeholders, so it is not a literal command a reader can re-run even though baseline_suite/after_suite (:16-:17) and every n8 log header hold the substituted form."
+    },
+    {
+      "file": "tests/test_follow_lifetime.py",
+      "line": "97",
+      "text": "no in-suite test pins _follower_env's contract: a revert to {**os.environ, ...} passes the whole file under a shell that does not itself carry a crew identity, so the regression reddens only in a followed caller's environment."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against f0ada2c60: 6f4e9d491 replaces the shared-home tree comparison with _own_traces, widens END_WITHIN_SECONDS to 30.0 (:58) and adds the peer-filing control; 988c2a46b and 7507c466a extend the evidence fragment; 80f6a59b5 adds _follower_env (:97) and arms the follower through it (:137).",
+    "done_when": "every named element is present and verified \u2014 the own-trace check (:290), the peer-filing control (:374), the executed negative control (logs/negative-control.log EXIT=1, independently re-run by this review as logs/review-negative-control.log EXIT=1), the bounded follower-end wait (:225), and twenty -n 8 runs whose logs head with revision 80f6a59b5 and end EXIT=0; the follow_ons census lists nine files with lines (manifest.md:20).",
+    "goal": "the node goal is to make the follow-lifetime case assert only on its own traces in the real crew home; tests/test_follow_lifetime.py:290-303 defines _assert_no_own_traces and :352 calls it with this file's own SESSION/RUN_ID (:46-:47) over watch/ and live/ (:253), replacing the tree snapshot.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T195747885388-follow-lifetime-reads-only-its-own-traces/manifest.md; status complete at :5, commits at :7, baseline_suite (:16) now armed at 988c2a46b with 2 failed and after_suite (:17) at 80f6a59b5 with 3 passed, and its artifact counts reconcile with git diff --numstat.",
+    "write_paths": "the declared scope is tests/test_follow_lifetime.py, the node's evidence fragment and the figures directory; git diff --numstat f0ada2c60..7507c466 lists exactly the test file (144/15) and the fragment (27/0), and each of the four commits touches nothing else."
+  },
+  "justifications": {
+    "durability": "the peer-filing control at tests/test_follow_lifetime.py:374 reddens if the check returns to tree equality, but no in-suite test reddens if _own_traces stops reporting hits or if _follower_env (:97) again hands the follower the ambient RECKON_ variables; those are shown only by the out-of-suite negative control and by a followed caller's environment.",
+    "evidence": "the armed gate logs (fix-red.log 2 failed at 988c2a46b, fix-green.log 3 passed at 80f6a59b5), the twenty n8 logs at 80f6a59b5 with EXIT=0, and this review's own re-run at 7507c466 (3 passed, EXIT=0) record the result, but the tests: line at manifest.md:10 still carries <worktree>/<root>/<NN> placeholders rather than a literal command.",
+    "fit": "_follower_env and _own_traces carry the file's own mechanism-first docstring style and no plan, sprint or ticket identifier appears in the diff.",
+    "goal_fidelity": "tests/test_follow_lifetime.py:290-303 asserts the shared home carries nothing naming this test's own session or run id, which is exactly the goal.",
+    "scope_discipline": "every path in f0ada2c60..7507c466 is inside the declared write paths and no other file moved."
+  },
+  "prior_review_resolution": {
+    "prior_review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T195747885388-follow-lifetime-reads-only-its-own-traces.at-988c2a46b5ec6ea5f098c14363aa91fe0a0da693.json",
+    "prior_reviewer_run_id": "r-20260929T204413623898-review-of-follow-lifetime-reads-only-its-own-traces",
+    "resolved_findings": [
+      {
+        "evidence": "re-run at head 7507c466 with RECKON_FOLLOWER_OWNER='{\"pid\": 1, \"start_time\": \"\"}' exported in the calling environment: 3 passed in 18.56s, EXIT=0; log /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T071601207600-review-of-follow-lifetime-reads-only-its-own-traces/logs/recheck-7507c466.log; mechanism _follower_env (tests/test_follow_lifetime.py:97) drops every RECKON_ variable from the child environment and sets only RECKON_HOME and PYTHONPATH.",
+        "finding": "tests/test_follow_lifetime.py:116 \u2014 the follower subprocess inherited the whole ambient environment, so with RECKON_FOLLOWER_OWNER set a run at 988c2a46b returned 2 failed / 1 passed.",
+        "id": "follower-env",
+        "resolved": true
+      },
+      {
+        "evidence": "the twenty n8 logs now head with revision 80f6a59b5, the commit carrying the tested file, and each ends EXIT=0; fix-red.log heads with 988c2a46b and fix-green.log with 80f6a59b5; head 7507c466 differs from 80f6a59b5 only by the evidence fragment.",
+        "finding": "the gate logs named revision f0ada2c60, the revision the change is not in, so no log tied its result to a reviewed commit.",
+        "id": "gate-log-revision",
+        "resolved": true
+      },
+      {
+        "evidence": "manifest.md:16-:17 now carry both arms with absolute-path commands, and the store's read-time derivation resolves added_failure_count 0.",
+        "finding": "the manifest carried no baseline_suite/after_suite fields, so the store annotated added_failure_count as unmeasured.",
+        "id": "manifest-suite-fields",
+        "resolved": true
+      }
+    ],
+    "reviewed_head_sha": "7507c466ada27114d446f7e3381a52a0518bbb0e"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the follow-lifetime case assert only on its own traces in the real crew home; tests/test_follow_lifetime.py:290-303 defines _assert_no_own_traces and :352 calls it with this file's own SESSION/RUN_ID (:46-:47) over watch/ and live/ (:253), replacing the tree snapshot.\nVERDICT done_when: every named element is present and verified \u2014 the own-trace check (:290), the peer-filing control (:374), the executed negative control (logs/negative-control.log EXIT=1, independently re-run by this review as logs/review-negative-control.log EXIT=1), the bounded follower-end wait (:225), and twenty -n 8 runs whose logs head with revision 80f6a59b5 and end EXIT=0; the follow_ons census lists nine files with lines (manifest.md:20).\nVERDICT write_paths: the declared scope is tests/test_follow_lifetime.py, the node's evidence fragment and the figures directory; git diff --numstat f0ada2c60..7507c466 lists exactly the test file (144/15) and the fragment (27/0), and each of the four commits touches nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T195747885388-follow-lifetime-reads-only-its-own-traces/manifest.md; status complete at :5, commits at :7, baseline_suite (:16) now armed at 988c2a46b with 2 failed and after_suite (:17) at 80f6a59b5 with 3 passed, and its artifact counts reconcile with git diff --numstat.\nVERDICT diff: read commit by commit against f0ada2c60: 6f4e9d491 replaces the shared-home tree comparison with _own_traces, widens END_WITHIN_SECONDS to 30.0 (:58) and adds the peer-filing control; 988c2a46b and 7507c466a extend the evidence fragment; 80f6a59b5 adds _follower_env (:97) and arms the follower through it (:137).\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_follow_lifetime.py:290-303 asserts the shared home carries nothing naming this test's own session or run id, which is exactly the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: the armed gate logs (fix-red.log 2 failed at 988c2a46b, fix-green.log 3 passed at 80f6a59b5), the twenty n8 logs at 80f6a59b5 with EXIT=0, and this review's own re-run at 7507c466 (3 passed, EXIT=0) record the result, but the tests: line at manifest.md:10 still carries <worktree>/<root>/<NN> placeholders rather than a literal command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in f0ada2c60..7507c466 is inside the declared write paths and no other file moved.\nSCORE durability: 16\nJUSTIFICATION durability: the peer-filing control at tests/test_follow_lifetime.py:374 reddens if the check returns to tree equality, but no in-suite test reddens if _own_traces stops reporting hits or if _follower_env (:97) again hands the follower the ambient RECKON_ variables; those are shown only by the out-of-suite negative control and by a followed caller's environment.\nSCORE fit: 19\nJUSTIFICATION fit: _follower_env and _own_traces carry the file's own mechanism-first docstring style and no plan, sprint or ticket identifier appears in the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T195747885388-follow-lifetime-reads-only-its-own-traces/manifest.md:10 the tests: line carries <worktree>, <root> and <NN> placeholders, so it is not a literal command a reader can re-run even though baseline_suite/after_suite (:16-:17) and every n8 log header hold the substituted form.\nFINDING tests/test_follow_lifetime.py:97 no in-suite test pins _follower_env's contract: a revert to {**os.environ, ...} passes the whole file under a shell that does not itself carry a crew identity, so the regression reddens only in a followed caller's environment.",
+  "review_run_id": "r-20260930T071601207600-review-of-follow-lifetime-reads-only-its-own-traces",
+  "reviewed_base_sha": "f0ada2c60f317b7d790f32b0af3788b481048921",
+  "reviewed_head_sha": "7507c466ada27114d446f7e3381a52a0518bbb0e",
+  "reviewed_run_id": "r-20260929T195747885388-follow-lifetime-reads-only-its-own-traces",
+  "reviewer_head_sha": "7afea2a2c41d32cd2770f236963058ba178d2368",
+  "reviewer_run_id": "r-20260930T071601207600-review-of-follow-lifetime-reads-only-its-own-traces",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T07:27:15.847008+00:00",
+  "total": 93
+}

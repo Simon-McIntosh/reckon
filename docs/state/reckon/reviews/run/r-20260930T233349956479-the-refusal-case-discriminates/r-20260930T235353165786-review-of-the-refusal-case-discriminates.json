@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T00:01:44.593Z",
+  "dispatched_at": "2026-09-30T23:54:08Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/the-refusal-case-discriminates.html",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the run's baseline_suite and after_suite are recorded at abfab2c93, the parent of the final head 687a66cb, so the run's self-record does not measure its delivered head; the head commit is docs-only so no test coverage is lost, and the reviewer's re-run at 687a66cb closes the gap for a reader."
+    },
+    {
+      "file": "docs/figures/crew-runtime-positive-controls/the-refusal-case-discriminates",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared figure path was never produced, so the node's declared artifact set is incomplete; the change is a test-message assertion and the evidence fragment carries the reproduction in text."
+    },
+    {
+      "file": "tests/test_cited_identifier_resolves.py",
+      "line": "27",
+      "severity": "follow-on",
+      "text": "follow-on: the presentation branch still drops an unresolvable citation silently \u2014 item (4) of the driving followup \u2014 and is unchanged here because the test that pins it sits outside the node's granted paths."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read abfab2c93 and 687a66cb against base 8b89df33; nine lines added to tests/test_cited_identifier_resolves.py (two message assertions and a docstring paragraph) plus 55 lines of evidence fragment, with no source file changed.",
+    "done_when": "the reviewed node's done-when is the gate over tests/test_cited_identifier_resolves.py plus tests/test_a_short_commit_list_is_reported.py; the manifest records 20 passed EXIT=0 at base 8b89df33 and 20 passed EXIT=0 at head abfab2c93, and the reviewer re-ran the same pair at head 687a66cb for 20 passed EXIT=0.",
+    "goal": "item (1) of f-crpc-control-gate-repairs asked the no-row case to assert the refusal under test, and at head 687a66cb tests/test_cited_identifier_resolves.py:402-403 now asserts the unresolved value and the citation refusal's reason beside the outcome, which the reviewer independently confirmed reddens under the check short-circuited in memory.",
+    "manifest": "read; status complete, commits abfab2c93 and 687a66cb named, baseline_suite and after_suite both completed with 0 failures and their logs base-gate.log and head-gate.log, and the negative control named with its log ending EXIT=1.",
+    "write_paths": "the reviewed manifest declares tests/test_cited_identifier_resolves.py, docs/evidence/fragments/crew-runtime-positive-controls/the-refusal-case-discriminates.html and docs/figures/crew-runtime-positive-controls/the-refusal-case-discriminates; the diff touches the first two inside the grant and the declared figures path was never produced."
+  },
+  "justifications": {
+    "durability": "tests/test_cited_identifier_resolves.py:402 asserts the fixed constant _FABRICATED in result.output, which is independent of the value the code under test issues, and the reviewer reinstated the regression by short-circuiting promotion._unresolved_citations to redden it rather than observing a green pass.",
+    "evidence": "the reviewed manifest's baseline_suite and after_suite record 20 passed EXIT=0 with completed true and the reviewer re-ran the two files at head 687a66cb for 20 passed EXIT=0; docked because the run's own suite revision is abfab2c93, the parent of its final head 687a66cb, so the recorded gate does not measure the delivered head.",
+    "fit": "the added lines read as the sibling refusal cases at tests/test_cited_identifier_resolves.py:245 and :266 do, the docstring at :384 states the mechanism, no plan label appears in the code, and both commits carry substantive bodies with no AI trailer.",
+    "goal_fidelity": "tests/test_cited_identifier_resolves.py:402-403 adds assert _FABRICATED in result.output and assert \"does not resolve\" in result.output, and the reviewer reddened the case under the in-memory short-circuit (1 failed EXIT=1 at 687a66cb).",
+    "scope_discipline": "the 8b89df33..687a66cb diff changes only tests/test_cited_identifier_resolves.py and docs/evidence/fragments/crew-runtime-positive-controls/the-refusal-case-discriminates.html, both inside the declared write paths, with the declared figures path left unproduced."
+  },
+  "node": "review-of-the-refusal-case-discriminates",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: item (1) of f-crpc-control-gate-repairs asked the no-row case to assert the refusal under test, and at head 687a66cb tests/test_cited_identifier_resolves.py:402-403 now asserts the unresolved value and the citation refusal's reason beside the outcome, which the reviewer independently confirmed reddens under the check short-circuited in memory.\nVERDICT done_when: the reviewed node's done-when is the gate over tests/test_cited_identifier_resolves.py plus tests/test_a_short_commit_list_is_reported.py; the manifest records 20 passed EXIT=0 at base 8b89df33 and 20 passed EXIT=0 at head abfab2c93, and the reviewer re-ran the same pair at head 687a66cb for 20 passed EXIT=0.\nVERDICT write_paths: the reviewed manifest declares tests/test_cited_identifier_resolves.py, docs/evidence/fragments/crew-runtime-positive-controls/the-refusal-case-discriminates.html and docs/figures/crew-runtime-positive-controls/the-refusal-case-discriminates; the diff touches the first two inside the grant and the declared figures path was never produced.\nVERDICT manifest: read; status complete, commits abfab2c93 and 687a66cb named, baseline_suite and after_suite both completed with 0 failures and their logs base-gate.log and head-gate.log, and the negative control named with its log ending EXIT=1.\nVERDICT diff: read abfab2c93 and 687a66cb against base 8b89df33; nine lines added to tests/test_cited_identifier_resolves.py (two message assertions and a docstring paragraph) plus 55 lines of evidence fragment, with no source file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_cited_identifier_resolves.py:402-403 adds assert _FABRICATED in result.output and assert \"does not resolve\" in result.output, and the reviewer reddened the case under the in-memory short-circuit (1 failed EXIT=1 at 687a66cb).\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed manifest's baseline_suite and after_suite record 20 passed EXIT=0 with completed true and the reviewer re-ran the two files at head 687a66cb for 20 passed EXIT=0; docked because the run's own suite revision is abfab2c93, the parent of its final head 687a66cb, so the recorded gate does not measure the delivered head.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the 8b89df33..687a66cb diff changes only tests/test_cited_identifier_resolves.py and docs/evidence/fragments/crew-runtime-positive-controls/the-refusal-case-discriminates.html, both inside the declared write paths, with the declared figures path left unproduced.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_cited_identifier_resolves.py:402 asserts the fixed constant _FABRICATED in result.output, which is independent of the value the code under test issues, and the reviewer reinstated the regression by short-circuiting promotion._unresolved_citations to redden it rather than observing a green pass.\nSCORE fit: 19\nJUSTIFICATION fit: the added lines read as the sibling refusal cases at tests/test_cited_identifier_resolves.py:245 and :266 do, the docstring at :384 states the mechanism, no plan label appears in the code, and both commits carry substantive bodies with no AI trailer.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/the-refusal-case-discriminates.html:47 follow-on: the run's baseline_suite and after_suite are recorded at abfab2c93, the parent of the final head 687a66cb, so the run's self-record does not measure its delivered head; the head commit is docs-only so no test coverage is lost, and the reviewer's re-run at 687a66cb closes the gap for a reader.\nFINDING docs/figures/crew-runtime-positive-controls/the-refusal-case-discriminates:1 follow-on: the declared figure path was never produced, so the node's declared artifact set is incomplete; the change is a test-message assertion and the evidence fragment carries the reproduction in text.\nFINDING tests/test_cited_identifier_resolves.py:27 follow-on: the presentation branch still drops an unresolvable citation silently \u2014 item (4) of the driving followup \u2014 and is unchanged here because the test that pins it sits outside the node's granted paths.\nreviewed_base_sha: 8b89df3321f9f3a47eac9a0cedb170c836c6e9bb\nreviewed_head_sha: 687a66cb08a22af9a1e639337ca3f54d5c8562e2",
+  "review_run_id": "r-20260930T235353165786-review-of-the-refusal-case-discriminates",
+  "reviewed_base_sha": "8b89df3321f9f3a47eac9a0cedb170c836c6e9bb",
+  "reviewed_head_sha": "687a66cb08a22af9a1e639337ca3f54d5c8562e2",
+  "reviewed_run_id": "r-20260930T233349956479-the-refusal-case-discriminates",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T00:00:30.613575+00:00",
+  "total": 93
+}

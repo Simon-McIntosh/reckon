@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "backend": "codex",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T10:29:59.575827+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/crew-observability-truth-landed.html",
+      "line": "1061",
+      "text": "the recorded gate is narrower than the node's named check: the brief required the two named parser files plus every test file asserting on reports.py, but the baseline and after commands cover only four files and omit tests/test_crew_recovery.py, which directly imports reports and asserts the unknown-status classification at line 1414; calling this the prescribed four-file gate therefore records an incomplete check. The omitted relevant test passes independently at the reviewed head, so this is missing evidence rather than an observed regression."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_manifest_parse_format.py:352-466 supplies load-bearing checks for field and value naming, 159 unrecognised tokens, two structurally malformed controls, every recognised status, and the explicit requirement that done remain rejected.",
+    "evidence": "The base and after receipts carry the same 13 failure identities while passes rise from 128 to 133, and an independent run passes 105 focused cases including the omitted unknown-status recovery assertion; however, docs/evidence/archive/crew-observability-truth-landed.html:1061 calls a four-file cohort prescribed even though the brief required every test file asserting on reports.py and tests/test_crew_recovery.py was omitted.",
+    "fit": "reckon/crew/reports.py:397-405 changes only the existing unknown-status diagnostic helper, keeps structural errors on their existing path, and introduces no plan-labelled source name or parallel vocabulary.",
+    "goal_fidelity": "reckon/crew/reports.py:397-405 names field status, quotes the rejected value, and states that the remaining structure parsed; independent probes distinguish both live unrecognised words from malformed JSON and confirm the accepted vocabulary remains blocked, complete, derived, failed, in-progress, in_progress, pending, running, waiting.",
+    "scope_discipline": "The clean diff from 782cc5614e0e9f40abe9705b6fca905a96c2fadb through 1c8f672d5de36e80c6bf2952d1f24b066bd5b646 changes exactly reckon/crew/reports.py, tests/test_manifest_parse_format.py, and the two declared plan-evidence paths, all within the node fence."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:397-405 names field status, quotes the rejected value, and states that the remaining structure parsed; independent probes distinguish both live unrecognised words from malformed JSON and confirm the accepted vocabulary remains blocked, complete, derived, failed, in-progress, in_progress, pending, running, waiting.\nSCORE evidence: 18\nJUSTIFICATION evidence: The base and after receipts carry the same 13 failure identities while passes rise from 128 to 133, and an independent run passes 105 focused cases including the omitted unknown-status recovery assertion; however, docs/evidence/archive/crew-observability-truth-landed.html:1061 calls a four-file cohort prescribed even though the brief required every test file asserting on reports.py and tests/test_crew_recovery.py was omitted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The clean diff from 782cc5614e0e9f40abe9705b6fca905a96c2fadb through 1c8f672d5de36e80c6bf2952d1f24b066bd5b646 changes exactly reckon/crew/reports.py, tests/test_manifest_parse_format.py, and the two declared plan-evidence paths, all within the node fence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_manifest_parse_format.py:352-466 supplies load-bearing checks for field and value naming, 159 unrecognised tokens, two structurally malformed controls, every recognised status, and the explicit requirement that done remain rejected.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/reports.py:397-405 changes only the existing unknown-status diagnostic helper, keeps structural errors on their existing path, and introduces no plan-labelled source name or parallel vocabulary.\nFINDING docs/evidence/archive/crew-observability-truth-landed.html:1061 the recorded gate is narrower than the node's named check: the brief required the two named parser files plus every test file asserting on reports.py, but the baseline and after commands cover only four files and omit tests/test_crew_recovery.py, which directly imports reports and asserts the unknown-status classification at line 1414; calling this the prescribed four-file gate therefore records an incomplete check. The omitted relevant test passes independently at the reviewed head, so this is missing evidence rather than an observed regression.\n",
+  "review_run_id": "r-20260917T102959575827-review-of-a-refusal-names-the-field-it-choked-on",
+  "reviewed_base_sha": "782cc5614e0e9f40abe9705b6fca905a96c2fadb",
+  "reviewed_commits": [
+    "839f8ad9170bb4b595b05abe666b88d1c6554d0a",
+    "1c8f672d5de36e80c6bf2952d1f24b066bd5b646"
+  ],
+  "reviewed_head_sha": "1c8f672d5de36e80c6bf2952d1f24b066bd5b646",
+  "reviewed_run_id": "r-20260917T101445063904-a-refusal-names-the-field-it-choked-on",
+  "reviewer_run_id": "r-20260917T102959575827-review-of-a-refusal-names-the-field-it-choked-on",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T10:38:42+00:00",
+  "total": 98
+}

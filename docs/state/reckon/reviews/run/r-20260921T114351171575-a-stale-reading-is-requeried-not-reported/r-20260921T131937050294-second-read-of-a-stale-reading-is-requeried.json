@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T13:19:37.050294+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/staleness.py",
+      "line": "69-73",
+      "text": "a reading observed in the future is clamped by max(0.0, ...) to age 0.0 and reported as a trusted position -- measured with an observation ten minutes ahead: requeried False, age_seconds 0.0, the probe not asked (reviewer-edge-probe.log edge-future) -- so a clock-skewed or invented future timestamp is rendered as perfect freshness and stays trusted for a further full shelf life, while the module's own rule at :41-43 refuses to trust an observation time that cannot show the reading inside one; no test covers a future observation."
+    },
+    {
+      "file": "reckon/crew/staleness.py",
+      "line": "120-128",
+      "text": "a reading carrying no figure (used_percent None) inside its shelf life is returned as a position with requeried False and the probe untouched (measured: reviewer-edge-probe.log edge-nofigure, probe_calls 0), while the same shape arriving as a probe answer is by :98-99 a failed re-query -- absence of a figure is refused when the reading answers but trusted when the reading is the input, so a caller receives a position with no number and nothing re-queried; no test covers a figure-less input."
+    }
+  ],
+  "findings_measured_by": "direct invocation of the reviewed module at 0c9b333c",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against base c0a50630 -- 0fc81fc8 adds reckon/crew/staleness.py and tests/test_staleness.py, 0c9b333c appends the landing record to the plan section and a 130-line entry to the cumulative evidence archive.",
+    "done_when": "all five declared measures are asserted in tests/test_staleness.py and none only appears to be -- m1 (a stale reading re-queries and the probe's figure is the one returned) asserted at :54-70 by calls == [1], used_percent 14.0 and requeried True; m2 (a failed re-query returns the old figure with its age and serving state unknown, neither a fresh-looking number nor nothing) asserted at :73-98 and :134-144 for a raising probe, a figure-less probe answer and an undated reading; m3 (a reading inside its shelf life is asserted NOT to re-query at all) asserted at :101-118, and its load-bearing assertion is `reported.requeried is False` at :116 because the probe's own raise is swallowed at staleness.py:96 and a forbidden probe alone would prove nothing -- this is the assertion the declared mutation reddens at :116; m4 (the shelf life is a flight key whose change moves which readings re-query) asserted at :147-172 with the key read through flight.resolve overrides at 60 and 180 minutes; m5 (the declared mutation applied to a scratch copy, the named test observed to FAIL, the log at the negative-control path) reproduced by me independently of the worker's log in reviewer-negative-control.log. I re-ran the gate in the reviewed worktree: 8 passed.",
+    "goal": "the goal asked that a reading older than its configured shelf life trigger a re-query rather than be reported as a position; reckon/crew/staleness.py:103-148 re-queries on a stale reading and on one with no observation time, and I measured the stale case in the reviewed worktree returning the probe's 14.0 in place of the receipt's 13.0 with requeried True, behind a positive control that first showed the same instrument re-queries normally (reviewer-edge-probe.log pc-stale).",
+    "manifest": "read; it names the two commits, the four changed paths, an 8-passing receipt with its log path, and a negative-control log whose first line repeats the declared mutation verbatim with the mutated run failing at the named test and an unmutated twin passing; I confirmed the receipt by re-running the file and the mutation by re-applying it to my own scratch copy (2 failed, 6 passed), and its follow_ons disclose the absent caller and the sibling reading type.",
+    "write_paths": "the declared four paths are reckon/crew/staleness.py, tests/test_staleness.py, docs/plans/a-window-paces-the-lane.html and docs/evidence/archive/a-window-paces-the-lane-landed.html, and git diff --name-only c0a50630..0c9b333c lists exactly those four and no fifth, all insertions."
+  },
+  "justifications": {
+    "durability": "tests/test_staleness.py:101-118 fails if the inside-shelf-life guard is removed (measured at :116 on a scratch copy of the fixed tree), and the same file covers the failed re-query and the flight key; the two edges I measured below carry no test, so those behaviours can regress uncaught.",
+    "evidence": "every done_when clause is asserted in tests/test_staleness.py:54-172 and the assertion the declared mutation reddens at :116 is exactly the one the done_when singles out for attention, which I reproduced on my own scratch copy.",
+    "fit": "reckon/crew/staleness.py follows the frozen-slots dataclass and docstring idiom of reckon/crew/reserve.py and carries no plan, ticket or version name, but its serving state \"unknown\" at :30 is a second spelling of the condition the surface vocabulary calls \"unmeasured\" (reckon/mcp_views.py:62 defines both stale and unmeasured), and a second reading type is introduced while the manifest's follow-on 2 names a sibling reading type still to be reconciled.",
+    "goal_fidelity": "reckon/crew/staleness.py:110-148 does what the goal states for a reading past its shelf life, and 0c9b333c is an ancestor of the main checkout HEAD where the module is byte-identical (sha256 9b762f86), so the module is the code actually served.",
+    "scope_discipline": "git diff --name-only c0a50630..0c9b333c lists exactly the four declared paths and nothing else, insertions only, and no plan-version or plan-modified meta line is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asked that a reading older than its configured shelf life trigger a re-query rather than be reported as a position; reckon/crew/staleness.py:103-148 re-queries on a stale reading and on one with no observation time, and I measured the stale case in the reviewed worktree returning the probe's 14.0 in place of the receipt's 13.0 with requeried True, behind a positive control that first showed the same instrument re-queries normally (reviewer-edge-probe.log pc-stale).\nVERDICT done_when: all five declared measures are asserted in tests/test_staleness.py and none only appears to be -- m1 (a stale reading re-queries and the probe's figure is the one returned) asserted at :54-70 by calls == [1], used_percent 14.0 and requeried True; m2 (a failed re-query returns the old figure with its age and serving state unknown, neither a fresh-looking number nor nothing) asserted at :73-98 and :134-144 for a raising probe, a figure-less probe answer and an undated reading; m3 (a reading inside its shelf life is asserted NOT to re-query at all) asserted at :101-118, and its load-bearing assertion is `reported.requeried is False` at :116 because the probe's own raise is swallowed at staleness.py:96 and a forbidden probe alone would prove nothing -- this is the assertion the declared mutation reddens at :116; m4 (the shelf life is a flight key whose change moves which readings re-query) asserted at :147-172 with the key read through flight.resolve overrides at 60 and 180 minutes; m5 (the declared mutation applied to a scratch copy, the named test observed to FAIL, the log at the negative-control path) reproduced by me independently of the worker's log in reviewer-negative-control.log. I re-ran the gate in the reviewed worktree: 8 passed.\nVERDICT write_paths: the declared four paths are reckon/crew/staleness.py, tests/test_staleness.py, docs/plans/a-window-paces-the-lane.html and docs/evidence/archive/a-window-paces-the-lane-landed.html, and git diff --name-only c0a50630..0c9b333c lists exactly those four and no fifth, all insertions.\nVERDICT manifest: read; it names the two commits, the four changed paths, an 8-passing receipt with its log path, and a negative-control log whose first line repeats the declared mutation verbatim with the mutated run failing at the named test and an unmutated twin passing; I confirmed the receipt by re-running the file and the mutation by re-applying it to my own scratch copy (2 failed, 6 passed), and its follow_ons disclose the absent caller and the sibling reading type.\nVERDICT diff: read both commits against base c0a50630 -- 0fc81fc8 adds reckon/crew/staleness.py and tests/test_staleness.py, 0c9b333c appends the landing record to the plan section and a 130-line entry to the cumulative evidence archive.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/staleness.py:110-148 does what the goal states for a reading past its shelf life, and 0c9b333c is an ancestor of the main checkout HEAD where the module is byte-identical (sha256 9b762f86), so the module is the code actually served.\nSCORE evidence: 19\nJUSTIFICATION evidence: every done_when clause is asserted in tests/test_staleness.py:54-172 and the assertion the declared mutation reddens at :116 is exactly the one the done_when singles out for attention, which I reproduced on my own scratch copy.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only c0a50630..0c9b333c lists exactly the four declared paths and nothing else, insertions only, and no plan-version or plan-modified meta line is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_staleness.py:101-118 fails if the inside-shelf-life guard is removed (measured at :116 on a scratch copy of the fixed tree), and the same file covers the failed re-query and the flight key; the two edges I measured below carry no test, so those behaviours can regress uncaught.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/staleness.py follows the frozen-slots dataclass and docstring idiom of reckon/crew/reserve.py and carries no plan, ticket or version name, but its serving state \"unknown\" at :30 is a second spelling of the condition the surface vocabulary calls \"unmeasured\" (reckon/mcp_views.py:62 defines both stale and unmeasured), and a second reading type is introduced while the manifest's follow-on 2 names a sibling reading type still to be reconciled.\nFINDING reckon/crew/staleness.py:69-73 a reading observed in the future is clamped by max(0.0, ...) to age 0.0 and reported as a trusted position -- measured with an observation ten minutes ahead: requeried False, age_seconds 0.0, the probe not asked (reviewer-edge-probe.log edge-future) -- so a clock-skewed or invented future timestamp is rendered as perfect freshness and stays trusted for a further full shelf life, while the module's own rule at :41-43 refuses to trust an observation time that cannot show the reading inside one; no test covers a future observation.\nFINDING reckon/crew/staleness.py:120-128 a reading carrying no figure (used_percent None) inside its shelf life is returned as a position with requeried False and the probe untouched (measured: reviewer-edge-probe.log edge-nofigure, probe_calls 0), while the same shape arriving as a probe answer is by :98-99 a failed re-query -- absence of a figure is refused when the reading answers but trusted when the reading is the input, so a caller receives a position with no number and nothing re-queried; no test covers a figure-less input.",
+  "review_run_id": "r-20260921T131937050294-second-read-of-a-stale-reading-is-requeried",
+  "reviewed_agent": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewed_base_sha": "c0a5063017efe706078367c29b65d95146b746f7",
+  "reviewed_commits": [
+    "0fc81fc89c9c9eb379de8f342c0cfe211d45a96b",
+    "0c9b333c5f95dd7ee5edef03f229c6e84770710e"
+  ],
+  "reviewed_head_sha": "0c9b333c5f95dd7ee5edef03f229c6e84770710e",
+  "reviewed_run_id": "r-20260921T114351171575-a-stale-reading-is-requeried-not-reported",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/a-stale-reading-is-requeried-not-reported",
+  "reviewer_edge_probe_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T131937050294-second-read-of-a-stale-reading-is-requeried/reviewer-edge-probe.log",
+  "reviewer_edge_probe_result": "positive controls pass (stale re-queries, fresh is trusted); a future-dated observation (+10 min) is trusted with age_seconds 0.0 and probe_calls 0; a figure-less reading inside its shelf life is reported with used_percent None and probe_calls 0",
+  "reviewer_negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T131937050294-second-read-of-a-stale-reading-is-requeried/reviewer-negative-control.log",
+  "reviewer_negative_control_result": "declared mutation re-applied by the reviewer to a fresh scratch copy of the reviewed tree: named test FAILS at tests/test_staleness.py:116 (assert True is False), whole file 2 failed 6 passed, mutated module proven the imported one (guard_present False); unmutated twin passed with guard_present True",
+  "reviewer_test_log": {
+    "command": "env -C <reviewed worktree> PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<reviewed worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staleness.py",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T131937050294-second-read-of-a-stale-reading-is-requeried/reviewer-test.log",
+    "result": "8 passed in 0.68s (exit 0)"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T14:43:35.948688+00:00",
+  "total": 93
+}

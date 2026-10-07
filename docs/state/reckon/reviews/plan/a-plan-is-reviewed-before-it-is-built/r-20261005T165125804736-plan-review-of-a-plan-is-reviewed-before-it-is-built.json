@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:55:26.324Z",
+  "dispatched_at": "2026-10-05T16:51:44Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:812",
+      "id": "deep_module-1",
+      "reason": "the move set and the done-when's grep must be extended to `_attr`, `_class_list`, `_element_id` and `_heading_open_tag_with_id`, or the intended module boundary is not reached and the guard that is meant to prove it reports success anyway.",
+      "text": "\u00a717 names nine symbols as \"the parser's input today\" and asserts \"all become part of `reckon/_plan_html.py`, so the parser imports nothing private from the store\", but the nine depend on four further helpers that \u00a717 does not name and that live only in `reckon/_store.py`: `_class_list` (`_store.py:824`, used by `_is_structural_boundary` at 840 and `_landed_card_span` at 1010), and `_attr` (812), `_element_id` (829) and `_heading_open_tag_with_id` (845), used by `_section_heading`/`_wrapper_section_heading`. Moving only the nine leaves `_plan_html.py` importing private names from `_store.py`, which is the coupling \u00a717 exists to remove, and the done-when (\"grep those nine names in `reckon/_store.py` and requires none\") passes while the coupling survives.",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ff2a4b92010e94b6e656b6d5aa5f0e557de1ed30277154a3cb9b482880910394",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T165125804736-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "21224608d7fee08857738f75ceb850957216a7a4",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a717 aims to make `reckon/_plan_html.py` the one owner of section recognition, but its enumerated move set is incomplete, so the module does not reach the boundary the section claims.",
+    "duplicate_owner": "pass \u2014 each proposed consolidation names the owner to extend rather than forking it: `landed_section_ids` is re-homed, not doubled (\u00a717); `promotion._plan_remaining_sections` is deleted and promotion calls the extended `roadmap.implementable_sections` (\u00a718); the `c-run-` constant is hoisted to one owner (\u00a718); the testimony of `evidence._section_key` and `ledger.normalize_section` is preserved with stated reasons (\u00a716).",
+    "interface_budget": "pass \u2014 with `public_definitions` 1476, `cli_options` 317, `mcp_views` 33, `refusal_families` 23, only \u00a717 adds surface: one public definition, `plan_headings`, which the section names and accounts for (\"the net is one\", with `landed_section_ids` retired from `reckon/_store.py` under the same name); \u00a716 and \u00a718 add none and say so, and \u00a716 reuses the existing `plan-review-missing` family rather than adding a refusal family.",
+    "reuse_search": "pass \u2014 the plan searched the package it extends and cites the mechanism for each move: \u00a717 consolidates onto the existing `_StructuredSectionSpanParser` in `reckon/_plan_html.py`, \u00a716 onto `plan_fingerprint`/`_fingerprint_forms` in `reckon/crew/plan_review.py`, \u00a718 onto `roadmap.implementable_sections`; every named owner file exists at the head and holds the named symbols.",
+    "thin_wrapper": "pass \u2014 the sections that could have been thin wrappers justify themselves in their own text: \u00a716 states the coverage predicate \"is not a wrapper over the review reader\" and separates the two join shapes; \u00a718 explains why neither `doccheck._implementable_section_ids` nor `metadata_index` is folded onto the extended owner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.843250+00:00"
+}

@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "pytest -p no:cacheprovider -q -n 8 --timeout=300 --basetemp=/tmp/reckon-crew-scratch/r-20261003T043810992501-time-fence-follows-the-attempt/bt-head <40 files>",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 3,
+    "failure_ids": [
+      "tests/test_crew_recovery.py::test_cli_follow_streams_each_event_as_one_json_document",
+      "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition",
+      "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T043810992501-time-fence-follows-the-attempt/gate-head.log",
+    "revision": "3d5db51d81cf8bea0b2f536d2517af592e40250a"
+  },
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": "06449805cf535c33f37f1a5688232d8429f851ea",
+  "baseline_suite": {
+    "command": "pytest -p no:cacheprovider -q -n 8 --timeout=300 --basetemp=/tmp/reckon-crew-scratch/r-20261003T043810992501-time-fence-follows-the-attempt/bt-base <40 files>",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 14,
+    "failure_ids": [
+      "tests/test_gate_evidence.py::test_armed_promotion_refuses_missing_observation_and_keeps_pointer",
+      "tests/test_gate_evidence.py::test_armed_promotion_refuses_added_failures_with_ids",
+      "tests/test_gate_evidence.py::test_reasoned_waiver_promotes_and_stores_observations",
+      "tests/test_gate_evidence.py::test_repair_run_with_only_baseline_failures_is_clean",
+      "tests/test_gate_evidence.py::test_known_bad_promotion_with_twenty_added_failures_is_refused",
+      "tests/test_gate_evidence.py::test_fifteen_repair_promotions_with_no_added_failures_are_accepted",
+      "tests/test_gate_evidence.py::test_added_failure_ids_matches_promotions_suite_delta_arithmetic",
+      "tests/test_gate_evidence.py::test_promoted_run_stores_failure_attribution_beside_added_ids",
+      "tests/test_gate_evidence.py::test_added_failure_with_no_attribution_entry_still_refuses",
+      "tests/test_gate_evidence.py::test_attribution_naming_a_pre_existing_failure_is_dropped",
+      "tests/test_crew_recovery.py::test_cli_follow_streams_each_event_as_one_json_document",
+      "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition",
+      "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+      "tests/test_time_fence_follows_the_attempt.py::test_an_early_fence_spent_blocker_is_reported_as_a_defect"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T043810992501-time-fence-follows-the-attempt/gate-base.log",
+    "revision": "06449805cf535c33f37f1a5688232d8429f851ea"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/reports.py:1765 (_time_fence_claim_findings called from audit_manifest)"
+  ],
+  "completed_at": "2026-10-03T05:26:50.274Z",
+  "dispatched_at": "2026-10-03T05:16:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "1594",
+      "severity": "follow-on",
+      "text": "_attempt_deadline_seconds has two branches: the deadline a manifest quotes back via _FENCE_STATEMENT, and the attempt.json+node.time_budget fallback. Only the fallback branch is exercised by tests/test_time_fence_follows_the_attempt.py (the fixture writes attempt.json and never a quoted fence). A regression in the quoted-statement regex or its parse would leave the check silently inert for manifests that quote their fence, and no test would catch it. Add a case whose manifest text carries 'Launched <iso> UTC; deadline <iso>' and assert the deadline is read from it."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/time-fence-follows-the-attempt.html",
+      "line": "40",
+      "severity": "follow-on",
+      "text": "The base arm ran from a git-archive extraction under $TMPDIR that is not a git worktree, and about ten tests/test_gate_evidence.py cases fail there because the promote path resolves a git root from the working directory ('Error: run ... is classified promotable; no complete independent review is stored'), not because of the code under test. I reproduced this: the same base reports.py passes tests/test_gate_evidence.py::test_armed_promotion_refuses_missing_observation_and_keeps_pointer when the working directory is inside a git repo, and fails when it is inside the archive. So the recorded base failure set (14) is inflated by ~10 spurious ids and the 14-vs-3 comparison reads as the change fixing eleven tests. added_failure_count is still 0 because every head failure id is also a base id. The remedy is to run the base arm from a git checkout (or git-init the extraction before the gate) so its failure set is meaningful."
+    }
+  ],
+  "head_log_revision": "3d5db51d81cf8bea0b2f536d2517af592e40250a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the new check is reached from one site: audit_manifest calls _time_fence_claim_findings at reports.py:1765, alongside the control-log and gate-log-revision findings",
+    "diff": "read 06449805 against d650b7853: +135/-1 in reckon/crew/reports.py adding _FENCE_EXPIRY, _FENCE_STATEMENT, _instant, _utc_stamp, _recorded_manifest_instant, _attempt_deadline_seconds, _time_fence_claim_findings and the call from audit_manifest; +345 tests/test_time_fence_follows_the_attempt.py (4 tests); +64 docs/evidence fragment; reckon/crew/dispatch.py declared but unchanged (empty diff), consistent with items (a) and (b) predating the base",
+    "done_when": "item (c) is new behaviour and its test fails at base (reproduced independently: base 1 failed / 3 passed with test_an_early_fence_spent_blocker_is_reported_as_a_defect, head 4 passed) and passes at head; items (a) and (b) pin wiring already present at base (dispatch() passes launch_instant at dispatch.py:6428, change_lane calls _restate_time_fence at dispatch.py:11277, both present before 06449805), disclosed in the manifest and fragment, so their tests measure regression rather than a change made here; the negative control requirement is met",
+    "goal": "section 27's three items are each covered by a test driving the real door: dispatch() with a stub launcher (item a), change_lane against a stopped pointer (item b), and audit_manifest against a blocked manifest with an attempt record (item c); the declared negative control restores change_lane's unrestated prompt and the lane-change case then fails",
+    "manifest": "read; status complete, changed_paths three, both gate arms named with revisions and counts, negative_control_log present with EXIT=1, commits 3d5db51d8 and d650b7853 each conventional with a body and no AI trailer",
+    "write_paths": "range 06449805..d650b7853 touches only three paths, all inside the declared grants; dispatch.py declared and correctly unchanged; no plan, sprint or index state mutated"
+  },
+  "justifications": {
+    "durability": "item (c) is pinned in both directions (early claim -> defect, post-deadline claim -> stays a blocker) and its test genuinely fails before the change; the negative control pins item (b) and was independently reproduced (mutated lane-change prompt -> FENCE-TIME-resumed assertion fails, EXIT=1). Cut: the manifest-quotes-the-fence branch of _attempt_deadline_seconds is untested, so that half of the deadline derivation could regress silently (finding below).",
+    "evidence": "both arms are complete and header-stamped (revision, module __file__, cwd, EXIT=); added_failure_count is 0 with every head id present in base; I independently reproduced head 4 passed / base 1 failed-3 passed on the new file and the recorded negative control. Cut: the base arm ran in a non-git archive tree, so ~10 test_gate_evidence ids fail there for lack of an enclosing git repo rather than for the code (finding below), inflating the base failure set and inviting a counts-only misread; the delta itself is unaffected.",
+    "fit": "mechanism-named helpers and comments with no plan/sprint/ticket id and no author attribution; the only 'plan-a' strings are throwaway fixture data; ruff check and ruff format --check clean on the two changed Python paths except the pre-existing SIM102 at reports.py:702, which is present at base (delta zero); no AI trailer on either commit.",
+    "goal_fidelity": "section 27's deliverable is met: a test per item driving the real door plus the item (c) implementation, with the required negative control. The one reservation is that only item (c) is a product change here -- items (a) and (b) were already wired at base (dispatch.py:6428 and the _restate_time_fence call at dispatch.py:11277, added by ef22fdae5 before 06449805), so section 27's premise for (b) ('change_lane relaunches without restating the fence') is stale and the literal 'each item's test fails before its change' holds only for (c). The node handled this correctly by pinning rather than reimplementing working guards, and disclosed it in the manifest and fragment.",
+    "scope_discipline": "the reviewed range touches exactly the three granted paths; reckon/crew/dispatch.py is in the declared write paths and is correctly left unchanged; no plan, sprint or index state was mutated; both commits are local and conventional."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 27's three items (dispatch wiring, lane-change restatement, early fence-spent blocker) are each covered by a test driving the real entry point, and item (c)'s implementation in audit_manifest reports the early claim as a defect; the declared negative control restores change_lane's unrestated prompt under which the lane-change case fails.\nVERDICT done_when: item (c) is new behaviour with a test that fails at base (base 1 failed/3 passed on the new file, head 4 passed -- independently reproduced) and passes at head; items (a) and (b) pin wiring already present at base (dispatch() passes launch_instant at dispatch.py:6428; change_lane calls _restate_time_fence at dispatch.py:11277), disclosed in the manifest and fragment; the negative control requirement is met and reproduced.\nVERDICT write_paths: range 06449805cf535c33f37f1a5688232d8429f851ea..d650b7853f72129ba1697e7a7e2cf60ad7b92c1e touches only reckon/crew/reports.py, tests/test_time_fence_follows_the_attempt.py and docs/evidence/fragments/crew-observability-truth/time-fence-follows-the-attempt.html, all inside the node's grants; reckon/crew/dispatch.py is declared and correctly unchanged; no plan, sprint or index state mutated.\nVERDICT manifest: read; status complete, changed_paths three, base arm 14 failed at 06449805, head arm 3 failed at 3d5db51d, negative_control.log EXIT=1, two commits 3d5db51d8 and d650b7853 each conventional with a body and no AI trailer.\nVERDICT diff: read 06449805 against d650b7853: +135/-1 in reckon/crew/reports.py (the _FENCE_EXPIRY and _FENCE_STATEMENT regexes, _instant, _utc_stamp, _recorded_manifest_instant, _attempt_deadline_seconds, _time_fence_claim_findings, and the audit_manifest call at :1765); +345 in tests/test_time_fence_follows_the_attempt.py (four tests); +64 in the evidence fragment; dispatch.py unchanged.\nVERDICT call_sites: one call site, audit_manifest -> _time_fence_claim_findings at reckon/crew/reports.py:1765.\nCALL_SITES: reckon/crew/reports.py:1765\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: section 27's deliverable is met -- a test per item driving the real door plus the item (c) implementation and the required negative control. Reservation: only item (c) is a product change here; items (a) and (b) were already wired at base (dispatch.py:6428 and _restate_time_fence at dispatch.py:11277, added by ef22fdae5 before base), so section 27's premise for (b) is stale and the literal 'each item's test fails before its change' holds only for (c). The node did the right thing by pinning rather than reimplementing a working guard and disclosed the fact.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arms are complete and header-stamped with revision, module __file__, cwd and a bare EXIT=; added_failure_count is 0 with every head failure id also a base id; I independently reproduced head 4 passed and base 1 failed/3 passed on the new file, and the recorded negative control. Cut: the base arm ran from a git-archive extraction that is not a git worktree, so ~10 tests/test_gate_evidence.py ids fail there for lack of an enclosing git repo rather than for the code (finding below), which inflates the recorded base failure count to 14 and invites a counts-only misread; the added-failure arithmetic is unaffected.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed range touches only the three granted paths; dispatch.py is in scope and correctly left unchanged; no plan, sprint or index state was mutated; both commits are local and conventional.\nSCORE durability: 17\nJUSTIFICATION durability: item (c) is pinned in both directions and its test genuinely fails before the change; the negative control pins item (b) and was independently reproduced (mutated prompt -> the resumed-attempt assertion fails, EXIT=1). Cut: the manifest-quotes-the-fence branch of _attempt_deadline_seconds is untested, so that half of the deadline derivation could regress silently (finding below).\nSCORE fit: 19\nJUSTIFICATION fit: mechanism-named helpers and comments carry no plan, sprint or ticket id and no author attribution; the only plan-a strings are throwaway fixture data; ruff check and ruff format --check are clean on the two changed Python paths except the pre-existing SIM102 at reports.py:702, present at base too (delta zero); no AI trailer on either commit.\nFINDING reckon/crew/reports.py:1594 follow-on: _attempt_deadline_seconds has two branches -- the fence statement a manifest quotes back via _FENCE_STATEMENT, and the attempt.json plus node.time_budget fallback -- but only the fallback is exercised by the new tests (the fixture writes attempt.json and never a quoted fence). A regression in the quoted-statement regex or parse would leave the check silently inert for manifests that quote their fence, and no test would catch it. Add a case whose manifest text carries 'Launched <iso> UTC; deadline <iso>' and assert the deadline is read from it.\nFINDING docs/evidence/fragments/crew-observability-truth/time-fence-follows-the-attempt.html:40 follow-on: the base arm ran from a git-archive extraction under $TMPDIR that is not a git worktree, so about ten tests/test_gate_evidence.py cases fail there for lack of an enclosing git repo -- the promote path emits 'Error: run ... is classified promotable; no complete independent review is stored' instead of JSON -- not because of the code under test. Reproduced: the same base reports.py passes test_gate_evidence.py::test_armed_promotion_refuses_missing_observation_and_keeps_pointer when the working directory is inside a git repo and fails when it is inside the archive. The recorded base count of 14 is therefore inflated by ~10 spurious ids; added_failure_count stays 0 because every head id is also a base id. Remedy: run the base arm from a git checkout, or git-init the extraction before the gate, so the base failure set is meaningful.\nreviewed_base_sha: 06449805cf535c33f37f1a5688232d8429f851ea\nreviewed_head_sha: d650b7853f72129ba1697e7a7e2cf60ad7b92c1e\n",
+  "review_run_id": "r-20261003T051553970453-review-of-time-fence-follows-the-attempt",
+  "reviewed_base_sha": "06449805cf535c33f37f1a5688232d8429f851ea",
+  "reviewed_head_sha": "d650b7853f72129ba1697e7a7e2cf60ad7b92c1e",
+  "reviewed_run_id": "r-20261003T043810992501-time-fence-follows-the-attempt",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T05:32:00+00:00",
+  "total": 91
+}

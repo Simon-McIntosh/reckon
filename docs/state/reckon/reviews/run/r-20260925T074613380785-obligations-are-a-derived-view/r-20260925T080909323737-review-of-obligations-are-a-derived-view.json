@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:3543"
+  ],
+  "completed_at": "2026-09-25T10:40:31Z",
+  "dispatched_at": "2026-09-25T07:46:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "181",
+      "text": "reading the view is not a pure read, because recovery.recover dispatches a review for every scoring run project-wide (reckon/crew/recovery.py:5315 composes the reflex with no session filter) while the view reports only this session's rows at :185, and the MCP crew view at reckon/mcp.py:3543 (landed as da226e1e after this head) now puts that launch behind a coordinator's inbox read."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "67",
+      "text": "the head-keying in _current_review_in_flight is unasserted, because a variant that returns True whenever any live review of the run exists, or that matched only the dead legacy path, keeps all five focused tests green while a live review of an older head would silently suppress a current-head review-missing duty."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "80",
+      "text": "_live_review_runs counts only this session's live review pointers, so a review of the run's current head dispatched under another session does not suppress review-missing and the view names a duty that is already underway with a next command admission will refuse."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "commit 66d08fa6 adds reckon/crew/obligations.py and tests/test_crew_obligations.py, commit 7e881d73 adds the cumulative evidence record, the derivation figure and one worker comment in the plan's comments element; no plan status, impl, version or followup was touched and the evidence file is new rather than a rewrite of a predecessor's record.",
+    "done_when": "the measure is the synthetic census plus the absence, head-moved and mutation checks; tests/test_crew_obligations.py:203-247 asserts exactly the six kinds with their ages and next commands, :213-215 the two absences, :342 the stale-head read, and negative-review-freshness.log repeats the declared mutation on its first line over a failing stale-head assertion.",
+    "goal": "the node goal is a derived obligations(project, session) listing each coordinator duty with kind, identity, age and the exact next command; reckon/crew/obligations.py:166-226 projects all six kinds from recovery rows and carries kind, run_id, node, plan, age_seconds and next_command, and no CLI or MCP surface was added at the reviewed head.",
+    "manifest": "the run manifest reports status complete with the focused gate at 7e881d73, ruff at zero findings, the mutation log and a clean tree; my re-run from the reviewed tree at 7e881d73, with the module imported from that tree, reproduced 5 passed, and focused-tests.log and ruff.log carry revision, tree and command headers.",
+    "write_paths": "the declared scope is the module, its test, the archived evidence record, the figure directory and the plan file; git diff e160b02da3..7e881d73cd is exactly those five paths with 738 insertions and zero deletions, recovery.py unmodified and the worktree clean."
+  },
+  "justifications": {
+    "durability": "the stored-review freshness the plan names is guarded and mutation-proven (tests/test_crew_obligations.py:334 with negative-review-freshness.log), but the in-flight head-keying at reckon/crew/obligations.py:67-73 is asserted by no test, so a variant returning True for any live review of the run, or matching only the legacy path, keeps all five tests green.",
+    "evidence": "the stale-head assertion at tests/test_crew_obligations.py:342 and negative-review-freshness.log, whose first line repeats the declared mutation and whose body shows the named test failing, are receipts I re-read and partly re-ran at the reviewed head.",
+    "fit": "the module imports recovery's classification and uses the same private helpers reckon/cli.py and reckon/ledger.py already use, and the naming checks over the two new files report no plan labels, tickets or changelog prose, though the docstring at reckon/crew/obligations.py:3 promises a projection while :181 dispatches.",
+    "goal_fidelity": "every kind, item field and summary figure the goal names is present in reckon/crew/obligations.py:190-224, but the summary at :219 carries no count of items unchanged since the last read and the derivation at :181 brings recovery's dispatch reflex into a read path.",
+    "scope_discipline": "the five-path diff between e160b02da36e795399de72503f197180c1fd993c and 7e881d73cd4cb66e8c9e4f46a8736853ac47ec06 lies entirely inside the declared write paths, adds no CLI or MCP surface, and leaves reckon/crew/recovery.py and the plan's state scalars untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a derived obligations(project, session) listing each coordinator duty with kind, identity, age and the exact next command; reckon/crew/obligations.py:166-226 projects all six kinds from recovery rows and carries kind, run_id, node, plan, age_seconds and next_command, and no CLI or MCP surface was added at the reviewed head.\nVERDICT done_when: the measure is the synthetic census plus the absence, head-moved and mutation checks; tests/test_crew_obligations.py:203-247 asserts exactly the six kinds with their ages and next commands, :213-215 the two absences, :342 the stale-head read, and negative-review-freshness.log repeats the declared mutation on its first line over a failing stale-head assertion.\nVERDICT write_paths: the declared scope is the module, its test, the archived evidence record, the figure directory and the plan file; git diff e160b02da3..7e881d73cd is exactly those five paths with 738 insertions and zero deletions, recovery.py unmodified and the worktree clean.\nVERDICT manifest: the run manifest reports status complete with the focused gate at 7e881d73, ruff at zero findings, the mutation log and a clean tree; my re-run from the reviewed tree at 7e881d73, with the module imported from that tree, reproduced 5 passed, and focused-tests.log and ruff.log carry revision, tree and command headers.\nVERDICT diff: commit 66d08fa6 adds reckon/crew/obligations.py and tests/test_crew_obligations.py, commit 7e881d73 adds the cumulative evidence record, the derivation figure and one worker comment in the plan's comments element; no plan status, impl, version or followup was touched and the evidence file is new rather than a rewrite of a predecessor's record.\nCALL_SITES: reckon/mcp.py:3543\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every kind, item field and summary figure the goal names is present in reckon/crew/obligations.py:190-224, but the summary at :219 carries no count of items unchanged since the last read and the derivation at :181 brings recovery's dispatch reflex into a read path.\nSCORE evidence: 19\nJUSTIFICATION evidence: the stale-head assertion at tests/test_crew_obligations.py:342 and negative-review-freshness.log, whose first line repeats the declared mutation and whose body shows the named test failing, are receipts I re-read and partly re-ran at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five-path diff between e160b02da36e795399de72503f197180c1fd993c and 7e881d73cd4cb66e8c9e4f46a8736853ac47ec06 lies entirely inside the declared write paths, adds no CLI or MCP surface, and leaves reckon/crew/recovery.py and the plan's state scalars untouched.\nSCORE durability: 16\nJUSTIFICATION durability: the stored-review freshness the plan names is guarded and mutation-proven (tests/test_crew_obligations.py:334 with negative-review-freshness.log), but the in-flight head-keying at reckon/crew/obligations.py:67-73 is asserted by no test, so a variant returning True for any live review of the run, or matching only the legacy path, keeps all five tests green.\nSCORE fit: 17\nJUSTIFICATION fit: the module imports recovery's classification and uses the same private helpers reckon/cli.py and reckon/ledger.py already use, and the naming checks over the two new files report no plan labels, tickets or changelog prose, though the docstring at reckon/crew/obligations.py:3 promises a projection while :181 dispatches.\nFINDING reckon/crew/obligations.py:181 reading the view is not a pure read, because recovery.recover dispatches a review for every scoring run project-wide (reckon/crew/recovery.py:5315 composes the reflex with no session filter) while the view reports only this session's rows at :185, and the MCP crew view at reckon/mcp.py:3543 (landed as da226e1e after this head) now puts that launch behind a coordinator's inbox read.\nFINDING reckon/crew/obligations.py:67 the head-keying in _current_review_in_flight is unasserted, because a variant that returns True whenever any live review of the run exists, or that matched only the dead legacy path, keeps all five focused tests green while a live review of an older head would silently suppress a current-head review-missing duty.\nFINDING reckon/crew/obligations.py:80 _live_review_runs counts only this session's live review pointers, so a review of the run's current head dispatched under another session does not suppress review-missing and the view names a duty that is already underway with a next command admission will refuse.\n",
+  "review_run_id": "r-20260925T080909323737-review-of-obligations-are-a-derived-view",
+  "reviewed_base_sha": "e160b02da36e795399de72503f197180c1fd993c",
+  "reviewed_head_sha": "7e881d73cd4cb66e8c9e4f46a8736853ac47ec06",
+  "reviewed_run_id": "r-20260925T074613380785-obligations-are-a-derived-view",
+  "reviewer": "review-of-obligations-are-a-derived-view",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T09:14:34.556433+00:00",
+  "total": 90
+}

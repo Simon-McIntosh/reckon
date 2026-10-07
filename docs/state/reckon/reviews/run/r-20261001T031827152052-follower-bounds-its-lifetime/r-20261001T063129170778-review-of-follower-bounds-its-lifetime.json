@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:3555",
+    "reckon/crew/dispatch.py:5035",
+    "reckon/crew/dispatch.py:4017",
+    "reckon/crew/dispatch.py:824"
+  ],
+  "completed_at": "2026-10-01T06:46:58.524Z",
+  "dispatched_at": "2026-10-01T06:31:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1050",
+      "severity": "follow-on",
+      "text": "follow-on: the watcher remedy sentence ('one is started with `{ensure}`, which is safe to run against a watcher that is already up') is a second copy of the wording WatcherRequired composes at reckon/crew/node.py:441, whose own docstring says it is kept in one place so a better remedy reaches every refusal without a second copy to keep in step."
+    }
+  ],
+  "head_log_revision": "4536c411cf95c178273aeb93289bd24a6b9eeb55",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit; the six commits split into the poll/reload/child fix, the new module, a format-only pass, two evidence fragments and the launch-kind guard, and nothing outside the four declared paths changed.",
+    "done_when": "the manifest's measure is the six-module gate; gate-head.log names revision 4536c411c and reports '43 passed' EXIT=0 while gate-base.log names 33c5e761d and reports '6 failed, 37 passed' EXIT=1, and the new module's five cases assert exactly the four properties.",
+    "goal": "the four items of followup f-afoim-handoff-01 are each landed -- a poll bounded by the deadline (reckon/cli.py:2850), a carried deadline spent rather than re-anchored (reckon/cli.py:3497), the hand-off variables confined to the re-exec mapping (reckon/cli.py:3512), and one refusal naming every unmet condition (reckon/crew/dispatch.py:1030).",
+    "manifest": "read; it records baseline_suite at 33c5e761d (6 failures) and after_suite at 4536c411c (0 failures) with their log paths, names both negative controls, and names the adjacent-module set.",
+    "write_paths": "git diff --name-only 33c5e761d..226c51e39 lists four paths -- reckon/cli.py, reckon/crew/dispatch.py, tests/test_follower_bounds_its_lifetime.py and docs/evidence/fragments/a-follower-outlives-its-monitor/follower-bounds-its-lifetime.html -- all inside the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "four of the new module's cases are recorded failing at base in gate-base.log and both controls redden a guard the head passes; docked one because tests/test_follower_bounds_its_lifetime.py:847 asserts the bare substring 'file' and the post-reload absence checks rescan the whole accumulated dump.",
+    "evidence": "gate-head.log names 4536c411c '43 passed' EXIT=0 and gate-base.log names 33c5e761d '6 failed, 37 passed' EXIT=1, with extra-coverage.log carrying 58 passed at the reviewed head 226c51e3; docked one because after_suite names 4536c411c, one docs-only commit behind the reviewed head.",
+    "fit": "the new refusal subclasses WatcherRequired and keeps its error key and exit code at reckon/crew/dispatch.py:1093 with no banned name on any added line; docked one for the second copy of the watcher remedy sentence at reckon/crew/dispatch.py:1050-1054.",
+    "goal_fidelity": "all four handoff items are landed and each has its own case in tests/test_follower_bounds_its_lifetime.py, with reckon/cli.py:2850 bounding the poll and reckon/crew/dispatch.py:1030 collecting every unmet condition.",
+    "scope_discipline": "every path in git diff 33c5e761d..226c51e39 sits inside the four declared write paths, each commit carries a conventional subject with a body, and no plan, index or sprint state was touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the four items of followup f-afoim-handoff-01 are each landed -- a poll bounded by the deadline (reckon/cli.py:2850), a carried deadline spent rather than re-anchored (reckon/cli.py:3497), the hand-off variables confined to the re-exec mapping (reckon/cli.py:3512), and one refusal naming every unmet condition (reckon/crew/dispatch.py:1030).\nVERDICT done_when: the manifest's measure is the six-module gate; gate-head.log names revision 4536c411c and reports '43 passed' EXIT=0 while gate-base.log names 33c5e761d and reports '6 failed, 37 passed' EXIT=1, and the new module's five cases assert exactly the four properties.\nVERDICT write_paths: git diff --name-only 33c5e761d..226c51e39 lists four paths -- reckon/cli.py, reckon/crew/dispatch.py, tests/test_follower_bounds_its_lifetime.py and docs/evidence/fragments/a-follower-outlives-its-monitor/follower-bounds-its-lifetime.html -- all inside the manifest's declared write paths.\nVERDICT manifest: read; it records baseline_suite at 33c5e761d (6 failures) and after_suite at 4536c411c (0 failures) with their log paths, names both negative controls, and names the adjacent-module set.\nVERDICT diff: read commit by commit; the six commits split into the poll/reload/child fix, the new module, a format-only pass, two evidence fragments and the launch-kind guard, and nothing outside the four declared paths changed.\nCALL_SITES: reckon/cli.py:3555, reckon/crew/dispatch.py:5035, reckon/crew/dispatch.py:4017, reckon/crew/dispatch.py:824\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all four handoff items are landed and each has its own case in tests/test_follower_bounds_its_lifetime.py, with reckon/cli.py:2850 bounding the poll and reckon/crew/dispatch.py:1030 collecting every unmet condition.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log names 4536c411c '43 passed' EXIT=0 and gate-base.log names 33c5e761d '6 failed, 37 passed' EXIT=1, with extra-coverage.log carrying 58 passed at the reviewed head 226c51e3; docked one because after_suite names 4536c411c, one docs-only commit behind the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 33c5e761d..226c51e39 sits inside the four declared write paths, each commit carries a conventional subject with a body, and no plan, index or sprint state was touched.\nSCORE durability: 19\nJUSTIFICATION durability: four of the new module's cases are recorded failing at base in gate-base.log and both controls redden a guard the head passes; docked one because tests/test_follower_bounds_its_lifetime.py:847 asserts the bare substring 'file' and the post-reload absence checks rescan the whole accumulated dump.\nSCORE fit: 19\nJUSTIFICATION fit: the new refusal subclasses WatcherRequired and keeps its error key and exit code at reckon/crew/dispatch.py:1093 with no banned name on any added line; docked one for the second copy of the watcher remedy sentence at reckon/crew/dispatch.py:1050-1054.\nFINDING reckon/crew/dispatch.py:1050 follow-on: the watcher remedy sentence ('one is started with `{ensure}`, which is safe to run against a watcher that is already up') is a second copy of the wording WatcherRequired composes at reckon/crew/node.py:441, whose own docstring says it is kept in one place so a better remedy reaches every refusal without a second copy to keep in step.",
+  "review_run_id": "r-20261001T063129170778-review-of-follower-bounds-its-lifetime",
+  "reviewed_base": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "reviewed_base_sha": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "reviewed_commit": "226c51e397c6888ed7e0ea0f8eb9fc4dd040aef4",
+  "reviewed_head_sha": "226c51e397c6888ed7e0ea0f8eb9fc4dd040aef4",
+  "reviewed_run_id": "r-20261001T031827152052-follower-bounds-its-lifetime",
+  "reviewer_run_id": "r-20261001T063129170778-review-of-follower-bounds-its-lifetime",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.103662+00:00",
+  "total": 97
+}

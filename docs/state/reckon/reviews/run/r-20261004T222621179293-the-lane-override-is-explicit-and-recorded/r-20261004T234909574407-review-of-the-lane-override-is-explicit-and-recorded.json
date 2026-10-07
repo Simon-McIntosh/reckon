@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused",
+    "tests/test_follow_replays_the_gap.py::test_the_record_follows_every_row_the_pane_receives"
+  ],
+  "added_failures_note": "count and ids derived by set difference (head minus base) over the two logs the reviewed manifest names under baseline_suite and after_suite; base-scratch.log records 11 failed + 4 errors (15 ids) and after-suite.log records 9 failed, so exactly two head-only ids remain: test_crew_orphan (head-only) and test_follow_replays_the_gap::test_the_record_follows_every_row_the_pane_receives (head-only; the base arm failed a different test id in the same file). Neither reproduces in isolation: head-failure-controls.log and base-failure-controls.log each record those two tests 2 passed EXIT=0.",
+  "backend": "local",
+  "base_log_revision": "e85fb9cd816df6d845dc37a9e86b78a96f841ff7",
+  "call_sites": [
+    "reckon/cli.py:1766",
+    "reckon/crew/dispatch.py:5649",
+    "reckon/crew/dispatch.py:7339",
+    "reckon/crew/promotion.py:8441",
+    "reckon/ledger.py:170"
+  ],
+  "completed_at": "2026-10-04T23:55:14.190Z",
+  "dispatched_at": "2026-10-04T23:49:29Z",
+  "findings": [
+    {
+      "file": "focused-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the focused-gate receipt's first-line revision field names the base commit (revision=e85fb9cd816df6d845dc37a9e86b78a96f841ff7) while the tree it names is the head worktree and the 10 tests it records can only pass with the new field present; the header therefore mislabels the revision it ran at, undercutting the gate-log contract that the first line names the revision the run was made at. My independent re-run of the same file at head wrote revision=fef2beb97c3fcc94e10a076d81c87c4f52b4939b and passed 3/3, confirming the header field (not the run) is wrong."
+    },
+    {
+      "file": "manifest.md",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "the two head-only population ids are not retired or attributed by the run's own arms. The manifest status was as-delivered blocked and repaired to complete with the rationale that test_crew_orphan::test_an_orphaned_watcher_is_replaced_rather_than_refused already failed at base in a coordinator w103 recheck, but this run's own baseline arm (baseline-scratch.log) does not list that id among its 15 failures, so the added-failure delta of 2 rests on an external recheck not present in the reviewed evidence. Both ids pass in isolation on both trees, so they read as load contention rather than a code regression, but a strict zero-added verdict from these two arms alone is unavailable."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5657",
+      "severity": "follow-on",
+      "text": "the override is applied only when the resolved lane's stop state is 'declared' (if reason and orchestrator_lane_stop['state'] == 'declared'); a --allow-orchestrator-lane REASON passed against a lane that does not declare the orchestrator role is silently accepted and dropped with no warning and no recorded override. A coordinator who deliberately states a reason against a lane whose resolution later changes (e.g. a budget fallback to a non-declaring backend) loses the record without a signal, which is the 'invisible config change' failure \u00a72 exists to prevent."
+    }
+  ],
+  "head_log_revision": "d90627fbf34f13e43355b6ae9f07648cfd2b539c",
+  "item_verdicts": {
+    "diff": "read fef2beb97 against base e85fb9cd8 \u2014 six files, 200 insertions, no deletions; reckon/cli.py adds the --allow-orchestrator-lane REASON option and threads orchestrator_lane_reason into both plan_dispatch and dispatch; reckon/crew/dispatch.py adds the DispatchPlan.orchestrator_lane_override field, composes it when the stop state is 'declared', flips the stop to state/severity 'overridden' with the reason, and writes the override into the run record; reckon/crew/promotion.py carries record['orchestrator_lane_override'] into the promoted row; reckon/ledger.py adds the field to RECORD_FIELDS and build_record; plus one guard test and one evidence fragment.",
+    "done_when": "the node goal (PLAN \u00a72) is that a deliberate dispatch to an orchestrator lane needs a flag whose reason is recorded on the run and reaches the ledger row, the default stops, and the override does not persist across runs. tests/test_the_lane_override_is_explicit_and_recorded.py covers all four: before/after unflagged dispatches record state 'declared' with override None, the flagged dispatch records {'lane':'clive','reason':...}, a launched run carries the field on its live pointer, an empty reason is refused (exit 1, dispatch-refused), and the promoted ledger row carries {'lane':'alpha','reason':...}. Focused gate 10 passed; negative control reddens the ledger assertion EXIT=1 and the restored control passes.",
+    "goal": "read the \u00a72 measure and the six-file diff \u2014 the flag exists, the reason is recorded on the live run record, it reaches the promoted ledger row, the unflagged default stays a recorded stop per \u00a74, and the reason is scoped to one dispatch by test. The goal is met.",
+    "manifest": "read; status complete (repaired from as-delivered blocked at 2026-10-04T23:49:04Z with the as-delivered copy kept at manifest.md.asdelivered); baseline_suite and after_suite are JSON blocks with completed:true, revisions e85fb9cd8 and d90627fb, literal commands and named logs; negative_control_log is a bare path.",
+    "write_paths": "the run declared seven paths including reckon/cli.py (not the sibling \u00a73 run's nonexistent reckon/crew/cli.py); the diff writes exactly the six named in changed_paths, all within the declaration, and the worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "the behaviour is guarded by tests/test_the_lane_override_is_explicit_and_recorded.py:33-46 (field present and None when unflagged, override dict when flagged), :47-56 (before/after unflagged dispatch proves non-persistence), :97-102 (live-pointer field on a launched run) and :115-126 (promoted row and ledger.runs). The recorded negative control (negative-control.log) mutates the run record to drop the reason and reddens the ledger assertion EXIT=1 (assert None == {'lane':'alpha','reason':'restore a blocked review'}), while restored-control.log passes the unmutated assertion \u2014 so the guard is not blind. The field rides ledger.RECORD_FIELDS, so every future row carries it rather than only rows built through the one path.",
+    "evidence": "the defect reproduces at base and the fix is shown to work: defect-reproduction.log reddens all three tests at e85fb9cd8 (KeyError 'orchestrator_lane_override', JSONDecodeError on the missing flag, TypeError on the unexpected orchestrator_lane_reason kwarg), and my independent re-run of the same file against the base scratch tree reproduced 3 failed EXIT=1 while the same file at head (fef2beb97) passed 3/3. The focused gate (10 passed), the negative control (EXIT=1) and the restored control (EXIT=0) are all recorded. Docked because the focused-head.log first line mislabels its revision as the base commit, and the added-failure delta of 2 is not retired or attributed by the run's own arms \u2014 the repair rationale appeals to a coordinator recheck the reviewed logs do not contain.",
+    "fit": "the change follows the established override-flag family (--allow-unreconciled-runs, --allow-unreviewed-plan, --no-watch): one CLI option, one DispatchPlan field, one run-record key, one RECORD_FIELDS entry and one build_record parameter, mirroring unreconciled_override exactly rather than inventing a second provenance path. It adds no new module, reuses the existing stop mapping and promotion plumbing, and the empty-reason refusal reuses CrewError, so the layer sits behind the existing dispatch interface.",
+    "goal_fidelity": "all four clauses of \u00a72's measure hold \u2014 the flag --allow-orchestrator-lane REASON exists (reckon/cli.py:1766), the reason is recorded on the run (reckon/crew/dispatch.py:7339 writes orchestrator_lane_override into the run record), it reaches the ledger row (reckon/crew/promotion.py:8441 plus reckon/ledger.py:170 in RECORD_FIELDS), and it does not persist across runs (proved by the before/after unflagged dispatches). The unflagged default remains the \u00a74 recorded stop (state 'declared'), not a silent launch, so the override is the only way through and it carries its reason. Docked one point only because \u00a72's 'the default is refusal' is presently the recorded-stop form that \u00a74 gates, so the refusal wording is not yet the live behaviour \u2014 correct per \u00a74, but the section's own sentence is not literally satisfied.",
+    "scope_discipline": "the diff writes exactly the six paths in the manifest's changed_paths and all fall within the run's declared seven-path fence (including the correct reckon/cli.py, unlike the sibling \u00a73 run); no figure was written though one was permitted; the worktree is clean at head; the three commits carry conventional subjects with explanatory bodies, no AI trailer, and no plan, sprint or ticket identifiers in messages, symbols, filenames or comments."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all four clauses of \u00a72's measure hold \u2014 the flag --allow-orchestrator-lane REASON exists (reckon/cli.py:1766), the reason is recorded on the run (reckon/crew/dispatch.py:7339 writes orchestrator_lane_override into the run record), it reaches the ledger row (reckon/crew/promotion.py:8441 plus reckon/ledger.py:170 in RECORD_FIELDS), and it does not persist across runs (proved by the before/after unflagged dispatches). The unflagged default remains the \u00a74 recorded stop (state 'declared'), not a silent launch, so the override is the only way through and it carries its reason. Docked one point only because \u00a72's 'the default is refusal' is presently the recorded-stop form that \u00a74 gates, so the refusal wording is not yet the live behaviour \u2014 correct per \u00a74, but the section's own sentence is not literally satisfied.\nSCORE evidence: 16\nJUSTIFICATION evidence: the defect reproduces at base and the fix is shown to work: defect-reproduction.log reddens all three tests at e85fb9cd8 (KeyError 'orchestrator_lane_override', JSONDecodeError on the missing flag, TypeError on the unexpected orchestrator_lane_reason kwarg), and my independent re-run of the same file against the base scratch tree reproduced 3 failed EXIT=1 while the same file at head (fef2beb97) passed 3/3. The focused gate (10 passed), the negative control (EXIT=1) and the restored control (EXIT=0) are all recorded. Docked because the focused-head.log first line mislabels its revision as the base commit, and the added-failure delta of 2 is not retired or attributed by the run's own arms \u2014 the repair rationale appeals to a coordinator recheck the reviewed logs do not contain.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff writes exactly the six paths in the manifest's changed_paths and all fall within the run's declared seven-path fence (including the correct reckon/cli.py, unlike the sibling \u00a73 run); no figure was written though one was permitted; the worktree is clean at head; the three commits carry conventional subjects with explanatory bodies, no AI trailer, and no plan, sprint or ticket identifiers in messages, symbols, filenames or comments.\nSCORE durability: 19\nJUSTIFICATION durability: the behaviour is guarded by tests/test_the_lane_override_is_explicit_and_recorded.py:33-46 (field present and None when unflagged, override dict when flagged), :47-56 (before/after unflagged dispatch proves non-persistence), :97-102 (live-pointer field on a launched run) and :115-126 (promoted row and ledger.runs). The recorded negative control (negative-control.log) mutates the run record to drop the reason and reddens the ledger assertion EXIT=1 (assert None == {'lane':'alpha','reason':'restore a blocked review'}), while restored-control.log passes the unmutated assertion \u2014 so the guard is not blind. The field rides ledger.RECORD_FIELDS, so every future row carries it rather than only rows built through the one path.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the established override-flag family (--allow-unreconciled-runs, --allow-unreviewed-plan, --no-watch): one CLI option, one DispatchPlan field, one run-record key, one RECORD_FIELDS entry and one build_record parameter, mirroring unreconciled_override exactly rather than inventing a second provenance path. It adds no new module, reuses the existing stop mapping and promotion plumbing, and the empty-reason refusal reuses CrewError, so the layer sits behind the existing dispatch interface.\nFINDING focused-head.log:1 follow-on: the focused-gate receipt's first-line revision field names the base commit (revision=e85fb9cd816df6d845dc37a9e86b78a96f841ff7) while the tree it names is the head worktree and the 10 tests it records can only pass with the new field present; the header therefore mislabels the revision it ran at, undercutting the gate-log contract that the first line names the revision the run was made at. My independent re-run of the same file at head wrote revision=fef2beb97c3fcc94e10a076d81c87c4f52b4939b and passed 3/3, confirming the header field (not the run) is wrong.\nFINDING manifest.md:23 follow-on: the two head-only population ids are not retired or attributed by the run's own arms. The manifest status was as-delivered blocked and repaired to complete with the rationale that test_crew_orphan::test_an_orphaned_watcher_is_replaced_rather_than_refused already failed at base in a coordinator w103 recheck, but this run's own baseline arm (baseline-scratch.log) does not list that id among its 15 failures, so the added-failure delta of 2 rests on an external recheck not present in the reviewed evidence. Both ids pass in isolation on both trees, so they read as load contention rather than a code regression, but a strict zero-added verdict from these two arms alone is unavailable.\nFINDING reckon/crew/dispatch.py:5657 follow-on: the override is applied only when the resolved lane's stop state is 'declared' (if reason and orchestrator_lane_stop['state'] == 'declared'); a --allow-orchestrator-lane REASON passed against a lane that does not declare the orchestrator role is silently accepted and dropped with no warning and no recorded override. A coordinator who deliberately states a reason against a lane whose resolution later changes (e.g. a budget fallback to a non-declaring backend) loses the record without a signal, which is the 'invisible config change' failure \u00a72 exists to prevent.\nreviewed_base_sha: e85fb9cd816df6d845dc37a9e86b78a96f841ff7\nreviewed_head_sha: fef2beb97c3fcc94e10a076d81c87c4f52b4939b",
+  "review_run_id": "r-20261004T234909574407-review-of-the-lane-override-is-explicit-and-recorded",
+  "reviewed_base_sha": "e85fb9cd816df6d845dc37a9e86b78a96f841ff7",
+  "reviewed_commits": [
+    "fc62f65be2da946df22e250dfb63c838c00a5936",
+    "d90627fbf34f13e43355b6ae9f07648cfd2b539c",
+    "fef2beb97c3fcc94e10a076d81c87c4f52b4939b"
+  ],
+  "reviewed_head_sha": "fef2beb97c3fcc94e10a076d81c87c4f52b4939b",
+  "reviewed_run_id": "r-20261004T222621179293-the-lane-override-is-explicit-and-recorded",
+  "reviewer_run_id": "r-20261004T234909574407-review-of-the-lane-override-is-explicit-and-recorded",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T23:59:00+00:00",
+  "total": 93
+}

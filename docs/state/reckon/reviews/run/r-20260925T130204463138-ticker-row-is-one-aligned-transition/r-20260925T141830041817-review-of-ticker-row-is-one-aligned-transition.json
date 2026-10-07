@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:_ticker_grid",
+    "reckon/crew/recovery.py:format_watch_transition"
+  ],
+  "completed_at": "2026-09-25T15:00:59.377Z",
+  "dispatched_at": "2026-09-25T14:18:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "339",
+      "text": "the width-budget comment still claims the 180-column pane leaves more than 60 columns for the reason and the 208-column pane more than 80; measured at the head it is 18 and 46, because this change widened the fixed grid (STATE_WORD 13 to 22) and the comment was never brought to the new geometry."
+    },
+    {
+      "file": "tests/test_ticker_row_is_one_transition.py",
+      "line": "154",
+      "text": "the observed sets are fed the same computed constants on every iteration, so the one-column-per-row assertion cannot fail whatever the renderer does; the claim is actually carried by the coordinate assertions above it."
+    },
+    {
+      "file": "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "line": "144",
+      "text": "the recorded 29484 rendered cases does not reproduce: the committed test renders 29 x 28 x 3 x 7 x 2 = 34104 cases over the 28-word classifier vocabulary, so the headline metric is 4620 low."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read all four commits against base 7a002ae4; 926b8743 replaces the state-and-action cell and rewrites the ticker tests, c74841cb widens the state vocabulary to the classifier's full set and rebinds the property test to it, 734537fa and dd090efd append the evidence anchor and figure.",
+    "done_when": "read the fence-evidence paragraph (prompt.txt:103) and the head gate log; the 266-test run at dd090efd is recorded with a header naming revision, tree and command, and each of the four declared mutations has its own red log, but two figures in the landing record do not reproduce (findings below).",
+    "goal": "read the node goal (prompt.txt:25) against reckon/crew/ticker.py:963 and rendered a row at the default width; the row is the lead's column order ending in one fixed arrow, the attention column replaces the action word, and a repeated destination renders no row.",
+    "manifest": "read; it records all four commits, the head-keyed gate log, both suite arms and the four mutation logs, but its artifact line repeats a case count the committed test does not produce.",
+    "write_paths": "read the manifest changed_paths against the diff; all fourteen changed files lie inside the sixteen declared paths, and the two documentation files are append-only (24 and 3 added lines, none removed)."
+  },
+  "justifications": {
+    "durability": "each of the four declared mutations reddens its intended test in its own log, while tests/test_crew_ticker_layout.py:1445 relaxes the reason-room floor from 75 columns at the measured 208-column pane to the bare MIN_REASON.",
+    "evidence": "final-suite-head.log records 266 passed with its revision, tree and command, but the landing record's case count and its column-start assertion (tests/test_ticker_row_is_one_transition.py:154) do not hold.",
+    "fit": "the cell list at reckon/crew/ticker.py:1019-1056 follows the module's existing text-and-style idiom and names no plan label, but the width-budget comment beside it was not brought to the new geometry.",
+    "goal_fidelity": "reckon/crew/ticker.py:999-1006 chains every row from the pane's own _reported map and returns an empty row for a repeated destination, so the goal's transition, attention and no-same-state clauses all hold.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, and the cumulative evidence file gained 24 lines with none removed (git diff --numstat)."
+  },
+  "node": "review-of-ticker-row-is-one-aligned-transition",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (prompt.txt:25) against reckon/crew/ticker.py:963 and rendered a row at the default width; the row is the lead's column order ending in one fixed arrow, the attention column replaces the action word, and a repeated destination renders no row.\nVERDICT done_when: read the fence-evidence paragraph (prompt.txt:103) and the head gate log; the 266-test run at dd090efd is recorded with a header naming revision, tree and command, and each of the four declared mutations has its own red log, but two figures in the landing record do not reproduce (findings below).\nVERDICT write_paths: read the manifest changed_paths against the diff; all fourteen changed files lie inside the sixteen declared paths, and the two documentation files are append-only (24 and 3 added lines, none removed).\nVERDICT manifest: read; it records all four commits, the head-keyed gate log, both suite arms and the four mutation logs, but its artifact line repeats a case count the committed test does not produce.\nVERDICT diff: read all four commits against base 7a002ae4; 926b8743 replaces the state-and-action cell and rewrites the ticker tests, c74841cb widens the state vocabulary to the classifier's full set and rebinds the property test to it, 734537fa and dd090efd append the evidence anchor and figure.\nCALL_SITES: reckon/cli.py:_ticker_grid, reckon/crew/recovery.py:format_watch_transition\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:999-1006 chains every row from the pane's own _reported map and returns an empty row for a repeated destination, so the goal's transition, attention and no-same-state clauses all hold.\nSCORE evidence: 16\nJUSTIFICATION evidence: final-suite-head.log records 266 passed with its revision, tree and command, but the landing record's case count and its column-start assertion (tests/test_ticker_row_is_one_transition.py:154) do not hold.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the cumulative evidence file gained 24 lines with none removed (git diff --numstat).\nSCORE durability: 17\nJUSTIFICATION durability: each of the four declared mutations reddens its intended test in its own log, while tests/test_crew_ticker_layout.py:1445 relaxes the reason-room floor from 75 columns at the measured 208-column pane to the bare MIN_REASON.\nSCORE fit: 17\nJUSTIFICATION fit: the cell list at reckon/crew/ticker.py:1019-1056 follows the module's existing text-and-style idiom and names no plan label, but the width-budget comment beside it was not brought to the new geometry.\nFINDING reckon/crew/ticker.py:339 the width-budget comment still claims the 180-column pane leaves more than 60 columns for the reason and the 208-column pane more than 80; measured at the head it is 18 and 46, because this change widened the fixed grid (STATE_WORD 13 to 22) and the comment was never brought to the new geometry.\nFINDING tests/test_ticker_row_is_one_transition.py:154 the observed sets are fed the same computed constants on every iteration, so the one-column-per-row assertion cannot fail whatever the renderer does; the claim is actually carried by the coordinate assertions above it.\nFINDING docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:144 the recorded 29484 rendered cases does not reproduce: the committed test renders 29 x 28 x 3 x 7 x 2 = 34104 cases over the 28-word classifier vocabulary, so the headline metric is 4620 low.\n",
+  "review_run_id": "r-20260925T141830041817-review-of-ticker-row-is-one-aligned-transition",
+  "reviewed_base_sha": "7a002ae4c16b04e15b85c14b75c9db852f01922e",
+  "reviewed_head_sha": "dd090efdfbe63afc012be183ce18c3910bb4ff57",
+  "reviewed_run_id": "r-20260925T130204463138-ticker-row-is-one-aligned-transition",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T14:56:04.633713+00:00",
+  "total": 86
+}

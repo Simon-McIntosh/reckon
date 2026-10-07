@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (both keys absent), so an added-failure count could not be derived from the reviewed run's own arms.",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_delivered_review_payloads_for_commit",
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-10-06T18:11:44.252Z",
+  "dispatched_at": "2026-10-06T17:43:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "8063",
+      "severity": "follow-on",
+      "text": "follow-on: an unnameable round is dropped from the committed record with only a log warning, so section 3's keep-every-record decision is silently violated for that round and the skipped record survives only in the unversioned host staging store."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against base 6573b06f0; four files, 352 insertions and 12 deletions: the promotion stamping and skip, a repointed rollback case, two new cases, and one evidence fragment.",
+    "done_when": "The node's done-when names tests/test_a_review_without_its_run_id_still_promotes.py plus three suites; the manifest records 21 passed EXIT=0 and the declared negative control 2 failed EXIT=1, and the diff makes both new cases fail when the stamping is reverted.",
+    "goal": "The node's goal is that a review run whose stored record lost its own review_run_id still promotes; promotion.py:8047-8052 stamps the delivered round with the promoting run's id before the committed store reads it, so the round lands rather than being refused.",
+    "manifest": "Read; changed_paths and the four commits f8a3bd4f8..443b26ac0 match the diff, status is complete, and its tests line records the 21-passed gate at the reviewed head.",
+    "write_paths": "The node's declared paths are promotion.py, review.py, the new test file and two evidence paths; the diff touches promotion.py, that test file, and tests/test_review_record_committed_at_promotion.py under a scope extension the manifest records, with review.py and the figure path untouched."
+  },
+  "justifications": {
+    "durability": "both new cases fail when the stamping is reverted (negative-control.log, 2 failed EXIT=1), and they assert committed file contents and the ledger row rather than a value the test itself supplied.",
+    "evidence": "tests/test_a_review_without_its_run_id_still_promotes.py:182 asserts the committed record and the ledger row, the manifest records 21 passed EXIT=0, and the gate log reconciles with that summary line.",
+    "fit": "promotion.py:99 adds the module's first LOGGER, matching reckon/run_store.py:439's logging.getLogger(__name__).warning idiom, though the docstring at promotion.py:8019 calls it a note where the code logs a warning.",
+    "goal_fidelity": "promotion.py:8048-8052 stamps a delivered payload that carries no review_run_id with run_id and includes it, exactly the goal's demand that the round still promotes.",
+    "reuse": "the change extends _delivered_review_payloads_for_commit's existing include/seen dedup at promotion.py:8034 rather than adding a second selection path, and forks no capability the repository already owns.",
+    "scope_discipline": "the diff edits tests/test_review_record_committed_at_promotion.py outside the declared write paths; the manifest records a granted scope extension and the edit is required because the old case asserted the inverse behaviour."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a review run whose stored record lost its own review_run_id still promotes; promotion.py:8047-8052 stamps the delivered round with the promoting run's id before the committed store reads it, so the round lands rather than being refused.\nVERDICT done_when: The node's done-when names tests/test_a_review_without_its_run_id_still_promotes.py plus three suites; the manifest records 21 passed EXIT=0 and the declared negative control 2 failed EXIT=1, and the diff makes both new cases fail when the stamping is reverted.\nVERDICT write_paths: The node's declared paths are promotion.py, review.py, the new test file and two evidence paths; the diff touches promotion.py, that test file, and tests/test_review_record_committed_at_promotion.py under a scope extension the manifest records, with review.py and the figure path untouched.\nVERDICT manifest: Read; changed_paths and the four commits f8a3bd4f8..443b26ac0 match the diff, status is complete, and its tests line records the 21-passed gate at the reviewed head.\nVERDICT diff: Read commit by commit against base 6573b06f0; four files, 352 insertions and 12 deletions: the promotion stamping and skip, a repointed rollback case, two new cases, and one evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_delivered_review_payloads_for_commit, reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:8048-8052 stamps a delivered payload that carries no review_run_id with run_id and includes it, exactly the goal's demand that the round still promotes.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_review_without_its_run_id_still_promotes.py:182 asserts the committed record and the ledger row, the manifest records 21 passed EXIT=0, and the gate log reconciles with that summary line.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff edits tests/test_review_record_committed_at_promotion.py outside the declared write paths; the manifest records a granted scope extension and the edit is required because the old case asserted the inverse behaviour.\nSCORE durability: 19\nJUSTIFICATION durability: both new cases fail when the stamping is reverted (negative-control.log, 2 failed EXIT=1), and they assert committed file contents and the ledger row rather than a value the test itself supplied.\nSCORE fit: 19\nJUSTIFICATION fit: promotion.py:99 adds the module's first LOGGER, matching reckon/run_store.py:439's logging.getLogger(__name__).warning idiom, though the docstring at promotion.py:8019 calls it a note where the code logs a warning.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends _delivered_review_payloads_for_commit's existing include/seen dedup at promotion.py:8034 rather than adding a second selection path, and forks no capability the repository already owns.\nFINDING reckon/crew/promotion.py:8063 follow-on: an unnameable round is dropped from the committed record with only a log warning, so section 3's keep-every-record decision is silently violated for that round and the skipped record survives only in the unversioned host staging store.\nreviewed_base_sha: 6573b06f0dbd47dbaab4bf391a6525d73734fca6\nreviewed_head_sha: 443b26ac05e68b37ab7d59306a24eaae8b5ca54b",
+  "review_run_id": "legacy-2a003130f8b5",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "6573b06f0dbd47dbaab4bf391a6525d73734fca6",
+  "reviewed_head_sha": "443b26ac05e68b37ab7d59306a24eaae8b5ca54b",
+  "reviewed_run_id": "r-20261006T174310999140-a-review-without-its-run-id-still-promotes",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T18:30:00.000000+00:00",
+  "total": 116
+}

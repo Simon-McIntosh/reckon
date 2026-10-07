@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T01:12:55.632Z",
+  "dispatched_at": "2026-10-07T01:04:59Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py:3582",
+      "id": "deep_module-1",
+      "reason": "the measured case (jt60sa-machine-map) lands through the versioned write because the current worker contract sets exactly one landing: line, so the uncovered paths are the legacy worker-authored deferral; naming the gap is enough, no design change is owed.",
+      "text": "the flip lives in _record_landing_comment, which returns before its versioned write on three paths (empty_narrative at :3582, and the two worker_recorded returns at :3611 and :3641), so a first landing through any of them leaves the plan reading draft; the stated invariant holds only on the write path.",
+      "type": "deep_module",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "495414caa5174fd1adac00f0a8b04e43accb4778995428be00204cb23ce74ad4",
+  "plan_slug": "a-landing-keeps-the-plan-live",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "c66d1ea6-525d-4cec-8114-013919000083",
+      "finding": "deep_module-1",
+      "reason": "Every current worker lands through the versioned write, because the worker contract requires exactly one landing: line. The three early returns are the legacy worker-authored-record path and an empty narrative, neither of which writes the plan. A plan landing only through them keeps its hand-set status, which is the behaviour before this plan, so the flip regresses nothing. The measured case, jt60sa-machine-map, lands through the write.",
+      "when": "2026-10-07T01:13:35.325406+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "declined",
+      "by": "c66d1ea6-525d-4cec-8114-013919000083",
+      "reason": "Every current worker lands through the versioned write, because the worker contract requires exactly one landing: line. The three early returns are the legacy worker-authored-record path and an empty narrative, neither of which writes the plan. A plan landing only through them keeps its hand-set status, which is the behaviour before this plan, so the flip regresses nothing. The measured case, jt60sa-machine-map, lands through the write.",
+      "when": "2026-10-07T01:13:35.325406+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-keeps-the-plan-live.v1.json",
+  "review_run_id": "r-20261007T010437958666-plan-review-of-a-landing-keeps-the-plan-live",
+  "reviewed_blob_sha": "9962fd23fd08ad463056f1b7f7adc8c5b402743a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72 hooks the lifecycle flip into _record_landing_comment alone, whose early returns skip the write; the \"first landing marks it in progress\" behaviour is therefore not behind the one landing path.",
+    "duplicate_owner": "pass \u2014 the plan fingerprint has a single owner; PLAN_METADATA_SCALARS is read only by plan_review._digest_state (no second fingerprint exists in review.py, dispatch.py or serve.py), and no existing code auto-transitions a plan status, so \u00a72 forks nothing.",
+    "interface_budget": "pass \u2014 public_definitions 1489, cli_options 317, mcp_views 33, refusal_families 23; neither section adds a public definition, CLI option, MCP view or refusal family \u2014 \u00a72 reuses the existing `in-progress` STATUS_ENUM value (reckon/_schema.py:99) and the existing `_store.write_plan` path, so there is nothing to retire or merge.",
+    "reuse_search": "pass \u2014 \u00a71 extends the existing PLAN_METADATA_SCALARS exclusion tuple (reckon/crew/plan_review.py:79) and \u00a72 extends the existing versioned plan write in promotion._record_landing_comment (reckon/crew/promotion.py:3657); commits is consumed only by plan_review's own fingerprint, and no other module consumes the digest, so the existing owner is the right place.",
+    "thin_wrapper": "pass \u2014 neither section adds a wrapper layer: \u00a71 is one entry in an existing exclusion set and \u00a72 one field in an existing write, neither introduces a new call boundary over existing machinery."
+  },
+  "section_digests": {
+    "_document": "d13d62f68a149aee568c4a908e391dca53ee6494bbfa52617c7f62045f794a6e",
+    "s1": "63d1f0e148842ed6f70b96e7dc5643401402ee8f7c16838e99e95ebc80ded6b8",
+    "s2": "80210b53c96688c6f860289e3f7f28be3ef579ccaa6d7be642a44537e570f2e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T01:13:30.234348+00:00"
+}

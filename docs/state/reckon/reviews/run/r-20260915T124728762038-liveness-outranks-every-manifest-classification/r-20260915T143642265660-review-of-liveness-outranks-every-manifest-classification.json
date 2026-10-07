@@ -1,0 +1,41 @@
+{
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T14:36:42.265660+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": 1485,
+      "text": "the budget-hold arm re-spells the hoisted verdict as `alive is not True` instead of using `process_gone`; the truth table is identical (alive is None or False), so this is an idiom nit, not a defect, but the classification-order comment at :1340-1342 promises a single hoisted liveness verdict and the function now carries two spellings of the same test."
+    },
+    {
+      "file": "docs/evidence/archive/crew-observability-truth-landed.html",
+      "line": 859,
+      "text": "the done_when asked the implementation manifest to quote the invariant comment verbatim ('quote the comment at recovery.py:1334-1337 in your manifest'); the stored manifest at ~/.config/reckon/crew/manifests/liveness-outranks-classification.md records the reproduction and the change but never quotes the comment. The substance is present \u2014 I independently confirmed the defect reproduces at base and the fix resolves it \u2014 so this is a citation gap in the evidence record, not a defect in the repair."
+    }
+  ],
+  "justifications": {
+    "durability": "a regression that reintroduces any unreadable-for-live reading fails the gate \u2014 I proved two of the nine cases fail at base and pass at head, and the dead control test_a_gone_process_keeps_the_invalid_wait_unreadable at :199 keeps the incomplete-wait reading alive for a gone process so the fix is a reservation, not a removal.",
+    "evidence": "the done_when's falsifier is ranged exactly as written over the seven manifest states in tests/test_live_process_outranks_classification.py:152-178, and I reproduced it independently: the invalid-wait and refusal-text cases fail at base 976dba6 (row reads unreadable where running is required, recovery.py:1459 at base had no liveness guard) while the same file passes 9/9 at the reviewed head, and every numeric claim in the record (228 insertions over 2 files, 261 vs 252 with the identical single pre-existing test_mcp_recovery.py failure at both revisions) verifies.",
+    "fit": "the change follows the surrounding idiom, keeps the refusal text on the running row through the existing manifest_error channel, and introduces no name the repository naming rules forbid, but the hoisted verdict is re-spelled inline at reckon/crew/recovery.py:1485 (elif budget_hold and alive is not True) where the hoisting comment promises one verdict.",
+    "goal_fidelity": "reckon/crew/recovery.py:1352 hoists one liveness verdict process_gone = alive is not True above the chain and both unreadable-producing arms consult it (the incomplete-wait arm at :1472, the refuse-to-parse manifest arm at :1619), making the invariant the base comment at :1334-1338 stated true across every manifest state a live run can reach.",
+    "scope_discipline": "git show --name-only confirms commit 882012ef touches only reckon/crew/recovery.py and tests/test_live_process_outranks_classification.py and 8f7e3fd8 only docs/evidence/archive/crew-observability-truth-landed.html and docs/plans/crew-observability-truth.html, exactly the four declared write paths, with the pre-existing mcp_recovery failure correctly reported as a follow-on rather than triaged."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "REVIEW r-20260915T124728762038-liveness-outranks-every-manifest-classification at 8f7e3fd8 (base 976dba6)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1352 hoists one liveness verdict process_gone = alive is not True above the chain, and both unreadable-producing arms (the incomplete-wait arm at :1472 and the refuse-to-parse manifest arm at :1619) consult it, making the invariant the base comment at :1334-1338 stated true across every manifest state a live run can reach.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when's falsifier is ranged exactly as written over the seven manifest states in tests/test_live_process_outranks_classification.py:152-178; I reproduced it independently \u2014 the invalid-wait and refusal-text cases fail at base 976dba6 (row reads unreadable where running is required, the base wait arm had no liveness guard) and pass 9/9 at the reviewed head, and every numeric claim in the record (228 insertions over 2 files, 261 vs 252 with the identical pre-existing test_mcp_recovery.py failure at both revisions) verifies.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --name-only confirms commit 882012ef touches only reckon/crew/recovery.py and tests/test_live_process_outranks_classification.py and 8f7e3fd8 only the two docs records \u2014 exactly the four declared write paths, with the pre-existing mcp_recovery failure reported as a follow-on rather than triaged.\nSCORE durability: 20\nJUSTIFICATION durability: a regression reintroducing any unreadable-for-live reading fails the gate \u2014 I proved two of the nine cases fail at base and pass at head, and the dead control at tests/test_live_process_outranks_classification.py:199 keeps the incomplete-wait reading for a gone process, so the fix is a reservation, not a removal.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the surrounding idiom, keeps the refusal text on the running row through the existing manifest_error channel, and introduces no name the repository naming rules forbid, but the hoisted verdict is re-spelled inline at reckon/crew/recovery.py:1485 (elif budget_hold and alive is not True) where the hoisting comment promises one verdict.\nFINDING reckon/crew/recovery.py:1485 the budget-hold arm re-spells the hoisted verdict as `alive is not True` instead of using `process_gone`; the truth table is identical, so this is an idiom nit not a defect, but the hoisting comment promises a single liveness verdict and the function carries two spellings of the same test.\nFINDING docs/evidence/archive/crew-observability-truth-landed.html:859 the implementation manifest was asked to quote the invariant comment verbatim; the stored manifest records the reproduction and the change but never quotes it \u2014 a citation gap in the evidence record, not a defect in the repair (the reproduction is independently confirmed).",
+  "review_run_id": "r-20260915T143642265660-review-of-liveness-outranks-every-manifest-classification",
+  "reviewed_base": "976dba605f4b8dde5aeb5238f3e7f3dac683973b",
+  "reviewed_commit": "8f7e3fd83d7e1a0a838b1884ab151870f8dafea1",
+  "reviewed_run_id": "r-20260915T124728762038-liveness-outranks-every-manifest-classification",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T16:45:00+00:00",
+  "total": 98
+}

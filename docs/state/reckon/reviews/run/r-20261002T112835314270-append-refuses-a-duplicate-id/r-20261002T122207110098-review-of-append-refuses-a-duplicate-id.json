@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (ff112f9f0, completed, 0 failures) and after_suite (9f727c063, completed, 0 failures); added ids = after_ids - base_ids = empty.",
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:5291"
+  ],
+  "completed_at": "2026-10-02T12:45:53.093Z",
+  "dispatched_at": "2026-10-02T12:22:32Z",
+  "findings": [
+    {
+      "file": "docs/plans/plan-writes-are-not-fenced.html",
+      "line": "160",
+      "severity": "follow-on",
+      "text": "follow-on: the section's recorded defect does not reproduce at the base revision the node was dispatched from \u2014 ff112f9f0 already refuses a duplicate followup append at reckon/_store.py:2515 of that revision \u2014 so \u00a77's premise (the append op accepts a duplicate id) and its data-status=implementable are stale; the node discloses this in its fragment, but a reader of \u00a77 alone would expect the refusal itself to be the landed change, and the section should be re-anchored or closed against the pre-existing guard rather than read as an open defect."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "2143",
+      "severity": "follow-on",
+      "text": "follow-on: the colliding entry rides in the structured existing_item field rather than inside the refusal sentence, so a caller reading only op_error's detail learns the collection and the id but not which item it met; this is forced by two assertions pinning the sentence word-for-word in tests/test_edit_plan.py (test_append_duplicate_followup_id_rejected and test_append_duplicate_ids_rejected_for_addressed_collections, outside this node's write scope) and is recorded in the manifest's follow_ons."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against ff112f9f0: 70a8b58c5 adds _shorten and _describe_entry and gives OpError an optional existing_item carried by _refuse_duplicate_id and the decision/gate arms, 92174999c adds mcp._op_error_response and routes both op_error returns through it, and 9f727c063 adds the refusal fixture fragment plus the test file.",
+    "done_when": "the dispatched done-when requires the refusal to name the collection, the id and the existing item and pins it with a same-id-twice test and a two-writer test in tests/test_append_refuses_a_duplicate_id.py; the head arm runs that file (head-arm-3.log: 114 passed, EXIT=0) and the existing-item clause is the genuinely new half, the collection-and-id sentence having stood at base.",
+    "goal": "the node's goal is to refuse an append whose id already addresses an entry, naming the collision; reckon/_store.py:2138 _refuse_duplicate_id raises OpError carrying an existing_item description and reckon/mcp.py:656 threads it onto the op_error payload, but the refusal itself predates the node \u2014 at base ff112f9f0 the same-id followup append is already refused (reckon/_store.py:2515 at that revision) \u2014 so the landed delta is the existing-item naming plus the tests.",
+    "manifest": "read; status complete, with commits, changed_paths, landing, tests, test_logs, negative_control_log and both suite fields populated and completed true.",
+    "write_paths": "the manifest declares reckon/_store.py, reckon/mcp.py, tests/test_append_refuses_a_duplicate_id.py, the fragment and an unused figures dir; git diff --name-status ff112f9f0 9f727c063 lists exactly those three source/test paths plus the fragment, so the diff stays inside the fence."
+  },
+  "justifications": {
+    "durability": "the declared mutation (remove the append op's duplicate check) reddens tests/test_append_refuses_a_duplicate_id.py::test_append_same_followup_id_twice_is_refused and the other two ids in gate/negative-control-3.log, and tests/test_append_refuses_a_duplicate_id.py:130 asserts the independent outcome['existing_item'], so the new naming is guarded as well as the refusal.",
+    "evidence": "the gate measures the done-when directly \u2014 head-arm-3.log ends 114 passed in 6.66s EXIT=0, baseline-arm.log 106 passed in 8.38s EXIT=0, and negative-control-3.log reddens 3 ids EXIT=1 \u2014 and I re-ran tests/test_append_refuses_a_duplicate_id.py alone at head (8 passed) with tests/test_append_refuses_a_duplicate_id.py:142 and :238 asserting the refusal it claims.",
+    "fit": "reckon/mcp.py:656 _op_error_response mirrors the neighbouring _conflict_response idiom and reckon/_store.py:1973 gives OpError an optional keyword rather than a new exception type, and no plan label or version number appears in the changed code.",
+    "goal_fidelity": "the refusal-and-name behaviour of reckon/_store.py:2138 pre-exists the node at ff112f9f0, where the append op already refused a duplicate followup, so the node's marginal product is the existing_item description at reckon/_store.py:2143 plus the tests done-when asks for \u2014 narrower than plan-writes-are-not-fenced \u00a77 reads.",
+    "scope_discipline": "git diff --name-status ff112f9f0 9f727c063 lists only reckon/_store.py, reckon/mcp.py, tests/test_append_refuses_a_duplicate_id.py and the fragment, all inside the fence, with the declared figures directory correctly untouched since the done-when names no artifact."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse an append whose id already addresses an entry, naming the collision; reckon/_store.py:2138 _refuse_duplicate_id raises OpError carrying an existing_item description and reckon/mcp.py:656 threads it onto the op_error payload, but the refusal itself predates the node \u2014 at base ff112f9f0 the same-id followup append is already refused (reckon/_store.py:2515 at that revision) \u2014 so the landed delta is the existing-item naming plus the tests.\nVERDICT done_when: the dispatched done-when requires the refusal to name the collection, the id and the existing item and pins it with a same-id-twice test and a two-writer test in tests/test_append_refuses_a_duplicate_id.py; the head arm runs that file (head-arm-3.log: 114 passed, EXIT=0) and the existing-item clause is the genuinely new half, the collection-and-id sentence having stood at base.\nVERDICT write_paths: the manifest declares reckon/_store.py, reckon/mcp.py, tests/test_append_refuses_a_duplicate_id.py, the fragment and an unused figures dir; git diff --name-status ff112f9f0 9f727c063 lists exactly those three source/test paths plus the fragment, so the diff stays inside the fence.\nVERDICT manifest: read; status complete, with commits, changed_paths, landing, tests, test_logs, negative_control_log and both suite fields populated and completed true.\nVERDICT diff: read commit by commit against ff112f9f0: 70a8b58c5 adds _shorten and _describe_entry and gives OpError an optional existing_item carried by _refuse_duplicate_id and the decision/gate arms, 92174999c adds mcp._op_error_response and routes both op_error returns through it, and 9f727c063 adds the refusal fixture fragment plus the test file.\nCALL_SITES: reckon/mcp.py:5291\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the refusal-and-name behaviour of reckon/_store.py:2138 pre-exists the node at ff112f9f0, where the append op already refused a duplicate followup, so the node's marginal product is the existing_item description at reckon/_store.py:2143 plus the tests done-when asks for \u2014 narrower than plan-writes-are-not-fenced \u00a77 reads.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate measures the done-when directly \u2014 head-arm-3.log ends 114 passed in 6.66s EXIT=0, baseline-arm.log 106 passed in 8.38s EXIT=0, and negative-control-3.log reddens 3 ids EXIT=1 \u2014 and I re-ran tests/test_append_refuses_a_duplicate_id.py alone at head (8 passed) with tests/test_append_refuses_a_duplicate_id.py:142 and :238 asserting the refusal it claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status ff112f9f0 9f727c063 lists only reckon/_store.py, reckon/mcp.py, tests/test_append_refuses_a_duplicate_id.py and the fragment, all inside the fence, with the declared figures directory correctly untouched since the done-when names no artifact.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation (remove the append op's duplicate check) reddens tests/test_append_refuses_a_duplicate_id.py::test_append_same_followup_id_twice_is_refused and the other two ids in gate/negative-control-3.log, and tests/test_append_refuses_a_duplicate_id.py:130 asserts the independent outcome['existing_item'], so the new naming is guarded as well as the refusal.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp.py:656 _op_error_response mirrors the neighbouring _conflict_response idiom and reckon/_store.py:1973 gives OpError an optional keyword rather than a new exception type, and no plan label or version number appears in the changed code.\nFINDING docs/plans/plan-writes-are-not-fenced.html:160 follow-on: the section's recorded defect does not reproduce at the base revision the node was dispatched from \u2014 ff112f9f0 already refuses a duplicate followup append at reckon/_store.py:2515 of that revision \u2014 so \u00a77's premise (the append op accepts a duplicate id) and its data-status=implementable are stale; the node discloses this in its fragment, but a reader of \u00a77 alone would expect the refusal itself to be the landed change, and the section should be re-anchored or closed against the pre-existing guard rather than read as an open defect.\nFINDING reckon/_store.py:2143 follow-on: the colliding entry rides in the structured existing_item field rather than inside the refusal sentence, so a caller reading only op_error's detail learns the collection and the id but not which item it met; this is forced by two assertions pinning the sentence word-for-word in tests/test_edit_plan.py (test_append_duplicate_followup_id_rejected and test_append_duplicate_ids_rejected_for_addressed_collections, outside this node's write scope) and is recorded in the manifest's follow_ons.\n",
+  "review_run_id": "r-20261002T122207110098-review-of-append-refuses-a-duplicate-id",
+  "reviewed_base_sha": "ff112f9f01e00ca5d0ea338a5b60cafb821e5e18",
+  "reviewed_head_sha": "9f727c063032cc6fe0333f999d81e1988b545bb7",
+  "reviewed_run_id": "r-20261002T112835314270-append-refuses-a-duplicate-id",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:33:38.885388+00:00",
+  "total": 89
+}

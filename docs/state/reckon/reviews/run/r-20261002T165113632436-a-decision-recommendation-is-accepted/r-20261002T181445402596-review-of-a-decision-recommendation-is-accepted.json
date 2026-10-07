@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:_edit_plan",
+    "reckon/_store.py:_apply_set",
+    "reckon/_store.py:_apply_append",
+    "reckon/roadmap.py:_build_roadmap"
+  ],
+  "completed_at": "2026-10-02T18:43:40.216Z",
+  "dispatched_at": "2026-10-02T18:15:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T165113632436-a-decision-recommendation-is-accepted/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: failure_attribution names tests/test_schema.py::test_committed_schema_matches_generated as a failure added by ccbe2b369, but neither baseline_suite.failure_ids (which lists test_well_formed_evidence_record_with_resolving_shas_is_quiet instead) nor after_suite (zero failures) records that id as added, so the field is a stale leftover from the earlier head arm and does not reconcile with the two gate logs beside it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 89690489; ccbe2b369 adds the recommendation fields, the accept op and the scope check across five modules plus the test file, and ef7b8fcbc regenerated docs/_shared/plan.schema.json for the two new string fields.",
+    "done_when": "the done-when at docs/plans/dependency-edge-semantics.html:624 names three items each with a test that fails before it; the manifest records the base arm (8 failed / 2268 passed) and the head arm (2278 passed).",
+    "goal": "the node's goal is to let a decision carry a recommendation the lead accepts and to check a section-scoped decision against the plan's sections, per docs/plans/dependency-edge-semantics.html:621; the diff adds recommended/recommended_by, an accept op, and the section-scope check.",
+    "manifest": "read; it states the base arm 8 failed / 2268 passed at 89690489, the head arm 2278 passed / EXIT=0 at ef7b8fcbc, and names the gate logs on disk.",
+    "write_paths": "read the manifest's declared paths (reckon/_store.py, reckon/mcp.py, reckon/roadmap.py, reckon/_plan_html.py, reckon/_schema.py, tests/test_decision_recommendation_and_scope.py, docs/_shared/plan.schema.json); every path in the two commits is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_decision_recommendation_and_scope.py:152 asserts the choice equals the seeded recommendation after accept, and the worker's negative-control log shows both accept cases redden when _apply_accept is mutated to write an empty choice, so the guard fails on the regression it names.",
+    "evidence": "the base arm log at /tmp/reckon-crew-scratch/r-20261002T165113632436-a-decision-recommendation-is-accepted/base-arm.log shows the seven tests/test_decision_recommendation_and_scope.py tests FAILED at 89690489 and the head arm log shows 2278 passed / EXIT=0, so each done-when item has a test that fails before it.",
+    "fit": "the change reuses reckon/_schema.py:602 decision_section_refusals and plan_section_anchors rather than adding a second judge, and its new names (_apply_accept, _normalise_decision_scope, declared_section_identities, plan_holding_decisions) state mechanism with no plan label.",
+    "goal_fidelity": "reckon/_store.py:_apply_accept turns a stored recommendation into the choice in one op and refuses an absent one, and reckon/_store.py:_normalise_decision_scope plus the roadmap finding at reckon/roadmap.py:2284 both judge a section scope, satisfying all three \u00a710 items.",
+    "scope_discipline": "every path in ccbe2b369 and ef7b8fcbc (reckon/_plan_html.py, reckon/_schema.py, reckon/_store.py, reckon/mcp.py, reckon/roadmap.py, tests/test_decision_recommendation_and_scope.py, docs/_shared/plan.schema.json) is inside the manifest's declared write paths at manifest.md:3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to let a decision carry a recommendation the lead accepts and to check a section-scoped decision against the plan's sections, per docs/plans/dependency-edge-semantics.html:621; the diff adds recommended/recommended_by, an accept op, and the section-scope check.\nVERDICT done_when: the done-when at docs/plans/dependency-edge-semantics.html:624 names three items each with a test that fails before it; the manifest records the base arm (8 failed / 2268 passed) and the head arm (2278 passed).\nVERDICT write_paths: read the manifest's declared paths (reckon/_store.py, reckon/mcp.py, reckon/roadmap.py, reckon/_plan_html.py, reckon/_schema.py, tests/test_decision_recommendation_and_scope.py, docs/_shared/plan.schema.json); every path in the two commits is inside them.\nVERDICT manifest: read; it states the base arm 8 failed / 2268 passed at 89690489, the head arm 2278 passed / EXIT=0 at ef7b8fcbc, and names the gate logs on disk.\nVERDICT diff: read both commits against base 89690489; ccbe2b369 adds the recommendation fields, the accept op and the scope check across five modules plus the test file, and ef7b8fcbc regenerated docs/_shared/plan.schema.json for the two new string fields.\nCALL_SITES: reckon/mcp.py:_edit_plan, reckon/_store.py:_apply_set, reckon/_store.py:_apply_append, reckon/roadmap.py:_build_roadmap\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:_apply_accept turns a stored recommendation into the choice in one op and refuses an absent one, and reckon/_store.py:_normalise_decision_scope plus the roadmap finding at reckon/roadmap.py:2284 both judge a section scope, satisfying all three \u00a710 items.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base arm log at /tmp/reckon-crew-scratch/r-20261002T165113632436-a-decision-recommendation-is-accepted/base-arm.log shows the seven tests/test_decision_recommendation_and_scope.py tests FAILED at 89690489 and the head arm log shows 2278 passed / EXIT=0, so each done-when item has a test that fails before it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in ccbe2b369 and ef7b8fcbc (reckon/_plan_html.py, reckon/_schema.py, reckon/_store.py, reckon/mcp.py, reckon/roadmap.py, tests/test_decision_recommendation_and_scope.py, docs/_shared/plan.schema.json) is inside the manifest's declared write paths at manifest.md:3.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_decision_recommendation_and_scope.py:152 asserts the choice equals the seeded recommendation after accept, and the worker's negative-control log shows both accept cases redden when _apply_accept is mutated to write an empty choice, so the guard fails on the regression it names.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses reckon/_schema.py:602 decision_section_refusals and plan_section_anchors rather than adding a second judge, and its new names (_apply_accept, _normalise_decision_scope, declared_section_identities, plan_holding_decisions) state mechanism with no plan label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T165113632436-a-decision-recommendation-is-accepted/manifest.md:22 follow-on: failure_attribution names tests/test_schema.py::test_committed_schema_matches_generated as a failure added by ccbe2b369, but neither baseline_suite.failure_ids (which lists test_well_formed_evidence_record_with_resolving_shas_is_quiet instead) nor after_suite (zero failures) records that id as added, so the field is a stale leftover from the earlier head arm and does not reconcile with the two gate logs beside it.\n",
+  "review_run_id": "r-20261002T181445402596-review-of-a-decision-recommendation-is-accepted",
+  "reviewed_base_sha": "89690489f0b9c717bc6f532fdce7e5a275e8faed",
+  "reviewed_head_sha": "ef7b8fcbce2566b7f7d6af2fe9fd784871a1738f",
+  "reviewed_run_id": "r-20261002T165113632436-a-decision-recommendation-is-accepted",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T18:32:57.609279+00:00",
+  "total": 96
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/node.py:398",
+    "reckon/crew/dispatch.py:11025"
+  ],
+  "completed_at": "2026-10-04T09:58:35.370Z",
+  "dispatched_at": "2026-10-04T09:52:46Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger.py",
+      "line": "1730",
+      "severity": "follow-on",
+      "text": "follow-on: tests/test_ledger.py is outside the node's declared write paths (the prompt's FENCE \u2014 SCOPE grants reckon/crew/node.py, reckon/crew/dispatch.py, tests/test_a_held_member_is_read.py, tests/test_member_guard_counts_live_processes.py, tests/test_dispatch_guard_consults_liveness.py and the evidence fragment/figure only), yet the session-capture fixture was edited to launch its first run with a launcher stub returning 0 so the pid-shape rule releases the member. The edit is necessary (the new rule holds a genuinely live pid) and is disclosed in changed_paths and the evidence fragment, but the fence's own remedy is a scope request or a follow-on, not an in-place write outside the grant; no concurrent node claims the file, so there is no collision."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "349",
+      "severity": "follow-on",
+      "text": "follow-on: _member_worker_liveness releases the member for a recorded pid that is negative, non-integer or boolean as well as zero, but only the pid 0 and pid None shapes are asserted; a corrupt or hand-written pointer carrying e.g. a string pid would release without a probe on an untested path. Low likelihood, but the shape the docstring names is broader than the shapes the tests drive."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s): reckon/crew/node.py:398 inside refuse_member_in_flight consumes the verdict, and reckon/crew/dispatch.py:11025 in _prior_session_still_held reuses the same predicate to withhold a session.",
+    "diff": "read 53eba38f2, 301686f3f, 65a44e722, 4dd94d7c8 and f6d9a470f against base 92ab0ad47789d09770612c1d57650099887ad54e; seven files, +746/-56. Production changes are reckon/crew/node.py and reckon/crew/dispatch.py; the final two commits after 4dd94d7c8 are docs/evidence only, so the gate at 4dd94d7c8 measures the reviewed head's code.",
+    "done_when": "the done_when asks the population of test files importing reckon.crew.node or reckon.crew.dispatch to add no failure against base; the reviewed run's own after_suite at 4dd94d7c8 reports 0 failed against the base arm's 9, and the head arm's signal set is the base's minus those 9.",
+    "goal": "the four clauses (hold a terminal-phase member while its worker lives, divert the session onto a fresh one with the substitution recorded, read stderr on a zero-length stream as launch-failed through the CLI observe arm, and leave a stored launch-failed phase unopened) are each delivered: node.py:398 removes the terminal-phase release, dispatch.py:11081 withholds a same-task held session and writes session_id_absent point dispatch-same-task-session-withheld at :11126, and the observe fold at :10692 reads the stderr tail via _empty_stream_launch_failure and _stored_phase_survives keeps launch-failed final.",
+    "manifest": "read; status complete, base 92ab0ad47 to head f6d9a470f, five commits, head focused gate 26 passed EXIT=0, base negative control 9 failed EXIT=1, population arms 9 failed/2495 passed vs 2 e/s/0 failed, negative_control_log present.",
+    "write_paths": "six of the seven changed files lie in the declared write paths; tests/test_ledger.py is the exception and is recorded as a finding."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_member_is_read.py:160 reddens at base against the resource the code had to write (session_withheld and session_id_absent on the dispatch record), :241 and :261 drive the zero-length stream through the function and the CLI arm, :282 proves a stored launch-failed pointer is not reopened, and :371 pins the pid-that-names-no-process release measured red separately at 301686f3f; the broader non-integer/boolean pid shape is left undriven.",
+    "evidence": "the reviewed manifest records both gate arms at the reviewed code revision: the base population arm 9 failed/2495 passed/1 error (logs/population-base.log, EXIT=1) and the head arm 2505 passed/0 failed/1 error (logs/population-head.log) on the identical 211-file list, and the focused head gate 26 passed EXIT=0 (logs/head-focused.log); the after_suite revision 4dd94d7c8 precedes the reviewed head f6d9a470f by two docs-only commits, so the gate covers the reviewed code but the manifest's after_suite revision is not the head sha.",
+    "fit": "dispatch.py:10582 composes the new _stored_phase_survives over the existing _terminal_phase_survives rather than replacing it, reuses LAUNCH_FAILED_PHASE, _LAUNCH_FAILURE_STDERR_BYTES and _wait_status_record from the launcher's reap, and node.py:349 folds the pid-shape guard into the existing three-valued _member_worker_liveness, so the change reads in the surrounding idiom and names its functions by what they do.",
+    "goal_fidelity": "all four clauses of the node goal land with tests: node.py:398 no longer consults the stored phase and releases only a proven-gone worker; dispatch.py:11081 withholds a held same-task session and reports the substitution; the observe fold reads a zero-length stream through its stderr tail and records a launch-failures entry in the reaper's shape; and _stored_phase_survives keeps both terminal and launch-failed phases final for their pointer.",
+    "scope_discipline": "six of seven changed files are declared write paths and the production edits carry nothing the four clauses do not imply, but tests/test_ledger.py lies outside the granted exclusive scope and was written in place rather than requested or reported as a follow-on."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the four clauses (hold a terminal-phase member while its worker lives, divert the session onto a fresh one with the substitution recorded, read stderr on a zero-length stream as launch-failed through the CLI observe arm, and leave a stored launch-failed phase unopened) are each delivered: node.py:398 removes the terminal-phase release, dispatch.py:11081 withholds a same-task held session and writes session_id_absent point dispatch-same-task-session-withheld at :11126, and the observe fold at :10692 reads the stderr tail via _empty_stream_launch_failure and _stored_phase_survives keeps launch-failed final.\nVERDICT done_when: the done_when asks the population of test files importing reckon.crew.node or reckon.crew.dispatch to add no failure against base; the reviewed run's own after_suite at 4dd94d7c8 reports 0 failed against the base arm's 9, and the head arm's signal set is the base's minus those 9.\nVERDICT write_paths: six of the seven changed files lie in the declared write paths; tests/test_ledger.py is the exception and is recorded as a finding.\nVERDICT manifest: read; status complete, base 92ab0ad47 to head f6d9a470f, five commits, head focused gate 26 passed EXIT=0, base negative control 9 failed EXIT=1, population arms 9 failed/2495 passed vs 0 failed, negative_control_log present.\nVERDICT diff: read 53eba38f2, 301686f3f, 65a44e722, 4dd94d7c8 and f6d9a470f against base 92ab0ad47789d09770612c1d57650099887ad54e; seven files, +746/-56. Production changes are reckon/crew/node.py and reckon/crew/dispatch.py; the final two commits after 4dd94d7c8 are docs/evidence only, so the gate at 4dd94d7c8 measures the reviewed head's code.\nCALL_SITES: reckon/crew/node.py:398, reckon/crew/dispatch.py:11025\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all four clauses of the node goal land with tests: node.py:398 no longer consults the stored phase and releases only a proven-gone worker; dispatch.py:11081 withholds a held same-task session and reports the substitution; the observe fold reads a zero-length stream through its stderr tail and records a launch-failures entry in the reaper's shape; and _stored_phase_survives keeps both terminal and launch-failed phases final for their pointer.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed manifest records both gate arms at the reviewed code revision: the base population arm 9 failed/2495 passed/1 error (logs/population-base.log, EXIT=1) and the head arm 2505 passed/0 failed/1 error (logs/population-head.log) on the identical 211-file list, and the focused head gate 26 passed EXIT=0 (logs/head-focused.log); the after_suite revision 4dd94d7c8 precedes the reviewed head f6d9a470f by two docs-only commits, so the gate covers the reviewed code but the manifest's after_suite revision is not the head sha.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: six of seven changed files are declared write paths and the production edits carry nothing the four clauses do not imply, but tests/test_ledger.py lies outside the granted exclusive scope and was written in place rather than requested or reported as a follow-on.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_held_member_is_read.py:160 reddens at base against the resource the code had to write (session_withheld and session_id_absent on the dispatch record), :241 and :261 drive the zero-length stream through the function and the CLI arm, :282 proves a stored launch-failed pointer is not reopened, and :371 pins the pid-that-names-no-process release measured red separately at 301686f3f; the broader non-integer/boolean pid shape is left undriven.\nSCORE fit: 20\nJUSTIFICATION fit: dispatch.py:10582 composes the new _stored_phase_survives over the existing _terminal_phase_survives rather than replacing it, reuses LAUNCH_FAILED_PHASE, _LAUNCH_FAILURE_STDERR_BYTES and _wait_status_record from the launcher's reap, and node.py:349 folds the pid-shape guard into the existing three-valued _member_worker_liveness, so the change reads in the surrounding idiom and names its functions by what they do.\nFINDING tests/test_ledger.py:1730 follow-on: tests/test_ledger.py is outside the node's declared write paths, yet the session-capture fixture was edited to launch its first run with a launcher stub returning 0 so the pid-shape rule releases the member; the edit is necessary and disclosed but the fence's remedy is a scope request or a follow-on, not an in-place write outside the grant.\nFINDING reckon/crew/node.py:349 follow-on: _member_worker_liveness releases the member for a pid that is negative, non-integer or boolean as well as zero, but only the pid 0 and pid None shapes are asserted; a corrupt pointer carrying a string pid would release without a probe on an untested path.\n",
+  "review_run_id": "r-20261004T095228227545-review-of-a-held-member-and-a-silent-launch-are-read",
+  "reviewed_base_sha": "92ab0ad47789d09770612c1d57650099887ad54e",
+  "reviewed_head_sha": "f6d9a470fab3567540f971682ccbbe33af173602",
+  "reviewed_run_id": "r-20261004T082832046411-a-held-member-and-a-silent-launch-are-read",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T095228227545-review-of-a-held-member-and-a-silent-launch-are-read",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T09:56:26+00:00",
+  "total": 94
+}

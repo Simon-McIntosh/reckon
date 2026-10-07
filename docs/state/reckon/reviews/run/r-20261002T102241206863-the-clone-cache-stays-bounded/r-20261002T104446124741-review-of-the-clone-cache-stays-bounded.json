@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:7312 (promotion_clone_matches -> clone_matches)",
+    "reckon/clones.py:554 (clone_matches direct call)"
+  ],
+  "completed_at": "2026-10-02T10:53:32.417Z",
+  "dispatched_at": "2026-10-02T10:45:11Z",
+  "findings": [
+    {
+      "file": "reckon/clones.py",
+      "line": "415",
+      "severity": "follow-on",
+      "text": "follow-on: the eviction cap is len(corpus_paths) taken from head_sources, so a scan whose head_sources carries only a subset of the corpus prunes the shared cache to that subset's count. Probed at the reviewed head: scanning five corpus files stored 5 entries (cap 5), then scanning one stored 1 entry (cap 1), discarding four warm fingerprints the next full scan must re-parse. promotion_clone_matches always passes the full revised_python(tip) tree so production is not reached today, but clone_matches is public and accepts any head_sources, so the latent edge silently clears the shared cache for a partial caller."
+    }
+  ],
+  "item_aggregate": 98,
+  "item_verdicts": {
+    "call_sites": "verified",
+    "diff": "verified",
+    "done_when": "verified",
+    "goal": "verified",
+    "manifest": "verified",
+    "write_paths": "verified 2 declared paths"
+  },
+  "justifications": {
+    "durability": "the tests make the guarded behaviour happen rather than observing it by default: they force more revisions than the cap admits, assert the cap is reached (== 6), assert the specific evicted key is gone, and assert warm and cold scans agree; the negative control proves the bound case can fail. Gaps: the LRU tie among entries written in one scan is broken arbitrarily (harmless because a scan's corpus entries cannot exceed the cap), and a subset head_sources silently prunes the shared cache to the subset's count, which no test covers.",
+    "evidence": "the reviewed run's own logs are armed and internally consistent: baseline_suite f262cad52 13 passed EXIT=0, after_suite c6a2f77b 17 passed EXIT=0, both completed with empty failure_ids, so added_failure_count is 0. The negative control (logs/negative-control.log) makes eviction a no-op and the bound case fails 1 failed / 3 passed EXIT=1, a failing id the head arm does not fail, so the bound assertion is non-vacuous rather than passing because nothing exercises it. I independently re-ran the after-suite command at the reviewed head and got 17 passed in 50.95s and the gate 4 passed in 0.99s, with ruff check and ruff format --check clean (--no-cache) on both changed paths.",
+    "fit": "the change follows the module's idiom (module-level Protocol, frozen dataclass providers, Mapping/Any typing, module docstrings, best-effort store under OSError, from __future__ import annotations in the test), introduces no plan or ticket identifier, and is ruff-clean. The cap is a named helper with a mechanism docstring rather than an inline literal, matching the file's style.",
+    "goal_fidelity": "the plan \u00a713 intent is that a promotion's reads are bounded by what it consumes; the cache this node bounds is the per-revision fingerprint store the prior node added, and unpruned it grew one entry per content a file ever had (the manifest cites corpus.json at 867 entries / 14.4 MB). The eviction keeps the latest scan's entries (used=now for every corpus path) and drops older revisions, and the cap derives from the corpus file count via _cap_for so it scales; the version bump discards entries the new shape would not write. Minor: the cap gives exactly one revision's headroom, so a scan whose head_sources is a subset of the corpus over-prunes (see finding).",
+    "scope_discipline": "the commit touches only the two declared paths; git status in the reviewed worktree is clean and no other file appears in git show --stat. No out-of-scope edit and no version/plan identifier leaked into source (the bumped _CLONE_CACHE_VERSION is the cache format's own version, data not provenance)."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reckon/clones.py:230 _cap_for plus :264 _evict_to_cap bound the digest-keyed corpus cache to one entry per corpus file, so a cache root shared by many revisions and worktrees no longer accumulates a fingerprint per revision; the plan \u00a713 clone-scan bound (fingerprint only the promoted diff, or read cached per-revision fingerprints) is already met by the earlier node, and this node closes the pruning defect that review recorded as a follow-on.\nVERDICT done_when: the node goal is a bounded cache; tests/test_the_clone_cache_stays_bounded.py:96 drives six distinct revisions over a six-file corpus and asserts the stored entry count is both <= clones._cap_for(6) and == 6 (reached, not vacuous), :110 asserts an earlier revision's entry (_unrelated_path(0)/_unrelated(0,0)) is actually absent, :121 asserts every entry the latest scan read survives, :131 asserts the bounded warm cache reports exactly the cold full scan's matches, and :139 asserts _cap_for scales with the corpus.\nVERDICT write_paths: the manifest declares exactly two changed paths, reckon/clones.py and tests/test_the_clone_cache_stays_bounded.py; git show --stat c6a2f77b lists only those two, so the fence and the landed set agree.\nVERDICT manifest: read; it carries the gate command and result (4 passed, EXIT=0), both arms' armed JSON with empty failure_ids, the negative-control log path and note, and the cache-format version bump as an intended evidence input; every field is populated and the base/after revisions resolve to real commits.\nVERDICT diff: read commit c6a2f77b in full: it replaces the list-valued cache entry with a {used, functions} mapping, filters malformed entries on load, bumps _CLONE_CACHE_VERSION 1->2, adds _WindowProvider Protocol typed onto _index/_cached_functions, records time.time() per touched entry, and calls _evict_to_cap(cache, _cap_for(len(corpus_paths))) before the best-effort store.\nCALL_SITES: reckon/crew/promotion.py:7312 (promotion_clone_matches -> clone_matches with the full tip tree), reckon/clones.py:554 (clone_matches direct call).\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the plan \u00a713 intent is that a promotion's reads are bounded by what it consumes; the cache this node bounds is the per-revision fingerprint store the prior node added, and unpruned it grew one entry per content a file ever had (the manifest cites corpus.json at 867 entries / 14.4 MB). The eviction keeps the latest scan's entries (used=now for every corpus path) and drops older revisions, and the cap derives from the corpus file count via _cap_for so it scales; the version bump discards entries the new shape would not write. Minor: the cap gives exactly one revision's headroom, so a scan whose head_sources is a subset of the corpus over-prunes (see finding).\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's own logs are armed and internally consistent: baseline_suite f262cad52 13 passed EXIT=0, after_suite c6a2f77b 17 passed EXIT=0, both completed with empty failure_ids, so added_failure_count is 0. The negative control (logs/negative-control.log) makes eviction a no-op and the bound case fails 1 failed / 3 passed EXIT=1, a failing id the head arm does not fail, so the bound assertion is non-vacuous rather than passing because nothing exercises it. I independently re-ran the after-suite command at the reviewed head and got 17 passed in 50.95s and the gate 4 passed in 0.99s, with ruff check and ruff format --check clean (--no-cache) on both changed paths.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only the two declared paths; git status in the reviewed worktree is clean and no other file appears in git show --stat. No out-of-scope edit and no version/plan identifier leaked into source (the bumped _CLONE_CACHE_VERSION is the cache format's own version, data not provenance).\nSCORE durability: 18\nJUSTIFICATION durability: the tests make the guarded behaviour happen rather than observing it by default: they force more revisions than the cap admits, assert the cap is reached (== 6), assert the specific evicted key is gone, and assert warm and cold scans agree; the negative control proves the bound case can fail. Gaps: the LRU tie among entries written in one scan is broken arbitrarily (harmless because a scan's corpus entries cannot exceed the cap), and a subset head_sources silently prunes the shared cache to the subset's count, which no test covers.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's idiom (module-level Protocol, frozen dataclass providers, Mapping/Any typing, module docstrings, best-effort store under OSError, from __future__ import annotations in the test), introduces no plan or ticket identifier, and is ruff-clean. The cap is a named helper with a mechanism docstring rather than an inline literal, matching the file's style.\nFINDING reckon/clones.py:415 follow-on: follow-on: the eviction cap is len(corpus_paths) taken from head_sources, so a scan whose head_sources carries only a subset of the corpus prunes the shared cache to that subset's count. Probed at the reviewed head: scanning five corpus files stored 5 entries (cap 5), then scanning one stored 1 entry (cap 1), discarding four warm fingerprints the next full scan must re-parse. promotion_clone_matches always passes the full revised_python(tip) tree so production is not reached today, but clone_matches is public and accepts any head_sources, so the latent edge silently clears the shared cache for a partial caller.\n",
+  "review_run_id": "r-20261002T104446124741-review-of-the-clone-cache-stays-bounded",
+  "reviewed_base_sha": "f262cad52c28e950c3fb7b8aa991bc550d81a573",
+  "reviewed_head_sha": "c6a2f77b2d92fe5fcb4f40a1988791048f9a3ad9",
+  "reviewed_run_id": "r-20261002T102241206863-the-clone-cache-stays-bounded",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T10:52:23.995132+00:00",
+  "total": 95
+}

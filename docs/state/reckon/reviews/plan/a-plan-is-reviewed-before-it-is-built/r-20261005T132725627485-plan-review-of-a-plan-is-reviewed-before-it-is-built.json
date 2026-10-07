@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:32:30.283Z",
+  "dispatched_at": "2026-10-05T13:27:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "reuse_search-1",
+      "reason": "",
+      "text": "\u2014 the plan's prior-art sweep names seven heading walks (the `mcp_views._authored_section_headings` soup walk; the `_store.landed_section_ids` regex walk; the `_store` section-record attachment soup walk; the two `_store._require_new_section_contracts` before/after soup walks; the two `doccheck` soup walks that collect heading ids), and I confirmed that enumeration is exactly accurate for those seven sites \u2014 but the whole-package claim \"The package today walks a plan's headings in seven places\" is false.",
+      "type": "reuse_search",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/_plan_html.py:44",
+      "id": "duplicate_owner-1",
+      "reason": "",
+      "text": "\u2014 \u00a716 says \"one enumerator in `reckon/_store.py`\" and claims section enumeration and extent \"move to one home rather than gaining a third\", but `reckon/_plan_html.py` already owns raw-text plan-span location: `_StructuredSectionSpanParser` yields per-heading identity and offsets in the same raw-text pass, and is already consumed for identity resolution (`reckon/_plan_html.py:890`) and for authored-text boundary protection (`reckon/_store.py:1644`). Building the enumerator on the `_H2_OPEN_RE` regex pair in `_store.py` adds a second raw-text scanner for the same question rather than extending the parser that already answers it, so after the change the package still carries two regex/raw-text span scanners and the \"one home\" claim holds only for the soup walks.",
+      "type": "duplicate_owner",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "b2ed3fbeda8aed9fe5379188a5c21fbb50e31ab96c90b8636bfdc50f51745772",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T132725627485-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "47ad229b3262617ae990ae947304e22db8629cc3",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change extends one owner (`plan_fingerprint` in `reckon/crew/plan_review.py`) to yield per-section digests behind the same name plus one coverage predicate, so one identity and one interface hide the section partitioning, the three identity forms and the landed-card exclusion.",
+    "duplicate_owner": "a finding \u2014 \u00a716 places a new raw-text section/heading enumerator in `reckon/_store.py` without citing `reckon/_plan_html.py`, whose `_StructuredSectionSpanParser` already scans raw text for per-heading identity and offsets and is already the owner of raw-text plan-span location.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition (the coverage predicate) and states in its own text that nothing is retired because the identity digest and the prose walk keep their names and gain a mode, and that the refusal reuses the existing plan-review-missing family rather than adding one.",
+    "reuse_search": "a finding \u2014 the prior-art sweep enumerates seven heading walks and consolidates them, but omits `reckon/_plan_html.py`'s `_StructuredSectionSpanParser`, a raw-text h2/span scanner already in the package whose output is the same kind of (identity, offset) pair the new enumerator is built to yield.",
+    "thin_wrapper": "pass \u2014 the proposed enumerator replaces six callers of the existing walks rather than layering over them, and \u00a716 states why the existing `_section_heading`/`_section_body_end` span pair is reused (the same scan the collapse derives its replaced span from)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.929208+00:00"
+}

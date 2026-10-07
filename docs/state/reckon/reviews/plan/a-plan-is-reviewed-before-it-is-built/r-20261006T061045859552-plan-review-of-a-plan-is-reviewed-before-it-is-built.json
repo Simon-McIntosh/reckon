@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:17:20.084Z",
+  "dispatched_at": "2026-10-06T06:11:05Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:2582",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name that one step and hoist it so the gate and the answer verb call the same store, or the fix lives in one copy while the defect survives in the other.",
+      "text": "\u00a723 says crew review-plan --answer \"stores an unstored delivery for the plan before answering\" but does not name routing._store_delivered_plan_review, the one step that already does exactly that (defined at routing.py:2582, its only caller the gate at routing.py:2656); a second copy of the store loop would reproduce the very silent-skip defect \u00a723 exists to close",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:798",
+      "id": "duplicate_owner-2",
+      "reason": "the plan should extend write_review_sidecar to carry store_error (or state why it cannot), so the sidecar's layout and keying keep one owner rather than two.",
+      "text": "\u00a723 records the refused store's reason \"on the delivery's sidecar as store_error\", but plan_review.write_review_sidecar (plan_review.py:798, sole writer of plan-review.json at plan_review.py:829) is the one owner of that file and its payload is fixed, so \u00a723 either forks a second sidecar writer or mutates a shared artifact outside its owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b041d27e9b3162fde5b8a177c7725ed32ab750d3d1ce03b69aec84218772c3e6",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 171,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T061045859552-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "bc6897b1efbeeee423d174fe4babd6faeea104ee",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716's second node replaces the interim _prose_slices slicer with one section_prose reader on reckon/_plan_html.py that hides the single record parse, the span subtraction, the landed-card mode and the tag strip behind one function taking one keyword, and it retires the two-parse path (plan_headings plus structured_section_spans) rather than layering over it.",
+    "duplicate_owner": "a finding \u2014 \u00a723 records the refused store's reason by writing the delivery's sidecar (reckon/crew/plan_review.py:798 is the one owner of plan-review.json) and adds a second store-of-unstored-deliveries step beside routing._store_delivered_plan_review (reckon/crew/routing.py:2582), naming neither owner to extend.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; only \u00a716 adds to a family and its own text accounts for it (it adds section_prose and retires the interim public strip_tags, net zero, and adds no refusal family), while \u00a721, \u00a722 and \u00a723 each state in their own text that no public definition is added and why.",
+    "reuse_search": "pass \u2014 the plan censuses the codebase with instruments (a 14-line soup-extraction grep, a 9-site section-spelling census) and cites the owner of each mechanism it extends: section_record_id/structured_section_spans and _TAG_RE/_PROSE_SKIP_TAGS on reckon/_plan_html.py, roadmap.implementable_sections, review_report_directory and _section_digests on reckon/crew/plan_review.py; each cited name resolves in the tree.",
+    "thin_wrapper": "pass \u2014 no open section adds a wrapper module; \u00a716 retires the interim public strip_tags and the _prose_slices delegator rather than leaving a pass-through beside the reader, and \u00a721/\u00a722/\u00a723 extend existing steps (store step, coverage predicate, sidecar) rather than wrapping them."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "a85d3d5b6115911cebee511fc8dcb878e34525faa6ed760e6c6d5e252a745c18",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "56b8e67086fbbc0952fdc88f54d0e5c96b0c7c4182a847824df210a1ed9be313",
+    "s22": "4e03af8ad5d6cd2a4a07bd70ff52cd50a2eb9ff80e65f4d4b5e6f1b9171fdf58",
+    "s23": "6a3f188c551badb342d6a19af417492aada053086591ae24449f1c9325aa11eb",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:22:13.030924+00:00"
+}

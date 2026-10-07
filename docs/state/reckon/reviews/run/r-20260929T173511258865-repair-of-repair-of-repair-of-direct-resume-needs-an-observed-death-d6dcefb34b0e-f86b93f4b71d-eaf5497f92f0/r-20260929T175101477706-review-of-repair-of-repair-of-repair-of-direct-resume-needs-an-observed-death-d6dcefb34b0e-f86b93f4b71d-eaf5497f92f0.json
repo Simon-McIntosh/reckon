@@ -1,0 +1,109 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "added_failures_source": {
+    "fields_named_instead": [
+      "tests",
+      "test_logs",
+      "negative_control_log"
+    ],
+    "measured_instead": "the reviewed run's own head gate log (logs/direct-resume-head.log) ends `9 passed in 11.19s` with no FAILED line, and the two population arms the same manifest's follow_ons cites (r-20260929T163935832766 population-base.log 2 failed 44 passed and population-after.log 2 failed 46 passed) carry the same two failing node ids at base and head, so no failure is attributable to the change this run landed",
+    "note": "the reviewed manifest names no baseline_suite or after_suite field, so both gate logs resolve to none and the count is unmeasured rather than zero",
+    "reviewed_manifest": {
+      "bytes": 7798,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/manifest.md",
+      "sha256": "946ab412958dfc4c8997f640e45181c430a55bf8a5f7242877039ef28dffe7a3"
+    },
+    "suite_fields_named": []
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:4772",
+    "reckon/cli.py:4870"
+  ],
+  "completed_at": "2026-09-29T18:46:57.603Z",
+  "control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/logs/negative-control.log",
+  "control_log_facts": {
+    "declared_string": "revert each answering commit in turn and confirm the check the finding names fails without it",
+    "declared_string_present_verbatim": true,
+    "failing_test_count": 2,
+    "failing_tests": [
+      "tests/test_direct_resume_needs_an_observed_death.py::test_a_lane_change_preview_reports_the_refusal_a_real_call_raises",
+      "tests/test_direct_resume_needs_an_observed_death.py::test_a_lane_change_preview_of_a_live_harness_task_is_refused"
+    ],
+    "isolation": "the mutation moves both refusals, so the red reading shows the ordering is load-bearing but not that the in-harness refusal alone is what the new case holds",
+    "mutation": "the in-harness refusal and the observed-end refusal are moved back below change_lane's preview return in a scratch tree at /tmp/rcq6-neg, with the node's head test file in place",
+    "result": "2 failed, 7 passed in 11.27s, EXIT=1"
+  },
+  "dispatched_at": "2026-09-29T17:51:23Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/logs/direct-resume-head.log",
+      "line": "1",
+      "text": "names revision=dad8fb2571371e39673fcd2c0f39be9a2ec45993, the node's own base, while the tree on the same line and the 9-passed reading below it are the head worktree's; a reader taking the revision from that line attributes the run to a revision whose copy of the test file holds 8 cases, and this is the same defect the node repaired in the parent's population-after.log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/logs/negative-control.log",
+      "line": "2",
+      "text": "moves the in-harness refusal and the observed-end refusal back below the preview return together, so the red reading also fails the pre-existing case test_a_lane_change_preview_reports_the_refusal_a_real_call_raises and therefore does not show the new case alone holding the in-harness ordering."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/manifest.md",
+      "line": "9",
+      "text": "claims \"(was 8 passed at base)\" while test_logs names no base-arm log, so the base figure is claimed rather than recorded and cannot be checked from the run's own artefacts."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/manifest.md",
+      "line": "3",
+      "text": "records orientation_write_paths as four paths where the node's write_paths are the twenty-four fenced ones, so the pointer's orientation check (reckon/crew/dispatch.py:7138 _apply_orientation_check, an exact sorted-list compare) reads write_paths mismatched and sets the run's phase to blocked."
+    }
+  ],
+  "findings_count": 4,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit b95d4cc4a against base dad8fb257: 34 added lines adding HARNESS_RUN and test_a_lane_change_preview_of_a_live_harness_task_is_refused, plus 16 added lines of landing fragment, and nothing else.",
+    "done_when": "the gate asserts that the manifest names every finding by id with none left unanswered, and all four ids carry an `acted <id>` line whose artefact I read (the two corrected run-directory logs, the two ruff readings, and the red control log).",
+    "goal": "the node's goal is to answer the four findings (f8b8e35fa84, fa21e2b286c, f0926f01a4d, f5a4a99b892) left against run r-20260929T163935832766-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d, and all four are answered: the manifest's evidence_inputs names each by id with `acted`, and commit b95d4cc4a adds the case the fourth names.",
+    "manifest": "read the 7798-byte manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/manifest.md (sha256 946ab412958dfc4c8997f640e45181c430a55bf8a5f7242877039ef28dffe7a3): status complete, commit b95d4cc4a, changed_paths two files, and a tests line recording 9 passed at head against 2 failed 7 passed under the control.",
+    "write_paths": "read the node's fence and its manifest's orientation_write_paths; both paths in commit b95d4cc4a (tests/test_direct_resume_needs_an_observed_death.py and the node's own evidence fragment) are inside the fence, as are the two run-directory logs it edited."
+  },
+  "justifications": {
+    "durability": "moving the two refusals back below `if not launch:` at reckon/crew/dispatch.py:8277 reddens tests/test_direct_resume_needs_an_observed_death.py:413 with DID NOT RAISE CrewError, and its second assertion quotes the refusal's own wording rather than a value the test supplied.",
+    "evidence": "the only record of the 9-passed gate is logs/direct-resume-head.log, whose line 1 names base dad8fb257 beside the head tree, the manifest's base reading has no log (manifest.md:9), and its orientation_write_paths line does not match the node's write_paths (manifest.md:3).",
+    "fit": "the new case at tests/test_direct_resume_needs_an_observed_death.py:413 reuses the module's _stub_destination, _lane_pointer and _write_json helpers and its name states the behaviour, with no plan or ticket label anywhere in the diff.",
+    "goal_fidelity": "the four artefacts the findings name are all changed \u2014 population-after.log line 1 now names head eaf5497f92f0, lint-figures.log carries the two revisions and the dispatch.py readings, and the new case at tests/test_direct_resume_needs_an_observed_death.py:413 holds the in-harness refusal.",
+    "scope_discipline": "both files in b95d4cc4a are inside the fenced paths, the diff carries nothing the goal does not imply, and the fragment is the landing record the node's brief requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to answer the four findings (f8b8e35fa84, fa21e2b286c, f0926f01a4d, f5a4a99b892) left against run r-20260929T163935832766-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d, and all four are answered: the manifest's evidence_inputs names each by id with `acted`, and commit b95d4cc4a adds the case the fourth names.\nVERDICT done_when: the gate asserts that the manifest names every finding by id with none left unanswered, and all four ids carry an `acted <id>` line whose artefact I read (the two corrected run-directory logs, the two ruff readings, and the red control log).\nVERDICT write_paths: read the node's fence and its manifest's orientation_write_paths; both paths in commit b95d4cc4a (tests/test_direct_resume_needs_an_observed_death.py and the node's own evidence fragment) are inside the fence, as are the two run-directory logs it edited.\nVERDICT manifest: read the 7798-byte manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/manifest.md (sha256 946ab412958dfc4c8997f640e45181c430a55bf8a5f7242877039ef28dffe7a3): status complete, commit b95d4cc4a, changed_paths two files, and a tests line recording 9 passed at head against 2 failed 7 passed under the control.\nVERDICT diff: read commit b95d4cc4a against base dad8fb257: 34 added lines adding HARNESS_RUN and test_a_lane_change_preview_of_a_live_harness_task_is_refused, plus 16 added lines of landing fragment, and nothing else.\nCALL_SITES: reckon/cli.py:4772, reckon/cli.py:4870\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the four artefacts the findings name are all changed \u2014 population-after.log line 1 now names head eaf5497f92f0, lint-figures.log carries the two revisions and the dispatch.py readings, and the new case at tests/test_direct_resume_needs_an_observed_death.py:413 holds the in-harness refusal.\nSCORE evidence: 14\nJUSTIFICATION evidence: the only record of the 9-passed gate is logs/direct-resume-head.log, whose line 1 names base dad8fb257 beside the head tree, the manifest's base reading has no log (manifest.md:9), and its orientation_write_paths line does not match the node's write_paths (manifest.md:3).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both files in b95d4cc4a are inside the fenced paths, the diff carries nothing the goal does not imply, and the fragment is the landing record the node's brief requires.\nSCORE durability: 18\nJUSTIFICATION durability: moving the two refusals back below `if not launch:` at reckon/crew/dispatch.py:8277 reddens tests/test_direct_resume_needs_an_observed_death.py:413 with DID NOT RAISE CrewError, and its second assertion quotes the refusal's own wording rather than a value the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the new case at tests/test_direct_resume_needs_an_observed_death.py:413 reuses the module's _stub_destination, _lane_pointer and _write_json helpers and its name states the behaviour, with no plan or ticket label anywhere in the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/logs/direct-resume-head.log:1 names revision=dad8fb2571371e39673fcd2c0f39be9a2ec45993, the node's own base, while the tree on the same line and the 9-passed reading below it are the head worktree's; a reader taking the revision from that line attributes the run to a revision whose copy of the test file holds 8 cases, and this is the same defect the node repaired in the parent's population-after.log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/logs/negative-control.log:2 moves the in-harness refusal and the observed-end refusal back below the preview return together, so the red reading also fails the pre-existing case test_a_lane_change_preview_reports_the_refusal_a_real_call_raises and therefore does not show the new case alone holding the in-harness ordering.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/manifest.md:9 claims \"(was 8 passed at base)\" while test_logs names no base-arm log, so the base figure is claimed rather than recorded and cannot be checked from the run's own artefacts.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/manifest.md:3 records orientation_write_paths as four paths where the node's write_paths are the twenty-four fenced ones, so the pointer's orientation check (reckon/crew/dispatch.py:7138 _apply_orientation_check, an exact sorted-list compare) reads write_paths mismatched and sets the run's phase to blocked.\n",
+  "review_run_id": "r-20260929T175101477706-review-of-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0",
+  "reviewed_base_sha": "dad8fb2571371e39673fcd2c0f39be9a2ec45993",
+  "reviewed_commits": [
+    "b95d4cc4a"
+  ],
+  "reviewed_head_sha": "b95d4cc4abf35e6f71b8f7e12eea663624532673",
+  "reviewed_manifest": {
+    "bytes": 7798,
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0/manifest.md",
+    "sha256": "946ab412958dfc4c8997f640e45181c430a55bf8a5f7242877039ef28dffe7a3"
+  },
+  "reviewed_run_id": "r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0",
+  "reviewer_node": "review-of-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0",
+  "reviewer_run_id": "r-20260929T175101477706-review-of-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T18:25:28.424412+00:00",
+  "total": 89
+}

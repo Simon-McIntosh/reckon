@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms, which its manifest names under baseline_suite/after_suite: baseline_suite (revision bd39abcff198175d3bb36ded90c4501d2a1aabe1, log_path .../gate/base.log) reports completed true with failure_count 0 and failure_ids [], and after_suite (revision 21f99fdee85a0b4c301d8297b151655b8ebecdc7, log_path .../gate/head2.log) reports completed true with failure_count 0 and failure_ids []; the two arms share no failing id, so nothing was added. The arms cover different test sets (base 8 existing picker files, 101 passed; head those plus the new test_picker_fresh_process_pick.py, 107 passed), which is the intended delta; I reproduced the head count (107 passed, EXIT=0) myself. base.log's last line is '101 passed' without an EXIT line, so its exit status reads from the pass summary rather than a recorded code.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T044618264909-picker-fresh-process-pick/gate/head2.log",
+  "base_log_revision": "bd39abcff198175d3bb36ded90c4501d2a1aabe1",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T044618264909-picker-fresh-process-pick/gate/base.log",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/routing.py:2797 routes the instruction-chain context manifest through agent_context.cached_context_manifest",
+    "reckon/crew/routing.py:3189 routes shared_verdict_inputs through capabilities.cached_pick_input"
+  ],
+  "completed_at": "2026-10-03T05:35:11.866Z",
+  "dispatched_at": "2026-10-03T05:21:23Z",
+  "findings": [
+    {
+      "file": "reckon/agent_context.py",
+      "line": "146",
+      "severity": "follow-on",
+      "text": "follow-on: the context-manifest cache stamps the paths _manifest_file_paths names and omits agent_root/config.toml, which _read_agent_config reads for agent=codex and which drives budget.limit_bytes, budget.source and the fallback instruction filenames; changing only config.toml returns a stale manifest (measured: cached limit_bytes 100 vs uncached 999999), so for codex-dialect dispatches the instruction-chain context estimate can disagree with an uncached build."
+    },
+    {
+      "file": "tests/test_picker_fresh_process_pick.py",
+      "line": "81",
+      "severity": "follow-on",
+      "text": "follow-on: test_cached_selection_inputs_match_the_uncached_build stubs the two real inputs (load_capabilities, project_cache_status), so it demonstrates the wrapper is value-transparent rather than that the real verdict inputs or context manifest equal an uncached build; a real-input equivalence test (or a stamp-completeness test) would close the gap the brief's equivalence clause targets."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/picker-fresh-process-pick.html",
+      "line": "43",
+      "severity": "follow-on",
+      "text": "follow-on: the delivered fragment reports the intermediate arm (106 passed at a63d72b8e, written as revision 06449805c plus this change) and its base/head gate logs carry no EXIT line, so its evidence statement lags the delivered head (107 passed, EXIT=0 at 21f99fdee) that the manifest records."
+    }
+  ],
+  "head_log_revision": "21f99fdee85a0b4c301d8297b151655b8ebecdc7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read a63d72b8e and 21f99fdee against 06449805c: the cache facade in capabilities.py, its two call sites in routing.py and the cached manifest in agent_context.py, plus the test file and fragment; the second commit reorders the cache-root resolution and pins it.",
+    "done_when": "the done-when's numeric targets (warm <=2.5 s, cold <5 s) are met on the bounded pick, a phase profile with figures exists, and an equivalence test is present; verified by re-running the head arm (107 passed, EXIT=0) and the new-file arm (6 passed, EXIT=0) at 21f99fdee.",
+    "goal": "the goal is that a fresh-process dispatch pick finishes inside its 5 s bound; the node treats the pick as the bounded dispatch_picker_selection step, measured at 916.3 ms warm / 1496.8 ms cold, inside the bound, with the residual full-path cost (~7.5-9 s, dispatch-scope ledger rows and live budget snapshot) disclosed and fenced to files a concurrent node owns.",
+    "manifest": "read; status complete, commits ending 21f99fdee, changed_paths match, after_suite 0 failed at 21f99fdee, baseline_suite 0 failed at bd39abcff, negative control 2 failed/3 passed, landing figures match the gate logs and my re-runs.",
+    "write_paths": "the grant names routing.py, capabilities.py, agent_context.py, picker/snapshot.py, picker/__init__.py, the test file, the fragment and a figures dir; the commits touch six of them and nothing else, leaving snapshot.py and picker/__init__.py untouched."
+  },
+  "justifications": {
+    "durability": "negative control reds the skip and equivalence tests; corrupt, version-mismatched and stamp-moved entries recompute; atomic non-fatal write; resolution-fix test pins RECKON_HOME over XDG; cut for a confirmed staleness gap where agent config.toml is an unstamped input to the cached context manifest (limit_bytes 100 cached vs 999999 uncached).",
+    "evidence": "reproduced head arm 107 passed EXIT=0 and new-file arm 6 passed EXIT=0 at 21f99fdee, and the declared mutation reds the two named cache tests (2 failed, EXIT=1); cut for the equivalence test stubbing the real inputs, a stale evidence fragment carrying the intermediate 106-passed arm, and a base.log with no EXIT line.",
+    "fit": "reuses write_json_atomically and a lazy capabilities import to avoid a cycle, with behaviour-named public API; cut because pick_input_cache_root duplicates and can diverge from the _config_home()/cache resolution, and the evidence table conflates pre-pick and bounded phases.",
+    "goal_fidelity": "bounded pick measured 916.3 ms warm (<=2.5 s) and 1496.8 ms cold (<5 s) by a driver building the dispatch-scope inputs as dispatch does then wrapping dispatch_picker_selection; the cache hits the two named inputs (candidate snapshot 863.7->79.3 ms, shared verdict inputs 4050.5->14.4 ms); cut for a result table framed for the bounded call that also lists pre-pick reads, and because the base pick already fit its bound (1672.7 ms) so this is a further cut rather than a removed timeout on the branch.",
+    "scope_discipline": "all eight changed paths lie inside the grant; dispatch.py and budget.py untouched and passed as a follow-on; plan/index/peers untouched; worktree clean; ruff with the repo config adds no findings (14 base -> 12 head over the three source files)."
+  },
+  "node": "review-of-picker-fresh-process-pick",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a fresh-process dispatch pick finishes inside its 5 s bound, and its own definition of the pick is the bounded step dispatch_picker_selection. In the run's own driver (profile_pick.py) that step is 916.3 ms warm median and 1496.8 ms cold on 98dci4-clu-2018, both inside the 5 s bound and the warm figure under the 2.5 s target, and the cache targets exactly the inputs the brief names: the instruction-chain context estimate (routing._standing_context_input -> agent_context.cached_context_manifest) and the shared verdict inputs (routing.shared_verdict_inputs). The full fresh-process path still reads ~7.5-9 s warm, dominated by the dispatch-scope ledger rows and the live budget snapshot, which the fragment discloses and fences to the files a concurrent node owns (reckon/crew/dispatch.py, reckon/budget.py).\nVERDICT done_when: the done-when's two numeric targets are met on the bounded pick (warm 916.3 ms <= 2.5 s, cold 1496.8 ms < 5 s), the phase profile exists with figures from tool output only, and an equivalence test is present; I re-ran the reviewed new-file arm (6 passed, EXIT=0) and the full head arm (107 passed, EXIT=0) at 21f99fdee.\nVERDICT write_paths: the grant is routing.py, capabilities.py, agent_context.py, picker/snapshot.py, picker/__init__.py, tests/test_picker_fresh_process_pick.py, the evidence fragment and a figures dir; git show --name-only lists 6 paths across a63d72b8e and 2 in 21f99fdee, every one inside the grant, with print snapshot.py and picker/__init__.py correctly left untouched.\nVERDICT manifest: read against the tree; status complete, commits oldest-first ending 21f99fdee, changed_paths match the commits, after_suite 0 failed at 21f99fdee and baseline_suite 0 failed at bd39abcff, negative control 2 failed/3 passed; its landing figures match both gate logs and my independent re-runs.\nVERDICT diff: read a63d72b8e and 21f99fdee against the base; a63d adds the per-input cache (cached_pick_input, cached_pick_input_stamped, file_stamp, pick_input_cache_root) in capabilities.py, routes routing._standing_context_input and routing.shared_verdict_inputs through it, adds agent_context.cached_context_manifest, and adds the test file and fragment; 21f99fdee reorders pick_input_cache_root to RECKON_HOME before XDG_CACHE_HOME and pins it with a test.\nVERDICT call_sites: verified 2 production call site(s)\nCALL_SITES: reckon/crew/routing.py:2797 routes the instruction-chain manifest through agent_context.cached_context_manifest; reckon/crew/routing.py:3189 routes shared_verdict_inputs through capabilities.cached_pick_input\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the bounded pick is measured at 916.3 ms warm (<= 2.5 s) and 1496.8 ms cold (< 5 s) with a driver that builds the three dispatch-scope inputs as dispatch builds them and then wraps dispatch_picker_selection exactly as dispatch reaches it, and the two caches hit precisely the two inputs the brief nominally targets (candidate snapshot 863.7 -> 79.3 ms; shared verdict inputs 4050.5 -> 14.4 ms); deducted because the result table is titled for phases \"at the bounded call\" while it also lists the pre-pick input reads (budget snapshot, ledger rows), so the 5 s claim reads as enclosing phases it does not, and because the bounded step was already 1672.7 ms at base, so the change is a further cut to a pick that already fit its bound rather than the removal of an observed timeout on this branch.\nSCORE evidence: 16\nJUSTIFICATION evidence: I reproduced the head arm (107 passed, EXIT=0) and the new-file arm (6 passed, EXIT=0) at 21f99fdee and re-ran the declared mutation, seeing the two named cache tests fail with EXIT=1; deducted because the equivalence test stubs the two real inputs (load_capabilities, project_cache_status) so it proves the cache wrapper is value-transparent on a synthetic fixture rather than that the real ledger and manifest caching equal an uncached build, because the delivered fragment still reports the intermediate arm (106 passed at a63d72b8e) rather than the delivered head (107 at 21f99fdee), and because base.log carries no EXIT line so its exit status is inferred from \"101 passed\" rather than recorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all eight changed paths across the two commits lie inside the declared grant; reckon/crew/dispatch.py and reckon/budget.py, where the remaining dominant costs live, are untouched and correctly passed as a follow-on; reck/picker/snapshot.py and picker/__init__.py are untouched; the plan, project index and peer paths are untouched and the reviewed worktree is clean at head; ruff with the repo's own config reports 14 findings at base over the three source files and 12 at head (routing.py 10 -> 9, capabilities.py 2 -> 1, agent_context.py 2 -> 2), so the commit adds none and removes two.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control reds the second-process skip test and the equivalence test under the declared mutation (I reproduced 2 failed, 4 passed, EXIT=1), a corrupt entry, a version mismatch and a moved stamp all recompute, the cache write is atomic and non-fatal, and the resolution-fix test pins RECKON_HOME ahead of XDG_CACHE_HOME; deducted for a confirmed staleness gap: the codex agent config.toml is read by build_context_manifest (via _read_agent_config, feeding budget.limit_bytes and fallback filenames) but is not among the paths _manifest_file_paths stamps nor the request key, so changing only config.toml returns a stale cached manifest (I measured limit_bytes 100 against an uncached 999999), which the brief's \"no pick may come out different from an uncached pick\" forbids.\nSCORE fit: 17\nJUSTIFICATION fit: the cache reuses the module's own idioms \u2014 write_json_atomically, a lazy import of capabilities inside agent_context to avoid a cycle, a public API named by behaviour, and JSON-safe stamp keys \u2014 and the resolution fix keeps the change minimal; deducted because pick_input_cache_root introduces a second cache-root resolution that overlaps _config_home()/cache (capabilities_path) and diverges from it whenever RECKON_HOME is unset (pick cache under ~/.cache/reckon, capabilities under ~/.config/reckon/cache), and because the evidence table's framing conflates pre-pick reads with the bounded call.\nFINDING follow-on reckon/agent_context.py:146 the context-manifest cache is keyed on the files _manifest_file_paths names, which omits the codex agent config agent_root/config.toml that _read_agent_config reads for agent=codex; a change confined to that file leaves the cached manifest in place though budget.limit_bytes, budget.source and the fallback instruction filenames derive from it (measured stale: limit_bytes 100 cached vs 999999 uncached).\nFINDING follow-on tests/test_picker_fresh_process_pick.py:81 the equivalence test stubs load_capabilities and project_cache_status, so it proves the cache wrapper preserves a synthetic dict, not that the real shared_verdict_inputs or context manifest equals an uncached build; the brief's requirement to compare the cached and uncached selection inputs on the same fixture is met only in the weakened form.\n",
+  "review_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T052057690954-review-of-picker-fresh-process-pick/gate/review-head-newfile.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T052057690954-review-of-picker-fresh-process-pick/gate/review-head-full.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T052057690954-review-of-picker-fresh-process-pick/gate/review-negative-control.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T052057690954-review-of-picker-fresh-process-pick/gate/review-config-stamp-probe.log"
+  ],
+  "review_run_id": "r-20261003T052057690954-review-of-picker-fresh-process-pick",
+  "reviewed_base_sha": "06449805cf535c33f37f1a5688232d8429f851ea",
+  "reviewed_head_sha": "21f99fdee85a0b4c301d8297b151655b8ebecdc7",
+  "reviewed_run_id": "r-20261003T044618264909-picker-fresh-process-pick",
+  "reviewer_run_id": "r-20261003T052057690954-review-of-picker-fresh-process-pick",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T05:35:01.729472+00:00",
+  "total": 86
+}

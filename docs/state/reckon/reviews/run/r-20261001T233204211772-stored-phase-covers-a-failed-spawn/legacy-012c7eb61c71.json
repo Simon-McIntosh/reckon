@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "grep of the reviewed manifest's baseline_suite and after_suite logs found no FAILED/ERROR node ids on either side; the review.added_failures_from_gate_logs parser returned (0, []) with its positive control returning (1, ['tests/y.py::u'])",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2690 (_supervisor_main -> _publish_stored_phase)"
+  ],
+  "completed_at": "2026-10-02T00:12:59.375Z",
+  "dispatched_at": "2026-10-01T23:32:27Z",
+  "findings": [
+    {
+      "file": "tests/test_stored_phase_advances.py",
+      "line": "245",
+      "severity": "follow-on",
+      "text": "follow-on: this test drives the real _run_supervisor, which installs process-wide SIGTERM/SIGHUP handlers through _record_stop_before_spawn (reckon/crew/dispatch.py:8371), and unlike the pre-existing test at :206-214 it never restores them, so the handlers stay replaced for the rest of the pytest process."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit 8b9dd16df against base c8087d0bc; three files, all inside the declared scope, no unrelated change.",
+    "done_when": "the done-when names three new cases in tests/test_stored_phase_advances.py plus a logged negative control; all three exist and the control is logged.",
+    "goal": "the node goal is that a launch which fails to spawn leaves its stored phase at launch-failed with the writer's guards asserted; reckon/crew/dispatch.py:8410 and :8228 publish LAUNCH_FAILED_PHASE on both branches that end a launch before a worker exists.",
+    "manifest": "read; it records head arm 15 passed EXIT=0, base arm 11 passed EXIT=0 and negative control 1 failed/4 passed EXIT=1, naming all three logs.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the plan evidence fragment; the diff touches exactly those."
+  },
+  "justifications": {
+    "durability": "tests/test_stored_phase_advances.py:246 fails if the spawn-failure branch stops publishing (shown by the negative control) and :271 fails if the abandoned-branch stops publishing.",
+    "evidence": "logs/head-arm.txt and logs/base-arm.txt record 15 passed and 11 passed at the revisions they name, and logs/negative-control.txt shows the spawn-failure case failing (EXIT=1) with the publish removed.",
+    "fit": "the branches compose the existing _supervisor_exit_record and _publish_stored_phase idioms at reckon/crew/dispatch.py:8410, and no symbol or comment carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:8410 and :8228 route both pre-spawn-end paths through _publish_stored_phase, whose _delivered_phase at :8304 resolves ended_during launch to LAUNCH_FAILED_PHASE.",
+    "scope_discipline": "the diff touches only reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/stored-phase-covers-a-failed-spawn.html."
+  },
+  "project": "reckon",
+  "raw_text": "Review of run r-20261001T233204211772-stored-phase-covers-a-failed-spawn (node stored-phase-covers-a-failed-spawn)...\nVERDICT goal: the node goal is that a launch which fails to spawn leaves its stored phase at launch-failed with the writer's guards asserted; reckon/crew/dispatch.py:8410 and :8228 publish LAUNCH_FAILED_PHASE on both branches that end a launch before a worker exists.\nVERDICT done_when: the done-when names three new cases in tests/test_stored_phase_advances.py plus a logged negative control; all three exist and the control is logged.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the plan evidence fragment; the diff touches exactly those.\nVERDICT manifest: read; it records head arm 15 passed EXIT=0, base arm 11 passed EXIT=0 and negative control 1 failed/4 passed EXIT=1, naming all three logs.\nVERDICT diff: read commit 8b9dd16df against base c8087d0bc; three files, all inside the declared scope, no unrelated change.\nCALL_SITES: reckon/crew/dispatch.py:2690 (_supervisor_main -> _publish_stored_phase)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:8410 and :8228 route both pre-spawn-end paths through _publish_stored_phase, whose _delivered_phase at :8304 resolves ended_during launch to LAUNCH_FAILED_PHASE.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-arm.txt and logs/base-arm.txt record 15 passed and 11 passed at the revisions they name, and logs/negative-control.txt shows the spawn-failure case failing (EXIT=1) with the publish removed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/dispatch.py, tests/test_stored_phase_advances.py and the fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/stored-phase-covers-a-failed-spawn.html.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_stored_phase_advances.py:246 fails if the spawn-failure branch stops publishing (shown by the negative control) and :271 fails if the abandoned-branch stops publishing.\nSCORE fit: 18\nJUSTIFICATION fit: the branches compose the existing _supervisor_exit_record and _publish_stored_phase idioms at reckon/crew/dispatch.py:8410, and no symbol or comment carries a plan or ticket identifier.\nFINDING tests/test_stored_phase_advances.py:245 follow-on: this test drives the real _run_supervisor, which installs process-wide SIGTERM/SIGHUP handlers through _record_stop_before_spawn (reckon/crew/dispatch.py:8371), and unlike the pre-existing test at :206-214 it never restores them, so the handlers stay replaced for the rest of the pytest process.\n",
+  "review_run_id": "legacy-012c7eb61c71",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "c8087d0bc5cf9f821cee71bed4ea006e7ffa9261",
+  "reviewed_head_sha": "8b9dd16dfb26fdb84a3fbaf575af903ea4e26d5d",
+  "reviewed_run_id": "r-20261001T233204211772-stored-phase-covers-a-failed-spawn",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T00:05:53.389273+00:00",
+  "total": 91
+}

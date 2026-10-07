@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "c091e7c9ccc3a0b4e1c82db4c78dc541a8cfb546",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:_manifest_wait"
+  ],
+  "completed_at": "2026-10-01T11:39:40.061Z",
+  "dispatched_at": "2026-10-01T11:30:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/a-probe-reference-is-resolved.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the landing record describes the executed control as failing 'the four HEAD2 cases in the new file, the reader-level case', but the four new-file ids the log actually reports are the three parametrised test_a_constant_token_carrying_a_digit_names_no_reference cases plus test_a_path_that_is_not_there_resolves_to_no_reference, which is a path case and not a HEAD2 case; the count is right and the label misnames one member, so a reader checking which cases the control covers against logs/negative-control.log finds a name that does not match the id."
+    }
+  ],
+  "head_log_revision": "4041280b3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits; 4041280b3 replaces the `[0-9/$`]`-class proxy with the kind resolution (a _WAIT_PROBE_* table plus _wait_probe_reference_kind and its four helpers) and moves the file-test branch into the shared loop, and 42ecd581e adds the 28-line evidence fragment; no unrelated edits ride along.",
+    "done_when": "the measure names a constant probe refused and a pid, path, port or job id accepted with the kind named; tests/test_a_probe_reference_is_resolved.py asserts the kind beside the verdict for each case, the base arm reproduces the old acceptance (base-gate.log 14 failed, 142 passed), the head arm is 156 passed, and the declared control fails 6 ids at EXIT=1.",
+    "goal": "the node goal is that a declared wait probe counts as able to differ only when it names an external reference resolving to a kind, not merely because its text carries a character; reckon/crew/recovery.py:3960 _wait_probe_reference_kind resolves a job id, pid, port or path from a token's place in the vector and returns the kind, and recovery.py:4056 _wait_probe_cannot_fail refuses exactly when that returns None, which I reproduced independently by importing the source worktree's module: ['git','rev-parse','HEAD2']->None (refused), ['squeue','-h','-j','1271081']->job, ['ssh','-p','2222','h']->port, ['nc','-z','a-host','8765']->port, ['kill','-0','1']->pid.",
+    "manifest": "read; each suite arm is recorded as JSON with completed true and a literal absolute command, the grand negative control and its failing ids are named, the reader-level case is listed, and the measurement module and cwd name the scratch tree and the worktree rather than the shared editable install.",
+    "write_paths": "the manifest declares three paths and `git diff --numstat c091e7c9c 42ecd581e` lists exactly those three and nothing else \u2014 reckon/crew/recovery.py (130/19), tests/test_a_probe_reference_is_resolved.py (183/0), docs/evidence/fragments/crew-observability-truth/a-probe-reference-is-resolved.html (28/0)."
+  },
+  "justifications": {
+    "durability": "each added assertion compares recovery._wait_probe_reference_kind(probe) and _wait_probe_cannot_fail(probe) against an independent literal ('pid'/'job'/'port'/'path'/None and True/False) rather than against a value the test handed the code, and the executed mutation (restore the character-class proxy) reddens 6 ids including the existing tests/test_external_wait.py reader, so the guard is shown to fire.",
+    "evidence": "the base arm reproduces the defect (logs/base-gate.log 14 failed at EXIT=1 with HEAD2 accepted), the head arm is 156 passed at EXIT=0, and the executed control reddens 6 ids; the one deduction is the fragment at docs/evidence/fragments/crew-observability-truth/a-probe-reference-is-resolved.html:24 calling the four new-file control failures 'the four HEAD2 cases' when one of them is the missing-path case.",
+    "fit": "the new symbols are mechanism-named (_wait_probe_reference_kind, _WAIT_PROBE_JOB_FLAGS, _WAIT_PROBE_PORT_RANGE) with the why in the comment above them, and no plan, sprint, version or ticket label appears in any staged path or symbol.",
+    "goal_fidelity": "recovery.py:3960 resolves the vector to a kind and answers with it, and recovery.py:4056 keys the refusal on that kind rather than on any character \u2014 HEAD2 reads None and is refused while a real job id, pid, port and path each resolve, exactly as the goal states.",
+    "scope_discipline": "`git diff --numstat c091e7c9c 42ecd581e` lists exactly the three declared write paths with no file outside the fence and no change the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a declared wait probe counts as able to differ only when it names an external reference resolving to a kind, not merely because its text carries a character; reckon/crew/recovery.py:3960 _wait_probe_reference_kind resolves a job id, pid, port or path from a token's place in the vector and returns the kind, and recovery.py:4056 _wait_probe_cannot_fail refuses exactly when that returns None, which I reproduced independently by importing the source worktree's module: ['git','rev-parse','HEAD2']->None (refused), ['squeue','-h','-j','1271081']->job, ['ssh','-p','2222','h']->port, ['nc','-z','a-host','8765']->port, ['kill','-0','1']->pid.\nVERDICT done_when: the measure names a constant probe refused and a pid, path, port or job id accepted with the kind named; tests/test_a_probe_reference_is_resolved.py asserts the kind beside the verdict for each case, the base arm reproduces the old acceptance (base-gate.log 14 failed, 142 passed), the head arm is 156 passed, and the declared control fails 6 ids at EXIT=1.\nVERDICT write_paths: the manifest declares three paths and `git diff --numstat c091e7c9c 42ecd581e` lists exactly those three and nothing else \u2014 reckon/crew/recovery.py (130/19), tests/test_a_probe_reference_is_resolved.py (183/0), docs/evidence/fragments/crew-observability-truth/a-probe-reference-is-resolved.html (28/0).\nVERDICT manifest: read; each suite arm is recorded as JSON with completed true and a literal absolute command, the grand negative control and its failing ids are named, the reader-level case is listed, and the measurement module and cwd name the scratch tree and the worktree rather than the shared editable install.\nVERDICT diff: read both commits; 4041280b3 replaces the `[0-9/$`]`-class proxy with the kind resolution (a _WAIT_PROBE_* table plus _wait_probe_reference_kind and its four helpers) and moves the file-test branch into the shared loop, and 42ecd581e adds the 28-line evidence fragment; no unrelated edits ride along.\nCALL_SITES: reckon/crew/recovery.py:_manifest_wait\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: recovery.py:3960 resolves the vector to a kind and answers with it, and recovery.py:4056 keys the refusal on that kind rather than on any character \u2014 HEAD2 reads None and is refused while a real job id, pid, port and path each resolve, exactly as the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base arm reproduces the defect (logs/base-gate.log 14 failed at EXIT=1 with HEAD2 accepted), the head arm is 156 passed at EXIT=0, and the executed control reddens 6 ids; the one deduction is the fragment at docs/evidence/fragments/crew-observability-truth/a-probe-reference-is-resolved.html:24 calling the four new-file control failures 'the four HEAD2 cases' when one of them is the missing-path case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --numstat c091e7c9c 42ecd581e` lists exactly the three declared write paths with no file outside the fence and no change the goal does not imply.\nSCORE durability: 20\nJUSTIFICATION durability: each added assertion compares recovery._wait_probe_reference_kind(probe) and _wait_probe_cannot_fail(probe) against an independent literal ('pid'/'job'/'port'/'path'/None and True/False) rather than against a value the test handed the code, and the executed mutation (restore the character-class proxy) reddens 6 ids including the existing tests/test_external_wait.py reader, so the guard is shown to fire.\nSCORE fit: 20\nJUSTIFICATION fit: the new symbols are mechanism-named (_wait_probe_reference_kind, _WAIT_PROBE_JOB_FLAGS, _WAIT_PROBE_PORT_RANGE) with the why in the comment above them, and no plan, sprint, version or ticket label appears in any staged path or symbol.\nFINDING docs/evidence/fragments/crew-observability-truth/a-probe-reference-is-resolved.html:24 follow-on: the landing record describes the executed control as failing 'the four HEAD2 cases in the new file, the reader-level case', but the four new-file ids the log actually reports are the three parametrised test_a_constant_token_carrying_a_digit_names_no_reference cases plus test_a_path_that_is_not_there_resolves_to_no_reference, which is a path case and not a HEAD2 case; the count is right and the label misnames one member, so a reader checking which cases the control covers against logs/negative-control.log finds a name that does not match the id.",
+  "review_run_id": "r-20261001T112947153621-review-of-a-probe-reference-is-resolved",
+  "reviewed_base_sha": "c091e7c9ccc3a0b4e1c82db4c78dc541a8cfb546",
+  "reviewed_head_sha": "42ecd581e1dfeb57af45160573851a42f08a685d",
+  "reviewed_run_id": "r-20261001T075747129876-a-probe-reference-is-resolved",
+  "reviewer_run_id": "r-20261001T112947153621-review-of-a-probe-reference-is-resolved",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.441397+00:00",
+  "total": 99
+}

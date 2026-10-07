@@ -1,0 +1,38 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T16:36:11.750797+00:00",
+  "findings": [
+    {
+      "file": "tests/test_doccheck_code_spans.py",
+      "line": "102",
+      "text": "test_a_plan_quoting_asterisks_only_in_verbatim_subtrees_has_no_bold_finding pins behaviour through a live document rather than through a self-contained fixture, so its fixture can go vacuous and its failures can be authored in a file it does not own, while the five synthetic cases alone carry the regression pin."
+    }
+  ],
+  "justifications": {
+    "durability": "four of the new file's ten cases fail against the pre-fix doccheck and all ten pass at the reviewed head (independently reproduced via a base overlay), so a regression of the prose exclusion turns the suite red; docked one because PLAN_QUOTING_ASTERISKS at tests/test_doccheck_code_spans.py:17 points at a live, concurrently edited plan document, so that one case can pass vacuously once the document stops quoting asterisks and can redden for a document reason unrelated to the checker.",
+    "evidence": "I re-ran the falsifier from inside the reviewed worktree (reckon.doccheck resolved to the worktree copy, _prose_text present) and reproduced every number the manifest claims \u2014 base-file overlay FAIL (5 error, 4 warn, 3 info), head warn (0 error, 4 warn, 3 info), synthetic prose 1 md-bold, synthetic verbatim 0 \u2014 with all four recorded test_logs present in the run directory as armed baseline_suite/after_suite records.",
+    "fit": "the helper sits beside _visible_text at reckon/doccheck.py:222, is named for what it returns, follows the module's own docstring voice about what renders literally, adds no public name, and introduces no plan label, ticket reference, version suffix or author attribution.",
+    "goal_fidelity": "reckon/doccheck.py:222 adds _prose_text and :641-642 reads it for md-bold, so the plan that reported 5 md-bold errors at base b5d298c2 reports 0 at head 4ce87b3a, while a synthesised document carrying a literal asterisk pair in ordinary prose still reports one.",
+    "scope_discipline": "git diff b5d298c2..4ce87b3a --name-status lists exactly the four declared write paths (reckon/doccheck.py, tests/test_doccheck_code_spans.py, docs/plans/crew-observability-truth.html, docs/evidence/archive/crew-observability-truth-landed.html), the plan's version and modified meta lines are not in the diff, and neither commit body carries a plan identifier or an AI trailer."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:222 adds _prose_text and :641-642 reads it for md-bold, so the plan that reported 5 md-bold errors at base b5d298c2 reports 0 at head 4ce87b3a, while a synthesised document carrying a literal asterisk pair in ordinary prose still reports one.\nSCORE evidence: 20\nJUSTIFICATION evidence: I re-ran the falsifier from inside the reviewed worktree (reckon.doccheck resolved to the worktree copy, _prose_text present) and reproduced every number the manifest claims \u2014 base-file overlay FAIL (5 error, 4 warn, 3 info), head warn (0 error, 4 warn, 3 info), synthetic prose 1 md-bold, synthetic verbatim 0 \u2014 with all four recorded test_logs present in the run directory as armed baseline_suite/after_suite records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff b5d298c2..4ce87b3a --name-status lists exactly the four declared write paths (reckon/doccheck.py, tests/test_doccheck_code_spans.py, docs/plans/crew-observability-truth.html, docs/evidence/archive/crew-observability-truth-landed.html), the plan's version and modified meta lines are not in the diff, and neither commit body carries a plan identifier or an AI trailer.\nSCORE durability: 19\nJUSTIFICATION durability: four of the new file's ten cases fail against the pre-fix doccheck and all ten pass at the reviewed head (independently reproduced via a base overlay), so a regression of the prose exclusion turns the suite red; docked one because PLAN_QUOTING_ASTERISKS at tests/test_doccheck_code_spans.py:17 points at a live, concurrently edited plan document, so that one case can pass vacuously once the document stops quoting asterisks and can redden for a document reason unrelated to the checker.\nSCORE fit: 20\nJUSTIFICATION fit: the helper sits beside _visible_text at reckon/doccheck.py:222, is named for what it returns, follows the module's own docstring voice about what renders literally, adds no public name, and introduces no plan label, ticket reference, version suffix or author attribution.\nFINDING tests/test_doccheck_code_spans.py:102 test_a_plan_quoting_asterisks_only_in_verbatim_subtrees_has_no_bold_finding pins behaviour through a live document rather than through a self-contained fixture, so its fixture can go vacuous and its failures can be authored in a file it does not own, while the five synthetic cases alone carry the regression pin.",
+  "review_run_id": "r-20260917T163611750797-review-of-an-audit-error-a-reader-cannot-clear",
+  "reviewed_base": "b5d298c2a402b9f2c9a32cf73c4670ae43773585",
+  "reviewed_commit": "4ce87b3aaae560869632ee493c61d8d3fbb7ba9a",
+  "reviewed_run_id": "r-20260917T145729063610-an-audit-error-a-reader-cannot-clear",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T17:34:18.652008+00:00",
+  "total": 99
+}

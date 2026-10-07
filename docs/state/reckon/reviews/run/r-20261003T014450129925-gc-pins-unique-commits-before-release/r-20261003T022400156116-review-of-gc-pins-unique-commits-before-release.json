@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:5554",
+    "reckon/crew.py:85"
+  ],
+  "completed_at": "2026-10-03T02:33:45.772Z",
+  "dispatched_at": "2026-10-03T02:24:50Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "5554",
+      "severity": "follow-on",
+      "text": "follow-on: crew gc exposes no way to request pin_unique_commits, so the option added to garbage_collect is reachable only by a direct Python caller and plan section 9's \"crew gc can pin\" is not yet true from the command line; cli.py is the exclusive write path of a concurrent node, so this is a declared follow-on rather than a scope defect."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1282",
+      "severity": "follow-on",
+      "text": "follow-on: PROGRAMMING_ERRORS names only TypeError, AttributeError and NameError, so a defect in the sweep that raises KeyError, IndexError or another exception still surfaces as an ordinary GcSweepError refusal instead of a traceback."
+    }
+  ],
+  "head_log_revision": "553f23f6a34f9bf41220f70a39218ad9c384fc0d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against 41e6fc48f5b7f9293694519d4c13c4e8c146bb82; the 553f23f6a change is routing.py and the new test, and b083c007 adds the evidence fragment only.",
+    "done_when": "the done_when names tests/test_gc_pins_unique_commits_before_release.py; the manifest's baseline_suite and after_suite record that file's run (base 49, head 56, both EXIT=0) and logs/base-arm-abs.log and logs/head-arm-abs.log carry them.",
+    "goal": "the node goal is to let gc release a dirty worktree after pinning its unique commits to an archive ref; reckon/crew/routing.py:982 defines _pin_archived_commits and :1463 pins then releases through the residue path, gated on the explicit option at :1301.",
+    "manifest": "read; it states the gate command, both arms (base 49 passed EXIT=0, head 56 passed EXIT=0), and the declared mutation with its negative-control log.",
+    "write_paths": "the manifest declares reckon/crew/routing.py, the new test, the evidence fragment and a figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_gc_pins_unique_commits_before_release.py fails under the declared mutation that removes the pin step (logs/negative-control.log, 2 failed of 7), so the release case guards the pin rather than merely passing.",
+    "evidence": "the manifest's baseline_suite and after_suite name tests/test_gc_pins_unique_commits_before_release.py's run and logs/base-arm-abs.log and logs/head-arm-abs.log record 49 and 56 passed with EXIT=0.",
+    "fit": "_pin_archived_commits and ARCHIVE_REF_PREFIX sit beside the existing _save_and_release_worktree residue helpers at reckon/crew/routing.py:973 and no symbol carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/routing.py:1463 pins the tree head into refs/reckon/archive/<name> before the removal at :1171, but crew gc at reckon/cli.py:5554 passes no pin option so the capability is reachable only from a direct Python caller.",
+    "scope_discipline": "the diff 41e6fc48..b083c007 touches only reckon/crew/routing.py, tests/test_gc_pins_unique_commits_before_release.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to let gc release a dirty worktree after pinning its unique commits to an archive ref; reckon/crew/routing.py:982 defines _pin_archived_commits and :1463 pins then releases through the residue path, gated on the explicit option at :1301.\nVERDICT done_when: the done_when names tests/test_gc_pins_unique_commits_before_release.py; the manifest's baseline_suite and after_suite record that file's run (base 49, head 56, both EXIT=0) and logs/base-arm-abs.log and logs/head-arm-abs.log carry them.\nVERDICT write_paths: the manifest declares reckon/crew/routing.py, the new test, the evidence fragment and a figures directory; every path in the diff is inside them.\nVERDICT manifest: read; it states the gate command, both arms (base 49 passed EXIT=0, head 56 passed EXIT=0), and the declared mutation with its negative-control log.\nVERDICT diff: read against 41e6fc48f5b7f9293694519d4c13c4e8c146bb82; the 553f23f6a change is routing.py and the new test, and b083c007 adds the evidence fragment only.\nCALL_SITES: reckon/cli.py:5554, reckon/crew.py:85\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1463 pins the tree head into refs/reckon/archive/<name> before the removal at :1171, but crew gc at reckon/cli.py:5554 passes no pin option so the capability is reachable only from a direct Python caller.\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite name tests/test_gc_pins_unique_commits_before_release.py's run and logs/base-arm-abs.log and logs/head-arm-abs.log record 49 and 56 passed with EXIT=0.\nSCORE evidence: 19\nJUSTIFICATION scope_discipline: the diff 41e6fc48..b083c007 touches only reckon/crew/routing.py, tests/test_gc_pins_unique_commits_before_release.py and the evidence fragment, all inside the declared write paths.\nSCORE scope_discipline: 20\nJUSTIFICATION durability: tests/test_gc_pins_unique_commits_before_release.py fails under the declared mutation that removes the pin step (logs/negative-control.log, 2 failed of 7), so the release case guards the pin rather than merely passing.\nSCORE durability: 19\nJUSTIFICATION fit: _pin_archived_commits and ARCHIVE_REF_PREFIX sit beside the existing _save_and_release_worktree residue helpers at reckon/crew/routing.py:973 and no symbol carries a plan, sprint or ticket identifier.\nSCORE fit: 20\nFINDING reckon/cli.py:5554 follow-on: crew gc exposes no way to request pin_unique_commits, so the option added to garbage_collect is reachable only by a direct Python caller and plan section 9's \"crew gc can pin\" is not yet true from the command line; cli.py is the exclusive write path of a concurrent node, so this is a declared follow-on rather than a scope defect.\nFINDING reckon/crew/routing.py:1282 follow-on: PROGRAMMING_ERRORS names only TypeError, AttributeError and NameError, so a defect in the sweep that raises KeyError, IndexError or another exception still surfaces as an ordinary GcSweepError refusal instead of a traceback.",
+  "review_run_id": "r-20261003T022400156116-review-of-gc-pins-unique-commits-before-release",
+  "reviewed_base_sha": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "reviewed_head_sha": "b083c0071777f62c5c0e78890d5e57f8943ec74d",
+  "reviewed_run_id": "r-20261003T014450129925-gc-pins-unique-commits-before-release",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T022400156116-review-of-gc-pins-unique-commits-before-release",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T02:32:10.768707+00:00",
+  "total": 95
+}

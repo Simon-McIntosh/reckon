@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:2724 _FollowerReloader constructed in crew_follow's stream_events",
+    "reckon/cli.py:2742 reloader.poll called from the follower's on_poll",
+    "reckon/crew/runs.py:169 follower_code_stamp consumed at reckon/cli.py:1785 and reckon/cli.py:1833"
+  ],
+  "completed_at": "2026-09-25T16:54:23.360Z",
+  "dispatched_at": "2026-09-25T16:21:33Z",
+  "findings": [
+    {
+      "file": "tests/test_follower_reload_is_safe.py",
+      "line": "242",
+      "text": "the assertion cannot fail -- _read_until at line 114 raises unless DEFERRED_MARKER is already in the row it returns -- so it pins nothing about the deferred line it appears to check."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T160042678741-follower-reloads-only-into-importable-changed-code/suite-head.log",
+      "line": "1",
+      "text": "the head suite arm ran at 16:09:41Z before the change was committed, so its own rev=$(git rev-parse HEAD) printed the base revision d8dc247d; both suite arms now carry the same revision label and the 8-vs-8 delta is attributable only from the tree fields."
+    },
+    {
+      "file": "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "line": "215",
+      "text": "the ruff row reads 'both 4 findings across runs.py and cli.py' where ruff reports two at each revision (SIM103 cli.py:1626, SIM105 cli.py:4605); the count includes ruff's summary lines, so the figure a later reader quotes is double the measured one."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against d8dc247d -- 2bafddb1 adds the content-keyed stamp at reckon/crew/runs.py:144, the reload probe and deferral at reckon/cli.py:1744-1849 and two tests, 3789cf47 appends the landing paragraph, the evidence section and the figure, and no code file differs between the two commits.",
+    "done_when": "the measure names a touched-module test and a syntax-error deferral test, both red at base and green at head, plus no added failures across the follow, watch, re-arm and freshness files; tests/test_follower_reload_is_safe.py:142 and :175 are those tests, I re-ran the file at the reviewed head for 2 passed, and base-arm.log, suite-base.log and suite-head.log hold the two arms' recorded results.",
+    "goal": "read the goal -- a follower reloads only when a module's content changed and its replacement image imports, keeping the current image and printing one dim deferred line when the proof fails; reckon/crew/runs.py:144 keys the stamp on the bytes and reckon/cli.py:1838-1849 defers on a failed proof, so both halves of the goal landed.",
+    "manifest": "read; it records the head gate (2 passed) with log paths that all exist on disk, the base arm's 2 failed, the declared mutation observed red, an 8-vs-8 suite delta with 0 added, and a retained limit on lazily imported submodules.",
+    "write_paths": "read the manifest's declared fence against both commits -- reckon/cli.py, reckon/crew/runs.py, tests/test_follower_reload_is_safe.py, docs/plans/the-fleet-counters-count-the-fleet.html, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html and the reload-guards figure are every changed path, and each one lies inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "both guards redden at base in base-arm.log and the declared mutation reddens the deferral test in negative-control.log, but tests/test_follower_reload_is_safe.py:242 is tautological given its own helper and the dim branch the goal names is never taken because the test runs --no-color.",
+    "evidence": "I reproduced tests/test_follower_reload_is_safe.py at 3789cf47 for 2 passed and verified /tmp/follower-base-reload's runs.py and cli.py byte-equal d8dc247d, but suite-head.log:1 names a revision the arm did not test and the record's ruff figure is miscounted, both named below.",
+    "fit": "_FOLLOWER_RELOAD_PROBE, _replacement_imports, _source_content_digest and deferred_stamp are mechanism-named with no plan or ticket labels, the comments name the merge-marker mechanism, and the colour access at reckon/cli.py:2729 matches the file's existing idiom at reckon/cli.py:2750.",
+    "goal_fidelity": "the content-keyed stamp at reckon/crew/runs.py:169 and the proof-then-defer path at reckon/cli.py:1838 implement both items of the followup as its words state them.",
+    "scope_discipline": "every path in 2bafddb1 and 3789cf47 lies inside the six-path fence, the cumulative landing record gains 24 insertions beside two extended meta lines, and the plan page's version and modified metas are untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal -- a follower reloads only when a module's content changed and its replacement image imports, keeping the current image and printing one dim deferred line when the proof fails; reckon/crew/runs.py:144 keys the stamp on the bytes and reckon/cli.py:1838-1849 defers on a failed proof, so both halves of the goal landed.\nVERDICT done_when: the measure names a touched-module test and a syntax-error deferral test, both red at base and green at head, plus no added failures across the follow, watch, re-arm and freshness files; tests/test_follower_reload_is_safe.py:142 and :175 are those tests, I re-ran the file at the reviewed head for 2 passed, and base-arm.log, suite-base.log and suite-head.log hold the two arms' recorded results.\nVERDICT write_paths: read the manifest's declared fence against both commits -- reckon/cli.py, reckon/crew/runs.py, tests/test_follower_reload_is_safe.py, docs/plans/the-fleet-counters-count-the-fleet.html, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html and the reload-guards figure are every changed path, and each one lies inside the declared write paths.\nVERDICT manifest: read; it records the head gate (2 passed) with log paths that all exist on disk, the base arm's 2 failed, the declared mutation observed red, an 8-vs-8 suite delta with 0 added, and a retained limit on lazily imported submodules.\nVERDICT diff: read both commits against d8dc247d -- 2bafddb1 adds the content-keyed stamp at reckon/crew/runs.py:144, the reload probe and deferral at reckon/cli.py:1744-1849 and two tests, 3789cf47 appends the landing paragraph, the evidence section and the figure, and no code file differs between the two commits.\nCALL_SITES: reckon/cli.py:2724 _FollowerReloader constructed in crew_follow's stream_events, reckon/cli.py:2742 reloader.poll called from the follower's on_poll, reckon/crew/runs.py:169 follower_code_stamp consumed at reckon/cli.py:1785 and reckon/cli.py:1833\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the content-keyed stamp at reckon/crew/runs.py:169 and the proof-then-defer path at reckon/cli.py:1838 implement both items of the followup as its words state them.\nSCORE evidence: 16\nJUSTIFICATION evidence: I reproduced tests/test_follower_reload_is_safe.py at 3789cf47 for 2 passed and verified /tmp/follower-base-reload's runs.py and cli.py byte-equal d8dc247d, but suite-head.log:1 names a revision the arm did not test and the record's ruff figure is miscounted, both named below.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 2bafddb1 and 3789cf47 lies inside the six-path fence, the cumulative landing record gains 24 insertions beside two extended meta lines, and the plan page's version and modified metas are untouched.\nSCORE durability: 17\nJUSTIFICATION durability: both guards redden at base in base-arm.log and the declared mutation reddens the deferral test in negative-control.log, but tests/test_follower_reload_is_safe.py:242 is tautological given its own helper and the dim branch the goal names is never taken because the test runs --no-color.\nSCORE fit: 18\nJUSTIFICATION fit: _FOLLOWER_RELOAD_PROBE, _replacement_imports, _source_content_digest and deferred_stamp are mechanism-named with no plan or ticket labels, the comments name the merge-marker mechanism, and the colour access at reckon/cli.py:2729 matches the file's existing idiom at reckon/cli.py:2750.\nFINDING tests/test_follower_reload_is_safe.py:242 the assertion cannot fail -- _read_until at line 114 raises unless DEFERRED_MARKER is already in the row it returns -- so it pins nothing about the deferred line it appears to check.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T160042678741-follower-reloads-only-into-importable-changed-code/suite-head.log:1 the head suite arm ran at 16:09:41Z before the change was committed, so its own rev=$(git rev-parse HEAD) printed the base revision d8dc247d; both suite arms now carry the same revision label and the 8-vs-8 delta is attributable only from the tree fields.\nFINDING docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:215 the ruff row reads 'both 4 findings across runs.py and cli.py' where ruff reports two at each revision (SIM103 cli.py:1626, SIM105 cli.py:4605); the count includes ruff's summary lines, so the figure a later reader quotes is double the measured one.\n",
+  "review_run_id": "r-20260925T162117683718-review-of-follower-reloads-only-into-importable-changed-code",
+  "reviewed_base_sha": "d8dc247d42dbe5244a4146d349cdb77996283aee",
+  "reviewed_head_sha": "3789cf473604d4870c7ebbf90fcc38f79b99ca8e",
+  "reviewed_run_id": "r-20260925T160042678741-follower-reloads-only-into-importable-changed-code",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T16:40:00Z",
+  "total": 90
+}

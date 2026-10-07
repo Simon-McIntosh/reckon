@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:4623",
+    "reckon/mcp.py:4618",
+    "reckon/crew/dispatch.py:4724"
+  ],
+  "completed_at": "2026-09-25T22:19:41.529Z",
+  "dispatched_at": "2026-09-25T21:38:55Z",
+  "findings": [
+    {
+      "file": "tests/test_edit_plan.py",
+      "line": "1975",
+      "text": "Re-running this file at the reviewed head fails 66 of its 79 tests whenever RECKON_RUN_ID is in the environment (an id with no live pointer is enough), because it and its siblings write a plan with no checkout_path and now meet the run-scoped refusal; those files are outside this node's scope, so a worker's gate over any of them reads red until the fixtures clear the variable or carry a synthetic pointer."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "493",
+      "text": "The refusal for a run with no readable pointer is reached by no committed test - a grep over tests/ finds run_scoped_write only in the new file, whose fixture always writes a readable pointer with a worktree - so the message branch is exercised by hand alone; the write is still refused without it, the neighbouring project check catching a None run_project, so this is a coverage gap rather than an open hole."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read against the recorded base dc0c6f34: the resolution, the structured refusal, the hint's run-scoped resolution and the wiring land in one commit with the four-test file and its evidence; the second commit is a pure append to the plan (+61/-0) and to the landed record (+101/-0), touching neither plan-version nor plan-modified; the third re-runs the head gate log so its revision field names the committed head.",
+    "done_when": "The substantive half holds - the two new-behaviour tests fail at base and pass at head, with the main checkout's plan asserted byte-identical - but the first clause cannot be satisfied as written: it says the three tests the followup names are red at base, and only two are, the coordinator and explicit-checkout_path tests being controls that pass in both arms; the node recorded that deviation in its manifest, and the followup at docs/plans/a-worker-cannot-write-your-home.html:570 still claims all three.",
+    "goal": "A plan write made through the reckon MCP from inside a crew run, with no checkout path, lands in that run's own worktree for its own project and is refused for any other project: reckon/mcp.py:476-504 resolves the pair, refuses the other-project case through _run_scoped_refusal, and _edit_plan honours the refusal before either edit mode at reckon/mcp.py:2826-2830, so both state and text writes are covered.",
+    "manifest": "The record at its declared path states both arms, the executed negative control and the ambient sensitivity the node deliberately left unpatched, but its prose says the selection is eight files where the gate log header records seven, and the run-directory copy of the head gate log still names the base revision where the committed copy names 22ae76dc.",
+    "write_paths": "Every changed path lies inside the declared fence: 22ae76dc touches 7 files (reckon/mcp.py, the new test file, four logs and one figure), 2269dbfd appends only to the plan and the cumulative landed record, 96728b7d changes 3 lines of one committed log, and no concurrent node's path is touched."
+  },
+  "justifications": {
+    "durability": "The new assertions are real guards - they fail under my own mutation of the resolution and compare values read back from disk (main plan digest before and after, version re-read, message contents) - but the no-recorded-worktree refusal at reckon/mcp.py:493 is reached by no committed test, whose fixture always writes a readable synthetic pointer, so that branch is exercised by hand alone.",
+    "evidence": "I reproduced the red-at-base pair on a base tree built from the recorded base revision (2 failed, 2 passed) and the green head (4 passed), each log naming module.__file__ and cwd, and re-ran tests/test_edit_plan.py at head (79 passed with the run id cleared, 66 failed with it set); the recorded 178-passed selection as a whole I did not re-run, so that figure stands as the node's own measurement.",
+    "fit": "The resolver follows the module's existing idiom (falsy-to-None normalisation, a structured refusal dict of the same shape and error vocabulary as its siblings, module-level aliased imports at reckon/mcp.py:108-110), the symbols are mechanism-named with no plan or ticket labels, and the refusal names the run, the reason and where the write would have gone.",
+    "goal_fidelity": "Both clauses behave as the goal states, reproduced in arms I ran myself; one edge is named rather than hidden - a run whose recorded worktree has no docs directory passes the resolver and falls to the generic no-docs-dir refusal, so the write is still stopped but the message does not name the run.",
+    "scope_discipline": "The diff stays inside the declared paths and inside the goal - no plan-version or plan-modified edit, no sprint or index state, no unrelated file reformatted - but the change to _plan_path_hint means the run scope now also resolves the path hint for the read_plan registration, which is a neighbouring surface the node's own tests do not assert."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: A plan write made through the reckon MCP from inside a crew run, with no checkout path, lands in that run's own worktree for its own project and is refused for any other project: reckon/mcp.py:476-504 resolves the pair, refuses the other-project case through _run_scoped_refusal, and _edit_plan honours the refusal before either edit mode at reckon/mcp.py:2826-2830, so both state and text writes are covered.\nVERDICT done_when: The substantive half holds - the two new-behaviour tests fail at base and pass at head, with the main checkout's plan asserted byte-identical - but the first clause cannot be satisfied as written: it says the three tests the followup names are red at base, and only two are, the coordinator and explicit-checkout_path tests being controls that pass in both arms; the node recorded that deviation in its manifest, and the followup at docs/plans/a-worker-cannot-write-your-home.html:570 still claims all three.\nVERDICT write_paths: Every changed path lies inside the declared fence: 22ae76dc touches 7 files (reckon/mcp.py, the new test file, four logs and one figure), 2269dbfd appends only to the plan and the cumulative landed record, 96728b7d changes 3 lines of one committed log, and no concurrent node's path is touched.\nVERDICT manifest: The record at its declared path states both arms, the executed negative control and the ambient sensitivity the node deliberately left unpatched, but its prose says the selection is eight files where the gate log header records seven, and the run-directory copy of the head gate log still names the base revision where the committed copy names 22ae76dc.\nVERDICT diff: Read against the recorded base dc0c6f34: the resolution, the structured refusal, the hint's run-scoped resolution and the wiring land in one commit with the four-test file and its evidence; the second commit is a pure append to the plan (+61/-0) and to the landed record (+101/-0), touching neither plan-version nor plan-modified; the third re-runs the head gate log so its revision field names the committed head.\nCALL_SITES: reckon/mcp.py:4623, reckon/mcp.py:4618, reckon/crew/dispatch.py:4724\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: Both clauses behave as the goal states, reproduced in arms I ran myself; one edge is named rather than hidden - a run whose recorded worktree has no docs directory passes the resolver and falls to the generic no-docs-dir refusal, so the write is still stopped but the message does not name the run.\nSCORE evidence: 18\nJUSTIFICATION evidence: I reproduced the red-at-base pair on a base tree built from the recorded base revision (2 failed, 2 passed) and the green head (4 passed), each log naming module.__file__ and cwd, and re-ran tests/test_edit_plan.py at head (79 passed with the run id cleared, 66 failed with it set); the recorded 178-passed selection as a whole I did not re-run, so that figure stands as the node's own measurement.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: The diff stays inside the declared paths and inside the goal - no plan-version or plan-modified edit, no sprint or index state, no unrelated file reformatted - but the change to _plan_path_hint means the run scope now also resolves the path hint for the read_plan registration, which is a neighbouring surface the node's own tests do not assert.\nSCORE durability: 17\nJUSTIFICATION durability: The new assertions are real guards - they fail under my own mutation of the resolution and compare values read back from disk (main plan digest before and after, version re-read, message contents) - but the no-recorded-worktree refusal at reckon/mcp.py:493 is reached by no committed test, whose fixture always writes a readable synthetic pointer, so that branch is exercised by hand alone.\nSCORE fit: 19\nJUSTIFICATION fit: The resolver follows the module's existing idiom (falsy-to-None normalisation, a structured refusal dict of the same shape and error vocabulary as its siblings, module-level aliased imports at reckon/mcp.py:108-110), the symbols are mechanism-named with no plan or ticket labels, and the refusal names the run, the reason and where the write would have gone.\nFINDING tests/test_edit_plan.py:1975 Re-running this file at the reviewed head fails 66 of its 79 tests whenever RECKON_RUN_ID is in the environment (an id with no live pointer is enough), because it and its siblings write a plan with no checkout_path and now meet the run-scoped refusal; those files are outside this node's scope, so a worker's gate over any of them reads red until the fixtures clear the variable or carry a synthetic pointer.\nFINDING reckon/mcp.py:493 The refusal for a run with no readable pointer is reached by no committed test - a grep over tests/ finds run_scoped_write only in the new file, whose fixture always writes a readable pointer with a worktree - so the message branch is exercised by hand alone; the write is still refused without it, the neighbouring project check catching a None run_project, so this is a coverage gap rather than an open hole.",
+  "review_run_id": "r-20260925T213844315821-review-of-plan-write-stays-in-the-worktree",
+  "reviewed_base_sha": "dc0c6f3476d362fdd8ba27bd7ba58996a90f4f3e",
+  "reviewed_head_sha": "96728b7d2571a1ee0ebe5f4434a8662bc1650584",
+  "reviewed_run_id": "r-20260925T205418461250-plan-write-stays-in-the-worktree",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T22:14:27.405473+00:00",
+  "total": 91
+}

@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:4405 (edit_plan tool registration)",
+    "reckon/mcp.py:2874 (apply_ops on the working dict)",
+    "reckon/mcp.py:2926 (write_plan at the locked write)",
+    "reckon/_store.py:738 (effect consumption in _write_state_locked)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T02:09:03.560838+00:00",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "738",
+      "text": "the effect consumption runs after the comment-merge reassignment at :736, so on that path `data` is a new dict, `pending[0] is data` fails, the queued insertion is discarded, and the write proceeds to success; reproduced at the reviewed head 06642dc7 \u2014 with the plan at version 1 after a peer comment append, a stale write at expected_version 0 whose batch appends its own comment and one insert_section op returned version 2, merged all three comments, and left the file without the requested section (inserted=false, no exception), while the identical batch at the current version lands it (inserted=true), so the caller is told the write succeeded and must diff the HTML to learn the insertion did not happen."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 0bd7a7c9 \u2014 25845dc8 adds both write paths, 0b3cd08c replaces the validation_diagnostics transport with the request-local effect list and adds the boundary and refusal assertions, dfa424c3 and 06642dc7 record the plan and evidence; every commit carries a body and no AI attribution.",
+    "done_when": "read against the fence's bullets; tests/test_edit_plan_section_writes.py:95 asserts the one-key change with the rest preserved, :112 the unknown value refused naming the accepted values, :137 the record-adjacent boundary with audit-doc passing, :188 the four named fragment refusals each byte-identical, :209 the inert validation_diagnostics entry; the named gate re-ran at the reviewed head for 13 passed, exit 0.",
+    "goal": "the node goal is \"let edit_plan set one section's declaration and insert a new section before the structured-state regions\"; reckon/_store.py:1506 accepts the dotted declaration set and reckon/_store.py:1980 the insert_section verb, which places the authored heading after the last typed section record and before the first gates collection (tests/test_edit_plan_section_writes.py:159).",
+    "manifest": "read at the run directory and re-checked independently \u2014 13-passed gate, ruff 14=14 on reckon/_store.py with none in the new test, audit-doc OK on plan and evidence, and the declared mutation red with the named string.",
+    "write_paths": "the manifest declares reckon/_store.py, tests/test_edit_plan_section_writes.py, the plan HTML, the cumulative evidence record and the figures directory, and git show --stat over all four commits lists exactly those five; the reviewed worktree is clean at the head."
+  },
+  "justifications": {
+    "durability": "the added assertions are independent \u2014 two mutations in a scratch copy redden them (the declared dotted-path removal at tests/test_edit_plan_section_writes.py:95 with \"unsupported plan set path\", and removing the nested-h2 refusal at reckon/_store.py:553 reddens only the nested-heading case at :188) \u2014 but no test covers the insertion plus comment-merge interaction at reckon/_store.py:736, where the queued effect is silently discarded.",
+    "evidence": "the gate re-ran green at the reviewed head (13 passed, exit 0) and the declared mutation reddens the dotted-set test in a scratch copy of 06642dc7 with the exact declared string, docked one because the stored red log is stamped 0b3cd08c and a reader must confirm the docs-only commit since leaves reckon/_store.py identical.",
+    "fit": "the new code follows the module's idioms \u2014 the request-local effect collection documented at reckon/_store.py:509, refusals checked before the write begins, and the dotted branch placed with the other plan set paths at :1506 \u2014 with mechanism-named symbols and no plan labels.",
+    "goal_fidelity": "both operations land and are asserted at reckon/_store.py:1506 and :1980, but a legitimate concurrent write (a stale expected_version whose batch also appends a comment) reaches the merge branch at reckon/_store.py:736, where the reassigned dict no longer matches the effect's object identity, so _consume_section_insertions at :738 returns [] and the requested section is dropped while the call returns ok:True with a new version.",
+    "scope_discipline": "all four commits touch only the five declared paths (reckon/_store.py, tests/test_edit_plan_section_writes.py, docs/plans/the-mcp-answers-within-its-ceiling.html, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html, docs/figures/the-mcp-answers-within-its-ceiling/) and the reviewed worktree is clean at the head."
+  },
+  "node": "review-of-edit-plan-writes-one-section",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"let edit_plan set one section's declaration and insert a new section before the structured-state regions\"; reckon/_store.py:1506 accepts the dotted declaration set and reckon/_store.py:1980 the insert_section verb, which places the authored heading after the last typed section record and before the first gates collection (tests/test_edit_plan_section_writes.py:159).\nVERDICT done_when: read against the fence's bullets; tests/test_edit_plan_section_writes.py:95 asserts the one-key change with the rest preserved, :112 the unknown value refused naming the accepted values, :137 the record-adjacent boundary with audit-doc passing, :188 the four named fragment refusals each byte-identical, :209 the inert validation_diagnostics entry; the named gate re-ran at the reviewed head for 13 passed, exit 0.\nVERDICT write_paths: the manifest declares reckon/_store.py, tests/test_edit_plan_section_writes.py, the plan HTML, the cumulative evidence record and the figures directory, and git show --stat over all four commits lists exactly those five; the reviewed worktree is clean at the head.\nVERDICT manifest: read at the run directory and re-checked independently \u2014 13-passed gate, ruff 14=14 on reckon/_store.py with none in the new test, audit-doc OK on plan and evidence, and the declared mutation red with the named string.\nVERDICT diff: read commit by commit against base 0bd7a7c9 \u2014 25845dc8 adds both write paths, 0b3cd08c replaces the validation_diagnostics transport with the request-local effect list and adds the boundary and refusal assertions, dfa424c3 and 06642dc7 record the plan and evidence; every commit carries a body and no AI attribution.\nCALL_SITES: reckon/mcp.py:4405 (edit_plan tool registration), reckon/mcp.py:2874 (apply_ops on the working dict), reckon/mcp.py:2926 (write_plan at the locked write), reckon/_store.py:738 (effect consumption in _write_state_locked)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both operations land and are asserted at reckon/_store.py:1506 and :1980, but a legitimate concurrent write (a stale expected_version whose batch also appends a comment) reaches the merge branch at reckon/_store.py:736, where the reassigned dict no longer matches the effect's object identity, so _consume_section_insertions at :738 returns [] and the requested section is dropped while the call returns ok:True with a new version.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate re-ran green at the reviewed head (13 passed, exit 0) and the declared mutation reddens the dotted-set test in a scratch copy of 06642dc7 with the exact declared string, docked one because the stored red log is stamped 0b3cd08c and a reader must confirm the docs-only commit since leaves reckon/_store.py identical.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four commits touch only the five declared paths (reckon/_store.py, tests/test_edit_plan_section_writes.py, docs/plans/the-mcp-answers-within-its-ceiling.html, docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html, docs/figures/the-mcp-answers-within-its-ceiling/) and the reviewed worktree is clean at the head.\nSCORE durability: 16\nJUSTIFICATION durability: the added assertions are independent \u2014 two mutations in a scratch copy redden them (the declared dotted-path removal at tests/test_edit_plan_section_writes.py:95 with \"unsupported plan set path\", and removing the nested-h2 refusal at reckon/_store.py:553 reddens only the nested-heading case at :188) \u2014 but no test covers the insertion plus comment-merge interaction at reckon/_store.py:736, where the queued effect is silently discarded.\nSCORE fit: 19\nJUSTIFICATION fit: the new code follows the module's idioms \u2014 the request-local effect collection documented at reckon/_store.py:509, refusals checked before the write begins, and the dotted branch placed with the other plan set paths at :1506 \u2014 with mechanism-named symbols and no plan labels.\nFINDING reckon/_store.py:738 the effect consumption runs after the comment-merge reassignment at :736, so on that path `data` is a new dict, `pending[0] is data` fails, the queued insertion is discarded, and the write proceeds to success; reproduced at the reviewed head 06642dc7 \u2014 with the plan at version 1 after a peer comment append, a stale write at expected_version 0 whose batch appends its own comment and one insert_section op returned version 2, merged all three comments, and left the file without the requested section (inserted=false, no exception), while the identical batch at the current version lands it (inserted=true), so the caller is told the write succeeded and must diff the HTML to learn the insertion did not happen.",
+  "review_run_id": "r-20260925T020903560838-review-of-edit-plan-writes-one-section",
+  "reviewed_base_sha": "0bd7a7c9667176b07d0d7912d07a1e8739581d03",
+  "reviewed_head_sha": "06642dc71ba473ac21d0b8064eaf0ade14bd5d8b",
+  "reviewed_run_id": "r-20260925T011144444203-edit-plan-writes-one-section",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T02:44:05.377105+00:00",
+  "total": 92
+}

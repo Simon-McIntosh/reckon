@@ -1,0 +1,24 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T12:02:45.694Z",
+  "dispatched_at": "2026-10-05T11:58:19Z",
+  "findings": [],
+  "plan_fingerprint": "920c00ea37a61d2749458f529fd5261141e457d211a66ef51d55ccdd83a7d403",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 104,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T115801963401-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "e0754392573585c5e184cad07873fc212b64aac1",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change is one module-private function over the nodes `definitions` already yields, hiding the whole rule (the callee set incl. bare `replace`/`rename`, the local-binding decidability test, the parameter-rename one-level-up resolution, the module-level-name move exclusion) behind a single node-inventory interface; it adds no parallel walker.",
+    "duplicate_owner": "pass \u2014 the one re-derivation, porting the census staged-write predicate into reckon/interface_counts.py, is justified and reconciled rather than forked: the census imports its sibling `candidates` unqualified at module scope (census.py:24) so a package caller cannot import it, its figures are compared across pinned commits so its predicate is frozen, and \u00a79 binds the runtime owner to it with a one-directional parity assertion (census \u2286 runtime, the correct direction since the runtime rule is strictly broader); the frames, scheduler queries and state readers it touches are routed to their owners, not duplicated.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a79 names its accounting in its own text \u2014 the inventory rule is module-private (definitions' publicity rule at interface_counts.py:88 excludes `_`-prefixed names) and the deleted helpers were private and uncounted, so public_definitions does not grow and nothing is retired; the section adds no CLI option, MCP view or refusal family, and its done-when pins the claim (\"public_definitions no higher than at the base\").",
+    "reuse_search": "pass \u2014 \u00a79 cites and extends existing machinery rather than adding a subsystem: the AST walker `read_trees`/`definitions` (reckon/interface_counts.py:326, :76), the staged-write predicate lifted from the census `primitive_concepts` (docs/research/data/crew-pattern-review/code-depth/census.py:233-274), and the \u00a78 owner `write_atomically` (reckon/_store.py:426); its write-site inventory is accurate (serve.py's four sites at :498, :562, :2322, :3629; ledger.py's two at :1032 and :1168; archive.py:137; evidence.py:676), and the two sites it names as retained exceptions genuinely cannot reach the file-writing primitive.",
+    "thin_wrapper": "pass \u2014 \u00a79 adds no layer: it deletes the private temporary-and-rename helper around each site and renders through the \u00a78 owner (\u00a79's `binary=True` reuses the keyword `_store.write_atomically` already carries), so the honest extension of the existing mechanism is what the plan does."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T12:03:52.554580+00:00"
+}

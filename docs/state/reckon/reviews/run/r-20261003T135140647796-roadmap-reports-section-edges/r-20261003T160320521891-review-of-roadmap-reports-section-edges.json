@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite 354 passed / 0 failed at 406faf5ef (logs/baseline-suite.log EXIT=0) and after_suite 354 passed / 0 failed at d7056b829 (logs/after-suite.log EXIT=0), over the 33 test files importing reckon.roadmap; no failure id appears on either arm, so the change adds none.",
+  "after_suite": {
+    "command": "cd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/roadmap-reports-section-edges && PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/roadmap-reports-section-edges /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/roadmap-reports-section-edges/.venv/bin/python -m pytest -p no:cacheprovider -q -rf --basetemp=/tmp/reckon-crew-scratch/r-20261003T135140647796-roadmap-reports-section-edges/pt-after-arm $(cat /tmp/reckon-crew-scratch/r-20261003T135140647796-roadmap-reports-section-edges/after-files-final.txt)",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T135140647796-roadmap-reports-section-edges/logs/after-suite.log",
+    "revision": "d7056b82927297e353fc6881f98dac38773cb6b5"
+  },
+  "backend": "clive",
+  "baseline_suite": {
+    "command": "cd /tmp/reckon-crew-scratch/r-20261003T135140647796-roadmap-reports-section-edges/base-tree && PYTHONPATH=/tmp/reckon-crew-scratch/r-20261003T135140647796-roadmap-reports-section-edges/base-tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/roadmap-reports-section-edges/.venv/bin/python -m pytest -p no:cacheprovider -q -rf --basetemp=/tmp/reckon-crew-scratch/r-20261003T135140647796-roadmap-reports-section-edges/pt-base-arm $(cat /tmp/reckon-crew-scratch/r-20261003T135140647796-roadmap-reports-section-edges/base-files-final.txt)",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T135140647796-roadmap-reports-section-edges/logs/baseline-suite.log",
+    "revision": "406faf5efe0cf4c3e7aa9381bfdc909b9e186a79"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/roadmap.py::_build_roadmap"
+  ],
+  "completed_at": "2026-10-03T16:13:32.594Z",
+  "dispatched_at": "2026-10-03T16:03:43Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/section-contract-and-computed-impl/roadmap-reports-section-edges.html",
+      "line": "110",
+      "severity": "follow-on",
+      "text": "follow-on: the base-arm row reads '5 failed, 1 passed -- the same file at the base revision' but cites logs/base-new-test.log, a round-1 log whose failure list names test_the_critical_path_carries_the_section_on_each_such_edge, a case the current file no longer holds; running the current seven-case file at base 406faf5ef gives 5 failed, 2 passed, so the row is one passing case stale and 'the same file' is inexact."
+    },
+    {
+      "file": "docs/evidence/fragments/section-contract-and-computed-impl/roadmap-reports-section-edges.html",
+      "line": "104",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm row cites head-new-test.log (6 passed at a097f12c8), measured before the shape case was added; the repair-head arm (60 = 53 named-file + 7 in the new file) is the row that carries the current file."
+    },
+    {
+      "file": "manifest.md",
+      "line": "35",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite is keyed to d7056b829 while the reviewed head is 9c924eb76; 9c924eb76 changes only the evidence fragment, so the suite result stands for the head's code, but the recorded revision is not the reviewed head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "5a0b0f87548f7696b2915b95135c304376024960..9c924eb76a61160a8577fe3f7758f79c4fb22353 is d7056b829 (restores the base text of _sprint_member_counts, sprint_summary_rows and _drift_is_member_progress) and 9c924eb76 (records the importing-set suite arms in the fragment); the feature code is unchanged since the prior reviewed head.",
+    "done_when": "section 6 asks the roadmap raw view to show a section edge for the two nova gates authored 2026-09-19; read live the topology rebank gate resolves to cut-cell-current-attribution#s6 (source_section s2, gate-text) and the corpus gate to labeller-throughput-and-shape-inverse#s1 and #s2 (source_section s6), and open_paths[2] carries the s6 edge, matching the committed fragment.",
+    "goal": "the node's section-6 roadmap clause is met and the gained commits complete its repair; the raw view's open_paths entries carry a section-level edge for a gate on one section of another plan and for a #section ref, while critical_path keeps the seven keys every summary has always carried.",
+    "manifest": "read; status complete; baseline_suite and after_suite now carry readable arms (406faf5ef 354 passed, d7056b829 354 passed); commits d7056b829 and 9c924eb76 are the gained pair.",
+    "write_paths": "the reviewed manifest declares reckon/roadmap.py, tests/test_roadmap_reports_section_edges.py and the evidence fragment; git diff --name-only 5a0b0f87548f7696b2915b95135c304376024960..9c924eb76a61160a8577fe3f7758f79c4fb22353 names exactly the fragment and reckon/roadmap.py, both inside scope."
+  },
+  "justifications": {
+    "durability": "tests/test_roadmap_reports_section_edges.py::test_the_critical_path_keeps_the_shape_every_summary_carries compares critical_path's key set to a literal and is the guard the repair added; the five section-edge cases fail at base 406faf5ef and pass at head, so the feature is pinned and the regression cannot return unseen.",
+    "evidence": "the importing-set arms are now recorded (354 passed at both 406faf5ef and d7056b829) and the manifest's baseline_suite/after_suite are readable, and the mechanism reproduced independently (7-case new file green at head, 5 failed/2 passed at base); docked because the fragment's head and base arm rows cite round-1 logs (6 cases) rather than the current 7-case file, and the manifest keys after_suite to d7056b829 rather than the reviewed head.",
+    "fit": "the new helpers (_gate_section_edges, _gate_section_refs, _declared_stages) reuse parse_plan_ref, execution_gates and the existing depends_on row shape, and the critical-path filter is a single idiomatic dict comprehension with an explanatory comment; no forbidden name or plan label.",
+    "goal_fidelity": "the gained commits complete the prior review's repair -- 7363fe596 filters the edges key out of critical_path (reckon/roadmap.py:3018) while the section stays on the raw view's open_paths entries -- and the live nova read shows both gates' section edges with critical_path carrying exactly the seven established keys.",
+    "scope_discipline": "git diff --name-only 5a0b0f87548f7696b2915b95135c304376024960..9c924eb76a61160a8577fe3f7758f79c4fb22353 is exactly the evidence fragment and reckon/roadmap.py; the restore is confined to the three functions it names and base..head carries no hunk inside them, and ruff reports the same three findings and the same format status as base, so the change adds no lint."
+  },
+  "model": "deepseek-v4.1-flash",
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T135140647796-roadmap-reports-section-edges/logs/base-new-test.log",
+  "negative_control_note": "independently reproduced: the current seven-case tests/test_roadmap_reports_section_edges.py run against the base source at 406faf5ef gives 5 failed, 2 passed (the five section-edge cases fail), and against the head source passes; the failure the negative control names is real.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's section-6 roadmap clause is met and the gained commits complete its repair; the raw view's open_paths entries carry a section-level edge for a gate on one section of another plan and for a #section ref, while critical_path keeps the seven keys every summary has always carried.\nVERDICT done_when: section 6 asks the roadmap raw view to show a section edge for the two nova gates authored 2026-09-19; read live the topology rebank gate resolves to cut-cell-current-attribution#s6 (source_section s2, gate-text) and the corpus gate to labeller-throughput-and-shape-inverse#s1 and #s2 (source_section s6), and open_paths[2] carries the s6 edge, matching the committed fragment.\nVERDICT write_paths: the reviewed manifest declares reckon/roadmap.py, tests/test_roadmap_reports_section_edges.py and the evidence fragment; git diff --name-only 5a0b0f87548f7696b2915b95135c304376024960..9c924eb76a61160a8577fe3f7758f79c4fb22353 names exactly the fragment and reckon/roadmap.py, both inside scope.\nVERDICT manifest: read; status complete; baseline_suite and after_suite now carry readable arms (406faf5ef 354 passed, d7056b829 354 passed); commits d7056b829 and 9c924eb76 are the gained pair.\nVERDICT diff: 5a0b0f87548f7696b2915b95135c304376024960..9c924eb76a61160a8577fe3f7758f79c4fb22353 is d7056b829 (restores the base text of _sprint_member_counts, sprint_summary_rows and _drift_is_member_progress) and 9c924eb76 (records the importing-set suite arms in the fragment); the feature code is unchanged since the prior reviewed head.\nreviewed_base_sha: 5a0b0f87548f7696b2915b95135c304376024960\nreviewed_head_sha: 9c924eb76a61160a8577fe3f7758f79c4fb22353\nCALL_SITES: reckon/roadmap.py::_build_roadmap\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained commits complete the prior review's repair -- 7363fe596 filters the edges key out of critical_path (reckon/roadmap.py:3018) while the section stays on the raw view's open_paths entries -- and the live nova read shows both gates' section edges with critical_path carrying exactly the seven established keys.\nSCORE evidence: 16\nJUSTIFICATION evidence: the importing-set arms are now recorded (354 passed at both 406faf5ef and d7056b829) and the manifest's baseline_suite/after_suite are readable, and the mechanism reproduced independently (7-case new file green at head, 5 failed/2 passed at base); docked because the fragment's head and base arm rows cite round-1 logs (6 cases) rather than the current 7-case file, and the manifest keys after_suite to d7056b829 rather than the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 5a0b0f87548f7696b2915b95135c304376024960..9c924eb76a61160a8577fe3f7758f79c4fb22353 is exactly the evidence fragment and reckon/roadmap.py; the restore is confined to the three functions it names and base..head carries no hunk inside them, and ruff reports the same three findings and the same format status as base, so the change adds no lint.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_roadmap_reports_section_edges.py::test_the_critical_path_keeps_the_shape_every_summary_carries compares critical_path's key set to a literal and is the guard the repair added; the five section-edge cases fail at base 406faf5ef and pass at head, so the feature is pinned and the regression cannot return unseen.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers (_gate_section_edges, _gate_section_refs, _declared_stages) reuse parse_plan_ref, execution_gates and the existing depends_on row shape, and the critical-path filter is a single idiomatic dict comprehension with an explanatory comment; no forbidden name or plan label.\nFINDING docs/evidence/fragments/section-contract-and-computed-impl/roadmap-reports-section-edges.html:110 follow-on: the base-arm row reads '5 failed, 1 passed -- the same file at the base revision' but cites logs/base-new-test.log, a round-1 log whose failure list names test_the_critical_path_carries_the_section_on_each_such_edge, a case the current file no longer holds; running the current seven-case file at base 406faf5ef gives 5 failed, 2 passed, so the row is one passing case stale and 'the same file' is inexact.\nFINDING docs/evidence/fragments/section-contract-and-computed-impl/roadmap-reports-section-edges.html:104 follow-on: the head-arm row cites head-new-test.log (6 passed at a097f12c8), measured before the shape case was added; the repair-head arm (60 = 53 named-file + 7 in the new file) is the row that carries the current file.\nFINDING manifest.md:35 follow-on: after_suite is keyed to d7056b829 while the reviewed head is 9c924eb76; 9c924eb76 changes only the evidence fragment, so the suite result stands for the head's code, but the recorded revision is not the reviewed head.",
+  "review_run_id": "r-20261003T160320521891-review-of-roadmap-reports-section-edges",
+  "reviewed_base_sha": "5a0b0f87548f7696b2915b95135c304376024960",
+  "reviewed_head_sha": "9c924eb76a61160a8577fe3f7758f79c4fb22353",
+  "reviewed_run_id": "r-20261003T135140647796-roadmap-reports-section-edges",
+  "reviewer_run_id": "r-20261003T160320521891-review-of-roadmap-reports-section-edges",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:07.453971+00:00",
+  "total": 93
+}

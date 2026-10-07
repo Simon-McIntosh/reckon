@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_member_friction.py::test_member_dispatch_without_a_registered_checkout_names_repo"
+  ],
+  "backend": "local",
+  "base_log_revision": "0fc262e3fe530bec5274d080981d927a98ad2945",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery.py:658 newest_review_for_headless_run (the shared headless reading)",
+    "reckon/crew/recovery.py:699 _stored_review (classifier)",
+    "reckon/crew/obligations.py:708 _sub_floor_items_by_session (duty reader)",
+    "reckon/crew/obligations.py:352 obligation producer",
+    "reckon/crew/promotion.py:6344 promotion gate",
+    "reckon/cli.py:4946 crew dispose"
+  ],
+  "completed_at": "2026-10-03T03:44:50.008Z",
+  "dispatched_at": "2026-10-03T03:31:44Z",
+  "findings": [
+    {
+      "file": "docs/figures/crew-runtime-positive-controls/reclaimed-run-head-keeps-stored-reviews/headless-reading-decision.svg",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the figure and both fragments state the reclaimed branch refuses in both readers and that the classifier and the obligations duty reader take the same branch, but reckon/crew/obligations.py:708 calls newest_review_for_headless_run with reclaimed=False, so for a run that named a worktree no longer on disk the duty reader reads the store's newest record rather than refusing; the new case's vanished-tree assertion depends on exactly that, so the artifact's claim that both readers take one branch overstates the agreement."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the repair arms include the real-store inventory test tests/test_member_friction.py, whose collection/setup error id shifts between the base and head arms under concurrent fleet writes; the store's own read-time annotation counts the head arm's error id as an added failure, so this review reads a total capped at 5 rather than its scored 84 until the id is retired by name, and the run's failure_attribution names only the file rather than the full node id."
+    }
+  ],
+  "head_log_revision": "b1b4f8983cceae1035ebd410b03b42e5ac9001eb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read d69cf81f and b1b4f898 against 0fc262e3f; the repair adds the shared function and rewires the two readers (+141/-24 over three files) and the evidence commit adds the node fragment, the topic-fragment repair section and the decision-tree figure (+85/-1), with no unrelated edits.",
+    "done_when": "The done-when asks for a parsed record scoring all five dimensions 0..20 naming reviewed_base_sha and reviewed_head_sha with added_failure_count and added_failure_ids derived from the reviewed run's own baseline_suite and after_suite gate logs; this record is that, at base 0fc262e3f..head b1b4f898. The two arms share the same seven FAILED ids (all tests/test_rereview_keeps_its_lane.py) and carry one ERROR id each, a different one, so the reviewed run's own derivation reads tests/test_member_friction.py::test_member_dispatch_without_a_registered_checkout_names_repo as added and added_failure_count is 1.",
+    "goal": "The repair for finding f49b6b9881f lands as the section needs: newest_review_for_headless_run (reckon/crew/recovery.py:658) holds the reading for a record that resolves no head, _stored_review takes it for the classifier (reckon/crew/recovery.py:699) and _sub_floor_items_by_session takes it for the duty reader (reckon/crew/obligations.py:708), so a live run whose pointer names no readable tree again produces its sub-floor disposition duty instead of skipping it over a head the pointer cannot resolve.",
+    "manifest": "The reviewed run's manifest.md reads status complete with its four commits, both suite records carrying literal commands, revisions and failure ids, a bare negative_control_log path, and measurement_module/measurement_cwd for the scratch base arm; its scope_note discloses that the live pointer still records the original dispatch's write paths, which the coordinator owns, rather than hiding it.",
+    "write_paths": "The six delta paths (reckon/crew/recovery.py, reckon/crew/obligations.py, tests/test_reclaimed_run_review_head.py, both evidence fragments, the figure directory) all sit inside the repair brief's declared write scope in resume-1-advice.txt; nothing outside it is changed and the plan is not edited from the worktree."
+  },
+  "justifications": {
+    "durability": "test_a_live_run_with_no_readable_tree_still_owes_its_sub_floor_duty asserts the duty for a vanished worktree and for a nameless tree, and the negative control reverses the two source files to redden it on an empty duty set; unwatched, reckon/cli.py:4944 still passes an empty head for a live pointer with no readable tree, so the disposition CLI keeps the lost-review shape the repair fixed for the duty reader.",
+    "evidence": "the arms over fourteen gate files are recorded at logs/repair-baseline-arm.log (7 failed, 111 passed, 1 error, EXIT=1 at 0fc262e3f) and logs/repair-arm-2.log (7 failed, 112 passed, 1 error, EXIT=1 at d69cf81f), the negative control at logs/negative-control-repair.log reddens the new case on an empty duty set (1 failed, 2 deselected, EXIT=1), and logs/store-inventory-alone.log clears the error (5 passed, EXIT=0); but the arms include a real-store test whose error id shifts between arms, so the run's own derivation reads it as an added failure.",
+    "fit": "newest_review_for_headless_run is named by the mechanism it carries, the docstrings state the branch and the reason, no added name carries a plan label, and the decision-tree figure has no data-ink violation.",
+    "goal_fidelity": "finding f49b6b9881f named the duty reader losing its duty over an empty head, and the repair answers it in one function both readers now take, with the classifier's reclaimed refusal preserved at reckon/crew/recovery.py:699.",
+    "scope_discipline": "every delta path is inside the repair brief's declared write scope and the plan is untouched; the only wrinkle is the run's live pointer still naming the original dispatch's paths, which the manifest discloses rather than conceals."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The repair for finding f49b6b9881f lands as the section needs: newest_review_for_headless_run (reckon/crew/recovery.py:658) holds the reading for a record that resolves no head, _stored_review takes it for the classifier (reckon/crew/recovery.py:699) and _sub_floor_items_by_session takes it for the duty reader (reckon/crew/obligations.py:708), so a live run whose pointer names no readable tree again produces its sub-floor disposition duty instead of skipping it over a head the pointer cannot resolve.\nVERDICT done_when: The done-when asks for a parsed record scoring all five dimensions 0..20 naming reviewed_base_sha and reviewed_head_sha with added_failure_count and added_failure_ids derived from the reviewed run's own baseline_suite and after_suite gate logs; this record is that, at base 0fc262e3f..head b1b4f898. The two arms share the same seven FAILED ids (all tests/test_rereview_keeps_its_lane.py) and carry one ERROR id each, a different one, so the reviewed run's own derivation reads tests/test_member_friction.py::test_member_dispatch_without_a_registered_checkout_names_repo as added and added_failure_count is 1.\nVERDICT write_paths: The six delta paths (reckon/crew/recovery.py, reckon/crew/obligations.py, tests/test_reclaimed_run_review_head.py, both evidence fragments, the figure directory) all sit inside the repair brief's declared write scope in resume-1-advice.txt; nothing outside it is changed and the plan is not edited from the worktree.\nVERDICT manifest: The reviewed run's manifest.md reads status complete with its four commits, both suite records carrying literal commands, revisions and failure ids, a bare negative_control_log path, and measurement_module/measurement_cwd for the scratch base arm; its scope_note discloses that the live pointer still records the original dispatch's write paths, which the coordinator owns, rather than hiding it.\nVERDICT diff: Read d69cf81f and b1b4f898 against 0fc262e3f; the repair adds the shared function and rewires the two readers (+141/-24 over three files) and the evidence commit adds the node fragment, the topic-fragment repair section and the decision-tree figure (+85/-1), with no unrelated edits.\nCALL_SITES: reckon/crew/recovery.py:658 newest_review_for_headless_run (the shared headless reading), reckon/crew/recovery.py:699 _stored_review (classifier), reckon/crew/obligations.py:708 _sub_floor_items_by_session (duty reader), reckon/crew/obligations.py:352 obligation producer, reckon/crew/promotion.py:6344 promotion gate, reckon/cli.py:4946 crew dispose\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: finding f49b6b9881f named the duty reader losing its duty over an empty head, and the repair answers it in one function both readers now take, with the classifier's reclaimed refusal preserved at reckon/crew/recovery.py:699.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms over fourteen gate files are recorded at logs/repair-baseline-arm.log (7 failed, 111 passed, 1 error, EXIT=1 at 0fc262e3f) and logs/repair-arm-2.log (7 failed, 112 passed, 1 error, EXIT=1 at d69cf81f), the negative control at logs/negative-control-repair.log reddens the new case on an empty duty set (1 failed, 2 deselected, EXIT=1), and logs/store-inventory-alone.log clears the error (5 passed, EXIT=0); but the arms include a real-store test whose error id shifts between arms, so the run's own derivation reads it as an added failure.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every delta path is inside the repair brief's declared write scope and the plan is untouched; the only wrinkle is the run's live pointer still naming the original dispatch's paths, which the manifest discloses rather than conceals.\nSCORE durability: 15\nJUSTIFICATION durability: test_a_live_run_with_no_readable_tree_still_owes_its_sub_floor_duty asserts the duty for a vanished worktree and for a nameless tree, and the negative control reverses the two source files to redden it on an empty duty set; unwatched, reckon/cli.py:4944 still passes an empty head for a live pointer with no readable tree, so the disposition CLI keeps the lost-review shape the repair fixed for the duty reader.\nSCORE fit: 17\nJUSTIFICATION fit: newest_review_for_headless_run is named by the mechanism it carries, the docstrings state the branch and the reason, no added name carries a plan label, and the decision-tree figure has no data-ink violation.\nFINDING docs/figures/crew-runtime-positive-controls/reclaimed-run-head-keeps-stored-reviews/headless-reading-decision.svg:1 follow-on: the figure and both fragments state the reclaimed branch refuses in both readers and that the classifier and the obligations duty reader take the same branch, but reckon/crew/obligations.py:708 calls newest_review_for_headless_run with reclaimed=False, so for a run that named a worktree no longer on disk the duty reader reads the store's newest record rather than refusing; the new case's vanished-tree assertion depends on exactly that, so the artifact's claim that both readers take one branch overstates the agreement.\nFINDING manifest.md:1 follow-on: the repair arms include the real-store inventory test tests/test_member_friction.py, whose collection/setup error id shifts between the base and head arms under concurrent fleet writes; the store's own read-time annotation counts the head arm's error id as an added failure, so this review reads a total capped at 5 rather than its scored 84 until the id is retired by name, and the run's failure_attribution names only the file rather than the full node id.\nreviewed_base_sha: 0fc262e3fe530bec5274d080981d927a98ad2945\nreviewed_head_sha: b1b4f8983cceae1035ebd410b03b42e5ac9001eb",
+  "review_run_id": "r-20261003T033058075022-review-of-reclaimed-run-head-keeps-stored-reviews",
+  "reviewed_base_sha": "0fc262e3fe530bec5274d080981d927a98ad2945",
+  "reviewed_head_sha": "b1b4f8983cceae1035ebd410b03b42e5ac9001eb",
+  "reviewed_run_id": "r-20261003T014958539604-reclaimed-run-head-keeps-stored-reviews",
+  "reviewer": "review-of-reclaimed-run-head-keeps-stored-reviews",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.861339+00:00",
+  "total": 84
+}

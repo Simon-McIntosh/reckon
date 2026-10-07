@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3608bb44e643bb445135f6b78bc9da767d42785e",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-05T09:11:18.282Z",
+  "dispatched_at": "2026-10-05T09:01:28Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger.py",
+      "line": "922",
+      "severity": "follow-on",
+      "text": "follow-on: the restored zero[\"review\"][\"status\"] == \"parsed\" and zero[\"review\"][\"total\"] == 0 assertions compare build_record's output against the same literals _review_block(0) supplied on the input side, so they are not independent of the value under test and hold for any regression other than build_record dropping or rewriting those two keys."
+    }
+  ],
+  "head_log_revision": "0506e9257e19d0eca5b92aa9218c348c8a94b464",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "git show 0506e9257 adds exactly two assertions to tests/test_ledger.py and nothing else; the increment is test-only with no production code.",
+    "done_when": "this node's done_when asks for a stored parsed five-dimension record naming the revision pair and the added-failure fields; the record this script stores is that measurement.",
+    "goal": "the increment's goal is to restore the two assertions a34b2c15 dropped from test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one, and tests/test_ledger.py:922-923 now carries both, so the goal is met.",
+    "manifest": "the reviewed run's manifest at head 0506e9257 records after_suite 737 passed EXIT=0 and gate 250 passed EXIT=0, but its focused gate.log is headed revision 3608bb44 (the reviewed run's base), so the increment is measured by the population arm rather than the focused gate.",
+    "write_paths": "the increment touches only tests/test_ledger.py, one of the reviewed run's declared write paths; no file outside it changed."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger.py:922-923 guards build_record's passthrough of the review block, but it compares the stored value against the same literals _review_block(0) passed in, so it reddens only if build_record drops or rewrites those keys.",
+    "evidence": "the reviewed manifest's after_suite at 0506e9257 (population_head.log, 737 passed EXIT=0) is the only arm headed at the increment's revision, while gate.log is headed 3608bb44, so the increment has no focused arm of its own.",
+    "fit": "the restored lines match the adjacent assertions and the test's own comment and introduce no new name or mechanism.",
+    "goal_fidelity": "tests/test_ledger.py:922-923 now asserts zero[\"review\"][\"status\"] == \"parsed\" and zero[\"review\"][\"total\"] == 0, exactly as the commit message states.",
+    "scope_discipline": "the increment's diff is two added lines in tests/test_ledger.py, inside the reviewed run's declared write paths and touching nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment's goal is to restore the two assertions a34b2c15 dropped from test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one, and tests/test_ledger.py:922-923 now carries both, so the goal is met.\nVERDICT done_when: this node's done_when asks for a stored parsed five-dimension record naming the revision pair and the added-failure fields; the record this script stores is that measurement.\nVERDICT write_paths: the increment touches only tests/test_ledger.py, one of the reviewed run's declared write paths; no file outside it changed.\nVERDICT manifest: the reviewed run's manifest at head 0506e9257 records after_suite 737 passed EXIT=0 and gate 250 passed EXIT=0, but its focused gate.log is headed revision 3608bb44 (the reviewed run's base), so the increment is measured by the population arm rather than the focused gate.\nVERDICT diff: git show 0506e9257 adds exactly two assertions to tests/test_ledger.py and nothing else; the increment is test-only with no production code.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_ledger.py:922-923 now asserts zero[\"review\"][\"status\"] == \"parsed\" and zero[\"review\"][\"total\"] == 0, exactly as the commit message states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed manifest's after_suite at 0506e9257 (population_head.log, 737 passed EXIT=0) is the only arm headed at the increment's revision, while gate.log is headed 3608bb44, so the increment has no focused arm of its own.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the increment's diff is two added lines in tests/test_ledger.py, inside the reviewed run's declared write paths and touching nothing else.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_ledger.py:922-923 guards build_record's passthrough of the review block, but it compares the stored value against the same literals _review_block(0) passed in, so it reddens only if build_record drops or rewrites those keys.\nSCORE fit: 19\nJUSTIFICATION fit: the restored lines match the adjacent assertions and the test's own comment and introduce no new name or mechanism.\nFINDING tests/test_ledger.py:922 follow-on: the restored zero[\"review\"][\"status\"] == \"parsed\" and zero[\"review\"][\"total\"] == 0 assertions compare build_record's output against the same literals _review_block(0) supplied on the input side, so they are not independent of the value under test and hold for any regression other than build_record dropping or rewriting those two keys.\nreviewed_base_sha: a34b2c15cd1cb7dcaa4c6d38b7d5d5c1f66e5f87\nreviewed_head_sha: 0506e9257e19d0eca5b92aa9218c348c8a94b464\n",
+  "review_run_id": "r-20261005T090059297925-review-of-reuse-is-a-review-dimension",
+  "reviewed_base_sha": "a34b2c15cd1cb7dcaa4c6d38b7d5d5c1f66e5f87",
+  "reviewed_head_sha": "0506e9257e19d0eca5b92aa9218c348c8a94b464",
+  "reviewed_run_id": "r-20261005T075546675949-reuse-is-a-review-dimension",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T09:09:53.876025+00:00",
+  "total": 91
+}

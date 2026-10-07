@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/project_state.py:1410",
+    "reckon/project_state.py:1482",
+    "reckon/roadmap.py:1478"
+  ],
+  "completed_at": "2026-09-25T15:49:48.322Z",
+  "dispatched_at": "2026-09-25T14:42:41Z",
+  "findings": [
+    {
+      "file": "tests/test_sprint_liveness.py",
+      "line": "99",
+      "text": "_write_watch_event takes a home and never reads it \u2014 the event's path resolves from the ambient RECKON_HOME through runs.watch_stream_path \u2014 so a caller passing a different home writes into the ambient one, and the containment the signature advertises rests on the environment instead."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against the base; the age bound is the three-part check at reckon/sprint_liveness.py:236-244, the two added tests redden under opposite single-clause removals, the second commit adds one plan note beside the record it corrects, and the head's own tree still holds no production caller of the module.",
+    "done_when": "the done_when asks for tests/test_sprint_liveness.py green with two new age-bound tests, the declared mutation red, a bounded warm call and the two touched files ruff-clean \u2014 the gate log records 7 passed, exit 0, at revision ea709b88 with the imported module's path under the run's own worktree, and my re-run of that suite from the same tree reproduced 7 passed, exit 0.",
+    "goal": "the GOAL is that a recorded liveness state counts only while it is fresh, and the landed code does that \u2014 HEAD:reckon/sprint_liveness.py:236 takes the recorded state only when _recorded_within_window is true and :244 falls back to the bounded manifest-and-age check otherwise.",
+    "manifest": "read; status complete with commits 81279f94 and ea709b88, the gate, mutation and latency logs recorded as real files, and evidence_inputs disclosing the plan note's placement under s2 for the coordinator to settle.",
+    "write_paths": "the range f668addc..ea709b88 changes exactly the five declared paths \u2014 reckon/sprint_liveness.py, tests/test_sprint_liveness.py, docs/figures/a-sprint-is-live-while-a-crew-works-it/recorded-state-age-bound.svg, docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html, docs/plans/a-sprint-is-live-while-a-crew-works-it.html \u2014 and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_sprint_liveness.py:344 reddens under the declared mutation observed in negative-control.log and :380 reddens if the observed_at clause alone is dropped, so the pair pins the bound from both sides.",
+    "evidence": "the gate log names its revision and command and records the 7-passed, exit-0 result against the reviewed module's path, and my independent re-run of tests/test_sprint_liveness.py matched it, while the run directory holds no log of its ruff result.",
+    "fit": "reckon/sprint_liveness.py:90 keeps the freshness predicate as its own documented helper rather than inlining it at the call site, matching the module's small-reader idiom.",
+    "goal_fidelity": "reckon/sprint_liveness.py:236-244 trusts a recorded state only while its own observed_at or the run's stream write sits inside the stall window, which is the goal sentence.",
+    "scope_discipline": "every path in the diff f668addc..ea709b88, the plan file included, is one of the five declared write paths and no other file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the GOAL is that a recorded liveness state counts only while it is fresh, and the landed code does that \u2014 HEAD:reckon/sprint_liveness.py:236 takes the recorded state only when _recorded_within_window is true and :244 falls back to the bounded manifest-and-age check otherwise.\nVERDICT done_when: the done_when asks for tests/test_sprint_liveness.py green with two new age-bound tests, the declared mutation red, a bounded warm call and the two touched files ruff-clean \u2014 the gate log records 7 passed, exit 0, at revision ea709b88 with the imported module's path under the run's own worktree, and my re-run of that suite from the same tree reproduced 7 passed, exit 0.\nVERDICT write_paths: the range f668addc..ea709b88 changes exactly the five declared paths \u2014 reckon/sprint_liveness.py, tests/test_sprint_liveness.py, docs/figures/a-sprint-is-live-while-a-crew-works-it/recorded-state-age-bound.svg, docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html, docs/plans/a-sprint-is-live-while-a-crew-works-it.html \u2014 and nothing else.\nVERDICT manifest: read; status complete with commits 81279f94 and ea709b88, the gate, mutation and latency logs recorded as real files, and evidence_inputs disclosing the plan note's placement under s2 for the coordinator to settle.\nVERDICT diff: read commit by commit against the base; the age bound is the three-part check at reckon/sprint_liveness.py:236-244, the two added tests redden under opposite single-clause removals, the second commit adds one plan note beside the record it corrects, and the head's own tree still holds no production caller of the module.\nCALL_SITES: reckon/project_state.py:1410, reckon/project_state.py:1482, reckon/roadmap.py:1478\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/sprint_liveness.py:236-244 trusts a recorded state only while its own observed_at or the run's stream write sits inside the stall window, which is the goal sentence.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate log names its revision and command and records the 7-passed, exit-0 result against the reviewed module's path, and my independent re-run of tests/test_sprint_liveness.py matched it, while the run directory holds no log of its ruff result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff f668addc..ea709b88, the plan file included, is one of the five declared write paths and no other file changed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_sprint_liveness.py:344 reddens under the declared mutation observed in negative-control.log and :380 reddens if the observed_at clause alone is dropped, so the pair pins the bound from both sides.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/sprint_liveness.py:90 keeps the freshness predicate as its own documented helper rather than inlining it at the call site, matching the module's small-reader idiom.\nFINDING tests/test_sprint_liveness.py:99 _write_watch_event takes a home and never reads it \u2014 the event's path resolves from the ambient RECKON_HOME through runs.watch_stream_path \u2014 so a caller passing a different home writes into the ambient one, and the containment the signature advertises rests on the environment instead.\n",
+  "review_run_id": "r-20260925T144225237095-review-of-recorded-liveness-has-an-age-bound",
+  "reviewed_base_sha": "f668addcbe5d9c934a81f1805e564f484c0d28d3",
+  "reviewed_head_sha": "ea709b88e5347d094ef947bb39428e9a7ffd7e30",
+  "reviewed_run_id": "r-20260925T135516711111-recorded-liveness-has-an-age-bound",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T15:42:16.121084+00:00",
+  "total": 95
+}
