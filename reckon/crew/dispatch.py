@@ -1291,14 +1291,14 @@ def _session_host_runtime_root() -> Path | None:
     return Path(scratch) if scratch else None
 
 
-def _session_host_fifo() -> Path | None:
-    """Resolve the calling Claude session's host FIFO, or None when there is none.
+def _session_host_owner() -> tuple[int, str] | None:
+    """The calling Claude process as ``(pid, start tick)``, or None without one.
 
     The host belongs to this session's Claude process, not to the crew session
-    name, so the path is built from ``CLAUDE_PID`` and that process's start tick
-    -- the pair that stays fixed across ``/clear``. A caller not running under
-    Claude Code, or one whose Claude process the kernel no longer reports, has
-    no host to ask.
+    name, so every path that names it -- the request FIFO and the census record
+    -- is built from this pair, which stays fixed across ``/clear``. A caller
+    not running under Claude Code, or one whose Claude process the kernel no
+    longer reports, has no host to name.
     """
     harness, _session, _transcript = _coordinator_runtime()
     if harness != "claude-code":
@@ -1312,10 +1312,75 @@ def _session_host_fifo() -> Path | None:
     start = _process_start_time(pid)
     if not start:
         return None
+    return pid, start
+
+
+def _session_host_fifo() -> Path | None:
+    """Resolve the calling Claude session's host FIFO, or None when there is none."""
+    owner = _session_host_owner()
     root = _session_host_runtime_root()
-    if root is None:
+    if owner is None or root is None:
         return None
+    pid, start = owner
     return root / SESSION_HOST_DIRECTORY / f"{pid}-{start}.fifo"
+
+
+# The host writes its census of running children to a directory the host module
+# owns, one record per session, named for the Claude process and its kernel
+# start tick. Dispatch reads that record to tell a follower the host runs from
+# one a coordinator armed by hand.
+def _session_host_record_path() -> Path | None:
+    """The calling Claude session's host census record, or None without a host.
+
+    Both the directory and the filename suffix are the host module's own, so the
+    name dispatch reads is the name the host wrote rather than a second spelling
+    of it, and an override that moves the host's records moves this reader with
+    them.
+    """
+    owner = _session_host_owner()
+    if owner is None:
+        return None
+    from reckon.crew.session_host import RECORD_SUFFIX, _state_dir
+
+    pid, start = owner
+    return _state_dir() / f"{pid}-{start}{RECORD_SUFFIX}"
+
+
+def _session_host_runs_follower(
+    project: str, session: str, follower_pid: int | None
+) -> bool:
+    """Whether the calling session's host runs the follower attached for a pair.
+
+    A session may already be attached when a dispatch arrives -- an earlier
+    dispatch asked its host, or the plugin's monitor attached a follower at
+    session start. Asking the host again would change nothing, and reporting
+    ``monitor`` would hand the caller an arming line for a follower the host
+    already consumes. The host's own census names every child it started, so a
+    child for this project and session carrying the pid the live registration
+    holds is the fact that the follower is the host's rather than one a
+    coordinator armed by hand.
+    """
+    path = _session_host_record_path()
+    if path is None:
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(payload, Mapping):
+        return False
+    for child in payload.get("children") or ():
+        if not isinstance(child, Mapping):
+            continue
+        if str(child.get("project")) != project:
+            continue
+        if str(child.get("session")) != session:
+            continue
+        if follower_pid is None:
+            continue
+        if child.get("pid") == follower_pid:
+            return True
+    return False
 
 
 def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
@@ -7332,14 +7397,22 @@ def dispatch(
             # to the host's FIFO and a bounded wait, and a session without a host
             # falls back to the Monitor path unchanged -- so this only ever
             # upgrades delivery, never refuses a dispatch the old path admitted.
-            if (
-                str(launch_kind) == "cli"
-                and session
-                and not dispatch_watch.get("session_attached")
-                and _ask_session_host_for_follower(project, session)
-            ):
-                session_delivery = "host"
-                dispatch_watch = watch_state(project, session=session)
+            if str(launch_kind) == "cli" and session:
+                attached = bool(dispatch_watch.get("session_attached"))
+                if not attached and _ask_session_host_for_follower(project, session):
+                    session_delivery = "host"
+                    dispatch_watch = watch_state(project, session=session)
+                # A session may already be attached by a follower the host runs,
+                # whether an earlier dispatch asked it or the plugin's monitor
+                # attached it at session start. That is host delivery just as
+                # much as one just asked for, and reading it as monitor would
+                # hand the caller an arming line for a follower the host already
+                # consumes. The host's census record, not this session's watch
+                # state, is what tells a host's follower from a hand-armed one.
+                elif _session_host_runs_follower(
+                    project, session, (dispatch_watch.get("follower") or {}).get("pid")
+                ):
+                    session_delivery = "host"
             # The watcher requirement is answered by the process, read from the
             # watcher's own state — never by a session's follower, which is how a
             # project with no watcher process at all kept admitting dispatches.

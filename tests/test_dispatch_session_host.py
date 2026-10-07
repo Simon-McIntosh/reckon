@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import runs
+from reckon.crew import runs, session_host
 
 # The suite suppresses watcher arming by default; these cases decide on the
 # watcher, so they run with arming allowed and register their own watcher
@@ -134,8 +134,14 @@ def _register_watcher(project: str, pid: int) -> None:
 
 
 def _claude_env(monkeypatch, runtime: Path) -> None:
-    """Make this process read as the calling Claude session with a runtime dir."""
+    """Make this process read as the calling Claude session with a runtime dir.
+
+    The host's census record directory is moved beside the runtime dir, so a
+    case never reads or writes the real config home and both the writer here and
+    the reader under test resolve the same temp tree.
+    """
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
+    monkeypatch.setenv("RECKON_SESSION_HOST_STATE_DIR", str(runtime / "session-hosts"))
     monkeypatch.setenv("CLAUDE_PID", str(os.getpid()))
     monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "claude-session-host-test")
     monkeypatch.delenv("CODEX_SESSION_ID", raising=False)
@@ -148,6 +154,23 @@ def _session_host_fifo(runtime: Path) -> Path:
     start = crew._process_start_time(pid)
     assert start, "the running node id must have a kernel start tick"
     return runtime / "reckon-session-host" / f"{pid}-{start}.fifo"
+
+
+def _write_host_record(children: list[dict]) -> Path:
+    """Write the calling session's host census into the host module's state dir.
+
+    The directory and the filename suffix are the ones the host itself resolves,
+    so this fixture writes where the reader under test looks rather than at a
+    second hardcoded spelling of the same path.
+    """
+    pid = os.getpid()
+    start = crew._process_start_time(pid)
+    assert start, "the running node id must have a kernel start tick"
+    directory = session_host._state_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{pid}-{start}{session_host.RECORD_SUFFIX}"
+    path.write_text(json.dumps({"pid": pid, "children": children}), encoding="utf-8")
+    return path
 
 
 class _StubHost:
@@ -266,3 +289,73 @@ def test_dispatch_without_a_host_reader_falls_back_to_the_monitor_refusal(
 
     assert str(after.value) == str(before.value), "the refusal text is unchanged"
     assert getattr(after.value, "delivery", None) == "monitor"
+
+
+def test_dispatch_reads_host_for_an_already_attached_host_follower(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    """A session already attached by the host's own follower reads delivery host.
+
+    No request is written and no arming line is offered: the host already
+    consumes the follower, so the payload must say so rather than hand the
+    caller a Monitor watch that would double-deliver.
+    """
+    config_home, repo = isolated_project
+    project = "sample"
+    session = "session-prehosted"
+    runtime = tmp_path / "run-runtime"
+    runtime.mkdir()
+    _claude_env(monkeypatch, runtime)
+    runner = _spawn_runner()
+    try:
+        _register_watcher(project, runner.pid)
+        # The host's census names the follower it started for this pair. The
+        # live registration below is held by the same process, which is the pid
+        # the census carries, so the two describe one follower.
+        _write_host_record(
+            [{"project": project, "session": session, "pid": os.getpid()}],
+        )
+        with runs.follower_registration(project, session, delivery="stream"):
+            record = _dispatch(config_home, repo, session)
+    finally:
+        runner.terminate()
+        runner.wait(timeout=5)
+
+    assert record["watch"]["session_attached"] is True
+    assert record["watch"]["delivery"] == "host"
+    assert record["watch"]["arming_line"] == "", "a host-delivered session arms nothing"
+
+
+def test_dispatch_reads_monitor_for_a_follower_the_host_did_not_start(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    """A hand-armed follower the host does not run leaves delivery at monitor.
+
+    The host's census names this pair, but with a pid that is not the live
+    registration's, so the follower attached to the session is not the host's
+    and the caller still needs the Monitor path.
+    """
+    config_home, repo = isolated_project
+    project = "sample"
+    session = "session-foreign"
+    runtime = tmp_path / "run-runtime"
+    runtime.mkdir()
+    _claude_env(monkeypatch, runtime)
+    runner = _spawn_runner()
+    try:
+        _register_watcher(project, runner.pid)
+        # A child for this pair, but a different process than the reader.
+        _write_host_record(
+            [{"project": project, "session": session, "pid": runner.pid}],
+        )
+        with runs.follower_registration(project, session, delivery="stream"):
+            record = _dispatch(config_home, repo, session)
+    finally:
+        runner.terminate()
+        runner.wait(timeout=5)
+
+    assert record["watch"]["session_attached"] is True
+    assert record["watch"]["delivery"] == "monitor"
+    assert record["watch"]["arming_line"] != "", (
+        "a monitor session keeps its arming line"
+    )
