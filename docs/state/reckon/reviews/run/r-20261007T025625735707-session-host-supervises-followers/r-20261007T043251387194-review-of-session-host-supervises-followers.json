@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:4703"
+  ],
+  "completed_at": "2026-10-07T04:50:34.904Z",
+  "dispatched_at": "2026-10-07T04:33:39Z",
+  "findings": [
+    {
+      "file": "tests/test_session_host.py",
+      "line": "358",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's \"no stdout from the host\" clause names three moments -- at start, on a request, on a restart -- but test_the_host_writes_nothing_to_stdout reads stdout only for the start and request moments; test_a_killed_child_is_restarted at :326 checks only the restarted pid, so a diagnostic the host wrote on the restart path would leave the gate green."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 0dbf9865; three commits, four files, +1203/-0, every changed file inside the declared write scope and every line the node's own authorship; the four follow-ons the prior review raised at 241b80161 are all addressed at 60e7f26b4.",
+    "done_when": "the section's done-when names five observable facts; tests/test_session_host.py asserts each (one child per pair at :301, a killed child restarted at :326, a hand-armed live follower left alone at :341, no host stdout at :358, no child surviving the host's SIGTERM at :371 or its owner's exit at :388), and my re-run of the gate reads 10 passed EXIT=0.",
+    "goal": "the node's goal is the \u00a74 deliverable, a hidden `reckon crew host` supervising one `crew follow` per project and session for one Claude session; reckon/crew/session_host.py:212 SessionHost implements it and reckon/cli.py:4703 exposes the verb.",
+    "manifest": "read; status complete, commits 87cc79c61, 241b80161 and 60e7f26b4, changed_paths and commits populated, negative_control_log names a log whose last line is EXIT=1 with one failing id the head arm does not fail; baseline_suite/after_suite are null, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "read the manifest's declared paths; the diff is four files plus one figure, all inside them (reckon/crew/session_host.py, reckon/cli.py, tests/test_session_host.py, the evidence fragment, docs/figures/.../host-topology.svg)."
+  },
+  "justifications": {
+    "durability": "the declared negative control (no parent-death signal, owner-liveness stop removed) reddens exactly tests/test_session_host.py:388 test_no_child_survives_its_owners_exit at 1 failed EXIT=1, so the teardown guard is falsified, while the restart path's stdout moment is asserted by no case.",
+    "evidence": "tests/test_session_host.py asserts four of the five done-when clauses directly and the fifth at :358 for the start and request moments, with the gate re-read at head 60e7f26b4 as 10 passed EXIT=0 and the declared negative control at 1 failed EXIT=1.",
+    "fit": "reckon/crew/session_host.py follows the surrounding crew idiom -- a dataclass at :132, a hidden click verb at reckon/cli.py:4703 with lazy imports, mechanism docstrings -- and carries no plan, version or ticket label on any added line.",
+    "goal_fidelity": "reckon/crew/session_host.py:303 runs one crew follow per (project, session) with stdout inherited and stderr logged, restarts a dead child through fleet_supervisor.next_backoff at :390, and stops every child on owner end or signal at :499, which is the section's deliverable.",
+    "reuse": "the change now extends the owners it found -- fleet_supervisor.next_backoff at :390, runs._FOLLOWER_OWNER_ENV and runs._format_follower_owner at :359, follower_state at :342, and _reckon_console_script at :194 -- rather than re-declaring the owner encoding the prior review flagged.",
+    "scope_discipline": "the three changed source files and the evidence fragment are all inside the declared write paths in the manifest, and the declared docs/figures/...sv g was emitted rather than left out."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the \u00a74 deliverable, a hidden `reckon crew host` supervising one `crew follow` per project and session for one Claude session; reckon/crew/session_host.py:212 SessionHost implements it and reckon/cli.py:4703 exposes the verb.\nVERDICT done_when: the section's done-when names five observable facts; tests/test_session_host.py asserts each (one child per pair at :301, a killed child restarted at :326, a hand-armed live follower left alone at :341, no host stdout at :358, no child surviving the host's SIGTERM at :371 or its owner's exit at :388), and my re-run of the gate reads 10 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths; the diff is four files plus one figure, all inside them (reckon/crew/session_host.py, reckon/cli.py, tests/test_session_host.py, the evidence fragment, docs/figures/.../host-topology.svg).\nVERDICT manifest: read; status complete, commits 87cc79c61, 241b80161 and 60e7f26b4, changed_paths and commits populated, negative_control_log names a log whose last line is EXIT=1 with one failing id the head arm does not fail; baseline_suite/after_suite are null, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: read commit by commit against base 0dbf9865; three commits, four files, +1203/-0, every changed file inside the declared write scope and every line the node's own authorship; the four follow-ons the prior review raised at 241b80161 are all addressed at 60e7f26b4.\nCALL_SITES: reckon/cli.py:4703\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:303 runs one crew follow per (project, session) with stdout inherited and stderr logged, restarts a dead child through fleet_supervisor.next_backoff at :390, and stops every child on owner end or signal at :499, which is the section's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_session_host.py asserts four of the five done-when clauses directly and the fifth at :358 for the start and request moments, with the gate re-read at head 60e7f26b4 as 10 passed EXIT=0 and the declared negative control at 1 failed EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three changed source files and the evidence fragment are all inside the declared write paths in the manifest, and the declared docs/figures/...sv g was emitted rather than left out.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control (no parent-death signal, owner-liveness stop removed) reddens exactly tests/test_session_host.py:388 test_no_child_survives_its_owners_exit at 1 failed EXIT=1, so the teardown guard is falsified, while the restart path's stdout moment is asserted by no case.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/session_host.py follows the surrounding crew idiom -- a dataclass at :132, a hidden click verb at reckon/cli.py:4703 with lazy imports, mechanism docstrings -- and carries no plan, version or ticket label on any added line.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change now extends the owners it found -- fleet_supervisor.next_backoff at :390, runs._FOLLOWER_OWNER_ENV and runs._format_follower_owner at :359, follower_state at :342, and _reckon_console_script at :194 -- rather than re-declaring the owner encoding the prior review flagged.\nFINDING tests/test_session_host.py:358 follow-on: the done-when's \"no stdout from the host\" clause names three moments -- at start, on a request, on a restart -- but test_the_host_writes_nothing_to_stdout reads stdout only for the start and request moments; test_a_killed_child_is_restarted at :326 checks only the restarted pid, so a diagnostic the host wrote on the restart path would leave the gate green.",
+  "review_run_id": "r-20261007T043251387194-review-of-session-host-supervises-followers",
+  "reviewed_base_sha": "0dbf9865e3be487063ab5fd1109ae1db59f087af",
+  "reviewed_head_sha": "60e7f26b4c106d6d610ef172ab9305d75bdc4b55",
+  "reviewed_run_id": "r-20261007T025625735707-session-host-supervises-followers",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:48:56.027283+00:00",
+  "total": 112
+}
