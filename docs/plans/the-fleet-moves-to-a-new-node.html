@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -209,108 +209,12 @@
       <li>Replacement refuses a pending job, a job of another user, and a job id the scheduler does not know, each with its own message.</li>
     </ul>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s8">&sect;8 &mdash; One command carries the move</h2>
-    <section data-reckon="section" data-id="s8" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>
-      <code>reckon fleet-node migrate</code> is one entry point that owns the move's
-      ordered steps. A module beneath it holds the sequence and a ledger under
-      <code>~/.local/state/fleet/migration/&lt;started-at&gt;/</code> on shared storage.
-      Each invocation reads the ledger, runs the next step, records what it did and
-      stops at the next checkpoint, where the operator confirms before the move goes
-      on. So ordering and resumption belong to the module, not to the operator: a
-      driving session that is lost is replaced by one that runs the same command and
-      continues from the last recorded step. <code>--dry-run</code> prints the next
-      step's actions and changes nothing, <code>--session NAME</code> limits a cutover
-      step to one zellij session, and <code>--confirm</code> is required before the
-      old job is cancelled.
-    </p>
-    <table>
-      <thead>
-        <tr><th>Step</th><th>What it does</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>census</td>
-          <td>
-            Runs on the old node through a step or ssh from the login node, and
-            changes nothing. It composes existing readers rather than adding new ones:
-            live runs and their resume paths come from <code>runs.list_live</code> and
-            the resume path resolved in <code>recovery.py</code>; each live Claude
-            process's conversation id and working directory come from the session
-            record Claude Code keeps per process; each session's tabs, their order and
-            each pane's command come from zellij's own layout dump. The pane start log
-            <code>fleet-claude</code> appends to <code>sessions.tsv</code> is cited
-            as a cross-check rather than used as the source, because it is append-only:
-            it keeps panes long closed and records no tab name. A live pane missing from
-            it is reported. Each conversation's transcript is confirmed to exist.
-          </td>
-        </tr>
-        <tr>
-          <td>layout</td>
-          <td>
-            Writes one zellij layout per session from the census:
-            <code>~/.config/zellij/layouts/migrate-&lt;session&gt;.kdl</code>. Tabs keep
-            their names and order. Each Claude pane runs <code>fleet-claude --resume
-            &lt;id&gt;</code> in its working directory, followed by the continue prompt
-            the ledger holds for it, if any. A tab holding only a shell comes back as a
-            shell, without the saved scrollback reference the dump carries.
-          </td>
-        </tr>
-        <tr>
-          <td>stand-up</td>
-          <td>
-            Holds the new allocation with its supervisor in standby (&sect;10), waits
-            until it runs, confirms the supervisor is serving requests, and runs one
-            step inside it.
-          </td>
-        </tr>
-        <tr>
-          <td>promote</td>
-          <td>
-            Points the worker reservation at the new job (&sect;7), has the standby
-            supervisor publish the fleet record, and moves the declared services to it
-            through their leases (&sect;5). Prints the records before and after.
-          </td>
-        </tr>
-        <tr>
-          <td>cutover, once per session</td>
-          <td>
-            Ends that zellij session on the old node, asks the new supervisor to start it
-            from its migration layout, and checks each pane: a Claude process running on
-            the new node with the expected conversation id.
-          </td>
-        </tr>
-        <tr>
-          <td>retire</td>
-          <td>
-            Confirms the old job holds no worker steps and no panes, then prints the
-            cancel command for that job id. It cancels only with <code>--confirm</code>,
-            and prints what the scheduler answered.
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <p>
-      The ledger is the resume path for the whole move: if the driving session is lost,
-      a new session reads the ledger and continues from the last recorded step.
-    </p>
-    <p>
-      <strong>Interface accounting.</strong> One command with three flags, added to
-      the <code>fleet-node</code> group beside <code>hold</code>, <code>status</code>
-      and <code>place</code>, and no refusal family. None of those three is retired:
-      <code>cx</code> calls <code>hold --submit</code>, and the move's stand-up step
-      composes it. The steps compose existing machinery: <code>fleet_node</code>'s
-      queue readers, the placement replacement of &sect;7, the supervisor's existing
-      layout argument to <code>start_session</code>, the gate of &sect;6 and the live-run
-      readers.
-    </p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>Against the 7 October census, the layout step reproduces each of the five sessions' tab names in order, and each Claude pane's conversation id and working directory, with zero differences; a test holds that census as a fixture.</li>
-      <li>A dry run at every step prints the actions it would take and changes nothing, asserted by a test.</li>
-      <li>A test interrupts the sequence after each step and finds a second invocation resuming at the next step from the ledger, never repeating a completed one.</li>
-      <li>The retire step without <code>--confirm</code> cancels nothing, and with it names the one job id it cancels.</li>
-    </ul>
+<section data-reckon="section" data-id="s8" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed through <code>41b3dc00a</code> and <code>16b06ec1c</code>: <code>reckon fleet-node migrate</code> carries census, layout, stand-up, promote, per-session cutover and a confirmed retire from one ledger, each step resumable and dry-runnable, with every scheduler call injected in its tests. <a href="s8">full record</a></p>
+</section>
 
     <h2 id="s9">&sect;9 &mdash; A rehearsal on a probe session</h2>
     <section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
