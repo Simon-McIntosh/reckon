@@ -206,24 +206,19 @@ def _fifo_path(owner: Mapping[str, Any]) -> Path | None:
 
     The entry point creates the FIFO under the node-local runtime root, named
     for the owner pid and its kernel start tick, and the host removes that same
-    path when it stops. The directory name and the runtime-root order are the
-    dispatcher's own -- the module that resolves the path to ask this host for
-    a follower -- and are imported here so one spelling of each serves both,
-    rather than two that agree only until one changes. The import is deferred
-    to call time because ``dispatch`` reaches back into this module lazily, and
-    a module-level import would close a cycle.
+    path when it stops. The composition is the dispatcher's own -- the module
+    that resolves the path to ask this host for a follower -- and is called here
+    so one spelling serves both, rather than two that agree only until one
+    changes. The import is deferred to call time because ``dispatch`` reaches
+    back into this module lazily, and a module-level import would close a cycle.
     """
-    from reckon.crew.dispatch import (
-        SESSION_HOST_DIRECTORY,
-        _session_host_runtime_root,
-    )
+    from reckon.crew.dispatch import _session_host_fifo_path
 
-    root = _session_host_runtime_root()
     pid = owner.get("pid")
-    if root is None or not pid:
+    if not pid:
         return None
     start = owner.get("start_time") or "0"
-    return root / SESSION_HOST_DIRECTORY / f"{pid}-{start}.fifo"
+    return _session_host_fifo_path((pid, start))
 
 
 def _set_parent_death_signal(expected_parent: int) -> None:

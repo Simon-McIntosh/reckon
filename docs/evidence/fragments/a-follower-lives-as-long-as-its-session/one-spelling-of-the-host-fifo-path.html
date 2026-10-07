@@ -1,0 +1,16 @@
+<section id="one-spelling-of-the-host-fifo-path">
+  <h2>One spelling of the session host's FIFO path</h2>
+  <p id="one-spelling-of-the-host-fifo-path-landing">
+    <code>reckon/crew/dispatch.py</code> composes the request FIFO path from an
+    owner pair in <code>_session_host_fifo_path(owner)</code>, and both
+    <code>_session_host_fifo</code> there and <code>session_host._fifo_path</code>
+    call it, so the host removes the same file a dispatch writes. The format
+    <code>{pid}-{start}.fifo</code> appears once under <code>reckon/</code>. Gate
+    <code>tests/test_session_host.py</code> +
+    <code>tests/test_dispatch_session_host.py</code>: 22 passed,
+    <code>EXIT=0</code>; the declared mutation — re-inlining a side-specific
+    format in <code>session_host</code> so its path differs — fails
+    <code>test_both_readers_name_one_fifo_for_the_same_owner</code>,
+    <code>EXIT=1</code>.
+  </p>
+</section>
