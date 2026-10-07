@@ -3353,6 +3353,123 @@ def _context_file_inputs(
     return file_tokens, {"write_paths": write_paths, "named_files": named_files}
 
 
+def pick_lane_document(
+    backend: Mapping[str, Any], cache: dict[str, Any]
+) -> Any:
+    """Parse one backend's published lane document once per pick.
+
+    ``run_time_profile.local_lane_load`` reads the same published document for
+    the lane's live load. A pick that also needs the parsed document itself --
+    for the admission and slot fields that reader does not expose -- reads it
+    here, and stores the parse in ``cache``, which the caller scopes to one
+    pick, so a document is read at most once per pick however many backends
+    resolve to it. An unreadable or malformed document reads as ``None``, which
+    the lane readers turn into their all-unknown report rather than raising.
+    """
+
+    path = backend.get("lane_document")
+    if not path:
+        return None
+    key = str(path)
+    if key not in cache:
+        try:
+            cache[key] = json.loads(Path(path).expanduser().read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            cache[key] = None
+    return cache[key]
+
+
+def _census_file_paths(
+    standing: Mapping[str, Any], files: Mapping[str, Any]
+) -> list[str]:
+    """Every file one context census read, deduplicated for its stamp."""
+
+    paths: list[str] = []
+    for item in standing.get("files") or ():
+        path = str((item or {}).get("path") or "")
+        if path:
+            paths.append(path)
+    for key in ("write_paths", "named_files"):
+        for item in files.get(key) or ():
+            path = str((item or {}).get("path") or "")
+            if path:
+                paths.append(path)
+    return sorted(set(paths))
+
+
+def _census_request_key(
+    node: TaskNode,
+    repo: Path,
+    backend_settings: Mapping[str, Any] | None,
+    authority: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """The selecting fields of one context census, hashed into its cache name.
+
+    Two calls sharing every field read the same files and share one entry; a
+    changed node, agent layout or dispatch authority selects a different entry
+    rather than serving a figure measured for another request.
+    """
+
+    authority_key = ""
+    if isinstance(authority, Mapping):
+        authority_key = hashlib.sha256(
+            json.dumps(authority, sort_keys=True, default=str).encode()
+        ).hexdigest()
+    return {
+        "repo": str(repo.resolve()),
+        "goal": node.goal,
+        "done_when": node.done_when,
+        "role": node.role,
+        "spec_level": node.spec_level,
+        "plan": node.plan,
+        "agent": _context_agent(backend_settings or {}),
+        "authority": authority_key,
+    }
+
+
+def context_census(
+    node: TaskNode,
+    repo: Path,
+    *,
+    backend_settings: Mapping[str, Any] | None = None,
+    authority: Mapping[str, Any] | None = None,
+    root: str | Path | None = None,
+) -> int:
+    """One node's deterministic input estimate, cached on the files it reads.
+
+    The estimate is the standing instruction chain plus the repository files the
+    node's brief loads, so it is a pure function of those files. A second census
+    of unchanged files reads none of them: the figure built from them is reused
+    while every file it recorded still carries the stamp it was built from, and
+    a file whose stamp moved makes the census run again over the files. Because
+    the reused figure is the figure the same files produced, the cached value
+    equals an uncached census of the same files.
+    """
+
+    def build() -> dict[str, Any]:
+        standing_tokens, standing = _standing_context_input(repo, backend_settings or {})
+        file_tokens, files = _context_file_inputs(repo, node, authority)
+        return {
+            "tokens": standing_tokens + file_tokens,
+            "paths": _census_file_paths(standing, files),
+        }
+
+    def stamp_of(value: Mapping[str, Any]) -> list[Any]:
+        return [
+            [path, capabilities.file_stamp(path)]
+            for path in (value.get("paths") or [])
+        ]
+
+    request_key = _census_request_key(node, repo, backend_settings, authority)
+    name = "context-census-" + hashlib.sha256(
+        json.dumps(request_key, sort_keys=True, default=str).encode()
+    ).hexdigest()
+    value = capabilities.cached_pick_input_stamped(
+        name, request_key, stamp_of, build, root=root
+    )
+    return int(value["tokens"])
+
+
 def _context_fit_verdict(
     *, resolution: DispatchPlan, repo: Path
 ) -> dict[str, Any] | None:

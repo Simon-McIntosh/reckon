@@ -1,0 +1,49 @@
+<section id="pick-candidates-one-pass">
+  <h2>pick candidates in one pass</h2>
+  <p>A production pick now scans the ledger rows once instead of once per
+  backend, and reuses its instruction census while the files it read still
+  carry the stamp the census was built from.</p>
+
+  <h3>What changed</h3>
+  <ul>
+    <li><code>snapshot.candidates</code> calls one helper,
+    <code>_candidates_scan</code>, which walks the rows once and yields both the
+    per-(backend, model) outcome counts and the per-backend peak-utilisation
+    values. The per-backend readers <code>recent_outcomes</code> and
+    <code>_peak_input_utilisation</code> stay as the reference and produce
+    identical figures.</li>
+    <li>Each lane document is parsed through
+    <code>routing.pick_lane_document</code> with a pick-scoped cache, so a pick
+    reads a document once however many backends name it. Every candidate field
+    is unchanged: same counts, same peaks, same lane facts.</li>
+    <li><code>routing.context_census</code> caches the node's input estimate on
+    the stamps of the files it read (standing instruction chain plus the node's
+    declared files). A second census of unchanged files reads none of them; a
+    file whose stamp moved makes the census run again. The reused figure equals
+    an uncached census of the same files.</li>
+  </ul>
+
+  <h3>Measure</h3>
+  <p><code>snapshot.candidates</code> timed directly against the live reckon
+  ledger (4,488 rows), five warm iterations in one process, base revision
+  <code>2a813c755</code> against head:</p>
+  <table>
+    <tr><th>arm</th><th>min ms</th><th>median ms</th><th>max ms</th></tr>
+    <tr><td>base</td><td>288.5</td><td>307.5</td><td>429.1</td></tr>
+    <tr><td>head</td><td>148.2</td><td>161.2</td><td>357.0</td></tr>
+  </table>
+  <p>Head is below base at minimum, median and maximum; the median falls by
+  about 48%. Figures are warm-arm only: the full census driver could not be
+  re-run because it requires a writable <code>~/.config</code> for the budget
+  lock, which the run fence mounts read-only. The direct measurement isolates
+  the same stage against the same rows and is read-only.</p>
+
+  <h3>Gate</h3>
+  <p>Gate over the node's tests, every <code>tests/test_picker*.py</code>, the
+  context-estimate tests and every test importing <code>reckon.crew.routing</code>:
+  base <code>2 failed / 704 passed / 1 error</code>, head
+  <code>1 failed / 709 passed / 1 error</code>; zero added failure ids. The one
+  head failure and the conftest error both reproduce at base. The declared
+  negative control restores the per-backend scan and turns
+  <code>test_candidates_iterates_the_records_once</code> red (EXIT=1).</p>
+</section>

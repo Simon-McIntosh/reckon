@@ -1,6 +1,5 @@
 """Adapt existing fleet measurements and hard gates to picker candidates."""
 
-import json
 import math
 from collections import Counter
 from collections.abc import Mapping
@@ -73,6 +72,7 @@ def estimated_context_tokens(
     *,
     backend_settings: dict[str, Any] | None = None,
     authority: Mapping[str, Any] | None = None,
+    root: str | Path | None = None,
 ) -> int:
     """A node's deterministic input estimate, independent of any lane window.
 
@@ -87,11 +87,19 @@ def estimated_context_tokens(
     candidate blocks. The standing chain is read for the resolved backend's
     agent layout; a caller with no backend reads the harness-independent chain,
     which is what an unrouted estimate wants.
+
+    ``routing.context_census`` caches the census on the stamps of the files it
+    read, so a cold process reuses the figure those files already produced
+    rather than re-counting the whole standing chain.
     """
 
-    standing_tokens, _ = routing._standing_context_input(repo, backend_settings or {})
-    file_tokens, _ = routing._context_file_inputs(repo, node, authority)
-    return standing_tokens + file_tokens
+    return routing.context_census(
+        node,
+        repo,
+        backend_settings=backend_settings,
+        authority=authority,
+        root=root,
+    )
 
 
 def _p90(values: list[float]) -> float:
@@ -100,6 +108,22 @@ def _p90(values: list[float]) -> float:
     ordered = sorted(values)
     index = max(0, math.ceil(0.9 * len(ordered)) - 1)
     return ordered[index]
+
+
+def _peak_summary(values: list[float]) -> dict[str, Any]:
+    """One lane's peak-utilisation block from the measured values it holds."""
+
+    if not values:
+        return {
+            "peak_utilisation_p50_pct": None,
+            "peak_utilisation_p90_pct": None,
+            "peak_utilisation_runs": None,
+        }
+    return {
+        "peak_utilisation_p50_pct": round(median(values), 1),
+        "peak_utilisation_p90_pct": round(_p90(values), 1),
+        "peak_utilisation_runs": len(values),
+    }
 
 
 def _peak_input_utilisation(
@@ -128,17 +152,55 @@ def _peak_input_utilisation(
         value = (block or {}).get("input_utilisation_pct")
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             values.append(float(value))
-    if not values:
-        return {
-            "peak_utilisation_p50_pct": None,
-            "peak_utilisation_p90_pct": None,
-            "peak_utilisation_runs": None,
-        }
-    return {
-        "peak_utilisation_p50_pct": round(median(values), 1),
-        "peak_utilisation_p90_pct": round(_p90(values), 1),
-        "peak_utilisation_runs": len(values),
-    }
+    return _peak_summary(values)
+
+
+def _candidates_scan(
+    records: list[dict[str, Any]], request: PickRequest, *, now: datetime
+) -> tuple[dict[tuple[str, str | None], dict[str, int]], dict[str, list[float]]]:
+    """One pass over the ledger rows: every candidate's outcomes and peaks.
+
+    ``recent_outcomes`` and ``_peak_input_utilisation`` each read the whole row
+    list once per configured backend, so a pick with several backends walked the
+    same rows many times. Both facts come from one row in one pass: the outcome
+    counts keyed by (backend, model) and the peak-utilisation values keyed by
+    backend. The elision is pure -- every figure equals the per-backend reader's
+    own figure for the same rows.
+    """
+
+    cutoff = now - timedelta(days=14)
+    counts: dict[tuple[str, str | None], Counter[str]] = {}
+    peaks: dict[str, list[float]] = {}
+    for row in records:
+        stamp = parse_utc(
+            str(row.get("completed_at") or row.get("dispatched_at") or "")
+        )
+        if stamp is None or not cutoff <= stamp <= now:
+            continue
+        backend = row.get("backend")
+        if not isinstance(backend, str):
+            continue
+        if row.get("gate") == "passed":
+            block = row.get("throughput")
+            value = (block or {}).get("input_utilisation_pct")
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                peaks.setdefault(backend, []).append(float(value))
+        if (
+            row.get("role") != request.node.role
+            or row.get("spec_level") != request.node.spec_level
+        ):
+            continue
+        model = (row.get("agent") or {}).get("model")
+        counts.setdefault((backend, model), Counter())[
+            str(row.get("gate") or "unknown")
+        ] += 1
+    return counts, peaks
+
+
+def _outcome_counts(counts: Counter[str]) -> dict[str, int]:
+    """The fixed outcome vocabulary, absent gates reading zero."""
+
+    return {key: counts[key] for key in ("passed", "failed", "not-run", "unknown")}
 
 
 def _context_block(
@@ -175,12 +237,16 @@ def _context_block(
     }
 
 
-def _lane(backend: dict[str, Any], session: str) -> tuple[Any, Any, dict[str, Any]]:
-    path = backend.get("lane_document")
-    try:
-        document = json.loads(Path(path).expanduser().read_text()) if path else None
-    except (OSError, ValueError):
-        document = None
+def _lane(
+    backend: dict[str, Any],
+    session: str,
+    documents: dict[str, Any] | None = None,
+) -> tuple[Any, Any, dict[str, Any]]:
+    # One lane document per pick: ``documents`` is the pick-scoped cache the
+    # candidate loop threads through, so a backend whose document another
+    # backend also names reads it once. The parse goes through the routing
+    # helper that reads the same published document ``local_lane_load`` reports.
+    document = routing.pick_lane_document(backend, {} if documents is None else documents)
     reading = lane_document.read_lane_document(document)
     # The shared allowance helper owns session/new-session/global precedence.
     admission = lane_document.read_lane_admission(document)
@@ -444,10 +510,15 @@ def candidates(
     node_context_tokens = estimated_context_tokens(
         request.node, repo, authority=authority
     )
+    # One pass over the rows yields every backend's outcome counts and peak
+    # utilisation, and one document cache is threaded through the loop so each
+    # lane document is parsed once per pick.
+    outcome_counts, peak_values = _candidates_scan(rows, request, now=now)
     lane_utilisation = {
-        name: _peak_input_utilisation(rows, name, now=now)
+        name: _peak_summary(peak_values.get(name, []))
         for name in config.get("backends", {})
     }
+    lane_documents: dict[str, Any] = {}
     budget_by_backend = {row["backend"]: row for row in view["backends"]}
     group_by_backend = {
         member: group for group in view["groups"] for member in group["members"]
@@ -511,7 +582,9 @@ def candidates(
         if gate["state"] in {"paused", "unreadable"}:
             reasons.append("lane-gate: " + gate["state"])
         slots, congestion, _ = (
-            _lane(backend, request.session) if local else (None, None, {})
+            _lane(backend, request.session, lane_documents)
+            if local
+            else (None, None, {})
         )
         # Already-excluded candidates need no repository census or serving probe.
         context_block = None
@@ -600,7 +673,9 @@ def candidates(
                 days_to_reset=days_to_reset,
                 worker_slots=slots,
                 congestion=congestion,
-                outcomes=recent_outcomes(rows, request, name, model, now=now),
+                outcomes=_outcome_counts(
+                    outcome_counts.get((name, model), Counter())
+                ),
                 reasons=reasons,
                 budget_reason=budget_reason,
                 stale=stale,
