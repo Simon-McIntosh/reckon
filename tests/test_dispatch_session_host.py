@@ -12,6 +12,7 @@ path it took.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import subprocess
@@ -230,6 +231,18 @@ def _dispatch(config_home: Path, repo: Path, session: str):
     )
 
 
+def _dry_dispatch(config_home: Path, repo: Path, session: str):
+    """Validate the same node a real dispatch launches, without any effect."""
+    return crew.plan_dispatch(
+        node=_node(config_home, session),
+        config=CONFIG,
+        project="sample",
+        repo=repo,
+        session=session,
+        watch_required=True,
+    )
+
+
 def test_dispatch_asks_the_session_host_and_is_admitted_by_it(
     isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
 ) -> None:
@@ -359,3 +372,136 @@ def test_dispatch_reads_monitor_for_a_follower_the_host_did_not_start(
     assert record["watch"]["arming_line"] != "", (
         "a monitor session keeps its arming line"
     )
+
+
+def test_dry_run_predicts_host_delivery_without_writing_the_fifo(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    """A waiting host makes the dry run predict host delivery and write nothing.
+
+    The host publishes that it is waiting by holding its FIFO open, so the dry
+    run reads that liveness instead of asking -- the request that would start a
+    follower is the one write a dry run must never make. The prediction reports
+    the ``host`` delivery the identical real dispatch reaches.
+    """
+    config_home, repo = isolated_project
+    project = "sample"
+    session = "session-dryhost"
+    runtime = tmp_path / "run-runtime"
+    runtime.mkdir()
+    _claude_env(monkeypatch, runtime)
+    fifo = _session_host_fifo(runtime)
+    fifo.parent.mkdir(parents=True, exist_ok=True)
+    os.mkfifo(fifo)
+    runner = _spawn_runner()
+    # Hold the FIFO open read-write, as the host's entry point does while it
+    # waits: the descriptor is the liveness the dry run reads, and out of it a
+    # real dispatch would draw the host's answer.
+    handle = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
+    os.set_blocking(handle, False)
+    try:
+        _register_watcher(project, runner.pid)
+        resolution = _dry_dispatch(config_home, repo, session)
+        written = b""
+        with contextlib.suppress(BlockingIOError):
+            written = os.read(handle, 4096)
+    finally:
+        os.close(handle)
+        runner.terminate()
+        runner.wait(timeout=5)
+
+    assert resolution.watch is not None, "the dry run records the delivery it predicts"
+    assert resolution.watch["delivery"] == "host"
+    assert resolution.watch["predicted"] is True
+    assert written == b"", "a dry run must not write to the host's FIFO"
+
+
+def test_dry_run_without_a_host_still_refuses_watcher_required(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    """A session with no host is refused exactly as a real dispatch refuses it."""
+    config_home, repo = isolated_project
+    project = "sample"
+    session = "session-dryunhosted"
+    runtime = tmp_path / "run-runtime"
+    runtime.mkdir()
+    _claude_env(monkeypatch, runtime)
+    runner = _spawn_runner()
+    try:
+        _register_watcher(project, runner.pid)
+        # No FIFO at all: nothing is waiting to serve this session.
+        with pytest.raises(crew.WatcherRequired):
+            _dry_dispatch(config_home, repo, session)
+        # A FIFO holding no reader is a host that has gone, so a real dispatch
+        # falls through to the Monitor path and the prediction must not read
+        # mere existence as a live host.
+        fifo = _session_host_fifo(runtime)
+        fifo.parent.mkdir(parents=True, exist_ok=True)
+        os.mkfifo(fifo)
+        with pytest.raises(crew.WatcherRequired):
+            _dry_dispatch(config_home, repo, session)
+    finally:
+        runner.terminate()
+        runner.wait(timeout=5)
+
+
+def test_dry_run_predicts_host_for_a_follower_the_host_started(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    """A session already attached by the host's own follower predicts host.
+
+    The host's census names the follower it runs for this pair, carrying the
+    live registration's pid, so the dry run reaches host delivery the way the
+    real admission does -- no write is needed, and none is made.
+    """
+    config_home, repo = isolated_project
+    project = "sample"
+    session = "session-dryhosted-hostrun"
+    runtime = tmp_path / "run-runtime"
+    runtime.mkdir()
+    _claude_env(monkeypatch, runtime)
+    runner = _spawn_runner()
+    try:
+        _register_watcher(project, runner.pid)
+        _write_host_record(
+            [{"project": project, "session": session, "pid": os.getpid()}],
+        )
+        with runs.follower_registration(project, session, delivery="stream"):
+            resolution = _dry_dispatch(config_home, repo, session)
+    finally:
+        runner.terminate()
+        runner.wait(timeout=5)
+
+    assert resolution.watch["delivery"] == "host"
+    assert resolution.watch["session_attached"] is True
+
+
+def test_dry_run_predicts_monitor_for_a_follower_the_host_did_not_start(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    """A hand-armed follower the host does not run predicts monitor.
+
+    The session is attached, but the host's census names a pid that is not the
+    live registration's, so the follower is not the host's and the delivery the
+    real dispatch would report is the Monitor path, not host.
+    """
+    config_home, repo = isolated_project
+    project = "sample"
+    session = "session-dryforeign-follower"
+    runtime = tmp_path / "run-runtime"
+    runtime.mkdir()
+    _claude_env(monkeypatch, runtime)
+    runner = _spawn_runner()
+    try:
+        _register_watcher(project, runner.pid)
+        _write_host_record(
+            [{"project": project, "session": session, "pid": runner.pid}],
+        )
+        with runs.follower_registration(project, session, delivery="stream"):
+            resolution = _dry_dispatch(config_home, repo, session)
+    finally:
+        runner.terminate()
+        runner.wait(timeout=5)
+
+    assert resolution.watch["delivery"] == "monitor"
+    assert resolution.watch["session_attached"] is True
