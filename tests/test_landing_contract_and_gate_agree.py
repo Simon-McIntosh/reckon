@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
+from reckon._backends import READ_ONLY
 from reckon.crew.dispatch import _can_write_worktree, _compose_dispatch_prompt
 from reckon.crew.node import role_may_write_repository_paths
 from reckon.crew.prompts import (
@@ -144,7 +145,14 @@ def test_every_default_role_agrees_with_the_promotion_gate(home, tmp_path, repos
     disagreements: list[str] = []
     for role in sorted(config["roles"]):
         run_directory = run_dir(f"r-agree-{role}")
-        write_paths = [str(run_directory)] if role == "test" else ["package/out.py"]
+        # A role whose sandbox cannot write the worktree, or that may not write
+        # repository paths, declares its own run directory, as its delivery
+        # does; dispatch refuses a repository path it could never reach.
+        reaches_repository = (
+            role_may_write_repository_paths(role)
+            and config["roles"][role].get("sandbox") != READ_ONLY
+        )
+        write_paths = ["package/out.py"] if reaches_repository else [str(run_directory)]
         resolution = crew.plan_dispatch(
             node=_node(role, write_paths, str(run_directory / "manifest.md")),
             config=config,
@@ -155,7 +163,7 @@ def test_every_default_role_agrees_with_the_promotion_gate(home, tmp_path, repos
         writable = _can_write_worktree(
             resolution.backend_settings,
             repository=repository,
-            run_directory=repository,
+            run_directory=run_directory,
         )
         expected = writable and role_may_write_repository_paths(role)
         prompt = _compose_dispatch_prompt(
