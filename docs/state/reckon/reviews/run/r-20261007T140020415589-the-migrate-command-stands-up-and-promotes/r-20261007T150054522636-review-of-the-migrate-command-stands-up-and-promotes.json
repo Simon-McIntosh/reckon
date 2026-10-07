@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate arms. The reviewed manifest's baseline_suite and after_suite fields are both empty, so it records no same-command base arm. The head arm it names (migration-fifo-reuse-gate.log, revision 2e2f5d3fe11168fd46e0ac93addb5dc2610b1783) reports 365 passed, EXIT=0, with no FAILED or ERROR id, so the head failing set is empty and the added set, head failing ids minus base failing ids, is empty whatever the base: added_failure_count 0, added_failure_ids [].",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1408 (session-host notify -> _write_fleet_request with a past deadline, single attempt)",
+    "reckon/crew/dispatch.py:10090 (spawn request -> _write_fleet_request on the runtime FIFO)",
+    "reckon/crew/fleet_migrate.py:384 (_local_request -> _write_fleet_request, deadline now+10)"
+  ],
+  "completed_at": "2026-10-07T15:13:18.943Z",
+  "dispatched_at": "2026-10-07T15:01:18Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites of the shared writer - dispatch.py:1408 (session-host notify), dispatch.py:10090 (spawn request), fleet_migrate.py:384 (migration request) - and one entry to _local_request at fleet_migrate.py:641.",
+    "diff": "read commit by commit against base 32b987406; the increment is the single commit 2e2f5d3fe: dispatch.py imports REQUEST_FIFO_NAME and binds FLEET_FIFO_NAME to it, adds ENOENT to the bounded retry set and generalises one operator message; fleet_migrate.py replaces its local os.open retry loop with a call to the shared writer, re-raising CrewError as MigrationError; the test file adds two tests.",
+    "done_when": "the reviewed node's done-when names the ten-file pytest gate; its manifest records that exact command at 2e2f5d3fe with 365 passed EXIT=0 (migration-fifo-reuse-gate.log), and the two tests added by this increment cover the delegation and the ENOENT retry each behaviour clause names.",
+    "goal": "the increment's goal - resolve the prior review's reuse finding by sharing the supervisor request writer - is met: fleet_migrate._local_request (fleet_migrate.py:375-385) now delegates to dispatch._write_fleet_request, and dispatch.FLEET_FIFO_NAME aliases fleet_supervisor.REQUEST_FIFO_NAME at dispatch.py:9956, so one writer and one FIFO literal serve every caller.",
+    "manifest": "read; status complete, commits 13c902590, 3f72ea363, 32b987406, 2e2f5d3fe, head gate log revision 2e2f5d3fe with 365 passed EXIT=0, declared negative control red; baseline_suite and after_suite are empty so the node records no same-command base arm.",
+    "write_paths": "the increment touches only reckon/crew/dispatch.py, reckon/crew/fleet_migrate.py and tests/test_fleet_migrate_stand_up.py, all inside the reviewed node's declared grants and exactly the three paths this review's goal names."
+  },
+  "justifications": {
+    "durability": "both added tests genuinely guard the increment. Reverting the ENOENT retry (dispatch.py:10044) in a scratch tree reddens test_shared_fifo_writer_retries_until_the_fifo_exists (1 failed, 9 passed); reverting the delegation to the pre-increment local os.open loop reddens test_local_supervisor_request_uses_the_shared_fifo_writer (1 failed, 9 passed). The delegation test patches import_module('reckon.crew.dispatch')._write_fleet_request, which the call-time import in _local_request resolves.",
+    "evidence": "the head arm the manifest names runs the node's exact ten-file command at 2e2f5d3fe and reports 365 passed EXIT=0 (migration-fifo-reuse-gate.log); I reproduced tests/test_fleet_migrate_stand_up.py at head (10 passed, EXIT=0) and falsified both new tests in a scratch tree. The node records no baseline_suite or after_suite arm, so its added-failure delta rests on a single head arm.",
+    "fit": "fleet_migrate._local_request keeps the module's injected-callable idiom with a local import of the shared writer and CrewError, and adds no plan, version or ticket label to any symbol or comment. The new module-top edge dispatch -> fleet_supervisor exists solely to source one constant; fleet_supervisor does not import dispatch (its load reaches dispatch only under TYPE_CHECKING and in lazy in-function imports), so the edge introduces no cycle and the import was verified live.",
+    "goal_fidelity": "the increment implements exactly the repair the prior review's follow-on finding called for: fleet_migrate._local_request delegates to dispatch._write_fleet_request rather than re-implementing the deadline-bounded non-blocking FIFO write, removing the second writer the finding named.",
+    "reuse": "the prior review's reuse finding (8 of 20) is resolved: the repository now has one FIFO writer (dispatch._write_fleet_request) called by the session-host notify, the spawn request and the migration request, and one FIFO literal (fleet_supervisor.REQUEST_FIFO_NAME) that dispatch.FLEET_FIFO_NAME aliases, so the two names can no longer drift.",
+    "scope_discipline": "every changed file (reckon/crew/dispatch.py, reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_stand_up.py) is inside the reviewed node's declared grants; the increment carries nothing outside the repair it was dispatched for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment's goal - resolve the prior review's reuse finding by sharing the supervisor request writer - is met: fleet_migrate._local_request (fleet_migrate.py:375-385) now delegates to dispatch._write_fleet_request, and dispatch.FLEET_FIFO_NAME aliases fleet_supervisor.REQUEST_FIFO_NAME at dispatch.py:9956, so one writer and one FIFO literal serve every caller.\nVERDICT done_when: the reviewed node's done-when names the ten-file pytest gate; its manifest records that exact command at 2e2f5d3fe with 365 passed EXIT=0 (migration-fifo-reuse-gate.log), and the two tests added by this increment cover the delegation and the ENOENT retry each behaviour clause names.\nVERDICT write_paths: the increment touches only reckon/crew/dispatch.py, reckon/crew/fleet_migrate.py and tests/test_fleet_migrate_stand_up.py, all inside the reviewed node's declared grants and exactly the three paths this review's goal names.\nVERDICT manifest: read; status complete, commits 13c902590, 3f72ea363, 32b987406, 2e2f5d3fe, head gate log revision 2e2f5d3fe with 365 passed EXIT=0, declared negative control red; baseline_suite and after_suite are empty so the node records no same-command base arm.\nVERDICT diff: read commit by commit against base 32b987406; the increment is the single commit 2e2f5d3fe: dispatch.py imports REQUEST_FIFO_NAME and binds FLEET_FIFO_NAME to it, adds ENOENT to the bounded retry set and generalises one operator message; fleet_migrate.py replaces its local os.open retry loop with a call to the shared writer, re-raising CrewError as MigrationError; the test file adds two tests.\nCALL_SITES: reckon/crew/dispatch.py:1408 (session-host notify -> _write_fleet_request with a past deadline, single attempt); reckon/crew/dispatch.py:10090 (spawn request -> _write_fleet_request on the runtime FIFO); reckon/crew/fleet_migrate.py:384 (_local_request -> _write_fleet_request, deadline now+10)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the increment implements exactly the repair the prior review's follow-on finding called for: fleet_migrate._local_request delegates to dispatch._write_fleet_request rather than re-implementing the deadline-bounded non-blocking FIFO write, removing the second writer the finding named.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head arm the manifest names runs the node's exact ten-file command at 2e2f5d3fe and reports 365 passed EXIT=0 (migration-fifo-reuse-gate.log); I reproduced tests/test_fleet_migrate_stand_up.py at head (10 passed, EXIT=0) and falsified both new tests in a scratch tree. The node records no baseline_suite or after_suite arm, so its added-failure delta rests on a single head arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed file (reckon/crew/dispatch.py, reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_stand_up.py) is inside the reviewed node's declared grants; the increment carries nothing outside the repair it was dispatched for.\nSCORE durability: 18\nJUSTIFICATION durability: both added tests genuinely guard the increment. Reverting the ENOENT retry (dispatch.py:10044) in a scratch tree reddens test_shared_fifo_writer_retries_until_the_fifo_exists (1 failed, 9 passed); reverting the delegation to the pre-increment local os.open loop reddens test_local_supervisor_request_uses_the_shared_fifo_writer (1 failed, 9 passed). The delegation test patches import_module('reckon.crew.dispatch')._write_fleet_request, which the call-time import in _local_request resolves.\nSCORE fit: 17\nJUSTIFICATION fit: fleet_migrate._local_request keeps the module's injected-callable idiom with a local import of the shared writer and CrewError, and adds no plan, version or ticket label to any symbol or comment. The new module-top edge dispatch -> fleet_supervisor exists solely to source one constant; fleet_supervisor does not import dispatch (its load reaches dispatch only under TYPE_CHECKING and in lazy in-function imports), so the edge introduces no cycle and the import was verified live.\nSCORE reuse: 19\nJUSTIFICATION reuse: the prior review's reuse finding (8 of 20) is resolved: the repository now has one FIFO writer (dispatch._write_fleet_request) called by the session-host notify, the spawn request and the migration request, and one FIFO literal (fleet_supervisor.REQUEST_FIFO_NAME) that dispatch.FLEET_FIFO_NAME aliases, so the two names can no longer drift.",
+  "review_run_id": "r-20261007T150054522636-review-of-the-migrate-command-stands-up-and-promotes",
+  "reviewed_base_sha": "32b9874064bc70c1470c82e8a412802bd05682a0",
+  "reviewed_head_sha": "2e2f5d3fe11168fd46e0ac93addb5dc2610b1783",
+  "reviewed_run_id": "r-20261007T140020415589-the-migrate-command-stands-up-and-promotes",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:11:10.835838+00:00",
+  "total": 111
+}
