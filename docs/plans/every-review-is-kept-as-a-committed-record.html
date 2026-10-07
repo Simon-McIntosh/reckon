@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.86">
-<meta name="plan-version" content="90">
+<meta name="plan-version" content="91">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -405,6 +405,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20261007-s11-two-nodes" data-who="reckon-build" data-when="2026-10-07T13:01:00Z">
     <div class="r-comment-body"><p>Section 11 runs as two nodes, one per repository, as its content review found it must: a node commits in one repository only. The imas-codex half, <code>misfiled-run-reviews-moved-to-their-runs</code>, has landed. Its commit <code>8d2dc46f1</code> moved both records unchanged (R100) to <code>run/&lt;reviewed-run-id&gt;/</code> and is merged into imas-codex <code>main</code>. <code>review.stored_record</code> returns each record, and no file carrying a <code>reviewed_run_id</code> remains under the plan tree. The routing fix in reckon, <code>store_committed_review</code>, is the second node.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261007T130151054650-committed-store-files-run-reviews-under-their-run" data-who="reckon-build" data-when="2026-10-07T13:36:26.781Z">
+    <div class="r-comment-body"><p>store_committed_review now tests reviewed_run_id before plan_slug, so a run review carrying its run&#x27;s plan_slug and a null plan_version is filed under run/&lt;reviewed-run-id&gt;/&lt;review-run-id&gt;.json instead of plan/&lt;slug&gt;/ at version 0, while a plan review still routes to the plan tree only with an integer plan_version and no reviewed run; merged with origin/main&#x27;s answer merge so both hold; four-file gate 21 passed EXIT=0, negative control 1 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261007T130318278063-one-owner-for-the-batched-object-read" data-who="reckon-build" data-when="2026-10-07T13:12:46.998Z">
     <div class="r-comment-body"><p>velocity.read_blobs now takes a bare object name as a spec beside a (revision, path) pair, and plan_review._read_reviewed_blob_texts calls it, so the batched cat-file protocol has one owner; the node's gate ran 22 tests to EXIT=0.</p></div>
