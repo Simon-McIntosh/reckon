@@ -34,10 +34,11 @@ review.
 
 The store reuses the crew review store root, so a plan review is queryable
 across plans and projects beside the code reviews: ``reviews/<project>/
-plan-<slug>.v<N>.json``, with a ``.at-<blob8>`` sibling when one version is
-reviewed twice. The second review of a version lands beside the first rather
-than over it, because a re-review accumulates as evidence next to the review
-that motivated it. ``reviewed_blob_sha`` is the git blob sha of the reviewed
+plan-<slug>.v<N>.json``, with a ``.at-`` sibling when one version is reviewed
+twice. The second review of a version lands beside the first rather than over
+it, because a re-review accumulates as evidence next to the review that
+motivated it. A second review of a version whose bytes are unchanged still
+lands beside the first. ``reviewed_blob_sha`` is the git blob sha of the reviewed
 bytes: content-addressing is what lets a review taken against an uncommitted
 MCP write join the committed plan later, since identical bytes hash identically
 in a worktree, the main checkout and a commit.
@@ -368,6 +369,20 @@ def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
 PLAN_REVIEW_FILE_GLOB = "plan-*.v*.json"
 
 
+def _review_run_tail(review_run_id: str) -> str:
+    """Return the filesystem-safe token that distinguishes one review run.
+
+    A run id is ``r-<mint-stamp>-<node>``; two review runs of one plan share a
+    node slug, so the mint stamp near the front of the id — not its trailing
+    slug — is what separates them. The token is the sanitised id bounded in
+    length, which keeps it path-safe and bounds the staging name it extends. A
+    run id sanitising to nothing still yields a token rather than a dangling
+    separator, so a caller that reaches here names its record a file.
+    """
+    sanitised = re.sub(r"[^A-Za-z0-9._-]+", "-", str(review_run_id or "")).strip("-.")
+    return sanitised[:40] or "unknown"
+
+
 def plan_review_path(
     project: str,
     plan_slug: str,
@@ -382,8 +397,14 @@ def plan_review_path(
 
     ``reviews/<project>/plan-<slug>.v<N>.json`` is the primary path. A named
     ``reviewed_blob_sha`` selects the ``.at-<blob8>`` sibling the second review
-    of one version lands on, so a re-review never overwrites its predecessor. An
-    invalid blob naming is refused rather than silently normalised into a path.
+    of one version lands on, so a re-review never overwrites its predecessor. A
+    ``review_run_id`` named beside the blob extends that sibling with the run's
+    own token — ``.at-<blob8>-<review-run-tail>`` — the name a review takes when
+    the plain path or the blob sibling already holds a record from a different
+    review run, so two runs of one version with identical bytes never share a
+    file. Either sibling stays inside the ``.at-*.json`` family the version-keyed
+    readers glob. An invalid blob naming is refused rather than silently
+    normalised into a path.
 
     ``committed_root`` selects the committed tree instead:
     ``<committed_root>/plan/<plan-slug>/<review-id>.json``, the plan directory
@@ -410,6 +431,9 @@ def plan_review_path(
         if reviewed_blob_sha is None
         else _review_store._blob_suffix(str(reviewed_blob_sha), length=8)
     )
+    run_name = str(review_run_id or "").strip()
+    if suffix and run_name:
+        suffix = f"{suffix}-{_review_run_tail(run_name)}"
     version = int(plan_version)
     return (
         _review_store.review_store_root(base_dir)
@@ -426,13 +450,56 @@ def _record_blob8(record: Any) -> str | None:
     return blob.lower()[:8] or None
 
 
-def _stored_blob8(path: Path) -> str | None:
-    """Return the blob8 a stored file holds, or ``None`` if it is unreadable."""
+def _record_run_id(record: Any) -> str:
+    """Return the review run id a record names, or ``""`` when it names none."""
+    if not isinstance(record, Mapping):
+        return ""
+    return str(record.get("review_run_id") or "").strip()
+
+
+def _stored_record(path: Path) -> Mapping[str, Any] | None:
+    """Return the mapping a stored file holds, or ``None`` when unreadable."""
+    if not path.is_file():
+        return None
     try:
         stored = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    return _record_blob8(stored)
+    return stored if isinstance(stored, Mapping) else None
+
+
+def _stored_blob8(path: Path) -> str | None:
+    """Return the blob8 a stored file holds, or ``None`` if it is unreadable."""
+    stored = _stored_record(path)
+    return None if stored is None else _record_blob8(stored)
+
+
+def _stored_run_id(path: Path) -> str:
+    """Return the review run a stored file names, or ``""`` if it is unreadable."""
+    stored = _stored_record(path)
+    return "" if stored is None else _record_run_id(stored)
+
+
+def _holds_run(path: Path, run_id: str, blob8: str) -> bool:
+    """Whether ``path`` already holds this review run's record for this blob.
+
+    This is the idempotency test the store keys on: a re-store of one review
+    run names the same blob and the same run id, so it finds the file it owns
+    and rewrites it rather than minting another sibling.
+    """
+    return (
+        bool(run_id) and _stored_blob8(path) == blob8 and _stored_run_id(path) == run_id
+    )
+
+
+def _holds_other_run(path: Path, run_id: str) -> bool:
+    """Whether ``path`` holds a stored record from a different review run.
+
+    A record naming no run id is read as a different run: it cannot be shown to
+    be this one, so the file it occupies is not displaced by a write that would
+    otherwise overwrite a record nobody compared.
+    """
+    return path.is_file() and _stored_run_id(path) != run_id
 
 
 def _target_path(
@@ -442,26 +509,62 @@ def _target_path(
     record: Mapping[str, Any],
     base_dir: str | Path | None,
 ) -> Path:
-    """Return where a record lands: the plain path or a blob-keyed sibling.
+    """Return where a record lands: the plain path or a run-owned sibling.
 
     The first review of a version takes the plain path. Re-storing the same
-    content there is idempotent, so a duplicate write overwrites its own bytes
-    and no `.at-` sibling is minted for a review that changed nothing. A second
-    review of the same version carrying different content moves to the
+    content and run there is idempotent, so a duplicate write overwrites its own
+    bytes and no `.at-` sibling is minted for a review that changed nothing. A
+    second review of the same version carrying different content moves to the
     ``.at-<blob8>`` sibling, so both files survive and the earlier review is not
     displaced by the later one.
+
+    A second review of a version whose bytes are unchanged is the case the plain
+    and blob-keyed names cannot separate: both reviews hash to one blob, so the
+    blob-keyed sibling would collide too. When the plain path or that sibling
+    already holds a record from a **different** review run, the review is
+    written to a further sibling its own run names:
+    ``.at-<blob8>-<review-run-tail>``. The name stays inside the ``.at-*.json``
+    family the version-keyed readers glob, so every round is found without a
+    reader change, and storing the same run again resolves to the file it owns.
+
+    A record naming no review run can be separated only by content, so it keeps
+    the earlier rule: an identical blob is idempotent and a different blob takes
+    the blob sibling.
     """
     blob8 = _record_blob8(record)
     plain = plan_review_path(project, plan_slug, plan_version, base_dir)
     if blob8 is None:
         return plain
-    if not plain.is_file():
-        return plain
-    if _stored_blob8(plain) == blob8:
-        return plain
-    return plan_review_path(
+    run_id = _record_run_id(record)
+    blob_sibling = plan_review_path(
         project, plan_slug, plan_version, base_dir, reviewed_blob_sha=blob8
     )
+    run_sibling = plan_review_path(
+        project,
+        plan_slug,
+        plan_version,
+        base_dir,
+        reviewed_blob_sha=blob8,
+        review_run_id=run_id or None,
+    )
+    # An already-owned file is rewritten in place, so a re-store is idempotent.
+    if _holds_run(plain, run_id, blob8):
+        return plain
+    if _holds_run(run_sibling, run_id, blob8):
+        return run_sibling
+    if not run_id and plain.is_file() and _stored_blob8(plain) == blob8:
+        return plain
+    # A different review run already holds the plain path or the blob sibling:
+    # this review takes a name its own run owns rather than displacing it.
+    if run_id and (
+        _holds_other_run(plain, run_id) or _holds_other_run(blob_sibling, run_id)
+    ):
+        return run_sibling
+    if not plain.is_file():
+        return plain
+    if not blob_sibling.is_file():
+        return blob_sibling
+    return run_sibling
 
 
 def store_plan_review(
