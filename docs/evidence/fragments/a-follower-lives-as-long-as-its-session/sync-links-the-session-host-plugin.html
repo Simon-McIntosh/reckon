@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-follower-lives-as-long-as-its-session">
+  <meta name="plan-verifies" content="reckon:a-follower-lives-as-long-as-its-session#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-07">
+  <title>Sync links the session-host plugin; doctor checks the link | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="sync-links-the-session-host-plugin">
+  <h2>Sync links the session-host plugin; doctor checks the link</h2>
+  <p>Base <code>9e3cbe6a2</code>. <code>reckon sync</code> now links the main
+  checkout's <code>plugins/crew-host</code> into
+  <code>~/.claude/skills/reckon-crew-host</code> — idempotently, leaving one
+  link however many times it runs — and refuses to link when the running
+  checkout is a linked worktree, because a reclaimed worktree would leave the
+  link resolving to nothing. <code>reckon doctor</code> reports the link as
+  <code>missing</code>, <code>dangling</code>, <code>worktree</code> or
+  <code>valid</code>, naming the fix; the broken states fail the run. The
+  session-host plugin is loaded only from personal scope, so the link is
+  user-level and one link serves every mounted repository. The check was
+  exercised under a temporary HOME: 12 passed, exit 0. Disabling the worktree
+  branch made a link resolving into a worker worktree read as an ordinary wrong
+  target, and the two worktree tests failed while the run stayed non-zero
+  (negative control, exit 1).</p>
+</section>
+</main>
+</body>
+</html>

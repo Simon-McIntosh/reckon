@@ -14,7 +14,9 @@ allowed-tools: Read Write Edit Bash(*) Grep
 ## Fast path
 
 - First-time setup / refresh CSS → `uv run --project ~/Code/reckon reckon sync <repo>/docs`
-- Link the skills → run **Step S** below for Claude, Codex, and shared agent runtimes.
+- Link the skills → run **Step S** below for Claude, Codex, and shared agent
+  runtimes, and **Step P** to link the session-host plugin into Claude's
+  personal skills dir.
 - Verify → `uv run --project ~/Code/reckon reckon doctor`
 
 `reckon sync` does the CSS copy, the SPA `index.html`, `.nojekyll`, the
@@ -180,19 +182,56 @@ echo "~/.codex/skills:"; link_skills "$HOME/.codex/skills"
 echo "~/.agents/skills:"; link_skills "$HOME/.agents/skills"
 ```
 
+### Step P — Link the session-host plugin (Claude only)
+
+The session host ships as a Claude Code plugin at `plugins/crew-host/`
+(`.claude-plugin/plugin.json` + `monitors/monitors.json` + `bin/crew-host`).
+Claude Code starts a plugin's monitors only from **personal scope**, so the
+link is user level: one link at `~/.claude/skills/reckon-crew-host` serves
+every repository that runs reckon, and each session picks it up at its next
+start or after `/reload-plugins`.
+
+The link must name the **main checkout**. A link into a worker worktree would
+resolve to nothing once the worktree is reclaimed, so this step refuses when
+the checkout it would link is a linked worktree. `reckon sync` run from the
+link's own checkout performs this step (`_sync_crew_host_plugin`), and the
+same guard protects the manual path:
+
+```bash
+RECKON_REPO="$HOME/Code/reckon"
+GIT_DIR="$(git -C "$RECKON_REPO" rev-parse --path-format=absolute --absolute-git-dir 2>/dev/null)"
+GIT_COMMON="$(git -C "$RECKON_REPO" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+MAIN="$(dirname "$GIT_COMMON")"
+PLUGIN_SRC="$MAIN/plugins/crew-host"
+PLUGIN_DST="$HOME/.claude/skills/reckon-crew-host"
+
+if [ -n "$GIT_DIR" ] && [ "$GIT_DIR" != "$GIT_COMMON" ]; then
+  echo "  refuse  reckon-crew-host — $RECKON_REPO is a worker worktree;"
+  echo "          link the main checkout $MAIN instead"
+elif [ -f "$PLUGIN_SRC/.claude-plugin/plugin.json" ]; then
+  ln -sfn "$PLUGIN_SRC" "$PLUGIN_DST"
+  echo "  link    reckon-crew-host → $PLUGIN_SRC"
+else
+  echo "  skip    plugins/crew-host not built under $MAIN"
+fi
+```
+
 ### Verify
 
 ```bash
 uv run --project ~/Code/reckon reckon doctor
 ```
 
-`doctor` checks the skills are present, `mounts.json` is reachable with every
-mounted dir existing, and the MCP config registers the `reckon` server.
+`doctor` checks the skills are present, the session-host plugin link resolves
+into the main checkout (flagging a link that is missing, dangling, or pointing
+into a worker worktree), `mounts.json` is reachable with every mounted dir
+existing, and the MCP config registers the `reckon` server.
 
 Confirm to user:
 
 > **reckon-sync complete — docs/ synced via `reckon sync`, skills linked into
-> `~/.claude/skills` + `~/.codex/skills` + `~/.agents/skills`, verified with
+> `~/.claude/skills` + `~/.codex/skills` + `~/.agents/skills`, session-host
+> plugin linked at `~/.claude/skills/reckon-crew-host`, verified with
 > `reckon doctor`.**
 > Run `/reckon-create <slug>` to add a plan.
 
