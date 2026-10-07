@@ -1,0 +1,146 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T22:43:38.088Z",
+  "dispatched_at": "2026-10-07T22:38:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:3343",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owners turns \u00a75 into a widening of `_require_new_section_contracts` and \u00a76 into an addition beside `validate_landing_patch`/`apply_ops`, instead of two parallel checks that can disagree with the existing ones.",
+      "text": "\u00a75's section/todo coverage refusal and \u00a76's terminal-status guard are new write-path refusals placed in `_store.py` without naming the owners to extend: `apply_ops` (the single post-op validation point, which already refuses a terminal `set` at lines 3366\u20133373 through `_require_transition_verdict`), `validate_landing_patch` (the write-keyed terminal-status/evidence guard at 3248), and `_require_new_section_contracts` (the newly-added-heading structure guard at 1662); a plan that adds two more checks beside these three grows a third refusal path in a module that already holds two.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py:780",
+      "id": "duplicate_owner-2",
+      "reason": "one predicate owned once (near `derive_impl_from_sections`) and consumed by both the write guard and the roadmap prevents the writer and the readiness surface from disagreeing about what \"done\" means.",
+      "text": "\u00a76 (refuse terminal while any declaration is `implementable` or `deferred`) and \u00a79 (whole-plan dependency \"satisfied \u2026 when none of its sections is left `implementable`\") both compute the same \"every declaration is `done`\" predicate over the same `section_declarations` map, and neither section names a shared owner; the vocabulary and a per-section partial reader already live beside this machinery (`reckon/crew/review_lifecycle.py:164` `_reviewed_sections_done`, and the `done`/`implementable`/`deferred` triple inlined at `reckon/_plan_html.py:798`).",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:2990",
+      "id": "reuse_search-1",
+      "reason": "as written the SPA cannot see the field \u00a73 adds, so \u00a74's done-when is unreachable unless the plan names a single shared derivation point (or extends `parse_plan`/`serve.py`); otherwise the SPA must re-derive `todos` in JSX, against the binding \"the SPA renders; it does not derive\".",
+      "text": "\u00a73 derives `todos` in the typed read (`mcp_views._summary`/`_detail`), but \u00a74 renders it in the SPA, whose plan state is fetched from `serve.py`'s `/plan/<project>/<slug>` endpoint; that endpoint returns `_plan_html.parse_plan(pf)`, not the typed view (it already re-shapes `sections` through `with_section_attempts` at `reckon/serve.py:3055`), and `_summary` is not even handed the `html_text` that the heading text and `#<id>` link require.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-done-when-every-section-is-ticked.html#s3",
+      "id": "thin_wrapper-1",
+      "reason": "the section should either carry these fields on `sections` or state why a parallel list is needed, so the two surfaces cannot drift apart.",
+      "text": "the `todos` list re-projects the reader's existing `sections` records over the same `section_declarations` (the id and the declaration are already present, and `sections` already carries status), adding only heading text, an in-page link and one `c-close-` comment lookup; the plan does not justify a second per-section list rather than enriching `sections`.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-done-when-every-section-is-ticked.html#s7",
+      "id": "interface_budget-1",
+      "reason": "with the measured families at public_definitions 1585, cli_options 335, mcp_views 33 and refusal_families 23, the plan widens surface without subtracting any, and \u00a77 in particular owes a reason for leaving a now-unused op in the interface.",
+      "text": "\u00a77 moves each skill's landing beat off `collapse_section` while deliberately leaving the op available (\"stays available but no skill uses it\"), adding a tick-and-close landing path beside it, and gives no reason it cannot be retired or merged; \u00a73/\u00a75/\u00a76/\u00a79 likewise add helper definitions, and no section names what it retires or merges, or states why nothing can.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2edc232764fc12faab3655c4974ff48cd765ecd4286cb024ea7a0c15a102e4ca",
+  "plan_slug": "a-plan-is-done-when-every-section-is-ticked",
+  "plan_version": 5,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-07T22:45:42.985605+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-07T22:45:50.682095+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-07T22:45:58.494810+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "follower-proof",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-07T22:46:06.305388+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "follower-proof",
+      "finding": "thin_wrapper-1",
+      "reason": "sections holds the stored, schema-validated typed records that round-trip into the plan HTML and narrative sections carry none, so heading text, links and closing comments added there would either enter the store or break its schema; the todo list is one read-only derivation in parse_plan beside it, recorded in section 3's text",
+      "when": "2026-10-07T22:46:14.124614+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T22:45:42.985605+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T22:45:50.682095+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T22:46:06.305388+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "follower-proof",
+      "reason": "",
+      "when": "2026-10-07T22:45:58.494810+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "declined",
+      "by": "follower-proof",
+      "reason": "sections holds the stored, schema-validated typed records that round-trip into the plan HTML and narrative sections carry none, so heading text, links and closing comments added there would either enter the store or break its schema; the todo list is one read-only derivation in parse_plan beside it, recorded in section 3's text",
+      "when": "2026-10-07T22:46:14.124614+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-done-when-every-section-is-ticked.v5.json",
+  "review_run_id": "r-20261007T223757307829-plan-review-of-a-plan-is-done-when-every-section-is-ticked",
+  "reviewed_blob_sha": "2490557fcf327196c6f1d25c30498899ed413348",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan proposes no new module; each section extends an existing owner, and the one place it adds a parallel projection of existing data is reported under thin_wrapper rather than as a missing deep module.",
+    "duplicate_owner": "a finding \u2014 \u00a75 and \u00a76 add write-path refusals without naming the owners to extend, and \u00a76 and \u00a79 each compute the same \"every section is done\" predicate over `section_declarations` with no single owner named.",
+    "interface_budget": "a finding \u2014 public_definitions 1585, cli_options 335, mcp_views 33, refusal_families 23; \u00a77 keeps `collapse_section` available while moving the skills off it, and \u00a73/\u00a75/\u00a76/\u00a79 add helper definitions, yet no section names what it retires or merges, or states why nothing can.",
+    "reuse_search": "a finding \u2014 the plan cites the declaration, fingerprint, review-lifecycle and roadmap machinery it extends, but never names the SPA's plan payload path (`serve.py` `/plan/` \u2192 `_plan_html.parse_plan`) that \u00a74 depends on.",
+    "thin_wrapper": "a finding \u2014 \u00a73 adds a `todos` list beside the reader's existing `sections` records over the same declarations, and does not say why `sections` cannot carry the heading, link and closing comment instead."
+  },
+  "section_digests": {
+    "_document": "a9789f1fd1531ce410418ec12b093717ce66c35277fd186488ce68d6e64c6bcf",
+    "s1": "504d22771a3dd608a5f113f45b30b87012723b39ee6319c32160ad40e77b7adb",
+    "s2": "2d0220d0872dd77830193ee143573a19119b3152a998506dd5491a03a0f80500",
+    "s3": "63eb1fe7f2c51b6d93c521bc14286bd3be28dceda8b033f2ed1e80b4b2c5c27f",
+    "s4": "f91b4fda0b5185501a0a7264c6ba88dc1586d9b53641cb27676fcd7d6e9a3bdc",
+    "s5": "d30bf921fc070e5510dc2b216dac193c2eb9cc6dde17ab6ab7d5d4a15ebe7185",
+    "s6": "504088a6bca382d31086c34ab7808c2828b6ea71f43aedee9db0cdecd1a84828",
+    "s7": "e3455055a66bbca0c287003010ae1c39d08480d02644d7735d3f0d9347754928",
+    "s8": "23225797b13458ee18b4f28fa51f9d59ce4d7450aa9f6f2268828e5825dd7308",
+    "s9": "020b9dd37334e40f502d73ae03b56c75461278e43e4e8ec645f62b6aeb973ed2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T22:45:20.547953+00:00"
+}
