@@ -85,7 +85,9 @@ def test_pace_counts_a_banked_reset_from_the_same_reading(isolated_reckon_home) 
     reading = _reading(resets_at=NOW + timedelta(days=4), observed_at=NOW)
 
     without = _allowance(reading)
-    assert without["reset_available"] is False
+    # No banked reset: the allowance is exactly what it was before the flag
+    # existed, so a replay that recomputes it from the same row reproduces it.
+    assert "reset_available" not in without
 
     budget_reset.mark_available("codex-sub", by="lead", moment=NOW)
 
@@ -155,6 +157,66 @@ def test_clearing_an_absent_flag_changes_nothing(isolated_reckon_home) -> None:
     assert result["available"] is False
     assert result["changed"] is False
     assert "nothing changed" in result["detail"]
+
+
+def test_a_concurrent_clear_is_not_lost_to_an_in_flight_observation(
+    isolated_reckon_home, monkeypatch
+) -> None:
+    """An observation cannot write back a flag a concurrent clear has removed.
+
+    The store lock is held across the read and the write, so a clear that lands
+    while an observation is in flight waits for the write and then stands: the
+    observation never resurrects an expired flag. The contention is staged on the
+    observation's own write, which is the moment the read is already decided.
+    """
+    import threading
+
+    budget_reset.mark_available("codex-sub", by="lead", moment=NOW)
+    started = threading.Event()
+    finished = threading.Event()
+    cleared: list = []
+
+    def clear() -> None:
+        started.set()
+        cleared.append(budget_reset.mark_used("codex-sub", by="lead", moment=NOW))
+        finished.set()
+
+    real_write = budget_reset._write
+    contender: list = []
+
+    def write_while_clearing(data, *, home=None):
+        if not contender:
+            thread = threading.Thread(target=clear)
+            thread.start()
+            assert started.wait(timeout=5.0)
+            # The clear contends for the lock this observation holds, so it
+            # cannot land until the observation has written.
+            assert not finished.wait(timeout=0.2)
+            contender.append(thread)
+        return real_write(data, home=home)
+
+    monkeypatch.setattr(budget_reset, "_write", write_while_clearing)
+
+    try:
+        state = budget_reset.observe(
+            "codex-sub",
+            resets_at=NOW + timedelta(days=4),
+            window_minutes=WEEK_MINUTES,
+            moment=NOW,
+            utilisation=2.0,
+        )
+    finally:
+        # The observation's lock is released on return, so the waiting clear
+        # proceeds now.
+        if contender:
+            contender[0].join(timeout=5.0)
+        monkeypatch.setattr(budget_reset, "_write", real_write)
+
+    assert state["changed"] is True
+    assert finished.is_set()
+    assert cleared and cleared[0]["changed"] is True
+    # The clear stands; the observation did not write the clear's flag back.
+    assert budget_reset.available("codex-sub") is False
 
 
 def test_cli_budget_reset_round_trip(isolated_reckon_home) -> None:

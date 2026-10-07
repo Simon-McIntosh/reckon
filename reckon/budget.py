@@ -1963,7 +1963,7 @@ def _unknown_allowance(
 
 
 def _scale_for_banked_reset(
-    allowance: dict[str, Any], *, credit: float, available: bool
+    allowance: dict[str, Any], *, credit: float
 ) -> dict[str, Any]:
     """Count a banked reset as one extra full window of allowance.
 
@@ -1971,11 +1971,16 @@ def _scale_for_banked_reset(
     so the same reading admits more: the derived allowance scales up by the
     extra window and the burn, which measures spend against the budget that is
     actually available, scales down by the same factor. The credit is capped at
-    one window — a group carries at most one banked reset — and the reading
-    states ``reset_available`` either way so a consumer can see why it moved.
+    one window — a group carries at most one banked reset.
+
+    A group with no banked reset is returned byte for byte as it was derived:
+    ``reset_available`` is added only when a reset is counted, so the allowance
+    a group without one carries is unchanged and stays equal to the allowance a
+    replay recomputes from the same row.
     """
     credit = max(0.0, min(1.0, float(credit)))
     if credit > 0:
+        allowance["reset_available"] = True
         factor = 1.0 + credit
         derived = allowance.get("derived")
         if isinstance(derived, (int, float)) and not isinstance(derived, bool):
@@ -1994,7 +1999,6 @@ def _scale_for_banked_reset(
         remaining = allowance.get("remaining_budget")
         if isinstance(remaining, (int, float)) and not isinstance(remaining, bool):
             allowance["remaining_budget"] = float(remaining) + credit
-    allowance["reset_available"] = bool(available)
     return allowance
 
 
@@ -2079,7 +2083,6 @@ def _group_allowance(
                 "resets_at": operative.resets_at,
             },
             credit=credit,
-            available=available,
         )
 
     week = clocks[CLOCK_SEVEN_DAY]
@@ -2112,7 +2115,7 @@ def _group_allowance(
             "resets_at": operative.resets_at,
         }
     )
-    return _scale_for_banked_reset(allowance, credit=credit, available=available)
+    return _scale_for_banked_reset(allowance, credit=credit)
 
 
 def _operative_window(

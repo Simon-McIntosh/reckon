@@ -18,9 +18,12 @@ natural reset and leaves the flag alone.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
-from collections.abc import Mapping
+import threading
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -30,6 +33,10 @@ from reckon.crew.obligation_snapshot import crew_home
 
 #: The filename under the crew state home holding every group's flag.
 STORE_FILENAME = "budget-resets.json"
+
+#: Serialises this module's in-process critical sections so a nested call from
+#: the same thread does not deadlock on the file lock below.
+_PROCESS_LOCK = threading.RLock()
 
 #: How far a jumped reset boundary may sit from ``observed_at + window`` and
 #: still read as a fresh window. A reset consumed between two observations is
@@ -57,6 +64,27 @@ def state_path(*, home: Path | None = None) -> Path:
 
 def _now() -> datetime:
     return datetime.now(UTC)
+
+
+@contextmanager
+def _locked(*, home: Path | None = None) -> Iterator[None]:
+    """Serialise a read-check-write of the flag store for one crew home.
+
+    Every writer — the command surface and the automatic detection — takes this
+    lock before it reads the record it is about to decide on, so a read and the
+    write that follows it are one step. Without it an observe that read the flag
+    before a concurrent clear would write back the value it read, and a clear
+    that had already landed would be lost.
+    """
+    path = state_path(home=home)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_name(path.name + ".lock")
+    with _PROCESS_LOCK, lock_path.open("a+b") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _iso(moment: datetime) -> str:
@@ -124,44 +152,45 @@ def mark_available(
     that is already available reports the existing record rather than advancing
     it. The caller can tell the two apart from ``changed``.
     """
-    data = _load(home=home)
-    groups = data["groups"]
-    now = moment or _now()
-    found = groups.get(group)
-    found = found if isinstance(found, dict) else {}
-    if found.get("available"):
+    with _locked(home=home):
+        data = _load(home=home)
+        groups = data["groups"]
+        now = moment or _now()
+        found = groups.get(group)
+        found = found if isinstance(found, dict) else {}
+        if found.get("available"):
+            return {
+                "ok": True,
+                "group": group,
+                "available": True,
+                "changed": False,
+                "set_at": found.get("set_at"),
+                "set_by": found.get("set_by"),
+                "detail": (
+                    "a banked reset is already available for this group; it does not "
+                    "stack, so the existing record stands"
+                ),
+            }
+        found = {
+            **found,
+            "available": True,
+            "set_at": _iso(now),
+            "set_by": (by or _who()),
+            "cleared_at": None,
+            "cleared_reason": None,
+        }
+        found.setdefault("events", [])
+        groups[group] = found
+        _write(data, home=home)
         return {
             "ok": True,
             "group": group,
             "available": True,
-            "changed": False,
-            "set_at": found.get("set_at"),
-            "set_by": found.get("set_by"),
-            "detail": (
-                "a banked reset is already available for this group; it does not "
-                "stack, so the existing record stands"
-            ),
+            "changed": True,
+            "set_at": found["set_at"],
+            "set_by": found["set_by"],
+            "detail": "a banked reset is now flagged available for this group",
         }
-    found = {
-        **found,
-        "available": True,
-        "set_at": _iso(now),
-        "set_by": (by or _who()),
-        "cleared_at": None,
-        "cleared_reason": None,
-    }
-    found.setdefault("events", [])
-    groups[group] = found
-    _write(data, home=home)
-    return {
-        "ok": True,
-        "group": group,
-        "available": True,
-        "changed": True,
-        "set_at": found["set_at"],
-        "set_by": found["set_by"],
-        "detail": "a banked reset is now flagged available for this group",
-    }
 
 
 def mark_used(
@@ -177,44 +206,45 @@ def mark_used(
     Clearing a group that carries no flag changes nothing and says so, so the
     command is safe to repeat.
     """
-    data = _load(home=home)
-    groups = data["groups"]
-    now = moment or _now()
-    found = groups.get(group)
-    found = found if isinstance(found, dict) else {}
-    if not found.get("available"):
+    with _locked(home=home):
+        data = _load(home=home)
+        groups = data["groups"]
+        now = moment or _now()
+        found = groups.get(group)
+        found = found if isinstance(found, dict) else {}
+        if not found.get("available"):
+            return {
+                "ok": True,
+                "group": group,
+                "available": False,
+                "changed": False,
+                "detail": "no banked reset is available for this group, so nothing changed",
+            }
+        found = {
+            **found,
+            "available": False,
+            "cleared_at": _iso(now),
+            "cleared_reason": reason,
+            "cleared_by": (by or _who()),
+        }
+        found.setdefault("events", []).append(
+            {
+                "kind": "used",
+                "detected_at": _iso(now),
+                "reason": reason,
+                "by": (by or _who()),
+            }
+        )
+        groups[group] = found
+        _write(data, home=home)
         return {
             "ok": True,
             "group": group,
             "available": False,
-            "changed": False,
-            "detail": "no banked reset is available for this group, so nothing changed",
+            "changed": True,
+            "cleared_at": found["cleared_at"],
+            "detail": "the banked-reset flag is cleared for this group",
         }
-    found = {
-        **found,
-        "available": False,
-        "cleared_at": _iso(now),
-        "cleared_reason": reason,
-        "cleared_by": (by or _who()),
-    }
-    found.setdefault("events", []).append(
-        {
-            "kind": "used",
-            "detected_at": _iso(now),
-            "reason": reason,
-            "by": (by or _who()),
-        }
-    )
-    groups[group] = found
-    _write(data, home=home)
-    return {
-        "ok": True,
-        "group": group,
-        "available": False,
-        "changed": True,
-        "cleared_at": found["cleared_at"],
-        "detail": "the banked-reset flag is cleared for this group",
-    }
 
 
 def observe(
@@ -236,60 +266,91 @@ def observe(
     schedule: the flag is cleared and the event recorded with both readings. A
     boundary that is only reached at its scheduled time leaves the flag alone,
     because the previous boundary is behind the observation by then.
+
+    The read, the comparison and the write happen under one lock, the same one
+    the command surface takes, so a clear that lands concurrently is never
+    overwritten by a reading taken before it. The record is written only when
+    there is something new to keep -- a first reading, a moved boundary, or a
+    reset consumed -- so a derivation over an unchanged reading costs no write.
     """
-    data = _load(home=home)
-    groups = data["groups"]
-    found = groups.get(group)
-    if not isinstance(found, dict):
-        return {
-            "tracked": False,
-            "available": False,
-            "consumed": False,
-            "changed": False,
-        }
-    now = moment or _now()
-    current = _parse(resets_at)
-    previous = _parse(found.get("observed_resets_at"))
-    consumed = False
-    if found.get("available") and current is not None and previous is not None:
-        window = window_minutes or found.get("observed_window_minutes")
-        if (
-            isinstance(window, int)
-            and window > 0
-            and previous > now
-            and current > previous
-        ):
-            tolerance = timedelta(minutes=window * RESET_JUMP_TOLERANCE_FRACTION)
-            expected = now + timedelta(minutes=window)
-            if abs(current - expected) <= tolerance:
-                consumed = True
-    if consumed:
-        found["available"] = False
-        found["cleared_at"] = _iso(now)
-        found["cleared_by"] = "detected"
-        found["cleared_reason"] = "consumed reset detected"
-        found.setdefault("events", []).append(
-            {
-                "kind": "consumed",
-                "detected_at": _iso(now),
-                "previous_resets_at": found.get("observed_resets_at"),
-                "resets_at": resets_at if isinstance(resets_at, str) else None,
-                "previous_observed_at": found.get("observed_at"),
-                "observed_at": _iso(now),
-                "window_minutes": window_minutes,
-                "utilisation": utilisation,
+    with _locked(home=home):
+        data = _load(home=home)
+        groups = data["groups"]
+        found = groups.get(group)
+        if not isinstance(found, dict):
+            return {
+                "tracked": False,
+                "available": False,
+                "consumed": False,
+                "changed": False,
             }
-        )
-    found["observed_resets_at"] = resets_at if isinstance(resets_at, str) else None
-    found["observed_window_minutes"] = window_minutes
-    found["observed_at"] = _iso(now)
-    if utilisation is not None:
-        found["observed_utilisation"] = utilisation
-    groups[group] = found
-    _write(data, home=home)
-    return {
-        "tracked": True,
-        "available": bool(found.get("available")),
-        "consumed": consumed,
-        "changed": True,
-    }
+        now = moment or _now()
+        boundary = resets_at if isinstance(resets_at, str) else None
+        current = _parse(resets_at)
+        previous = _parse(found.get("observed_resets_at"))
+        consumed = False
+        if found.get("available") and current is not None and previous is not None:
+            window = window_minutes or found.get("observed_window_minutes")
+            if (
+                isinstance(window, int)
+                and window > 0
+                and previous > now
+                and current > previous
+            ):
+                tolerance = timedelta(minutes=window * RESET_JUMP_TOLERANCE_FRACTION)
+                expected = now + timedelta(minutes=window)
+                if abs(current - expected) <= tolerance:
+                    consumed = True
+        if not consumed and _same_observation(
+            found, boundary, window_minutes, utilisation
+        ):
+            return {
+                "tracked": True,
+                "available": bool(found.get("available")),
+                "consumed": False,
+                "changed": False,
+            }
+        if consumed:
+            found["available"] = False
+            found["cleared_at"] = _iso(now)
+            found["cleared_by"] = "detected"
+            found["cleared_reason"] = "consumed reset detected"
+            found.setdefault("events", []).append(
+                {
+                    "kind": "consumed",
+                    "detected_at": _iso(now),
+                    "previous_resets_at": found.get("observed_resets_at"),
+                    "resets_at": boundary,
+                    "previous_observed_at": found.get("observed_at"),
+                    "observed_at": _iso(now),
+                    "window_minutes": window_minutes,
+                    "utilisation": utilisation,
+                }
+            )
+        found["observed_resets_at"] = boundary
+        found["observed_window_minutes"] = window_minutes
+        found["observed_at"] = _iso(now)
+        if utilisation is not None:
+            found["observed_utilisation"] = utilisation
+        groups[group] = found
+        _write(data, home=home)
+        return {
+            "tracked": True,
+            "available": bool(found.get("available")),
+            "consumed": consumed,
+            "changed": True,
+        }
+
+
+def _same_observation(
+    found: Mapping[str, Any],
+    boundary: str | None,
+    window_minutes: int | None,
+    utilisation: float | None,
+) -> bool:
+    """Whether ``found`` already carries exactly this observation."""
+    if found.get("observed_resets_at") != boundary:
+        return False
+    if found.get("observed_window_minutes") != window_minutes:
+        return False
+    return utilisation is None or found.get("observed_utilisation") == utilisation
