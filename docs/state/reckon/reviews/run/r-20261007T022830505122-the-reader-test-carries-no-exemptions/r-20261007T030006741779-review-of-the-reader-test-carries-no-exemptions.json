@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T03:15:04.525Z",
+  "dispatched_at": "2026-10-07T03:00:34Z",
+  "findings": [
+    {
+      "file": "tests/test_the_section_prose_reader_has_one_home.py",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "follow-on: the reference walk was extended beyond the briefed comment-node fix to treat a heading-carried section marker as transparent; the brief directed blocking and naming the plan rather than extending the walk, though the extension matches the reader (reckon/_plan_html.py:445, record.kind == \"section\") and no product file changed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022830505122-the-reader-test-carries-no-exemptions/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control was to keep HTML comment text and fail on orchestrator-crew-pattern-studies.html, but the kept log applies a different mutation (restore element.name == \"section\" transparency) and fails on a-follower-lives-as-long-as-its-session.html; the comment-drop half is falsified only by the manifest's round-one reproduction, not by the recorded log."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 6a3dc0b88; the two test commits touch only tests/test_the_section_prose_reader_has_one_home.py, deleting EXEMPT_PLANS and its asserting test, adding a _drop_comments helper called by both reference walks, and re-keying the search walk's transparency from element.name == \"section\" to machinery_kind(element.attrs) == \"section\".",
+    "done_when": "the reviewed done_when requires no EXEMPT_PLANS and no count assertion, comment-dropping reference walks, parity on every plan, the file passing in full and no other file changed; the full file passes at the reviewed head and the diff touches only that file.",
+    "goal": "the reviewed node's goal is to remove the three plan exemptions from the section-prose reference test; tests/test_the_section_prose_reader_has_one_home.py:31 now carries no EXEMPT_PLANS and asserts parity on every plan under docs/plans.",
+    "manifest": "read; it records the gate command, gate.log (7 passed in 67.23s) at EXIT=0 for the merged tree, a negative-control.log at EXIT=1, and names the three commits aaac9b16d, 0f401b88e, bef45f5aa.",
+    "write_paths": "the sole declared path tests/test_the_section_prose_reader_has_one_home.py is the only file the node authored; commit 0f401b88e brings main's already-committed plans into the tree without authoring them here."
+  },
+  "justifications": {
+    "durability": "reverting the transparency condition reddens test_surfaces_reproduce_their_reference_outputs_on_every_plan on docs/plans/a-follower-lives-as-long-as-its-session.html (negative-control.log EXIT=1), and keeping comment text reddens it on docs/plans/orchestrator-crew-pattern-studies.html as recorded before the fix.",
+    "evidence": "the parity result is recorded in the manifest's named gate log; I re-ran the gate at bef45f5aa (7 passed in 67.52s, EXIT=0), matching the recorded result.",
+    "fit": "the _drop_comments helper at tests/test_the_section_prose_reader_has_one_home.py:36 and the re-keyed condition at line 60 match the file's existing helper-and-walk idiom and add no forbidden name.",
+    "goal_fidelity": "tests/test_the_section_prose_reader_has_one_home.py:121 iterates every plan with the EXEMPT_PLANS skip removed, so the goal is met; the heading-transparency extension at line 60 is a departure from the comment-node fix the brief named.",
+    "reuse": "_drop_comments implements no capability reckon already owns; a capability search over reckon/ found no HTML-comment-dropping helper (reckon/doccheck.py:307 reads text nodes for markdown rendering, a different purpose).",
+    "scope_discipline": "the diff stays inside the declared path tests/test_the_section_prose_reader_has_one_home.py:45, but extends the reference walk to heading-carried section markers, which the brief did not name and which it said to block on rather than extend."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to remove the three plan exemptions from the section-prose reference test; tests/test_the_section_prose_reader_has_one_home.py:31 now carries no EXEMPT_PLANS and asserts parity on every plan under docs/plans.\nVERDICT done_when: the reviewed done_when requires no EXEMPT_PLANS and no count assertion, comment-dropping reference walks, parity on every plan, the file passing in full and no other file changed; the full file passes at the reviewed head and the diff touches only that file.\nVERDICT write_paths: the sole declared path tests/test_the_section_prose_reader_has_one_home.py is the only file the node authored; commit 0f401b88e brings main's already-committed plans into the tree without authoring them here.\nVERDICT manifest: read; it records the gate command, gate.log (7 passed in 67.23s) at EXIT=0 for the merged tree, a negative-control.log at EXIT=1, and names the three commits aaac9b16d, 0f401b88e, bef45f5aa.\nVERDICT diff: read commit by commit against base 6a3dc0b88; the two test commits touch only tests/test_the_section_prose_reader_has_one_home.py, deleting EXEMPT_PLANS and its asserting test, adding a _drop_comments helper called by both reference walks, and re-keying the search walk's transparency from element.name == \"section\" to machinery_kind(element.attrs) == \"section\".\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_the_section_prose_reader_has_one_home.py:121 iterates every plan with the EXEMPT_PLANS skip removed, so the goal is met; the heading-transparency extension at line 60 is a departure from the comment-node fix the brief named.\nSCORE evidence: 18\nJUSTIFICATION evidence: the parity result is recorded in the manifest's named gate log; I re-ran the gate at bef45f5aa (7 passed in 67.52s, EXIT=0), matching the recorded result.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff stays inside the declared path tests/test_the_section_prose_reader_has_one_home.py:45, but extends the reference walk to heading-carried section markers, which the brief did not name and which it said to block on rather than extend.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the transparency condition reddens test_surfaces_reproduce_their_reference_outputs_on_every_plan on docs/plans/a-follower-lives-as-long-as-its-session.html (negative-control.log EXIT=1), and keeping comment text reddens it on docs/plans/orchestrator-crew-pattern-studies.html as recorded before the fix.\nSCORE fit: 19\nJUSTIFICATION fit: the _drop_comments helper at tests/test_the_section_prose_reader_has_one_home.py:36 and the re-keyed condition at line 60 match the file's existing helper-and-walk idiom and add no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: _drop_comments implements no capability reckon already owns; a capability search over reckon/ found no HTML-comment-dropping helper (reckon/doccheck.py:307 reads text nodes for markdown rendering, a different purpose).\nFINDING tests/test_the_section_prose_reader_has_one_home.py:60 follow-on: the reference walk was extended beyond the briefed comment-node fix to treat a heading-carried section marker as transparent; the brief directed blocking and naming the plan rather than extending the walk, though the extension matches the reader (reckon/_plan_html.py:445, record.kind == \"section\") and no product file changed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022830505122-the-reader-test-carries-no-exemptions/manifest.md:1 follow-on: the declared negative control was to keep HTML comment text and fail on orchestrator-crew-pattern-studies.html, but the kept log applies a different mutation (restore element.name == \"section\" transparency) and fails on a-follower-lives-as-long-as-its-session.html; the comment-drop half is falsified only by the manifest's round-one reproduction, not by the recorded log.",
+  "review_run_id": "r-20261007T030006741779-review-of-the-reader-test-carries-no-exemptions",
+  "reviewed_base_sha": "6a3dc0b88a575bd75ef1f1e4a5c0cdd4f7972a44",
+  "reviewed_head_sha": "bef45f5aa13b168377927cbed5a60910400f0d34",
+  "reviewed_run_id": "r-20261007T022830505122-the-reader-test-carries-no-exemptions",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-07T03:11:29.360568+00:00",
+  "total": 109
+}
