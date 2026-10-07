@@ -85,6 +85,71 @@ def parse_layout(source: str) -> list[dict[str, Any]]:
     return tabs
 
 
+def _listed_sessions(
+    *,
+    invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+    check: bool = False,
+    timeout: float | None = None,
+) -> list[tuple[str, bool]]:
+    """Read zellij's session list with each server's exited state."""
+    options: dict[str, Any] = {"capture_output": True, "text": True, "check": check}
+    if timeout is not None:
+        options["timeout"] = timeout
+    result = invoke(["zellij", "list-sessions", "--no-formatting"], **options)
+    if result.returncode:
+        raise MigrationError(f"zellij session list failed: {result.stderr.strip()}")
+    sessions = []
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if fields:
+            sessions.append((fields[0], "EXITED" in line))
+    return sessions
+
+
+def _live_claude_records(
+    claude_sessions: Path,
+    process_root: Path,
+    *,
+    skip_invalid: bool = False,
+) -> dict[str, dict[str, Any]]:
+    """Join session records to live processes by pid and process start."""
+    records = {}
+    for path in claude_sessions.glob("*.json"):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            if skip_invalid:
+                continue
+            raise
+        try:
+            conversation = record.get("sessionId")
+            pid = record.get("pid")
+        except AttributeError:
+            if skip_invalid:
+                continue
+            raise
+        if not conversation or not isinstance(pid, int):
+            continue
+        try:
+            start = (
+                (process_root / str(pid) / "stat")
+                .read_text()
+                .rsplit(") ", 1)[1]
+                .split()[19]
+            )
+        except (IndexError, OSError):
+            continue
+        if start != str(record.get("procStart")):
+            continue
+        records[conversation] = {
+            "conversation": conversation,
+            "cwd": record.get("cwd"),
+            "pid": pid,
+            "status": record.get("status"),
+        }
+    return records
+
+
 def _local_observation(
     *,
     state: Path,
@@ -94,16 +159,10 @@ def _local_observation(
     invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> dict[str, Any]:
     """Read the old node's zellij and Claude records without changing them."""
-    listed = invoke(
-        ["zellij", "list-sessions", "--no-formatting"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
     names = [
-        line.split()[0]
-        for line in listed.stdout.splitlines()
-        if line.strip() and line.split()[0].endswith("-fleet")
+        name
+        for name, _exited in _listed_sessions(invoke=invoke, check=True)
+        if name.endswith("-fleet")
     ]
     if not names:
         raise MigrationError(
@@ -120,25 +179,7 @@ def _local_observation(
         if not parse_layout(result.stdout):
             raise MigrationError(f"layout dump for {name} has no tabs")
         layouts[name] = result.stdout
-    records = {}
-    for path in claude_sessions.glob("*.json"):
-        record = json.loads(path.read_text())
-        conversation = record.get("sessionId")
-        pid = record.get("pid")
-        stat = process_root / str(pid) / "stat" if isinstance(pid, int) else None
-        if conversation and stat is not None and stat.is_file():
-            try:
-                start = stat.read_text().rsplit(") ", 1)[1].split()[19]
-            except (IndexError, OSError):
-                continue
-            if start != str(record.get("procStart")):
-                continue
-            records[conversation] = {
-                "conversation": conversation,
-                "cwd": record.get("cwd"),
-                "pid": record.get("pid"),
-                "status": record.get("status"),
-            }
+    records = _live_claude_records(claude_sessions, process_root)
     log = state / "sessions.tsv"
     starts = log.read_text().splitlines() if log.is_file() else []
     return {
@@ -364,19 +405,10 @@ def _run_step(argv: list[str]) -> subprocess.CompletedProcess[str]:
 def _active_sessions(
     invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> list[str]:
-    result = invoke(
-        ["zellij", "list-sessions", "--no-formatting"],
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=30,
-    )
-    if result.returncode:
-        raise MigrationError(f"zellij session list failed: {result.stderr.strip()}")
     return [
-        line.split()[0]
-        for line in result.stdout.splitlines()
-        if line.split() and "EXITED" not in line
+        name
+        for name, exited in _listed_sessions(invoke=invoke, timeout=30)
+        if not exited
     ]
 
 
@@ -411,30 +443,26 @@ def _local_session_processes(
     if result.returncode:
         raise MigrationError(f"layout read for {name} failed: {result.stderr.strip()}")
     tabs = parse_layout(result.stdout)
-    records = {}
-    for path in (claude_sessions or Path.home() / ".claude" / "sessions").glob(
-        "*.json"
-    ):
+    records = _live_claude_records(
+        claude_sessions or Path.home() / ".claude" / "sessions",
+        process_root,
+        skip_invalid=True,
+    )
+    for conversation, record in list(records.items()):
         try:
-            record = json.loads(path.read_text())
-            pid = int(record["pid"])
-            stat = (process_root / str(pid) / "stat").read_text()
-            start = stat.rsplit(") ", 1)[1].split()[19]
             command = (
-                (process_root / str(pid) / "cmdline")
+                (process_root / str(record["pid"]) / "cmdline")
                 .read_bytes()
                 .replace(b"\0", b" ")
                 .decode(errors="replace")
             )
-        except (OSError, ValueError, KeyError, IndexError):
+        except OSError:
+            del records[conversation]
             continue
-        if start == str(record.get("procStart")) and "claude" in command.lower():
-            records[record.get("sessionId")] = {
-                "conversation": record["sessionId"],
-                "cwd": record.get("cwd"),
-                "pid": pid,
-                "command": command,
-            }
+        if "claude" not in command.lower():
+            del records[conversation]
+            continue
+        record["command"] = command
     panes = []
     for tab in tabs:
         for pane in tab["panes"]:
