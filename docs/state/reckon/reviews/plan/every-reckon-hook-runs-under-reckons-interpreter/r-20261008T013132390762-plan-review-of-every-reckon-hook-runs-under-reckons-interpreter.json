@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T01:57:15.055Z",
+  "dispatched_at": "2026-10-08T01:32:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-reckon-hook-runs-under-reckons-interpreter.html:53",
+      "id": "reasoning-1",
+      "reason": "the fail-closed decision and the \u00a74/\u00a75 repair rest on a live fail-open the plan's own evidence contradicts; only `worker_stop.py` and `coordinator_obligations.py` actually crash on 3.9, and the guard fails open only when its script is copied away from a checkout, neither of which is the failure the plan names.",
+      "text": "\u00a71 asserts the bare git guard \"cannot import its rules\" and so fails open on the system Python 3.9, attributing it to `from datetime import UTC`; reproduced on this node against `/usr/bin/python3.9` (3.9.16): `from reckon.worker_git_shim import mutating_verb` (\u2192 `reckon.shim_lookup`) imports with no UTC reference, and running `reckon/hooks/worker_git_guard.py` under that interpreter with `RECKON_RUN_ID` set denies a banned `git \u2026 reset --hard` with a reason, exit 0 \u2014 the guard the plan says lets a banned command through refuses it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-reckon-hook-runs-under-reckons-interpreter.html:81",
+      "id": "done_when-1",
+      "reason": "as written the clause cannot be satisfied for three of the six scripts, so a worker would either fail the node or weaken the test to the two scripts that do crash (stop, obligations); the clause must name the scripts that can detect a wrong interpreter, or state the detection as an interpreter-identity check rather than a reckon-import capability check.",
+      "text": "\u00a74's first done-when requires a test to start \"each reckon hook script\" through a `python3` on `PATH` that cannot import reckon and find it \"re-executed under the checkout's interpreter\", but `native_agent_guard.py`, `worker_message_guard.py` and `worker_git_guard.py` import no reckon module and run correctly under `/usr/bin/python3.9` (exit 0, no traceback), so no re-execution is reachable for them",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f0e10bdfc60630f5fa2aef4018c2a4bd3c749d65811c523005524f4f71458dc8",
+  "plan_slug": "every-reckon-hook-runs-under-reckons-interpreter",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T013132390762-plan-review-of-every-reckon-hook-runs-under-reckons-interpreter",
+  "reviewed_blob_sha": "241ffad71fa119bc7dc870841d8170ca0b53fe96",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `reckon/hooks/install.py`, `reckon/_backends.py` (`_seed_harness_entry`), `reckon/schema/flight-defaults.yaml` (`harness_home_files` at line 40), and the fleet move's \u00a715 (`the-fleet-moves-to-a-new-node.html` s15). No hrefs are used, so no href needs the extensionless-`.html` resolution.",
+    "done_when": "a finding \u2014 \u00a74's first done-when requires a test to start \"each reckon hook script\" through a Python that cannot import reckon and find it re-executed, but three of the six scripts import no reckon module and run correctly under the system interpreter, so no re-execution \u2014 and no way to observe one \u2014 is reachable for them.",
+    "evidence_paths": "pass \u2014 the plan names no evidence or gate path at all, so nothing sits on a scratchpad or a transient directory; the done-whens are test-based.",
+    "naming": "pass \u2014 the plan's prose is mechanism-based; no plan labels, stage names, ticket numbers or version tags are carried into the symbols or files it will create.",
+    "reasoning": "a finding \u2014 \u00a71 states the git guard fails open on the fleet node's Python 3.9 because `from datetime import UTC` fails, but the git guard's rules-import chain carries no UTC dependency and the guard denies a banned command correctly under `/usr/bin/python3.9`.",
+    "single_goal": "pass \u2014 each section names one mechanism (\u00a72 the unified composer, \u00a73 the harness-home seeding, \u00a74 the self-correcting script, \u00a75 the healing step); \u00a71 is context.",
+    "wiring": "pass \u2014 no depends-on/informs/gates are declared and none is required; the only cross-reference (the fleet move's \u00a715, `the-fleet-moves-to-a-new-node.html`) is a completed historical section, and no plan declares a dependency on this plan beyond its `S21.html` listing."
+  },
+  "section_digests": {
+    "_document": "55e5412245dee4a0372bda47c8410a7dcf026433c35c0d22d1eaedbcb10ff3a3",
+    "s1": "2edd03521fc161e511674984b72836b0c293493d430b48b84d55803de9f30a26",
+    "s2": "df578de5b81a61d4c936fde662da83296580dc5591d40f0003bbc28626269b0c",
+    "s3": "dc16395bb30acca8f3fdc2b34fd78e6c59e2daa511fb92d877a788860cc61a8d",
+    "s4": "ba00ef0a56179332f4562326f1de00bc8bffa0a00a6a65a953cd6e982df8909b",
+    "s5": "0af530e080ca800ac60a14a270445e8bb22495cf0430285d5856fcd3a7bd3e27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:54:49.838236+00:00"
+}
