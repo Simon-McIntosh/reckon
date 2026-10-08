@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T23:07:52.872Z",
+  "dispatched_at": "2026-10-08T22:52:40Z",
+  "findings": [
+    {
+      "anchor": "reckon/mcp_census.py:49",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name the one order and its owner (the `CAUSES` tuple) so the attribution is deterministic and the done-when test pins it, instead of leaving two orders that disagree on a timeout log.",
+      "text": "\u00a713 attributes each failed connection to \"the first in \u00a71's table that its log carries\" and reports how many failures \"also carried each later signature\", but \u00a71's table order (`CONNECTION_CLOSED`\u2192`package_metadata`\u2192`missing_directory`\u2192`read_only_environment`\u2192`CONNECT_TIMEOUT`\u2192`server_discover`) is not the module's `CAUSES` order (`CONNECTION_CLOSED`\u2192`CONNECT_TIMEOUT`\u2192`package_metadata`\u2192`missing_directory`\u2192`read_only_environment`\u2192`server_discover`): a log carrying both a `CONNECT_TIMEOUT` and the package-metadata stderr line is attributed to `package_metadata` by the plan's rule and to `CONNECT_TIMEOUT` by the natural `matched[0]` implementation at `reckon/mcp_census.py:245`, and the done-when case \"counts once, under the earlier\" cannot tell which order was used",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "26b918f6a5049654bb2abc24f8667d353a2dca8684755ad1b50f3ae4e32df1d8",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 85,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T225205817719-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "04b43fa02ce435cab201e4649e90c409c364ff94",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the census stays one public entry point, `census()`: \u00a713 shrinks the interface (makes `directory_kind` private, the module's only other public function) while adding behaviour (one-cause attribution and the stale-directory skip), so depth grows as surface shrinks.",
+    "duplicate_owner": "a finding \u2014 \u00a713 fixes a failure's attribution as \"the first in \u00a71's table that its log carries\", a second order beside the `CAUSES` tuple that owns the order and that the implementation will use; the two disagree for a `CONNECT_TIMEOUT` log.",
+    "interface_budget": "pass \u2014 public_definitions 1623, cli_options 351, mcp_views 33, refusal_families 23; \u00a713 adds no CLI option, no MCP view and no refusal family, and adds no public definition while retiring one (`directory_kind` becomes private), which the section states in its own text.",
+    "reuse_search": "pass \u2014 \u00a713 extends the landed `reckon/mcp_census.py` (its `_server_log_files` walk, its `CAUSES` signature table and its transcript count) rather than adding a second census; no other reader of Claude Code's `mcp-logs-*`/`claude-cli-nodejs` trees exists (grep finds none) and no other consumer of `STORAGE_SLOW`, and the section's new directory-mtime skip mirrors the transcript file-mtime skip the module already carries at `reckon/mcp_census.py:167`.",
+    "thin_wrapper": "pass \u2014 \u00a713 changes the existing census in place rather than placing a layer beside it, and `_echo_mcp_census` at `reckon/project_maintenance_commands.py:1055` stays the single reader of the report."
+  },
+  "section_digests": {
+    "_document": "8f30e5bc3d66f5dc60222cbd887ce290c7d711a334bf38c52d98bcb04c708389",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s13": "b4adaeec310af28c38637d2faad4744a1c78b0d6ece38e1b0bf5d5d02c84608f",
+    "s2": "3a0632a9c77266389bb16c116a82d809d3c62b98f0ca44f8c9f8eb4ccde7a18e",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "16d91b56539888d5683fc9808616b764742e6c7e93516541ff6dc793aec9fc84",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T23:08:08.703922+00:00"
+}
