@@ -1,27 +1,25 @@
 """The claim grace follows the observed launch-to-claim time, with a floor.
 
 A dispatch that loses a registration race waits, bounded, for the winning claim
-to launch or withdraw. That bound used to be a fixed fifteen seconds whatever
-the fleet's launches actually cost. It is now derived from the observed
-launch-to-claim distribution — the interval from a claim's registration to the
-instant its worker record carries ``launched_at`` — scaled by a margin and
-floored, so a slow fleet waits longer and a fast one does not hold a losing
-dispatch's turn.
+to launch or withdraw. The bound follows the observed launch-to-claim
+distribution — the interval from a claim's registration to the instant its
+worker record carries ``launched_at`` — scaled by a margin and floored, so a
+slow fleet waits longer and a fast one does not hold a losing dispatch's turn.
 
 These tests pin the derivation, not a particular number: they assert that the
-grace scale with the observation it is handed, that it never falls below the
-floor, and that the module value is the derivation applied to the recorded
-distribution rather than a fixed constant.
+grace scales with its observations, never falls below the floor, and reads
+recorded launch intervals rather than a fixed distribution.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from reckon.crew.dispatch_claims import (
-    _CLAIM_LAUNCH_OBSERVED_SECONDS,
     CLAIM_GRACE_FLOOR_SECONDS,
     CLAIM_GRACE_MARGIN,
-    RACING_WINNER_WAIT_SECONDS,
     claim_grace_seconds,
+    recent_claim_grace_seconds,
 )
 
 
@@ -56,15 +54,15 @@ def test_the_grace_reads_the_tail_of_the_distribution() -> None:
     assert claim_grace_seconds(samples) == CLAIM_GRACE_MARGIN * 10.0
 
 
-def test_the_module_grace_is_the_derivation_not_a_constant() -> None:
-    """The shipped grace is the recorded distribution put through the function.
+def test_the_module_grace_is_the_derivation_not_a_constant(tmp_path: Path) -> None:
+    """Recorded launch intervals, rather than a module constant, set the grace."""
+    for index in range(20):
+        directory = tmp_path / f"r-{index:02d}-sample"
+        directory.mkdir()
+        (directory / "worker.json").write_text(
+            '{"claim_registered_at":"2026-10-08T12:00:00Z",'
+            '"launched_at":"2026-10-08T12:00:20Z"}',
+            encoding="utf-8",
+        )
 
-    A fixed fifteen-second grace is what this replaces: if the module value is
-    a constant again, this fails rather than passing silently.
-    """
-    assert (
-        claim_grace_seconds(_CLAIM_LAUNCH_OBSERVED_SECONDS)
-        == RACING_WINNER_WAIT_SECONDS
-    )
-    assert RACING_WINNER_WAIT_SECONDS != 15.0
-    assert RACING_WINNER_WAIT_SECONDS >= CLAIM_GRACE_FLOOR_SECONDS
+    assert recent_claim_grace_seconds(tmp_path) == claim_grace_seconds([20.0] * 20)

@@ -24,6 +24,10 @@ from reckon import (
     _backends,
     _store,
 )
+from reckon.crew.dispatch_claims import (
+    CLAIM_GRACE_OBSERVATIONS_NAME,
+    CLAIM_GRACE_OBSERVATION_LIMIT,
+)
 from reckon._timestamps import (
     parse_utc,
 )
@@ -48,6 +52,7 @@ from reckon.crew.runs import (
     _process_start_time,
     _utc_now,
     _write_json,
+    crew_home,
     placement_job_alive,
     process_alive,
     read_pointer,
@@ -2507,6 +2512,17 @@ def _publish_stored_phase(
         )
         if phase:
             record["phase"] = phase
+        if not ended:
+            try:
+                worker = json.loads(
+                    (run_dir(run_id) / WORKER_RECORD_NAME).read_text(encoding="utf-8")
+                )
+            except (OSError, ValueError):
+                worker = {}
+            if isinstance(worker, Mapping):
+                for key in ("claim_registered_at", "launched_at"):
+                    if worker.get(key):
+                        record[key] = worker[key]
         _write_existing_pointer(run_id, record)
 
 
@@ -3061,6 +3077,7 @@ def _run_supervisor(spec_path: Path) -> int:
             return 0
     finally:
         signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+    registered_at = _claim_registration_for_worker(run_directory, run_id)
     _write_attempt_artifact(
         run_directory,
         WORKER_RECORD_NAME,
@@ -3070,11 +3087,17 @@ def _run_supervisor(spec_path: Path) -> int:
             "pid": pid,
             "pid_start_time": _process_start_time(pid),
             "launched_at": launched_at,
+            "claim_registered_at": registered_at,
             "backend": str(spec["plan"].get("backend") or ""),
             "argv": list(spec["plan"].get("argv") or ()),
         },
         attempt=attempt,
     )
+    if attempt == 1 and registered_at:
+        try:
+            _remember_claim_launch_interval(run_id, registered_at, launched_at)
+        except (OSError, ValueError, TypeError) as exc:
+            print(f"claim grace observation unavailable: {exc}", file=sys.stderr)
     _publish_stored_phase(spec, ended=False)
     # The spawn retry's startup poll reaps a worker that exits inside its
     # window, and the pid it hands back then carries that exit: waiting on the
@@ -3128,6 +3151,50 @@ def _run_supervisor(spec_path: Path) -> int:
     )
     _publish_stored_phase(spec, ended=True, exit_record=exit_record)
     return 0
+
+
+def _claim_registration_for_worker(run_directory: Path, run_id: str) -> str:
+    """Read this run's registration instant for its worker receipt."""
+    try:
+        claim = json.loads((run_directory / "claim.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(claim, Mapping) or claim.get("run_id") != run_id:
+        return ""
+    return str(claim.get("claim_registered_at") or "")
+
+
+def _remember_claim_launch_interval(
+    run_id: str, registered_at: str, launched_at: str
+) -> None:
+    """Keep a bounded, process independent index of durable worker receipts."""
+    registered = parse_utc(registered_at)
+    launched = parse_utc(launched_at)
+    if registered is None or launched is None:
+        return
+    seconds = (launched - registered).total_seconds()
+    if seconds < 0:
+        return
+    path = crew_home() / CLAIM_GRACE_OBSERVATIONS_NAME
+    with _pointer_lock("claim-grace-observations"):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            payload = {}
+        rows = payload.get("intervals") if isinstance(payload, Mapping) else None
+        observations = (
+            [
+                row
+                for row in rows
+                if isinstance(row, Mapping) and row.get("run_id") != run_id
+            ]
+            if isinstance(rows, list)
+            else []
+        )
+        observations.append({"run_id": run_id, "seconds": seconds})
+        observations.sort(key=lambda row: str(row.get("run_id") or ""))
+        _write_json(path, {"intervals": observations[-CLAIM_GRACE_OBSERVATION_LIMIT:]})
+
 
 from .dispatch_admission import (  # noqa: E402
     _require_fleet_gate_open,

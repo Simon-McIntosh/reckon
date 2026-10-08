@@ -1,0 +1,24 @@
+<section id="claim-grace-follows-live-launches">
+  <h2>Racing claim grace follows launch receipts</h2>
+  <p>Each run records its claim registration instant and carries it into the
+    worker launch receipt beside <code>launched_at</code>. A bounded index retains
+    the latest 128 intervals. Dispatch uses the recent 90th percentile times
+    1.5, with a 5 s floor until 20 intervals exist and a 30 s process cache.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Recorded distributions</td><td>Twenty 8 s intervals gave a
+        12 s grace; twenty 24 s intervals gave 36 s. Nineteen 40 s
+        intervals gave the 5 s floor.</td></tr>
+      <tr><td>Mutation control</td><td>Restoring the frozen observation tuple
+        made the two-distribution test fail: actual wait 33 s, expected 12 s.
+        The red log ends <code>EXIT=1</code>.</td></tr>
+      <tr><td>Warm arbitration driver</td><td>Across 1,000 calls, the derived
+        grace added 0.028166 ms median; observed p95 was 0.033726 ms,
+        below the 50 ms bound.</td></tr>
+      <tr><td>Gate</td><td>Immutable base: 161 passed, 2 failed.
+        Head: 167 passed, 0 failed. The named gate adds no failures;
+        both tests with stale constant assertions now read the live grace.</td></tr>
+    </tbody>
+  </table>
+</section>
