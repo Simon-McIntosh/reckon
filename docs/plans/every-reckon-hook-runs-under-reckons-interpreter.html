@@ -23,9 +23,9 @@
   <title>Every Reckon Hook Runs Under Reckon's Interpreter | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-08">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -63,14 +63,12 @@
   <p class="landed-summary">Landed: <code>reckon sync</code> writes its hook entries through <code>reckon/hooks/install.py</code>. <code>cli_entry._configure_crew_guards</code> delegates to the installer's <code>configure_crew_guards</code>, so every reckon-importing hook script is bound to the checkout interpreter and bare commands already in a settings file are upgraded in place. The private recognisers and atomic writer are gone. Merged gate over 19 affected test files: 302 passed, 0 failed; review 111/120. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s2">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s3">&sect;3 &mdash; A run's harness home carries interpreter-bound hooks</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>When reckon seeds a run's harness home from the operator's <code>settings.json</code>, it passes the copied <code>hooks</code> through &sect;2's recogniser and composer, so every reckon hook command in the run home is interpreter-bound whatever the operator's file holds. Hooks that are not reckon's are copied unchanged, and the operator's own file is never written.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>A test seeds a run home from an operator settings file holding bare reckon hook commands beside a hook that is not reckon's, and finds the run home's reckon commands interpreter-bound, the other hook unchanged, and the operator file's bytes unchanged.</li>
-      <li>A test seeds from a file that already holds the bound commands and finds the run home identical to it.</li>
-    </ul>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: seeding a run's harness home passes the operator's copied hooks through the installer's <code>upgrade_registered_commands</code>, so every reckon-importing hook in a run home is bound to the checkout interpreter whatever the operator file holds; other hooks and the operator file are unchanged. Merged gate over 30 affected test files: 329 passed, 0 added; review 107/120. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s3">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
@@ -85,6 +83,10 @@
 <section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
   <p class="landed-summary">Healed: the workstation's <code>~/.claude/settings.json</code> now runs every reckon-importing hook (git guard, worker stop, obligations) under the checkout's <code>.venv</code> python, written by <code>reckon hooks install --write</code> and sync's guard writer, with no duplicate entry and every other setting byte-identical. A worker started with the system 3.9 first on PATH had its git guard refuse a mutating commit against a foreign repository, whose commit count stayed 1. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s5">full record</a></p>
 </section>
+
+    <h2 id="s6">§6 — One function names the checkout interpreter</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><code>reckon/hooks/interpreter_bootstrap.py</code> computes the checkout interpreter as <code>script_path.parents[2] / '.venv' / 'bin' / 'python'</code> because it runs before any reckon import and cannot call the installer. <code>reckon/hooks/install.py</code> owns the same fact in <code>interpreter_path()</code> and re-derives it inline once more. The bootstrap is stdlib-only and importable from the installer, so the installer delegates to it and the venv layout is named in one function.</p><p><strong>Done when:</strong> <code>install.interpreter_path()</code> and the installer's inline derivation both call the bootstrap's resolver, and no other file under <code>reckon/hooks</code> composes the <code>.venv/bin/python</code> path; a test builds a temporary checkout layout and asserts the installer and the bootstrap name the same interpreter; the hook installer, bootstrap and command tests pass.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -135,7 +137,10 @@
     <div class="r-comment-body"><p>Guard probe passed — in a worker whose first python3 is /usr/bin/python3 (3.9.16), the worker git guard refused `git commit --allow-empty` aimed at /home/ITER/mcintos/.cache/reckon-hooks-heal-probe/repo and the refused commit did not land (rev-list --count 1 before, 1 after); evidence in the report named below.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261008T093416111336-review-of-run-home-hooks-are-interpreter-bound" data-who="reckon-build" data-when="2026-10-08T09:53:34.087Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261008T092441846310-run-home-hooks-are-interpreter-bound stored as a parsed 6-dimension record (total 107/120) at both granted store paths, naming base 732c8ea92 and head 7fec3b7dd, with two follow-on findings and an added-failure count of 0 derived from the run&#x27;s own gate.log.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261008T092441846310-run-home-hooks-are-interpreter-bound stored as a parsed 6-dimension record (total 107/120) at both granted store paths, naming base 732c8ea92 and head 7fec3b7dd, with two follow-on findings and an added-failure count of 0 derived from the run's own gate.log.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261008T1205-s3" data-who="reckon-build" data-when="2026-10-08T12:05:00+02:00">
+    <div class="r-comment-body">gate merged-population passed (329, 0 added); section s3 closed by run run-home-hooks-are-interpreter-bound after one review repair</div>
 </div>
 </section>
 </main>
