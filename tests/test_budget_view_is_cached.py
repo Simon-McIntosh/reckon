@@ -135,6 +135,49 @@ def test_touching_the_paid_lanes_document_invalidates_the_cache(
     assert len(calls) == 2, "a stamped change to a read file must invalidate the cache"
 
 
+def test_an_absent_records_input_does_not_raise(
+    tmp_path, budget_config, cache_root, monkeypatch
+):
+    """A sibling input failing leaves records None; the view must still compose.
+
+    The dispatcher builds the ledger rows, the verdict inputs and the budget
+    view behind one guard each. When the rows cannot be read the view is handed
+    None, and this input must not add its own error to the recorded set — every
+    failure stays attributed to the input that raised.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    moment = datetime(2026, 10, 8, 0, 0, tzinfo=UTC)
+
+    view = _call("sample", budget_config, repo, None, now=moment, cache_root=cache_root)
+    assert isinstance(view, dict)
+    assert "backends" in view
+
+
+def test_a_cache_failure_falls_back_to_the_direct_composition(
+    tmp_path, budget_config, cache_root, monkeypatch
+):
+    """A failing cache read or write is an optimisation failing, not the input.
+
+    The cache is not the dispatch's authority, so an error in reading it or in
+    stamping its inputs falls back to the direct composition rather than
+    surfacing as this input failing.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    records: list[dict] = []
+    moment = datetime(2026, 10, 8, 0, 0, tzinfo=UTC)
+
+    def broken_cache(*args, **kwargs):
+        raise OSError("cache unavailable")
+
+    monkeypatch.setattr(snapshot.capabilities, "cached_pick_input_stamped", broken_cache)
+
+    view = _call("sample", budget_config, repo, records, now=moment, cache_root=cache_root)
+    assert isinstance(view, dict)
+    assert "backends" in view
+
+
 def test_advancing_the_clock_changes_ages_but_not_file_derived_fields(
     tmp_path, budget_config, cache_root, monkeypatch
 ):

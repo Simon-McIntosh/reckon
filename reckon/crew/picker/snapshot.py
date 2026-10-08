@@ -437,7 +437,7 @@ def _budget_view_request_key(
         "project": project,
         "repo": str(Path(repo).resolve()),
         "cached_only": cached_only,
-        "records": len(records),
+        "records": len(records) if records is not None else None,
         "config": hashlib.sha256(
             json.dumps(config, sort_keys=True, default=str).encode()
         ).hexdigest(),
@@ -614,11 +614,14 @@ def budget_view(
             },
         }
 
+    def compose() -> dict[str, Any]:
+        return _compose_budget_report(
+            project, config, repo, records, moment, cached_only=cached_only
+        )
+
     def build() -> dict[str, Any]:
         return {
-            "report": _compose_budget_report(
-                project, config, repo, records, moment, cached_only=cached_only
-            ),
+            "report": compose(),
             "built_at": moment.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "paths": _budget_view_input_paths(config),
             "ledger": [project, str(Path(repo))],
@@ -633,16 +636,24 @@ def budget_view(
         stamps.append(["ledger", ledger.index_stamp(project_name, root)])
         return stamps
 
-    request_key = _budget_view_request_key(
-        project, config, repo, records, cached_only=cached_only
-    )
-    name = "budget-view-" + hashlib.sha256(
-        json.dumps(request_key, sort_keys=True, default=str).encode()
-    ).hexdigest()
-    value = capabilities.cached_pick_input_stamped(
-        name, request_key, stamp_of, build, root=cache_root
-    )
-    return _reage_budget_report(value, moment, config)
+    try:
+        request_key = _budget_view_request_key(
+            project, config, repo, records, cached_only=cached_only
+        )
+        name = "budget-view-" + hashlib.sha256(
+            json.dumps(request_key, sort_keys=True, default=str).encode()
+        ).hexdigest()
+        value = capabilities.cached_pick_input_stamped(
+            name, request_key, stamp_of, build, root=cache_root
+        )
+        return _reage_budget_report(value, moment, config)
+    except Exception:  # noqa: BLE001 - the cache is an optimisation, not the authority
+        # A cache read or its stamping failing must never surface as this input
+        # failing: the picker records a failure against the input that raised,
+        # so a neighbouring input's failure would be misattributed to this one.
+        # Fall back to the direct composition, which is what the caller had
+        # before the cache and which the picker already tolerates.
+        return compose()
 
 
 def candidates(
