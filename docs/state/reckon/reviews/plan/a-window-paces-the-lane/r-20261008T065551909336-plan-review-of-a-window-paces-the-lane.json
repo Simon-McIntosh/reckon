@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T07:04:12.617Z",
+  "dispatched_at": "2026-10-08T06:56:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1951",
+      "id": "reasoning-1",
+      "reason": "the worker would place the lift lookup at whichever of the two named seams it reads first, and if it follows the negative control into `policy()` the reset-anchored expiry it must implement there is impossible to evaluate, so the node's declared control does not prove the guard fires.",
+      "text": "the negative control \"deletes the lift lookup from `pace.policy` alone\", but \u00a710 line 1924 says the lift is applied \"given the group, the reading and the time\" and \u2014 as the cited code shows \u2014 `pace.policy(config)` (reckon/crew/pace.py:128) takes only `config` and reads nothing but `drain_lead_hours` and `pace_multiple`; it has no group, no reading and no clock, so it cannot evaluate a lift's reset/`max_hours`/`at` end conditions, and the control as written can never redden",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1924",
+      "id": "reasoning-2",
+      "reason": "the section names only the pace seam as the single application point, so a worker implementing it would raise the multiple and leave the reserve block untouched, failing the section's own 100%-ceiling done-when.",
+      "text": "\"A lift raises the pace multiple and releases the reserves\" and the done-when (line 1950) asserts the implementation ceiling \"reads 100% with all three reserves at zero\", but the reserves are not computed through `pace.allowance_for_group`; `reckon/crew/reserve.py` `reserve_pct`/`role_ceiling_pct` read the raw budget block, reached by `reserve_admit_windows((config or {}).get(\"budget\") or {}, \u2026)` at reckon/crew/dispatch_admission.py:308, a path the \"one seam \u2026 none computes its own\" paragraph does not name",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6492c97716888d43118f43338ce89ecf7bc3d876050eb01ff07e7aef499ac133",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 148,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T065551909336-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "0e8dbab025d1561d5e96a90a8b22e301ba9fa9ab",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/reserve.py` (DEFAULT_RESERVE_PCT 20.0), `reckon/schema/flight.yaml` `BudgetConfig` (extra=\"forbid\", no `bookend_reserve_pct` and no `lift` block), `reckon/crew/pace.py` `policy`/`allowance_for_group`, `reckon/crew/budget_group.py` `group_position`, `skills/reckon-build/SKILL.md` \u00a74c, and the 100 / 5 / 3 defaults in `reckon/schema/flight-defaults.yaml` all resolve.",
+    "done_when": "pass \u2014 each bullet is falsifiable and the section names a negative control (delete the lift lookup) and derives its figures from the fixture at assertion time rather than writing them down; the mislocation of that control is raised under reasoning.",
+    "evidence_paths": "pass \u2014 \u00a710 names no session-scratch or node-local path; the evidence it points a reader to is the landing-record convention under `docs/evidence/archive/`, as \u00a76's sibling record shows.",
+    "naming": "pass \u2014 the proposed symbols and keys (`bookend_reserve_pct`, `budget.lift.max_multiple`, `budget-lift.json`, `pace.lift_id`, `releases_at`) carry no plan/label/ticket/version token, and no changelog prose reaches a comment.",
+    "reasoning": "two findings \u2014 the seam the lift is applied at is named two different ways (prose at `allowance_for_group` needing group+reading+time, negative control at `pace.policy`), and the reserve release the section asserts has no application site named on the path that computes reserves.",
+    "single_goal": "pass \u2014 \u00a710 carries one capability, the self-ending pace lift; the `releases_at` correction is a supporting fix the done-when ties to the same hold.",
+    "wiring": "pass \u2014 \u00a710 declares no node dependency, and the sections it rests on (\u00a72's pace module, \u00a74's reserve, \u00a79's dispatch row) are all landed, so nothing it needs is missing or miswired."
+  },
+  "section_digests": {
+    "_document": "a9b4e425234eb6fffeff1584d67108ba8a14bdeaa2aeba0fa25998b47c3100fa",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "2820756ea3a73e1ee7caf176820f2c4495848f13d9d52a08cff4b255b0609834",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:04:32.443487+00:00"
+}
