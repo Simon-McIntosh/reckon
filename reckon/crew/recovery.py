@@ -115,7 +115,7 @@ WAITING_STATUS = "waiting"
 # fleet counts it here, never in the blocked tally. Its age is the news, and
 # the news is carried by the action marker on its row, so the wait-aged state
 # also sits in the action set while remaining a member of this family.
-WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
+WAITING_STATES = frozenset({"waiting", "wait-aged", "paused", "queued"})
 # The manifest status vocabulary — TERMINAL_MANIFEST_STATUSES,
 # NON_TERMINAL_MANIFEST_STATUSES and manifest_status_is_template — is imported
 # from reckon.crew.reports, which owns the single statement of it so the reader
@@ -154,6 +154,7 @@ MANIFEST_SIZE_MEMORY_MAX = 256
 # though both remain attention-worthy terminal-looking rows.
 RECOVERY_VERBS = {
     "running": "observe",
+    "queued": "wait",
     "waiting": "wait",
     "paused": "wait",
     "completed_unpromoted": "promote",
@@ -8445,7 +8446,11 @@ def classify_pointer(
     )
     marker = None
     needs_help_complete_value = None
-    if interruption is not None:
+    if phase == "queued":
+        classification = "queued"
+        detail = str(record.get("reason") or "waiting for a local lane slot")
+        action = "wait for a local lane slot"
+    elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")
         if signal_name:

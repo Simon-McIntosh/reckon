@@ -178,6 +178,7 @@ from reckon.crew.runs import (
     placement_job_alive as placement_job_alive,
     pointer_path as pointer_path,
     process_alive as process_alive,
+    queue_dispatch as queue_dispatch,
     read_pointer as read_pointer,
     record_process_alive as record_process_alive,
     reports_dir as reports_dir,
@@ -547,6 +548,7 @@ def dispatch(
     route: str | None = None,
     comment: str = "",
     picker_selection: Mapping[str, Any] | None = None,
+    dispatch_options: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -898,14 +900,40 @@ def dispatch(
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
 
-    # The lane's own allowance, chosen from the router's published figures: an
-    # allowance of zero or less holds the node here, before a pointer or a
-    # worktree exists, so the caller retries when the router's next reading
-    # grants a slot rather than unwinding a launch. This is the same wait the
-    # gate-withholds dispatch above is, and it is raised distinctly so the
-    # reason a surface reports is the allowance the router published.
+    # The router's allowance is checked before creating a worktree. A local
+    # hold records the request as queued; other holds remain transient. The
+    # allowance rides the exception so the caller reports the router's reason.
     lane_allowance = resolution.lane_allowance or {}
     if lane_allowance.get("held"):
+        if (
+            backend_name == str(config.get("local_backend") or "")
+            and not shadow_lineage
+        ):
+            queued_at = _utc_now()
+            queued, position = queue_dispatch(
+                {
+                    "run_id": run_id,
+                    "project": project,
+                    "plan": node.plan,
+                    "section": node.section,
+                    "repo": str(repo_root),
+                    "session": session,
+                    "node": node.as_dict(),
+                    "backend": backend_name,
+                    "launch": launch_kind,
+                    "local": True,
+                    "launcher_host": None,
+                    "phase": "queued",
+                    "queued_at": queued_at,
+                    "created_at": queued_at,
+                    "hold": dict(lane_allowance),
+                    "reason": lane_allowance.get("reason"),
+                    "dispatch_options": dict(dispatch_options or {}),
+                }
+            )
+            held = LaneHeld(lane_allowance)
+            held.queued = {"run_id": queued["run_id"], "position": position}
+            raise held
         raise LaneHeld(lane_allowance)
 
     # A cli worker launches inside the fence, and the fence is bubblewrap over a

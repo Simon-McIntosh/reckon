@@ -1050,6 +1050,7 @@ def crew_dispatch(
     """
     crew_module, flight_module = _crew_modules()
     from reckon.crew.dispatch import (
+        LaneHeld,
         LanePaused,
         TmpHeadroomError,
         resolve_dispatch_route,
@@ -1491,6 +1492,9 @@ def crew_dispatch(
             route=route,
             comment=comment,
             picker_selection=picker_selection,
+            dispatch_options=json.loads(
+                json.dumps(click.get_current_context().params, default=str)
+            ),
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
@@ -1535,6 +1539,11 @@ def crew_dispatch(
                 "detail": _lane_paused_detail(exc.gate),
                 "reason": exc.gate.get("reason"),
                 "lane_gate": exc.gate,
+                **(
+                    exc.queued
+                    if isinstance(exc, LaneHeld) and hasattr(exc, "queued")
+                    else {}
+                ),
             },
             pretty,
         )
