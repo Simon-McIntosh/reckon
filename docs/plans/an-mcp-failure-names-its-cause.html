@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="83">
+<meta name="plan-version" content="84">
 <meta name="plan-modified" content="2026-10-09">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -303,6 +303,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-landed" data-who="reckon-build" data-when="2026-10-08T22:05:00Z">
     <div class="r-comment-body"><p>gate passed (3 passed EXIT=0; 6 importer modules, 63 passed at the merged head; review 108/120); section 5 closed. Doctor flags five launches here; the imas-codex and imas-efit entries belong to those repositories.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261008T161825478049-doctor-flags-unsafe-mcp-launches" data-who="reckon-build" data-when="2026-10-08T17:02:03.888Z">
+    <div class="r-comment-body"><p>§5 doctor now reads the user-scope stdio entries in ~/.claude.json and the .mcp.json at each mounted checkout, flags a uv run launch that omits --no-sync, names no absolute --project, carries a literal /home/&lt;user&gt; path, or names a missing --project directory, prints a corrected uv run --no-sync --project &lt;checkout&gt; command, and exits non-zero; tests/test_doctor_mcp_launch.py 3 passed EXIT=0</p></div>
 </div>
 </section>
 </main>
