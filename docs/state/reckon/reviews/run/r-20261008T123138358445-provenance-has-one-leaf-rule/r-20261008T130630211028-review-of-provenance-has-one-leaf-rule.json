@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4f0bf656e702dce9ba3bc543c20756adc890616c",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/flight.py:1568 resolve",
+    "reckon/flight.py:1404 _lane_provenance",
+    "reckon/flight.py:1411 _lane_provenance"
+  ],
+  "completed_at": "2026-10-08T13:17:32.762Z",
+  "dispatched_at": "2026-10-08T13:07:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/provenance-has-one-leaf-rule.html",
+      "line": "42",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's header records revision 4f0bf656 \"(working tree, uncommitted fix)\" while the manifest's after_suite block claims the committed head a4ebec5a, so a promotion reader comparing the two sees a mismatch and cannot tie the 430 pass to the committed revision without re-running the gate; the fragment discloses the mismatch but neither re-runs at the committed sha nor reconciles the header's revision."
+    }
+  ],
+  "head_log_revision": "4f0bf656e702dce9ba3bc543c20756adc890616c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 4f0bf656; a4ebec5a changes reckon/flight.py and adds the test, 99b719788 adds only the evidence fragment, and nothing falls outside scope.",
+    "done_when": "the done-when names tests/test_provenance_has_one_leaf_rule.py plus the gate file list and judges by delta; the manifest records base 429 EXIT=0 and head 430 EXIT=0 with logs, and the new test reddens under the restored inline traversal (negative-control.log, EXIT=1).",
+    "goal": "the node's goal is that the flight resolver has one owner for the provenance leaf rule; reckon/flight.py:1162-1174 shows _record_provenance now iterating _leaf_paths and holding no leaf traversal of its own.",
+    "manifest": "read; it states the gate result, names gate-head.log, gate-base.log and negative-control.log, and its baseline_suite/after_suite blocks reconcile with those logs' summaries (429 and 430 passed, both EXIT=0).",
+    "write_paths": "the manifest declares reckon/flight.py, tests/test_provenance_has_one_leaf_rule.py, docs/evidence/fragments/lane-and-model-routing/provenance-has-one-leaf-rule.html and the node's figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_provenance_has_one_leaf_rule.py:96 asserts changed.origin('lanes.claude.environment') is None, which reads 'host' once the inline traversal is restored (negative-control.log, EXIT=1), so the assertion fails on the regression it guards rather than moving with its input.",
+    "evidence": "the manifest records base 429 EXIT=0 and head 430 EXIT=0 against gate-base.log and gate-head.log, but the head log's own header reads revision 4f0bf656 \"(working tree, uncommitted fix)\" while after_suite claims a4ebec5a, so the log alone does not tie the 430 pass to the committed head.",
+    "fit": "reckon/flight.py:1170-1188 keeps the surrounding docstring-and-iterator idiom and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/flight.py:1173 replaces _record_provenance's inline walk with a loop over _leaf_paths, making that function the module's one leaf rule.",
+    "reuse": "the change removes a duplicate rather than adding one, making _leaf_paths (reckon/flight.py:1177) the single leaf walk; a repository search over reckon/ for another leaf-walk helper found none.",
+    "scope_discipline": "the diff of 4f0bf656..99b719788 touches only reckon/flight.py:1162, tests/test_provenance_has_one_leaf_rule.py and the node's fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the flight resolver has one owner for the provenance leaf rule; reckon/flight.py:1162-1174 shows _record_provenance now iterating _leaf_paths and holding no leaf traversal of its own.\nVERDICT done_when: the done-when names tests/test_provenance_has_one_leaf_rule.py plus the gate file list and judges by delta; the manifest records base 429 EXIT=0 and head 430 EXIT=0 with logs, and the new test reddens under the restored inline traversal (negative-control.log, EXIT=1).\nVERDICT write_paths: the manifest declares reckon/flight.py, tests/test_provenance_has_one_leaf_rule.py, docs/evidence/fragments/lane-and-model-routing/provenance-has-one-leaf-rule.html and the node's figures directory; every path in the diff is inside them.\nVERDICT manifest: read; it states the gate result, names gate-head.log, gate-base.log and negative-control.log, and its baseline_suite/after_suite blocks reconcile with those logs' summaries (429 and 430 passed, both EXIT=0).\nVERDICT diff: read commit by commit against base 4f0bf656; a4ebec5a changes reckon/flight.py and adds the test, 99b719788 adds only the evidence fragment, and nothing falls outside scope.\nCALL_SITES: reckon/flight.py:1568 resolve, reckon/flight.py:1404 _lane_provenance, reckon/flight.py:1411 _lane_provenance\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/flight.py:1173 replaces _record_provenance's inline walk with a loop over _leaf_paths, making that function the module's one leaf rule.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records base 429 EXIT=0 and head 430 EXIT=0 against gate-base.log and gate-head.log, but the head log's own header reads revision 4f0bf656 \"(working tree, uncommitted fix)\" while after_suite claims a4ebec5a, so the log alone does not tie the 430 pass to the committed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of 4f0bf656..99b719788 touches only reckon/flight.py:1162, tests/test_provenance_has_one_leaf_rule.py and the node's fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_provenance_has_one_leaf_rule.py:96 asserts changed.origin('lanes.claude.environment') is None, which reads 'host' once the inline traversal is restored (negative-control.log, EXIT=1), so the assertion fails on the regression it guards rather than moving with its input.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/flight.py:1170-1188 keeps the surrounding docstring-and-iterator idiom and introduces no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes a duplicate rather than adding one, making _leaf_paths (reckon/flight.py:1177) the single leaf walk; a repository search over reckon/ for another leaf-walk helper found none.\nFINDING docs/evidence/fragments/lane-and-model-routing/provenance-has-one-leaf-rule.html:42 follow-on: the head gate log's header records revision 4f0bf656 \"(working tree, uncommitted fix)\" while the manifest's after_suite block claims the committed head a4ebec5a, so a promotion reader comparing the two sees a mismatch and cannot tie the 430 pass to the committed revision without re-running the gate; the fragment discloses the mismatch but neither re-runs at the committed sha nor reconciles the header's revision.",
+  "review_run_id": "r-20261008T130630211028-review-of-provenance-has-one-leaf-rule",
+  "reviewed_base_sha": "4f0bf656e702dce9ba3bc543c20756adc890616c",
+  "reviewed_head_sha": "99b719788814728dbed8fa54e134dcf3ed638c95",
+  "reviewed_run_id": "r-20261008T123138358445-provenance-has-one-leaf-rule",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261008T130630211028-review-of-provenance-has-one-leaf-rule",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:15:39.166071+00:00",
+  "total": 117
+}
