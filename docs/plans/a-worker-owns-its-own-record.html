@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
+<meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -227,6 +227,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260918T164251538988-the-worker-record-plan-is-read-back-before-release" data-who="reckon-ship" data-when="2026-09-18T17:32:45.854Z">
     <div class="r-comment-body"><p>read a-worker-owns-its-own-record back and found half of its second section already shipped in 86aafc6a on 15 September, its figures wording contradicting the live topic-directory exclusivity guard, and nine sentences admitting two readings; reported parts=4 sections=6 claims=3 plans=21 with all three factual claims still-holding. The plan is returned to draft on its findings. Its three load-bearing claims were verified independently at the code by the coordinator rather than through a second review node</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-terminal-status-wording" data-who="reckon-build" data-when="2026-10-08T04:05:00Z">
+    <div class="r-comment-body"><p>Reported 2026-10-08 by the nova S21 coordinator: a codex worker on <code>r-20261008T004354567004-cfs-edge-term-tangents</code> finished every deliverable but left its manifest at <code>status: in-progress</code>, writing <em>check-manifest requires complete, blocked or failed; worker contract forbids setting a terminal status</em>. The wording it read is the contract block in <code>reckon/crew/prompts.py</code> (lines 220 to 224): a worker <em>must not set a terminal status</em>. That sentence means the plan's or section's status, which only the coordinator sets, but it reads as forbidding the manifest's own <code>complete</code>, <code>blocked</code> or <code>failed</code>. One line naming which status is the worker's own removes the ambiguity. The coordinator repaired the status and kept <code>manifest.md.asdelivered</code>.</p></div>
 </div>
 </section>
 

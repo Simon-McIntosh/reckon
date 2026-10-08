@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-run-has-one-live-worker">
   <meta name="plan-title" content="A Run Has One Live Worker">
-  <meta name="plan-summary" content="Two workers drove one run's session in one worktree; the second closed the run and dropped five of eight commits. Find the second launcher, then refuse it.">
+  <meta name="plan-summary" content="Two workers drove one run&#x27;s session in one worktree; the second closed the run and dropped five of eight commits. Find the second launcher, then refuse it.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
@@ -25,6 +25,8 @@
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -68,12 +70,17 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-arolw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §2">
-    <h4 class="r-fu-title">Find the second launcher of one run's worker session</h4>
+<article class="r-fu" data-id="f-arolw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Find the second launcher of one run&#x27;s worker session</h4>
     <div class="r-fu-body"><p>Plan authored from the nova S21 coordinator's defect report of 2026-10-08. §2 is a read-only investigation; the repair section follows its finding.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §2</pre>
-</article>
+    </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-s2-second-instance" data-who="reckon-build" data-when="2026-10-08T04:05:00Z">
+    <div class="r-comment-body"><p>A second instance, reported by the nova S21 coordinator: run <code>r-20261008T004354567004-cfs-edge-term-tangents</code> on codex-astra. After H200 job 1281977 completed at 05:54:42 CEST, the wait sweep resumed the run (resume 2). Its stderr reads <code>thread/resume failed: thread 01a1192e-8494-7fc0-a551-721fb3acada8 already has an active writer (code -32600)</code> at 03:56:32Z while a codex worker in the same worktree went on working. The follower then reported <em>exited with code 1 with 11 commits beyond its recorded base</em> and, a second later, <em>ended by SIGKILL</em>. The investigation should name the guard for both runs: here the backend refused the second writer, while the claude run of §1 admitted it.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
