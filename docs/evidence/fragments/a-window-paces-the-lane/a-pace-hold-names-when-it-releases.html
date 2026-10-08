@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="A pace hold names the instant it releases">
+  <meta name="plan-summary" content="budget.pace_hold returns releases_at — the window start plus utilisation / (multiple x banked-reset factor) of the window, the instant its own burn comparison first admits with the utilisation held fixed — and prints it in the hold reason, so a ten-hour hold reads as ten hours rather than the window reset days away. An admitted or bookend verdict carries releases_at None.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="a-pace-hold-names-when-it-releases">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-environment" content="Linux node; Python venv; pytest; head and base measured in one pass">
+  <title>A pace hold names the instant it releases &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1 id="a-pace-hold-names-when-it-releases-title">A pace hold names the instant it releases</h1>
+    <p class="plan-summary">The hold is <code>burn &gt; multiple</code> with <code>burn = utilisation / elapsed_fraction</code>, so with no
+    further spend it releases once the elapsed fraction reaches
+    <code>utilisation / (multiple &times; banked-reset factor)</code>: the window start plus that share of the window. That instant is
+    named <code>releases_at</code> and printed in the hold reason instead of the window reset.</p>
+  </header>
+
+  <p id="a-pace-hold-names-when-it-releases-measure">For the fixture (a 168 h window read 22.0 h in at 21% used against the 1.1&times; multiple) the
+  burn is 1.60&times;, so <code>pace_hold</code> holds an implement dispatch and returns <code>releases_at</code> at the window start plus
+  0.21 / 1.1 of the window &mdash; about ten hours away, not the reset six days out. Rebuilding the reading one minute either side of that
+  instant flips the hold: held one minute before, admitted after, so the instant is pinned to the hold's own arithmetic, banked-reset
+  scaling included. Asserted in <code>tests/test_pace_hold_releases_at.py</code>.</p>
+</main>
+</body>
+</html>

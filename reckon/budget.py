@@ -2682,6 +2682,41 @@ def group_pace(
     return report
 
 
+def _pace_releases_at(
+    allowance: Mapping[str, Any],
+    *,
+    utilisation: float,
+    multiple: float,
+    factor: float,
+) -> str | None:
+    """The instant a group's own burn comparison first admits, utilisation held.
+
+    The hold is ``burn > multiple`` with ``burn = utilisation / elapsed_fraction``,
+    and ``_scale_for_banked_reset`` has already divided the reported burn by the
+    banked-reset factor, so the comparison admits once the elapsed fraction
+    reaches ``utilisation / (multiple * factor)``. With no further spend the
+    utilisation holds, so that instant is the window start plus that share of the
+    window's own length, which is what the hold reason must name rather than the
+    window's reset days away. A window whose own length or reset cannot be read
+    yields no instant, which is an absence rather than a hold released now.
+    """
+    minutes = allowance.get("window_minutes")
+    resets_at = allowance.get("resets_at")
+    reset_moment = _parse_stamp(resets_at) if resets_at else None
+    if (
+        isinstance(minutes, bool)
+        or not isinstance(minutes, (int, float))
+        or float(minutes) <= 0
+        or reset_moment is None
+        or multiple <= 0
+        or factor <= 0
+    ):
+        return None
+    window = timedelta(minutes=float(minutes))
+    share = min(1.0, max(0.0, utilisation / (multiple * factor)))
+    return _iso(reset_moment - window + window * share)
+
+
 def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
     """Whether a group's pace withholds a dispatch from a role's work.
 
@@ -2699,6 +2734,13 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
     window down. A group carrying no derived allowance -- an unread window or a
     reset that cannot be placed -- holds nothing, because absence of a reading
     is not a measured overspend.
+
+    A held verdict also names ``releases_at``: the instant the hold's own burn
+    comparison first admits with the utilisation held fixed, which is almost
+    always far sooner than the window reset it used to print. The hold reason
+    prints that instant rather than the reset, so a reader sees a ten-hour hold
+    for the ten hours it is. An admitted or bookend verdict, and one whose
+    window cannot be placed, carries ``releases_at`` as ``None``.
     """
     allowance = entry.get("allowance")
     allowance = allowance if isinstance(allowance, Mapping) else {}
@@ -2726,6 +2768,7 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
             "utilisation": measured_utilisation,
             "allowance": None,
             "resets_at": resets_at,
+            "releases_at": None,
             "reason": str(allowance.get("reason") or "")
             or (
                 f"the {entry.get('group')!r} group's allowance was not read, so "
@@ -2733,6 +2776,11 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
             ),
         }
     held = (not bookend) and float(burn) > float(multiple)
+    # The reported burn has already been scaled by the banked-reset factor, so
+    # the release instant must divide by the same factor or it would name an
+    # instant the hold does not actually release at.
+    factor = 2.0 if allowance.get("reset_available") else 1.0
+    releases_at = None
     if bookend:
         reason = (
             f"the {role} role is a bookend, so the {entry.get('group')!r} group's "
@@ -2741,14 +2789,21 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
             "allowance"
         )
     elif held:
+        releases_at = _pace_releases_at(
+            allowance,
+            utilisation=float(utilisation),
+            multiple=float(multiple),
+            factor=factor,
+        )
         reason = format_refusal(
             "D02",
             f"the {entry.get('group')!r} group reports utilisation "
             f"{float(utilisation) * 100:g}% at {float(burn):g}x burn against a "
             f"{float(multiple):g}x pace multiple, above its "
             f"{float(derived) * 100:g}% allowance for the elapsed window, so a "
-            f"{role} dispatch is held until the window resets at "
-            f"{resets_at or 'an unstated time'}",
+            f"{role} dispatch is held until the pace releases it at "
+            f"{releases_at or 'an unstated instant'}, with the window itself "
+            f"resetting at {resets_at or 'an unstated time'}",
         )
     else:
         reason = (
@@ -2765,6 +2820,7 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
         "allowance": float(derived),
         "burn_multiple": float(burn),
         "resets_at": resets_at,
+        "releases_at": releases_at,
         "reason": reason,
     }
 
