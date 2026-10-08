@@ -554,6 +554,99 @@ def _preferred_resource(left: Resource, right: Resource) -> Resource | None:
     return None
 
 
+#: Unarchived resource kinds whose canonical location is fully determined by
+#: type and slug, so a named read need not walk the tree to find them.
+_DIRECT_RESOLVABLE_TYPES = frozenset({"plan", "research", "evidence"})
+
+
+def _canonical_resource_at(
+    docs_dir: Path,
+    project: str,
+    artifact_type: str,
+    slug: str,
+    *,
+    archived: bool,
+) -> Resource | None:
+    """Build the resource a slug's canonical path names, without scanning.
+
+    A named read already knows where its document lives, so it reads that one
+    path instead of globbing the tree to rediscover it. Only the candidate
+    file's own head decides the hit, via the same parse the discovery walk
+    classifies with, so a mislabelled file at a canonical path is passed over
+    rather than accepted on its name. The identity is validated exactly as
+    discovery classifies a canonical file, so the returned resource is the one
+    the walk would have produced for this path.
+    """
+    try:
+        relative = canonical_relative_path(artifact_type, slug, archived=archived)
+    except (KeyError, ValueError):
+        return None
+    path = docs_dir / relative
+    if not path.is_file():
+        return None
+    if path.name in NON_RESOURCE_FILES:
+        return None
+    meta = _plan_html.parse_meta(path)
+    if canonical_type(meta.get("type")) != artifact_type:
+        return None
+    if (meta.get("slug") or path.stem) != slug:
+        return None
+    try:
+        identity = ResourceIdentity(
+            project=project,
+            type=artifact_type,
+            slug=slug,
+            archived=archived,
+        ).validate_for_write()
+    except ValueError:
+        return None
+    return Resource(
+        identity=identity,
+        path=path,
+        relative_path=relative,
+        canonical_relative_path=relative,
+        canonical_href=canonical_href(project, artifact_type, slug, archived=archived),
+        legacy=False,
+    )
+
+
+def _resolve_canonical(
+    docs_dir: Path,
+    project: str,
+    slug: str,
+    requested_type: str | None,
+    *,
+    include_archived: bool,
+) -> Resource | None:
+    """Resolve a named resource from its canonical path, or None to scan.
+
+    Only the kinds whose canonical path is type-and-slug determined take this
+    path. An untyped read resolves the plan case directly, because a plan is
+    what an untyped read names and the scan's own untyped rule prefers a
+    uniquely matching plan. The fast path decides only where the path is
+    unambiguous: when more than one canonical candidate exists for the slug —
+    a live and an archived document, which an include_archived lookup sees
+    together — it returns None and the full scan resolves the duplicate with
+    its own collision rule, so the answer for a duplicated slug is the one the
+    scan gives, unchanged.
+    """
+    if requested_type is None:
+        types: tuple[str, ...] = ("plan",)
+    elif requested_type in _DIRECT_RESOLVABLE_TYPES:
+        types = (requested_type,)
+    else:
+        return None
+    archived_values = (False, True) if include_archived else (False,)
+    candidates = [
+        _canonical_resource_at(docs_dir, project, artifact_type, slug, archived=archived)
+        for artifact_type in types
+        for archived in archived_values
+    ]
+    if sum(resource is not None for resource in candidates) != 1:
+        return None
+    return next(resource for resource in candidates if resource is not None)
+
+
 def resolve_resource(
     docs_dir: Path,
     project: str,
@@ -562,8 +655,24 @@ def resolve_resource(
     *,
     include_archived: bool = False,
 ) -> Resource | None:
-    """Resolve by typed identity; untyped compatibility reads require uniqueness."""
+    """Resolve by typed identity; untyped compatibility reads require
+    uniqueness.
+
+    A named slug is first looked up at its canonical path, so a read about one
+    document does not walk the corpus to find it. A canonical miss falls
+    through to the full scan, which is what discovers legacy, noncanonical and
+    colliding placements.
+    """
     requested_type = canonical_type(artifact_type) if artifact_type else None
+    direct = _resolve_canonical(
+        docs_dir,
+        project,
+        slug,
+        requested_type,
+        include_archived=include_archived,
+    )
+    if direct is not None:
+        return direct
     matches_by_key: dict[tuple[str, str, bool], Resource] = {}
     for resource in iter_resources(
         docs_dir,
