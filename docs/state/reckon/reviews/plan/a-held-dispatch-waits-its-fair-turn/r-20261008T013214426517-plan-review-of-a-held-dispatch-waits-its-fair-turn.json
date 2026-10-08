@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T01:44:21.103Z",
+  "dispatched_at": "2026-10-08T01:32:57Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:59",
+      "id": "reasoning-1",
+      "reason": "the builder cannot tell whether the intended observable is strict alternation (requiring a count-normalised tie-break the mechanism does not describe) or drain-first, and will pick one the done-when then contradicts.",
+      "text": "\u00a73 ranks entries by \"their session's use of the lane\" and the recommended `priority-measure` is \"runs in flight\", but \u00a73's done-when (line 62) asserts admissions \"alternate in the lighter session's favour\"; a session holding zero runs outranks a session holding many for all of the many, so the mechanism yields drain-the-lighter-queue-first, not alternation",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:64",
+      "id": "done_when-1",
+      "reason": "without a declared bound the node writes whatever constant it guesses, and the assertion cannot fail on the unfixed code.",
+      "text": "\u00a73's third bullet asserts \"an entry that has waited past a stated bound is admitted ahead of a lighter session's newer entry\" but no section states the bound, its units or its value, so the starvation guarantee cannot be tested",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:115",
+      "id": "wiring-1",
+      "reason": "a build node following the note would dispatch \u00a72/\u00a73 with the decisions that fix their scope still open.",
+      "text": "the followup's ordering (\"\u00a72 and \u00a73 can run together; \u00a74 needs both and the `drainer` decision\") omits that \u00a72 is gated by the unresolved `lane-scope` decision, which selects whether this plan queues at all on the local lane vs every lane, and \u00a73 by `priority-measure`; neither is named as a prerequisite",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e6a36d6a659f7411d1d39609820410369452f44e0b6e827a61669c191894694d",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T013214426517-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "6d85d33e4dbeb6fb19c382dff7fe801527492ff3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_lane_worker_allowance` and `LaneHeld`/`LanePaused` resolve at `reckon/crew/dispatch.py:6751`, `:4363`, `:4345`; `admission.sessions[...].worker_slots` is published/read (`reckon/crew/lane_document.py:121`, `reckon/crew/dispatch.py:6795\u20136819`); the follower's `q` bucket resolves (`reckon/crew/ticker.py:360,376`); `dispatch` takes `session` explicitly (`reckon/crew/dispatch.py:6904`); the `plan-after` target `docs/plans/the-local-lane-is-the-default.html` exists; the \"declared fleet service\" / \"host lease\" of the recommended `drainer` option exist (`reckon/crew/fleet_supervisor.py:43`, `reckon/crew/host_lease.py`).",
+    "done_when": "a finding \u2014 `\u00a73`'s third bullet (line 64) asserts \"waited past a stated bound\" but the piece needs a bound the plan never states, so the assertion is not measurable as written.",
+    "evidence_paths": "pass \u2014 the plan names no session scratchpad or node-local temp path for evidence; `\u00a72`'s \"temporary\" queue directory and lane document are test isolation, which the repo's TMPDIR convention covers.",
+    "naming": "pass \u2014 the plan introduces no new symbols carrying plan labels, ticket numbers or version tags, and carries no changelog prose; the only symbols named (`_lane_worker_allowance`, `dispatch`, `LaneHeld`) are existing code.",
+    "reasoning": "a finding \u2014 `\u00a73`'s ranking mechanism does not entail its own done-when: ranking entries by the session's runs in flight (line 59) keeps the zero-run session strictly ahead of the many-run session for every one: one of its entries, so its queue drains before the other's rather than \"alternat[ing]\" (line 62).",
+    "single_goal": "pass \u2014 each of `\u00a72`\u2013`\u00a75` names one deliverable (queue write, ordering function, drainer, queue views); `\u00a71` is context and is `done`.",
+    "wiring": "a finding \u2014 the plan declares only `plan-after: the-local-lane-is-the-default` (which resolves, and no open plan declares a dependency on this one, consistent with `plan-standalone`), but the followup's build ordering (line 115) understates the decision prerequisites: `\u00a72` is gated by the unresolved `lane-scope` decision and `\u00a73` ... (see finding)."
+  },
+  "section_digests": {
+    "_document": "fe93320d8d7577ad7a203e1e9e30a58aabc6b7454d4ddcf78a3cd37b812b064a",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s2": "94e5430abeecc82c6e14a1c29fbc8e87c1da5ee0ce35176e2050f236b9969436",
+    "s3": "fad57e6dd12ac80a3e14dfa3fa0cefa444ba18e25576d6115c0fa0065e970438",
+    "s4": "a4fa2ad7fe551c92aa9e9c0bcf5efc25c67ca3ac181fd84e0391033b8c40e551",
+    "s5": "4e4a27589e4e0f507de67d955d1255b9dedbaf0c04f178f55d5805d7fb9911e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:55:34.202751+00:00"
+}
