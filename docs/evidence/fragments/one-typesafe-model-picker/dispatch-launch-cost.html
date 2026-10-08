@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="dispatch-launch-cost"><meta name="plan-title" content="Dispatch spends its time launching the worker">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s18">
+<meta name="plan-recorded-at" content="2026-10-08"><meta name="plan-verdict" content="measurement">
+<title>Dispatch spends its time launching the worker | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="dispatch-launch-cost" id="dispatch-launch-cost">
+<h1>Dispatch spends its time launching the worker</h1>
+
+<h2 id="dispatch-launch-cost-measured">The launch-to-claim time, measured</h2>
+<p id="dispatch-launch-cost-launch-figure">The claim grace covered the window in which a dispatch that lost a registration race waits for the winning claim to launch its worker. That window was fixed at 15&nbsp;s. Measured on the fleet node 2026-10-08 over 397 recent run directories, the launch-to-claim time &mdash; a claim's registration to the instant its worker record carries <code>launched_at</code>, the interval the loser actually waits on &mdash; is: minimum 1&nbsp;s, median 10&nbsp;s, 90th percentile 22&nbsp;s, maximum 41&nbsp;s.</p>
+
+<h2 id="dispatch-launch-cost-grace">The grace is now derived from that figure</h2>
+<p id="dispatch-launch-cost-derived">The grace is the observed tail scaled by a margin, floored: <code>max(5&nbsp;s, 1.5 &times; p90)</code>. On the measured distribution that is <code>max(5, 1.5 &times; 22) = 33&nbsp;s</code>. A slow fleet waits longer, a fast one does not hold a losing dispatch's turn, and a deliberate outlier beyond the tail does not stretch the bound because the figure is a percentile rather than the maximum. A fleet with nothing recent to learn from falls back to the 5&nbsp;s floor rather than refusing on sight.</p>
+
+<h2 id="dispatch-launch-cost-size">The checkout size, by top-level path</h2>
+<table id="dispatch-launch-cost-size-table">
+<caption>Fresh checkout at <code>3f7a2f71f</code>, materialised from <code>git archive</code>; sizes in MB.</caption>
+<thead><tr><th>Top-level path</th><th>Size [MB]</th><th>Share</th></tr></thead>
+<tbody>
+<tr><td><code>docs/</code></td><td>337</td><td>94%</td></tr>
+<tr><td><code>docs/state/reckon/</code></td><td>270</td><td>75%</td></tr>
+<tr><td><code>tests/</code></td><td>14</td><td>4%</td></tr>
+<tr><td><code>reckon/</code></td><td>7</td><td>2%</td></tr>
+<tr><td>all other top-level files and dirs</td><td>&lt;1 each</td><td>&lt;1%</td></tr>
+</tbody>
+</table>
+<p id="dispatch-launch-cost-exclusion">Committed run records under <code>docs/state/reckon/</code> are 270&nbsp;MB of the 359&nbsp;MB tree &mdash; three quarters of it, across 5,042 tracked files. Leaving that share out of provisioning was considered and not implemented. The share is read: 20 test files reference <code>docs/state</code> or <code>state/reckon</code>, and the ledger, review-store and state-write paths resolve through it. An exclusion would break readers that depend on it, so the size cannot be cut without a scoped change to those readers, which this node does not own. No before-and-after provisioning measurement is therefore offered; the size is measured and stated, not cut.</p>
+
+<h2 id="dispatch-launch-cost-provisioning">Provisioning cost</h2>
+<p id="dispatch-launch-cost-provision">A real <code>git worktree add</code> could not run on this host &mdash; the main checkout's <code>.git</code> is sealed read-only by the worker fence &mdash; so the write volume was measured directly by materialising the same revision with <code>git archive &lt;sha&gt; | tar -x</code>: <strong>3.1&nbsp;s</strong> to write 359&nbsp;MB across the tree. This is the floor of the provisioning cost, since a worktree add performs the same write volume.</p>
+</article></main></body></html>
