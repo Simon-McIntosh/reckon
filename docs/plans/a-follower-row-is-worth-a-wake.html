@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.25">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -128,12 +128,14 @@
       <code>working → exited-unfinished</code> and its kin print without the audit's list being grown by hand. A coordinator row followed by another
       transition of the same run within a twenty-second settle window prints only the later row, so the
       measured chains (<code>working → exited-unfinished → blocked</code> in 2 s,
-      <code>blocked → wait-aged → blocked</code> in 3 to 8 s) print once. The settle window is one module
-      constant beside <code>ARRIVAL_WINDOW</code>; it is the only definition §2 adds, because a hold needs a
-      length and the existing windows each belong to one named noise pair. The settle hold never keeps a row more than two minutes
-      from its first transition. The three <code>NOISE_PAIRS</code> holds keep their own measured windows (90 s for
-      the launch flicker, 300 s for the exit phantom and the stall flap), which §2 does not change. A pane built with observer context shown keeps today's behaviour exactly, which
-      <code>replay_row_policy</code> uses for §5's comparison. <code>PaneRowPath</code> writes its memory only for printed rows, as it does today,
+      <code>blocked → wait-aged → blocked</code> in 3 to 8 s) print once. The settle hold needs two module
+      constants beside <code>ARRIVAL_WINDOW</code>, and they are the only definitions §2 adds: the twenty-second
+      settle window, and a two-minute cap from a run's first held transition after which the latest row prints even
+      if the run is still changing, so a run that changes state more often than every twenty seconds is never held
+      indefinitely. The existing windows each belong to one named noise pair, so neither can serve. The three <code>NOISE_PAIRS</code> holds keep their own measured windows (90 s for
+      the launch flicker, 300 s for the exit phantom and the stall flap), which §2 does not change. A pane built with observer context shown keeps today's behaviour for every row
+      except those the two resolution rules above restore, which print on that pane too. <code>replay_row_policy</code>
+      uses that pane for §5's comparison, and §5 counts the restored rows separately. <code>PaneRowPath</code> writes its memory only for printed rows, as it does today,
       and a held-back observer row is held back again when a re-arm re-derives it.</p>
     <p><strong>Done when</strong> <code>tests/test_row_policy_holds_observer_context.py</code> feeds
       <code>RowPolicy</code> the measured sequences and checks each one:</p>
@@ -200,7 +202,9 @@
     <p><strong>Done when</strong> the report shows at least half of today's rows removed, zero held-back
       action states, and no action row delayed by more than two minutes
       beyond the <code>NOISE_PAIRS</code> window its opener carries, which is zero for an opener outside those pairs. As a positive control, the same replay with
-      observer context shown, the pane <code>replay_row_policy</code> builds for today's behaviour, reproduces today's row count within 2%.</p>
+      observer context shown, the pane <code>replay_row_policy</code> builds for today's behaviour, reproduces today's
+      row count within 2% once the rows the two resolution rules restore, which the report counts separately, are
+      subtracted.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
