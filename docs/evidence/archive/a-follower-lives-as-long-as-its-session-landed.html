@@ -74,6 +74,11 @@ still to be read after this session ends.</p>
 <p><strong>Stale FIFOs.</strong> Three of five FIFOs were stale: 42863's, and those of two sessions that never dispatched (2484216 and 2489693). The entry point traps no signal, so a monitor stopped at session end never reaches its own removal; §9 now covers that path.</p>
   </section>
 
+  <section id="s14-hand-off">
+    <h2>§14 — a hand-armed follower hands its session to the host</h2>
+    <p>A <code>crew follow</code> started outside the session host, in a Claude session whose host is waiting on its FIFO, now writes its project and session to the host, prints <em>session host now delivers …; nothing needs re-arming</em> and exits; the host takes the pair over. A hand-armed follower reaching its lifetime end hands over the same way instead of printing a re-arm command. Dispatch asks a waiting host even when a hand-armed follower is attached. The host's children carry a marker and never hand over, and a session with no waiting host streams as before. The request line has one writer, <code>_request_host_follower</code> in <code>reckon/crew/dispatch_watch.py</code>, and a follower reloaded in place adopts its launched workers before it can hand off. The first build conflicted with main's later split of <code>reckon/cli.py</code> and was ported by a fresh node from its saved patch, with both of that build's review findings fixed. Gate: 6 passed, and the control with the hand-off check removed fails. 33 session-host tests pass. Reviews 92/120 for the first build and 99/120 for the port. The admission line in <code>reckon/crew/dispatch.py</code> was granted at promotion. Measured before the fix, on 2026-10-08: sessions re-armed hand followers beside idle hosts, and the lead messaged ten sessions to stop.</p>
+  </section>
+
 </main>
 </body>
 </html>
