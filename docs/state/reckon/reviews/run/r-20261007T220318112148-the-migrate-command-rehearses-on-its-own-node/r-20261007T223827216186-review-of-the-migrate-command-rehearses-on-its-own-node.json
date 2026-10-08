@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0a760f2abdcbf1b136caa4480b16333e8a4dac54",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/fleet_migrate.py:751",
+    "reckon/crew/fleet_migrate.py:1089"
+  ],
+  "completed_at": "2026-10-07T22:50:31.559Z",
+  "dispatched_at": "2026-10-07T22:38:53Z",
+  "findings": [],
+  "head_log_revision": "5c11fbd614b4b516ab4f8ff633a1ff7bed399edf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read cd64ae5a..5c11fbd6; 5bfd32c5 adds SessionVerificationError, gives the tab-order mismatch its own message, records the failure in the rehearsal ledger and adds test_rehearsal_records_reordered_tabs_with_matching_claude_pane; 5c11fbd6 updates the evidence receipt to 59 passed plus the tab-order mutation line.",
+    "done_when": "section 9's done-when names a real two-tab probe returning with the same tab order, the same Claude conversation id and a growing transcript; the manifest defers that operational probe to the coordinator in follow_ons, and the gained commits verify the tab-order half at the tooling level, whose 59-test gate I reproduced as 59 passed, EXIT=0 in a scratch tree at 5c11fbd6.",
+    "goal": "the node goal is a rehearsal that cuts one probe zellij session back onto the node it runs on; the gained commits add no new capability and instead make the rehearsal's tab-order clause independently enforceable, which is the \"same tab names in the same order\" half of section 9's done-when.",
+    "manifest": "read at 5c11fbd6; baseline_suite (0a760f2ab, exit 1, 7 failed) and after_suite (5c11fbd6, exit 0, 0 failed) are both complete with log paths, so the added-failure derivation now reads a measured 0 rather than unmeasured, and the tab-order mutation is recorded in tab-negative-control.log.",
+    "write_paths": "the two gained commits touch only reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_rehearsal.py and docs/evidence/fragments/the-fleet-moves-to-a-new-node/the-migrate-command-rehearses-on-its-own-node.html, every one a path the reviewed manifest declares."
+  },
+  "justifications": {
+    "durability": "the prior review's follow-on, that removing the check_tabs clause left the suite green, is closed; the new test drives reordered tabs with matched panes, and removing the clause at fleet_migrate.py:651 turns it red with DID NOT RAISE, which I reproduced.",
+    "evidence": "the manifest's baseline_suite (0a760f2ab, 7 failed) and after_suite (5c11fbd6, 0 failed) are both complete with log paths so the added-failure derivation reads a measured 0; I reproduced the 59-test named gate EXIT=0 and the tab-order mutation (1 failed, EXIT=1) in a scratch tree at 5c11fbd6.",
+    "fit": "SessionVerificationError subclasses MigrationError and follows the module's injected-callable idiom; no added name or comment carries a plan, stage or ticket label.",
+    "goal_fidelity": "the gained commits add no capability beyond section 9's rehearsal; they make the \"same tab names in the same order\" clause independently enforceable, and the real two-tab probe remains deferred to the coordinator in the manifest's follow_ons.",
+    "reuse": "_verified_session is reused by both callers and the new error extends the existing MigrationError hierarchy rather than introducing a parallel one; the expected-tabs extraction is duplicated once in the ledger-recording except block.",
+    "scope_discipline": "the two gained commits touch only reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_rehearsal.py and the evidence fragment, all declared paths, and add no capability the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a rehearsal that cuts one probe zellij session back onto the node it runs on; the gained commits add no new capability and instead make the rehearsal's tab-order clause independently enforceable, which is the \"same tab names in the same order\" half of section 9's done-when.\nVERDICT done_when: section 9's done-when names a real two-tab probe returning with the same tab order, the same Claude conversation id and a growing transcript; the manifest defers that operational probe to the coordinator in follow_ons, and the gained commits verify the tab-order half at the tooling level, whose 59-test gate I reproduced as 59 passed, EXIT=0 in a scratch tree at 5c11fbd6.\nVERDICT write_paths: the two gained commits touch only reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_rehearsal.py and docs/evidence/fragments/the-fleet-moves-to-a-new-node/the-migrate-command-rehearses-on-its-own-node.html, every one a path the reviewed manifest declares.\nVERDICT manifest: read at 5c11fbd6; baseline_suite (0a760f2ab, exit 1, 7 failed) and after_suite (5c11fbd6, exit 0, 0 failed) are both complete with log paths, so the added-failure derivation now reads a measured 0 rather than unmeasured, and the tab-order mutation is recorded in tab-negative-control.log.\nVERDICT diff: read cd64ae5a..5c11fbd6; 5bfd32c5 adds SessionVerificationError, gives the tab-order mismatch its own message, records the failure in the rehearsal ledger and adds test_rehearsal_records_reordered_tabs_with_matching_claude_pane; 5c11fbd6 updates the evidence receipt to 59 passed plus the tab-order mutation line.\nCALL_SITES: reckon/crew/fleet_migrate.py:751, reckon/crew/fleet_migrate.py:1089\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the gained commits add no capability beyond section 9's rehearsal; they make the \"same tab names in the same order\" clause independently enforceable, and the real two-tab probe remains deferred to the coordinator in the manifest's follow_ons.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's baseline_suite (0a760f2ab, 7 failed) and after_suite (5c11fbd6, 0 failed) are both complete with log paths so the added-failure derivation reads a measured 0; I reproduced the 59-test named gate EXIT=0 and the tab-order mutation (1 failed, EXIT=1) in a scratch tree at 5c11fbd6.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two gained commits touch only reckon/crew/fleet_migrate.py, tests/test_fleet_migrate_rehearsal.py and the evidence fragment, all declared paths, and add no capability the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the prior review's follow-on, that removing the check_tabs clause left the suite green, is closed; the new test drives reordered tabs with matched panes, and removing the clause at fleet_migrate.py:651 turns it red with DID NOT RAISE, which I reproduced.\nSCORE fit: 19\nJUSTIFICATION fit: SessionVerificationError subclasses MigrationError and follows the module's injected-callable idiom; no added name or comment carries a plan, stage or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: _verified_session is reused by both callers and the new error extends the existing MigrationError hierarchy rather than introducing a parallel one; the expected-tabs extraction is duplicated once in the ledger-recording except block.\n",
+  "review_run_id": "r-20261007T223827216186-review-of-the-migrate-command-rehearses-on-its-own-node",
+  "reviewed_base_sha": "cd64ae5a4704cc36375efd4b88da995446285d61",
+  "reviewed_head_sha": "5c11fbd614b4b516ab4f8ff633a1ff7bed399edf",
+  "reviewed_run_id": "r-20261007T220318112148-the-migrate-command-rehearses-on-its-own-node",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T22:48:40.902439+00:00",
+  "total": 113
+}
