@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -122,7 +122,7 @@
       <code>_write_state_locked</code>, where it runs today. Text-mode writes (<code>edit_plan</code> mode text, through
       <code>_replace_plan_text</code>) never enter <code>_write_state_locked</code>, so the same function is called
       there before the write. <code>_require_new_section_contracts</code>, which that text path runs for newly
-      added headings only, keeps its narrower job. The census comes first:
+      added headings only, keeps its narrower job. The check compares headings with the declarations the write produces. On the state path that is the HTML <code>write_state</code> renders, carrying the new <code>plan-section-declarations</code>, not the authored <code>source_text</code> the existing call site reads. Otherwise a write that adds a heading and its declaration together would be refused against the old declarations. The census comes first:
       count the live plans that would fail today, and state the count in the evidence, because closing this guard
       turns every existing gap into a refusal at that plan's next write.</p>
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
@@ -273,7 +273,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents at head e4f26bea over the two commits since the prior review (2c5adbfa4, e4f26bea): parsed record, total 107/120 over 6 dimensions (goal_fidelity 18, evidence 16, scope_discipline 18, durability 18, fit 19, reuse 18), reviewed_base_sha c5c3fbd0 = the prior review's head, reviewed_head_sha e4f26bea. The section-9 deliverable is met at plan version 24 — the at-least-one-done rule restored under the amended section, both uncertain cases (deferred-only, undeclared-heading) held and reported in judgment_required on the dependent row and the report, and the build skill updated; two follow-ons, no blockers.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261008T061933580577-review-of-a-deferred-section-blocks-only-its-dependents" data-who="reckon-build" data-when="2026-10-08T06:57:09.414Z">
-    <div class="r-comment-body"><p>Independent review of r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents at head 28e81ae6 over the one commit gained since the prior review (head e4f26bea). The stored record parses (status parsed), scores all six dimensions in 0..20 (goal_fidelity 16, evidence 15, scope_discipline 18, durability 13, fit 18, reuse 18; total 98), records reviewed_base_sha e4f26bea (the prior review&#x27;s head) and reviewed_head_sha 28e81ae6, and carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own base and head suite logs. The gained commit routes a whole-plan judgment through one helper at all four holdable sites; the after-edge route is verified and falsifiable, but the graph-closure route misnames a cross-project dependency&#x27;s target with the dependent&#x27;s own project, so judgment_required names a plan that does not exist — one blocking finding plus one follow-on.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents at head 28e81ae6 over the one commit gained since the prior review (head e4f26bea). The stored record parses (status parsed), scores all six dimensions in 0..20 (goal_fidelity 16, evidence 15, scope_discipline 18, durability 13, fit 18, reuse 18; total 98), records reviewed_base_sha e4f26bea (the prior review's head) and reviewed_head_sha 28e81ae6, and carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own base and head suite logs. The gained commit routes a whole-plan judgment through one helper at all four holdable sites; the after-edge route is verified and falsifiable, but the graph-closure route misnames a cross-project dependency's target with the dependent's own project, so judgment_required names a plan that does not exist — one blocking finding plus one follow-on.</p></div>
 </div>
 </section>
 </main>
