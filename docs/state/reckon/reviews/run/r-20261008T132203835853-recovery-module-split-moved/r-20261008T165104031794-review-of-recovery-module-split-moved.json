@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:88",
+    "reckon/crew_run_commands.py:54",
+    "reckon/crew/promotion.py:90",
+    "reckon/crew/review.py:364"
+  ],
+  "completed_at": "2026-10-08T17:01:22.951Z",
+  "dispatched_at": "2026-10-08T16:51:29Z",
+  "findings": [
+    {
+      "file": "tests/test_every_module_fits_a_worker_window.py",
+      "line": "33",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when asserts every produced module is at or under 40,000 estimated tokens, but the ratchet binds at BOUND = 50_000, so the 40,000 target is met (largest recovery_watch.py at 31,356) only by the run's own measurement and is unguarded against a later module growing back to 49,000."
+    },
+    {
+      "file": "docs/state/reckon/shared-write-paths.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the diff removes the reckon/crew/recovery.py entry and adds none of the twelve produced modules, so the concurrency guidance the declaration carried is dropped rather than re-expressed for the split files, exactly as in the promotion split."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 6deafa1: 85c4e4813 moves the statements into twelve new modules and leaves recovery.py as the import surface re-exporting every moved name; 778d1a69f and 42c7ed60b trim imports and repoint the census patches; db118d34f adds the landing fragment. 69 files, 13,365 insertions and 11,940 deletions.",
+    "done_when": "the conditions are measured and recorded: check_pure_move.py's receipt names 353/353 statements moved with an empty problems list against base 6deafa1, the size guard passes with recovery.py removed from its ALLOWLIST and reddens under the declared mutation (EXIT=1), and crew --help exits 0; the 40,000 produced-module target is met but only by the receipt's token map rather than the ratchet.",
+    "goal": "the landed tree holds recovery.py at 444 lines (from 11,731 at base 6deafa1) re-exporting every moved name, plus twelve new siblings including recovery_vocabulary.py and recovery_liveness.py, so the split and the two coordinator-ruled departures both exist.",
+    "manifest": "read; it records the pure-move receipt, the size guard and its mutation, crew --help, the vocabulary and process_alive moves, and the mapped census at 711 passed / 2 failed reproduced at base, but leaves baseline_suite and after_suite empty so the added-failure count is unmeasured.",
+    "write_paths": "the manifest declares 69 paths under reckon/crew/, tests/, docs/evidence and docs/state; every changed path is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_every_module_fits_a_worker_window.py:30 removed reckon/crew/recovery.py from the ALLOWLIST and the declared mutation restoring its size reddens that guard at EXIT=1, but the 40,000 target and the no-back-import invariant are held only by reading.",
+    "evidence": "pure-move-head.json names 353/353 statements with an empty problems list and the guard and crew --help are logged at EXIT=0 with the mutation at EXIT=1, but the 40,000 target is asserted only by the receipt's token map (ratchet bound is 50_000) and no baseline_suite/after_suite arm is recorded.",
+    "fit": "each sibling names one concern (reckon/crew/recovery_liveness.py, recovery_vocabulary.py, recovery_watch.py) with no part number, matching the dispatch and promotion siblings, though reckon/crew/recovery.py:1 carries a four-code ruff noqa.",
+    "goal_fidelity": "reckon/crew/recovery.py:1-444 is the import surface re-exporting every moved name and the twelve siblings each carry one concern, so the named split landed exactly.",
+    "reuse": "the diff moves existing statements and adds no new mechanism; recovery.py re-exports the moved names and recovery_vocabulary.py holds only moved constants.",
+    "scope_discipline": "git diff --name-status 6deafa1 db118d34 lists 69 paths and every one is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to split reckon/crew/recovery.py into the eleven map-named siblings plus a shared-vocabulary leaf, as a pure move with the census repointed; the landed tree holds recovery.py at 444 lines (from 11,731 at base 6deafa1) re-exporting every moved name, plus twelve new siblings including recovery_vocabulary.py and recovery_liveness.py, so the split and the two coordinator-ruled departures both exist.\nVERDICT done_when: the conditions are measured and recorded, not claimed \u2014 check_pure_move.py's receipt (pure-move-head.json) names 353/353 statements moved with an empty problems list against base 6deafa1, the size guard passes with recovery.py removed from its ALLOWLIST and reddens under the declared mutation (size-guard-negative.log EXIT=1), and head help exits 0 (help-head.log); the 40,000 produced-module target is met (largest recovery_watch.py 31,356) but only by the receipt's own token map, not by the ratchet, which is bound at 50,000.\nVERDICT write_paths: read the manifest's 69 declared paths; git diff --name-status 6deafa1..db118d34 lists 69 changed paths and every one is inside them.\nVERDICT manifest: read; it records the pure-move receipt at 353/353 zero altered/lost/duplicated, the four-pass size guard and its EXIT=1 mutation, crew --help EXIT=0, the 13-constant vocabulary move and the process_alive move, and the mapped census at 711 passed / 2 failed with both ids reproduced at base; it leaves baseline_suite and after_suite empty, so the reviewed run's added-failure count is unmeasured.\nVERDICT diff: read commit by commit against base 6deafa1: 85c4e4813 moves the statements into twelve new modules and leaves recovery.py as the import surface re-exporting every moved name; 778d1a69f and 42c7ed60b trim imports and repoint the census patches to the modules whose code reads each name; db118d34f adds the landing fragment. 69 files, 13,365 insertions and 11,940 deletions.\nCALL_SITES: reckon/serve.py:88, reckon/crew_run_commands.py:54, reckon/crew/promotion.py:90, reckon/crew/review.py:364, reckon/crew/routing.py\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1-444 is the import surface re-exporting every moved name and the twelve siblings each carry one concern, so the split the goal names landed exactly, with the vocabulary leaf and process_alive placement the coordinator ruled.\nSCORE evidence: 17\nJUSTIFICATION evidence: scripts/check_pure_move.py's receipt at pure-move-head.json names 353/353 statements with an empty problems list and the size guard and crew --help are logged at EXIT=0 with the declared mutation at EXIT=1, but the done-when's 40,000 produced-module target is asserted only by the receipt's token map while tests/test_every_module_fits_a_worker_window.py:33 binds the ratchet at 50_000, and no baseline_suite/after_suite arm is recorded so the promotion suite delta is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 6deafa1380d064fe921adb1320d3eba4e96b104a db118d34f67322de43d3bb6c79b459b0cf495074 lists 69 paths and every one is inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_module_fits_a_worker_window.py:30 removed reckon/crew/recovery.py from the ALLOWLIST and the declared mutation restoring its size reddens that guard at EXIT=1 (size-guard-negative.log), but the 40,000 produced-module target and the no-back-import invariant are held only by reading, not by a ratchet.\nSCORE fit: 18\nJUSTIFICATION fit: each sibling names one concern (reckon/crew/recovery_liveness.py, recovery_vocabulary.py, recovery_watch.py) with no part number or version, matching the dispatch and promotion siblings, though reckon/crew/recovery.py:1 carries a four-code ruff noqa on the import surface.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff moves existing statements and adds no new mechanism \u2014 recovery.py:1-444 re-exports the moved names and recovery_vocabulary.py holds only moved constants \u2014 so no capability is forked.\nFINDING tests/test_every_module_fits_a_worker_window.py:33 follow-on: the done-when asserts every produced module is at or under 40,000 estimated tokens, but the ratchet binds at BOUND = 50_000, so the 40,000 target is met (largest recovery_watch.py at 31,356) only by the run's own measurement and is unguarded against a later module growing back to 49,000.\nFINDING docs/state/reckon/shared-write-paths.json:1 follow-on: the diff removes the reckon/crew/recovery.py entry and adds none of the twelve produced modules, so the concurrency guidance the declaration carried is dropped rather than re-expressed for the split files, exactly as in the promotion split.\n",
+  "review_run_id": "r-20261008T165104031794-review-of-recovery-module-split-moved",
+  "reviewed_base_sha": "6deafa1380d064fe921adb1320d3eba4e96b104a",
+  "reviewed_head_sha": "db118d34f67322de43d3bb6c79b459b0cf495074",
+  "reviewed_run_id": "r-20261008T132203835853-recovery-module-split-moved",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T17:12:00+00:00",
+  "total": 112
+}
