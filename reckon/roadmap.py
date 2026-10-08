@@ -394,9 +394,13 @@ def _gate_section_edges(
                 )
                 row["section_found"] = section_found
             else:
-                satisfied = _plan_dependency_satisfied(
+                satisfied, judgment = _whole_plan_dependency(
                     target, docs_dir, project, parsed.slug
                 )
+                if judgment is not None:
+                    row["judgment"] = _judgment_member(
+                        project, slug, parsed.slug, judgment
+                    )
             row.update(
                 {
                     "scope": "local",
@@ -741,6 +745,46 @@ def _plan_dependency_judgment(
     return None
 
 
+def _whole_plan_dependency(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> tuple[bool, tuple[str, list[str]] | None]:
+    """Return a whole-plan dependency's verdict and its judgment in one call.
+
+    One helper owns the whole-plan decision so every site that can hold a
+    dependent reaches the judgment with the verdict, rather than each site
+    calling the verdict alone and the judgment only where a row is built. A
+    site that reads ``judgment`` and, when it is not ``None``, records the
+    member in ``judgment_required`` guarantees the orchestrator is told
+    whenever an uncertain dependency holds something — through a declared
+    dependency, a gate ref, an after edge, or the graph closure alike.
+    """
+
+    satisfied = _plan_dependency_satisfied(plan, docs_dir, project, slug)
+    if satisfied:
+        return True, None
+    return False, _plan_dependency_judgment(plan, docs_dir, project, slug)
+
+
+def _judgment_member(
+    project: str,
+    dependent: str,
+    target: str,
+    judgment: tuple[str, list[str]],
+) -> dict[str, Any]:
+    """Compose one ``judgment_required`` member naming a held dependency."""
+
+    reason, sections = judgment
+    return {
+        "dependent": _qualified_plan(project, dependent),
+        "target": _qualified_plan(project, target),
+        "reason": reason,
+        "sections": list(sections),
+    }
+
+
 def execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
     """Plan gates whose verdict holds execution.
 
@@ -1004,9 +1048,14 @@ def _after_edges(
                 target, parsed.stage, declarations
             )
         else:
-            row["satisfied"] = _plan_dependency_satisfied(
+            satisfied, judgment = _whole_plan_dependency(
                 target, docs_dir, project, parsed.slug
             )
+            row["satisfied"] = satisfied
+            if judgment is not None:
+                row["judgment"] = _judgment_member(
+                    project, str(plan.get("slug") or ""), parsed.slug, judgment
+                )
         rows.append(row)
     return rows
 
@@ -2064,6 +2113,7 @@ def resolve_graph_target(
     decision_blocker_rows: list[dict[str, Any]] = []
     closure_blocker_rows: list[dict[str, Any]] = []
     ready: list[str] = []
+    graph_judgment_members: list[dict[str, Any]] = []
     for key in member_keys:
         plan = plans[key]
         if _status(plan) in COMPLETED_STATUSES:
@@ -2074,15 +2124,23 @@ def resolve_graph_target(
         )
         decision_blocker_rows.extend(unsettled_decisions(plan, graph_sections_map))
         closure_blocker_rows.extend(closure_blockers(plan))
-        dependencies_complete = all(
-            _plan_dependency_satisfied(
+        dependencies_complete = True
+        for dependency in plan_blocking_graph[key]:
+            satisfied, judgment = _whole_plan_dependency(
                 plans[dependency],
                 project_state[dependency[0]].get("docs_dir"),
                 dependency[0],
                 dependency[1],
             )
-            for dependency in plan_blocking_graph[key]
-        )
+            if satisfied:
+                continue
+            dependencies_complete = False
+            if judgment is not None:
+                graph_judgment_members.append(
+                    _judgment_member(
+                        graph_project, graph_slug, dependency[1], judgment
+                    )
+                )
         # Readiness is the roadmap row's own verdict for this plan, so both
         # surfaces answer from one computation: authorisation (including a plan
         # released by its cleared hold), its blockers, gates, decisions and
@@ -2126,6 +2184,18 @@ def resolve_graph_target(
         "ready": sorted(ready),
         "decision_blockers": decision_blocker_rows,
         "closure_blockers": closure_blocker_rows,
+        "judgment_required": {
+            "required": bool(graph_judgment_members),
+            "count": len(graph_judgment_members),
+            "members": sorted(
+                graph_judgment_members,
+                key=lambda member: (
+                    str(member.get("dependent") or ""),
+                    str(member.get("target") or ""),
+                    str(member.get("reason") or ""),
+                ),
+            ),
+        },
         "ship_ready": not decision_blocker_rows and not closure_blocker_rows,
         "schedule_override": {
             "required": bool(deferred_members),
@@ -2672,23 +2742,13 @@ def _build_roadmap(
                     target_view.get("section_declarations"),
                 )
             else:
-                satisfied = _plan_dependency_satisfied(
+                satisfied, judgment = _whole_plan_dependency(
                     target, docs_dir, project, parsed.slug
                 )
-                if not satisfied:
-                    judgment = _plan_dependency_judgment(
-                        target, docs_dir, project, parsed.slug
+                if judgment is not None:
+                    judgment_required_rows[slug].append(
+                        _judgment_member(project, slug, parsed.slug, judgment)
                     )
-                    if judgment is not None:
-                        reason, concerned = judgment
-                        judgment_required_rows[slug].append(
-                            {
-                                "dependent": _qualified_plan(project, slug),
-                                "target": _qualified_plan(project, parsed.slug),
-                                "reason": reason,
-                                "sections": concerned,
-                            }
-                        )
             dependency_row = {
                 "ref": ref,
                 "scope": "local",
@@ -2808,6 +2868,10 @@ def _build_roadmap(
                         "section": str(edge_row.get("stage") or ""),
                         "gate": str(edge_row.get("gate") or ""),
                     }
+            for edge_row in gate_edge_rows:
+                member = edge_row.pop("judgment", None)
+                if member is not None:
+                    judgment_required_rows[slug].append(member)
 
         # A decision scoped to a section the plan never declares holds nothing
         # and can never be satisfied, so it is reported rather than silently
@@ -2842,6 +2906,10 @@ def _build_roadmap(
         # out of every blocker list — an after target that has not shipped
         # orders the plan later without ever holding it.
         after_rows[slug] = _after_edges(project, plan, all_plans, artifacts, docs_dir)
+        for after_row in after_rows[slug]:
+            member = after_row.pop("judgment", None)
+            if member is not None:
+                judgment_required_rows[slug].append(member)
         for row in after_rows[slug]:
             if row.get("found"):
                 continue

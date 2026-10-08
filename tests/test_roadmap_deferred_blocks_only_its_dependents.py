@@ -26,6 +26,7 @@ def _row(
     status: str = "active",
     declarations: dict | None = None,
     depends_on: list | None = None,
+    after: list | None = None,
 ) -> dict:
     """One composed inventory row, as discovery hands it to the roadmap."""
 
@@ -42,6 +43,8 @@ def _row(
         row["section_declarations"] = declarations
     if depends_on is not None:
         row["depends_on"] = depends_on
+    if after is not None:
+        row["after"] = after
     return row
 
 
@@ -247,3 +250,28 @@ def test_an_undeclared_heading_reports_undeclared_heading(roadmap_rows) -> None:
     assert member["target"] == "proj:I"
     assert member["reason"] == "undeclared-heading"
     assert member["sections"] == ["s2"]
+
+
+def test_an_after_edge_to_an_all_deferred_plan_is_reported(roadmap_rows) -> None:
+    """An uncertain whole-plan hold reached through an after edge is reported.
+
+    The same judgment an edge declares through ``depends_on`` reaches the
+    roadmap through a soft ``after`` edge, and the orchestrator must be told
+    whenever an uncertain dependency holds something — whatever route carried
+    it. M is sequenced after L, whose every section is deferred, so L's hold is
+    reported in M's ``judgment_required`` with the reason ``deferred-only``.
+    """
+    roadmap_rows.write(
+        "L",
+        headings=["s1", "s2"],
+        declarations={"s1": "deferred", "s2": "deferred"},
+    )
+    rows = roadmap_rows([_row("L"), _row("M", after=["L"])])
+
+    block = rows["M"]["judgment_required"]
+    assert block["required"] is True
+    (member,) = block["members"]
+    assert member["dependent"] == "proj:M"
+    assert member["target"] == "proj:L"
+    assert member["reason"] == "deferred-only"
+    assert member["sections"] == ["s1", "s2"]
