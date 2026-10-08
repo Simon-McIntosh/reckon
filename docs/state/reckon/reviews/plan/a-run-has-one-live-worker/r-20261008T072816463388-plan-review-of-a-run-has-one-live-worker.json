@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T07:33:42.426Z",
+  "dispatched_at": "2026-10-08T07:28:41Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:61",
+      "id": "single_goal-1",
+      "reason": "the two guards fail independently and can land independently; keeping them in one node means a reviewer with one green case and one red case cannot give the node a single verdict, so splitting \u00a73 into one node per guard is the change.",
+      "text": "\u00a73 carries two unrelated deliverables \u2014 the resumption-stamp lost-update fix in `sweep`/`_stamp_resumption_trigger`, and the session-claim refusal in `_launcher_refusal` \u2014 each with its own test case, so the section cannot be closed or reviewed on one verdict and its gate proves neither",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:75",
+      "id": "reasoning-1",
+      "reason": "an implementer who takes the lock alternative writes a fix whose own case-1 fixture (a pointer rewritten from a stale snapshot between two sweeps) still fails, so the plan should keep the append-only record only or restate the lock alternative so the launch write re-reads under the lock.",
+      "text": "the second offered mechanism (\"the pointer lock held across the launch and the stamp\") cannot satisfy the section's own done-when case 1, because a lock held in the sweep process cannot serialise the competing pointer rewrite, which is an out-of-process write by the launched supervisor landing ~38 s after the stamp (\u00a72's report: the launch-machinery write at 02:25:46Z that dropped the 02:25:08Z stamp)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "34428161df8039486a0f10a59cb590957085447f4734097fd9b730782d7baf65",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T072816463388-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "aa1dcf231c8490fc02d691d064993d198ca7170e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file, section and symbol resolves: `reckon/crew/resumption.py` (`sweep` L1123, `_stamp_resolve` L923, `_launcher_refusal` L579), `reckon/crew/runs.py` (`record_process_alive` L4486), the landed evidence anchor `#s2-second-launcher`, the `a-crew-process-ends-with-its-owner` dependency, and the \u00a72 report file. Extensionless hrefs were resolved as `<path>.html` per the surface convention.",
+    "done_when": "pass \u2014 \u00a73's done-when names two concrete test cases and declares its negative control explicitly (\"Each fails on the current code, which is the negative control, executed and logged\"), so each case has a control that can fail.",
+    "evidence_paths": "pass \u2014 the plan's cited artifacts sit on durable paths the a-later-reader can open (`~/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md`, the landed evidence HTML under `docs/evidence/archive/`), and no gate log is directed to a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the proposed symbols or files (`tests/test_a_hold_lifts_once.py` is named by what it measures), and no changelog prose in the mechanism text.",
+    "reasoning": "a finding \u2014 \u00a73's stated root cause matches its cited evidence, but one of its two named repair mechanisms cannot produce the section's own done-when.",
+    "single_goal": "a finding \u2014 \u00a73 declares two independent deliverables under one heading (`A hold lifts once, and a live session refuses a second worker`).",
+    "wiring": "pass \u2014 `plan-depends-on: a-crew-process-ends-with-its-owner` resolves to a real, `shipped` plan; no `informs`/`gates` are declared and none is required, and each section's own cross-references (`\u00a72`'s report, the landed evidence record) resolve."
+  },
+  "section_digests": {
+    "_document": "1dbe266d8d91b37a1378dc89bfbd211c020b551c1c1d9e8cf58c6957404b2aaf",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "741bab64468e22f3b3d06833c1ab45a47a32b8d199ebd25f038924e0f7084cb1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:38:19.686084+00:00"
+}
