@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 600" width="1400" height="600" style="font-family:sans-serif">
+  <!-- Time markers -->
+  <g stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 5">
+    <line x1="230" y1="90" x2="230" y2="540"/>
+    <line x1="760" y1="90" x2="760" y2="540"/>
+    <line x1="1160" y1="90" x2="1160" y2="540"/>
+  </g>
+  <g fill="#374151" font-size="20" text-anchor="middle">
+    <text x="230" y="76">sweep 1</text>
+    <text x="760" y="76">resume launch rewrites pointer</text>
+    <text x="1160" y="76">sweep 2</text>
+  </g>
+
+  <!-- Band A: pointer auto_resume slot (the cache) -->
+  <text x="24" y="182" font-size="22" fill="#1a1a1a">pointer</text>
+  <text x="24" y="208" font-size="20" fill="#6b7280">auto_resume slot</text>
+  <text x="24" y="232" font-size="18" fill="#6b7280">(a cache)</text>
+
+  <g font-size="20" text-anchor="middle">
+    <rect x="120" y="160" width="180" height="56" rx="6" fill="none" stroke="#9aa1a8" stroke-width="1.6" stroke-dasharray="5 5"/>
+    <text x="210" y="195" fill="#6b7280">absent</text>
+
+    <rect x="430" y="160" width="250" height="56" rx="6" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+    <text x="555" y="195" fill="#1a1a1a">trigger: resets:…</text>
+
+    <rect x="900" y="160" width="180" height="56" rx="6" fill="none" stroke="#9aa1a8" stroke-width="1.6" stroke-dasharray="5 5"/>
+    <text x="990" y="195" fill="#6b7280">absent</text>
+
+    <line x1="690" y1="188" x2="890" y2="188" stroke="#6b7280" stroke-width="1.6"/>
+    <polygon points="890,188 878,182 878,194" fill="#6b7280"/>
+    <text x="790" y="176" fill="#6b7280" font-size="18">rewrite from a pre-stamp snapshot</text>
+  </g>
+
+  <!-- Band B: recovery log (the authority) -->
+  <text x="24" y="392" font-size="22" fill="#0f766e">recovery log</text>
+  <text x="24" y="418" font-size="20" fill="#0f766e">append-only</text>
+  <text x="24" y="442" font-size="18" fill="#0f766e">(the authority)</text>
+
+  <g font-size="20" text-anchor="middle">
+    <rect x="430" y="366" width="640" height="56" rx="6" fill="none" stroke="#0f766e" stroke-width="2"/>
+    <text x="750" y="401" fill="#0f766e">resumed: [{ run_id, hold: resets:… }]</text>
+    <text x="740" y="452" fill="#0f766e" font-size="18">one line per sweep; a pointer rewrite cannot drop it</text>
+  </g>
+
+  <!-- Outcome under sweep 2 -->
+  <g font-size="20" text-anchor="middle">
+    <line x1="1160" y1="446" x2="1160" y2="494" stroke="#0f766e" stroke-width="1.6"/>
+    <polygon points="1160,500 1154,488 1166,488" fill="#0f766e"/>
+    <text x="1160" y="524" fill="#1a1a1a">already-resumed-for-this-hold</text>
+    <text x="1160" y="552" fill="#6b7280" font-size="18">resumed: [] · the hold lifts once</text>
+  </g>
+</svg>
