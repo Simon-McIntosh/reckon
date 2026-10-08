@@ -41,6 +41,8 @@ import pytest
 from reckon import cli, crew, crew_follow_commands
 from reckon.crew import runs
 
+pytestmark = pytest.mark.xdist_group("follower_source")
+
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
 FOLLOWER_SOURCE = Path(crew_follow_commands.__file__).resolve()
 PROJECT = "proj"

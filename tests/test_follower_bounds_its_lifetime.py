@@ -64,7 +64,10 @@ dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 # The dispatch case arms a producer path and reads the arming variable, so this
 # module is allowed to touch arming; the follower cases arm no producer.
-pytestmark = pytest.mark.arms_watch_producer
+pytestmark = [
+    pytest.mark.arms_watch_producer,
+    pytest.mark.xdist_group("follower_source"),
+]
 
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
 FOLLOWER_SOURCE = Path(crew_follow_commands.__file__).resolve()

@@ -19,7 +19,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import project_maintenance_commands
+from reckon import cli_entry, project_maintenance_commands
 from reckon.cli import (
     CREW_HOST_DANGLING,
     CREW_HOST_MISSING,
@@ -339,7 +339,7 @@ def _run_sync(
         cli_module.CLAUDE_SKILLS_DIR_ENV,
         str(skills_dir if skills_dir is not None else home / ".claude" / "skills"),
     )
-    monkeypatch.setattr(project_maintenance_commands, "_reckon_checkout", lambda: checkout)
+    monkeypatch.setattr(cli_entry, "_reckon_checkout", lambda: checkout)
     return (
         CliRunner().invoke(
             main,

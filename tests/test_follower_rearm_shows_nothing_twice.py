@@ -44,6 +44,8 @@ import pytest
 from reckon import cli, crew
 from reckon.crew import follow_checkpoint, runs
 
+pytestmark = pytest.mark.xdist_group("follower_source")
+
 PROJECT = "rearm-replay-proj"
 SESSION = "s-replay"
 OTHER_SESSION = "s-other"
