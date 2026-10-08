@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -70,9 +70,9 @@
     <p>Second, the launch backstop. <code>_launcher_refusal</code> refuses only when a pid the run's records name is
       alive (<code>record_process_alive</code> in <code>reckon/crew/runs.py</code>). The second worker ran under
       ppid 1 with no attempt record, so nothing named it.</p>
-    <p>A hold is lifted at most once per condition. The sweep already appends one line per lift to its append-only
-      recovery log (<code>recovery_log_path</code> in <code>reckon/crew/resumption.py</code>), carrying each resumed run's id and hold
-      signature. §2 found the two lifts there, lines 7668 and 7669. Before lifting, the sweep checks that log for a line already naming
+    <p>A hold is lifted at most once per condition. The sweep already appends one line per sweep to its append-only
+      recovery log (<code>recovery_log_path</code> in <code>reckon/crew/resumption.py</code>), whose <code>resumed</code> list carries
+      one entry per lift with the resumed run's id and hold signature. §2 found the two lifts there, lines 7668 and 7669. Before lifting, the sweep checks that log for a line already naming
       this run and this hold signature, and treats the pointer's <code>auto_resume</code> slot as a cache of it, not as the authority.
       A whole-pointer rewrite cannot drop a line from the log. No new record is added and nothing is retired: the log the sweep already
       writes becomes the one it reads.</p>
@@ -87,17 +87,24 @@
       <code>_launcher_refusal</code> in <code>reckon/crew/resumption.py</code> as the sweep's mirror of it, held word for word by a parity
       test. Both refuse only when a pid the run's records name is alive (<code>record_process_alive</code> in
       <code>reckon/crew/runs.py</code>). §2 found the second worker running under ppid 1 with no attempt record, so nothing named it.</p>
-    <p>A launched worker holds a <code>HostLease</code> (<code>reckon/crew/host_lease.py</code>) keyed on its worker session, from launch
-      until it exits. The lease already provides single ownership, an atomic take, release on exit, and a stale claim that cannot block
-      forever. Both guards read that lease. A held lease fires the existing live-process refusal with a reason naming the session, so
-      no new refusal family is added and the parity test still holds the two in step.</p>
+    <p>The second worker was <code>claude -p --resume 00ba9ff6…</code> under ppid 1. Its supervisor was gone and wrote no attempt
+      record, so no pid on the run named it. But its argv carried the run's worker session id, and that is how §1's <code>ps</code>
+      listing found it. Both guards read the same fact. A reader in <code>reckon/crew/runs.py</code>, beside
+      <code>record_process_alive</code>, walks <code>/proc</code> the way <code>_pipe_reader_pids</code> in the same module already
+      does. It returns the live processes owned by this user whose argv carries the run's recorded worker session id as a whole
+      element, excluding the caller and its ancestors. A hit fires the existing live-process refusal with a reason naming the pid and
+      the session. So no new refusal family is added, and the parity test still holds the two guards in step.</p>
+    <p>The read needs no claim, lease or renewal, and no change at the launch site: an orphan is found whatever its parent and
+      whether or not its supervisor wrote a record. Its reach is the host it runs on, the same reach <code>record_process_alive</code>
+      already has, and workers run on the node that runs the guards.</p>
     <p><strong>Done when</strong> <code>tests/test_a_live_session_refuses_a_second_worker.py</code> builds a fixture run whose recorded
-      pids are dead while a live process holds its session lease. A resume through <code>resume_plan</code>, and the sweep through
-      <code>_launcher_refusal</code>, are both refused with the live-process refusal naming the session. The same fixture with the lease
-      released admits both. The negative control is executed and logged: the first case is admitted on the current code and the test
-      fails. The write paths are <code>reckon/crew/dispatch_sessions.py</code>, <code>reckon/crew/resumption.py</code>,
-      <code>reckon/crew/runs.py</code> and <code>tests/test_a_live_session_refuses_a_second_worker.py</code>; it runs after §3, which
-      edits <code>resumption.py</code> too.</p>
+      pids are dead and starts a live child process whose argv carries the run's session id as one element. A resume through
+      <code>resume_plan</code>, and the sweep through <code>_launcher_refusal</code>, are both refused with the live-process refusal
+      naming that pid and the session. Once the child exits, both admit. A live process whose argv carries a different session id
+      refuses neither. The negative control is executed and logged: the first case is admitted on the current code and the test
+      fails. The write paths are <code>reckon/crew/runs.py</code>, <code>reckon/crew/dispatch_sessions.py</code>,
+      <code>reckon/crew/resumption.py</code> and <code>tests/test_a_live_session_refuses_a_second_worker.py</code>. It runs after §3,
+      which edits <code>resumption.py</code> too.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
