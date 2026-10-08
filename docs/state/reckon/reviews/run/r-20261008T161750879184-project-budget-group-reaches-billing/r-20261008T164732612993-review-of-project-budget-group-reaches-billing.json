@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's gate-base.log and gate-head.log, which the reviewed manifest names under test_logs rather than in its baseline_suite/after_suite fields; both logs completed with EXIT=0, so the added-failure count is 0",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/capabilities.py:_backend_billing",
+    "reckon/crew/picker/outcomes.py"
+  ],
+  "completed_at": "2026-10-08T16:59:53.078Z",
+  "dispatched_at": "2026-10-08T16:47:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "866",
+      "severity": "follow-on",
+      "text": "follow-on: _complete_locked calls ledger.build_record without project, so the stored row's budget block is not nulled at write time and the override reaches the row only when a reader stamps _project; passing project=str(record.get(\"project\") or \"\") would make the written row agree with what the read surfaces already compute."
+    },
+    {
+      "file": "reckon/crew/picker/outcomes.py",
+      "line": "373",
+      "severity": "follow-on",
+      "text": "follow-on: is_subscription_backend is called without a project, so the picker's per-backend subscription label is resolved from the host and catalogue layers alone and ignores a project-layer budget_group override for rows the picker summarises; the row's _project stamp should be passed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T161750879184-project-budget-group-reaches-billing/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest leaves baseline_suite and after_suite empty while naming its arm logs only under test_logs, so annotate_review_of_run finds no base gate log and records added_failure_count as unmeasured rather than the 0 the two passing logs support."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit d379a89ba against base 889ed1b4d, four files, +184/-28, all inside the declared write paths; the change threads a project argument through the ledger's billing resolution and reads the project stamp in capabilities.",
+    "done_when": "the done_when names a project-flight test that records zero per-token spend for that project's rows and a kept cost for another's; tests/test_subscription_lanes_record_no_spend.py:150 test_a_project_flight_moves_a_backend_into_a_subscription_group and :191 test_a_read_row_reads_its_project_layer assert exactly that in both directions, and the manifest records the gate that ran them.",
+    "goal": "the node's goal is to resolve a backend's subscription billing with the project the row belongs to, so a project's budget_group override reaches its own rows and another project's stay metered; reckon/ledger.py:2261 backend_budget_group, :2279 is_subscription_backend and :2350 build_record take a project and fold that project's flight layer in, and reckon/capabilities.py:241 _backend_billing reads the reader's _project stamp, so both the write and the read paths resolve with the project.",
+    "manifest": "read; it states the gate passed 142 tests against a 140-test base (both EXIT=0) and names the two gate logs, but its structured baseline_suite and after_suite fields are left empty, so only test_logs names the arm logs.",
+    "write_paths": "read the manifest's declared paths reckon/ledger.py, reckon/capabilities.py, tests/test_subscription_lanes_record_no_spend.py and the evidence fragment; every path the diff touches is inside them, and the plan section names the first three."
+  },
+  "justifications": {
+    "durability": "tests/test_subscription_lanes_record_no_spend.py:178 asserts moved cost_usd is None and :205 asserts the read row resolves to subscription, and the recorded negative control re-resolving with no project reddens both (2 failed, 9 passed, EXIT=1), so the assertions guard the regression they name.",
+    "evidence": "the manifest records the gate result (head 142 passed vs base 140, EXIT=0) but leaves the structured baseline_suite and after_suite fields empty, so the review's own read-time added-failure annotation reports unmeasured and the count had to be taken from the gate logs the manifest names only under test_logs.",
+    "fit": "the new project parameter is keyword-only on ledger.py:2261 and :2279, the cache key at ledger.py:2201 is extended in place rather than a second resolver added, and capabilities.py:227 _run_project follows the module's reader idiom.",
+    "goal_fidelity": "reckon/ledger.py:2279 is_subscription_backend and reckon/capabilities.py:241 _backend_billing both resolve with the row's project, and the read path settles billing at read time, so a project's rows read with no per-token spend while another project's keep their cost; the write path is wired but not yet driven by the one production caller.",
+    "reuse": "every changed function extends the owner of its capability, the flight cache at reckon/ledger.py:2201 and the billing reader at reckon/ledger.py:2279, and the only new definition, reckon/capabilities.py:227 _run_project is a three-line reader of the _project stamp with no existing owner to extend.",
+    "scope_discipline": "every path in reckon/ledger.py, reckon/capabilities.py and tests/test_subscription_lanes_record_no_spend.py is inside the declared write paths, and the change adds only the project argument the goal implies; the evidence fragment is the landing record rather than product change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to resolve a backend's subscription billing with the project the row belongs to, so a project's budget_group override reaches its own rows and another project's stay metered; reckon/ledger.py:2261 backend_budget_group, :2279 is_subscription_backend and :2350 build_record take a project and fold that project's flight layer in, and reckon/capabilities.py:241 _backend_billing reads the reader's _project stamp, so both the write and the read paths resolve with the project.\nVERDICT done_when: the done_when names a project-flight test that records zero per-token spend for that project's rows and a kept cost for another's; tests/test_subscription_lanes_record_no_spend.py:150 test_a_project_flight_moves_a_backend_into_a_subscription_group and :191 test_a_read_row_reads_its_project_layer assert exactly that in both directions, and the manifest records the gate that ran them.\nVERDICT write_paths: read the manifest's declared paths reckon/ledger.py, reckon/capabilities.py, tests/test_subscription_lanes_record_no_spend.py and the evidence fragment; every path the diff touches is inside them, and the plan section names the first three.\nVERDICT manifest: read; it states the gate passed 142 tests against a 140-test base (both EXIT=0) and names the two gate logs, but its structured baseline_suite and after_suite fields are left empty, so only test_logs names the arm logs.\nVERDICT diff: read the single commit d379a89ba against base 889ed1b4d, four files, +184/-28, all inside the declared write paths; the change threads a project argument through the ledger's billing resolution and reads the project stamp in capabilities.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/capabilities.py:_backend_billing, reckon/crew/picker/outcomes.py\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2279 is_subscription_backend and reckon/capabilities.py:241 _backend_billing both resolve with the row's project, and the read path settles billing at read time, so a project's rows read with no per-token spend while another project's keep their cost; the write path is wired but not yet driven by the one production caller.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest records the gate result (head 142 passed vs base 140, EXIT=0) but leaves the structured baseline_suite and after_suite fields empty, so the review's own read-time added-failure annotation reports unmeasured and the count had to be taken from the gate logs the manifest names only under test_logs.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in reckon/ledger.py, reckon/capabilities.py and tests/test_subscription_lanes_record_no_spend.py is inside the declared write paths, and the change adds only the project argument the goal implies; the evidence fragment is the landing record rather than product change.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_subscription_lanes_record_no_spend.py:178 asserts moved cost_usd is None and :205 asserts the read row resolves to subscription, and the recorded negative control re-resolving with no project reddens both (2 failed, 9 passed, EXIT=1), so the assertions guard the regression they name.\nSCORE fit: 18\nJUSTIFICATION fit: the new project parameter is keyword-only on ledger.py:2261 and :2279, the cache key at ledger.py:2201 is extended in place rather than a second resolver added, and capabilities.py:227 _run_project follows the module's reader idiom.\nSCORE reuse: 18\nJUSTIFICATION reuse: every changed function extends the owner of its capability, the flight cache at reckon/ledger.py:2201 and the billing reader at reckon/ledger.py:2279, and the only new definition, reckon/capabilities.py:227 _run_project is a three-line reader of the _project stamp with no existing owner to extend.\nFINDING reckon/crew/promotion.py:866 follow-on: _complete_locked calls ledger.build_record without project, so the stored row's budget block is not nulled at write time and the override reaches the row only when a reader stamps _project; passing project=str(record.get(\"project\") or \"\") would make the written row agree with what the read surfaces already compute.\nFINDING reckon/crew/picker/outcomes.py:373 follow-on: is_subscription_backend is called without a project, so the picker's per-backend subscription label is resolved from the host and catalogue layers alone and ignores a project-layer budget_group override for rows the picker summarises; the row's _project stamp should be passed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T161750879184-project-budget-group-reaches-billing/manifest.md:19 follow-on: the reviewed manifest leaves baseline_suite and after_suite empty while naming its arm logs only under test_logs, so annotate_review_of_run finds no base gate log and records added_failure_count as unmeasured rather than the 0 the two passing logs support.",
+  "review_run_id": "r-20261008T164732612993-review-of-project-budget-group-reaches-billing",
+  "reviewed_base_sha": "889ed1b4d98b7d68d34d437b8c1777ae7718485f",
+  "reviewed_head_sha": "d379a89ba47abb4ef7adacc04802ba7270131182",
+  "reviewed_run_id": "r-20261008T161750879184-project-budget-group-reaches-billing",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:59:16.711370+00:00",
+  "total": 103
+}
