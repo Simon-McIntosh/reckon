@@ -623,8 +623,12 @@ def _resolve_canonical(
     Only the kinds whose canonical path is type-and-slug determined take this
     path. An untyped read resolves the plan case directly, because a plan is
     what an untyped read names and the scan's own untyped rule prefers a
-    uniquely matching plan; every other untyped or typed ambiguity keeps the
-    full scan, so collision and cross-type answers are unchanged.
+    uniquely matching plan. The fast path decides only where the path is
+    unambiguous: when more than one canonical candidate exists for the slug —
+    a live and an archived document, which an include_archived lookup sees
+    together — it returns None and the full scan resolves the duplicate with
+    its own collision rule, so the answer for a duplicated slug is the one the
+    scan gives, unchanged.
     """
     if requested_type is None:
         types: tuple[str, ...] = ("plan",)
@@ -633,14 +637,14 @@ def _resolve_canonical(
     else:
         return None
     archived_values = (False, True) if include_archived else (False,)
-    for artifact_type in types:
-        for archived in archived_values:
-            resource = _canonical_resource_at(
-                docs_dir, project, artifact_type, slug, archived=archived
-            )
-            if resource is not None:
-                return resource
-    return None
+    candidates = [
+        _canonical_resource_at(docs_dir, project, artifact_type, slug, archived=archived)
+        for artifact_type in types
+        for archived in archived_values
+    ]
+    if sum(resource is not None for resource in candidates) != 1:
+        return None
+    return next(resource for resource in candidates if resource is not None)
 
 
 def resolve_resource(

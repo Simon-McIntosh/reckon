@@ -111,6 +111,44 @@ def _build_project(root: Path, plan_count: int) -> Path:
     return root
 
 
+def _build_duplicate_slug_project(root: Path) -> Path:
+    """Lay out a live and an archived document that share one slug."""
+
+    docs = root / "docs"
+    for relative in (Path("plans/dup.html"), Path("plans/archive/dup.html")):
+        target = docs / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            write_state(
+                _BARE_PLAN.replace("<title>plan</title>", "<title>dup</title>"),
+                {
+                    "slug": "dup",
+                    "title": "dup",
+                    "status": "active",
+                    "type": "plan",
+                    "version": 0,
+                },
+            ),
+            encoding="utf-8",
+        )
+    return root
+
+
+def _resolve_outcome(root: Path, include_archived: bool) -> tuple:
+    """Return what one resolve_resource call yields: a resource, None, or a raise."""
+
+    docs = root / "docs"
+    try:
+        resource = resources.resolve_resource(
+            docs, PROJECT, "dup", "plan", include_archived=include_archived
+        )
+    except resources.ResourceCollision as collision:
+        return ("raised", type(collision).__name__, str(collision))
+    if resource is None:
+        return ("none",)
+    return ("resource", str(resource.relative_path), resource.archived)
+
+
 def _read(root: Path) -> tuple[dict, int]:
     return _store.read_plan(PROJECT, "plan-000", root=root)
 
@@ -163,3 +201,21 @@ def test_one_plan_read_counts_flat_in_corpus_size(tmp_path: Path, monkeypatch) -
         f"and {large_count} times for {PLAN_COUNT_LARGE} plans; a read about one "
         "plan must not walk the corpus"
     )
+
+
+def test_duplicate_slug_matches_scan(tmp_path: Path, monkeypatch) -> None:
+    """A slug with both a live and an archived document still answers as the scan."""
+
+    root = _build_duplicate_slug_project(tmp_path)
+    for include_archived in (False, True):
+        fast = _resolve_outcome(root, include_archived)
+        with monkeypatch.context() as context:
+            _disable_direct_resolution(context)
+            scanned = _resolve_outcome(root, include_archived)
+        assert fast == scanned, (include_archived, fast, scanned)
+
+    # The duplicate is a decision the scan owns: with the archive in view both
+    # documents are claimants, so the scan refuses rather than choosing one,
+    # and the fast path defers to it instead of returning the live document.
+    assert _resolve_outcome(root, False)[0] == "resource"
+    assert _resolve_outcome(root, True)[0] == "raised"
