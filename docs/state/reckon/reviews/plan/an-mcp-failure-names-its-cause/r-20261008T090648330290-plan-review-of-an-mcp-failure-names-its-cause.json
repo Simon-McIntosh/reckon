@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T09:19:16.894Z",
+  "dispatched_at": "2026-10-08T09:07:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:245",
+      "id": "wiring-1",
+      "reason": "",
+      "text": "\u2014 the only open followup,",
+      "type": "wiring",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:215",
+      "id": "reasoning-1",
+      "reason": "the figure is background; `s12`'s deliverable and done-when do not rest on it, though a reader who opens the cited record to reproduce it will not find it and should be shown 22/132 instead.",
+      "text": "`s12` states \"\u00a79's worker measured 44 `scandir` calls at 5 plans against 264 at 60\", but \u00a79's landed record (`docs/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s9-one-plan-read`) records \"Its `scandir` count is 0 for fixtures of 5 and 60 plans\" and \"The declared control reverts the direct resolution and reproduces 22 against 132\" \u2014 44 and 264 are exactly twice the recorded control figures and appear nowhere in the cited evidence",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:202",
+      "id": "reasoning-2",
+      "reason": "an implementer taking the stated \"the flight schema admits\" route edits `reckon/schema/flight.yaml` and regenerates `reckon/_flight_schema.py`, both outside the declared scope (a blocker), or ships a key the schema still refuses in production; the section should name which of the two routes it means.",
+      "text": "`s11` says \"`_schema_view` in `reckon/flight.py` refuses unknown top-level keys\" and \"The flight schema admits `worker_mcp_servers` as a list of server names\", but the refusal is raised by the generated LinkML model (`reckon/_flight_schema.py`, generated from `reckon/schema/flight.yaml`, header \"do not edit \u2026 Regenerate with: uv run python scripts/regen_flight_schema.py\"), neither of which is in `s11`'s declared write paths (`reckon/flight.py`, `tests/test_worker_mcp_servers.py`), and `_schema_view` itself does not refuse \u2014 it removes reckon-owned keys and passes the rest through (reckon/flight.py:320-354); the route that stays inside the declared paths is the reckon-owned-key pattern the module already documents and uses (`SPRINT_RECENT_DAYS_KEY`, `HARNESS_HOME_FILES`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "57c53803f6d90a5f26baf1d62f6467665cd5b6904abe19cbc35ad7163066c4d1",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 57,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T090648330290-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "2863aab3fa214746027babb633f1f9bd8e4b42cf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_schema_view` (`reckon/flight.py:320`), `_discover_project`",
+    "done_when": "pass \u2014 `s11` and `s12` each declare a negative control that reverts the",
+    "evidence_paths": "pass \u2014 `s11` and `s12` write tests under `tests/` and name no",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a code",
+    "reasoning": "a finding \u2014 `s11`'s stated mechanism names the LinkML schema artifact while",
+    "single_goal": "pass \u2014 `s11` carries one deliverable (admit `worker_mcp_servers`) and",
+    "wiring": "a finding \u2014 every `depends-on` (`reckon-reads-answer-in-seconds`) and"
+  },
+  "section_digests": {
+    "_document": "fde96442d568e87088a9d75f21259acff20938624fe68039941e7b52e4c2123e",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "797b82322d206cd9058c9b6f210df471087d728b9655955f78612320d642e533",
+    "s12": "6d00fdd3f3f2f1daffb67747e0ea1fb63ca5c2db026df4432bf50d4c767b9daf",
+    "s2": "7129157f5e9ff4843f8c51517b28ce9dbcd6f9d657fd6f8f419bf9fd232ad903",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "3e9867402ffb3df16fe573240c8b0e6c8fda824b2eb1e7a39d962e6d09b11b91",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:19:33.240676+00:00"
+}
