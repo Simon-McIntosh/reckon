@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/budget_group.py:354 group_figures -> reserve_block_for_group",
+    "reckon/crew/dispatch_admission.py:312 _refuse_against_the_bookend_reserve -> budget_group.reserve_block_for_group",
+    "reckon/crew/budget_group.py:178 reserve_block_for_group -> all_members_review_excluded"
+  ],
+  "completed_at": "2026-10-08T14:02:45.476Z",
+  "dispatched_at": "2026-10-08T13:52:39Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "the reviewed manifest files its gate logs under test_logs rather than the dispatch contract's baseline_suite/after_suite JSON fields, so the promotion path's annotate_review_of_run (reckon/crew/review.py:1762) finds no baseline_suite/after_suite field and derives added_failure_count as unmeasured rather than 0; the two gate logs exist and both show zero failures, so the count is recoverable from the logs the manifest does name."
+    },
+    {
+      "file": "gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the head-arm log's first line names revision 24c8efb59 (the base commit) while the change is at 410cec8d15, so recorded_log_revision(head_text) returns the base sha and the stored head_log_revision contradicts reviewed_head_sha; the head arm demonstrably ran at head (215 passed = 211 base + the 4 new tests, and its command names the new test file), so the header revision is mislabelled rather than the arm misplaced."
+    },
+    {
+      "file": "docs/_shared/flight.schema.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the generated JSON schema was written although it was outside the node's seven-path declaration; it is a regenerated artifact required to keep the byte-identical schema round-trip in tests/test_flight.py green, and the manifest's follow_ons names it for the schema owner to accept or re-drive."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read line by line. budget_group.py adds all_members_review_excluded and reserve_block_for_group and routes group_figures through it; dispatch_admission.py routes the bookend-reserve refusal through reserve_block_for_group; the pydantic model and JSON schema are regenerated from the LinkML source. The two surfaces a reader consults (the wallet's group_figures report and the dispatch refusal) both move, so the lift is not confined to one path.",
+    "done_when": "I reproduced each bullet at head 410cec8d. Reserve of 0 on an all-excluded wallet: tests/test_bookend_reserve_by_group.py test_a_wallet_with_no_review_capable_member_withholds_no_reserve asserts figures.reserve_pct == 0.0. Full-ceiling implement dispatch: test_an_implement_dispatch_reaches_the_full_ceiling_on_such_a_wallet admits the implement dispatch at utilisation 0.85 past the 0.75 boundary and refuses the same reading on the review-capable wallet. Configured reserve derived at assertion time: the review-capable half reads float(config['budget'][reserve.RESERVE_KEY]) rather than a literal. Schema accepts the key and it moves the boundary: test_a_flight_layer_writes_the_key_and_moves_the_boundary resolves a layer writing bookend_reserve_pct: 35 and asserts role_ceiling_pct(implement) == 65. I ran the file at head: 4 passed EXIT=0. Negative control: I applied the declared mutation (rv all_members_review_excluded -> False) in a scratch tree and the two all-excluded cases reddened while the other two stayed green (2 failed, 2 passed, EXIT=1). Config isolation: every case runs under the guarded_home fixture, which points RECKON_HOME at a throwaway tree and asserts the real home's file census and content digests are unchanged after the case.",
+    "goal": "The node carries plan \u00a711: budget_group.all_members_review_excluded (reckon/crew/budget_group.py:136) reads the declared wallet's members and the configuration's review_excluded_backends, and reserve_block_for_group (budget_group.py:163) zeroes RESERVE_KEY on the block a wallet whose every member is excluded is judged through; group_figures (budget_group.py:354) and the dispatch refusal (reckon/crew/dispatch_admission.py:312) both judge through it, so a wallet that cannot serve a review withholds no bookend reserve and an implement dispatch reaches the group's full ceiling rather than the reserved fraction.",
+    "manifest": "Read; it records the head gate 215 passed EXIT=0, the base arm 211 passed EXIT=0 (zero added failures), the negative control red (2 failed, EXIT=1), commits 410cec8d, and changed_paths matching the diff exactly. Two manifest-shape gaps are named as findings below: the gate logs are filed under test_logs rather than the contract's baseline_suite/after_suite fields, and the head-arm log's own first line names the base revision.",
+    "write_paths": "git show --name-only 410cec8d lists seven paths: reckon/schema/flight.yaml, reckon/_flight_schema.py, reckon/crew/budget_group.py, reckon/crew/dispatch_admission.py, tests/test_bookend_reserve_by_group.py, docs/_shared/flight.schema.json, docs/evidence/fragments/a-window-paces-the-lane/a-review-excluded-group-withholds-no-reserve.html. Six are inside the node's declared write paths; docs/_shared/flight.schema.json is the generated schema, outside the declaration, which the manifest's own follow_ons names rather than hides."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node carries plan \u00a711: budget_group.all_members_review_excluded (reckon/crew/budget_group.py:136) reads the declared wallet's members and the configuration's review_excluded_backends, and reserve_block_for_group (budget_group.py:163) zeroes RESERVE_KEY on the block a wallet whose every member is excluded is judged through; group_figures (budget_group.py:354) and the dispatch refusal (reckon/crew/dispatch_admission.py:312) both judge through it, so a wallet that cannot serve a review withholds no bookend reserve and an implement dispatch reaches the group's full ceiling rather than the reserved fraction.\nVERDICT done_when: I reproduced each done-when bullet at head 410cec8d. All-excluded wallet reports 0 and reaches the ceiling: the new test file's test_a_wallet_with_no_review_capable_member_withholds_no_reserve asserts reserve_pct == 0.0 and test_an_implement_dispatch_reaches_the_full_ceiling_on_such_a_wallet admits the implement dispatch at utilisation 0.85 past the 0.75 reserve boundary while refusing the same reading on the review-capable wallet. Review-capable wallet reports the configured reserve derived at assertion time from the resolved configuration. A flight layer writing bookend_reserve_pct: 35 is accepted and moves the implement ceiling to 65. I ran tests/test_bookend_reserve_by_group.py at head: 4 passed EXIT=0. Negative control: applying the declared mutation in a scratch tree reddened exactly the two all-excluded cases (2 failed, 2 passed, EXIT=1), which I reproduced independently. Config isolation: every case runs under a fixture that redirects RECKON_HOME to a throwaway tree and asserts the real home is byte-unchanged afterwards.\nVERDICT write_paths: git show --name-only 410cec8d lists seven paths; six lie inside the node's declared write paths, and docs/_shared/flight.schema.json is a regenerated artifact outside the declaration, named in the manifest's own follow_ons.\nVERDICT manifest: read; head gate 215 passed EXIT=0, base arm 211 passed EXIT=0, negative control 2 failed EXIT=1, commits 410cec8d, changed_paths match the diff. The gate logs are filed under test_logs rather than baseline_suite/after_suite, so the wrapped added-failure derivation reads unmeasured rather than 0.\nVERDICT diff: read line by line; both surfaces a reader consults (group_figures and the dispatch refusal) move through reserve_block_for_group, and the schema slot is declared in the LinkML source with the pydantic model and JSON schema regenerated.\nCALL_SITES: reckon/crew/budget_group.py:354 group_figures -> reserve_block_for_group, reckon/crew/dispatch_admission.py:312 _refuse_against_the_bookend_reserve -> budget_group.reserve_block_for_group, reckon/crew/budget_group.py:178 reserve_block_for_group -> all_members_review_excluded\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every one of the four done-when bullets is implemented and covered, and both the wallet's own report (group_figures) and the dispatch refusal judge through the single reserve_block_for_group so the lift is not confined to one surface.\nSCORE evidence: 18\nJUSTIFICATION evidence: I reproduced the head gate (4 passed) and the negative control (2 failed) independently at 410cec8d, but the head-arm log's first line names the base revision and the manifest omits the contract's baseline_suite/after_suite fields, so the stored evidence carries two shape defects a reader must work around.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff is seven paths, six inside the declaration; the seventh, the generated JSON schema, is outside it but honestly disclosed in the manifest's follow_ons rather than hidden.\nSCORE durability: 20\nJUSTIFICATION durability: the negative control makes the all-excluded predicate false and reddens exactly the two all-excluded cases while the review-capable and schema cases stay green, so the guarded behaviour is shown to be the thing under test; expectations are read from the configuration at assertion time and every case watches the real config home.\nSCORE fit: 20\nJUSTIFICATION fit: the change sits in budget_group beside the grouping it depends on, the slot is declared in schema/flight.yaml and the pydantic model is regenerated from it, and no plan, stage or ticket label appears in the changed source or tests.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses the existing reserve module and the recovery module's own exclusion reader rather than re-deriving the exclusion list, and adds one predicate and one block helper instead of a second reserve implementation.\n",
+  "review_run_id": "r-20261008T135202240039-review-of-a-review-excluded-group-withholds-no-reserve",
+  "reviewed_base_sha": "24c8efb59e17296e2118b4e12afc6a7981d7b5de",
+  "reviewed_head_sha": "410cec8d15dba64c7814b1777bd529a1f8b1cc40",
+  "reviewed_run_id": "r-20261008T132118005275-a-review-excluded-group-withholds-no-reserve",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T14:05:00+00:00",
+  "total": 116
+}
