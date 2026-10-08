@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: head_regression.log at the reviewed head fails 5 ids, and an independently run base arm at 266574666 (reviewer_base_regression.log) fails the same 5 test_edit_plan_section_writes ids plus the delta's own new test, so the delta adds none. The run stores its gate logs under test_logs rather than baseline_suite/after_suite and its own base regression arm is truncated (base_regression.log carries no summary), so the reviewer re-ran the base arm; head failures minus base failures over the shared set is 0.",
+  "base_log_revision": "786c5ba86a76d00549da0455b02e9cae31b58a6c",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:3577",
+    "reckon/mcp.py:3751",
+    "reckon/_store.py:1201"
+  ],
+  "completed_at": "2026-10-08T05:37:20.294Z",
+  "dispatched_at": "2026-10-08T05:00:33Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "3265",
+      "severity": "follow-on",
+      "text": "follow-on: on a read failure _status_before_the_patch falls back to the state's own status, which on the patch path is the requested terminal, so the section guard is silently disabled and an open-section plan can land whenever the stored plan is momentarily unreadable; its sibling _followups_before_the_patch at reckon/_store.py:3228 fails closed. Reproduced by raising OSError from read_plan: no section refusal is raised and only the unrelated evidence-record guard answers."
+    },
+    {
+      "file": "tests/test_terminal_status_needs_every_section_ticked.py",
+      "line": "127",
+      "severity": "follow-on",
+      "text": "follow-on: the test pops project and slug to reach the fallback branch, so the production grandfathering case (a plan stored at done holding an open section, patched with project and slug present) is covered by no test at the reviewed head."
+    }
+  ],
+  "head_log_revision": "4de09c126e38d631d0ee9e7eaeeed8e3c626c6e5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 266574666; b70f47ee3 adds _status_before_the_patch (reckon/_store.py:3251) and keys the section guard on the stored status not already being terminal (reckon/_store.py:3306-3309), adding two tests; 4de09c126 rewrites the evidence fragment to record the repair and its negative control.",
+    "done_when": "the section-6 done_when asks for a recorded census and two refusal tests that fail at base; the census is recorded (census.log, 15 projects / 374 plans / 213 terminal / 17 terminal-with-open-section) and the gate tests/test_terminal_status_needs_every_section_ticked.py reads 7 passed EXIT=0 at the reviewed head, with base_arm.log at 786c5ba8 showing the refusal tests DID NOT RAISE (4 failed, EXIT=1) and patch_keying_negative_control.log failing the already-terminal patch test (1 failed, 6 passed).",
+    "goal": "read the node goal for section 6 and the two delta commits (b70f47ee3, 4de09c126); the fix makes validate_landing_patch run the open-section guard only on the transition into shipped/done, matching apply_ops and _write_state_locked, and a probe at the reviewed head confirms an already-terminal plan is no longer re-judged while a genuine landing still raises terminal status refused: 1 section(s) still open (s2).",
+    "manifest": "read the run's manifest; it records the gate 7 passed EXIT=0, the base arm 4 failed EXIT=1 and the patch-keying negative control, and it carries the nine-file regression result (195 passed, 5 failed) under follow_ons as an order-dependent insert_section flake, candid about its truncated base comparison.",
+    "write_paths": "read the reviewed run's declared paths (reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py, docs/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/a-plan-reaches-done-only-when-every-section-is-ticked.html, docs/figures/a-plan-is-done-when-every-section-is-ticked/); the two delta commits change only reckon/_store.py, the test file and the evidence fragment, every one inside them."
+  },
+  "justifications": {
+    "durability": "the two added tests fail at base 266574666 (reviewer_base_regression.log, base_arm.log), but test_the_patch_writer_does_not_rejudge_an_already_terminal_plan at tests/test_terminal_status_needs_every_section_ticked.py:127 exercises the unreadable-stored fallback rather than the production grandfathering path.",
+    "evidence": "base_arm.log and patch_keying_negative_control.log carry revision/tree/command headers and an EXIT line, but head_arm.log holds only '7 passed' with no header and no EXIT sentinel, so the head receipt rests on the reviewer's own reproduction (reviewer_head_gate.log).",
+    "fit": "_status_before_the_patch at reckon/_store.py:3251 mirrors _followups_before_the_patch at reckon/_store.py:3216 (same project/slug read, same except tuple) and reuses the existing _require_every_section_ticked site.",
+    "goal_fidelity": "reckon/_store.py:3306 keys the guard on _status_before_the_patch being non-terminal, so a genuine landing is refused and an already-terminal plan is grandfathered, exactly as the delta states; the fallback at reckon/_store.py:3270 is the one gap (see the finding).",
+    "reuse": "the fix reads the one stored-status source (read_plan, reckon/_store.py:1417) and the one terminal predicate TERMINAL_STATUSES (reckon/lifecycle.py:9) rather than re-deriving either.",
+    "scope_discipline": "the delta touches only reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py and the section-6 evidence fragment, all four declared write paths minus the untouched docs/figures directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal for section 6 and the two delta commits (b70f47ee3, 4de09c126); the fix makes validate_landing_patch run the open-section guard only on the transition into shipped/done, matching apply_ops and _write_state_locked, and a probe at the reviewed head confirms an already-terminal plan is no longer re-judged while a genuine landing still raises terminal status refused: 1 section(s) still open (s2).\nVERDICT done_when: the section-6 done_when asks for a recorded census and two refusal tests that fail at base; the census is recorded (census.log, 15 projects / 374 plans / 213 terminal / 17 terminal-with-open-section) and the gate tests/test_terminal_status_needs_every_section_ticked.py reads 7 passed EXIT=0 at the reviewed head, with base_arm.log at 786c5ba8 showing the refusal tests DID NOT RAISE (4 failed, EXIT=1) and patch_keying_negative_control.log failing the already-terminal patch test (1 failed, 6 passed).\nVERDICT write_paths: read the reviewed run's declared paths (reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py, docs/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/a-plan-reaches-done-only-when-every-section-is-ticked.html, docs/figures/a-plan-is-done-when-every-section-is-ticked/); the two delta commits change only reckon/_store.py, the test file and the evidence fragment, every one inside them.\nVERDICT manifest: read the run's manifest; it records the gate 7 passed EXIT=0, the base arm 4 failed EXIT=1 and the patch-keying negative control, and it carries the nine-file regression result (195 passed, 5 failed) under follow_ons as an order-dependent insert_section flake, candid about its truncated base comparison.\nVERDICT diff: read commit by commit against base 266574666; b70f47ee3 adds _status_before_the_patch (reckon/_store.py:3251) and keys the section guard on the stored status not already being terminal (reckon/_store.py:3306-3309), adding two tests; 4de09c126 rewrites the evidence fragment to record the repair and its negative control.\nCALL_SITES: reckon/serve.py:3577, reckon/mcp.py:3751, reckon/_store.py:1201\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:3306 keys the guard on _status_before_the_patch being non-terminal, so a genuine landing is refused and an already-terminal plan is grandfathered, exactly as the delta states; the fallback at reckon/_store.py:3270 is the one gap (see the finding).\nSCORE evidence: 16\nJUSTIFICATION evidence: base_arm.log and patch_keying_negative_control.log carry revision/tree/command headers and an EXIT line, but head_arm.log holds only '7 passed' with no header and no EXIT sentinel, so the head receipt rests on the reviewer's own reproduction (reviewer_head_gate.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py and the section-6 evidence fragment, all four declared write paths minus the untouched docs/figures directory.\nSCORE durability: 16\nJUSTIFICATION durability: the two added tests fail at base 266574666 (reviewer_base_regression.log, base_arm.log), but test_the_patch_writer_does_not_rejudge_an_already_terminal_plan at tests/test_terminal_status_needs_every_section_ticked.py:127 exercises the unreadable-stored fallback rather than the production grandfathering path.\nSCORE fit: 20\nJUSTIFICATION fit: _status_before_the_patch at reckon/_store.py:3251 mirrors _followups_before_the_patch at reckon/_store.py:3216 (same project/slug read, same except tuple) and reuses the existing _require_every_section_ticked site.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fix reads the one stored-status source (read_plan, reckon/_store.py:1417) and the one terminal predicate TERMINAL_STATUSES (reckon/lifecycle.py:9) rather than re-deriving either.\nFINDING reckon/_store.py:3265 follow-on: on a read failure _status_before_the_patch falls back to the state's own status, which on the patch path is the requested terminal, so the section guard is silently disabled and an open-section plan can land whenever the stored plan is momentarily unreadable; its sibling _followups_before_the_patch at reckon/_store.py:3228 fails closed. Reproduced by raising OSError from read_plan: no section refusal is raised and only the unrelated evidence-record guard answers.\nFINDING tests/test_terminal_status_needs_every_section_ticked.py:127 follow-on: the test pops project and slug to reach the fallback branch, so the production grandfathering case (a plan stored at done holding an open section, patched with project and slug present) is covered by no test at the reviewed head.",
+  "review_run_id": "r-20261008T045928252512-review-of-a-plan-reaches-done-only-when-every-section-is-ticked",
+  "reviewed_base_sha": "26657466689deabf0b63dcab52a239995d5c041d",
+  "reviewed_head_sha": "4de09c126e38d631d0ee9e7eaeeed8e3c626c6e5",
+  "reviewed_run_id": "r-20261008T025558982950-a-plan-reaches-done-only-when-every-section-is-ticked",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:37:48.733696+00:00",
+  "total": 110
+}
