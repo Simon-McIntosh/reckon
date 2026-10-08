@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:805 (gather_sources -> _wallet_map(wanted, _resolved_config(project, root)))",
+    "reckon/crew/paid_lanes.py:951 (_codex_rollout_candidates joins accounts whose declared wallet equals the rollout account's)"
+  ],
+  "completed_at": "2026-10-08T02:56:57.853Z",
+  "dispatched_at": "2026-10-08T02:25:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "943",
+      "severity": "note",
+      "text": "resolved: the name-prefix join the prior review flagged at :900 (name.startswith(\"codex\")) and :904 (profile.startswith(\"codex\")) is replaced by a declaration-based wallet join; the run's own backend still joins by identity (profile in accounts). Verified by the two new tests and an independent negative control in which restoring the prefix join reddens both."
+    },
+    {
+      "file": "manifest.md",
+      "line": "after_suite",
+      "severity": "evidence-defect",
+      "text": "after_suite.log_path names runs/r-20261008T004712736537-picker-joins-codex-by-lane/head_new.log, which does not exist at that path; the matching 459-passed log survives only at node-local /tmp/head_new.log, outside the run directory a later reader resolves. The head arm is reproducible at the reviewed head (my head-gate.log) but the cited receipt is not openable."
+    },
+    {
+      "file": "manifest.md",
+      "line": "baseline_suite",
+      "severity": "evidence-defect",
+      "text": "baseline_suite.command carries angle-bracket placeholders an absolute command may not carry, and the matching gate logs (base-new.log and the /tmp head log) carry neither the required revision/tree/command header nor a terminal EXIT= line; base-new.log ends at its summary with no EXIT line at all. The head arm the manifest records is readable only from the manifest's own after_suite block, never from a gate log at the cited path."
+    },
+    {
+      "file": "manifest.md",
+      "line": "orientation_write_paths",
+      "severity": "record-fidelity",
+      "text": "orientation_write_paths is not the dispatch-time value: it was rewritten during the resumed attempt to add reckon/crew/paid_lanes.py and tests/test_paid_lanes_codex_window.py and drop the declared docs/figures path. The paid_lanes.py grant is on record in the resume advice, so this is an amendment rather than a concealed expansion, but the orientation field no longer states what the fence granted at dispatch. orientation_base_sha also carries a transposed digit (7c882130dec0022ba... versus the actual ...0027b...)."
+    }
+  ],
+  "head_log_revision": "685f7a0043c93e8dd37cd9306ddf7537cedbf4cb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against the previously reviewed head aa56ba6f9; 685f7a004 replaces the two startswith(\"codex\") wallet tests in reckon/crew/paid_lanes.py with _wallet_map/_resolved_config and a wallet-equality match in _codex_rollout_candidates, aligns tests/test_paid_lanes_codex_window.py's stub config to declare budget_group, and adds two publisher tests to tests/test_picker_joins_codex_by_lane.py; 9aff46e1e records the publisher measure and the widened gate in the landing fragment.",
+    "done_when": "the widened gate is the picker targets plus every tests/ module importing reckon.crew.paid_lanes; the reviewed run records base 449 and head 459 passed; I independently ran the same widened target set at reviewed head 9aff46e1e in a scratch extraction and got 459 passed EXIT=0, and reproduced the control (name-prefix join restored -> 2 failed EXIT=1).",
+    "goal": "the resume directive is to replace the codex name-prefix profile join with a join on the declared budget_group (else the catalogue lane) and to add cases to tests/test_picker_joins_codex_by_lane.py; both land at reckon/crew/paid_lanes.py:832 (_wallet_map) feeding the matching block at :951, with the two new tests exercising the catalogue-lane path and the budget-group path.",
+    "manifest": "read; baseline_suite and after_suite both record failure_count 0, so added_failure_count 0. The after_suite log_path is missing in the run directory and the baseline command carries placeholders; the substance is independently confirmed but the baseline arm the manifest records has no readable EXIT line.",
+    "write_paths": "the run's dispatch scope was five paths (outcomes.py, lane_context.py, test_picker_joins_codex_by_lane.py, the fragment, the figures path); the resumed node added paid_lanes.py under the resume advice's explicit grant and tests/test_paid_lanes_codex_window.py as a disclosed fixture alignment. Every path in the two new commits is authorised or disclosed."
+  },
+  "justifications": {
+    "durability": "the negative control is two-sided: restoring the prefix join can only fail if the new tests actually constrain the code, and it reddens both new tests (catalogue-lane and budget-group) while the unmutated head passes; tests assert the negative direction too (LOOKALIKE_NAMES utilisation is None) rather than only the positive.",
+    "evidence": "the gate claim is true and independently reproduced (459 passed EXIT=0 at reviewed head 9aff46e1e), but the reviewed run's cited head log does not exist at its recorded path, its baseline command carries banned placeholders, and neither arm's log carries the required header or EXIT line; the receipt a coordinator can open is not at the recorded location.",
+    "fit": "the changed code carries mechanism-honest names (_wallet_map, _resolved_config, wallet) with no plan, ticket or version labels, and its docstrings state the join rule itself rather than citing the run that motivated it.",
+    "goal_fidelity": "the join is now declared rather than resemblance-based exactly as the directive asks: budget_group first, catalogue lane second, lookalikes that resolve to no lane left their own; the previous review's paid_lanes follow-on is closed.",
+    "reuse": "the helper folds onto the existing owners (budget_group.declared_group_for and ledger.resolve_name) rather than reimplementing them, forking no capability."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the resume directive is to replace the codex name-prefix profile join with a join on the declared budget_group (else the catalogue lane) and to add cases to tests/test_picker_joins_codex_by_lane.py; both land at reckon/crew/paid_lanes.py:832 (_wallet_map) feeding the matching block at :951, with the two new tests exercising the catalogue-lane path and the budget-group path.\nVERDICT done_when: the widened gate is the picker targets plus every tests/ module importing reckon.crew.paid_lanes; the reviewed run records base 449 and head 459 passed; I independently ran the same widened target set at reviewed head 9aff46e1e in a scratch extraction and got 459 passed EXIT=0, and reproduced the control (name-prefix join restored -> 2 failed EXIT=1).\nVERDICT diff: read both commits against the previously reviewed head aa56ba6f9; 685f7a004 replaces the two startswith(\"codex\") wallet tests in reckon/crew/paid_lanes.py with _wallet_map/_resolved_config and a wallet-equality match in _codex_rollout_candidates, aligns tests/test_paid_lanes_codex_window.py's stub config to declare budget_group, and adds two publisher tests to tests/test_picker_joins_codex_by_lane.py; 9aff46e1e records the publisher measure and the widened gate in the landing fragment.\nVERDICT manifest: read; baseline_suite and after_suite both record failure_count 0, so added_failure_count 0; the after_suite log_path is missing in the run directory and the baseline command carries placeholders, so the baseline arm has no readable EXIT= line.\nCALL_SITES: reckon/crew/paid_lanes.py:805 (gather_sources -> _wallet_map(wanted, _resolved_config(project, root))), reckon/crew/paid_lanes.py:951 (_codex_rollout_candidates joins accounts whose declared wallet equals the rollout account's)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the join is now declared rather than resemblance-based exactly as the directive asks: budget_group first, catalogue lane second, lookalikes that resolve to no lane left their own; the prior review's paid_lanes follow-on is closed.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate claim is true and independently reproduced (459 passed EXIT=0), but the cited head log does not exist at its recorded run-directory path, the baseline command carries banned placeholders, and neither arm's log carries the required header or the EXIT= line.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: paid_lanes.py is explicitly granted by the resume advice and the test_paid_lanes_codex_window.py fixture edit is a necessary, disclosed alignment; orientation_write_paths was rewritten during the run to reflect the grant rather than the dispatch-time fence.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control is two-sided, reddens both new tests while the head passes, and the tests assert the negative direction (lookalikes unobserved) as well as the positive.\nSCORE fit: 20\nJUSTIFICATION fit: mechanism-honest names, no plan/ticket/version labels, docstrings state the rule rather than citing the run that motivated it.\nSCORE reuse: 20\nJUSTIFICATION reuse: _wallet_map folds onto budget_group.declared_group_for and ledger.resolve_name, forking no capability.\nFINDING reckon/crew/paid_lanes.py:943 note: the name-prefix join flagged by the prior review is replaced by a declaration-based wallet join; independently verified by negative control.\nFINDING manifest.md:after_suite evidence-defect: after_suite.log_path names a head_new.log that does not exist in the run directory; the 459-passed log survives only at node-local /tmp/head_new.log.\nFINDING manifest.md:baseline_suite evidence-defect: baseline_suite.command carries angle-bracket placeholders and the gate logs lack the required header and terminal EXIT= line.\nFINDING manifest.md:orientation_write_paths record-fidelity: the orientation fields were rewritten during the resumed attempt (paid_lanes.py and the fixture added, figures path dropped; base sha transposed).\nreviewed_base_sha: aa56ba6f9c2c1f4a7baac10d345c502544d1e82c\nreviewed_head_sha: 9aff46e1e2a45ffde91dc2d514d108abe04b8d13\n",
+  "review_run_id": "r-20261008T022410864497-review-of-picker-joins-codex-by-lane",
+  "reviewed_base_sha": "aa56ba6f9c2c1f4a7baac10d345c502544d1e82c",
+  "reviewed_head_sha": "9aff46e1e2a45ffde91dc2d514d108abe04b8d13",
+  "reviewed_run_id": "r-20261008T004712736537-picker-joins-codex-by-lane",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T02:59:23.081266+00:00",
+  "total": 110
+}
