@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log, so the read path (read_review -> annotate_review_of_run) reports the added-failure count unmeasured rather than zero; supplemental: the reviewed run's own arm logs hold no FAILED/ERROR id \u2014 baseline.log 54 passed, repair_surface.log 105 passed \u2014 so the material added-failure count for the reviewed delta is 0.",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_backends.py:3285 (launch_plan -> seed_harness_home -> _seed_worker_mcp_settings)",
+    "reckon/crew/dispatch.py:1546",
+    "reckon/crew/dispatch_sessions.py:1096"
+  ],
+  "completed_at": "2026-10-08T07:16:16.020Z",
+  "dispatched_at": "2026-10-08T06:57:56Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/an-mcp-failure-names-its-cause/workers-seed-only-named-mcp-servers.html",
+      "line": "28",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states test_fence_is_on_again.py was \"granted to this round's write scope\", but the reviewed run's own manifest (blockers) says \"the resumed run's live record was not widened \u2014 node.write_paths still holds the original four paths\", so the fragment records a scope grant that exists only as repair-round prose and is not readable by the mechanical scope check."
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": "334",
+      "severity": "follow-on",
+      "text": "follow-on: _schema_view pops harness_home_files, harness_home_adjacent_files, sprint_recent_days and the review-owned keys but not worker_mcp_servers, so a project cannot declare the key and the named-server half of \u00a77 is unreachable in production (measured: FlightConfigError 'Extra inputs are not permitted'); the run declares this as a follow-on and it holds."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; 8a0f0d6e6 makes worker_mcp_servers default None (reckon/_backends.py:2152), guards the seed write on `worker_mcp_servers is not None` (:2228), passes None from launch_plan when fence_config is None (:3294-3299), reverts the operator-config test, and updates the fragment.",
+    "done_when": "\u00a77's done-when names tests/test_worker_mcp_servers.py; the run records that file green (gate_head.log 7 passed EXIT=0) and the repair surface arm green (repair_surface.log 105 passed EXIT=0), with the declared negative control repair_declared_negative.log red EXIT=1 at 4 test ids the head arm passes.",
+    "goal": "the node goal is \u00a77 of an-mcp-failure-names-its-cause: a dispatched worker's harness starts the reckon server and no project MCP server unless the project asks for one; the delta keeps the disable half for a resolved-config launch at reckon/_backends.py:3294-3299, but the opt-in half stays unreachable because reckon/flight.py:334 _schema_view does not exempt worker_mcp_servers (measured: resolve(overrides={\"worker_mcp_servers\": [\"imas-cx\"]}) raised FlightConfigError 'Extra inputs are not permitted').",
+    "manifest": "read; it lists changed_paths of four paths, commits 8c9e4276e/700fc0f62/8a0f0d6e6, test_logs incl. gate_head.log and repair_surface.log and the declared negative control, and itself flags that tests/test_fence_is_on_again.py sits outside the un-widened write_paths.",
+    "write_paths": "\u00a77 declares only reckon/_backends.py and tests/test_worker_mcp_servers.py; the delta 700fc0f62..8a0f0d6e6 touches the declared reckon/_backends.py and the evidence fragment, and reverts tests/test_harness_home_carries_the_operator_config.py to base (git diff c5afaf59e 8a0f0d6e6 for that file is empty), so the delta adds nothing outside scope."
+  },
+  "justifications": {
+    "durability": "repair_gate_negative.log shows dropping the config gate returns tests/test_harness_home_carries_the_operator_config.py to FAILED EXIT=1 against its unchanged set(seeded)=={\"hooks\"} assertion, so the delta's new guard reddens if reverted.",
+    "evidence": "the delta's arms are recorded \u2014 repair_surface.log 105 passed EXIT=0 and repair_declared_negative.log 4 failed EXIT=1 \u2014 but tests/test_worker_mcp_servers.py still injects fence_config directly, so no arm exercises the opt-in through flight resolution.",
+    "fit": "the None default and the `is not None` guard at reckon/_backends.py:2152 and :2228 follow the module's Optional-parameter idiom and the added comments state the mechanism, carrying no plan label or attribution.",
+    "goal_fidelity": "reckon/_backends.py:3294-3299 keeps the disable half for a resolved-config launch (a dispatched worker still seeds enableAllProjectMcpServers false), but reckon/flight.py:334 leaves worker_mcp_servers out of _schema_view's removal set so the opt-in half is inert (measured refusal).",
+    "reuse": "the delta only gates the existing _seed_worker_mcp_settings write and forks no capability; a search of reckon/ for enableAllProjectMcpServers found no second writer.",
+    "scope_discipline": "the delta's only non-declared file, tests/test_harness_home_carries_the_operator_config.py, is reverted to base (git diff c5afaf59e 8a0f0d6e6 for it is empty), and the other two paths are declared."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-workers-seed-only-named-mcp-servers",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \u00a77 of an-mcp-failure-names-its-cause: a dispatched worker's harness starts the reckon server and no project MCP server unless the project asks for one; the delta keeps the disable half for a resolved-config launch at reckon/_backends.py:3294-3299, but the opt-in half stays unreachable because reckon/flight.py:334 _schema_view does not exempt worker_mcp_servers (measured: resolve(overrides={\"worker_mcp_servers\": [\"imas-cx\"]}) raised FlightConfigError 'Extra inputs are not permitted').\nVERDICT done_when: \u00a77's done-when names tests/test_worker_mcp_servers.py; the run records that file green (gate_head.log 7 passed EXIT=0) and the repair surface arm green (repair_surface.log 105 passed EXIT=0), with the declared negative control repair_declared_negative.log red EXIT=1 at 4 test ids the head arm passes.\nVERDICT write_paths: \u00a77 declares only reckon/_backends.py and tests/test_worker_mcp_servers.py; the delta 700fc0f62..8a0f0d6e6 touches the declared reckon/_backends.py and the evidence fragment, and reverts tests/test_harness_home_carries_the_operator_config.py to base (git diff c5afaf59e 8a0f0d6e6 for that file is empty), so the delta adds nothing outside scope.\nVERDICT manifest: read; it lists changed_paths of four paths, commits 8c9e4276e/700fc0f62/8a0f0d6e6, test_logs incl. gate_head.log and repair_surface.log and the declared negative control, and itself flags that tests/test_fence_is_on_again.py sits outside the un-widened write_paths.\nVERDICT diff: read commit by commit; 8a0f0d6e6 makes worker_mcp_servers default None (reckon/_backends.py:2152), guards the seed write on `worker_mcp_servers is not None` (:2228), passes None from launch_plan when fence_config is None (:3294-3299), reverts the operator-config test, and updates the fragment.\nCALL_SITES: verified 3 production call site(s)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3294-3299 keeps the disable half for a resolved-config launch (a dispatched worker still seeds enableAllProjectMcpServers false), but reckon/flight.py:334 leaves worker_mcp_servers out of _schema_view's removal set so the opt-in half is inert (measured refusal).\nSCORE evidence: 15\nJUSTIFICATION evidence: the delta's arms are recorded \u2014 repair_surface.log 105 passed EXIT=0 and repair_declared_negative.log 4 failed EXIT=1 \u2014 but tests/test_worker_mcp_servers.py still injects fence_config directly, so no arm exercises the opt-in through flight resolution.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the delta's only non-declared file, tests/test_harness_home_carries_the_operator_config.py, is reverted to base (git diff c5afaf59e 8a0f0d6e6 for it is empty), and the other two paths are declared.\nSCORE durability: 18\nJUSTIFICATION durability: repair_gate_negative.log shows dropping the config gate returns tests/test_harness_home_carries_the_operator_config.py to FAILED EXIT=1 against its unchanged set(seeded)=={\"hooks\"} assertion, so the delta's new guard reddens if reverted.\nSCORE fit: 19\nJUSTIFICATION fit: the None default and the `is not None` guard at reckon/_backends.py:2152 and :2228 follow the module's Optional-parameter idiom and the added comments state the mechanism, carrying no plan label or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta only gates the existing _seed_worker_mcp_settings write and forks no capability; a search of reckon/ for enableAllProjectMcpServers found no second writer.\nFINDING docs/evidence/fragments/an-mcp-failure-names-its-cause/workers-seed-only-named-mcp-servers.html:28 follow-on: the fragment states test_fence_is_on_again.py was \"granted to this round's write scope\", but the reviewed run's own manifest (blockers) says \"the resumed run's live record was not widened \u2014 node.write_paths still holds the original four paths\", so the fragment records a scope grant that exists only as repair-round prose and is not readable by the mechanical scope check.\nFINDING reckon/flight.py:334 follow-on: _schema_view pops harness_home_files, harness_home_adjacent_files, sprint_recent_days and the review-owned keys but not worker_mcp_servers, so a project cannot declare the key and the named-server half of \u00a77 is unreachable in production (measured: FlightConfigError 'Extra inputs are not permitted'); the run declares this as a follow-on and it holds.\nreviewed_base_sha: 700fc0f624cbc32f25bb757f7254d7bbbb62c3f5\nreviewed_head_sha: 8a0f0d6e6c7cca73b4c62719f6c9bf1a235d8927\n",
+  "review_run_id": "r-20261008T065716456795-review-of-workers-seed-only-named-mcp-servers",
+  "reviewed_base_sha": "700fc0f624cbc32f25bb757f7254d7bbbb62c3f5",
+  "reviewed_head_sha": "8a0f0d6e6c7cca73b4c62719f6c9bf1a235d8927",
+  "reviewed_run_id": "r-20261008T044322676562-workers-seed-only-named-mcp-servers",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:11:29.788617+00:00",
+  "total": 106
+}
