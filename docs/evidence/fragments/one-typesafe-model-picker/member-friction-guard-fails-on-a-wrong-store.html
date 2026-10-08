@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="member-friction-guard-fails-on-a-wrong-store"><meta name="plan-title" content="The member-friction guard fails when its store path is wrong">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s20">
+<meta name="plan-recorded-at" content="2026-10-08"><meta name="plan-verdict" content="measurement">
+<title>The member-friction guard fails when its store path is wrong | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="member-friction-guard-fails-on-a-wrong-store" id="member-friction-guard-fails-on-a-wrong-store">
+<h1>The member-friction guard fails when its store path is wrong</h1>
+<p id="member-friction-guard-fails-on-a-wrong-store-record">The member-friction guard test compared <code>_guard_store()</code> against <code>real_store_home()</code>, the same helper the guard calls, so on the standard XDG layout a guard reverted to a path literal stayed green. The test now sets <code>HOME</code> to a temporary directory and <code>RECKON_HOME</code> to a second, unrelated directory with <code>RECKON_GUARD_HOME</code> unset, and asserts the guard's target against a path written out in the test. Two cases cover the resolver's branches: with <code>.config/reckon</code> under HOME the guard must return <code>&lt;HOME&gt;/.config/reckon</code>, and without it the resolver's legacy branch must return <code>&lt;HOME&gt;/docs-server</code>. Only the legacy case separates the resolver from the XDG literal, which matches the XDG case too.</p>
+<p id="member-friction-guard-fails-on-a-wrong-store-reproduction">Before the change, replacing <code>_guard_store()</code>'s body with the literal <code>Path.home() / ".config" / "reckon"</code> left all six tests in <code>tests/test_member_friction.py</code> green (<code>6 passed</code>) — the guard guarded nothing.</p>
+<p id="member-friction-guard-fails-on-a-wrong-store-controls">The XDG-literal mutation now fails <code>test_isolation_guard_watches_the_legacy_store_home</code> and passes the XDG case (1 failed, 6 passed). The keep-<code>RECKON_HOME</code> mutation, which returns the second directory, fails both <code>test_isolation_guard_watches_the_xdg_store_home</code> and <code>test_isolation_guard_watches_the_legacy_store_home</code> (2 failed, 5 passed).</p>
+<p id="member-friction-guard-fails-on-a-wrong-store-gate">The gate — <code>tests/test_member_friction.py</code>, <code>tests/test_no_test_spawns_a_provider.py</code>, and every file using the <code>isolated_project</code> fixture (26 files) — runs 200 passed at the base revision and 201 passed at head, zero added failures.</p>
+</article></main></body></html>

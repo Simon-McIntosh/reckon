@@ -168,15 +168,59 @@ def isolated_project(
     _assert_isolation(_guard_store())
 
 
-def test_isolation_guard_watches_the_escape_destination(
+def _isolated_guard_home(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, legacy: bool
+) -> tuple[Path, Path]:
+    """Point the guard at a HOME this test owns, with RECKON_HOME elsewhere.
+
+    With ``RECKON_GUARD_HOME`` unset the guard resolves the real crew home, so
+    it must reach the home ``HOME`` names and never the second directory
+    ``RECKON_HOME`` names — the one a dispatcher bypassing it would miss. When
+    ``legacy`` is false ``.config/reckon`` exists under HOME, so the resolver
+    takes its XDG branch; when true it is left out, so the resolver falls to the
+    legacy ``docs-server`` branch.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    if not legacy:
+        (home / ".config" / "reckon").mkdir(parents=True)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.delenv("RECKON_GUARD_HOME", raising=False)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("RECKON_HOME", str(elsewhere))
+    return home, elsewhere
+
+
+def test_isolation_guard_watches_the_xdg_store_home(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The guard's default target is the real crew home — where an escaped
-    write lands — not a fixture directory nothing writes."""
-    monkeypatch.delenv("RECKON_GUARD_HOME", raising=False)
-    watched = _guard_store()
-    assert watched == real_store_home()
-    assert tmp_path not in watched.parents
+    """With .config/reckon under HOME the guard watches <HOME>/.config/reckon.
+
+    The expectation is written out here rather than read from the helper the
+    guard calls, so a guard that returned a fixed path would fail. On the
+    standard layout the XDG path literal matches this case too, so it does not
+    separate the resolver from a literal — the legacy case below does.
+    """
+    home, elsewhere = _isolated_guard_home(monkeypatch, tmp_path, legacy=False)
+
+    assert _guard_store() == home / ".config" / "reckon"
+    assert _guard_store() != elsewhere
+
+
+def test_isolation_guard_watches_the_legacy_store_home(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """With no .config/reckon under HOME the guard follows the legacy branch.
+
+    The resolver must return <HOME>/docs-server here. This is the case that
+    separates the resolver from the XDG path literal: a guard that returned
+    ``Path.home() / ".config" / "reckon"`` fails only here.
+    """
+    home, elsewhere = _isolated_guard_home(monkeypatch, tmp_path, legacy=True)
+
+    assert _guard_store() == home / "docs-server"
+    assert _guard_store() != elsewhere
 
 
 def test_isolation_guard_refuses_a_fixture_named_write(
