@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T14:09:20.953Z",
+  "dispatched_at": "2026-10-08T13:54:32Z",
+  "findings": [
+    {
+      "anchor": "one-typesafe-model-picker.html:23",
+      "id": "wiring-1",
+      "reason": "without the edge \u00a724 can be dispatched before \u00a712's picker cache lands, into a picker/__init__.py that lacks the code the section repairs, which is the collision the \u00a714/\u00a715/\u00a719 edges exist to prevent.",
+      "text": "\u00a724 depends on \u00a712's second node (r-20261008T124144038643, commit 4821665f8) and writes reckon/crew/picker/__init__.py, the file \u00a712's node introduces and \u00a712 owns; plan-section-depends-on declares no s24\u2192s12 edge, while \u00a714 (picker/outcomes.py), \u00a715 (dispatch_picker.py) and \u00a719 (picker/prompts.py, picker/snapshot.py) each declare a one-typesafe-model-picker#s12 edge for exactly the same reason \u2014 a section writing into \u00a712's paths \u2014 so a coordinator reading the roadmap sees \u00a724 as ready while its target file and tests/test_pick_stages_fit_the_bound.py do not exist on main",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "270f403944b19b94ecb86724abef2a448f629a6d62e1b021610460fe149f14ef",
+  "plan_slug": "one-typesafe-model-picker",
+  "plan_version": 244,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "\u00a724's prose names its introducing run and commit and says to dispatch after \u00a712's second node lands, which it does in this sitting after the full-suite merge check; a typed edge to a done section would hold \u00a724 until roadmap.py's _section_satisfied reads a done declaration (a-plan-is-done-when-every-section-is-ticked \u00a79), the same reason \u00a722's and \u00a723's edges were declined.",
+      "when": "2026-10-08T14:10:14.484619+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a724's prose names its introducing run and commit and says to dispatch after \u00a712's second node lands, which it does in this sitting after the full-suite merge check; a typed edge to a done section would hold \u00a724 until roadmap.py's _section_satisfied reads a done declaration (a-plan-is-done-when-every-section-is-ticked \u00a79), the same reason \u00a722's and \u00a723's edges were declined.",
+      "when": "2026-10-08T14:10:14.484619+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-one-typesafe-model-picker.v244.json",
+  "review_run_id": "r-20261008T135400460583-plan-review-of-one-typesafe-model-picker",
+  "reviewed_blob_sha": "3bac485a8a0e8789ac98feb2b6c02840a53398f1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit 4821665f8, run r-20261008T124144038643-pick-stages-fit-the-bound, tests/test_pick_stages_fit_the_bound.py, stamp_of, ledger._file_identity and capabilities.file_stamp all resolve at that run's head (the file and symbols are absent from main only because the run is not yet merged, which the section states).",
+    "done_when": "pass \u2014 the done-when names a negative control (the renamed-plan case fails when the cache serves the old resolution) and a second measurable clause (stamp_of calls no private ledger name).",
+    "evidence_paths": "pass \u2014 \u00a724 writes no evidence to a session scratchpad or a node-local path; its gate is the test module it owns, which lives under tests/.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach code, and every symbol named (stamp_of, file_stamp, _file_identity, _resolved_plan_path) is mechanism-named.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited review record's own findings, the mechanism (renamed-plan case plus the sanctioned stamp helper) produces the done-when, and the mechanism runs on the production path: pick()'s capability stage calls _resolved_plan_path at reckon/crew/picker/__init__.py, whose result feeds _section_effort_hours and resolve_section_routing, and the cited review record (r-20261008T124144038643-pick-stages-fit-the-bound.json, reviewed_head_sha 4821665f8, total 96, added_failure_count 0) carries exactly the two code findings the section names.",
+    "single_goal": "pass \u2014 both work items serve the one goal of the pick's plan-cache stamp, and one done-when covers both.",
+    "wiring": "a finding \u2014 \u00a724 repairs \u00a712's picker cache yet writes reckon/crew/picker/__init__.py, the file \u00a712 owns, and plan-section-depends-on (line 23) declares no s24\u2192s12 edge while \u00a714, \u00a715 and \u00a719 declare theirs for the same shared-write-path reason."
+  },
+  "section_digests": {
+    "_document": "67086ffcdd2853a953937429f01eb1874522310924beda12c3160d64ac8f3b49",
+    "s1": "3dd077bfa248eda6f6c24717a04df3458940aa1ce4b181140912e4be27342432",
+    "s10": "f8cea7db03e6ce1a59ee44f2b9bafe7cdd9ef466468807c3d5318193033ccbc9",
+    "s11": "1d394a8f1735f908f234eebae944b87de35bf29d61262044f141232459adc254",
+    "s12": "af11de0f4676d5bce82108292ff4bd53ef3cf4be79b9cde147ff02353e45ad19",
+    "s13": "b71eac6d273258ccac40c54d461300de9ca3d357c0aab3578ddd33d5af2cf85f",
+    "s14": "80e1aab6a3adcfc393f8eb96e4e2c521d214a091f339171692887d357aa12ded",
+    "s15": "d843acc145f2b949becb689478c1f35cd64798d88961327eb9ea48133cbd7952",
+    "s16": "ab68bc3a9d2b0f85a253ab2145a45f0685be101e187b6cd4acff11a215b7c1f0",
+    "s17": "df94e0673bf16ca4e597c2521a40a7b4182c803246232961a80c3f1a2290f5ea",
+    "s18": "2fc0286d6b14797e2ab8abd784cdc37a53b8becd7a41a5194140a99df5555ff5",
+    "s19": "80093ee76ea44f51b96b2e98eb3e696df50a928a8ec0ab0f13708c7ed589ba09",
+    "s2": "eacf32d1b5ac595aa7c3d40ee1b27dd2d2950ad725cff0f6d45bcd2ffe6f12bd",
+    "s20": "bc240a8a6af09c691dd80ba9fe097a42cef4e7eb590d0315023f90127737f174",
+    "s21": "315ffd5dfd3a0d976183ae08a9742e2fc46e4eeb5da4efaf135a690279c8e4ae",
+    "s22": "93bcd5b217250205dd5cdaabb3f05c75ee82fac0bbbde30c21c31e4a01aba614",
+    "s23": "55e325fbd61df8f8ec9ddc4a0ad554011d605bf78d6e2539b8ddbc9d4e4faec0",
+    "s24": "bea854251fb1bfdc1c76362b986f64e0b15aeea6d0b76a26ca197684e9ae5cc0",
+    "s3": "73993936e3a3367541ef63991298fd7d60aa3f241a9f1d68739b3cd180903ed2",
+    "s4": "3261b375216071d2db98d8de24e80697fd3d9d749a2e1fe7039eb2b09042d16f",
+    "s5": "bdd5ce075a9b03d3484f04421703d7210a276d0a6d8bd81ff277a411b0b6f6ac",
+    "s6": "1165482cbe98832408cc4d70e2324421e85cdc1d710cca0eff7ffa780d159838",
+    "s7": "6708dba8a743eb29f1233c04ff4d9cffe1b0db6f989cfa377622eb4ead6f8f65",
+    "s8": "02a3718052487fea0ed2e112ef68038773eae6a9ea8287e9dbd31e00b39bde71",
+    "s9": "9fdaa963d17c4033bdace1de49ee9b3f118e183f06473d4c47bf74e2c24cdbc1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T14:10:12.923337+00:00"
+}
