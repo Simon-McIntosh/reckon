@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T05:10:40.628Z",
+  "dispatched_at": "2026-10-08T05:00:29Z",
+  "findings": [
+    {
+      "anchor": "reckon/hooks/install.py:140",
+      "id": "reuse_search-1",
+      "reason": "recasting \u00a72 as \"extend `install.py`'s composer/recogniser and delete cli.py's copies\" removes invented work and points the implementer at the owner.",
+      "text": "\u00a72 proposes \"one composer writes every reckon hook command\" and \"one recogniser \u2026 bare or bound\" as though new, but `build_hook_snippet` (install.py:140) already composes every command as `interpreter_path()` (install.py:124, `.venv/bin/python`) followed by the script, `_command_identity` (install.py:414) already treats the bare and bound forms of a hook as one entry, `_merge_settings` (install.py:307) already upgrades a bare command in place, and `tests/test_hook_installer.py:246` already proves a worker stop hook and git guard decide correctly under a broken `python3` on PATH, with :449, :471 and :568 covering the bare-form upgrade and the untouched real settings file; the plan's \u00a72 done-when items therefore largely restate behaviour that ships and is tested.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/hooks/worker_stop.py:1",
+      "id": "deep_module-1",
+      "reason": "naming one owner for the shim, or stating the bootstrap reason it cannot be shared, decides whether \u00a74 is one module or five copied blocks.",
+      "text": "\u00a74 says \"Each reckon hook script therefore checks \u2026 when it cannot [serve it] re-executes itself\", which replicates one bootstrap shim inline in up to five scripts (coordinator_obligations.py, worker_stop.py, worker_git_guard.py, native_agent_guard.py, worker_message_guard.py) rather than one shared stdlib-only fragment; a shared by-path/vendored shim is possible (the check is pre-import, so it need not import reckon), yet the plan neither proposes a single home for the shim nor states why the duplication is forced, so the complexity is spread across shallow copies.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/hooks/native_agent_guard.py:4",
+      "id": "thin_wrapper-1",
+      "reason": "scoping \u00a74's re-exec to the scripts that import reckon, stating why the stdlib-only guards are exempt, keeps a working guard working.",
+      "text": "\u00a74's \"Each reckon hook script\" reaches `native_agent_guard.py` and `worker_message_guard.py`, whose own docstrings state they are \"Self-contained and stdlib-only on purpose \u2026 never import from `reckon`\", and which \u00a71 of the plan itself says decide correctly under 3.9; adding a re-exec that redirects them to a checkout's `.venv/bin/python` contradicts that distribution design, since these guards ship into repositories that carry no reckon environment, and their \u00a74 done-when only asks that they \"decide unchanged\".",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:472",
+      "id": "duplicate_owner-1",
+      "reason": "without naming these sites the \"one recogniser\" claim is unfixed and a second, bare, writer remains beside the composer.",
+      "text": "the plan's \"one composer \u2026 one recogniser \u2026 both writers use it\" never names the duplicate machinery in `reckon sync`'s writer `_configure_crew_guards` (cli.py:413), which emits bare commands (`shlex.join([str(_native_agent_guard_path())])` at cli.py:472 and cli.py:483), carries two recognisers that duplicate install.py's (`_is_native_agent_guard_group` cli.py:318, `_is_worker_message_guard_group` cli.py:343) beside the one it already delegates (`_is_worker_git_guard_group` cli.py:368), and re-implements the atomic settings write (`_write_json_atomically` cli.py:373) that install.py's `_write_settings` (install.py:445) owns. The owner to extend is `reckon/hooks/install.py`; the sites to retire are cli.py:318,343,373,472,483, and the tests asserting the bare form they produce (`tests/test_guard_install.py`:126,176) must move with them.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a35ccf24a2c0771ea9b1f7f0a10112bb81086434b6786e23a05e1b84db4d3bfa",
+  "plan_slug": "every-reckon-hook-runs-under-reckons-interpreter",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T045948631778-plan-review-of-every-reckon-hook-runs-under-reckons-interpreter",
+  "reviewed_blob_sha": "b51534454b24223d0f01f058762ddd841c98394b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a74 spreads one self-correction shim across every hook script instead of one shared bootstrap, adding surface without depth.",
+    "duplicate_owner": "a finding \u2014 the plan says \"one composer \u2026 one recogniser\" without naming the parallel writer and two duplicate recognisers in `reckon/cli.py` that must be retired, or the owner to extend.",
+    "interface_budget": "pass \u2014 public_definitions 1589, cli_options 336, mcp_views 33, refusal_families 23; no section adds a public definition, CLI option, MCP view or `format_refusal` family (\u00a75 reuses the existing `hooks install --write`), so nothing needs retiring or merging.",
+    "reuse_search": "a finding \u2014 the plan's \u00a72 composer, bare-or-bound recogniser and in-place upgrade already exist in `reckon/hooks/install.py` and are already exercised by `tests/test_hook_installer.py`, but the plan cites none of them and so reads as new construction.",
+    "thin_wrapper": "a finding \u2014 \u00a74 adds a re-exec wrapper to `native_agent_guard.py` and `worker_message_guard.py`, which import no reckon module and whose stated design is to be self-contained."
+  },
+  "section_digests": {
+    "_document": "55e5412245dee4a0372bda47c8410a7dcf026433c35c0d22d1eaedbcb10ff3a3",
+    "s1": "9fafa87eb74b6352e5ad1435ac0779ebc2e5e591f596df544c4b6fda15ccda27",
+    "s2": "df578de5b81a61d4c936fde662da83296580dc5591d40f0003bbc28626269b0c",
+    "s3": "dc16395bb30acca8f3fdc2b34fd78e6c59e2daa511fb92d877a788860cc61a8d",
+    "s4": "2bdda1dab1e3cdc5a53f8207a46aca39254d834d96a1cbfc5f5ff3b44af1e0d0",
+    "s5": "0af530e080ca800ac60a14a270445e8bb22495cf0430285d5856fcd3a7bd3e27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:31:30.969353+00:00"
+}
