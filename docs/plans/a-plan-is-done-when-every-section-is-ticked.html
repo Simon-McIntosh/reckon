@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -285,6 +285,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-08T07:52:36Z">
     <div class="r-comment-body"><p>Landed at merge <code>6d72fec58</code>. A dependency on a whole plan is satisfied when the plan is complete, or when at least one section is done and none is still implementable. A section dependency is satisfied only by <code>done</code>. Two cases get no fixed rule: every open section deferred, or an authored heading without a declaration. Both are held and reported in a <code>judgment_required</code> block on every edge path, so the orchestrator decides. The block counts its members under <code>count</code>, not <code>deferred</code>, because it counts every uncertain hold; that follow-on was accepted. Delta review 113/120 after three earlier rounds. Integrated gate: 9 passed, EXIT=0. Population: 0 added. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/a-deferred-section-blocks-only-its-dependents.html">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents" data-who="reckon-build" data-when="2026-10-08T07:11:37.063Z">
+    <div class="r-comment-body"><p>roadmap readiness judges a whole-plan dependency by its sections — satisfied when the target is complete, or when at least one of its sections is done and none is left implementable (every open section deferred), read through §9&#x27;s open-section predicate. A done declaration satisfies a section dependency; deferred/implementable never does. Two cases have no fixed rule and are held by default: an all-deferred target (reason deferred-only) and a target with an authored heading carrying no declaration (reason undeclared-heading). Both are reported in a judgment_required block — required, count, and members naming the dependent, the target, the reason and the sections concerned — on the dependent plan&#x27;s readiness row and at the report top level, so the orchestrator decides to build or un-defer the section, or to narrow or remove the dependency. A plan declaring no sections keeps the completion-only rule, and a target with a section still implementable stays plainly blocked without a judgment. One helper `_whole_plan_dependency(plan, docs_dir, project, slug)` returns a whole-plan dependency&#x27;s verdict and its judgment together, and every site that can hold a dependent routes through it — the declared depends_on edge, a gate ref, a soft after edge, and the graph closure — so each records the member whenever an uncertain hold is present; `_judgment_member(dependent_project, dependent, target_project, target, judgment)` composes the row, qualifying each side with its own project so a cross-project hold names the dependency&#x27;s project rather than the dependent&#x27;s. The graph report carries its own judgment_required block beside schedule_override. skills/reckon-build/SKILL.md names the judgment_required block beside schedule_override as something the coordinator reports and decides before dispatch. Gate tests/test_roadmap_deferred_blocks_only_its_dependents.py 9 passed EXIT=0</p></div>
 </div>
 </section>
 </main>
