@@ -5,10 +5,12 @@
     <tbody>
       <tr><td>Pure move</td><td>151 of 151 statements preserved; none altered, lost, or duplicated</td></tr>
       <tr><td>Estimated module size</td><td><code>_backends.py</code>: 36,910 tokens; <code>_worker_fence.py</code>: 15,475 tokens</td></tr>
-      <tr><td>Focused gate</td><td>492 passed, 0 failed; EXIT=0 across 39 files</td></tr>
+      <tr><td>Initial focused gate</td><td>492 passed, 0 failed; EXIT=0 across 39 files</td></tr>
       <tr><td>Size mutation</td><td><code>_backends.py</code> restored to 51,866 estimated tokens; the guard failed, EXIT=1</td></tr>
       <tr><td>Harness-home exclusion</td><td>Coordinator's serial runs outside the worker fence: 7 passed at base and 7 at head</td></tr>
       <tr><td>Boundary placement</td><td><code>BackendError</code> moved with the fence functions that raise it; <code>_harness_credential_binds</code> stays beside its caller and <code>Dialect</code> type in <code>_backends.py</code></td></tr>
+      <tr><td>Review controls</td><td>Both direct-run mutations reach the fence; 10 affected tests pass, and each scratch reversal fails its named check</td></tr>
+      <tr><td>Writer coverage</td><td>Five private-JSON test calls reach <code>_worker_fence.py</code>; 31 writer tests pass</td></tr>
     </tbody>
   </table>
   <table>
