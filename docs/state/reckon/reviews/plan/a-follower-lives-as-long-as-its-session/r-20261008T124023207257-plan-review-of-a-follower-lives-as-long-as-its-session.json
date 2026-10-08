@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T12:49:34.472Z",
+  "dispatched_at": "2026-10-08T12:40:49Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_watch.py:477",
+      "id": "reuse_search-1",
+      "reason": "if the plan reuses `_session_host_runs_follower` (the reader its own dispatch already trusts and that predates the marker) it may not need the new `/proc` predicate at all, and must at minimum say why that reader cannot be used.",
+      "text": "\u00a715 proposes a new predicate to answer \"is this follower the host's own child\" from the owner stamp plus a `/proc` ancestor-argv walk, and cites neither the host census record that `SessionHost.record()` writes (`reckon/crew/session_host.py:308`, `children[].pid`) nor its reader `_session_host_runs_follower` (`reckon/crew/dispatch_watch.py:477`), which the codebase already calls \"what tells a host's follower from a hand-armed one\" (`reckon/crew/dispatch.py:1210-1211`, `reckon/crew/dispatch_plan.py:859`); the census writer landed with \u00a74 at `87cc79c61` and so predates the reverted marker, meaning it survives the very incident that forced the revert (an old-code host lists its own child's pid), and the plan's own cited pair does not close the gap the plan claims \u2014 `_current_and_ancestor_argvs` returns this process's ancestor argv with no pids, so it cannot tie a \"crew host\" reading to the resolved owner",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_watch.py:477",
+      "id": "duplicate_owner-1",
+      "reason": "one of the two should be extended or removed; the plan should name `_session_host_runs_follower` as the owner to extend rather than adding a second reader beside it.",
+      "text": "a predicate built on the owner stamp and an ancestor argv read is a second, parallel state reader of the host-child question whose owner is `_session_host_runs_follower` (with the record it reads, `reckon/crew/session_host.py:308`), so \u00a715 would leave two mechanisms that disagree the moment the census and the `/proc` reading diverge",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "644f816c6e3d4213dd47435736c93977dd088ddd66fb9630e581f76f375a0482",
+  "plan_slug": "a-follower-lives-as-long-as-its-session",
+  "plan_version": 73,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T124023207257-plan-review-of-a-follower-lives-as-long-as-its-session",
+  "reviewed_blob_sha": "58295b09c90e6bac04e6d7cc25076b02febab41f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a715 adds one predicate inside existing modules (`reckon/crew_follow_commands.py`, `reckon/crew/dispatch_watch.py`) and introduces no new module or surface.",
+    "duplicate_owner": "a finding \u2014 the predicate \u00a715 adds is a second reader of a question the codebase already owns, the host census state read by `dispatch_watch._session_host_runs_follower`.",
+    "interface_budget": "pass \u2014 public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; \u00a715 states it \"adds one predicate and no public definition\", re-adds neither the `CHILD_ENV` constant nor `RECKON_SESSION_HOST_CHILD` (grep confirms both absent), and adds no CLI option, MCP view or refusal family.",
+    "reuse_search": "a finding \u2014 \u00a715 searches for a way to tell a host's own follower from a hand-armed one and cites the owner stamp (`session_host._spawn`), `runs.follower_owner()` and the `/proc`-walking `dispatch_watch._current_and_ancestor_argvs`/`runs._process_start_time`, but cites none of the machinery the codebase already uses for exactly this question \u2014 the host census record and `dispatch_watch._session_host_runs_follower`.",
+    "thin_wrapper": "pass \u2014 \u00a715 adds behaviour (the hand-off predicate and the end-of-line text it selects), not a pass-through layer over existing machinery, so there is no wrapper needing a justification."
+  },
+  "section_digests": {
+    "_document": "859b0475212d44864c153fcb5370c100d8d9f42f019ce34697c71e2164c19cee",
+    "s1": "a4eeecaff9300863f1a6f28d4f659a0977a7583ac703af75654ddf0622bd81d4",
+    "s10": "7dd4672bb7cf4d1be69d191b1b75168b2541ba034fb2e304aac73c5826be0125",
+    "s11": "e05ea2085f88e301a9bd3edd6b7f417b6926e799c9d5ce6ed68371c6b658880d",
+    "s12": "b9d1786058731f14be5bf5e3a693f8df0c72a0163c45603a8fc047776485e6a9",
+    "s13": "a0712742324c0998b55d2e12f73be0a740cd6f26ca2a0d5647a0665e7ac7896c",
+    "s14": "ab00818b9989f3c80766edc7a4ea21ee86e4458c88c0edc5a6f1fc1724d1ebaa",
+    "s15": "e464678601cae51c5c0fc4522dfbfa96ca1d573044458f51cd45eba806981dc2",
+    "s2": "b9689c739005faa621201d6009e306831a98c253828e1da227693acd6b977ab2",
+    "s3": "27ff46e837af55f0eaba51e6b64d726f133b299233e5eb3f672ab5fc6b1ca9bd",
+    "s4": "9c4d2ab6d7ca5942dead1327565460770d77bccf4ecd90e73c42a2b6eef7d94d",
+    "s5": "42339a7b96242d9c43f0a11b39792c3a77586525b5e12fff673cb29b22b1f33d",
+    "s6": "c99082a11529fcb10ae0464cbc7f1ed142dfe25618098cdf03a199fd240978c8",
+    "s7": "c115e3e35b8c6fc3d8ce9a5648d440b39c7f571ee1afabdea4a1c2a395bc3a22",
+    "s8": "7870597c5f6c188f2c555f7f17bca65a25aa338f1f74d3557f870668b31f167f",
+    "s9": "36ff7b0447b49cb29d721d4956a0d47739c48e68212f6c9d6a1cd99f2195b73b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T12:59:07.029904+00:00"
+}
