@@ -245,14 +245,17 @@ plan other than the one you are landing against. Do not edit the plan-version or
 plan-modified meta lines: every worker touching them makes every merge conflict
 there. Dispatching an unrelated ready node is outside this freeze.
 
-The landing beat is three `edit_plan` ops, not a hand edit:
-`{op:'append_evidence', plan, anchor, title, body}`,
-`{op:'collapse_section', section, summary, evidence_anchor}` and
-`{op:'insert_section', id, title, body, effort_hours, capability, links}`.
-`evidence_anchor` is the `anchor` that `append_evidence` writes. The op links it
-as `/<project>/evidence/archive/<plan>-landed.html#<anchor>` and refuses an
-anchor the landing record does not hold, so append the evidence in the same call
-or an earlier one.
+The landing beat ticks a section rather than collapsing it, and leaves the
+section body as authored: the tick records completion without moving the design
+out of the page. It is three `edit_plan` ops, not a hand edit:
+`{op:'append_evidence', plan, anchor, title, body}` writes the node's anchored
+record into the cumulative landing record; `{op:'set', path, value}` sets the
+section's declaration to `done`; and `{op:'append', target, item}` writes a
+`c-close-<section>` comment on that section carrying the result and a link to the
+evidence, all in one call. Nothing resolves a link inside a comment body, so
+write the project-absolute href
+`/<project>/evidence/archive/<plan>-landed.html#<anchor>` into the comment, with
+the `anchor` that `append_evidence` writes.
 
 ```python
 edit_plan(project="<project>", slug="<slug>", ops=[
@@ -266,8 +269,8 @@ edit_plan(project="<project>", slug="<slug>", ops=[
 
 `impl` = count of completed executable nodes / count of total executable nodes
 over the whole plan. Set it on EVERY node landing; the server does not compute
-it. After collapsing a section, reclassify its `section_declarations` entry to
-`done`; a section comment records a landed node, not completion, so a node that
+it. After ticking a section, its `section_declarations` entry reads `done`; a
+section comment records a landed node, not completion, so a node that
 does not close its section leaves that followup open — never wait for section
 closure to record earlier nodes. A project's declared suite holds a lighter
 promotion: `reckon crew suite run --project <project>` runs it under its budget
@@ -280,20 +283,16 @@ and records the result, and `reckon crew suite waive --project <project>
   {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
-  {"op": "collapse_section", "section": "s2",
-   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
-   "evidence_anchor": "s2"},
-  {"op": "insert_section", "id": "s3", "title": "§3 — checkpoint scoring",
-   "body": "<p>Score the checkpoint on the held-out split and record the MAE.</p>",
-   "effort_hours": 1.25,
-   "capability": {"version": "1.0", "class": "general",
-     "requirements": {"reasoning": "standard", "verification": "strict", "risk": "low"}},
-   "links": []}
+  {"op": "set", "path": "section_declarations.s2", "value": "done"},
+  {"op": "append", "target": "comments", "section": "s2",
+   "item": {"id": "c-close-s2", "who": "reckon-build", "when": "2026-06-24T00:00:00Z",
+     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2\">evidence</a></p>"}}
 ]
 ```
 
-If the node also closes its section, include the driving-followup resolution and
-the reclassification to `done` in the same `edit_plan` call, then collapse.
+If the node also closes its section, include the driving-followup resolution in
+the same `edit_plan` call and tick it too: append the evidence, set the
+declaration to `done`, and append the `c-close-<section>` comment.
 
 ### 5. Verify every worker
 
