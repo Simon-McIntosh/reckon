@@ -2149,7 +2149,7 @@ def seed_harness_home(
     declaration: Iterable[Mapping[str, Any]] = (),
     adjacent_declaration: Iterable[Mapping[str, Any]] = (),
     resume_session: str | None = None,
-    worker_mcp_servers: Iterable[str] = (),
+    worker_mcp_servers: Iterable[str] | None = None,
 ) -> None:
     """Create a run's harness home carrying what its harness reads there.
 
@@ -2188,7 +2188,10 @@ def seed_harness_home(
     the claude-shaped harness, whose settings file governs them, the run home's
     settings then records that the project's ``.mcp.json`` servers start only
     when the project asks for them, rather than every worker inheriting each
-    server the checkout registers.
+    server the checkout registers. Passing ``None`` states that no project
+    configuration governs this launch — a bare composition with no flight
+    layer — and then no record is written, because a project the configuration
+    never named is not a project whose servers this run is dropping.
     """
     home.mkdir(parents=True, exist_ok=True)
     declared = _HARNESS_HOME.get(dialect_name)
@@ -2219,7 +2222,11 @@ def seed_harness_home(
         _merge_harness_entry(source, home / relative, entry.get("keys"))
     if resume_session:
         _seed_harness_session(home, source_home, str(resume_session))
-    if dialect_name == "claude" and not settings_preexisting:
+    if (
+        dialect_name == "claude"
+        and not settings_preexisting
+        and worker_mcp_servers is not None
+    ):
         _seed_worker_mcp_settings(home, worker_mcp_servers)
 
 
@@ -3282,7 +3289,15 @@ def launch_plan(
             declaration=harness_home_files(dialect.name, backend),
             adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
-            worker_mcp_servers=_declared_worker_mcp_servers(fence_config),
+            # A resolved flight configuration states which project this run
+            # belongs to and so which servers its harness should start; a bare
+            # composition carries none, so it names no project and seeds no
+            # MCP record.
+            worker_mcp_servers=(
+                _declared_worker_mcp_servers(fence_config)
+                if fence_config is not None
+                else None
+            ),
         )
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
     argv = dialect.argv(

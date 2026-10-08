@@ -18,11 +18,16 @@
   control — removing the seeded settings write — fails at EXIT=1 with 4 failing
   test ids the head arm does not fail, and the project server then reads enabled
   (repro log <code>gate_negative_repro.log</code>). Existing tests over
-  <code>reckon._backends</code>' launch/seed surface pass at EXIT=0 (166 passed,
-  1 previously failing assertion repaired in <code>test_fence_is_on_again.py</code>).</p>
-  <p><strong>Scope note.</strong> Two existing tests asserted the seeded
-  <code>settings.json</code> carried only the operator's <code>hooks</code> key;
-  that contract is what §7 supersedes, so those assertions were updated.
+  <code>reckon._backends</code>' launch/seed surface pass at EXIT=0 (167 passed,
+ 1 assertion in <code>test_fence_is_on_again.py</code> updated in this round).</p>
+  <p><strong>Scope note.</strong> The record is written only when the launch
+  carries a resolved flight configuration: a bare composition with no project
+  layer governs no project, so the existing operator-harness-home test that
+  asserted the seeded <code>settings.json</code> held only the
+  <code>hooks</code> key passes unchanged. The dispatch path does carry a
+  configuration, so <code>test_fence_is_on_again.py</code> — granted to this
+  round's write scope — was updated to expect the record.</p>
+  <p><strong>Follow-on.</strong>
   The flight-config key <code>worker_mcp_servers</code> is read from the resolved
   configuration, but flight's schema (<code>reckon/flight.py</code>) forbids
   unknown top-level keys, so a project cannot yet declare it without a one-line
