@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import promotion, recovery, routing, runs
+from reckon.crew import promotion, promotion_checks, recovery, routing, runs
 from reckon.crew.dispatch import terminate
 
 # The kernel start tick a run record carries is a positive integer, so this
@@ -164,7 +164,7 @@ def test_promotion_settle_names_the_run_directory(
     }
     # A substituted liveness probe answers liveness for the module under test;
     # the identity mismatch the guard refuses on is the record's own start time.
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: True)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: True)
 
     ended = promotion._end_live_writer_for_settle(record)
 
@@ -185,7 +185,7 @@ def test_promotion_settle_leaves_one_attribution_and_one_outcome(
         "pid_start_time": live_run.start_time(),
         "manifest_path": str(manifest),
     }
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: True)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: True)
 
     ended = promotion._end_live_writer_for_settle(record)
 

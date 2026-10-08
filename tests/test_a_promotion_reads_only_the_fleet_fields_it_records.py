@@ -14,7 +14,7 @@ from typing import Any
 
 import pytest
 
-from reckon.crew import promotion, recovery, runs
+from reckon.crew import promotion, promotion_release, recovery, runs
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "fleet-read-project"
@@ -121,7 +121,7 @@ def test_the_bounded_reading_does_not_run_the_closure_drain(
         invoked.append(project)
         return runs.drain(project)
 
-    monkeypatch.setattr(promotion, "drain", spy)
+    monkeypatch.setattr(promotion_release, "drain", spy)
 
     reading = promotion._fleet_state_reading(PROJECT)
 

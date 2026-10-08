@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_scope
 from reckon.crew.runs import _write_json, pointer_path
 
 
@@ -45,7 +45,7 @@ def test_head_path_survives_unrelated_restore_failure(repository, monkeypatch):
             return subprocess.CompletedProcess(args, 128, "", "index is locked")
         return real_git(checkout, *args, **kwargs)
 
-    monkeypatch.setattr(promotion, "_git", fail_restore)
+    monkeypatch.setattr(promotion_scope, "_git", fail_restore)
     promotion._restore_landing_writes(repository, [tracked])
     assert len(restores) == 1
     assert tracked.is_file(), (
@@ -67,7 +67,7 @@ def test_path_absent_from_head_is_dropped(repository, monkeypatch):
             return subprocess.CompletedProcess(args, 128, "", "index is locked")
         return real_git(checkout, *args, **kwargs)
 
-    monkeypatch.setattr(promotion, "_git", fail_restore)
+    monkeypatch.setattr(promotion_scope, "_git", fail_restore)
     promotion._restore_landing_writes(repository, [created])
     assert "restore" in calls
     assert "rm" in calls
@@ -101,7 +101,7 @@ def test_real_index_lock_preserves_head_path(repository, monkeypatch):
         calls.append((args[0], result.returncode, result.stderr))
         return result
 
-    monkeypatch.setattr(promotion, "_git", record_git)
+    monkeypatch.setattr(promotion_scope, "_git", record_git)
     try:
         with pytest.raises(promotion.CrewError, match="could not stage"):
             promotion._commit_landing_writes(
@@ -175,7 +175,7 @@ def test_failure_after_append_names_the_row_state(repository, monkeypatch, failu
         raise OSError(f"injected {failure} failure")
 
     monkeypatch.setattr(ledger, "append_run", append)
-    monkeypatch.setattr(promotion, "_git", git)
+    monkeypatch.setattr(promotion_scope, "_git", git)
     if failure in {"capture", "release", "fleet"}:
         monkeypatch.setattr(
             promotion,

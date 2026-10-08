@@ -24,7 +24,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, crew
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_checks
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -215,9 +215,9 @@ def _terminal_lines() -> str:
 
 def _fast_settle(monkeypatch: pytest.MonkeyPatch) -> None:
     """Shrink the settle's windows so the suite does not pay production timing."""
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_POLL_SECONDS", 0.01)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_QUIESCENCE_SECONDS", 0.05)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_MAX_SECONDS", 5.0)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_POLL_SECONDS", 0.01)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_QUIESCENCE_SECONDS", 0.05)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_MAX_SECONDS", 5.0)
 
 
 def test_a_live_writer_is_ended_first_and_its_receipt_is_folded(
@@ -250,8 +250,8 @@ def test_a_live_writer_is_ended_first_and_its_receipt_is_folded(
         with stream.open("a", encoding="utf-8") as handle:
             handle.write(_terminal_lines())
 
-    monkeypatch.setattr(promotion, "process_alive", fake_alive)
-    monkeypatch.setattr(promotion, "_signal_process_group", release_when_signalled)
+    monkeypatch.setattr(promotion_checks, "process_alive", fake_alive)
+    monkeypatch.setattr(promotion_checks, "_signal_process_group", release_when_signalled)
     _fast_settle(monkeypatch)
 
     _stored_review(run_id)
@@ -302,8 +302,8 @@ def test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback(
         # a killed or hard-exiting harness never does.
         state["alive"] = False
 
-    monkeypatch.setattr(promotion, "process_alive", fake_alive)
-    monkeypatch.setattr(promotion, "_signal_process_group", signal_without_receipt)
+    monkeypatch.setattr(promotion_checks, "process_alive", fake_alive)
+    monkeypatch.setattr(promotion_checks, "_signal_process_group", signal_without_receipt)
     _fast_settle(monkeypatch)
 
     began = time.monotonic()
@@ -349,8 +349,8 @@ def test_an_already_terminal_quiet_run_is_unchanged(
         reads["count"] += 1
         return real_newest(paths)
 
-    monkeypatch.setattr(promotion, "_newest_stream_mtime", count_reads)
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
+    monkeypatch.setattr(promotion_checks, "_newest_stream_mtime", count_reads)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: False)
 
     _stored_review(run_id)
     promoted = crew.complete(
@@ -395,11 +395,11 @@ def test_a_writer_that_never_stops_cannot_hang_the_folded_promotion(
         # the settle never observes quiescence before the ceiling.
         state["alive"] = False
 
-    monkeypatch.setattr(promotion, "process_alive", fake_alive)
-    monkeypatch.setattr(promotion, "_signal_process_group", signal_then_keep_writing)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_POLL_SECONDS", 0.01)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_QUIESCENCE_SECONDS", 0.05)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_MAX_SECONDS", 0.5)
+    monkeypatch.setattr(promotion_checks, "process_alive", fake_alive)
+    monkeypatch.setattr(promotion_checks, "_signal_process_group", signal_then_keep_writing)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_POLL_SECONDS", 0.01)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_QUIESCENCE_SECONDS", 0.05)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_MAX_SECONDS", 0.5)
 
     def endless_writer() -> None:
         while not stop.is_set():
@@ -454,9 +454,9 @@ def test_a_writer_the_release_would_not_signal_is_left_alone(
     }
 
     signalled: list[int] = []
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: True)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: True)
     monkeypatch.setattr(
-        promotion,
+        promotion_checks,
         "_signal_process_group",
         lambda pid, started_at, **kwargs: signalled.append(pid),
     )
@@ -484,7 +484,7 @@ def test_the_pre_release_gate_is_the_release_gates_signal(
     manifest.write_text("node: node-a\nstatus: complete\n", encoding="utf-8")
     signalled: list[tuple[int, str]] = []
     monkeypatch.setattr(
-        promotion,
+        promotion_checks,
         "_signal_process_group",
         lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
     )
@@ -499,15 +499,15 @@ def test_the_pre_release_gate_is_the_release_gates_signal(
         "pid_start_time": "start",
     }
 
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: True)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: True)
     assert promotion._end_live_writer_for_settle(base) is True
     assert signalled == [(4242, "promotion-settle")]
 
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: False)
     assert promotion._end_live_writer_for_settle(base) is False
     assert signalled == [(4242, "promotion-settle")]
 
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: True)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: True)
     non_cli = {**base, "launch": "in-harness"}
     assert promotion._end_live_writer_for_settle(non_cli) is False
     assert signalled == [(4242, "promotion-settle")]

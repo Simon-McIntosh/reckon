@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew import promotion, recovery
+from reckon.crew import promotion, promotion_release, recovery
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "cause-project"
@@ -119,7 +119,7 @@ def _raise_from_the_pointer_step(
     """
     failure = _PointerStepError(message)
     monkeypatch.setattr(
-        promotion,
+        promotion_release,
         "list_live",
         lambda *, project: [
             {
@@ -139,7 +139,7 @@ def _raise_from_the_pointer_step(
     def raising(pointer: Any) -> dict[str, Any]:
         raise failure
 
-    monkeypatch.setattr(promotion, "_drain_row", raising)
+    monkeypatch.setattr(promotion_release, "_drain_row", raising)
     return failure
 
 
@@ -157,7 +157,7 @@ def _raise_from_the_pointer_listing(
     def raising(*, project: str) -> list[dict[str, Any]]:
         raise failure
 
-    monkeypatch.setattr(promotion, "list_live", raising)
+    monkeypatch.setattr(promotion_release, "list_live", raising)
     return failure
 
 

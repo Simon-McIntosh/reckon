@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_records
 from reckon.crew.runs import (
     _process_start_time,
     _write_json,
@@ -292,7 +292,7 @@ def test_promotion_releases_only_the_integrated_clean_case(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     if os.environ.get("PROMOTION_NEGATIVE_CONTROL"):
-        monkeypatch.setattr(promotion, "_live_worktree_claims", dict)
+        monkeypatch.setattr(promotion_records, "_live_worktree_claims", dict)
     cases = (
         ("clean", False, False, False, "passed"),
         ("dirty", True, False, False, "passed"),

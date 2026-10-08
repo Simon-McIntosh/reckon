@@ -58,7 +58,7 @@ import pytest
 
 import reckon
 from reckon._store import _config_home
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_scope
 from reckon.crew.node import CrewError
 from reckon.shim_lookup import real_executable
 
@@ -1060,7 +1060,7 @@ def test_dispatch_returns_once_its_supervisor_runs(
             "node": {"write_paths": []},
         }
         monkeypatch.setenv("RECKON_HOME", str(run.home))
-        monkeypatch.setattr(promotion, "_repository_tree_snapshot", _capture)
+        monkeypatch.setattr(promotion_scope, "_repository_tree_snapshot", _capture)
         with pytest.raises(_ReachedError):
             promotion._repository_tree_boundary_violations(
                 str(output["run_id"]), record
