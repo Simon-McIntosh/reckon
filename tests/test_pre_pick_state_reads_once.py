@@ -8,6 +8,11 @@ published. An estimated-hours cache was stamped on the plan's own file and the
 directory listings alone, so an in-place edit to a sibling plan left a stale
 stamp. And the scratch survey's docstring said an unattributed directory is
 never removed by age while the orphan sweep removes it by age.
+
+Each guard here measures the behaviour it names rather than a claim about it: a
+worktree path resolved before its mount pays one git probe, not two; the orphan
+sweep's age boundary is exercised just inside and just outside the figure the
+survey docstring states; and a second dispatch runs no git command.
 """
 
 from __future__ import annotations
@@ -51,7 +56,7 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _git_repo(path: Path) -> Path:
-    """A throwaway git repository, enough for a git-common-dir probe."""
+    """A throwaway git repository with one commit, enough for a common-dir probe."""
     path.mkdir(parents=True)
     for args in (
         ["init", "-q", "-b", "main"],
@@ -59,6 +64,25 @@ def _git_repo(path: Path) -> Path:
         ["config", "user.name", "Worker"],
     ):
         subprocess.run(["git", *args], cwd=path, check=True, capture_output=True)
+    (path / "README").write_text("repo\n")
+    subprocess.run(
+        ["git", "-C", str(path), "add", "README"], check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "-C", str(path), "commit", "-qm", "init"],
+        check=True,
+        capture_output=True,
+    )
+    return path
+
+
+def _linked_worktree(repo: Path, path: Path) -> Path:
+    """A linked worktree: a second spelling of one repository's common dir."""
+    subprocess.run(
+        ["git", "-C", str(repo), "worktree", "add", "-q", "--detach", str(path)],
+        check=True,
+        capture_output=True,
+    )
     return path
 
 
@@ -95,7 +119,7 @@ def _node(plan: str) -> TaskNode:
     )
 
 
-# ── item 1: resolve the project repository once per process ──────────────────
+# ── item 1: the repository identity is probed once per repository ─────────────
 
 
 def test_a_second_resolution_runs_no_git(
@@ -115,6 +139,24 @@ def test_a_second_resolution_runs_no_git(
     second = dispatch_sections.resolve_project_repository(PROJECT, repo)
     assert second == first
     assert calls == [], f"the second resolution ran git: {calls}"
+
+
+def test_a_worktree_and_its_mount_probe_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Resolving a worktree path and then its mount costs one git probe."""
+    repo = _git_repo(tmp_path / "repo")
+    worktree = _linked_worktree(repo, tmp_path / "linked")
+    getattr(dispatch_sections, "_REPOSITORY_IDENTITIES", {}).clear()
+    calls = _counting_git(monkeypatch)
+
+    worktree_identity = dispatch_sections.repository_identity_once(worktree)
+    assert len(calls) == 1, f"the worktree probe ran git {len(calls)} times"
+    calls.clear()
+
+    mount_identity = dispatch_sections.repository_identity_once(repo)
+    assert mount_identity == worktree_identity
+    assert calls == [], f"the mount after the worktree re-probed git: {calls}"
 
 
 # ── item 2: a refused refresh reads the last good index, with its age ─────────
@@ -215,21 +257,54 @@ def test_editing_a_sibling_plan_changes_the_stamp(
 # ── item 4: the survey docstring states the age rule the sweep applies ────────
 
 
-def test_the_scratch_survey_docstring_states_the_orphan_sweep_age_rule() -> None:
+def _stated_grace_seconds() -> int:
+    """The grace figure the survey docstring quotes, as an integer."""
     doc = inspect.getdoc(routing.garbage_collect_scratch) or ""
     match = re.search(r"SCRATCH_GRACE_SECONDS\s+\((\d+) seconds\)", doc)
     assert match is not None, "the survey docstring no longer states the age rule"
-    assert int(match.group(1)) == routing.SCRATCH_GRACE_SECONDS
+    return int(match.group(1))
 
 
-def test_the_orphan_sweep_uses_the_stated_grace() -> None:
-    """The sweep's own age rule is the one the survey docstring now states."""
-    source = inspect.getsource(routing.garbage_collect_orphan_scratch)
-    assert "SCRATCH_GRACE_SECONDS" in source
-    assert routing.SCRATCH_GRACE_SECONDS > 0
+def test_the_scratch_survey_docstring_states_the_orphan_sweep_age_rule() -> None:
+    assert _stated_grace_seconds() == routing.SCRATCH_GRACE_SECONDS
 
 
-# ── the timed driver: a second dispatch pays under half a second ──────────────
+def test_the_orphan_sweep_removes_by_the_stated_grace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The sweep's age boundary is the figure the survey docstring states."""
+    stated = _stated_grace_seconds()
+    assert stated == routing.SCRATCH_GRACE_SECONDS
+
+    root = (tmp_path / "scratch").resolve()
+    root.mkdir()
+    inside = root / "inside-grace"
+    outside = root / "outside-grace"
+    inside.mkdir()
+    outside.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "state"))
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(root))
+
+    now = time.time()
+    ages = {
+        "inside-grace": float(stated) - 1.0,
+        "outside-grace": float(stated) + 1.0,
+    }
+    monkeypatch.setattr(routing, "_scratch_ctime", lambda path: now - ages[path.name])
+
+    result = routing.garbage_collect_orphan_scratch(apply=True, now=now)
+    removed = {Path(path).name for path in result["removed"]}
+    assert "inside-grace" not in removed, (
+        f"the sweep removed a directory {ages['inside-grace']:.0f}s inside the "
+        f"stated {stated}s grace"
+    )
+    assert "outside-grace" in removed, (
+        f"the sweep kept a directory {ages['outside-grace']:.0f}s past the "
+        f"stated {stated}s grace"
+    )
+
+
+# ── the timed driver: a second dispatch runs no git ───────────────────────────
 
 
 def _pre_pick_stages(repo: Path, project: str) -> None:
@@ -238,18 +313,36 @@ def _pre_pick_stages(repo: Path, project: str) -> None:
     routing._estimated_hours(repo, project, _node("alpha"))
 
 
-def test_the_second_dispatch_pays_under_half_a_second_for_its_pre_pick_stages(
-    tmp_path: Path, home: Path, docs_tree: Path, monkeypatch: pytest.MonkeyPatch
+def test_the_second_dispatch_runs_no_git(
+    tmp_path: Path,
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """A warm process pays one probe for a worktree and its mount, then none."""
+    monkeypatch.setenv("RECKON_PICK_CACHE", str(tmp_path / "pick-cache"))
+    repo = _git_repo(tmp_path / "repo")
+    _write_plan(repo / "docs", "plans/alpha.html", "alpha", 3)
+    subprocess.run(
+        ["git", "-C", str(repo), "add", "docs"], check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "-C", str(repo), "commit", "-qm", "plans"],
+        check=True,
+        capture_output=True,
+    )
+    worktree = _linked_worktree(repo, tmp_path / "linked")
     _place_aggregate(["r-alpha"])
     getattr(dispatch_sections, "_REPOSITORY_IDENTITIES", {}).clear()
     monkeypatch.setattr(
-        dispatch_sections, "project_mount_repository", lambda project: docs_tree
+        dispatch_sections, "project_mount_repository", lambda project: repo
     )
+    calls = _counting_git(monkeypatch)
 
-    _pre_pick_stages(docs_tree, PROJECT)  # warm every cache
+    _pre_pick_stages(worktree, PROJECT)  # first dispatch: worktree, then its mount
+    assert len(calls) == 1, (
+        f"the worktree and its mount cost {len(calls)} git probes, not one"
+    )
+    calls.clear()
 
-    start = time.perf_counter()
-    _pre_pick_stages(docs_tree, PROJECT)
-    elapsed = time.perf_counter() - start
-    assert elapsed < 0.5, f"second dispatch's pre-pick stages took {elapsed:.3f}s"
+    _pre_pick_stages(worktree, PROJECT)  # second dispatch: nothing left to probe
+    assert calls == [], f"the second dispatch ran git: {calls}"

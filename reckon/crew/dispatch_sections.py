@@ -54,20 +54,35 @@ def project_mount_repository(project: str) -> Path | None:
 
 # The repository a path belongs to is a pure function of the checkout's git
 # common directory, and probing git is the dominant cost of resolving a
-# project's repository (1.7 s median in the 2026-10-07 census). A process that
-# dispatches more than once pays that probe once per path: the identity of a
-# named checkout and of a project's mount is read here rather than on every
-# resolution. Two spellings of one repository — a checkout and its linked
-# worktree — collapse to the same common directory, so the memo also answers
-# the same repository under a second path without a second probe.
+# project's repository (1.7 s median in the 2026-10-07 census). The memo is
+# therefore keyed by the repository itself rather than by the path a caller
+# happened to name: the probe run for one spelling records its result under the
+# resolved path of that spelling and, once the identity is known, under the
+# resolved path of the repository the common directory names. A named checkout
+# and a project's mount, or a checkout and its linked worktree, are then two
+# spellings of one entry, so resolving one and then the other — a worktree path
+# and the mount it belongs to — costs a single probe rather than two.
 _REPOSITORY_IDENTITIES: dict[str, Path | None] = {}
 
 
 def repository_identity_once(path: Path) -> Path | None:
-    """Return a checkout's repository identity, probing git once per path."""
-    key = str(path)
+    """Return a checkout's repository identity, probing git once per repository.
+
+    The identity is keyed by the repository's own resolved path, so any spelling
+    of it already resolved in this process — the mount after the worktree whose
+    common directory answered, or a second dispatch naming the same checkout —
+    is returned without a second probe.
+    """
+    resolved = Path(path).expanduser().resolve()
+    key = str(resolved)
     if key not in _REPOSITORY_IDENTITIES:
-        _REPOSITORY_IDENTITIES[key] = repository_identity(path)
+        identity = repository_identity(path)
+        _REPOSITORY_IDENTITIES[key] = identity
+        if identity is not None:
+            # The identity is the repository root, so it is its own best key:
+            # the mount, or a second spelling of the same common directory is
+            # answered from this entry rather than by a fresh probe.
+            _REPOSITORY_IDENTITIES.setdefault(str(identity), identity)
     return _REPOSITORY_IDENTITIES[key]
 
 
@@ -87,9 +102,10 @@ def resolve_project_repository(
     before a worktree, pointer or ledger row exists, naming both resolved
     roots and the flag so the caller can correct one of them.
 
-    The git probe behind that comparison is paid once per path per process,
-    keyed by each path's git common directory, so a second resolution in the
-    same process runs no git command.
+    The git probe behind that comparison is paid once per repository per
+    process, keyed by the repository's git common directory, so resolving a
+    worktree path and then its mount — or a second resolution of either — runs
+    no second git command.
     """
     mount = project_mount_repository(project)
     if repo is None:

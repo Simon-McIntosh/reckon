@@ -21,7 +21,7 @@ stated below with the reproduction that failed on the base revision
 <tbody>
 <tr><th>1. Repository resolved once per process</th>
 <td>The second <code>resolve_project_repository</code> in one process re-ran its git probe: <code>the second resolution ran git: [(&hellip; 'rev-parse', '--path-format=absolute', '--git-common-dir'), (&hellip;)]</code></td>
-<td>The git probe is paid once per path per process, keyed by each path's git common directory; the second resolution runs no git command.</td></tr>
+<td>The git probe is paid once per repository per process, cached against the repository's git common directory; a worktree path and its mount are one entry, so a second resolution runs no git command.</td></tr>
 <tr><th>2. Refused index refresh keeps the last good index</th>
 <td>A refused refresh fell through to <code>_load_aggregate</code>; with the aggregate stubbed the read returned <code>set()</code> against the expected rows.</td>
 <td><code>load</code> reads the last published index read-only, returns its rows with <code>index_age_seconds</code>, and opens the aggregate only when no good index can be read.</td></tr>
@@ -30,7 +30,7 @@ stated below with the reproduction that failed on the base revision
 <td>Every candidate plan file the resolve walks past is stamped, so a sibling's metadata edit is a cache miss.</td></tr>
 <tr><th>4. Survey docstring states the sweep's age rule</th>
 <td><code>the survey docstring no longer states the age rule</code> &mdash; the survey said unattributed scratch is never removed, while the orphan sweep removes it by age.</td>
-<td>The docstring states the rule the orphan sweep applies (<code>SCRATCH_GRACE_SECONDS (7200 seconds)</code>); a test fails if the two diverge.</td></tr>
+<td>The docstring states the rule the orphan sweep applies (<code>SCRATCH_GRACE_SECONDS (7200 seconds)</code>); the figure is compared against what the sweep removes, exercised just inside and just outside the grace, and the test fails if the sweep stops applying it.</td></tr>
 </tbody></table>
 
 <table id="pre-pick-state-reads-once-measure"><caption>Quantitative outcomes</caption>
@@ -41,7 +41,7 @@ stated below with the reproduction that failed on the base revision
 <tr><th>Gate suite at head</th><td>260 passed, 1 failed, EXIT=1</td><td>The single failure is pre-existing at base</td></tr>
 <tr><th>Gate suite at base</th><td>256 passed, 5 failed, EXIT=1</td><td>Added failures against base: 0</td></tr>
 <tr><th>Negative control</th><td>1 failed, EXIT=1: <code>test_a_refused_index_refresh_returns_rows_with_an_age_and_no_aggregate_scan</code></td><td>The declared mutation makes a refused refresh fall back to a full aggregate scan</td></tr>
-<tr><th>Timed driver, second dispatch's pre-pick stages</th><td>under 0.5 s</td><td>Run in a local fixture; it also passes at base there, because a local git probe is milliseconds. The census's 1.7 s median was GPFS latency a fixture cannot reproduce.</td></tr>
+<tr><th>Timed driver, second dispatch's pre-pick stages</th><td>zero git invocations on the second dispatch</td><td>The driver counts git probes rather than wall clock: the worktree and its mount resolve in one probe, and a second dispatch runs no git. It fails at base, where the two spellings cost two probes.</td></tr>
 </tbody></table>
 
 <table id="pre-pick-state-reads-once-bindings"><caption>Reproducible inputs and source bindings</caption>
