@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-done-when-every-section-is-ticked">
+  <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-08">
+  <meta name="evidence-commit" content="ce78504dfa64bfc3e88bc61ffde9e9ea02856a98">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-plan-view-shows-its-section-checklist">
+  <h2>The plan view shows its section checklist</h2>
+  <p>The plan view renders the <code>todos</code> field the plan read carries, above the
+  plan body, in <code>docs/ui/plan.jsx</code>. A new <code>PlanChecklist</code> component maps
+  the payload rows straight to markup: one <code>&lt;li&gt;</code> per authored section in
+  document order, each carrying the payload's <code>link</code> as an anchor to
+  <code>#&lt;id&gt;</code>. A row's look is chosen from its declaration and nothing else is
+  derived — <code>done</code> renders a checked box and its <code>c-close-&lt;id&gt;</code>
+  body, <code>deferred</code> reads as deferred, anything else reads as open. The render is
+  inserted directly before the plan body container (<code>className="r-plan-html"</code>), so
+  it sits above the first authored section heading. Styles land in the plan view's own
+  stylesheet, <code>docs/ui/plans.css</code> (<code>.r-plan-checklist</code>,
+  <code>.r-plan-todo</code>, <code>.r-plan-todo-box</code>, <code>.r-plan-todo-state</code>).
+  No payload field was changed; <code>reckon/</code> is untouched.</p>
+  <p>Gate: <code>PYTHONPATH=$PWD .venv/bin/python -m pytest tests/test_spa_plan_checklist.py</code>
+  at head <code>51e59e01</code> — <strong>5 passed</strong>, <code>EXIT=0</code>. The test is a
+  module test, not a browser probe: it compiles the plan view with <code>compile_jsx</code>,
+  reads the view's own <code>&lt;PlanChecklist todos={&hellip;} /&gt;</code> props expression out
+  of the source, and evaluates that expression against a three-entry payload
+  (<code>done</code> with a close record, <code>implementable</code>, <code>deferred</code>),
+  then reads the links, checked state, closing comment and state words back out of the tree.</p>
+  <p>Negative control: the declared mutation removes the checklist render from
+  <code>docs/ui/plan.jsx</code>. The run at <code>ce78504df</code> fails four ids. Log:
+  <code>logs/negative_control.log</code> (<code>EXIT=1</code>, 4 failed, 1 passed). Log evidence:
+  <code>logs/head.log</code> (<code>EXIT=0</code>, 5 passed).</p>
+</section>
+</main>
+</body>
+</html>
