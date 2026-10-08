@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:source_code_stamp",
+    "reckon/crew/runs.py:follower_code_stamp"
+  ],
+  "completed_at": "2026-10-08T08:56:26.537Z",
+  "dispatched_at": "2026-10-08T08:39:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the census (imports, patches, source_reads, module_state) is the artefact the move node repoints from, yet the node's gate only asserts each section is present and never re-derives it, so a stale or mis-keyed census would be accepted silently; independent spot-checks (11 from-import names, six patch lines and six source_reads) reconcile with the base tree and module_state is correctly empty because every module-level object is a frozenset or a compiled regex, but no check the worker ran establishes the census against the tree."
+    },
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the census's three categories cover imports and patches and source reads but not prose references to a moved name, and reckon/crew/prompts/review.md:171 cites reckon/crew/promotion.py:_require_review_waiver, which the map places in promotion_checks.py; the reference appears nowhere in the machine-readable census (only the node's free-text follow_ons names it), so a move node reading the census alone would leave the review prompt pointing at a name that will not live there."
+    },
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the map's only falsifiable checks ran inline in the run directory, so the placement, size and edge invariants have no durable guard once the run directory is cleaned; no committed test fails if a member is dropped from a produced module's list and the JSON drifts from promotion.py."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read at 0d925378..6f94d788; one landed change, 1,051 insertions across the two fragment files and nothing else.",
+    "done_when": "the node's gate is an inline AST checker asserting every non-import top-level statement of the base is placed exactly once, every produced module is under 40,000 estimated tokens and there is no module-level cycle; I independently re-derived all three from the base tree - 241 of 241 statements placed with no duplicate, a 25,855-token maximum, and zero module-level cross-module references.",
+    "goal": "the node was dispatched to map one module's split (reckon/crew/promotion.py) per section 6 and the section 8 split contract; the two fragment files at docs/evidence/fragments/every-module-fits-a-worker-window/ carry base 0d925378, reckon/crew/promotion.py, seven module entries of path/concern/members/estimated_tokens, the edges and back_references and the four-section census, so the map the goal names exists.",
+    "manifest": "read; it records the gate at EXIT=0 and the drop-one control at EXIT=1 (missing=[_recorded_disposition]), 241 statements, a 25,855-token maximum and zero module-level edges, but leaves baseline_suite/after_suite empty because the map node ran no test arms.",
+    "write_paths": "the manifest declares docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json and .html; git diff --name-status 0d925378 6f94d788 names exactly those two paths, so the change sits inside its fence."
+  },
+  "justifications": {
+    "durability": "the placement and size invariants are enforced only by an inline checker in the run directory, so no committed test reddens if the JSON later drifts from promotion.py.",
+    "evidence": "the gate log names revision 0d925378 and I re-derived placement (241/241), size (max 25,855) and zero module-level edges from the base tree, but the census is asserted for presence only.",
+    "fit": "the produced module names (promotion_evidence, promotion_gate, promotion_scope, promotion_checks, promotion_records, promotion_release) each describe one concern and carry no part number, version or the word core.",
+    "goal_fidelity": "docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json carries the brief's keys (base, module, modules of 7 with concern/members/estimated_tokens, edges, back_references, census, commands) and the HTML table mirrors the JSON row for row.",
+    "reuse": "the landed change adds no definition and a capability search over reckon/ and scripts/ found no owner of a module-split map; the only overlap, a revision and byte walk, lives in the node's uncommitted checker and is not in the diff.",
+    "scope_discipline": "git diff --name-status 0d925378 6f94d788 lists exactly the two declared fragment paths and no file under reckon/, tests/ or scripts/ is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was dispatched to map one module's split (reckon/crew/promotion.py) per section 6 and the section 8 split contract; the two fragment files at docs/evidence/fragments/every-module-fits-a-worker-window/ carry base 0d925378, reckon/crew/promotion.py, seven module entries of path/concern/members/estimated_tokens, the edges and back_references and the four-section census, so the map the goal names exists.\nVERDICT done_when: the node's gate is an inline AST checker asserting every non-import top-level statement of the base is placed exactly once, every produced module is under 40,000 estimated tokens and there is no module-level cycle; I independently re-derived all three from the base tree - 241 of 241 statements placed with no duplicate, a 25,855-token maximum, and zero module-level cross-module references.\nVERDICT write_paths: the manifest declares docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json and .html; git diff --name-status 0d925378 6f94d788 names exactly those two paths, so the change sits inside its fence.\nVERDICT manifest: read; it records the gate at EXIT=0 and the drop-one control at EXIT=1 (missing=[_recorded_disposition]), 241 statements, a 25,855-token maximum and zero module-level edges, but leaves baseline_suite/after_suite empty because the map node ran no test arms.\nVERDICT diff: read at 0d925378..6f94d788; one landed change, 1,051 insertions across the two fragment files and nothing else.\nCALL_SITES: reckon/crew/obligation_snapshot.py:source_code_stamp, reckon/crew/runs.py:follower_code_stamp\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json carries the brief's keys (base, module, modules of 7 with concern/members/estimated_tokens, edges, back_references, census, commands) and the HTML table mirrors the JSON row for row.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate log names revision 0d925378 and I re-derived placement (241/241), size (max 25,855) and zero module-level edges from the base tree, but the census is asserted for presence only.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 0d925378 6f94d788 lists exactly the two declared fragment paths and no file under reckon/, tests/ or scripts/ is touched.\nSCORE durability: 14\nJUSTIFICATION durability: the placement and size invariants are enforced only by an inline checker in the run directory, so no committed test reddens if the JSON later drifts from promotion.py.\nSCORE fit: 18\nJUSTIFICATION fit: the produced module names (promotion_evidence, promotion_gate, promotion_scope, promotion_checks, promotion_records, promotion_release) each describe one concern and carry no part number, version or the word core.\nSCORE reuse: 19\nJUSTIFICATION reuse: the landed change adds no definition and a capability search over reckon/ and scripts/ found no owner of a module-split map; the only overlap, a revision and byte walk, lives in the node's uncommitted checker and is not in the diff.\nFINDING docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json:1 follow-on: the census (imports, patches, source_reads, module_state) is the artefact the move node repoints from, yet the node's gate only asserts each section is present and never re-derives it, so a stale or mis-keyed census would be accepted silently; independent spot-checks (11 from-import names, six patch lines and six source_reads) reconcile with the base tree and module_state is correctly empty because every module-level object is a frozenset or a compiled regex, but no check the worker ran establishes the census against the tree.\nFINDING docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json:1 follow-on: the census's three categories cover imports and patches and source reads but not prose references to a moved name, and reckon/crew/prompts/review.md:171 cites reckon/crew/promotion.py:_require_review_waiver, which the map places in promotion_checks.py; the reference appears nowhere in the machine-readable census (only the node's free-text follow_ons names it), so a move node reading the census alone would leave the review prompt pointing at a name that will not live there.\nFINDING docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json:1 follow-on: the map's only falsifiable checks ran inline in the run directory, so the placement, size and edge invariants have no durable guard once the run directory is cleaned; no committed test fails if a member is dropped from a produced module's list and the JSON drifts from promotion.py.\n",
+  "review_run_id": "r-20261008T083834963002-review-of-promotion-split-map",
+  "reviewed_base_sha": "0d925378c9966477a8f8e42bef2584641c0a62cc",
+  "reviewed_head_sha": "6f94d788d488ba96e72581c6436ab8e003f17688",
+  "reviewed_run_id": "r-20261008T081501855970-promotion-split-map",
+  "role": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:53:40.064146+00:00",
+  "total": 105
+}
