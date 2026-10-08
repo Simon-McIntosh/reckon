@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "223187b5c80131f6ad9c90fe04e6dbac469b1985",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:_resolved_plan_path",
+    "reckon/crew/routing.py:_estimated_hours"
+  ],
+  "completed_at": "2026-10-08T15:57:12.534Z",
+  "dispatched_at": "2026-10-08T15:42:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3681",
+      "severity": "follow-on",
+      "text": "follow-on: the run stores its after_suite at ba4ca787d, so the head gate log does not name the reviewed head 2b1f5388b; the delta is a trailing newline only, but a reader comparing head_log_revision to reviewed_head_sha sees a mismatch. Re-run the full gate at the final head when a head commit is a style-only follow-up."
+    }
+  ],
+  "head_log_revision": "ba4ca787d182dffc70511637a9e8ecb859d35e6e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base; ba4ca787d splits _docs_scan_directories into _docs_scan_inputs (returning both listings) and a one-line _docs_scan_directories delegate that returns the directory list, retargets _estimated_hours to _docs_scan_inputs, adds tests/test_warm_pick_rescans_no_plan.py (a shape test and a warm-resolve test) and an empty evidence-fragment anchor; 2b1f5388b adds the trailing newline the prior review's fit finding named and nothing else.",
+    "done_when": "the node had no reproduction obligation of its own, and I reproduced the reviewed defect independently: at base 223187b5c tests/test_pick_stages_fit_the_bound.py::test_the_cut_stops_the_repeated_docs_scan fails (assert 2 == 0, 1 failed EXIT=1), the new tests/test_warm_pick_rescans_no_plan.py pass at head 2b1f5388b (2 passed EXIT=0), and reverting _docs_scan_directories to return the tuple reddens all three (3 failed EXIT=1).",
+    "goal": "the node's goal is a warm pick that resolves the plan path without re-walking the docs tree while the estimate stage keeps its sibling-file stamp; reckon/crew/routing.py:3684 _docs_scan_inputs returns both listings from the one walk and routing.py:3681 _docs_scan_directories returns the directory list the pick's stamp at reckon/crew/picker/__init__.py:111 iterates, while _estimated_hours at routing.py:3732 reads the pair, so a warm pick resolves 0 plans through a scan where it resolved 2.",
+    "manifest": "read; it names the cause (commit ab5883931 changed routing._docs_scan_directories to return a (directories, files) tuple) with the call path pick()->_declared_difficulty()->picker._resolved_plan_path()->build()/stamp_of, carries baseline_suite (223187b5c, exit 0, completed true) and after_suite (ba4ca787d, exit 0, completed true) with literal commands, and a negative_control_log naming the mutation; the after_suite revision is ba4ca787d rather than the final head 2b1f5388b, so the format-only head commit is covered by a subset re-run (6 passed), not a full gate log.",
+    "write_paths": "git diff 223187b5c..2b1f5388b touches exactly reckon/crew/routing.py, tests/test_warm_pick_rescans_no_plan.py and docs/evidence/fragments/one-typesafe-model-picker/pick-cache-survives-the-sibling-stamp.html, the node's declared write paths, and nothing else; write_paths in the reviewed manifest do not list the docs/evidence fragment that _context_refusal_detail was not involved with and that the diff adds, a bookkeeping gap only."
+  },
+  "justifications": {
+    "durability": "reverting _docs_scan_directories to return the (directories, files) tuple in a scratch copy reddens tests/test_warm_pick_rescans_no_plan.py (both tests) and test_pick_stages_fit_the_bound.py::test_the_cut_stops_the_repeated_docs_scan (3 failed EXIT=1), so the added assertions genuinely fire on the regression.",
+    "evidence": "gate-head.log line 1 names ba4ca787d and ends 207 passed EXIT=0 while gate-base.log names 223187b5c and ends 205 passed EXIT=0, a 0-added delta, and my independent head gate at 2b1f5388b reproduced 206 passed / 1 load-dependent flake in an untouched file; the after_suite revision does not name the final head, so the format-only commit has no full gate log.",
+    "fit": "tests/test_warm_pick_rescans_no_plan.py is ruff-format clean and adds no ruff findings, routing.py carries 11 findings at both base and head (delta 0), and the blank line after the multi-line docstring matches the file's own convention (90 occurrences).",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:111 stores _docs_scan_directories(docs) as \"directories\" and the stamp joins each entry onto the docs root, so the fix restores the list[str] shape the stamp consumes and the fallback rescan is not taken; reproduced 2 warm-pick rescans at base and 0 at head.",
+    "reuse": "_docs_scan_directories is a one-line delegate over the single walk in _docs_scan_inputs rather than a second scan, and a grep finds only the picker stamp and _estimated_hours as consumers.",
+    "scope_discipline": "git diff 223187b5c..2b1f5388b lists exactly reckon/crew/routing.py, tests/test_warm_pick_rescans_no_plan.py and the evidence fragment, all inside the node's declared write paths; no other path changed."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 223187b5c80131f6ad9c90fe04e6dbac469b1985\nreviewed_head_sha: 2b1f5388bd05a840aa1e9f00e06d9f29b42599a8\nVERDICT goal: the node's goal is a warm pick that resolves the plan path without re-walking the docs tree while the estimate stage keeps its sibling-file stamp; reckon/crew/routing.py:3684 _docs_scan_inputs returns both listings from the one walk and routing.py:3681 _docs_scan_directories returns the directory list the pick's stamp at reckon/crew/picker/__init__.py:111 iterates, while _estimated_hours at routing.py:3732 reads the pair, so a warm pick resolves 0 plans through a scan where it resolved 2.\nVERDICT done_when: the node had no reproduction obligation of its own, and I reproduced the reviewed defect independently: at base 223187b5c tests/test_pick_stages_fit_the_bound.py::test_the_cut_stops_the_repeated_docs_scan fails (assert 2 == 0, 1 failed EXIT=1), the new tests/test_warm_pick_rescans_no_plan.py pass at head 2b1f5388b (2 passed EXIT=0), and reverting _docs_scan_directories to return the tuple reddens all three (3 failed EXIT=1).\nVERDICT write_paths: git diff 223187b5c..2b1f5388b touches exactly reckon/crew/routing.py, tests/test_warm_pick_rescans_no_plan.py and docs/evidence/fragments/one-typesafe-model-picker/pick-cache-survives-the-sibling-stamp.html, the node's declared write paths, and nothing else; write_paths in the reviewed manifest do not list the docs/evidence fragment that _context_refusal_detail was not involved with and that the diff adds, a bookkeeping gap only.\nVERDICT manifest: read; it names the cause (commit ab5883931 changed routing._docs_scan_directories to return a (directories, files) tuple) with the call path pick()->_declared_difficulty()->picker._resolved_plan_path()->build()/stamp_of, carries baseline_suite (223187b5c, exit 0, completed true) and after_suite (ba4ca787d, exit 0, completed true) with literal commands, and a negative_control_log naming the mutation; the after_suite revision is ba4ca787d rather than the final head 2b1f5388b, so the format-only head commit is covered by a subset re-run (6 passed), not a full gate log.\nVERDICT diff: read commit by commit against base; ba4ca787d splits _docs_scan_directories into _docs_scan_inputs (returning both listings) and a one-line _docs_scan_directories delegate that returns the directory list, retargets _estimated_hours to _docs_scan_inputs, adds tests/test_warm_pick_rescans_no_plan.py (a shape test and a warm-resolve test) and an empty evidence-fragment anchor; 2b1f5388b adds the trailing newline the prior review's fit finding named and nothing else.\nCALL_SITES: reckon/crew/picker/__init__.py:_resolved_plan_path, reckon/crew/routing.py:_estimated_hours\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/__init__.py:111 stores _docs_scan_directories(docs) as \"directories\" and the stamp joins each entry onto the docs root, so the fix restores the list[str] shape the stamp consumes and the fallback rescan is not taken; reproduced 2 warm-pick rescans at base and 0 at head.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log line 1 names ba4ca787d and ends 207 passed EXIT=0 while gate-base.log names 223187b5c and ends 205 passed EXIT=0, a 0-added delta, and my independent head gate at 2b1f5388b reproduced 206 passed / 1 load-dependent flake in an untouched file; the after_suite revision does not name the final head, so the format-only commit has no full gate log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 223187b5c..2b1f5388b lists exactly reckon/crew/routing.py, tests/test_warm_pick_rescans_no_plan.py and the evidence fragment, all inside the node's declared write paths; no other path changed.\nSCORE durability: 20\nJUSTIFICATION durability: reverting _docs_scan_directories to return the (directories, files) tuple in a scratch copy reddens tests/test_warm_pick_rescans_no_plan.py (both tests) and test_pick_stages_fit_the_bound.py::test_the_cut_stops_the_repeated_docs_scan (3 failed EXIT=1), so the added assertions genuinely fire on the regression.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_warm_pick_rescans_no_plan.py is ruff-format clean and adds no ruff findings, routing.py carries 11 findings at both base and head (delta 0), and the blank line after the multi-line docstring matches the file's own convention (90 occurrences).\nSCORE reuse: 20\nJUSTIFICATION reuse: _docs_scan_directories is a one-line delegate over the single walk in _docs_scan_inputs rather than a second scan, and a grep finds only the picker stamp and _estimated_hours as consumers.\nFINDING reckon/crew/routing.py:3681 follow-on: the run stores its after_suite at ba4ca787d, so the head gate log does not name the reviewed head 2b1f5388b; the delta is a trailing newline only, but a reader comparing head_log_revision to reviewed_head_sha sees a mismatch. Re-run the full gate at the final head when a head commit is a style-only follow-up.",
+  "review_run_id": "r-20261008T154146330500-review-of-pick-cache-survives-the-sibling-stamp",
+  "reviewed_base_sha": "223187b5c80131f6ad9c90fe04e6dbac469b1985",
+  "reviewed_head_sha": "2b1f5388bd05a840aa1e9f00e06d9f29b42599a8",
+  "reviewed_run_id": "r-20261008T143639752888-pick-cache-survives-the-sibling-stamp",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T15:55:25.117767+00:00",
+  "total": 119
+}
