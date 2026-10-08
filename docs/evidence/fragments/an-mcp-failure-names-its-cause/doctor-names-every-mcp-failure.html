@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s2">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <title>reckon doctor names every MCP failure's cause | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="doctor-names-every-mcp-failure-landing" data-node="doctor-names-every-mcp-failure" data-reckon="landed" data-when="2026-10-08">
+  <h2>The census names every connection failure's cause and counts storage-slow results</h2>
+  <p>A new module <code>reckon/mcp_census.py</code> holds one public function, <code>census</code>, that takes an explicit window and returns, per server, the connections seen, the failures grouped by cause, and the <code>storage-slow</code> tool results per tool. It reuses the existing owners of every fact: <code>_in_linked_worktree</code> for whether a path is a linked worktree, <code>_repository_named_by_worktree</code> for the repository a reaped <code>.reckon-worktrees</code> path names, <code>transcript_index</code> and the store's <code>STORAGE_SLOW</code> sentinel. The transcript tool-block walk <code>promotion_receipts</code> held inline is extracted into <code>transcript_tool_blocks</code>, which both readers call. <code>reckon doctor</code> gains an "MCP connections" block that prints the census for the seven days ending now.</p>
+  <table id="doctor-names-every-mcp-failure-figures">
+    <caption>Gate and real-tree figures</caption>
+    <thead>
+      <tr><th>Measure</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>tests/test_mcp_census.py</code></td><td>6 passed, EXIT=0</td></tr>
+      <tr><td>Negative control (patterns emptied; tool-result reader muted)</td><td>EXIT=1, 5 failed</td></tr>
+      <tr><td>Tests importing <code>reckon.velocity</code></td><td>53 passed, EXIT=0</td></tr>
+      <tr><td>imas-cx <code>CONNECTION_CLOSED</code>, 2026-10-01T01:00Z–2026-10-08T01:00Z</td><td>1065 (section 1 records 1068; 0.28% within the 5% bound)</td></tr>
+      <tr><td>imas-cx connections seen / failed / clean</td><td>1643 / 1635 / 8</td></tr>
+      <tr><td>reckon connections seen / failed / clean</td><td>3784 / 1020 / 2764</td></tr>
+    </tbody>
+  </table>
+  <p>The one-cause-per-signature fixture lands every signature in its cause, reports an unmatched failure as <code>unclassified</code> with its first line, counts a clean connection as a success and a failure whose <code>.reckon-worktrees</code> directory was removed as a worker worktree of its repository, and reads two <code>storage-slow</code> results for <code>read_plan</code> and one for <code>roadmap</code>. The real-tree run is logged at the run directory as <code>census-real-tree.log</code>.</p>
+</article>
+</body>

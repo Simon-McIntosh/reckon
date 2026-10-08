@@ -805,6 +805,37 @@ def _project_environment_drift() -> tuple[Path | None, list[str]]:
     return checkout, changes
 
 
+def _iso_instant(epoch: float) -> str:
+    return datetime.fromtimestamp(epoch, UTC).isoformat().replace("+00:00", "Z")
+
+
+def _echo_mcp_census(report: dict) -> None:
+    """Print one census report: per server, connections and failures by cause."""
+
+    for server, row in report["servers"].items():
+        click.echo(
+            f"  {server}: {row['connections']} connections, "
+            f"{row['failed']} failed, {row['succeeded']} clean"
+        )
+        for cause in row["causes"]:
+            kinds = cause["directory_kind"] or "unknown"
+            if cause["repository"]:
+                kinds = f"{server} {kinds} of {cause['repository']}"
+            click.echo(
+                f"    {cause['cause']}  {cause['count']}  "
+                f"newest {cause['newest']}  in {kinds}"
+            )
+            if cause.get("first_line"):
+                click.echo(f"       {cause['first_line'][:120]}")
+    storage = report.get("storage_slow") or {}
+    if storage:
+        summary = ", ".join(
+            f"{tool} {count}" for tool, count in sorted(storage.items())
+        )
+        click.echo(f"  storage-slow results: {summary}")
+    else:
+        click.echo("  storage-slow results: none")
+
 
 @main.command()
 def doctor():
@@ -934,6 +965,17 @@ def doctor():
             click.echo(f"       {error}")
         click.echo("       see: https://docs.reckon.dev/mcp")
         ok = False
+
+    # ── MCP connections check ────────────────────────────────────────────────
+    click.echo("\nMCP connections")
+    from reckon.mcp_census import census
+
+    now = datetime.now(UTC)
+    report = census(
+        window_start=_iso_instant(now.timestamp() - 7 * 24 * 3600),
+        window_end=_iso_instant(now.timestamp()),
+    )
+    _echo_mcp_census(report)
 
     # ── Environment check ────────────────────────────────────────────────────
     checkout, drift = _project_environment_drift()
