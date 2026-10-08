@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T15:17:56.107Z",
+  "dispatched_at": "2026-10-08T15:07:45Z",
+  "findings": [
+    {
+      "anchor": "reckon/_mcp_tools.py:9",
+      "id": "duplicate_owner-1",
+      "reason": "naming `reckon/_mcp_tools.STORAGE_SLOW` as the value the count matches makes the census track the producer if the literal ever moves; second instance of the same defect: \u00a72 says a missing path \"under the system temporary directory, which holds the legacy `reckon-worktrees` pool, reads as temporary\", but the legacy pool path `Path(tempfile.gettempdir()) / \"reckon-worktrees\" / stem` is owned by `_workspace_roots` at `reckon/crew/routing.py:469`, which \u00a72 does not name, so the census re-derives where worktrees live beside the modern `.reckon-worktrees` component (`reckon/hooks/coordinator_obligations.py:239`) rather than citing the owner of both locations.",
+      "text": "\u00a72 counts `storage-slow` tool results but names no owner for the sentinel it matches, while `STORAGE_SLOW = \"storage-slow\"` at `reckon/_mcp_tools.py:9` (with `StorageSlowResult.error: Literal[\"storage-slow\"] = STORAGE_SLOW`, `reckon/_mcp_tools.py:148`) is that value's single definition; the census would re-spell the literal",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "166b47f404fe9231fb940226f3541ebe8423c014315a048421885647cedd58f1",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 76,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T150715266935-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "cea244c2efe9b2b8578c3c40ac57e76cdcb83b93",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one module `reckon/mcp_census.py` hides log discovery, JSONL parsing, the signature pattern table, the missing-path worktree classification and the transcript tool-result count behind the single `census(window)` function the doctor block and other callers use.",
+    "duplicate_owner": "a finding \u2014 \u00a72 filters tool results on the `storage-slow` literal owned at `reckon/_mcp_tools.py:9` and classifies the legacy worktree pool whose location is owned at `reckon/crew/routing.py:454` without naming either owner.",
+    "interface_budget": "pass \u2014 public_definitions 1614, cli_options 336, mcp_views 33, refusal_families 23; \u00a72 adds one module and one public function to `public_definitions` and states in its own text what it retires (\"adds one module \u2026 and one public function in it, the census; nothing is retired, because no existing reader counts MCP connections or `storage-slow` results\"), adds no command or option, no MCP view and no refusal family.",
+    "reuse_search": "pass \u2014 \u00a72 now cites the mechanisms it extends: `transcript_index`/`TRANSCRIPT_ROOT` and the `promotion_receipts` content-block walk in `reckon/velocity.py`, and `_in_linked_worktree` (`reckon/cli_entry.py:132`) and `_repository_named_by_worktree` (`reckon/hooks/coordinator_obligations.py:276`) for the working-directory kind; no existing reader of Claude Code's `mcp-logs-*` trees or of `storage-slow` counts exists to reuse (verified: no `mcp_census`, no `mcp-logs` reader, no `STORAGE_SLOW` consumer in `reckon/*.py`).",
+    "thin_wrapper": "pass \u2014 the census adds the per-cause connection counts and per-tool `storage-slow` counts no reader has; it calls existing owners for its sub-decisions rather than re-deriving them, and it extends `promotion_receipts` by extracting a shared walk rather than adding a parallel transcript reader."
+  },
+  "section_digests": {
+    "_document": "fde96442d568e87088a9d75f21259acff20938624fe68039941e7b52e4c2123e",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s2": "9c953af50e75c2123f44df1c74b462c6579c417e011b23199be1976bf83e92b5",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "0efccf9b7631774bee09027c337e0599e1d4ad91274eb1c58105ba82279f9a54",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T15:21:43.876044+00:00"
+}
