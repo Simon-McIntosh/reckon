@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.87">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -351,6 +351,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-08T16:49:59Z">
     <div class="r-comment-body"><p>Landed at merge <code>cf14ae6fd</code>. A plan write is refused when it adds a gap the plan did not carry before: an authored section heading with no declaration, or a declaration naming no heading. This follows decision <code>coverage-gap-scope</code>. The check runs on the state write, the text write and the server's <code>POST /plan</code> patch route. <code>reckon audit-doc</code> reports every gap, existing ones included, as <code>section-without-todo</code> and <code>todo-without-section</code>. At the transition into shipped or done, an undeclared heading counts as open. Census: 109 of 214 live plans across ten projects carry a gap, mostly older plans with no declarations; they stay writable. The authoring exemplar and the <code>reckon-create</code> skeleton now declare their sections, and stale fixtures in <code>test_edit_plan.py</code> and <code>test_promotion_requires_impl_move.py</code> author the headings they declare. Reviews: 115, 116, then a delta review of 114 out of 120. Seven tests, each with a negative control. Integrated gate: 217 passed, EXIT=0. Store, serve, doccheck and plan-HTML importer population, 291 files: 0 added at <code>f5e6ba410</code>. The overlap re-measured at <code>4f3512239</code>: 0 added. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/every-section-has-a-declaration.html">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261008T082524909480-every-section-has-a-declaration" data-who="reckon-build" data-when="2026-10-08T15:45:25.368Z">
+    <div class="r-comment-body"><p>A plan write is refused when it leaves an authored heading without a declaration or a declaration without a heading, and only for a gap the write introduces: new_section_coverage_gaps compares the gap set of the HTML the write produces with the gap set of the document as it stood when the write began, and only the new ids are named (section-without-todo / todo-without-section). One comparison, section_coverage_gaps, is shared with reckon audit-doc, which still reports every gap in every plan. A plan that already carries an undeclared heading stays writable but cannot land: at the transition into shipped or done the guard counts such a heading as open beside the declared implementable and deferred sections, reading the headings from the plan&#x27;s HTML via authored_section_headings, and names it in the refusal, at the state write, at validate_landing_patch, and at the apply_ops landing op. The HTTP route POST /plan/&lt;project&gt;/&lt;slug&gt; renders its own file without reaching either store write path, so it runs the same comparison on the text it read and the HTML it is about to write and returns 400 section_coverage naming the new ids, leaving the file untouched. open_sections is unchanged, so roadmap readiness still reads the declaration map alone.</p></div>
 </div>
 </section>
 </main>
