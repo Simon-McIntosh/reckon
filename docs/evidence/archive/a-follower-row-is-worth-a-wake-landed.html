@@ -25,6 +25,11 @@
     <p>397 of the 446 bare rows of §1 (89%) were drawn by <code>_fleet_replay</code>'s baseline loop in <code>reckon/cli.py</code>, reached from <code>_follow_watch_lines</code> on an arming whose resume plan is <code>continue</code>: a fresh child (a session host restarting it, or a Monitor re-arm) whose durable checkpoint continues. That path neither reads the delivered record nor seeds the row path with the checkpoint's <code>reported</code> map, which only an in-place reload applies through <code>path.reseed</code>. A fixture follower whose delivered record holds a run at working reproduced the bare row; the same record with the checkpoint removed, so the arming reads the record, drew none. The host-restart versus Monitor re-arm split is not recoverable from the frozen extraction. Report: <code>~/.config/reckon/crew/reports/reckon/follower-quiet/reannounce-path/report.md</code>. Review 108/120.</p>
   </section>
 
+  <section id="s2-row-policy-holds-observer-context">
+    <h2>§2 — the coordinator pane holds observer context back</h2>
+    <p><code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> holds observer-context rows back on the coordinator pane: a launch row, a run already working at attach, a terminal echo and a start in the next wave no longer print there. A coordinator row, a recovery, an unexplained end, a drain or producer-wait notice and a needs-action row at attach still print. The declared negative control removes the hold, and a launch prints three rows against one (EXIT=1). Thirty-five tests across seven files that had asserted the old stream were updated to the held-back behaviour, each recorded in the manifest; where a test was about the complete stream, it builds the pane with <code>show_observer=True</code>. The independent review stored 115/120 at <code>ed3d6ffce</code> with zero added failures. The coordinator ran the 55 test modules that reach the ticker or the follower with the run merged onto main <code>d420ec996</code>. 871 passed. Four failed in parallel only, reading "producer runs older code than this follower": the code stamp moved under the run when the live checkout changed. Those two files pass 13 of 13 serially at the merged head. The nine changed test files pass at the merged head, 116 passed with EXIT=0.</p>
+  </section>
+
 </main>
 </body>
 </html>

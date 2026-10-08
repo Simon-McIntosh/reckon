@@ -21,13 +21,14 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.25">
-<meta name="plan-version" content="38">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-08">
+<meta name="plan-commits" content="ed3d6ffc">
 </head>
 <body>
   <main class="plan-doc">
@@ -95,78 +96,12 @@
       session whether or not anything changed. Its owner should weigh this plan's measurement before
       building that cadence. Nothing here edits that plan.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s2">§2 — One row policy decides what a follower delivers</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> holds back a
-      row that <code>transition_class</code> classes as observer context instead of printing it, with three
-      exceptions that print:</p>
-    <ul>
-      <li>A recovery: the run leaves a state whose coordinator row this pane printed, for a non-terminal state
-        such as working.</li>
-      <li>An unexplained end: the run reaches a state in <code>SETTLED_STATES</code> without this pane having
-        printed a coordinator row for it since its arrival. <code>SETTLED_STATES</code> gains
-        <code>withdrawn</code> and <code>discarded</code>, which a run also does not leave, so the one owner of
-        "a state a run does not leave" covers them and <code>HIDDEN_AT_ATTACH</code> derives from it as before.
-        A launch withdrawn straight from dispatched within <code>ARRIVAL_WINDOW</code> is not unexplained: it is the
-        coordinator's own refused dispatch, which the dispatch call already reported, so it stays held back.</li>
-      <li>An actionable resolution: a noise pair whose resolving row lands in an action state prints the net change.
-        Today <code>working → blocked</code> followed by <code>blocked → completed_unpromoted</code> inside the 300 s
-        exit-phantom window prints nothing, because <code>NOISE_RESOLUTIONS</code> drops the resolution, so a run that
-        finished and waits for promotion never reaches the coordinator. The pair now prints one row,
-        <code>working → completed_unpromoted</code>, as an arrival's hold already prints its resolution under the
-        arrival's left side. A resolution
-        row is dropped only when it completes an opener still held. Once the opener has printed, because its window
-        passed, the resolving row is judged like any other: <code>blocked → completed_unpromoted</code> after a printed
-        blocked prints as an action state, and <code>stalled → working</code> after a printed stall prints as a
-        recovery. Today <code>NOISE_RESOLUTIONS</code> drops both kinds whether or not a hold is open.</li>
-    </ul>
-    <p>An arrival that resolves into an observer kind, the launch's <code>dispatched → working</code>, prints
-      nothing. An arrival still sitting in dispatched at <code>ARRIVAL_WINDOW</code> prints as today. A
-      kind outside <code>COORDINATOR_KINDS</code> counts as coordinator when its event's
-      <code>recovery_classification</code> is in <code>ACTIONABLE_RECOVERY_CLASSIFICATIONS</code> in
-      <code>reckon/crew/recovery.py</code>, the owner of "needs the coordinator", so
-      <code>working → exited-unfinished</code> and its kin print without the audit's list being grown by hand. A coordinator row followed by another
-      transition of the same run within a twenty-second settle window prints only the later row, when that later
-      row itself prints; a later row the policy holds back, such as the terminal echo <code>complete → recorded</code>,
-      supersedes nothing, so the
-      measured chains (<code>working → exited-unfinished → blocked</code> in 2 s,
-      <code>blocked → wait-aged → blocked</code> in 3 to 8 s) print once. The settle hold needs two module
-      constants beside <code>ARRIVAL_WINDOW</code>: the twenty-second
-      settle window, and a two-minute cap from a run's first held transition after which the latest row prints even
-      if the run is still changing, so a run that changes state more often than every twenty seconds is never held
-      indefinitely. The existing windows each belong to one named noise pair, so neither can serve. The third and last addition is
-      one keyword, <code>show_observer</code>, default false, on <code>RowPolicy</code>, <code>PaneRowPath</code> and
-      <code>replay_row_policy</code>: a pane built with it true prints observer context as today and applies no settle hold, and it is how §3's
-      negative control and §5's comparison build their pane. The three <code>NOISE_PAIRS</code> holds keep their own measured windows (90 s for
-      the launch flicker, 300 s for the exit phantom and the stall flap), which §2 does not change. A pane built with observer context shown keeps today's behaviour for every row
-      except those the two resolution rules above restore, which print on that pane too. <code>replay_row_policy</code>
-      uses that pane for §5's comparison, and §5 counts the restored rows separately. <code>PaneRowPath</code> writes its memory only for printed rows, as it does today,
-      and a held-back observer row is held back again when a re-arm re-derives it.</p>
-    <p><strong>Done when</strong> <code>tests/test_row_policy_holds_observer_context.py</code> feeds
-      <code>RowPolicy</code> the measured sequences and checks each one:</p>
-    <ul>
-      <li>arrival, <code>dispatched → working</code>, <code>working → complete</code>,
-        <code>complete → recorded</code> prints exactly one row, the complete.</li>
-      <li><code>working → exited-unfinished → blocked</code> two seconds apart prints one row, the blocked.</li>
-      <li>A printed blocked followed by <code>blocked → working</code> prints the recovery.</li>
-      <li>arrival then <code>dispatched → withdrawn</code> twice prints nothing.</li>
-      <li><code>working → blocked</code> then <code>blocked → completed_unpromoted</code> two seconds apart prints one
-        row, <code>working → completed_unpromoted</code>; today it prints none.</li>
-      <li>The same pair 400 s apart prints the blocked at its window and then the completed_unpromoted;
-        <code>working → stalled</code> then <code>stalled → working</code> 400 s apart prints the stall and then the
-        recovery. Today the second row of each prints nothing.</li>
-      <li>A working run whose next row is <code>working → discarded</code> prints the discarded.</li>
-      <li>A run changing state every ten seconds prints within two minutes of its first change.</li>
-      <li>With observer context shown, the first sequence prints the rows it prints today.</li>
-    </ul>
-    <p>A negative control is executed and logged: with the observer hold removed, the first case prints three
-      rows and fails. <code>tests/test_a_dispatch_is_one_row.py</code> and
-      <code>tests/test_follower_prints_only_policy_rows.py</code> assert today's launch row and are updated
-      to the held-back behaviour in the same change; every other test that imports <code>RowPolicy</code>
-      or <code>PaneRowPath</code> passes unchanged. The write paths are <code>reckon/crew/ticker.py</code>,
-      <code>tests/test_row_policy_holds_observer_context.py</code>,
-      <code>tests/test_a_dispatch_is_one_row.py</code> and
-      <code>tests/test_follower_prints_only_policy_rows.py</code>.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">RowPolicy holds observer-context rows back on the coordinator pane; coordinator, recovery and needs-action rows still print. Review 115; 55-module population green at the merged head. <a href="/reckon/evidence/archive/a-follower-row-is-worth-a-wake-landed.html#s2-row-policy-holds-observer-context">full record</a></p>
+</section>
 
     <h2 id="s3">§3 — The follower delivers through the policy</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -248,7 +183,10 @@
     <div class="r-comment-body"><p>Independent review of run r-20261008T084304183300-row-policy-holds-observer-context stored for range afe8932f0..8dbf1da9b (the five repair commits since its prior review); the parsed record scores all six dimensions in 0..20 (total 110), names reviewed_base_sha afe8932f0 and reviewed_head_sha 8dbf1da9b, and carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own logs/base-wide.txt and logs/gate.txt.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261008T124901581492-review-of-row-policy-holds-observer-context" data-who="reckon-build" data-when="2026-10-08T13:12:44.535Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261008T084304183300-row-policy-holds-observer-context stored for range 8dbf1da9b..ed3d6ffce (the two commits it gained since its prior review); the parsed record scores all six dimensions in 0..20 (total 115), names reviewed_base_sha 8dbf1da9b and reviewed_head_sha ed3d6ffce, and carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite log (865 passed EXIT=0) and after_suite log (874 passed EXIT=0).</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261008T084304183300-row-policy-holds-observer-context stored for range 8dbf1da9b..ed3d6ffce (the two commits it gained since its prior review); the parsed record scores all six dimensions in 0..20 (total 115), names reviewed_base_sha 8dbf1da9b and reviewed_head_sha ed3d6ffce, and carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite log (865 passed EXIT=0) and after_suite log (874 passed EXIT=0).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-landed" data-who="reckon-build" data-when="2026-10-08T13:20:00Z">
+    <div class="r-comment-body"><p>gate passed (nine changed test files, 116 passed, EXIT=0 at the merged head; review 115/120; population 871 passed with four parallel-only stamp flakes that pass serially); section 2 closed.</p></div>
 </div>
 </section>
 </main>
