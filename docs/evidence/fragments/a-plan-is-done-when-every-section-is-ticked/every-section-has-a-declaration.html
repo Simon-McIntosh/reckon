@@ -8,7 +8,7 @@
   <meta name="artifact-kind" content="evidence">
   <meta name="plan-evidence-for" content="reckon:a-plan-is-done-when-every-section-is-ticked">
   <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s5">
-  <meta name="evidence-commit" content="dd57ef890b556fb652c373b6266e74a8f7b255d3">
+  <meta name="evidence-commit" content="06b37a794cb96b3e914193ce8374db8b741b5df5">
   <meta name="evidence-date" content="2026-10-08">
   <meta name="evidence-verdict" content="pass">
 </head>
@@ -17,6 +17,8 @@
 <section id="every-section-has-a-declaration">
   <h2>Every section has a declaration</h2>
   <p id="every-section-has-a-declaration-census">Census of every mounted project's live (non-terminal) plans for a heading/declaration coverage gap, counted 2026-10-08: <strong>109</strong> gapped of <strong>214</strong> live plans. A gap a plan already carries is not refused: the write guard compares the gaps after a write with the gaps the plan carried before it and refuses only when the write adds one (decision <code>coverage-gap-scope</code> = <code>refuse-new-gaps</code>). The 109 are reported by <code>reckon audit-doc</code> as <code>section-without-todo</code> or <code>todo-without-section</code>, and stay writable; a plan that would acquire a gap it did not have is refused at that write, naming only the new id.</p>
+  <p id="every-section-has-a-declaration-terminal">A gap a plan already carries cannot be used to land it. At the transition into <code>shipped</code> or <code>done</code> an authored heading with no declaration is counted as open beside the sections declared <code>implementable</code> or <code>deferred</code>, and the refusal names it; the headings are read from the plan's HTML, so a heading nothing declares has an answer owed. The check applies wherever a landing can be written: the state write, the landing patch, and the op batch that applies before either. A plan already stored at a terminal status is not re-judged, so history stays editable.</p>
+  <p id="every-section-has-a-declaration-patch-route"><code>POST /plan/&lt;project&gt;/&lt;slug&gt;</code> patches state and renders the file itself, reaching neither store write path, so it runs the same coverage comparison on the text it read and the HTML it is about to write. A patch that would drop a declaration or introduce a heading without one is refused with <code>400 section_coverage</code>, naming the new ids, and the file is left unchanged.</p>
   <table id="every-section-has-a-declaration-per-project">
     <thead><tr><th>project</th><th>live</th><th>gapped</th></tr></thead>
     <tbody>
