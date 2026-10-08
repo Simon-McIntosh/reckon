@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:1084"
+  ],
+  "completed_at": "2026-10-08T17:14:18.330Z",
+  "dispatched_at": "2026-10-08T17:03:31Z",
+  "findings": [
+    {
+      "file": "reckon/project_maintenance_commands.py",
+      "line": "943",
+      "severity": "follow-on",
+      "text": "follow-on: _mounted_project_checkouts re-reads mounts.json to derive each mounted checkout as the docs path's parent, which reckon/mcp.py:3463 _list_projects already enumerates as {name, docs_path} through the same _mounts_path(); it also resolves the path through _mounts_path() while doctor's own mounts section at :905 reads _config_home()/mounts.json, so with RECKON_MOUNTS_PATH set the \"MCP launches\" and \"mounts.json\" sections of one reckon doctor run consult different files."
+    },
+    {
+      "file": "reckon/project_maintenance_commands.py",
+      "line": "777",
+      "severity": "follow-on",
+      "text": "follow-on: the _LITERAL_HOME pattern matches a literal /home or /Users path only when it follows the start of an argument, whitespace or '=', so an argument that joins a home path with another separator such as \"--project:/home/user/x\" carries a literal user home the check does not flag."
+    },
+    {
+      "file": "manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest leaves baseline_suite and after_suite empty and records its gate logs only under test_logs, so the review's added_failure_count and added_failure_ids cannot be derived from the reviewed run's own manifest fields and stand unmeasured."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "three commits over base e22aa6f - 736bf9ad feat(doctor) adds the audit, its helpers and the test, 056bfb015 tidies for lint, 7057e247 adds the evidence fragment; +511 lines across the production module, the test and the fragment, with no deletion and no production module touched beyond project_maintenance_commands.py.",
+    "done_when": "section 5's done-when names tests/test_doctor_mcp_launch.py over a fixture user config and three projects; the run's gate_head.log records that file 3 passed EXIT=0, gate_importers.log records the importer suite 42 passed EXIT=0, and both negative-control logs record 2 failed EXIT=1; I reproduced the head gate in a scratch tree extracted from 7057e247 (head_repro.log, 3 passed EXIT=0). The record's added-failure count is unmeasured because the reviewed manifest names no baseline_suite/after_suite gate log.",
+    "goal": "the goal is that reckon doctor flags every stdio MCP launch that would sync or resolve from the working directory; at head 7057e247 reckon/project_maintenance_commands.py:969 _audit_mcp_launches enumerates the user-scope entries of ~/.claude.json and the .mcp.json at each mounted project's checkout and emits one finding per flagged launch.",
+    "manifest": "the reviewed manifest reads complete - status complete, the goal, both gates, the two negative controls, commits, changed paths and the landing line - but leaves baseline_suite and after_suite empty at manifest.md:19-20, so the review's added-failure count cannot be derived from it.",
+    "write_paths": "the dispatch fenced the node to reckon/project_maintenance_commands.py, tests/test_doctor_mcp_launch.py, the evidence fragment and a figures directory; git diff --name-only e22aa6f 7057e247 lists exactly the first three, so the diff stays inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the two logged negative controls - removing the --no-sync check and removing the missing-directory check - each redden tests/test_doctor_mcp_launch.py with 2 failed EXIT=1, so the guards are shown to fire; docked because no control removes the literal-home check and the ${HOME} rendering is asserted only by a fixed prefix in test_flags_the_user_scope_entry_for_three_reasons.",
+    "evidence": "the gate and both negative controls are recorded (gate_head.log 3 passed EXIT=0; negative_control_no_sync_removed.log and negative_control_missing_dir_removed.log each 2 failed EXIT=1) and I reproduced 3 passed EXIT=0 at 7057e247 in a scratch tree (head_repro.log); docked because the reviewed manifest leaves baseline_suite/after_suite empty at manifest.md:19-20, so the review's added-failure count stands unmeasured.",
+    "fit": "the added helpers (project_maintenance_commands.py:779-1002) follow the module's private-helper idiom and their docstrings state the mechanism, with no plan, stage, ticket or author label.",
+    "goal_fidelity": "project_maintenance_commands.py:969-1002 _audit_mcp_launches flags a uv run that syncs, names no absolute --project, carries a literal home or names a missing directory, and _corrected_launch at :918 prints \"uv run --no-sync --project ...\" with the checkout rendered through ${HOME} by _as_home_variable at :797, matching section 5; docked only because the literal-home match at :777 needs whitespace or '=' before the path.",
+    "reuse": "project_maintenance_commands.py:943 _mounted_project_checkouts re-reads mounts.json and derives each checkout as the docs path's parent, a listing reckon/mcp.py:3463 _list_projects already produces from the same _mounts_path(), and it resolves through _mounts_path() while doctor's own mounts section at :905 uses _config_home()/mounts.json, so the two disagree under RECKON_MOUNTS_PATH.",
+    "scope_discipline": "git diff --name-only e22aa6f 7057e247 lists exactly reckon/project_maintenance_commands.py, tests/test_doctor_mcp_launch.py and docs/evidence/fragments/an-mcp-failure-names-its-cause/doctor-flags-unsafe-mcp-launches.html, all inside the dispatch's declared write paths, with no other file touched."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: e22aa6f96685e3d0653a8b0e6f95e5cc224539e5\nreviewed_head_sha: 7057e247491b826b22b0d20dae2f502b6c62f576\n\nVERDICT goal: the goal is that reckon doctor flags every stdio MCP launch that would sync or resolve from the working directory; at head 7057e247 reckon/project_maintenance_commands.py:969 _audit_mcp_launches enumerates the user-scope entries of ~/.claude.json and the .mcp.json at each mounted project's checkout and emits one finding per flagged launch.\nVERDICT done_when: section 5's done-when names tests/test_doctor_mcp_launch.py over a fixture user config and three projects; the run's gate_head.log records that file 3 passed EXIT=0, gate_importers.log records the importer suite 42 passed EXIT=0, and both negative-control logs record 2 failed EXIT=1; I reproduced the head gate in a scratch tree extracted from 7057e247 (head_repro.log, 3 passed EXIT=0). The record's added-failure count is unmeasured because the reviewed manifest names no baseline_suite/after_suite gate log.\nVERDICT write_paths: the dispatch fenced the node to reckon/project_maintenance_commands.py, tests/test_doctor_mcp_launch.py, the evidence fragment and a figures directory; git diff --name-only e22aa6f 7057e247 lists exactly the first three, so the diff stays inside the declared scope.\nVERDICT manifest: the reviewed manifest reads complete - status complete, the goal, both gates, the two negative controls, commits, changed paths and the landing line - but leaves baseline_suite and after_suite empty at manifest.md:19-20, so the review's added-failure count cannot be derived from it.\nVERDICT diff: three commits over base e22aa6f - 736bf9ad feat(doctor) adds the audit, its helpers and the test, 056bfb015 tidies for lint, 7057e247 adds the evidence fragment; +511 lines across the production module, the test and the fragment, with no deletion and no production module touched beyond project_maintenance_commands.py.\nCALL_SITES: reckon/project_maintenance_commands.py:1084\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: project_maintenance_commands.py:969-1002 _audit_mcp_launches flags a uv run that syncs, names no absolute --project, carries a literal home or names a missing directory, and _corrected_launch at :918 prints \"uv run --no-sync --project ...\" with the checkout rendered through ${HOME} by _as_home_variable at :797, matching section 5; docked only because the literal-home match at :777 needs whitespace or '=' before the path.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate and both negative controls are recorded (gate_head.log 3 passed EXIT=0; negative_control_no_sync_removed.log and negative_control_missing_dir_removed.log each 2 failed EXIT=1) and I reproduced 3 passed EXIT=0 at 7057e247 in a scratch tree (head_repro.log); docked because the reviewed manifest leaves baseline_suite/after_suite empty at manifest.md:19-20, so the review's added-failure count stands unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only e22aa6f 7057e247 lists exactly reckon/project_maintenance_commands.py, tests/test_doctor_mcp_launch.py and docs/evidence/fragments/an-mcp-failure-names-its-cause/doctor-flags-unsafe-mcp-launches.html, all inside the dispatch's declared write paths, with no other file touched.\nSCORE durability: 18\nJUSTIFICATION durability: the two logged negative controls - removing the --no-sync check and removing the missing-directory check - each redden tests/test_doctor_mcp_launch.py with 2 failed EXIT=1, so the guards are shown to fire; docked because no control removes the literal-home check and the ${HOME} rendering is asserted only by a fixed prefix in test_flags_the_user_scope_entry_for_three_reasons.\nSCORE fit: 19\nJUSTIFICATION fit: the added helpers (project_maintenance_commands.py:779-1002) follow the module's private-helper idiom and their docstrings state the mechanism, with no plan, stage, ticket or author label.\nSCORE reuse: 16\nJUSTIFICATION reuse: project_maintenance_commands.py:943 _mounted_project_checkouts re-reads mounts.json and derives each checkout as the docs path's parent, a listing reckon/mcp.py:3463 _list_projects already produces from the same _mounts_path(), and it resolves through _mounts_path() while doctor's own mounts section at :905 uses _config_home()/mounts.json, so the two disagree under RECKON_MOUNTS_PATH.\nFINDING reckon/project_maintenance_commands.py:943 follow-on: _mounted_project_checkouts re-reads mounts.json to derive each mounted checkout as the docs path's parent, which reckon/mcp.py:3463 _list_projects already enumerates as {name, docs_path} through the same _mounts_path(); it also resolves the path through _mounts_path() while doctor's own mounts section at :905 reads _config_home()/mounts.json, so with RECKON_MOUNTS_PATH set the \"MCP launches\" and \"mounts.json\" sections of one reckon doctor run consult different files.\nFINDING reckon/project_maintenance_commands.py:777 follow-on: the _LITERAL_HOME pattern matches a literal /home or /Users path only when it follows the start of an argument, whitespace or '=', so an argument that joins a home path with another separator such as \"--project:/home/user/x\" carries a literal user home the check does not flag.\nFINDING manifest.md:19 follow-on: the reviewed manifest leaves baseline_suite and after_suite empty and records its gate logs only under test_logs, so the review's added_failure_count and added_failure_ids cannot be derived from the reviewed run's own manifest fields and stand unmeasured.\n",
+  "review_run_id": "r-20261008T170309233488-review-of-doctor-flags-unsafe-mcp-launches",
+  "reviewed_base_sha": "e22aa6f96685e3d0653a8b0e6f95e5cc224539e5",
+  "reviewed_head_sha": "7057e247491b826b22b0d20dae2f502b6c62f576",
+  "reviewed_run_id": "r-20261008T161825478049-doctor-flags-unsafe-mcp-launches",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T17:13:21.828799+00:00",
+  "total": 108
+}
