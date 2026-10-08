@@ -1,10 +1,10 @@
 """The follower delivers a settled row when it asks for action, and only then.
 
-Section 3 of *a-follower-row-is-worth-a-wake*: the follower runs the
-coordinator's pane through the row policy, so a run's start, the bare
-re-announcement of a state the pane already shows, and the terminal echo of a
-completion the coordinator's own command caused all stay off the pane. What
-prints is the settled change that asks the coordinator for something -- a
+The follower runs the coordinator's pane through the row policy, so it
+delivers a change that asks the coordinator for action and any reversal of an
+action row it already showed, and holds back a start, a bare re-announcement
+of a state the pane already shows, and the terminal echo of the coordinator's
+own command. What prints is the settled change that asks for something -- a
 completion to record, a block to repair -- and a completion no later
 transition supersedes still prints on its own, released by the wait pass
 rather than by a later row that may never come.
