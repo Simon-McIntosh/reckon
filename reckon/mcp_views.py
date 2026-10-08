@@ -21,8 +21,8 @@ from reckon import _backends, ledger
 from reckon import budget as budget_module
 from reckon._plan_html import (
     RECKON_ATTRIBUTE,
+    authored_section_headings,
     machinery_kind,
-    plan_headings,
     section_prose,
     section_record_id,
 )
@@ -2088,19 +2088,7 @@ def authored_plan_text(html_text: str) -> str:
 
 def _authored_section_headings(html_text: str) -> list:
     """Locate each authored section's heading record from the shared spans."""
-    sections = []
-    claimed = set()
-    for heading in plan_headings(html_text):
-        if (
-            heading.level != 2
-            or not heading.raw_id
-            or heading.identity in claimed
-            or heading.machinery
-        ):
-            continue
-        claimed.add(heading.identity)
-        sections.append((heading.identity, heading))
-    return sections
+    return authored_section_headings(html_text)
 
 
 def _record_text_response(
@@ -2669,6 +2657,7 @@ def _summary(
     if selector.type == "plan":
         result["section_blocking"] = _section_blocking(deps)
         result["sections"] = list(data.get("sections") or [])
+        result["todos"] = list(data.get("todos") or [])
     return result
 
 

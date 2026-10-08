@@ -675,6 +675,7 @@ def _read_state(
 
     state, text = _plan_html.read_state_and_text_file(html_file)
     state = _state_with_diagnostics(project, text, state, root)
+    state["todos"] = _plan_html.derive_section_todos(text, state)
     version = int(state.get("version", 0) or 0)
     return state, version
 

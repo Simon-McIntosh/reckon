@@ -777,6 +777,26 @@ def _record_field(record, name):
     return getattr(record, name, None)
 
 
+#: The three values a section's ``section_declarations`` classification takes.
+#: ``done`` is ticked; ``implementable`` and ``deferred`` are the two open
+#: states a section can be left in.
+SECTION_DECLARATION_DONE = "done"
+SECTION_DECLARATION_IMPLEMENTABLE = "implementable"
+SECTION_DECLARATION_DEFERRED = "deferred"
+
+#: The declarations that leave a section open — the one predicate the terminal
+#: guard and roadmap readiness both read.
+OPEN_SECTION_DECLARATIONS = (
+    SECTION_DECLARATION_IMPLEMENTABLE,
+    SECTION_DECLARATION_DEFERRED,
+)
+
+#: The id prefix a section's closing record carries. The landing beat writes one
+#: comment per landed section under ``c-close-<section>`` in the same call as the
+#: tick, so the record is selected by that id rather than by position.
+SECTION_CLOSE_COMMENT_PREFIX = "c-close-"
+
+
 def derive_impl_from_sections(sections, declarations=None) -> float | None:
     """impl from section effort: done over done plus remaining implementable.
 
@@ -795,7 +815,8 @@ def derive_impl_from_sections(sections, declarations=None) -> float | None:
     recorded = {str(_record_field(record, "id") or "") for record in sections}
     for section, classification in (declarations or {}).items():
         if (
-            str(classification or "").strip() in ("done", "implementable")
+            str(classification or "").strip()
+            in (SECTION_DECLARATION_DONE, SECTION_DECLARATION_IMPLEMENTABLE)
             and str(section) not in recorded
         ):
             return None
@@ -810,16 +831,109 @@ def derive_impl_from_sections(sections, declarations=None) -> float | None:
             return None
         if hours <= 0:
             return None
-        if status == "done":
+        if status == SECTION_DECLARATION_DONE:
             done += hours
-        elif status == "implementable":
+        elif status == SECTION_DECLARATION_IMPLEMENTABLE:
             predicted += hours
-        elif status != "deferred":
+        elif status != SECTION_DECLARATION_DEFERRED:
             return None
     total = done + predicted
     if total <= 0:
         return None
     return done / total
+
+
+def authored_section_headings(html_text: str) -> list:
+    """Each authored section's heading record and identity, in document order.
+
+    The one reader of the section headings: a level-2 heading carrying an id,
+    not machinery, claimed once per identity. ``derive_section_todos`` and the
+    authored-section walk that reads a plan's prose both resolve through here,
+    so a heading one counts and the other does not cannot diverge.
+    """
+    sections = []
+    claimed = set()
+    for heading in plan_headings(html_text):
+        if (
+            heading.level != 2
+            or not heading.raw_id
+            or heading.identity in claimed
+            or heading.machinery
+        ):
+            continue
+        claimed.add(heading.identity)
+        sections.append((heading.identity, heading))
+    return sections
+
+
+def open_sections(state) -> list[str]:
+    """Section ids the plan still holds open: implementable or deferred.
+
+    The one open-section predicate. A terminal-status guard refuses ``done``
+    while this is non-empty, and roadmap readiness reads the same list to decide
+    whether a whole-plan dependency is satisfied. Order follows the declaration
+    map, which is the order the plan's sections were declared in.
+    """
+    declarations = (state or {}).get("section_declarations") or {}
+    return [
+        str(section)
+        for section, classification in declarations.items()
+        if str(classification or "").strip() in OPEN_SECTION_DECLARATIONS
+    ]
+
+
+def _closing_comment(state, identity: str) -> dict | None:
+    """The closing record a landed section carries.
+
+    The landing beat writes one comment per ticked section under the id
+    ``c-close-<section>``, in the same call as the tick, so it is found by that
+    id and never by position — promotion appends its own section comments after
+    the close.
+    """
+    wanted = {
+        f"{SECTION_CLOSE_COMMENT_PREFIX}{candidate}"
+        for candidate in section_id_candidates(identity)
+    }
+    for records in (state.get("comments") or {}).values():
+        for record in records or []:
+            if str((record or {}).get("id") or "") in wanted:
+                return record
+    return None
+
+
+def derive_section_todos(html_text: str, state) -> list[dict]:
+    """One checklist entry per authored section, in document order.
+
+    Each entry carries the section id, its heading text, the in-page link
+    ``#<id>``, and its declaration. A ticked entry (declaration ``done``) also
+    carries its closing record when one is present. The list is a read-only
+    derivation over the plan text and its parsed state: nothing new is stored,
+    so the todos never enter the fingerprint the review reads, and the state
+    schema drops the field on the way through rather than round-tripping it.
+    """
+    declarations = (state or {}).get("section_declarations") or {}
+    records = {
+        str(record.get("id") or ""): record
+        for record in ((state or {}).get("sections") or [])
+        if isinstance(record, Mapping)
+    }
+    todos = []
+    for identity, heading in authored_section_headings(html_text):
+        declaration = declarations.get(identity)
+        if declaration is None:
+            record = records.get(identity)
+            if record is not None:
+                declaration = record.get("status")
+        todos.append(
+            {
+                "id": identity,
+                "heading": heading.text,
+                "link": f"#{identity}",
+                "declaration": declaration,
+                "close": _closing_comment(state, identity),
+            }
+        )
+    return todos
 
 
 def _document_carries_records(html_text: str) -> bool:
@@ -2197,6 +2311,7 @@ def _parse_plan_uncached(path: Path, slug: str | None) -> dict:
     ]
     rec["followups"] = st.get("followups") or []
     rec["comments"] = st.get("comments") or {}
+    rec["todos"] = derive_section_todos(text, st)
     rec["questions"] = st.get("questions") or []
     rec["research"] = st.get("research") or []
     rec["depends_on"] = st.get("depends_on") or []
