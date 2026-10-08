@@ -240,12 +240,13 @@ def test_an_unscoped_follower_renders_a_row_without_a_session_id(home) -> None:
     conditional, so ownership is carried by the follower's own delivery scope
     rather than by a row column."""
     _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
+    _deliver(home, "r-mine", "complete")
 
     with runs._project_watch_claim("proj", "1h") as (_acquired, _seat):
         crew.list_live(project="proj")
         events = _follow("proj")
 
-    assert events, "an unscoped follower still receives the fleet"
+    assert events, "an unscoped follower still receives the fleet's action rows"
     asked = recovery.format_watch_transition(events[0], with_session=True)
     assert "mine" not in asked, "the session id is not for the line to show"
     assert "mine" not in recovery.format_watch_transition(events[0])
@@ -302,6 +303,7 @@ def test_a_follower_outlives_a_drained_fleet_and_reports_the_next_wave(home) -> 
     monitor that had already exited — one arming covered one wave.
     """
     _write_pointer(home, "r-first", "first-node", session="mine", phase="working")
+    _deliver(home, "r-first", "complete")
     received: list[dict] = []
     failures: list[BaseException] = []
     stop = threading.Event()
@@ -327,6 +329,7 @@ def test_a_follower_outlives_a_drained_fleet_and_reports_the_next_wave(home) -> 
         # The wave drains: the seat is released and every pointer is promoted.
         crew.pointer_path("r-first").unlink()
         _write_pointer(home, "r-second", "second-node", session="mine", phase="working")
+        _deliver(home, "r-second", "complete")
         with runs._project_watch_claim("proj", "1h"):
             crew.list_live(project="proj")
             _wait_for(lambda: any(e["node"] == "second-node" for e in received))
@@ -365,6 +368,7 @@ def test_a_follower_waits_for_a_producer_instead_of_refusing(home) -> None:
         time.sleep(0.05)
         assert received == [], "nothing is live yet, so nothing is reported"
         _write_pointer(home, "r-late", "late-node", session="mine", phase="working")
+        _deliver(home, "r-late", "complete")
         with runs._project_watch_claim("proj", "1h"):
             crew.list_live(project="proj")
             _wait_for(lambda: any(e["node"] == "late-node" for e in received))
@@ -377,6 +381,7 @@ def test_a_follower_waits_for_a_producer_instead_of_refusing(home) -> None:
 
 def test_a_re_attached_follower_repeats_no_state_it_already_reported(home) -> None:
     _write_pointer(home, "r-one", "one-node", session="mine", phase="working")
+    _deliver(home, "r-one", "blocked")
     received: list[dict] = []
     stop = threading.Event()
 
@@ -409,7 +414,7 @@ def test_a_re_attached_follower_repeats_no_state_it_already_reported(home) -> No
         thread.join(timeout=2)
 
     assert [event["to_state"] for event in received] == [
-        "working",
+        "blocked",
         "completed_unpromoted",
     ]
 
@@ -498,14 +503,14 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
             "proj", session="mine", until=lambda received: len(received) >= 2
         )
 
-    # A run already moved off dispatched reports at once; a run still sitting
-    # in dispatched has its arrival held for the window, because the launch
-    # that has not moved may yet collapse into its first transition, and only
-    # prints late — here on the stop that drains the hold — if it never moves.
+    # A run still sitting in dispatched has its arrival held for the window,
+    # because the launch that has not moved may yet collapse into its first
+    # transition, and only prints late — here on the stop that drains the hold —
+    # if it never moves. The run that did move into working is observer context
+    # the pane withholds.
     assert [(e["node"], e["to_state"]) for e in events] == [
-        ("two-node", "working"),
         ("one-node", "dispatched"),
-    ]
+    ], events
     assert all(e.get("event") in {"baseline", "transition"} for e in events), (
         "the follower's own lifecycle is not fleet state and does not belong here"
     )
