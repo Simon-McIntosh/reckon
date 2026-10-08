@@ -25,7 +25,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="233">
+<meta name="plan-version" content="234">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
 </head>
@@ -750,6 +750,9 @@
 </div>
 <div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-10-08T11:00:00Z">
     <div class="r-comment-body"><p>§16 landed: the stale-window test pins its clock, the guard resolves the real store, the reap seam defaults off, and no test may spawn a provider binary (merge <code>73d08fddb</code>, review 99, no failures added). Follow-on is §20. <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s16">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261008T093552471977-picker-tests-read-their-own-state" data-who="reckon-build" data-when="2026-10-08T10:15:39.748Z">
+    <div class="r-comment-body"><p>picker-tests-read-their-own-state ready to land — tests/test_no_test_spawns_a_provider.py, the frozen snapshot clock in test_picker_dispatch_pace.py, the store-path resolution in tests/conftest.py and test_member_friction.py, and the reap-seam default flip. The driving followup &quot;the account-probe guard covers only the run_probe seam; add a suite-wide check that no test spawns a provider binary&quot; is satisfied by the new check; the coordinator owns resolving it and setting plan status.</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261008T102018501789-review-of-dispatch-launch-cost" data-who="reckon-build" data-when="2026-10-08T10:33:47.100Z">
     <div class="r-comment-body"><p>review of r-20261008T093629275905-dispatch-launch-cost — parsed record scores all six dimensions (goal_fidelity 17, evidence 14, scope_discipline 20, durability 16, fit 18, reuse 19; total 104), reviewed base 3f7a2f71ff433c778659e93e870207d3752c748f to head 50281aef2d2366a2acaf031d9054c6f644719000; the grace derivation reproduces (33.0) and the head gate reproduces green (11 passed EXIT=0), but four follow-ons sit on unverifiable measurement provenance and a narrow not-a-constant guard.</p></div>
