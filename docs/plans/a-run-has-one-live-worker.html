@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -90,11 +90,14 @@
     <p>The second worker was <code>claude -p --resume 00ba9ff6…</code> under ppid 1. Its supervisor was gone and wrote no attempt
       record, so no pid on the run named it. But its argv carried the run's worker session id, and that is how §1's <code>ps</code>
       listing found it. Both guards already take liveness from one owner, <code>record_process_alive</code> in
-      <code>reckon/crew/runs.py</code>: <code>resume_plan</code> calls it directly, and <code>_launcher_refusal</code> reaches it through
-      <code>local_liveness</code> in <code>reckon/crew/recovery.py</code>. That owner gains one more read, a private helper in the same
+      <code>reckon/crew/runs.py</code>, and both call it directly: <code>resume_plan</code> in
+      <code>reckon/crew/dispatch_sessions.py</code> and <code>_launcher_refusal</code> in <code>reckon/crew/resumption.py</code>.
+      <code>local_liveness</code> in <code>reckon/crew/recovery.py</code> calls it too and so reads the same answer. That owner gains one more read, a private helper in the same
       module. When every pid the record names is dead and the record names a worker session, it walks <code>/proc</code> the way
       <code>_pipe_reader_pids</code> already does, for a live process owned by this user whose argv carries that session id as a whole
-      element, excluding the caller and its ancestors. A hit reads alive. A live run never reaches the walk, so it costs nothing
+      element, excluding the caller and its ancestors. Both predicates have owners it calls rather than rewrites: the whole-element
+      session match is the test <code>_launched_prior_session</code> in <code>reckon/crew/dispatch_launch.py</code> applies to a launch
+      argv, and the bounded ancestry is <code>_ancestor_processes</code> in <code>reckon/crew/dispatch_accounting.py</code>. A hit reads alive. A live run never reaches the walk, so it costs nothing
       extra. Its reach is the host it runs on, the same reach the pid probe has.</p>
     <p>No public definition is added and no refusal changes: both guards fire their existing live-process refusals, whose fixed text
       reads identically on both doors as <code>tests/test_dry_run_predicts_the_launcher.py</code> requires. No claim, lease or renewal

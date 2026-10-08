@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.64">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="cff2bbed,e52b056f">
 </head>
@@ -83,7 +83,13 @@
       now. Each cause carries its count, newest occurrence, one example log path and the kind of working
       directory it failed in: main checkout, worker worktree or temporary directory. The census reads that kind with
       <code>_in_linked_worktree</code> in <code>reckon/cli_entry.py</code>, the existing owner of whether a path is a linked
-      worktree, and a directory under the system temporary directory reads as temporary; it re-derives neither. The causes are the
+      worktree, and a directory under the system temporary directory reads as temporary; it re-derives neither. Most failing
+      directories are gone by the time the census reads them: 1,453 of 1,500 sampled connection records name a directory that no
+      longer exists, and 1,450 of those sit under a <code>reckon-worktrees</code> root. <code>_in_linked_worktree</code> answers
+      false for a missing path, so a missing path is classified by where it sat instead: under a <code>reckon-worktrees</code>
+      component, the root <code>_workspace_roots</code> in <code>reckon/crew/routing.py</code> provisions every worktree under, it reads
+      as a worker worktree, and any other missing path reads as gone, never as a main checkout. The fixture log tree in the done-when
+      includes one failure whose worktree directory has been removed, and it is counted as a worker worktree. The causes are the
       signatures in §1's table, matched by a table of patterns in the same module. A failure no pattern matches
       is reported as unclassified with its first line rather than dropped, because the next unknown cause is the
       one this check exists to surface. It also counts <code>storage-slow</code> tool results per tool over the
