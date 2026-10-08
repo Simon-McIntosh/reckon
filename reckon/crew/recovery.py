@@ -154,6 +154,7 @@ MANIFEST_SIZE_MEMORY_MAX = 256
 # though both remain attention-worthy terminal-looking rows.
 RECOVERY_VERBS = {
     "running": "observe",
+    "queued": "wait",
     "waiting": "wait",
     "paused": "wait",
     "completed_unpromoted": "promote",
@@ -8445,7 +8446,11 @@ def classify_pointer(
     )
     marker = None
     needs_help_complete_value = None
-    if interruption is not None:
+    if phase == "queued":
+        classification = "queued"
+        detail = str(record.get("reason") or "waiting for a local lane slot")
+        action = "wait for a local lane slot"
+    elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")
         if signal_name:
