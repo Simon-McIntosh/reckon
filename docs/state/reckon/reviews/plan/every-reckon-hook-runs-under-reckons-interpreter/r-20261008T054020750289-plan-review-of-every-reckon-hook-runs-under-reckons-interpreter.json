@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T05:55:17.411Z",
+  "dispatched_at": "2026-10-08T05:40:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-reckon-hook-runs-under-reckons-interpreter.html:86",
+      "id": "done_when-1",
+      "reason": "a node implementing bullet 3 for the git guard would build a fail-open path that permits a banned command and defeats the plan's central fail-closed decision.",
+      "text": "\u00a74's third done-when has a script whose checkout interpreter is missing \"exit non-zero rather than looping\", but the worker git guard refuses by printing a `permissionDecision: deny` JSON on exit 0 (`reckon/hooks/worker_git_guard.py:548-558`), so a non-zero exit is a non-blocking error under which the harness runs the command anyway; applied to the git guard this is exactly the copied-away/wrong-interpreter fail-open exposure \u00a71 names and the fail-closed decision at `data-key=\"guard-failure\"` forbids",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-reckon-hook-runs-under-reckons-interpreter.html:61",
+      "id": "reasoning-1",
+      "reason": "\u00a75's done-when (\"the operator's settings file holds no bare reckon hook command\") cannot hold for the obligations hook without extending the upgrade set, so the plan would ship leaving the very bare, wrong-interpreter hook it exists to remove.",
+      "text": "\u00a72 asserts the installer already upgrades a bare command in place and its done-when requires every bare reckon command be upgraded with no duplicate, but `_merge_settings`' replacement set is built only for `_script_name(command) in WORKER_SCRIPT_NAMES`, which is (worker_stop, worker_git_guard) \u2014 the obligations hook is not in it: verified on this node, `_merge_settings` given a bare `coordinator_obligations.py --hook prompt` returns `upgraded=False` and lists it under `skipped`, leaving it bare",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "72b9d9baa1a1a3cd9ad0d91bfabf6ce6564f58771079e1f449783f0048f85480",
+  "plan_slug": "every-reckon-hook-runs-under-reckons-interpreter",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T054020750289-plan-review-of-every-reckon-hook-runs-under-reckons-interpreter",
+  "reviewed_blob_sha": "7832b42b23607b2735d4e2e8ff999c7b3a2529e5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `build_hook_snippet`, `interpreter_path`, `_command_identity`, `_merge_settings`, `_write_settings` and `is_worker_git_guard_group` in `reckon/hooks/install.py`, `_configure_crew_guards`, `_is_native_agent_guard_group`, `_is_worker_message_guard_group` in `reckon/cli.py`, `_seed_harness_entry` in `reckon/_backends.py`, `harness_home_files` in `reckon/schema/flight-defaults.yaml`, `reckon.worker_git_shim`, and the fleet move's \u00a715 in `docs/plans/the-fleet-moves-to-a-new-node.html`.",
+    "done_when": "a finding \u2014 \u00a74's third done-when requires a script whose checkout interpreter is missing to \"exit non-zero rather than looping\", which for the worker git guard is not a refusal (see FINDING done_when).",
+    "evidence_paths": "pass \u2014 the units' claimed outputs are code paths and the operator settings file read back after write; no evidence is placed in a session scratchpad or node-local temporary.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach any symbol or comment the units describe.",
+    "reasoning": "a finding \u2014 \u00a72 says `_merge_settings`/`_write_settings` \"upgrade a bare command in place\", but the upgrade set is worker-stop and git-guard only, so a bare obligations command is skipped, not elevated (see FINDING reasoning).",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (sync composes/recognises/writes through the installer's composer) and \u00a74 one (one shared bootstrap that re-executes under the checkout interpreter).",
+    "wiring": "pass \u2014 the plan declares itself standalone (plan-standalone meta, no depends-on/informs/gates) and states its internal ordering (\u00a72 then \u00a73 and \u00a75; \u00a74 in parallel with \u00a72) in the `f-ehr-build` followup."
+  },
+  "section_digests": {
+    "_document": "55e5412245dee4a0372bda47c8410a7dcf026433c35c0d22d1eaedbcb10ff3a3",
+    "s1": "9fafa87eb74b6352e5ad1435ac0779ebc2e5e591f596df544c4b6fda15ccda27",
+    "s2": "44ac3032f72723cc2173b53a5fb81485e8ac292876f9b1a77bae6591bfca7fb4",
+    "s3": "dc16395bb30acca8f3fdc2b34fd78e6c59e2daa511fb92d877a788860cc61a8d",
+    "s4": "81aea7e718fd84862d0f8899d6e8b25d61f61c7f4e1dddfb80ea478de32547a6",
+    "s5": "0af530e080ca800ac60a14a270445e8bb22495cf0430285d5856fcd3a7bd3e27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:56:31.158286+00:00"
+}
