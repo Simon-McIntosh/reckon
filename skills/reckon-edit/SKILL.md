@@ -383,10 +383,11 @@ their own tree and `read_plan(..., checkout_path=…)` for state.
 
 ## Op reference
 
-The landing beat is three of these ops, never a hand edit: `collapse_section`
-collapses a shipped section in the evergreen, `append_evidence` writes the
-node's anchored section into the cumulative landing record, and `insert_section`
-adds a discovered section as a concrete section rather than a followup.
+The landing beat ticks a section rather than collapsing it, and leaves the
+section body as authored: `append_evidence` writes the node's anchored section
+into the cumulative landing record, a `set` of `section_declarations.<id>` to
+`done` records completion, and an `append` of a `c-close-<id>` comment on that
+section carries the result and a link to the evidence. Never a hand edit.
 
 | Op | Required keys | Notes |
 |---|---|---|
@@ -395,7 +396,7 @@ adds a discovered section as a concrete section rather than a followup.
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |
 | `move` | `target="sprint_item"`, `slug`, `from`, `to` | Index only. Moves item between sprints. |
-| `collapse_section` | `section`, `summary`, `evidence_anchor` | Landing beat: replaces the authored body under the section's `h2` with the landed card, keeps the heading and its id, and sets its declaration to `done`, in one versioned write. A bare `evidence_anchor` is the `append_evidence` anchor and links as `/<project>/evidence/archive/<plan>-landed.html#<anchor>`; one the record does not hold is refused. |
+| `collapse_section` | `section`, `summary`, `evidence_anchor` | Retained but no longer used by any skill: replaces the authored body under the section's `h2` with the landed card, keeps the heading and its id, and sets its declaration to `done`, in one versioned write. A bare `evidence_anchor` is the `append_evidence` anchor and links as `/<project>/evidence/archive/<plan>-landed.html#<anchor>`; one the record does not hold is refused. |
 | `append_evidence` | `plan`, `anchor`, `title`, `body` | Landing beat: appends one anchored `<section id=anchor>` to that plan's cumulative landing record, creating the record when absent and refusing a duplicate anchor. |
 | `insert_section` | `id`, `title`, `body`, `effort_hours`, `capability`, `links` | Writes a new `h2` with its typed section record. `capability` is the versioned request object; `effort_hours`, `capability` and `links` are required, not defaulted. |
 
@@ -411,15 +412,10 @@ Copyable landing-beat examples, one per op:
   {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
-  {"op": "collapse_section", "section": "s2",
-   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
-   "evidence_anchor": "s2"},
-  {"op": "insert_section", "id": "s3", "title": "§3 — checkpoint scoring",
-   "body": "<p>Score the checkpoint on the held-out split and record the MAE.</p>",
-   "effort_hours": 1.25,
-   "capability": {"version": "1.0", "class": "general",
-     "requirements": {"reasoning": "standard", "verification": "strict", "risk": "low"}},
-   "links": []}
+  {"op": "set", "path": "section_declarations.s2", "value": "done"},
+  {"op": "append", "target": "comments", "section": "s2",
+   "item": {"id": "c-close-s2", "who": "reckon-build", "when": "2026-06-24T00:00:00Z",
+     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2\">evidence</a></p>"}}
 ]
 ```
 
@@ -437,7 +433,7 @@ human/external blocker and record that blocker through sprint state.
 | Typo, clarification, new subsection | **Evergreen** (direct HTML edit) | Edit `docs/plans/<slug>.html` in place |
 | Followup, note, question | **`edit_plan` append op** | Structured write via ops |
 | Decision with rationale | **`edit_plan` lock op** | Lock the `.r-dec` element |
-| Section fully landed | **Execution evidence update** | Append an anchored section to `docs/evidence/archive/<slug>-landed.html`; collapse section in evergreen |
+| Section fully landed | **Execution evidence update** | Append an anchored section to `docs/evidence/archive/<slug>-landed.html`; tick the section (`set` `section_declarations.<id>` to `done`, append its `c-close-` comment) |
 | Decision locked irreversibly | **Phase transition** | Write `docs/plans/archive/<slug>-<key>-locked.html` |
 | Plan fully implemented | **Phase transition + archive** | See §archive below |
 

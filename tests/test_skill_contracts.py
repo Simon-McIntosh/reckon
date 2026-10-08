@@ -11,6 +11,7 @@ from reckon import mcp as mcp_module
 from reckon._mcp_tools import CrewArgs
 from reckon.cli import main
 from reckon.crew.node import NODE_PROPERTIES
+from reckon.crew.plan_review import plan_fingerprint
 from reckon.crew.runs import _watch_attach_line
 from reckon.mcp import _OP_VOCAB
 
@@ -782,12 +783,12 @@ def test_ship_persists_the_dag_build_section_classification() -> None:
     assert "remainder is unknown, never zero" in ship
 
 
-def test_ship_reclassifies_a_collapsed_section_as_done() -> None:
+def test_ship_ticks_a_landed_section_as_done() -> None:
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
-    assert "reclassify its `section_declarations` entry to `done`" in ship
+    assert "After ticking a section, its `section_declarations` entry reads `done`" in ship
     assert "records a landed node, not completion" in ship
-    assert "reclassification to `done` in the same `edit_plan` call" in ship
+    assert "and tick it too" in ship
 
 
 def test_ship_landing_state_carries_commit_and_gate_measure_with_impl() -> None:
@@ -1614,25 +1615,31 @@ def test_the_obligations_view_is_the_coordinator_inbox() -> None:
 # The landing beat is three edit_plan ops, not a hand edit. A skill that
 # describes the beat in prose but names no op sends a coordinator to a text-mode
 # edit or a direct file write — the hand edit these ops exist to replace.
-LANDING_BEAT_OPS = ("collapse_section", "append_evidence", "insert_section")
+LANDING_BEAT_OPS = ("append_evidence", "set", "append")
 
 # Each op's signature as _OP_VOCAB declares it: "{op:'name', field, field, ...}".
+# A generic op carries a grammar with bracketed optional groups — `append` with
+# `[section][, key]`; the required keys are read up to the first `[`, so the
+# optional tail is not pinned as required and a generic op is checked on the
+# fields every landing call passes.
 _OP_SIGNATURE = re.compile(r"\{op:'(?P<op>[a-z_]+)'(?P<fields>[^}]*)\}")
 
 
 def _required_fields(op: str) -> tuple[str, ...]:
     """The op's required keys, read from the vocabulary it is dispatched under.
 
-    The vocabulary is the agent-facing contract and is held against the
-    dispatch table elsewhere, so reading it here pins the skills to the code
-    rather than to a second copy of the field list that can drift from it.
+    Fields are named by their leading identifier, so `path:'<dotted>'` reads as
+    `path` and the initialiser beside it is not mistaken for part of the name.
     """
     entry = _OP_VOCAB[op]
     match = _OP_SIGNATURE.search(entry)
     assert match is not None, f"_OP_VOCAB entry for {op} names no field signature"
     assert match.group("op") == op, entry
+    required = match.group("fields").split("[", 1)[0]
     return tuple(
-        field.strip() for field in match.group("fields").split(",") if field.strip()
+        re.match(r"[a-z_]+", field.strip()).group(0)
+        for field in required.split(",")
+        if field.strip()
     )
 
 
@@ -1640,9 +1647,9 @@ def test_both_skills_name_the_landing_beat_ops_with_their_fields() -> None:
     """Both skills name every landing-beat op and the fields the code requires.
 
     The fields are read from _OP_VOCAB, so the check tracks the implementation
-    rather than a copy of it: naming insert_section with three keys, when the
-    record's effort_hours, capability and links are required and not defaulted,
-    returns op_error, and this fails before that reaches a reader.
+    rather than a copy of it: a landing call that omits a required key — the
+    declaration's `path` or `value`, the comment's `target` or `item` — is
+    returned op_error, and this fails before that reaches a reader.
     """
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     edit = normalized((ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text())
@@ -1683,7 +1690,7 @@ def _synthesized_checkout(checkout: Path) -> None:
     path.parent.mkdir(parents=True)
     authored = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
-        '<meta name="docs-project" content="sample">'
+        '<meta name="docs-project" content="my-project">'
         '<meta name="reckon-type" content="plan">'
         '<title>Example plan</title></head><body><main class="plan-doc">'
         '<h2 id="s1">First section</h2><p>First body.</p>'
@@ -1692,7 +1699,7 @@ def _synthesized_checkout(checkout: Path) -> None:
     )
     declarations = {"s1": "done", "s2": "implementable"}
     state = {
-        "project": "sample",
+        "project": "my-project",
         "type": "plan",
         "slug": "my-plan",
         "title": "Example plan",
@@ -1727,7 +1734,7 @@ def _apply_example(checkout: Path, example: dict) -> dict:
     path = checkout / "docs" / "plans" / "my-plan.html"
     state = _plan_html.read_state(path.read_text(encoding="utf-8"))
     return mcp_module._edit_plan_tool(
-        "sample",
+        "my-project",
         "my-plan",
         expected_version=state["version"],
         checkout_path=str(checkout),
@@ -1738,13 +1745,14 @@ def _apply_example(checkout: Path, example: dict) -> dict:
 
 
 def test_each_skills_documented_examples_apply(tmp_path: Path) -> None:
-    """The exact example each skill prints applies through edit_plan unchanged.
+    """The documented landing examples apply and tick without rewriting the body.
 
     An example a reader copies and submits has to work, so this takes each
-    skill's three op objects verbatim, applies each to a plan synthesised under
-    the temporary directory, and requires ok. Dropping a required field from a
-    documented example — capability from insert_section — turns its op into
-    op_error and fails here.
+    skill's op objects verbatim, applies each to a plan synthesised under the
+    temporary directory, and requires ok. The beat must then tick the section
+    rather than collapse it: the authored prose stays, the declaration reads
+    done, the closing comment is on the section, and the plan's review
+    fingerprint is unchanged.
     """
     for name in ("reckon-build", "reckon-edit"):
         text = (ROOT / "skills" / name / "SKILL.md").read_text()
@@ -1753,18 +1761,36 @@ def test_each_skills_documented_examples_apply(tmp_path: Path) -> None:
 
         checkout = tmp_path / name
         _synthesized_checkout(checkout)
+        plan_path = checkout / "docs" / "plans" / "my-plan.html"
+        before = plan_path.read_text(encoding="utf-8")
+        before_fingerprint = plan_fingerprint(before)
+
         for example in examples:
             result = _apply_example(checkout, example)
             assert result["ok"] is True, f"{name}: {example['op']} -> {result}"
 
+        after = plan_path.read_text(encoding="utf-8")
+        assert "Second body." in after, f"{name}: the landing beat rewrote the body"
+        state = _plan_html.read_state(after)
+        assert state["section_declarations"]["s2"] == "done", name
+        closing = [
+            comment
+            for section_comments in (state.get("comments") or {}).values()
+            for comment in section_comments
+            if comment.get("id") == "c-close-s2"
+        ]
+        assert closing, f"{name}: the landing beat wrote no c-close-s2 comment"
+        assert plan_fingerprint(after) == before_fingerprint, name
+
 
 def test_each_skills_documented_landing_links_a_record_section(tmp_path: Path) -> None:
-    """The landed card the documented examples write links to evidence that exists.
+    """The closing comment's link resolves to a section of the landing record.
 
-    Applying an example is not enough: a collapse whose link names no file, or a
-    file without the anchored section, still applies and leaves a reader a dead
-    link. So this follows the card's full-record href from the project root to a
-    file under the synthesised docs tree and requires the fragment's id there.
+    Applying an example is not enough: a link that names no file, or a file
+    without the anchored section, still applies and leaves a reader a dead
+    link. So this follows the c-close comment's evidence href from the project
+    root to a file under the synthesised docs tree and requires the fragment's
+    id there.
     """
     for name in ("reckon-build", "reckon-edit"):
         text = (ROOT / "skills" / name / "SKILL.md").read_text()
@@ -1774,12 +1800,14 @@ def test_each_skills_documented_landing_links_a_record_section(tmp_path: Path) -
             assert _apply_example(checkout, example)["ok"] is True
 
         plan_text = (checkout / "docs" / "plans" / "my-plan.html").read_text()
-        link = re.search(r'<a href="([^"]+)">full record</a>', plan_text)
-        assert link is not None, f"{name}: the collapse wrote no full-record link"
-        href = link.group(1)
+        comment = re.search(
+            r'data-id="c-close-s2".*?<a href="([^"]+)"', plan_text, re.DOTALL
+        )
+        assert comment is not None, f"{name}: the c-close comment carries no link"
+        href = comment.group(1)
         path, _, fragment = href.partition("#")
-        assert path.startswith("/sample/") and fragment, f"{name}: {href}"
-        record = checkout / "docs" / path.removeprefix("/sample/")
+        assert path.startswith("/my-project/") and fragment, f"{name}: {href}"
+        record = checkout / "docs" / path.removeprefix("/my-project/")
         assert record.is_file(), f"{name}: {href} names no file"
         assert f'id="{fragment}"' in record.read_text(), (
             f"{name}: {href} names no section of {record.name}"

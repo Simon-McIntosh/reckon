@@ -152,7 +152,7 @@ def _plan_landed(
     The plan has shipped, or every section the review's own ``section_digests``
     named is now declared done. A review that named no section — one whose
     digests carry only the document unit — is not landed by the second clause,
-    since nothing has collapsed for it.
+    since no section of it has been declared done.
     """
     if not isinstance(plan_state, Mapping):
         return False
@@ -254,7 +254,7 @@ def lifecycle(
 
     The states are checked in order — landed, superseded, open, answered — so a
     landed review whose finding is still unanswered reads ``landed``: the work
-    has collapsed and the review's live obligation has gone with it.
+    has landed and the review's live obligation has gone with it.
     """
     candidates = tuple(other for other in later_records if isinstance(other, Mapping))
     if _is_run_review(record):

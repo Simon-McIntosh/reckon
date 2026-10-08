@@ -841,40 +841,26 @@ afresh while the evidence is fresh.
   doc-producing tasks MUST carry this representation-selection rule, not a
   demand to produce an image.
 
-### 6b. Collapse-on-landing — MANDATORY
+### 6b. Tick-on-landing — MANDATORY
 
-**When a section ships, IMMEDIATELY collapse it in the evergreen.** Replace the section body with a 2–4 line landed-summary card. Do not accumulate shipped sections.
+**When a section ships, IMMEDIATELY tick it in the evergreen.** Append the
+node's anchored record, set the section's declaration to `done`, and append a
+`c-close-<section>` comment carrying the quantitative result and a link to the
+evidence. The section body stays as authored — the tick records completion
+without moving the design out of the page.
 
-```html
-<section id="s2" class="section-landed">
-  <header><span class="badge badge-shipped">✓ landed 2026-06-24</span>
-    <h2>§2 — Data prep pipeline</h2></header>
-  <p class="landed-summary">Built <code>src/data_prep.py</code>; smoke-test
-    green. Encoded 11,237 shots in 3h12m; eval MAE 0.04 — passing. Full record:
-    <a href="/<project>/evidence/archive/<slug>-landed#s2">§2 landed</a>
-    (commit <code>abc1234</code>).</p>
-</section>
-```
+**This is an `edit_plan` write, not a hand edit.** `append_evidence` —
+`{op:'append_evidence', plan, anchor, title, body}` — writes the node's anchored
+section into the cumulative landing record; the `c-close-<section>` comment
+carries the result and the project-absolute href
+`/<project>/evidence/archive/<plan>-landed.html#<anchor>` to that anchor,
+because nothing resolves a link inside a comment body. A direct HTML edit is the
+exception, announced under the bypass rule `reckon-edit` authors.
 
-**Rules for the landed summary:** 2-4 lines — what was built (past tense), the
-**quantitative result** ("landed §2" without its numbers is not a summary),
-artifact paths, evidence link + SHAs; `✓ landed YYYY-MM-DD` badge
-(`.badge-shipped`) on the header; original prose moves to the cumulative
-evidence anchor; **HTML, never markdown**.
-
-**This is an `edit_plan` write, not a hand edit.** `collapse_section` —
-`{op:'collapse_section', section, summary, evidence_anchor}` — replaces the
-authored body under that section's `h2` with the card, keeps its id, and sets
-the declaration to `done`. `evidence_anchor` is the `anchor` that
-`append_evidence` writes: the op links it as
-`/<project>/evidence/archive/<plan>-landed.html#<anchor>` and refuses an anchor
-the landing record does not hold, so append the evidence in the same call or an
-earlier one. A direct HTML edit is the exception, announced under the bypass
-rule `reckon-edit` authors.
-
-In the same collapse-on-landing beat, reclassify its `section_declarations`
-entry to `done`. A section comment records a landed node, not completion: only
-`done` lowers its executable remainder.
+In the same tick-on-landing beat, set the section's `section_declarations` in the
+same call — `{op:'set', path, value}` sets the declaration to `done`. A section
+comment records a landed node, not completion: only `done` lowers its executable
+remainder.
 
 ### 7. Update plan state — in the SAME BEAT as EACH node promotion
 
@@ -936,15 +922,10 @@ versioned request object) and `links` are required, not defaulted.
   {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
-  {"op": "collapse_section", "section": "s2",
-   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
-   "evidence_anchor": "s2"},
-  {"op": "insert_section", "id": "s3", "title": "§3 — checkpoint scoring",
-   "body": "<p>Score the checkpoint on the held-out split and record the MAE.</p>",
-   "effort_hours": 1.25,
-   "capability": {"version": "1.0", "class": "general",
-     "requirements": {"reasoning": "standard", "verification": "strict", "risk": "low"}},
-   "links": []}
+  {"op": "set", "path": "section_declarations.s2", "value": "done"},
+  {"op": "append", "target": "comments", "section": "s2",
+   "item": {"id": "c-close-s2", "who": "reckon-build", "when": "2026-06-24T00:00:00Z",
+     "body": "<p>§2 landed: built <code>src/data_prep.py</code>... <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2\">evidence</a></p>"}}
 ]
 ```
 
@@ -955,8 +936,8 @@ MUST set it.
 
 If the node also closes its section, include the driving-followup resolution
 and the section's `section_declarations` reclassification to `done` in the same
-`edit_plan` call, then collapse the section as §6b requires. If it does not
-close the section, leave that followup open: a node landing advances the ledger
+`edit_plan` call, then tick the section as §6b requires. If it does not close
+the node's section, leave that followup open: a node landing advances the ledger
 without pretending the larger section is finished.
 
 **Same-plan follow-on work becomes a section, never a followup.** Before setting
@@ -1145,7 +1126,7 @@ state = read_plan(
 # Verify:
 assert state["data"]["status"] in ("shipped", "done")   # or "active" if more sections remain
 assert state["data"]["impl"] == expected_fraction         # set correctly
-# All shipped sections are collapsed in the HTML
+# All shipped sections are ticked: declaration done, c-close comment present
 # Driving followup is resolved
 # A next followup or "done — no followup" outcome is present
 # No foldable followup remains open; each exempt open followup records its exemption
