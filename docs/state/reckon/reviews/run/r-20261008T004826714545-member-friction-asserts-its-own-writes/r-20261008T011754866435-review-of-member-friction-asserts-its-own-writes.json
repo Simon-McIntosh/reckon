@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_dispatch_spawns_through_the_fleet.py::test_an_unacknowledged_fifo_refuses_leaving_no_pointer_or_worktree"
+  ],
+  "added_failures_note": "from the reviewed run own gate logs: base gate-base.log 205 passed EXIT=0, head gate-head.log 1 failed/206 passed EXIT=1; the one added id is an unrelated timing flake",
+  "completed_at": "2026-10-08T01:42:09.085Z",
+  "dispatched_at": "2026-10-08T01:19:09Z",
+  "findings": [
+    {
+      "file": "tests/test_member_friction.py",
+      "line": "162",
+      "severity": "blocking",
+      "text": "the teardown asserts _assert_isolation(real_store) where real_store is a temporary dir that neither the code under test nor the fixture writes, so the guard cannot fire on the escaped write it exists to catch"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T004826714545-member-friction-asserts-its-own-writes/manifest.md",
+      "line": "15",
+      "severity": "blocking",
+      "text": "after_suite records exit_status 0 with failure_count 0 and head 207 passed while the gate-head.log it names records 1 failed/206 passed EXIT=1"
+    },
+    {
+      "file": "tests/test_dispatch_spawns_through_the_fleet.py",
+      "line": "378",
+      "severity": "follow-on",
+      "text": "the one added failure is a load-sensitive timing assertion unrelated to this test-only change; it passes alone in 10.79s"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "single commit; 152 insertions / 17 deletions across the two declared paths, replacing the whole-store comparison with a fixture-id scan plus two new guard tests",
+    "done_when": "items 2, 3 and 4 have artifacts, but the item-1 guard inspection target is decoupled from where an escaped write lands",
+    "goal": "the goal is that the test guards its own writes to the real store, not peer activity; the landed guard is peer-tolerant but inspects a temp dir the code never writes",
+    "manifest": "records a green head while the gate-head.log it names is red",
+    "write_paths": "both changed paths are declared write paths"
+  },
+  "justifications": {
+    "durability": "the added tests at tests/test_member_friction.py:165 and :177 redden if _assert_isolation regresses, but the wired fixture guard at :162 is vacuous",
+    "evidence": "the manifest records after_suite exit 0 failure_count 0 and head 207 passed, but the gate-head.log it cites records 1 failed/206 passed EXIT=1, and derivation from those logs yields 1",
+    "fit": "it diverges from the repo idiom real_stores_are_not_fixture_targets (tests/test_gate_log_is_preserved.py:79), and the real_store docstring at tests/test_member_friction.py:95 claims it is installed as RECKON_HOME though isolated_project overrides it",
+    "goal_fidelity": "the guard now inspects real_store, a temp dir the code never writes (isolated_project overrides RECKON_HOME to config_home at tests/test_member_friction.py:135), so it no longer guards the real store the goal names",
+    "reuse": "the repo already owns this guard in seven modules via real_stores_are_not_fixture_targets (tests/test_gate_log_is_preserved.py:79), and _fixture_writes_under re-implements a weaker temp-dir variant",
+    "scope_discipline": "git diff 7c882130 33f3d876 touches only tests/test_member_friction.py and docs/evidence/fragments/one-typesafe-model-picker/member-friction-asserts-its-own-writes.html, no plan-meta edit"
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "review_run_id": "r-20261008T011754866435-review-of-member-friction-asserts-its-own-writes",
+  "reviewed_base_sha": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "reviewed_head_sha": "33f3d8768732497c4e04fbf64b3e8e8c69dfd235",
+  "reviewed_run_id": "r-20261008T004826714545-member-friction-asserts-its-own-writes",
+  "scores": {
+    "durability": 11,
+    "evidence": 10,
+    "fit": 13,
+    "goal_fidelity": 9,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T01:30:00+00:00",
+  "total": 68
+}
