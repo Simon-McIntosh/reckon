@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_dispatch_spawns_through_the_fleet.py::test_an_unacknowledged_fifo_refuses_leaving_no_pointer_or_worktree"
+  ],
+  "added_failures_note": "derived from the reviewed run's own gate logs: base gate-base.log 204 passed/1 failed EXIT=1 (failure_id test_a_discarded_run_is_not_recreated), head gate-head.log 206 passed/2 failed EXIT=1; the one added id is a load-timing flake in test_dispatch_spawns_through_the_fleet.py outside this node's write scope",
+  "completed_at": "2026-10-08T02:54:09.260Z",
+  "dispatched_at": "2026-10-08T02:33:23Z",
+  "findings": [
+    {
+      "file": "tests/test_member_friction.py",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "the guard re-implements a variant of the repo's existing real_stores_are_not_fixture_targets idiom (tests/test_gate_log_is_preserved.py:79, duplicated in six peer modules), which also checks the real crew home under exact run-id filenames; adopting or extracting the shared guard would remove a second implementation of one truth"
+    },
+    {
+      "file": "tests/test_member_friction.py",
+      "line": "57",
+      "severity": "follow-on",
+      "text": "_ESCAPE_HOME hardcodes Path.home()/'.config'/'reckon' while reckon._store._config_home() falls back to ~/docs-server when ~/.config/reckon is absent, so on a host without the XDG directory the guard would watch a path no escaped write reaches and could pass vacuously; deriving the target from _config_home() would track the real destination"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the guard and its helpers are referenced only from tests/test_member_friction.py; the real_stores_are_not_fixture_targets idiom with the same purpose lives in seven other modules and was not reused",
+    "diff": "three commits (33f3d876, ce400c443, c76797a5): the first scoped the guard to fixture ids, the second pointed it at the real crew home, the third corrected the evidence fragment and the manifest gate numbers",
+    "done_when": "all items have artifacts: the guard target is the escape destination, both prior blocking findings are repaired with evidence on disk, and the manifest reconciles with the head gate log",
+    "goal": "the goal is that the member-friction isolation guard asserts its own writes rather than peer activity; the repaired guard now watches the real crew home and matches only this fixture's exact ids",
+    "manifest": "records base 204 passed/1 failed and head 206 passed/2 failed, matching gate-base.log and gate-head.log line for line",
+    "write_paths": "both changed paths are declared write paths of the reviewed run"
+  },
+  "justifications": {
+    "durability": "the guard is self-checking: test_isolation_guard_watches_the_escape_destination asserts the default target is the real home, test_isolation_guard_refuses_a_fixture_named_write proves it fires on a planted fixture-named pointer, and test_isolation_guard_tolerates_a_peer_dispatch proves peer tolerance; a focused run of the file at head gave 6 passed EXIT=0; weak point is the hardcoded _ESCAPE_HOME",
+    "evidence": "the manifest's baseline_suite (204 passed/1 failed) and after_suite (206 passed/2 failed) reconcile exactly with gate-base.log and gate-head.log, correcting the prior review's blocking finding; the two graded negative controls are on disk (negative-control-guard-target.log EXIT=1, negative-control-after-suite-record.log arm A MISMATCH EXIT=1 / arm B OK EXIT=0), though the guard-target control is a test-time mutation of the target constant rather than a fresh end-to-end escaped-write demonstration",
+    "fit": "follows the repo's test-level isolation convention and matches the intent of the per-module real_stores_are_not_fixture_targets fixture, but the layout of the guard is bespoke where the repo already carries the idiom",
+    "goal_fidelity": "the goal is that the guard asserts this fixture's own writes and fires on an escaped write while ignoring peer activity; the repaired guard watches the real crew home by default (tests/test_member_friction.py:60, :75), the escape destination the reviewer confirmed by resolving crew.runs.pointer_path('r-first') with RECKON_HOME unset to /home/ITER/mcintos/.config/reckon/crew/live/r-first.json, so the target now matches where a leak lands",
+    "reuse": "the repo already owns this exact guard, real_stores_are_not_fixture_targets, duplicated as an autouse fixture in seven test modules (tests/test_gate_log_is_preserved.py:79 and six peers), each checking the real crew home under exact run-id filenames; the node re-implements a variant rather than adopting or extracting that guard",
+    "scope_discipline": "git diff 7c882130 c76797a5 touches only tests/test_member_friction.py and docs/evidence/fragments/one-typesafe-model-picker/member-friction-asserts-its-own-writes.html, both declared write paths of the reviewed run; no plan-meta edit"
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "review_run_id": "r-20261008T023220940800-review-of-member-friction-asserts-its-own-writes",
+  "reviewed_base_sha": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "reviewed_head_sha": "c76797a5d39234dd1a7b57717be4efd5577ef1e9",
+  "reviewed_run_id": "r-20261008T004826714545-member-friction-asserts-its-own-writes",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 9,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T02:50:00+00:00",
+  "total": 97
+}
