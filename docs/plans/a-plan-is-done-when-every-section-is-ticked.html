@@ -19,12 +19,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,plan-format">
   <meta name="plan-blocks" content="plan-lifecycle-hygiene">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>A Plan Is Done When Every Section Is Ticked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="48">
+<meta name="plan-impl" content="0.87">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -115,7 +115,7 @@
       links to <code>#s1</code>, <code>#s2</code> and <code>#s3</code> above the first heading, with the done item
       checked. With the render removed, the test fails; that is its negative control.</p>
 
-    <h2 id="s5" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§5 — Every section has a todo item</h2>
+    <h2 id="s5" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§5 — Every section has a todo item</h2>
     <p><strong>Deliverable.</strong> <code>reckon audit-doc</code> reports <code>section-without-todo</code> for an
       authored section heading with no declaration, and <code>todo-without-section</code> for a declaration naming no
       heading. A plan write that would introduce either gap, one the plan did not carry before the write, is refused by one coverage check over the resulting plan HTML,
@@ -227,6 +227,16 @@
       </p>
     <p class="r-dec-rat">The lead chose to refuse only new gaps. A write is refused when it leaves a gap the plan did not carry before, the same transition keying the terminal-status guard uses, so the 109 plans with existing gaps stay writable while reckon audit-doc lists every one. New and edited sections must still be declared.</p>
     </div>
+<div class="r-dec" data-key="fingerprint-retirement-timing" data-choice="" data-by="" data-when="" data-sections="s8" data-recommended="undefer-when-census-allows" data-recommended-by="reckon-build">
+    <p class="r-dec-q">When does the fingerprint retirement (section 8) un-defer?</p>
+    <p class="r-dec-ctx">Every other section is done. Section 8 retires the pre-collapse fingerprint form, and a change to the fingerprint&#x27;s shape makes every plan owe a review at its next build. Its own text gates it on the plan-review session&#x27;s edits to reckon/crew/plan_review.py having merged and on a census of stored review sidecars showing the change orphans no review. Until it un-defers the plan stays open, and section 9&#x27;s judgment_required block reports that to any dependent plan. On un-deferral, write its cross-plan gate edge and a negative control into its done-when: two content-review findings asked for those and were declined while it stayed deferred.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="undefer-when-census-allows">undefer-when-census-allows</button>
+      <button class="r-opt" data-value="keep-deferred">keep-deferred</button>
+      <button class="r-opt" data-value="drop-from-this-plan">drop-from-this-plan</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -256,10 +266,11 @@
     <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
     <p class="r-fu-outcome">the gate reopened on the new node; §3 is being dispatched, and §5 gains a carried requirement in f-tick-005</p>
     </article>
-<article class="r-fu" data-id="f-tick-005" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-08T01:12:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tick-005" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-08T01:12:00Z" data-recommends-skill="" data-resolved-at="2026-10-08T16:50:45+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build in three waves; §5&#x27;s guard reads the declarations a write produces</h4>
     <div class="r-fu-body"><p>Order: §3 alone; then §4, §6, §7 and §9 in parallel; then §5 once §6 releases <code>reckon/_store.py</code>. §8 stays deferred. A requirement on §5, from the version-10 content review: its coverage check must compare headings against the declarations the write produces. At <code>_write_state_locked</code>, the guard's existing call site reads <code>source_text</code>, the authored HTML before <code>write_state</code> injects the new <code>plan-section-declarations</code>. A check there would test the old declarations against the new headings and falsely refuse a write that adds a heading and its declaration together. Amend §5's text and brief with this before dispatching it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
+    <p class="r-fu-outcome">Built in three waves as ordered. Section 3 landed alone; sections 4, 6, 7 and 9 landed in parallel; section 5 landed last at cf14ae6fd after section 6 released reckon/_store.py, with its guard reading the declarations the write produces. Section 8 stays deferred by the lead's ruling, so the plan stays open; when it un-defers is recorded as the open decision fingerprint-retirement-timing.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -336,7 +347,10 @@
     <div class="r-comment-body"><p>Independent review of run r-20261008T082524909480-every-section-has-a-declaration over the commits it gained since its prior review (base 17a234247..9d0b0cada): the delta implements plan s5's remaining clauses — refuse only the heading/declaration gap a write introduces, count an undeclared authored heading as open at a landing, and run the same comparison on the HTTP patch route — scoring goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116/120), with 3 added failures in tests/test_edit_plan.py recorded and two follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261008T154701071235-review-of-every-section-has-a-declaration" data-who="reckon-build" data-when="2026-10-08T16:02:32.688Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261008T082524909480-every-section-has-a-declaration over only the commits it gained since its prior review (base 9d0b0cada09f1e82c67587275aaff958ca0b7107, head d490ca02aaf8350024ef5d7df565cba6503cdeca): the delta touches four node-scope files and no production code, repairing the run&#x27;s own artefacts to conform to the guard it landed - the edit-plan fixture authors the headings its tests declare (retracting the three added failures), the patch-route test restores the serve globals it installs, and the exemplar and create skeleton declare their authored sections - scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 15, fit 20, reuse 20 (total 114/120), with 0 added failures and three follow-on findings.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261008T082524909480-every-section-has-a-declaration over only the commits it gained since its prior review (base 9d0b0cada09f1e82c67587275aaff958ca0b7107, head d490ca02aaf8350024ef5d7df565cba6503cdeca): the delta touches four node-scope files and no production code, repairing the run's own artefacts to conform to the guard it landed - the edit-plan fixture authors the headings its tests declare (retracting the three added failures), the patch-route test restores the serve globals it installs, and the exemplar and create skeleton declare their authored sections - scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 15, fit 20, reuse 20 (total 114/120), with 0 added failures and three follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-08T16:49:59Z">
+    <div class="r-comment-body"><p>Landed at merge <code>cf14ae6fd</code>. A plan write is refused when it adds a gap the plan did not carry before: an authored section heading with no declaration, or a declaration naming no heading. This follows decision <code>coverage-gap-scope</code>. The check runs on the state write, the text write and the server's <code>POST /plan</code> patch route. <code>reckon audit-doc</code> reports every gap, existing ones included, as <code>section-without-todo</code> and <code>todo-without-section</code>. At the transition into shipped or done, an undeclared heading counts as open. Census: 109 of 214 live plans across ten projects carry a gap, mostly older plans with no declarations; they stay writable. The authoring exemplar and the <code>reckon-create</code> skeleton now declare their sections, and stale fixtures in <code>test_edit_plan.py</code> and <code>test_promotion_requires_impl_move.py</code> author the headings they declare. Reviews: 115, 116, then a delta review of 114 out of 120. Seven tests, each with a negative control. Integrated gate: 217 passed, EXIT=0. Store, serve, doccheck and plan-HTML importer population, 291 files: 0 added at <code>f5e6ba410</code>. The overlap re-measured at <code>4f3512239</code>: 0 added. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/every-section-has-a-declaration.html">evidence</a></p></div>
 </div>
 </section>
 </main>
