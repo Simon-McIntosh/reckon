@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.92">
-<meta name="plan-version" content="62">
-<meta name="plan-modified" content="2026-10-07">
+<meta name="plan-version" content="63">
+<meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -344,6 +344,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261007T153523035962-review-of-session-host-removes-its-fifo" data-who="reckon-build" data-when="2026-10-07T15:41:01.672Z">
     <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T151850415696-session-host-removes-its-fifo.at-68361d4eee327c1d53e425b3288a78bd9d3d514a.json</p></div>
 </div>
+<div class="r-comment" data-section="s9" data-id="c-s9-nova-tab-close" data-who="reckon-build" data-when="2026-10-08T01:15:00Z">
+    <div class="r-comment-body"><p>Live observation, 2026-10-08 on 98dci4-clu-2002: the lead closed the nova tab running session <code>8e9e8ed7</code> (nova-f8) at about 02:53 CEST. It was started after merge 9dfb2a1e (resumed at 02:06 on the new node) and made no dispatch after resuming, so its monitor was still the silent entry point. Afterwards no process on the node carried its session id, its FIFO was gone, and every one of the 12 remaining FIFOs and 6 hosts belonged to a live Claude process: stale_fifos=0, survivors=0. That is the census's did-not-dispatch half. The dispatched half needs a session with a running host and follower, started after 9dfb2a1e, to end; no such session has ended on this node yet. Hosts on the old node 98dci4-clu-2018 ran code from before 9dfb2a1e and that node is no longer reachable, so they cannot serve as the dispatched half.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261007T154246101688-review-of-a-dry-run-predicts-host-delivery" data-who="reckon-build" data-when="2026-10-07T15:54:47.371Z">
     <div class="r-comment-body"><p>Independent review of run r-20261007T151956577480-a-dry-run-predicts-host-delivery stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T151956577480-a-dry-run-predicts-host-delivery.at-413c5a02589e0f2dd76581801483bc2ff0076a79.json: all six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 16; total 110) over the a78d1cf..413c5a025 diff, with added_failure_count 0 and no added failure ids derived from the reviewed run's own gate-head.log and gate-negative.log; two follow-on findings and no blocking finding.</p></div>
 </div>
@@ -387,7 +390,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>SessionHost.stop takes its reason as a required non-empty string and raises ValueError before any state change otherwise; the request-descriptor end-of-file path records "request stream ended", the run entry's finally records "host exited", a bare request_stop() records the signalled reason, and an exception escaping the read loop records "host failed" and still propagates, so no stop path leaves the census's stop_reason null or empty; tests/test_session_host.py and tests/test_dispatch_session_host.py pass 26 tests with EXIT=0, and the four new tests fail under the two negative-control mutations.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261007T182546847711-review-of-a-stopped-host-names-its-reason" data-who="reckon-build" data-when="2026-10-07T18:36:26.034Z">
-    <div class="r-comment-body"><p>Independent review of r-20261007T180232994727-a-stopped-host-names-its-reason over 242220970..8ed54b97b stored as a parsed code_review record scoring 6 dimensions (goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20, reuse 20; total 120), reviewed_base_sha 242220970ddda915bbc96d4dd5f370b77fa0fb34, reviewed_head_sha 8ed54b97b4720f8f305c17d2f415cbfb0ec2deff, added_failure_count 0 and added_failure_ids [] derived from the run&#x27;s own gate.log (26 passed, EXIT=0) and baseline.log (22 passed, EXIT=0); the two commits gained since review name the raised-loop stop exit (_FAILED_REASON at session_host.py:101) and make the reason mandatory at runtime (ValueError at session_host.py:490), retiring the prior review&#x27;s only follow-on.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261007T180232994727-a-stopped-host-names-its-reason over 242220970..8ed54b97b stored as a parsed code_review record scoring 6 dimensions (goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20, reuse 20; total 120), reviewed_base_sha 242220970ddda915bbc96d4dd5f370b77fa0fb34, reviewed_head_sha 8ed54b97b4720f8f305c17d2f415cbfb0ec2deff, added_failure_count 0 and added_failure_ids [] derived from the run's own gate.log (26 passed, EXIT=0) and baseline.log (22 passed, EXIT=0); the two commits gained since review name the raised-loop stop exit (_FAILED_REASON at session_host.py:101) and make the reason mandatory at runtime (ValueError at session_host.py:490), retiring the prior review's only follow-on.</p></div>
 </div>
 </section>
 </main>
