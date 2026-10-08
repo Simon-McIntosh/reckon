@@ -134,7 +134,7 @@ def test_a_malformed_mapping_is_named_in_a_finding(
     plan = {"slug": "plan-m"}
     resolved = roadmap_module._plan_section_deps(plan, docs_dir, project, "plan-m")
     rows, findings = roadmap_module._section_scoped_edges(
-        project, plan, "plan-m", resolved or {}, {}
+        project, plan, "plan-m", resolved or {}, {}, docs_dir
     )
 
     assert rows == []
@@ -163,7 +163,7 @@ def test_a_malformed_entry_does_not_drop_the_valid_edge_beside_it(docs_tree):
     plan = {"slug": "plan-mix"}
     resolved = roadmap_module._plan_section_deps(plan, docs_dir, project, "plan-mix")
     rows, findings = roadmap_module._section_scoped_edges(
-        project, plan, "plan-mix", resolved or {}, {}
+        project, plan, "plan-mix", resolved or {}, {}, docs_dir
     )
 
     assert [row["source_section"] for row in rows] == ["s5"]
