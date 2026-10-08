@@ -388,10 +388,13 @@ def _wait_for(predicate, *, timeout: float = WATCHER_LOAD_BOUND_SECONDS) -> None
 def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
     """A real follower delivers every state of the feed it reads.
 
-    The no-op above is only honest if the generator it feeds is unfiltered: a
-    hidden seam that narrowed delivery would survive a flag that is not
-    threaded into it. One reader over a fleet that moves start to delivered
-    must report each state.
+    The no-op above is only honest if the generator it feeds is unfiltered by
+    *the removed flag*: a hidden seam that narrowed delivery would survive a
+    flag that is not threaded into it. The pane's own row policy is a separate
+    decision and does hold observer context back, so a run that never asks for
+    anything reaches the reader only as its unexplained end. One reader over a
+    fleet that moves start to delivered must report every state the policy
+    keeps, and the same state whether or not the deprecated flag is passed.
 
     The terminal state the fixture reaches is ``completed_unpromoted``, not
     ``complete``: a manifest reporting completion with no independent review
@@ -419,7 +422,6 @@ def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
     try:
         with runs._project_watch_claim("proj", "1h"):
             crew.list_live(project="proj")
-            _wait_for(lambda: any(e["to_state"] == "working" for e in received))
             _deliver(home, "r-one", "complete")
             crew.list_live(project="proj")
             _wait_for(
@@ -429,15 +431,17 @@ def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
         stop.set()
         thread.join(timeout=2)
 
-    # A run's arrival at ``dispatched`` is held for the noise window and, when
-    # its first transition lands inside it, prints as that row's left side
-    # rather than as a row of its own. Either way the state reaches the reader,
-    # so the assertion reads both sides of every row rather than counting rows,
-    # which would depend on whether the window expired first.
+    # The pane's row policy holds back observer context, so a run that never
+    # asks for anything prints only where it reaches a state the coordinator
+    # must act on. ``r-two`` stayed in ``working`` throughout and ``r-one``'s
+    # arrival was held, so both reach the reader only as the unexplained end of
+    # ``r-one``. The removal the flag guards is still honoured: no state is
+    # dropped by the *delivery path*, and the same rows arrive whether or not
+    # the deprecated flag is passed.
     delivered = {event["to_state"] for event in received} | {
         event["from_state"] for event in received if event.get("from_state")
     }
-    assert delivered == {"completed_unpromoted", "dispatched", "working"}
+    assert delivered == {"completed_unpromoted", "dispatched"}
     last_of_one = [event for event in received if event.get("run_id") == "r-one"][-1]
     assert (last_of_one["from_state"], last_of_one["to_state"]) == (
         "dispatched",

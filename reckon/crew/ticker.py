@@ -1228,6 +1228,8 @@ class RowPolicy:
         """
         if run_id and state:
             self._reported[str(run_id)] = str(state)
+            if self._lands_in_an_action_state({"to_state": str(state)}):
+                self._told[str(run_id)] = True
 
     def _row_class(self, event: Mapping[str, Any], kind: tuple[Any, Any]) -> str:
         """The class of a row: coordinator, observer or counter.

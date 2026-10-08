@@ -134,6 +134,20 @@ def _write_pointer(home: Path, run_id: str, node: str, *, session: str, phase: s
     )
 
 
+def _deliver(home: Path, run_id: str, status: str) -> None:
+    """Give a run a manifest, so the fleet derives an action state for it.
+
+    A run still in a progress state is observer context the pane withholds, so a
+    case whose subject is the replay, the history or the session filter delivers
+    its run into an action state and observes that row instead.
+    """
+    manifest = home / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        f"node: replay-node\nstatus: {status}\ncommits: HEAD\nblockers: none\n"
+    )
+
+
 def _discard_pointer(run_id: str) -> None:
     path = crew.pointer_path(run_id)
     if path.exists():
@@ -394,6 +408,7 @@ def test_a_pipe_rearm_with_nothing_new_draws_the_fleet(home, follow_lines) -> No
     for a pipe.
     """
     _write_pointer(home, RUN_A, "node-a", session=SESSION, phase="working")
+    _deliver(home, RUN_A, "complete")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
@@ -409,7 +424,7 @@ def test_a_pipe_rearm_with_nothing_new_draws_the_fleet(home, follow_lines) -> No
     rows = _fleet_rows(follow_lines)
     assert len(rows) == 1, f"a re-arm draws its one live run exactly once; got {rows!r}"
     assert "node-a" in rows[0], rows[0]
-    assert "working" in rows[0], rows[0]
+    assert "unpromoted" in rows[0], rows[0]
 
 
 # ── Case 2: a non-TTY re-arm delivers exactly the new transitions ───────────
@@ -492,6 +507,7 @@ def test_a_terminal_rearm_shows_the_burst_under_one_frame_line(
     row is then never read as a fresh transition.
     """
     _write_pointer(home, RUN_A, "node-a", session=SESSION, phase="working")
+    _deliver(home, RUN_A, "complete")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
@@ -547,6 +563,7 @@ def test_another_sessions_rows_and_legacy_lines_are_not_this_followers(home) -> 
     follower never read.
     """
     _write_pointer(home, RUN_A, "node-a", session=SESSION, phase="working")
+    _deliver(home, RUN_A, "complete")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
         assert acquired
         stream_path = Path(seat["stream_path"])
@@ -611,6 +628,7 @@ def test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted(
     stored history, which is not a pipe's to replay.
     """
     _write_pointer(home, RUN_C, "node-c", session=SESSION, phase="working")
+    _deliver(home, RUN_C, "complete")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
         assert acquired
         stream_path = Path(seat["stream_path"])
@@ -729,6 +747,7 @@ def test_the_real_watch_directory_is_untouched(home, follow_lines, monkeypatch) 
         assert not artifact.exists(), f"a real-home artifact pre-exists: {artifact}"
 
     _write_pointer(home, RUN_A, "node-a", session=SESSION, phase="working")
+    _deliver(home, RUN_A, "complete")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
