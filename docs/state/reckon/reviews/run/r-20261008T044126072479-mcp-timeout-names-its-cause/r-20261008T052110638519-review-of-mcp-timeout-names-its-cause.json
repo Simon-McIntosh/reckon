@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken; supplemental: the reviewed run's two gate arms (gate-head.log 2 passed, gate-existing.log 58 passed) each report no FAILED id, so no test regressed; the only FAILED line in the run directory is the intentional negative control.",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:_deadline_tool"
+  ],
+  "completed_at": "2026-10-08T05:47:05.617Z",
+  "dispatched_at": "2026-10-08T05:21:45Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "303",
+      "severity": "follow-on",
+      "text": "follow-on: read_plan maps to \"reckon roadmap --project <project>\", a command that answers a roadmap read rather than the read_plan call that timed out, so a computing read_plan timeout is pointed at work it did not ask for; the reviewed run's own manifest follow_on states read_plan has no CLI counterpart, so the code and its report disagree about the same mapping and a coordinator must decide whether read_plan names no command or the plan HTML path."
+    },
+    {
+      "file": "tests/test_mcp_deadline_names_its_cause.py",
+      "line": "55",
+      "severity": "follow-on",
+      "text": "follow-on: assert \"reckon\" in result[\"hint\"] does not verify the CLI-command half of the deliverable -- the word \"reckon\" is present in the base computing hint text (\"this is a reckon work deadline\") regardless of cli_command, and the test never asserts the mapped command string -- so dropping cli_command for every label would leave both tests green."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against the base; 570b7c40c adds _thread_cpu_seconds (a /proc reader) and _cause_of_timeout, threads them through _run_under_deadline, and adds the cpu_seconds/cause/cli_command fields on StorageSlowResult, while 4ecc70307 records the landing fragment.",
+    "done_when": "the done_when names tests/test_mcp_deadline_names_its_cause.py; I re-ran it at head 4ecc703 -- 2 passed EXIT=0 (spinning body computing at about 0.2s CPU against 0.25s wall, sleeping body waiting at about 0.0s CPU) -- and independently reproduced the negative control in a scratch tree with _thread_cpu_seconds returning 0.0, which keeps the spinning case red (1 failed 1 passed EXIT=1).",
+    "goal": "the node's goal is that a reckon MCP timeout names whether the abandoned body was computing or waiting; reckon/mcp.py:290 _cause_of_timeout and reckon/mcp.py:362 _run_under_deadline deliver it from the worker thread's CPU seconds read beside the wall time.",
+    "manifest": "read; it names commits 570b7c40c and 4ecc70307, the three gate logs and the negative control, but its follow_on states read_plan has no CLI counterpart while reckon/mcp.py:303 maps read_plan to a command, so the report contradicts its own diff.",
+    "write_paths": "git diff --name-only 72525a3 4ecc703 lists reckon/mcp.py, reckon/_mcp_tools.py, tests/test_mcp_deadline_names_its_cause.py and docs/evidence/fragments/an-mcp-failure-names-its-cause/mcp-timeout-names-its-cause.html, every one inside the manifest's declared paths; the declared docs/figures directory was correctly left unused."
+  },
+  "justifications": {
+    "durability": "the assertions at tests/test_mcp_deadline_names_its_cause.py:45 and :61 name the regression that reddens them (the negative control shows the computing case reports waiting once the CPU measurement is zeroed) and :50/:65 pin cpu_seconds against a constant rather than a value the test passed in; the hint's CLI command is unguarded, because :55 asserts a substring present regardless of cli_command.",
+    "evidence": "the gate tests/test_mcp_deadline_names_its_cause.py:45,:54,:61 measures exactly what the done_when asserts and its result is recorded in gate-head.log (2 passed EXIT=0) with the negative control in gate-negative-control.log (EXIT=1), both reproduced independently; the CLI-command half of the deliverable has no real assertion (see the finding on tests/test_mcp_deadline_names_its_cause.py:55).",
+    "fit": "_cause_of_timeout and the _CLI_ANSWER_COMMANDS map follow the module's private-helper idiom at reckon/mcp.py:258-310 with no plan or version label; the pre-existing per-call state dict at reckon/mcp.py:363 is named waiting yet now also carries the worker tid and CPU baseline used to detect computing.",
+    "goal_fidelity": "reckon/mcp.py:362 _run_under_deadline reports cause from the worker thread's CPU seconds read at reckon/mcp.py:410 beside the wall time, carries cpu_seconds/cause/cli_command on the result and leaves the error value storage-slow, meeting the deliverable; the read_plan CLI command named at reckon/mcp.py:303 does not answer read_plan's own work, so that clause is met only in part.",
+    "reuse": "no owner of a thread-CPU reading exists (a search of reckon/ for /proc/self/task, time.thread_time or SC_CLK_TCK finds only mountinfo/cgroup readers) and no label-to-CLI map exists, so _thread_cpu_seconds and _CLI_ANSWER_COMMANDS introduce capability rather than fork one.",
+    "scope_discipline": "every path in the diff 72525a3..4ecc703 sits inside reckon/mcp.py, reckon/_mcp_tools.py, tests/test_mcp_deadline_names_its_cause.py and the evidence fragment declared in the manifest, with no plan or shared-index write."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-mcp-timeout-names-its-cause",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reckon MCP timeout names whether the abandoned body was computing or waiting; reckon/mcp.py:290 _cause_of_timeout and reckon/mcp.py:362 _run_under_deadline deliver it from the worker thread's CPU seconds read beside the wall time.\nVERDICT done_when: the done_when names tests/test_mcp_deadline_names_its_cause.py; I re-ran it at head 4ecc703 -- 2 passed EXIT=0 (spinning body computing at about 0.2s CPU against 0.25s wall, sleeping body waiting at about 0.0s CPU) -- and independently reproduced the negative control in a scratch tree with _thread_cpu_seconds returning 0.0, which keeps the spinning case red (1 failed 1 passed EXIT=1).\nVERDICT write_paths: git diff --name-only 72525a3 4ecc703 lists reckon/mcp.py, reckon/_mcp_tools.py, tests/test_mcp_deadline_names_its_cause.py and docs/evidence/fragments/an-mcp-failure-names-its-cause/mcp-timeout-names-its-cause.html, every one inside the manifest's declared paths; the declared docs/figures directory was correctly left unused.\nVERDICT manifest: read; it names commits 570b7c40c and 4ecc70307, the three gate logs and the negative control, but its follow_on states read_plan has no CLI counterpart while reckon/mcp.py:303 maps read_plan to a command, so the report contradicts its own diff.\nVERDICT diff: read commit by commit against the base; 570b7c40c adds _thread_cpu_seconds (a /proc reader) and _cause_of_timeout, threads them through _run_under_deadline, and adds the cpu_seconds/cause/cli_command fields on StorageSlowResult, while 4ecc70307 records the landing fragment.\nCALL_SITES: reckon/mcp.py:_deadline_tool\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:362 _run_under_deadline reports cause from the worker thread's CPU seconds read at reckon/mcp.py:410 beside the wall time, carries cpu_seconds/cause/cli_command on the result and leaves the error value storage-slow, meeting the deliverable; the read_plan CLI command named at reckon/mcp.py:303 does not answer read_plan's own work, so that clause is met only in part.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate tests/test_mcp_deadline_names_its_cause.py:45,:54,:61 measures exactly what the done_when asserts and its result is recorded in gate-head.log (2 passed EXIT=0) with the negative control in gate-negative-control.log (EXIT=1), both reproduced independently; the CLI-command half of the deliverable has no real assertion (see the finding on tests/test_mcp_deadline_names_its_cause.py:55).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff 72525a3..4ecc703 sits inside reckon/mcp.py, reckon/_mcp_tools.py, tests/test_mcp_deadline_names_its_cause.py and the evidence fragment declared in the manifest, with no plan or shared-index write.\nSCORE durability: 17\nJUSTIFICATION durability: the assertions at tests/test_mcp_deadline_names_its_cause.py:45 and :61 name the regression that reddens them (the negative control shows the computing case reports waiting once the CPU measurement is zeroed) and :50/:65 pin cpu_seconds against a constant rather than a value the test passed in; the hint's CLI command is unguarded, because :55 asserts a substring present regardless of cli_command.\nSCORE fit: 18\nJUSTIFICATION fit: _cause_of_timeout and the _CLI_ANSWER_COMMANDS map follow the module's private-helper idiom at reckon/mcp.py:258-310 with no plan or version label; the pre-existing per-call state dict at reckon/mcp.py:363 is named waiting yet now also carries the worker tid and CPU baseline used to detect computing.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of a thread-CPU reading exists (a search of reckon/ for /proc/self/task, time.thread_time or SC_CLK_TCK finds only mountinfo/cgroup readers) and no label-to-CLI map exists, so _thread_cpu_seconds and _CLI_ANSWER_COMMANDS introduce capability rather than fork one.\nFINDING reckon/mcp.py:303 follow-on: read_plan maps to \"reckon roadmap --project <project>\", a command that answers a roadmap read rather than the read_plan call that timed out, so a computing read_plan timeout is pointed at work it did not ask for; the reviewed run's own manifest follow_on states read_plan has no CLI counterpart, so the code and its report disagree about the same mapping and a coordinator must decide whether read_plan names no command or the plan HTML path.\nFINDING tests/test_mcp_deadline_names_its_cause.py:55 follow-on: assert \"reckon\" in result[\"hint\"] does not verify the CLI-command half of the deliverable -- the word \"reckon\" is present in the base computing hint text (\"this is a reckon work deadline\") regardless of cli_command, and the test never asserts the mapped command string -- so dropping cli_command for every label would leave both tests green.\nreviewed_base_sha: 72525a342eb342ae14faddf2de3f05ae3e623be8\nreviewed_head_sha: 4ecc70307c1ffd8c13214743576a576035c4855c\n",
+  "review_run_id": "r-20261008T052110638519-review-of-mcp-timeout-names-its-cause",
+  "reviewed_base_sha": "72525a342eb342ae14faddf2de3f05ae3e623be8",
+  "reviewed_head_sha": "4ecc70307c1ffd8c13214743576a576035c4855c",
+  "reviewed_run_id": "r-20261008T044126072479-mcp-timeout-names-its-cause",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:41:05.433805+00:00",
+  "total": 109
+}
