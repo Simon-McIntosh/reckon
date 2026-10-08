@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.22">
-<meta name="plan-version" content="42">
+<meta name="plan-impl" content="0.4">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -104,20 +104,12 @@
       <code>reckon/mcp_census.py</code>, <code>reckon/cli.py</code> and <code>tests/test_mcp_census.py</code>; the
       transcript count calls <code>reckon/velocity.py</code> and changes nothing in it.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s3">§3 — A reckon MCP timeout says whether it was computing or waiting</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>_run_under_deadline</code> in <code>reckon/mcp.py</code> measures
-      the thread CPU time its body has spent at the moment the deadline expires, beside the wall time, and the
-      timeout result carries both with a <code>cause</code> of <code>computing</code> or <code>waiting</code>.
-      The message and hint name that cause. For computing, they say the call was abandoned while it was still
-      working, and give the CLI command that answers without a deadline. The <code>error</code> value stays
-      <code>storage-slow</code> so no existing caller's branch changes.</p>
-    <p><strong>Done when</strong> a test in <code>tests/test_mcp_deadline_names_its_cause.py</code> runs one
-      body that spins the CPU past a short deadline and one that sleeps past it. The first reports
-      <code>computing</code> and the second <code>waiting</code>, each with wall and CPU seconds. A
-      negative control is executed and logged: with the CPU measurement removed, the first case reports
-      <code>waiting</code> and the test fails. The write paths are <code>reckon/mcp.py</code>,
-      <code>reckon/_mcp_tools.py</code> and <code>tests/test_mcp_deadline_names_its_cause.py</code>.</p>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed at e04773113: a timeout reports computing or waiting from thread CPU plus run-queue wait; error stays storage-slow; read_plan names no CLI command. Reviews 109 and 115/120. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s3-timeout-names-its-cause">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
@@ -151,7 +143,7 @@
       directory under the temporary home, one with <code>uv run --no-sync --project ${HOME}/Code/absent serve</code> naming
       a directory that does not exist, and the user-scope reckon
       entry launches with <code>uv run --project /home/someone/Code/reckon reckon mcp</code>. Doctor flags the first
-      project and the third, the third for its missing directory, and flags the user-scope entry twice (it syncs, and it names one user's home). It prints a
+      project and the third, the third for its missing directory, and flags the user-scope entry three times (it syncs, it names one user's home, and that path does not exist). It prints a
       corrected command for each, passes the second project, and exits non-zero. A
       negative control is executed and logged: with the <code>--no-sync</code> check removed, the user-scope
       entry is flagged only for its path and the test fails; a second, with the missing-directory check removed,
@@ -167,24 +159,12 @@
   <p class="landed-summary">Cause named: imas-ambix's imas-cx launch named <code>--directory /home/mcintos/Code/imas-codex</code>, which does not exist; uv's chdir failed before the server started. Already fixed in imas-ambix <code>aa387764</code>; 467 failing connections, none after. Review 116/120. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s6-imas-cx-os-error-2">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s7">§7 — A worker starts only the MCP servers its work uses</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A dispatched worker's harness starts the <code>reckon</code> server and
-      no project MCP server unless the project asks for one. The run's harness home is seeded by
-      <code>_seed_harness_entry</code> in <code>reckon/_backends.py</code>, the one writer of that home, so the
-      seeded <code>settings.json</code> carries the setting that disables the project's <code>.mcp.json</code>
-      servers. A project whose workers query a server names it under a <code>worker_mcp_servers</code> list in
-      its flight configuration, which the seeding reads, and the seeded settings file in the run's harness home is the record of the servers it enabled. No
-      dispatch option is added. The surface this retires is the implicit default under which every worker
-      inherits every project server, the default that started about twenty imas-codex servers on 2026-10-08. A
-      worker that needs the graph is no worse off. One that does not stops paying about 610 MB of memory and a
-      launch that fails in a third of worktrees.</p>
-    <p><strong>Done when</strong> <code>tests/test_worker_mcp_servers.py</code> seeds a fixture run's harness
-      home for a project with no <code>worker_mcp_servers</code> and finds the project's servers disabled and
-      reckon enabled. For a project listing <code>imas-cx</code> it finds imas-cx enabled in the seeded settings file, which
-      is the record of the servers the run enabled. A negative control is executed and logged: with the settings write removed, the project server
-      reads enabled and the test fails. The write paths are <code>reckon/_backends.py</code> and
-      <code>tests/test_worker_mcp_servers.py</code>.</p>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed at d6196143e: a configured worker launch seeds settings disabling project MCP servers except those worker_mcp_servers names. Reviews 93 and 106/120; opt-in waits on §11. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s7-worker-mcp-servers">full record</a></p>
+</section>
 
     <h2 id="s8">§8 — A retried reckon read waits for the copy already running</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -238,6 +218,19 @@
       acquisition restored to its current form, the call raises the read-only error and the test fails. The write
       paths are the module that takes the lock for the live read, which the node names in its manifest before
       editing, and <code>tests/test_live_view_reads_under_a_read_only_home.py</code>.</p>
+
+    <h2 id="s11">§11 — A project can name its worker MCP servers</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> §7 seeds the worker setting from a project's <code>worker_mcp_servers</code>, but
+      <code>_schema_view</code> in <code>reckon/flight.py</code> refuses unknown top-level keys, so no project can declare one
+      and the opt-in half is inert. The flight schema admits <code>worker_mcp_servers</code> as a list of server names. imas-codex,
+      whose workers query its graph, declares <code>imas-cx</code> there in its flight configuration.</p>
+    <p><strong>Done when</strong> a test in <code>tests/test_worker_mcp_servers.py</code> resolves a flight configuration carrying
+      <code>worker_mcp_servers: [imas-cx]</code> without a schema refusal and seeds a run home whose settings enable
+      <code>imas-cx</code>. The negative control is executed and logged: with the schema change reverted, the resolve raises and the test
+      fails. After it lands, the next worker dispatched in an imas-ambix worktree is listed with <code>ps</code> and shows no
+      <code>imas-codex serve</code> child, and the listing is logged in the run directory. The write paths are
+      <code>reckon/flight.py</code> and <code>tests/test_worker_mcp_servers.py</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -294,7 +287,7 @@
     <div class="r-comment-body"><p>independent re-review of r-20261008T044322676562-workers-seed-only-named-mcp-servers covering only the commit it gained since review, 8a0f0d6e6 (delta 700fc0f624cbc32f25bb757f7254d7bbbb62c3f5..8a0f0d6e6c7cca73b4c62719f6c9bf1a235d8927), stored at the two granted paths, total 106/120; two follow-on findings (the evidence fragment claims a write-scope grant for tests/test_fence_is_on_again.py that the run's own record shows was never widened; worker_mcp_servers is still refused by reckon/flight.py _schema_view so §7's opt-in half is inert in production).</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261008T044322676562-workers-seed-only-named-mcp-servers" data-who="reckon-build" data-when="2026-10-08T06:56:34.159Z">
-    <div class="r-comment-body"><p>§7 implemented in reckon/_backends.py: the run home seeder writes enableAllProjectMcpServers=false and enabledMcpjsonServers=[&lt;worker_mcp_servers&gt;] into the settings.json it creates, so a fenced claude-shaped worker starts no project .mcp.json server unless the project names it, with reckon still enabled via the user-scope carry. The record is written only when the launch carries a resolved flight configuration (a bare composition governs no project), which is what leaves the operator-harness test&#x27;s unchanged assertion green.</p></div>
+    <div class="r-comment-body"><p>§7 implemented in reckon/_backends.py: the run home seeder writes enableAllProjectMcpServers=false and enabledMcpjsonServers=[&lt;worker_mcp_servers&gt;] into the settings.json it creates, so a fenced claude-shaped worker starts no project .mcp.json server unless the project names it, with reckon still enabled via the user-scope carry. The record is written only when the launch carries a resolved flight configuration (a bare composition governs no project), which is what leaves the operator-harness test's unchanged assertion green.</p></div>
 </div>
 </section>
 </main>
