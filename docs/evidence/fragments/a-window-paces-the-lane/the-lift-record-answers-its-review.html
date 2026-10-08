@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="The lift record answers its review">
+  <meta name="plan-summary" content="reckon/crew/budget_lift.py answers the review of the lift resolver: clear() names the lift it revokes by session or id so a session-scoped lift is revocable, effective_budget never returns a None pace_multiple (the drain-by and uncapped forms keep the configured multiple and mark their own hold), configured_pace_multiple reads reckon.crew.pace.policy rather than restating a default, effective_budget takes its session only as an argument, and budget.lift with max_multiple (default 3.0) and max_hours (default 168) is declared in reckon/schema/flight.yaml and regenerated into reckon/_flight_schema.py and docs/_shared/flight.schema.json so a flight layer can set the ceilings.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="the-lift-record-answers-its-review">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-environment" content="Linux compute node 98dci4-clu-2002; Python venv at /home/ITER/mcintos/Code/reckon/.venv; pytest with an isolated RECKON_HOME under tmp_path">
+  <title>The lift record answers its review &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The lift record answers its review</h1>
+    <p class="plan-summary">The resolver's review named five follow-ons. This node closes the
+    three that live in this scope and declares the two it cannot: the one that revokes a lift by
+    name, the one that returned a None multiple for two of the three forms, the copy of the pace
+    default, the environment read in the resolver, and the flight slot that makes the lift's own
+    ceilings settable by a layer.</p>
+  </header>
+
+  <section aria-labelledby="the-lift-record-answers-its-review-what">
+    <h2 id="the-lift-record-answers-its-review-what">What landed</h2>
+    <p><code>clear()</code> now names the lift it revokes one of two ways. It takes
+    <code>lift_id</code>, which revokes that exact record whatever its scope, or it resolves the
+    lift for the given <code>session</code>, where a session's own lift governs it over a global
+    one and a bare clear with neither argument still revokes only a global lift. So a session-scoped
+    lift is revocable by a coordinator that sees it in the listing, and a global clear never takes a
+    session's owned lift out from under it.</p>
+    <p><code>effective_budget</code> no longer returns <code>pace_multiple: None</code>. Only the
+    multiple form raises the multiple and carries the lifted figure; the drain-by and uncapped forms
+    keep the configured multiple and mark their own hold in the block's <code>pace_hold</code>
+    marker, which is what a reader consults for those forms.</p>
+    <p><code>configured_pace_multiple</code> reads <code>reckon.crew.pace.policy(config)</code>
+    rather than keeping a second copy of the default. <code>effective_budget</code> takes its session
+    only from its argument: the environment fallback is removed, so a resolver that reached for
+    <code>RECKON_SESSION</code> cannot answer a different question from the one its caller asked.</p>
+    <p><code>budget.lift</code> with <code>max_multiple</code> and <code>max_hours</code> is declared
+    in <code>reckon/schema/flight.yaml</code> as a <code>LiftConfig</code> block and regenerated with
+    <code>scripts/regen_flight_schema.py</code> into <code>reckon/_flight_schema.py</code> and
+    <code>docs/_shared/flight.schema.json</code>. <code>BudgetConfig</code> forbids extra keys, so a
+    layer writing the ceilings validates and a layer writing an undeclared key under the block does
+    not. The shipped defaults (3.0 and 168) are the fallback <code>budget_lift.ceilings</code> applies
+    when a configuration sets neither.</p>
+  </section>
+
+  <section aria-labelledby="the-lift-record-answers-its-review-measure">
+    <h2 id="the-lift-record-answers-its-review-measure">Measure</h2>
+    <p>The gate is <code>tests/test_budget_lift.py tests/test_flight.py tests/test_flight_lanes.py
+    tests/test_budget_group.py tests/test_bookend_reserve_by_group.py tests/test_pace.py</code>.</p>
+    <ul>
+      <li><strong>Base</strong> (revision <code>5a9aadbf5</code>): <code>154 passed</code>, exit 0.</li>
+      <li><strong>Head</strong> (same revision, working tree swapped over the edited sources):
+      <code>166 passed</code>, exit 0. The twelve added cases are this node's; the two
+      <code>test_flight</code> regeneration round-trips stay green, proving the committed
+      <code>_flight_schema.py</code> and <code>flight.schema.json</code> match the edited LinkML
+      source byte-for-byte.</li>
+      <li><strong>Delta:</strong> zero added failures.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="the-lift-record-answers-its-review-negative">
+    <h2 id="the-lift-record-answers-its-review-negative">Negative control</h2>
+    <p>Declared mutation: <em>make clear resolve the lift it revokes with session None again, so a
+    session-scoped lift cannot be revoked</em>. Applied on a scratch copy of
+    <code>reckon/crew/budget_lift.py</code> &mdash; the <code>session=session</code> line in
+    <code>clear()</code> changed to <code>session=None</code> &mdash; the head gate turns red:
+    <code>1 failed, 165 passed</code>, exit 1, the failure being
+    <code>test_clear_with_a_session_revokes_that_session_lift_leaving_the_global</code>, the
+    session-clear assertion. The head arm does not fail that test, which is what isolates the
+    mutation.</p>
+  </section>
+</main>
+</body>
+</html>

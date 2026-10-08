@@ -726,6 +726,35 @@ slots:
     range: float
     minimum_value: 0
 
+  lift:
+    description: >-
+      Ceilings a lift grant is checked against, so a layer bounds how far and
+      how long a declared budget group's pace may be raised. A lift raises one
+      group's pace multiple, drains its window by a stated time, or removes its
+      pace hold entirely, and ends by itself at a window reset, a stated time,
+      or the hard ceiling. Declaring the block here is what lets a flight layer
+      set the ceilings; the shipped defaults live in the defaults layer.
+    range: LiftConfig
+
+  max_multiple:
+    description: >-
+      Hard ceiling, as a multiple of the configured pace, that a lift may raise
+      a group to. A lift's multiple must exceed the group's configured pace
+      multiple and must not exceed this, so a layer caps how far ahead of pace a
+      grant may push a group. The uncapped lift form is the explicit exception,
+      since removing the pace hold is what it asks for.
+    range: float
+    minimum_value: 0
+
+  max_hours:
+    description: >-
+      Hard limit, in hours, on how long a lift stays in force whatever its own
+      stated end. It bounds the one case a reading cannot: a reset-anchored lift
+      whose clock's reset is never observed because the reading went stale, so a
+      dead producer cannot leave a lift on indefinitely.
+    range: float
+    minimum_value: 0
+
   time_budget:
     description: >-
       Wall-clock allowance, written as an integer followed by a unit — `s`, `m`
@@ -1238,6 +1267,16 @@ classes:
       - evidence_shelf_life_minutes
       - drain_lead_hours
       - pace_multiple
+      - lift
+
+  LiftConfig:
+    description: >-
+      Ceilings a lift grant is checked against, declared so a layer bounds how
+      far and how long a lead may raise one budget group's pace ahead of its
+      configured rate.
+    slots:
+      - max_multiple
+      - max_hours
 
   FenceConfig:
     description: Limits a worker applies to itself before asking for help.

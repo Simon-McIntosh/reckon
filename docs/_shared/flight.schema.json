@@ -569,6 +569,17 @@
                         "null"
                     ]
                 },
+                "lift": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/LiftConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Ceilings a lift grant is checked against, so a layer bounds how far and how long a declared budget group's pace may be raised. A lift raises one group's pace multiple, drains its window by a stated time, or removes its pace hold entirely, and ends by itself at a window reset, a stated time, or the hard ceiling. Declaring the block here is what lets a flight layer set the ceilings; the shipped defaults live in the defaults layer."
+                },
                 "pace_multiple": {
                     "description": "Deliberate lean above the linear share, applied on top of the same derivation for every declared budget group. A group exactly on pace returns this multiple times the nominal share of the weekly budget per five-hour window, rather than the bare nominal share, so the week converges on its deadline slightly ahead of it. A group's returned allowance records the multiple that produced it, because the multiple is retuned over a longer horizon than one week.",
                     "minimum": 0,
@@ -1918,6 +1929,30 @@
             ],
             "title": "LaunchMode",
             "type": "string"
+        },
+        "LiftConfig": {
+            "additionalProperties": false,
+            "description": "Ceilings a lift grant is checked against, declared so a layer bounds how far and how long a lead may raise one budget group's pace ahead of its configured rate.",
+            "properties": {
+                "max_hours": {
+                    "description": "Hard limit, in hours, on how long a lift stays in force whatever its own stated end. It bounds the one case a reading cannot: a reset-anchored lift whose clock's reset is never observed because the reading went stale, so a dead producer cannot leave a lift on indefinitely.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "max_multiple": {
+                    "description": "Hard ceiling, as a multiple of the configured pace, that a lift may raise a group to. A lift's multiple must exceed the group's configured pace multiple and must not exceed this, so a layer caps how far ahead of pace a grant may push a group. The uncapped lift form is the explicit exception, since removing the pace hold is what it asks for.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "title": "LiftConfig",
+            "type": "object"
         },
         "ModelAlias": {
             "additionalProperties": false,

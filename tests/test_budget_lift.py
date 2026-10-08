@@ -18,9 +18,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from reckon import _store
+from reckon._flight_schema import BudgetConfig
 from reckon.crew import budget_lift as bl
+from reckon.crew import pace as pace_module
 from reckon.crew import reserve as reserve_module
 
 WEEK_HOURS = bl.CLOCK_HOURS[bl.SEVEN_DAY]
@@ -458,4 +461,291 @@ def test_a_session_lift_alone_does_not_cover_another_session():
             config, group=GROUP, readings=[reading], now=NOW, session="s1"
         )
         is not config["budget"]
+    )
+
+
+# ── clear names the lift it revokes ─────────────────────────────────────────
+
+
+def _global_and_session_lifts(config, reading):
+    """Grant a global lift and a session lift for ``s1``, returning both."""
+    global_lift = bl.grant(
+        config, group=GROUP, reason="all", multiple=1.5, readings=[reading], now=NOW
+    )
+    session_lift = bl.grant(
+        config,
+        group=GROUP,
+        reason="mine",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+        scope="session",
+        session="s1",
+    )
+    return global_lift, session_lift
+
+
+def test_clear_with_a_session_revokes_that_session_lift_leaving_the_global():
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    global_lift, session_lift = _global_and_session_lifts(config, reading)
+    assert (
+        bl.effective_budget(
+            config, group=GROUP, readings=[reading], now=NOW, session="s1"
+        )["lift_id"]
+        == session_lift["id"]
+    )
+
+    cleared = bl.clear(config, group=GROUP, session="s1", now=NOW)
+    assert cleared is not None and cleared["id"] == session_lift["id"]
+
+    after = bl.effective_budget(
+        config, group=GROUP, readings=[reading], now=NOW, session="s1"
+    )
+    assert after["lift_id"] == global_lift["id"]
+    assert after["pace_multiple"] == pytest.approx(global_lift["pace_multiple"])
+
+
+def test_clear_by_id_revokes_a_session_lift():
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    global_lift, session_lift = _global_and_session_lifts(config, reading)
+
+    cleared = bl.clear(config, group=GROUP, lift_id=session_lift["id"], now=NOW)
+    assert cleared is not None and cleared["id"] == session_lift["id"]
+
+    after = bl.effective_budget(
+        config, group=GROUP, readings=[reading], now=NOW, session="s1"
+    )
+    assert after["lift_id"] == global_lift["id"]
+
+
+def test_clear_without_a_session_or_id_revokes_only_a_global_lift():
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    global_lift, session_lift = _global_and_session_lifts(config, reading)
+
+    cleared = bl.clear(config, group=GROUP, now=NOW)
+    assert cleared is not None and cleared["id"] == global_lift["id"]
+
+    mine = bl.effective_budget(
+        config, group=GROUP, readings=[reading], now=NOW, session="s1"
+    )
+    assert mine["lift_id"] == session_lift["id"]
+    assert (
+        bl.effective_budget(
+            config, group=GROUP, readings=[reading], now=NOW, session="s2"
+        )
+        is config["budget"]
+    )
+
+
+def test_clear_returns_none_when_only_a_session_lift_exists():
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    bl.grant(
+        config,
+        group=GROUP,
+        reason="mine",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+        scope="session",
+        session="s1",
+    )
+    assert bl.clear(config, group=GROUP, now=NOW) is None
+
+
+# ── the returned block never carries a None pace multiple ───────────────────
+
+
+def test_effective_budget_keeps_the_configured_multiple_for_a_drain_by_lift():
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    bl.grant(
+        config,
+        group=GROUP,
+        reason="land at friday",
+        form=bl.DRAIN_BY,
+        target=NOW + timedelta(hours=24),
+        readings=[reading],
+        now=NOW,
+    )
+    block = bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)
+    assert block is not config["budget"]
+    assert block["pace_multiple"] == pytest.approx(config["budget"]["pace_multiple"])
+    assert block["pace_hold"]["kind"] == bl.DRAIN_BY
+
+
+def test_effective_budget_keeps_the_configured_multiple_for_an_uncapped_lift():
+    config = _config()
+    reading = _reading(week_utilisation=0.99, elapsed_hours=22.0)
+    bl.grant(
+        config,
+        group=GROUP,
+        reason="spend it",
+        form=bl.UNCAPPED,
+        readings=[reading],
+        now=NOW,
+    )
+    block = bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)
+    assert block["pace_multiple"] == pytest.approx(config["budget"]["pace_multiple"])
+    assert block["pace_hold"] == {"kind": bl.UNCAPPED, "held": False}
+
+
+def test_effective_budget_never_returns_a_none_pace_multiple():
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    for form in (bl.MULTIPLE, bl.DRAIN_BY, bl.UNCAPPED):
+        grant = {"multiple": 1.8} if form == bl.MULTIPLE else {}
+        if form == bl.DRAIN_BY:
+            grant["target"] = NOW + timedelta(hours=24)
+        bl.grant(
+            config,
+            group=GROUP,
+            reason="spend",
+            form=form,
+            readings=[reading],
+            now=NOW,
+            **grant,
+        )
+        block = bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)
+        assert block["pace_multiple"] is not None, form
+        bl.clear(config, group=GROUP, now=NOW)
+
+
+# ── the configured multiple is read from the pace policy ────────────────────
+
+
+def test_configured_pace_multiple_reads_the_pace_policy():
+    config = _config()
+    assert bl.configured_pace_multiple(config) == pytest.approx(
+        pace_module.policy(config).pace_multiple
+    )
+    retuned = _config(pace_multiple=1.4)
+    assert bl.configured_pace_multiple(retuned) == pytest.approx(1.4)
+    assert bl.configured_pace_multiple({}) == pytest.approx(
+        pace_module.policy({}).pace_multiple
+    )
+
+
+def test_effective_budget_ignores_a_session_environment_variable(monkeypatch):
+    """The session is the argument; a resolver reading the environment would
+    answer a different question from the one its caller asked."""
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    bl.grant(
+        config,
+        group=GROUP,
+        reason="mine",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+        scope="session",
+        session="s1",
+    )
+    monkeypatch.setenv("RECKON_SESSION", "s1")
+    assert (
+        bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)
+        is config["budget"]
+    )
+    assert (
+        bl.effective_budget(
+            config, group=GROUP, readings=[reading], now=NOW, session="s1"
+        )
+        is not config["budget"]
+    )
+
+
+# ── the lift ceilings are declared flight keys ──────────────────────────────
+
+
+def test_a_flight_layer_may_set_the_lift_ceilings():
+    """The declared slots validate, and an undeclared key under the block does
+    not, so a layer writing the ceilings is held to the same shape as any
+    other."""
+    accepted = BudgetConfig.model_validate(
+        {"lift": {"max_multiple": 2.0, "max_hours": 24.0}}
+    )
+    assert accepted.lift is not None
+    assert accepted.lift.max_multiple == pytest.approx(2.0)
+    assert accepted.lift.max_hours == pytest.approx(24.0)
+    with pytest.raises(ValidationError):
+        BudgetConfig.model_validate({"lift": {"max_multiple": 2.0, "nope": 1}})
+
+
+def _resolved_layer(tmp_path, lift_block: str) -> dict:
+    """Resolve a host layer declaring ``lift_block`` under budget.lift."""
+    from reckon import flight
+
+    host = tmp_path / "host-flight.yaml"
+    host.write_text(
+        "backends:\n"
+        f"  {GROUP}:\n"
+        f"    budget_group: {GROUP}\n"
+        "budget:\n"
+        "  lift:\n"
+        f"{lift_block}"
+    )
+    resolved = flight.resolve(host_path=host, project_path=tmp_path / "absent.yaml")
+    return resolved.config
+
+
+def test_a_layer_ceiling_refuses_a_lift_above_it_and_a_higher_one_admits(tmp_path):
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    bounded = _resolved_layer(tmp_path, "    max_multiple: 2\n")
+    assert bounded["budget"]["lift"]["max_multiple"] == pytest.approx(2.0)
+    with pytest.raises(bl.LiftRefusedError):
+        bl.grant(
+            bounded,
+            group=GROUP,
+            reason="too far",
+            multiple=2.5,
+            readings=[reading],
+            now=NOW,
+        )
+
+    unbounded = _resolved_layer(tmp_path, "    max_multiple: 3\n")
+    admitted = bl.grant(
+        unbounded,
+        group=GROUP,
+        reason="within",
+        multiple=2.5,
+        readings=[reading],
+        now=NOW,
+    )
+    assert admitted["pace_multiple"] == pytest.approx(2.5)
+
+
+def test_a_layer_hour_ceiling_makes_an_old_lift_inert_and_a_loose_one_keeps_it(
+    tmp_path,
+):
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    granted_at = NOW - timedelta(hours=30)
+    tight = _resolved_layer(tmp_path, "    max_hours: 24\n")
+    bl.grant(
+        tight,
+        group=GROUP,
+        reason="spend",
+        multiple=1.8,
+        readings=[reading],
+        now=granted_at,
+    )
+    assert (
+        bl.effective_budget(tight, group=GROUP, readings=[reading], now=NOW)
+        is tight["budget"]
+    )
+
+    loose = _resolved_layer(tmp_path, "    max_hours: 168\n")
+    bl.grant(
+        loose,
+        group=GROUP,
+        reason="spend",
+        multiple=1.8,
+        readings=[reading],
+        now=granted_at,
+    )
+    assert (
+        bl.effective_budget(loose, group=GROUP, readings=[reading], now=NOW)
+        is not loose["budget"]
     )
