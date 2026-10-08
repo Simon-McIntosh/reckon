@@ -61,14 +61,6 @@ LOG_DIR_ENV = "RECKON_SESSION_HOST_LOG_DIR"
 POLL_ENV = "RECKON_SESSION_HOST_POLL_SECONDS"
 BACKOFF_ENV = "RECKON_SESSION_HOST_BACKOFF"
 
-# The marker the host stamps into every child it runs. A follower reading it is
-# one the host already consumes, so it never hands its session back to the host
-# -- a handoff from the host's own child would ask the host for a follower it is
-# already running. A follower without it is one a coordinator armed by hand and
-# is the one that hands over. The name lives here, beside the host that sets it,
-# and the follower reads it from here rather than spelling it a second time.
-CHILD_ENV = "RECKON_SESSION_HOST_CHILD"
-
 # The owner is re-checked this often while the host waits for a request. It is
 # the same cadence a follower uses to notice its owner, so a session that ends
 # takes its followers down within one tick of the session host noticing.
@@ -417,9 +409,6 @@ class SessionHost:
         environ[_FOLLOWER_OWNER_ENV] = _format_follower_owner(
             (os.getpid(), process_start_time(os.getpid()) or "")
         )
-        # Mark this as the host's own child, so the follower it starts never
-        # hands its session back to the host that is already delivering it.
-        environ[CHILD_ENV] = "1"
         self._log_path.parent.mkdir(parents=True, exist_ok=True)
         parent = os.getpid()
         try:

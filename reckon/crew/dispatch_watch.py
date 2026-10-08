@@ -511,15 +511,17 @@ def _session_host_runs_follower(
     return False
 
 
-def _request_host_follower(project: str, session: str | None) -> bool:
-    """Write one follow request to this session's host FIFO, returning success.
+def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
+    """Ask this session's host to follow the project, returning whether it did.
 
     The request is one JSON line naming the project and the session, written to
     the host's FIFO through the same non-blocking write the fleet spawn uses, so
     a FIFO with no reader means no host and falls back at once rather than
-    stalling. This is the write alone; a caller that must see the host attach
-    composes it with its own wait, and a caller that is itself the follower
-    handing over only needs the request delivered before it exits.
+    stalling. The caller then waits, for at most the producer bound, until the
+    session reads as attached -- the fact that matters, since the host attaching
+    a follower is what makes the finished run reach the session. Without a host,
+    or when it does not attach within the bound, this reports False and the
+    caller admits exactly as it does today.
     """
     if not session:
         return False
@@ -533,46 +535,12 @@ def _request_host_follower(project: str, session: str | None) -> bool:
         _write_fleet_request(fifo, line, time.monotonic())
     except CrewError:
         return False
-    return True
-
-
-def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
-    """Ask this session's host to follow the project, returning whether it did.
-
-    The request is one JSON line naming the project and the session, delivered
-    by ``_request_host_follower`` rather than spelled here, so the one place the
-    request line is composed is the one place a later change updates. The caller
-    then waits, for at most the producer bound, until the session reads as
-    attached -- the fact that matters, since the host attaching a follower is
-    what makes the finished run reach the session. Without a host, or when it
-    does not attach within the bound, this reports False and the caller admits
-    exactly as it does today.
-    """
-    if not _request_host_follower(project, session):
-        return False
     deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     while time.monotonic() < deadline:
         if watch_state(project, session=session)["session_attached"]:
             return True
         time.sleep(0.1)
     return False
-
-
-def _hand_off_to_waiting_host(project: str, session: str | None) -> bool:
-    """Hand a hand-armed follower's session to a waiting host, if one is waiting.
-
-    A session whose host is waiting owns its own delivery, so a follower armed
-    by hand beside it only duplicates the pane and ends at its lifetime. Writing
-    the pair to the host lets the host run its own long-lived follower once the
-    hand-armed one is gone. Only a host already waiting on its FIFO is asked: a
-    session with no host, or a host that has gone, keeps the Monitor path
-    unchanged, so this never turns a working arming into a silent one. The
-    request is written through ``_request_host_follower``, the same single
-    spelling of the request line the waiting ask uses.
-    """
-    if not _session_host_waiting():
-        return False
-    return _request_host_follower(project, session)
 
 
 def _released_follower_warning(dispatch_watch: Mapping[str, Any]) -> str:

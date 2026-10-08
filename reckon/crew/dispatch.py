@@ -1170,16 +1170,7 @@ def dispatch(
             # upgrades delivery, never refuses a dispatch the old path admitted.
             if str(launch_kind) == "cli" and session:
                 attached = bool(dispatch_watch.get("session_attached"))
-                # A session attached by a follower the host does not run -- one
-                # armed by hand beside a waiting host -- is still one the host
-                # can take over: the hand-armed follower ends (a Monitor does,
-                # at its lifetime), and asking the host now makes the session
-                # host-delivered rather than resting on an arming the caller
-                # must renew. A host not on its FIFO is not asked, so a session
-                # with no host keeps the Monitor path unchanged.
-                if (not attached or _session_host_waiting()) and (
-                    _ask_session_host_for_follower(project, session)
-                ):
+                if not attached and _ask_session_host_for_follower(project, session):
                     session_delivery = "host"
                     dispatch_watch = watch_state(project, session=session)
                 # A session may already be attached by a follower the host runs,

@@ -592,60 +592,12 @@ def _population_has_live_work(project: str, *, session: str | None) -> bool:
 
 
 
-def _session_host_child() -> bool:
-    """Whether this follower is a child the session host started.
-
-    The host stamps every child it runs with an environment variable, and a
-    follower reading it is one the host already consumes: it never hands its
-    session back to the host, because that would ask the host for a follower it
-    is already running. Only a follower without the marker is one a coordinator
-    armed by hand, and only that one hands over. The marker's name is the host
-    module's own, so a host that renames it moves this reader with it.
-    """
-    from reckon.crew.session_host import CHILD_ENV
-
-    return bool(os.environ.get(CHILD_ENV))
-
-
-def _host_handoff_line(project: str, session: str | None) -> str:
-    """The one line a hand-armed follower prints as it hands its session over.
-
-    It states the fact the reader acts on -- the session host now delivers this
-    session -- so an operator reading a pane that ended early is not left to
-    work out why, and it says nothing needs re-arming so the arm-on-exit reflex
-    the old end row invited does not fire against a host that is delivering.
-    """
-    target = f"{project}/{session}" if session else project
-    return f"session host now delivers {target}; nothing needs re-arming"
-
-
-def _hand_off_from_follower(project: str, session: str | None) -> bool:
-    """Hand this hand-armed follower's session to a waiting host, if one waits.
-
-    A follower the host owns stays put: the host delivers the session and would
-    only be asked for a follower it runs. Otherwise a host waiting on its FIFO
-    takes the pair over once this follower is gone, so the handoff is written
-    here and the caller prints the handoff line rather than a re-arm command.
-    """
-    if _session_host_child():
-        return False
-    from reckon.crew.dispatch_watch import _hand_off_to_waiting_host
-
-    return _hand_off_to_waiting_host(project, session)
-
-
 def _follower_end_line(
     *,
     attach_line: str,
     needs: list[Mapping[str, str]],
-    handed_to_host: bool = False,
 ) -> str:
-    """Compose the single line a reader acts on as the pane goes dark.
-
-    When the arming handed its session to a waiting host, the line says so and
-    carries no ``re-arm with``: the host runs the session's next follower, so a
-    re-arm command would arm a second follower beside one the host consumes.
-    """
+    """Compose the single line a reader acts on as the pane goes dark."""
     if not needs:
         tail = "no runs need you"
     else:
@@ -654,14 +606,7 @@ def _follower_end_line(
             tail = f"1 run needs you: {outstanding}"
         else:
             tail = f"{len(needs)} runs need you: {outstanding}"
-    if handed_to_host:
-        head = (
-            "follower end: arming lifetime elapsed; session host now delivers "
-            "this session; nothing needs re-arming"
-        )
-    else:
-        head = f"follower end: arming lifetime elapsed; re-arm with: {attach_line}"
-    return f"{head}; {tail}"
+    return f"follower end: arming lifetime elapsed; re-arm with: {attach_line}; {tail}"
 
 
 
@@ -672,15 +617,9 @@ def _follower_end_event(
     armed_seconds: float | None,
     elapsed: float,
 ) -> dict[str, Any]:
-    """Build the follower's own final transition, carrying the line to print.
-
-    A hand-armed follower reaching its deadline hands its session to a waiting
-    host before it composes the line, so the row a reader acts on says the host
-    now delivers rather than naming a re-arm command.
-    """
+    """Build the follower's own final transition, carrying the line to print."""
     from reckon.crew import runs as runs_module
 
-    handed = _hand_off_from_follower(project, session)
     attach_line = runs_module._watch_attach_line(project, session=session)
     needs = _needs_you_runs(project, session=session)
     return {
@@ -692,10 +631,7 @@ def _follower_end_event(
         "elapsed_seconds": round(float(elapsed), 3),
         "attach_line": attach_line,
         "needs_you": needs,
-        "handed_to_host": handed,
-        "line": _follower_end_line(
-            attach_line=attach_line, needs=needs, handed_to_host=handed
-        ),
+        "line": _follower_end_line(attach_line=attach_line, needs=needs),
     }
 
 
@@ -2305,33 +2241,6 @@ def crew_follow(
     # adopts them exactly as if it had launched them and collects them as they
     # end.
     _adopt_launched_workers_from_reexec()
-
-    # A follower armed by hand beside a session host that is waiting is the one
-    # path that keeps a session off its host: the host is the session's own
-    # delivery and this pane would only duplicate it and die at its lifetime.
-    # Handing the pair over lets the host run its own long-lived follower once
-    # this one is gone, and it happens after the adoption above so a reloaded
-    # follower re-registers the children it carried across the in-place reload
-    # before it exits -- a handoff taken first would abandon them uncollected.
-    # A follower the host started is left alone, and a session with no waiting
-    # host streams as before, so this only ever upgrades delivery.
-    if not _session_host_child() and _hand_off_from_follower(project, session):
-        line = _host_handoff_line(project, session)
-        if json_output:
-            _emit_crew_result(
-                {
-                    "event": FOLLOWER_END_EVENT,
-                    "project": project,
-                    "session": session or "",
-                    "handed_to_host": True,
-                    "line": line,
-                },
-                pretty,
-                observation=True,
-            )
-        else:
-            _echo_follow_line(line)
-        return
 
     # Fix the process this follower reports to, once, before anything claims a
     # registration. A registration taken over later records this owner rather
