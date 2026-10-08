@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T05:15:21.033Z",
+  "dispatched_at": "2026-10-08T05:01:23Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/obligations.py:60",
+      "id": "reuse_search-1",
+      "reason": "the plan would place the queue as an extension of the framework's queued-duty model (one bound, one refusal record, one withdraw path) instead of a parallel subsystem, which is the difference between one queued-held-work concept and two that drift.",
+      "text": "the plan adds a fresh \"queued held dispatch with a bounded wait\" model without citing the one that already exists: `REVIEW_QUEUED_DUTY_KIND = \"review-queued\"` with `REVIEW_QUEUED_BOUND_SECONDS = 30 * 60` reads a lane-refused dispatch as \"queued rather than missing\" for a 30-minute bound (`reckon/crew/obligations.py:53-70, 283-320`), which is exactly the plan's \u00a75 obligation reading and exactly the plan's `queue.max_wait` default of 30 minutes; the plan should say whether it extends this bound and this duty kind, and every site of the type is: the duty kind and its bound (`obligations.py:60-61`), the non-blocking classification of that duty (`obligations.py:70`), the queued reading `_queued_review_fields` (`obligations.py:283`), the paused-refusal status that produces it `REVIEW_LANE_PAUSED_STATUS = \"lane-paused\"` (`obligations.py:65`), the owner of the held-dispatch record it rests on `REVIEW_DISPATCH_FIELD = \"review_dispatch\"` (`recovery.py:1185`), the writer `_record_review_dispatch` (`recovery.py:1447`), and the existing withdraw path `withdraw_superseded_review` (`recovery.py:1980`) whose \"queued\"/\"withdrawn\" vocabulary the plan's \u00a75 `queue withdraw` re-invents.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:650",
+      "id": "reuse_search-2",
+      "reason": "naming the reader turns an unspecified re-derivation into either a call to the existing store or an explicit statement that the router's published share is insufficient, which is the reuse decision the section currently hides.",
+      "text": "\u00a73's ranking needs each session's runs in flight, \"counted again after every admission\", but the plan names no reader for that count although the live-pointer store already owns it (`list_run`/`list_live`, `runs.py:625-650`) and the lane document already publishes the derived per-session figure (`ADMISSION_SESSIONS_KEY` / `sessions[<session>].worker_slots`, `lane_document.py:119-134`, the figure `_lane_worker_allowance` reads, `dispatch_plan.py:1100`); the same absence applies to every place the plan says \"runs in flight on the lane\" (\u00a73 paragraph, \u00a73 first done-when, \u00a74 \"whenever the router grants room to a session\").",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py:655",
+      "id": "thin_wrapper-1",
+      "reason": "it would replace \"one drainer per lane\" as a property the plan builds with \"the drainer is one declared service\", removing a lease implementation the supervisor already ships.",
+      "text": "\u00a74's drainer is described as \"exactly one drainer runs per lane, held by a host lease\", but a declared fleet service is already started exactly once behind that lease, restarted with backoff, and each start is refused while another holder is live (`apply` / \"declared service ... held by {holder.host}\", `fleet_supervisor.py:655-737`, config path `services.json`, `fleet_supervisor.py:199,441`) \u2014 so the only new thing is the drain loop itself, and the section must say it is declared in `services.json` and reuses the supervisor's lease rather than describing lease acquisition as if it were the plan's; the same wrapper-without-justification applies to \u00a75's listing surface, which duplicates the obligations view `reckon/crew/obligations.py` already stamps as `review-queued` and the crew listing already reachable through `crew list` / `crew directory` (`cli.py:5786,5876`).",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:1185",
+      "id": "duplicate_owner-1",
+      "reason": "choosing `review_dispatch`-style pointer state as the queue's home (or explicitly rejecting it) decides the store, the visibility path and the withdraw path the plan currently invents three times.",
+      "text": "the plan makes a new durable queue the owner of held requests, but in this codebase a held dispatch is already a record on the thing it was for: the review reflex writes `review_dispatch` on the run pointer and reads it back (`REVIEW_DISPATCH_FIELD`, `recovery.py:1185`; write `_record_review_dispatch`, `recovery.py:1447`; read `_review_dispatch_fields`, `recovery.py:493`), the refusal refires through the same `resume-ready` sweep the follower runs on a cadence (`recovery.sweep`, surfaced `cli.py:5652`), and the withdrawal path already exists (`recovery.py:1980`); naming any of these as the owner to extend \u2014 or stating why a request with no run yet cannot live there \u2014 is what the section omits, and the plan's own \u00a74 requirement that the entry records \"the run on the entry\" after admission shows the two representations are one object at two moments.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html#s2",
+      "id": "interface_budget-1",
+      "reason": "the plan must either account for the added `--no-queue` flag, `crew queue` / `crew queue withdraw` commands and `view=\"queue\"` against the existing listing surfaces, or state in \u00a75 why the obligations and crew-list surfaces cannot carry the queue.",
+      "text": "\u00a72 adds a CLI option (`--no-queue`) and \u00a75 adds two CLI commands (`reckon crew queue`, `reckon crew queue withdraw`) and one MCP crew view (`crew(view=\"queue\")`, a new entry in the hardcoded crew-view tuple at `reckon/mcp.py:4364`), against the supplied cli_options 336 and mcp_views 33, and no section names what it retires, merges or cannot retire; the new `queue` view in particular is a second listing surface for the same store the obligations view (\u00a75) and `crew list` already render.",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html#s3",
+      "id": "duplicate_owner-2",
+      "reason": "a second 30-minute bound declared in two places is a drift risk the section can remove by naming the existing one, or by stating why the queue's bound must be independent.",
+      "text": "\u00a73 introduces a new flight-config block `queue.max_wait` (default 30 minutes) as the section's bound on the wait, duplicating the existing declared constant `REVIEW_QUEUED_BOUND_SECONDS = 30 * 60` (`reckon/crew/obligations.py:61`) rather than extending the config the framework already reads for the same kind of bound; the section does not name that precedent or say why a second bound is needed.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "22232d26a1ab755d627ca6d1225c6651ae07d52ba73ff1b586342e393250dc4a",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T050037175223-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "d69aca2052ef371938324cea5556b18c539fbc88",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73 concentrates the entire fairness rule in one function (\"The queue's order is one function\"), and \u00a74 routes every admission through the same `dispatch` entry point a coordinator calls, so the substantial behaviour (fair-share ranking and admission) sits behind two entry points rather than being spread across shallow per-operation helpers.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements \"a held dispatch is queued, bounded in the wait, and withdrawn\" as a new shared-store subsystem while `reckon/crew/obligations.py` owns the framework-side queued duty, `reckon/crew/recovery.py` owns the held-dispatch refusal record on which a queue entry would most naturally live, and `reckon/crew/runs.py` owns the per-session live-run reading \u00a73's ranking needs.",
+    "interface_budget": "a finding \u2014 public_definitions 1589, cli_options 336, mcp_views 33, refusal_families 23; the plan's five sections add a CLI flag (\u00a72 `--no-queue`), two CLI commands (\u00a75 `crew queue`, `crew queue withdraw`), a new MCP crew view (\u00a75 `crew(view=\"queue\")`) and a new flight-config block (`queue.max_wait`) without any section naming what it retires or merges, or stating why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites the lane document, `_lane_worker_allowance`, `LaneHeld`/`LanePaused` and the host lease, but its search misses the queued-held-work machinery that already exists for the review reflex (`REVIEW_QUEUED_DUTY_KIND`, the pointer's `review_dispatch` refusal record with `withdrawn`, `_record_review_dispatch`) and the live-pointer store `list_live` that already owns \"what is in flight\" and already provides the retry the plan calls a queue.",
+    "thin_wrapper": "a finding \u2014 \u00a74's drainer and \u00a75's `crew(view=\"queue\")` / `reckon crew queue` layer a second daemon and a second listing surface over machinery (the declared fleet service with its host lease, the `resume-ready` reflex sweep, the obligations view) that already retries held work and already reports it, and the plan nowhere says why those cannot be extended instead."
+  },
+  "section_digests": {
+    "_document": "78cdc012e7ca72c178fc40a4a6d592f356054fea2d26c779733f3ec3ca0efabe",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s2": "c427772469ef3c2c40abe8fae5ae2d84d7930af0e4d99fdc4f706bcf8518956a",
+    "s3": "77c24ac54c4c81eec787928aedeed65114dbb41ec5b174943c56a1a3dbb13f12",
+    "s4": "a4fa2ad7fe551c92aa9e9c0bcf5efc25c67ca3ac181fd84e0391033b8c40e551",
+    "s5": "4e4a27589e4e0f507de67d955d1255b9dedbaf0c04f178f55d5805d7fb9911e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:32:46.414914+00:00"
+}
