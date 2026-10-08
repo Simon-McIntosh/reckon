@@ -8110,6 +8110,13 @@
       ]
     },
     "patches": {
+      "FLEET_BLOCKED_STATES": [
+        {
+          "file": "tests/test_a_live_run_never_reads_dead.py",
+          "line": 89,
+          "kind": "mp.setattr"
+        }
+      ],
       "_COMMITS_BEYOND_BASE_CACHE_LIMIT": [
         {
           "file": "tests/test_producer_reads_only_what_changed.py",
@@ -8141,6 +8148,13 @@
           "file": "tests/test_every_signal_caller_names_its_run_directory.py",
           "line": 232,
           "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_carries_orientation_write": [
+        {
+          "file": "tests/test_a_live_run_never_reads_dead.py",
+          "line": 80,
+          "kind": "mp.setattr"
         }
       ],
       "_derive_missing_manifest": [
@@ -8184,6 +8198,11 @@
       "_ledger_run_id_reader": [
         {
           "file": "tests/test_a_live_run_never_reads_dead.py",
+          "line": 86,
+          "kind": "mp.setattr"
+        },
+        {
+          "file": "tests/test_a_live_run_never_reads_dead.py",
           "line": 566,
           "kind": "monkeypatch.setattr"
         }
@@ -8200,6 +8219,18 @@
           "file": "tests/test_producer_shares_the_classifier_verdict.py",
           "line": 238,
           "kind": "monkeypatch.setattr dynamic name tuple"
+        }
+      ],
+      "_observed_phase": [
+        {
+          "file": "tests/test_a_live_run_never_reads_dead.py",
+          "line": 64,
+          "kind": "mp.setattr"
+        },
+        {
+          "file": "tests/test_a_live_run_never_reads_dead.py",
+          "line": 83,
+          "kind": "mp.setattr"
         }
       ],
       "_opened_repair_rounds": [
@@ -8282,14 +8313,14 @@
       ],
       "_run_stream_quiet_seconds": [
         {
-          "file": "tests/test_resume_is_aged_from_its_own_start.py",
-          "line": 70,
-          "kind": "monkeypatch.setattr"
-        },
-        {
           "file": "tests/test_producer_shares_the_classifier_verdict.py",
           "line": 238,
           "kind": "monkeypatch.setattr dynamic name tuple"
+        },
+        {
+          "file": "tests/test_resume_is_aged_from_its_own_start.py",
+          "line": 70,
+          "kind": "monkeypatch.setattr"
         }
       ],
       "_signal_process_group": [
@@ -8309,6 +8340,11 @@
           "kind": "monkeypatch.setattr"
         },
         {
+          "file": "tests/test_producer_seat_across_hosts.py",
+          "line": 78,
+          "kind": "monkeypatch.setattr via importlib"
+        },
+        {
           "file": "tests/test_terminal_run_elapsed.py",
           "line": 146,
           "kind": "monkeypatch.setattr"
@@ -8317,23 +8353,18 @@
           "file": "tests/test_unwatch_leaves_a_sender_record.py",
           "line": 186,
           "kind": "monkeypatch.setattr"
-        },
-        {
-          "file": "tests/test_producer_seat_across_hosts.py",
-          "line": 78,
-          "kind": "monkeypatch.setattr via importlib"
         }
       ],
       "_stall_wait_reason": [
         {
-          "file": "tests/test_recovery_state_typing.py",
-          "line": 84,
-          "kind": "monkeypatch.setattr"
-        },
-        {
           "file": "tests/test_producer_shares_the_classifier_verdict.py",
           "line": 238,
           "kind": "monkeypatch.setattr dynamic name tuple"
+        },
+        {
+          "file": "tests/test_recovery_state_typing.py",
+          "line": 84,
+          "kind": "monkeypatch.setattr"
         }
       ],
       "_stored_review": [
@@ -8381,6 +8412,11 @@
           "kind": "monkeypatch.setattr"
         },
         {
+          "file": "tests/test_crew_surface_parity.py",
+          "line": 53,
+          "kind": "monkeypatch.setattr via importlib"
+        },
+        {
           "file": "tests/test_mcp_crew_obligations.py",
           "line": 79,
           "kind": "monkeypatch.setattr"
@@ -8399,11 +8435,6 @@
           "file": "tests/test_obligations_snapshot_is_published.py",
           "line": 518,
           "kind": "monkeypatch.setattr"
-        },
-        {
-          "file": "tests/test_crew_surface_parity.py",
-          "line": 53,
-          "kind": "monkeypatch.setattr via importlib"
         }
       ],
       "_watch_snapshot": [
@@ -8431,6 +8462,21 @@
         }
       ],
       "_worker_record_liveness": [
+        {
+          "file": "tests/test_a_live_run_never_reads_dead.py",
+          "line": 71,
+          "kind": "mp.setattr"
+        },
+        {
+          "file": "tests/test_a_live_run_never_reads_dead.py",
+          "line": 74,
+          "kind": "mp.setattr"
+        },
+        {
+          "file": "tests/test_a_live_run_never_reads_dead.py",
+          "line": 77,
+          "kind": "mp.setattr"
+        },
         {
           "file": "tests/test_producer_shares_the_classifier_verdict.py",
           "line": 238,
@@ -8899,8 +8945,10 @@
     "git grep -n -E '(from reckon\\.crew\\.recovery import|import reckon\\.crew\\.recovery|from reckon\\.crew import recovery)' -- reckon tests scripts",
     "git grep -n -E '(monkeypatch\\.setattr|mock\\.patch|patch\\(|inspect\\.getsource|recovery\\.py|recovery\\.__file__)' -- reckon tests scripts",
     "git grep -n -E '(recovery\\.py|recovery\\.__file__|getsource\\(recovery|inspect\\.getsource)' -- reckon tests scripts",
-    "git grep -n 'import_module(\"reckon.crew.recovery\")' -- reckon tests scripts"
+    "git grep -n 'import_module(\"reckon.crew.recovery\")' -- reckon tests scripts",
+    "git grep -n -E '[[:alnum:]_]+\\.setattr\\(' -- tests"
   ],
   "statement_count": 353,
-  "counting_rule": "Every non-import top-level AST statement placed once by starting line. Each estimate includes exact statement bytes, a copy of the original import block, cross-group imports and conservative original reexports; ceil(total bytes / 3.5)."
+  "counting_rule": "Every non-import top-level AST statement placed once by starting line. Each estimate includes exact statement bytes, a copy of the original import block, cross-group imports and conservative original reexports; ceil(total bytes / 3.5).",
+  "census_method": "The receiver-wide setattr search identifies candidates regardless of the fixture variable name. The AST census resolves recovery module aliases and records each static string-valued setattr target by file and call line; a dynamic tuple of target names is recorded separately."
 }
