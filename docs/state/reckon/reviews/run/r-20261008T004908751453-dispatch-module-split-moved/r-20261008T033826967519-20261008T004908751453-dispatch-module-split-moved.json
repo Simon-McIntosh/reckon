@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate arms. The reviewed manifest's baseline_suite and after_suite fields are both empty, so no same-command base arm is recorded. The run's head arms name no FAILED/ERROR id: two-files-committed.log (revision 0999bfe27) reports 7 passed EXIT=0, module-guard-final.log reports 4 passed EXIT=0, and pure-move-final.log reports EXIT=0 with an empty problems list. The one pre-repointing two-file arm (two-files-before.log, 5 failed at 590fe543d) records the failures the repoints fix, not failures the run added. I independently reran the three named gates at the reviewed head 0999bfe27 (pure-move EXIT=0 with 407 moved, guard 4 passed EXIT=0, two-file 7 passed EXIT=0): head minus base is empty, so added_failure_count 0 and added_failure_ids [].",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py",
+    "reckon/crew/resumption.py:56",
+    "reckon/crew/promotion.py:31",
+    "reckon/crew/picker/snapshot.py:15",
+    "reckon/crew/supervisor_main.py:20",
+    "reckon/crew/run_time_profile.py:54"
+  ],
+  "completed_at": "2026-10-08T03:44:17Z",
+  "dispatched_at": "2026-10-08T00:50:06Z",
+  "findings": [
+    {
+      "file": "tests/test_every_module_fits_a_worker_window.py",
+      "line": "31",
+      "severity": "follow-on",
+      "text": "follow-on: after dispatch.py's removal from the allowlist the ratchet this test applies is the 50,000-estimated-token lane bound, not \u00a73's stricter 40,000-token per-produced-module target, so a produced module growing past 40,000 (e.g. reckon/crew/dispatch_launch.py, at 37,174 today) is not caught until it exceeds 50,000; \u00a73's produced-module bound is measured in the landing fragment but no test fails when it is crossed."
+    },
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "887",
+      "severity": "follow-on",
+      "text": "follow-on: no clean whole-census gate exists at the reviewed head 0999bfe27. Every full census arm the run carries ended EXIT=2 \u2014 census-gate-complete.log (760 passed, 1 failed) at cb1d09bd5 and census-gate-final2.log (624 passed, 1 failed) at 590fe543d \u2014 and the manifest's tests line records only the two-file focused gate at the final head, so census cleanliness at 0999bfe27 rests on the coordinator's merged-head suite measure rather than the run's own log."
+    }
+  ],
+  "head_log_revision": "0999bfe2718002967bacf813a51c5ea63e0600ff",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commit by commit against base 7bdc80794e: aedd69270 the split, 675bbf840 the guard allowlist and shared-write-paths removal, b39ffc315/4c0b9950f/2a37971f4/2e928ae54/cb1d09bd5/590fe543d/0999bfe27 the census repoints, 77 files, all inside the declared grants.",
+    "done_when": "The done_when is the pure-move receipt, produced modules at or under 40,000 estimated tokens, the guard passing with dispatch.py removed from its allowlist, the census tests run among the declared paths, and a red negative control; the manifest records all of these and I reproduced the pure-move, guard and two-file gates at head.",
+    "goal": "The node goal is to split reckon/crew/dispatch.py into the ten sibling modules its committed map names as a pure move with the census repointed; the diff adds dispatch_accounting/admission/claims/launch/peer/picker/plan/sections/sessions/watch.py and leaves dispatch.py as the import surface.",
+    "manifest": "Read the manifest at status complete, base 7bdc80794e, commits aedd69270..0999bfe27, tests line naming the two-file, pure-move and module-guard gates all EXIT=0, negative_control_log named and red, landing line present, conventional subjects with non-empty bodies and no AI trailer; baseline_suite and after_suite are both empty.",
+    "write_paths": "The run pointer declares 140+ write paths covering the ten produced modules, dispatch.py, shared-write-paths.json and the census tests; every file in the diff is inside that set."
+  },
+  "justifications": {
+    "durability": "Removing reckon/crew/dispatch.py from the guard allowlist at tests/test_every_module_fits_a_worker_window.py:31 makes the ratchet apply to it, and the run's negative control (negative-control.log) restores the module's size and drives the guard red with EXIT=1; the repointing is load-bearing, as two-files-before.log shows 5 failed before the repoints and two-files-head.log shows 7 passed after them.",
+    "evidence": "The three gates the manifest's tests line names are recorded with EXIT=0 and I reproduced all three at the reviewed head 0999bfe27 (pure-move EXIT=0, guard 4 passed EXIT=0, two-file 7 passed EXIT=0); weakness: the last whole-census arms (census-gate-complete.log at cb1d09bd5, census-gate-final2.log at 590fe543d) each ended EXIT=2, so no clean full-census log exists at the reviewed head.",
+    "fit": "The produced sibling modules are named for one concern each (accounting, admission, claims, launch, peer, picker, plan, sections, sessions, watch), carry no version, plan or ticket label, the repointed aliases follow the existing <name>_module idiom, and the original is reduced to a ruff-noqa'd re-export surface.",
+    "goal_fidelity": "The node goal \u2014 split reckon/crew/dispatch.py into the ten sibling modules its committed map names as a pure move with the census repointed \u2014 is met: scripts/check_pure_move.py at head reports 407 statements moved with an empty problems list (independently rerun, EXIT=0), dispatch.py survives as the import surface at reckon/crew/dispatch.py:1-60, and the ten siblings sit under the bound.",
+    "reuse": "The change is a pure move: no definition is added, and no produced module imports the original at module level, so no capability is forked; consumers keep importing from reckon/crew/dispatch.py.",
+    "scope_discipline": "Every one of the 77 files in the diff base..0999bfe27 is inside the write paths the run pointer declares (reckon/crew/dispatch*.py, docs/state/reckon/shared-write-paths.json, the census test files, the landing fragment and figures); no file outside the grant was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to split reckon/crew/dispatch.py into the ten sibling modules its committed map names as a pure move with the census repointed; the diff adds dispatch_accounting/admission/claims/launch/peer/picker/plan/sections/sessions/watch.py and leaves dispatch.py as the import surface.\nVERDICT done_when: The done_when is the pure-move receipt, produced modules at or under 40,000 estimated tokens, the guard passing with dispatch.py removed from its allowlist, the census tests run among the declared paths, and a red negative control; the manifest records all of these and I reproduced the pure-move, guard and two-file gates at head.\nVERDICT write_paths: The run pointer declares 140+ write paths covering the ten produced modules, dispatch.py, shared-write-paths.json and the census tests; every file in the diff is inside that set.\nVERDICT manifest: Read the manifest at status complete, base 7bdc80794e, commits aedd69270..0999bfe27, tests line naming the two-file, pure-move and module-guard gates all EXIT=0, negative_control_log named and red, landing line present, conventional subjects with non-empty bodies and no AI trailer; baseline_suite and after_suite are both empty.\nVERDICT diff: Read commit by commit against base 7bdc80794e: aedd69270 the split, 675bbf840 the guard allowlist and shared-write-paths removal, b39ffc315/4c0b9950f/2a37971f4/2e928ae54/cb1d09bd5/590fe543d/0999bfe27 the census repoints, 77 files, all inside the declared grants.\nCALL_SITES: reckon/crew/dispatch.py, reckon/crew/resumption.py:56, reckon/crew/promotion.py:31, reckon/crew/picker/snapshot.py:15, reckon/crew/supervisor_main.py:20, reckon/crew/run_time_profile.py:54\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The node goal \u2014 split reckon/crew/dispatch.py into the ten sibling modules its committed map names as a pure move with the census repointed \u2014 is met: scripts/check_pure_move.py at head reports 407 statements moved with an empty problems list (independently rerun, EXIT=0), dispatch.py survives as the import surface at reckon/crew/dispatch.py:1-60, and the ten siblings sit under the bound.\nSCORE evidence: 16\nJUSTIFICATION evidence: The three gates the manifest's tests line names are recorded with EXIT=0 and I reproduced all three at the reviewed head 0999bfe27 (pure-move EXIT=0, guard 4 passed EXIT=0, two-file 7 passed EXIT=0); weakness: the last whole-census arms (census-gate-complete.log at cb1d09bd5, census-gate-final2.log at 590fe543d) each ended EXIT=2, so no clean full-census log exists at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every one of the 77 files in the diff base..0999bfe27 is inside the write paths the run pointer declares (reckon/crew/dispatch*.py, docs/state/reckon/shared-write-paths.json, the census test files, the landing fragment and figures); no file outside the grant was touched.\nSCORE durability: 18\nJUSTIFICATION durability: Removing reckon/crew/dispatch.py from the guard allowlist at tests/test_every_module_fits_a_worker_window.py:31 makes the ratchet apply to it, and the run's negative control (negative-control.log) restores the module's size and drives the guard red with EXIT=1; the repointing is load-bearing, as two-files-before.log shows 5 failed before the repoints and two-files-head.log shows 7 passed after them.\nSCORE fit: 19\nJUSTIFICATION fit: The produced sibling modules are named for one concern each (accounting, admission, claims, launch, peer, picker, plan, sections, sessions, watch), carry no version, plan or ticket label, the repointed aliases follow the existing <name>_module idiom, and the original is reduced to a ruff-noqa'd re-export surface.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change is a pure move: no definition is added, and no produced module imports the original at module level, so no capability is forked; consumers keep importing from reckon/crew/dispatch.py.\nFINDING tests/test_every_module_fits_a_worker_window.py:31 follow-on: after dispatch.py's removal from the allowlist the ratchet this test applies is the 50,000-estimated-token lane bound, not \u00a73's stricter 40,000-token per-produced-module target, so a produced module growing past 40,000 (e.g. reckon/crew/dispatch_launch.py, at 37,174 today) is not caught until it exceeds 50,000; \u00a73's produced-module bound is measured in the landing fragment but no test fails when it is crossed.\nFINDING tests/test_dispatch_returns_without_worker.py:887 follow-on: no clean whole-census gate exists at the reviewed head 0999bfe27. Every full census arm the run carries ended EXIT=2 \u2014 census-gate-complete.log (760 passed, 1 failed) at cb1d09bd5 and census-gate-final2.log (624 passed, 1 failed) at 590fe543d \u2014 and the manifest's tests line records only the two-file focused gate at the final head, so census cleanliness at 0999bfe27 rests on the coordinator's merged-head suite measure rather than the run's own log.",
+  "review_run_id": "r-20261008T033826967519-20261008T004908751453-dispatch-module-split-moved",
+  "reviewed_base_sha": "7bdc80794e3a2d2314a395bcdb7fe6dcd3f65835",
+  "reviewed_head_sha": "0999bfe2718002967bacf813a51c5ea63e0600ff",
+  "reviewed_run_id": "r-20261008T004908751453-dispatch-module-split-moved",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:01:33.197793+00:00",
+  "total": 112
+}
