@@ -1,5 +1,7 @@
 """Adapt existing fleet measurements and hard gates to picker candidates."""
 
+import hashlib
+import json
 import math
 from collections import Counter
 from collections.abc import Mapping
@@ -9,9 +11,16 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-from reckon import _backends, budget, capability, ledger
+from reckon import _backends, budget, capabilities, capability, ledger
 from reckon._timestamps import parse_utc
-from reckon.crew import lane_document, paid_lanes, recovery, resumption, routing
+from reckon.crew import (
+    budget_reset,
+    lane_document,
+    paid_lanes,
+    recovery,
+    resumption,
+    routing,
+)
 from reckon.crew.dispatch import (
     DispatchPlan,
     _dispatch_lane_gate,
@@ -388,26 +397,64 @@ def _fit(
     return reasons
 
 
-def budget_view(
+def _budget_view_input_paths(config: Mapping[str, Any]) -> list[str]:
+    """Every non-ledger file one budget view reads, deduplicated for its stamp.
+
+    The paid-lanes document and the banked-reset record are read directly; a
+    lane document is included for every configured backend that publishes one,
+    so a backend's own load document is part of the figure's input stamp.
+    """
+
+    paths = [str(paid_lanes.document_path()), str(budget_reset.state_path())]
+    for backend in (config.get("backends") or {}).values():
+        if not isinstance(backend, Mapping):
+            continue
+        lane_path = backend.get("lane_document")
+        if lane_path:
+            paths.append(str(Path(str(lane_path)).expanduser()))
+    return sorted(set(paths))
+
+
+def _budget_view_request_key(
+    project: str,
+    config: Mapping[str, Any],
+    repo: Path,
+    records: list[dict[str, Any]],
+    *,
+    cached_only: bool,
+) -> dict[str, Any]:
+    """The selecting fields of one budget view, hashed into its cache name.
+
+    Two calls sharing every field read the same files and the same records and
+    share one entry; a changed project, repository, configuration, record count
+    or cache mode selects a different entry rather than serving a figure built
+    for another request. The records themselves are keyed by the ledger stamp in
+    the value's stamp rather than re-hashed here, because the committed rows a
+    caller passes are exactly the rows the ledger files carry.
+    """
+
+    return {
+        "project": project,
+        "repo": str(Path(repo).resolve()),
+        "cached_only": cached_only,
+        "records": len(records),
+        "config": hashlib.sha256(
+            json.dumps(config, sort_keys=True, default=str).encode()
+        ).hexdigest(),
+    }
+
+
+def _compose_budget_report(
     project: str,
     config: dict[str, Any],
     repo: Path,
     records: list[dict[str, Any]],
+    moment: datetime,
     *,
-    cached_only: bool = False,
+    cached_only: bool,
 ) -> dict[str, Any]:
-    """Compose one dated live budget view using its existing state and pace readers."""
-    if cached_only:
-        # Budget preflight may refresh an undated refusal with a serving request.
-        # Disable that refresh; candidate availability comes from the cache below.
-        config = {
-            **config,
-            "backends": {
-                name: {**backend, "budget_check": False}
-                for name, backend in config.get("backends", {}).items()
-            },
-        }
-    moment = datetime.now(UTC)
+    """Compose one dated live budget view at a stated moment."""
+
     windows = budget.recorded_windows(project, config, root=repo, records=records)
     document = paid_lanes.read_document()
     published = paid_lanes.document_windows(document, moment=moment)
@@ -468,6 +515,134 @@ def budget_view(
             )
     report["summary"] = budget.summary(report)
     return report
+
+
+def _reage_budget_report(
+    value: Mapping[str, Any],
+    moment: datetime,
+    config: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Refresh a budget view's time-derived fields to a fresh moment.
+
+    The cached report holds the file-derived composition of a budget view. Its
+    ages, elapsed fractions, seconds-to-reset and stale flags all describe the
+    moment the view was built. A view reused at the moment it was built is
+    returned unchanged, so a cached figure equals the figure the same files
+    produce; a view reused later is advanced by the interval since that moment
+    rather than served stale. The shelf life a stale flag is judged against is
+    the configured one, so a reading that ages past it flips on the call that
+    crosses it rather than only on the next rebuild.
+    """
+
+    report = value["report"]
+    built = parse_utc(str(value.get("built_at") or ""))
+    delta = (moment - built).total_seconds() if built is not None else 0.0
+    if delta == 0.0:
+        return report
+    report = json.loads(json.dumps(report))
+    report["checked_at"] = moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+    shelf_seconds = budget.policy(config)["evidence_shelf_life_minutes"] * 60
+    for entry in report["backends"]:
+        state = entry["state"]
+        remaining = state.get("seconds_until_reset")
+        if isinstance(remaining, (int, float)) and not isinstance(remaining, bool):
+            state["seconds_until_reset"] = max(0, int(remaining - delta))
+        observed = parse_utc(str(state.get("observed_at") or ""))
+        if observed is not None and state.get("headroom") == "known":
+            state["expired"] = (moment - observed).total_seconds() > shelf_seconds
+    waits = [
+        entry["state"]["seconds_until_reset"]
+        for entry in report["backends"]
+        if entry.get("held")
+        and isinstance(entry["state"].get("seconds_until_reset"), int)
+    ]
+    report["resume_after_seconds"] = min(waits) if waits else None
+    for group in report["groups"]:
+        for clock in (group.get("clocks") or {}).values():
+            age = clock.get("age_seconds")
+            if isinstance(age, (int, float)) and not isinstance(age, bool):
+                clock["age_seconds"] = age + delta
+        allowance = group.get("allowance") or {}
+        elapsed = allowance.get("elapsed_hours")
+        if isinstance(elapsed, (int, float)) and not isinstance(elapsed, bool):
+            elapsed = elapsed + delta / 3600.0
+            allowance["elapsed_hours"] = elapsed
+            window_minutes = allowance.get("window_minutes")
+            if window_minutes:
+                allowance["elapsed_fraction"] = min(
+                    1.0, elapsed / (float(window_minutes) / 60.0)
+                )
+        runway = ((group.get("bar") or {}).get("runway")) or {}
+        age = runway.get("age_seconds")
+        if isinstance(age, (int, float)) and not isinstance(age, bool):
+            runway["age_seconds"] = age + delta
+    report["summary"] = budget.summary(report)
+    return report
+
+
+def budget_view(
+    project: str,
+    config: dict[str, Any],
+    repo: Path,
+    records: list[dict[str, Any]],
+    *,
+    cached_only: bool = False,
+    now: datetime | None = None,
+    cache_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Compose one dated live budget view, its file-derived part cached.
+
+    The composition reads the paid-lanes document, the banked-reset record, the
+    lane documents and the ledger files, and preflight costs a few hundred
+    milliseconds against live state — every one of which a dispatch paid to
+    rebuild a figure the same files had already produced. The file-derived
+    report is cached on the stamps of those files, so an unchanged set of files
+    reuses it, and every time-derived field is recomputed on each call so a
+    cached entry never serves a stale age. ``now`` and ``cache_root`` exist so a
+    caller can pin the clock and the cache location.
+    """
+
+    moment = datetime.now(UTC) if now is None else now
+    if cached_only:
+        # Budget preflight may refresh an undated refusal with a serving request.
+        # Disable that refresh; candidate availability comes from the cache below.
+        config = {
+            **config,
+            "backends": {
+                name: {**backend, "budget_check": False}
+                for name, backend in config.get("backends", {}).items()
+            },
+        }
+
+    def build() -> dict[str, Any]:
+        return {
+            "report": _compose_budget_report(
+                project, config, repo, records, moment, cached_only=cached_only
+            ),
+            "built_at": moment.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "paths": _budget_view_input_paths(config),
+            "ledger": [project, str(Path(repo))],
+        }
+
+    def stamp_of(value: Mapping[str, Any]) -> list[Any]:
+        stamps: list[Any] = [
+            [path, capabilities.file_stamp(path)]
+            for path in (value.get("paths") or [])
+        ]
+        project_name, root = value["ledger"]
+        stamps.append(["ledger", ledger.index_stamp(project_name, root)])
+        return stamps
+
+    request_key = _budget_view_request_key(
+        project, config, repo, records, cached_only=cached_only
+    )
+    name = "budget-view-" + hashlib.sha256(
+        json.dumps(request_key, sort_keys=True, default=str).encode()
+    ).hexdigest()
+    value = capabilities.cached_pick_input_stamped(
+        name, request_key, stamp_of, build, root=cache_root
+    )
+    return _reage_budget_report(value, moment, config)
 
 
 def candidates(
