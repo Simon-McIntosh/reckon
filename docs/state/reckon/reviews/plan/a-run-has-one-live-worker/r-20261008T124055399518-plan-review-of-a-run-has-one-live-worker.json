@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T12:52:19.672Z",
+  "dispatched_at": "2026-10-08T12:41:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/runs.py:4541",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must place the argv read inside the existing owner it extends (`live_worker_pid` at recovery.py:7160, or `record_process_alive`) or state why neither can carry it, so one host-gated liveness reading stays authoritative instead of a third being added beside two.",
+      "text": "\u00a74 adds a fifth reader of worker liveness beside the two existing owners \u2014 `record_process_alive` (reckon/crew/runs.py:4541, whose docstring states \"the pid lookup lives here in one place\") and `live_worker_pid`/`local_liveness` (reckon/crew/recovery.py:7160, 7114), the latter already composing the host-gated \"which process holds the run\" and feeding the refusal at reckon/crew/resumption.py:672",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:4541",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the public definition it adds, in its own text, naming what it retires or merges or stating why nothing can be.",
+      "text": "\u00a74 adds a public reader function to reckon/crew/runs.py (raising public_definitions 1597 by one) and names nothing it retires or merges, nor why nothing can be; its only budget statement, \"no new refusal family is added\", accounts for refusal_families alone",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_sessions.py:996",
+      "id": "interface_budget-2",
+      "reason": "as written the section cannot both reuse that exact refusal unchanged and add pid+session, so it must state whether it rewrites the shared word-for-word message on both literals or adds a sibling message in the same refusal family, and how parity still holds.",
+      "text": "\u00a74 says a hit \"fires the existing live-process refusal with a reason naming the pid and the session\", but that refusal's text is the fixed literal \"run {run_id!r} still has a live process; observe or stop it before resuming\" (reckon/crew/dispatch_sessions.py:996 and reckon/crew/resumption.py:606), which names neither a pid nor a session and must read identically on both doors per tests/test_dry_run_predicts_the_launcher.py:192 (`assert str(mirror) == str(launcher_exc)`)",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2f0f8d5b80a70663531411cc394aabf2fd88ce456341fb6c854510843fbf2f38",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T124055399518-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "0db545dbd9bebae34f68e130e5380b6c93d38c09",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the reader is one function in an existing module hiding the /proc walk, the whole-element argv match, the uid/host scope and the caller/ancestor exclusion behind a single small interface; the ownership question it raises is reported under duplicate_owner.",
+    "duplicate_owner": "a finding \u2014 \u00a74 owns a third reader of \"does a worker still hold this run\" beside `record_process_alive` (`reckon/crew/runs.py:4541`, whose docstring declares the pid lookup lives \"here in one place\") and `live_worker_pid`/`local_liveness` (`reckon/crew/recovery.py:7160`).",
+    "interface_budget": "a finding \u2014 public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; \u00a74 adds a public reader and (as written) changes a refusal message, and names nothing it retires or merges nor why nothing can be, its only budget statement covering the refusal family.",
+    "reuse_search": "pass \u2014 \u00a74 names the existing /proc walk it follows (`_pipe_reader_pids`, reckon/crew/runs.py:344) and the liveness owner (`record_process_alive`, reckon/crew/runs.py:4541); a repo-wide search found no existing reader that finds a live process by its session-id argv, so the predicate is genuinely new and the precedent it cites is the right one.",
+    "thin_wrapper": "pass \u2014 \u00a74 adds no thin layer over existing machinery; it adds a genuinely new /proc predicate and extends the two guards to consult it."
+  },
+  "section_digests": {
+    "_document": "02170e104cddeaa30cf41a05bd1a49a7b5ff97780df20792448999435f6144a6",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "00e5904288b325a87d416a0de5356c779e8e1a630a084b58a753bbbcd9fe71f4",
+    "s4": "0d255d73d0477a46378e2815eab6a726e486a18420935309da992089d81b270c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T12:59:48.755448+00:00"
+}
