@@ -37,6 +37,7 @@ from reckon.crew.node import (
     TaskNode,
     parse_duration,
 )
+from reckon.crew.obligation_snapshot import CLI_MODULE_FILES
 
 # ── Run records ─────────────────────────────────────────────────────────────
 
@@ -218,13 +219,7 @@ def follower_code_stamp() -> str:
     """
     package_dir = Path(__file__).resolve().parent.parent
     sources = [
-        package_dir / "cli.py",
-        package_dir / "cli_entry.py",
-        package_dir / "project_setup_commands.py",
-        package_dir / "crew_dispatch_commands.py",
-        package_dir / "crew_follow_commands.py",
-        package_dir / "crew_run_commands.py",
-        package_dir / "project_maintenance_commands.py",
+        *(package_dir / name for name in CLI_MODULE_FILES),
         *sorted((package_dir / "crew").glob("*.py")),
     ]
     stamp = hashlib.sha256()

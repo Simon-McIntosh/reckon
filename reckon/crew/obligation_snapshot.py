@@ -302,6 +302,23 @@ def _records_the_live_producer(producer: Mapping[str, Any]) -> bool:
 
 _PACKAGE_DIR = Path(__file__).resolve().parent.parent
 
+# The CLI's own modules, named relative to the package directory. Both code
+# stamps build their source list from this one declaration, so a module that
+# carries a command is named here once and both a running producer and a
+# running follower reload when its bytes change. Every name is a module
+# directly under ``reckon``; the ``reckon/crew`` package is covered by the glob
+# each stamp appends, so a module that moves under it leaves this tuple rather
+# than being kept in both places.
+CLI_MODULE_FILES = (
+    "cli.py",
+    "cli_entry.py",
+    "project_setup_commands.py",
+    "crew_dispatch_commands.py",
+    "crew_follow_commands.py",
+    "crew_run_commands.py",
+    "project_maintenance_commands.py",
+)
+
 
 def _content_digest(source: Path) -> str:
     try:
@@ -320,13 +337,7 @@ def source_code_stamp(package_dir: Path | None = None) -> str:
     """
     root = Path(package_dir) if package_dir is not None else _PACKAGE_DIR
     sources = [
-        root / "cli.py",
-        root / "cli_entry.py",
-        root / "project_setup_commands.py",
-        root / "crew_dispatch_commands.py",
-        root / "crew_follow_commands.py",
-        root / "crew_run_commands.py",
-        root / "project_maintenance_commands.py",
+        *(root / name for name in CLI_MODULE_FILES),
         *sorted((root / "crew").glob("*.py")),
     ]
     stamp = hashlib.sha256()
