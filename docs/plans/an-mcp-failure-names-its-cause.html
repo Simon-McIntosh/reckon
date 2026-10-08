@@ -21,11 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-impl" content="0.11">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -139,7 +140,8 @@
       command, <code>uv run --no-sync --project &lt;checkout&gt; …</code>. The checkout is written so it
       names no single user's home: through a variable Claude Code expands in MCP configuration, such as
       <code>${HOME}</code> or a project-specific variable with a default. A launch whose arguments carry a
-      literal <code>/home/&lt;user&gt;</code> path is flagged too. Doctor exits non-zero when any launch is
+      literal <code>/home/&lt;user&gt;</code> path is flagged too. So is a launch whose <code>--project</code> or
+      <code>--directory</code> names a path that does not exist: §6 found 467 imas-cx launches lost to exactly that. Doctor exits non-zero when any launch is
       flagged. The
       existing environment-drift check stays beside it, because a launch that no longer syncs depends on the
       shared environment being kept current, which is already every agent's job. reckon edits no other
@@ -157,21 +159,12 @@
       <code>~/.claude.json</code> is untouched. The write paths are <code>reckon/cli.py</code> and
       <code>tests/test_doctor_mcp_launch.py</code>.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s6">§6 — Find why imas-cx exits with os error 2 in imas-ambix worktrees</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> An investigation of the 576 imas-cx launches that died 40 ms after start
-      with <code>error: No such file or directory (os error 2)</code>, all in imas-ambix worktrees, where
-      imas-ambix's <code>.mcp.json</code> runs <code>uv run --project /home/ITER/mcintos/Code/imas-codex imas-codex
-      serve --no-embed</code>. Two hypotheses were tested on 2026-10-08 and do not reproduce: a working directory
-      deleted before launch, and a missing <code>TMPDIR</code>. Both ran cleanly. The investigation reproduces the
-      failure inside a worker's fence (the bind mounts, <code>CLAUDE_CONFIG_DIR</code>, <code>TMPDIR</code> and
-      <code>UV_OFFLINE=1</code> a dispatched worker carries), or finds the path uv could not open from
-      <code>strace</code> or uv's verbose output. It names the cause and the owning repository of the fix. The report and its logs are written to
-      <code>~/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/</code>, which outlives the run.</p>
-    <p><strong>Done when</strong> the report names the file uv failed to open, shows the failure reproduced
-      on demand and absent under a changed condition that differs in one variable, and names the repository and
-      file whose change removes it. Census figures in the report come from §2's command where it has landed, or
-      from a recorded count otherwise.</p>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Cause named: imas-ambix's imas-cx launch named <code>--directory /home/mcintos/Code/imas-codex</code>, which does not exist; uv's chdir failed before the server started. Already fixed in imas-ambix <code>aa387764</code>; 467 failing connections, none after. Review 116/120. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s6-imas-cx-os-error-2">full record</a></p>
+</section>
 
     <h2 id="s7">§7 — A worker starts only the MCP servers its work uses</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -271,6 +264,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261008T022026469831-review-of-imas-cx-os-error-2-cause" data-who="reckon-build" data-when="2026-10-08T02:53:02.418Z">
     <div class="r-comment-body"><p>stored the independent review of r-20261008T012837840391-imas-cx-os-error-2-cause: 6 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 20, reuse 20), total 116, reviewed_base_sha = reviewed_head_sha = e5982a8d645f6ca86b32ded7eb891174dfc635e2, one follow-on finding; the reviewed cause (uv --directory naming a nonexistent home component) and every census figure reproduced independently</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-landed" data-who="reckon-build" data-when="2026-10-08T02:55:00Z">
+    <div class="r-comment-body">investigation imas-cx-os-error-2-cause recorded (gate not-run, review 116/120); section closed</div>
 </div>
 </section>
 </main>

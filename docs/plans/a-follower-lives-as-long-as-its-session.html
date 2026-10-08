@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.92">
-<meta name="plan-version" content="63">
+<meta name="plan-version" content="64">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -168,6 +168,45 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <section data-reckon="section" data-id="s13" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> Every path that stops <code>reckon crew host</code> names its reason, so the final record never carries <code>stop_reason: null</code>. <code>SessionHost.stop</code> takes the reason as required rather than optional. The entry's <code>finally</code> call passes one, and the request-descriptor end-of-file path records its own. That path has no production caller: the entry point and <code>reckon crew host</code> open the request FIFO read-write, so the host holds a write end and its read never returns end-of-file. The branch stays as a guard, because without it a closed descriptor would spin the read loop. Its caller is a host handed a plain pipe, as the tests do. The §11 review found the fallback and the end-of-file path untested and the <code>finally</code> call passing no reason.</p>
 <p><strong>Done when</strong> tests in <code>tests/test_session_host.py</code> drive a bare <code>request_stop()</code> with no wake-pipe write, and an end-of-file on a host handed a plain pipe as its request descriptor, and find a non-null <code>stop_reason</code> in the final record each time. <code>tests/test_session_host.py</code> and <code>tests/test_dispatch_session_host.py</code> pass. Each new test fails when the reason its path records is removed, and that is the negative control.</p>
+
+    <h2 id="s14">§14 — A hand-armed follower hands its session to the host</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> On 2026-10-08 sessions on the fleet node kept arming followers by hand and
+      re-arming them every 29 minutes beside a session host that waited unused. imas-codex session
+      <code>jt60sa-20261005</code> received <code>follower end: arming lifetime elapsed; re-arm with: … crew follow
+      --project imas-codex --session jt60sa-20261005</code> while its plugin entry point (pid 2838990) had never
+      been asked. reckon session <code>s25-picker</code> held a Monitor follower beside an idle host the same way. Two paths keep
+      a session off its host. Dispatch asks the host only for an unattached session
+      (<code>_ask_session_host_for_follower</code> in <code>reckon/crew/dispatch.py</code> is reached only then), so a
+      session attached by a hand-armed follower never asks. And the follower's end row,
+      <code>_follower_end_line</code> in <code>reckon/cli.py</code>, tells the reader to re-arm.</p>
+    <p>A <code>crew follow</code> started outside the host, in a Claude session whose host is waiting
+      (<code>_session_host_waiting</code>), writes its project and session to the host, prints one line saying the
+      session host now delivers that session and nothing needs re-arming, and exits. The host takes the pair over
+      once that follower is gone, as it already does when a hand-armed follower ends. A hand-armed follower that
+      reaches its lifetime end hands over the same way instead of printing a re-arm command. Dispatch asks a
+      waiting host even when the session is attached by a follower the host does not run, and reports delivery
+      <code>host</code>. The host's own child is told apart from a hand-armed follower by a marker the host sets in
+      its child's environment. A session with no waiting host keeps the Monitor fallback unchanged: a Codex
+      session, a <code>-p</code> session, or one started before the plugin was linked.
+      <code>skills/reckon-build/references/coordinator-reference.md</code>, which still says to arm one bare
+      <code>crew follow</code> as the session's wake-up, names host delivery first, as §7 did for the other
+      references.</p>
+    <p><strong>Done when</strong> <code>tests/test_follower_hands_off_to_host.py</code> passes five cases:</p>
+    <ul>
+      <li>A follower started for a fake owner whose host FIFO has a reader writes exactly one request line to it,
+        prints the handoff line and exits 0.</li>
+      <li>With no reader on the FIFO it streams as today.</li>
+      <li>A follower carrying the host-child marker never hands off.</li>
+      <li>The lifetime-end row with a waiting host carries no <code>re-arm with</code>.</li>
+      <li>A dispatch for a session attached by a follower the host does not run, with a waiting host, writes the
+        request and reports delivery <code>host</code>.</li>
+    </ul>
+    <p>A negative control is executed and logged: with the handoff check removed, the first case streams and writes
+      no request, and the test fails. The write paths are <code>reckon/cli.py</code>,
+      <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/session_host.py</code>,
+      <code>tests/test_follower_hands_off_to_host.py</code> and
+      <code>skills/reckon-build/references/coordinator-reference.md</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>

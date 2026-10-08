@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause-landed">
+  <meta name="plan-title" content="An MCP Failure Names Its Cause — landed record">
+  <meta name="plan-summary" content="Closure synthesis for An MCP Failure Names Its Cause: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-verdict" content="qualified">
+  <title>An MCP Failure Names Its Cause — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>An MCP Failure Names Its Cause — landed record</h1>
+  <p>Closure synthesis for An MCP Failure Names Its Cause: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s6-imas-cx-os-error-2">
+    <h2>§6 — imas-cx os error 2 was a launch naming a directory that does not exist</h2>
+    <p>imas-ambix's <code>.mcp.json</code> launched imas-cx with <code>uv run --directory /home/mcintos/Code/imas-codex</code>, a directory that does not exist on this workstation, whose home is <code>/home/ITER/mcintos</code>. uv's first act, <code>chdir</code> into that directory, failed with ENOENT (strace), and uv exited 2 with <code>error: No such file or directory (os error 2)</code> before any server started. Claude Code saw only <code>CONNECTION_CLOSED</code>. Three arms run inside a worker fence from a live imas-ambix worktree differed in that one path component: the registered directory failed with exit 2, and the corrected directory and the shipped <code>--project</code> line each started the server. The fix had already landed in imas-ambix as <code>aa387764</code> on 2026-10-07; the census over 289 log directories counts 467 failing connections, none with this signature after the fix. Report: <code>~/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/report.md</code>. Independent review 116/120.</p>
+  </section>
+
+</main>
+</body>
+</html>
