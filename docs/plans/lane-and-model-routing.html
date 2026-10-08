@@ -19,12 +19,13 @@
   <meta name="plan-sprint" content="S25">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
-<meta name="plan-modified" content="2026-10-07">
+<meta name="plan-version" content="31">
+<meta name="plan-modified" content="2026-10-08">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
@@ -80,6 +81,22 @@
     <h2 id="s7" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links="">§7 — One read-side resolver for old names</h2></header>
   <p class="landed-summary"><code>resolve_name</code> maps backend names, model ids and aliases to a lane-and-model pair across the ledger, run records, reviews and crew views, and no committed row is rewritten. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s7">full record</a></p>
 </section>
+
+    <h2 id="s8">§8 — A lane-and-model key is unique and claims only what it carries</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="one-typesafe-model-picker#s12"></section>
+<p>The reviews of §5 left two defects in <code>option_key</code> (<code>reckon/crew/picker/prompts.py</code>):</p><ol><li>Two backends that share a family and a model produce the same key. The questions are a mapping keyed by that pair, so the second candidate silently replaces the first, and Jev can never choose it. Make every offered key distinct, and refuse to offer two candidates under one key.</li><li>For a candidate with no model, the key's second part is the backend name. The questions then present it as a model. Name the part for what it is, or omit it.</li></ol><p>Write paths: <code>reckon/crew/picker/prompts.py</code> and its tests. The file is shared with <code>one-typesafe-model-picker</code> §12 and §19. Dispatch this section when neither holds a live claim on it.</p><p><strong>Done when</strong> tests prove both items. Two backends sharing a family and a model are each offered and each resolvable from Jev's answer. A modelless candidate's entry does not call its backend a model.</p>
+
+    <h2 id="s9">§9 — Every derived lane entry says where each key came from</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><code>expand_lanes</code> in <code>reckon/flight.py</code> marks an entry it derived from a legacy name with <code>derived_from</code>. The entry's keys carry no per-key provenance, though, so <code>reckon flight</code> cannot say which layer or lane key set a value on a derived entry. Every other entry can. Record provenance for each key of a derived entry, naming both the lane it came from and that lane's layer.</p><p>Write paths: <code>reckon/flight.py</code> and its tests. Not <code>reckon/cli.py</code>: the command already renders whatever provenance the resolution returns.</p><p><strong>Done when</strong> a test resolves a flight with a derived entry. Every key of that entry then has a provenance record naming the lane key and the layer it was read from.</p>
+
+    <h2 id="s10">§10 — A foreign &lt;code&gt;--repo&lt;/code&gt; is refused, not a traceback</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="every-module-fits-a-worker-window#s4"></section>
+<p><code>reckon crew dispatch --repo &lt;path&gt;</code>, given a repository that belongs to another project, raises a Python traceback instead of the dispatch refusal every other invalid argument produces. Catch the condition where the repository is resolved and refuse with the project the repository belongs to and the project the dispatch named.</p><p>This section edits <code>reckon/cli.py</code>, so it waits until <code>every-module-fits-a-worker-window</code> §4 has split that module. Write paths: the module that holds the dispatch command after the split, and its tests.</p><p><strong>Done when</strong> a test dispatches with a foreign repository. The command then exits non-zero with a one-line refusal naming both projects, and no traceback reaches stderr.</p>
+
+    <h2 id="s11">§11 — The plan page shows gate evidence as it was written</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>A gate stores its required evidence as prose or as an anchor reference. <code>docs/ui/plan.jsx</code> renders that text as a link whatever it holds, so prose evidence becomes a broken link. This plan's content review raised it (<code>anchors_resolve-1</code>). Render a link only for a value that parses as an anchor reference, and render prose as text.</p><p>Write paths: <code>docs/ui/plan.jsx</code> and its tests. A browser test needs the chromium shim this host provides.</p><p><strong>Done when</strong> a test renders a gate whose evidence is prose and another whose evidence is an anchor reference. The first shows no link; the second links to the anchor.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -137,10 +154,16 @@
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §3</pre>
     <p class="r-fu-outcome"><p>§3 landed in dotfiles <code>c6590f7</code> and §7 at <code>af12dbd54</code>; §6 followed at <code>9ce7876d3</code> with dotfiles <code>6d1f742</code>.</p></p>
     </article>
-<article class="r-fu" data-id="f-lmr-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lmr-004" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §4" data-resolved-at="2026-10-08T05:46:06+00:00" data-resolved-by="reckon-73">
     <h4 class="r-fu-title">Land §5&#x27;s lane-and-model pairs, then build §4</h4>
     <div class="r-fu-body"><p>§5 is reviewed (105) and merged with main in a scratch worktree; the conflict in <code>pick()</code> was resolved there. Two stage-timing tests still answer Jev by backend name, so node <code>stage-time-tests-answer-by-pair</code> fixes them from that merge. §5 lands with it.</p><p>§4 adds <code>--model</code> to dispatch and writes <code>reckon/cli.py</code> and <code>reckon/crew/dispatch.py</code>. Dispatch it after <code>every-module-fits-a-worker-window</code> §3 and §4.</p><p>Follow-ons from the reviews:</p><ul><li><code>option_key</code> can collide for two backends that share a family and a model.</li><li>The questions overstate the key for a candidate with no model.</li><li>Derived entries carry no per-key provenance.</li><li><code>crew dispatch --repo</code> with a foreign repository raises a traceback instead of a refusal.</li></ul></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §4</pre>
+    <p class="r-fu-outcome"><p>§5 landed (merge <code>bfe725991</code>, with <code>stage-time-tests-answer-by-pair</code>). §4 remains and is held on <code>every-module-fits-a-worker-window</code> §4 by the plan's section dependency. The four review follow-ons are §8–§11.</p></p>
+    </article>
+<article class="r-fu" data-id="f-lmr-005" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 10:00" data-recommends-skill="/reckon-build lane-and-model-routing §9" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §8–§11, then §4 after the cli.py split</h4>
+    <div class="r-fu-body"><p>§9 and §11 can start now. §8 shares <code>reckon/crew/picker/prompts.py</code> with <code>one-typesafe-model-picker</code> §12 and §19. §4 and §10 edit <code>reckon/cli.py</code> and wait on <code>every-module-fits-a-worker-window</code> §4.</p></div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §9</pre>
     </article>
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">
