@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_picker as dispatch_picker_module
 from reckon import _store, budget, capabilities, ledger
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import lane_context, prompts, snapshot
@@ -362,7 +363,7 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
                 ),
             )
             patch.setattr(
-                dispatch,
+                dispatch_picker_module,
                 "_picker_ledger_rows",
                 lambda project, root: original_load(project, root, use_index=False)[0][
                     "runs"

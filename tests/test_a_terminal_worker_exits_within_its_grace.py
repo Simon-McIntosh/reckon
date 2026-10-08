@@ -29,6 +29,7 @@ from typing import Any
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import _backends
 from reckon.crew import routing, runs
 
@@ -161,13 +162,13 @@ def _control(monkeypatch: pytest.MonkeyPatch) -> None:
             return status
 
         monkeypatch.setattr(
-            dispatch_module, "_reap_worker_on_its_terminal_manifest", _never_reaps
+            dispatch_launch_module, "_reap_worker_on_its_terminal_manifest", _never_reaps
         )
     elif NEGATIVE_CONTROL == "baseline":
         # Drop the baseline comparison: a manifest left by a previous attempt
         # is read as this attempt's delivery, so a resumed worker is killed.
         monkeypatch.setattr(
-            dispatch_module, "_supervisor_manifest_baseline_ns", lambda *a, **k: 0
+            dispatch_launch_module, "_supervisor_manifest_baseline_ns", lambda *a, **k: 0
         )
     elif NEGATIVE_CONTROL == "prefer-pointer-baseline":
         # Prefer the pointer's recorded generation over the attempt start,
@@ -196,7 +197,7 @@ def _control(monkeypatch: pytest.MonkeyPatch) -> None:
             return parsed if parsed is not None else 0
 
         monkeypatch.setattr(
-            dispatch_module, "_supervisor_manifest_baseline_ns", _prefer_pointer
+            dispatch_launch_module, "_supervisor_manifest_baseline_ns", _prefer_pointer
         )
     elif NEGATIVE_CONTROL == "keep-deadline":
         # Leave the deadline set when the manifest turns non-done: every
@@ -204,7 +205,7 @@ def _control(monkeypatch: pytest.MonkeyPatch) -> None:
         # longer clears the deadline and the worker is ended on the withdrawn
         # complete delivery's clock.
         monkeypatch.setattr(
-            dispatch_module, "_worker_manifest_done_status", lambda *a, **k: "complete"
+            dispatch_launch_module, "_worker_manifest_done_status", lambda *a, **k: "complete"
         )
     elif NEGATIVE_CONTROL == "done-status-alone":
         # Signal on the done status line alone, exactly as before the wholeness
@@ -212,9 +213,9 @@ def _control(monkeypatch: pytest.MonkeyPatch) -> None:
         # period is collapsed to zero, so a still-writing worker's first
         # complete read starts the grace and it is ended while it writes.
         monkeypatch.setattr(
-            dispatch_module, "_worker_manifest_is_whole", lambda *a, **k: True
+            dispatch_launch_module, "_worker_manifest_is_whole", lambda *a, **k: True
         )
-        monkeypatch.setattr(dispatch_module, "_WORKER_MANIFEST_QUIET_SECONDS", 0.0)
+        monkeypatch.setattr(dispatch_launch_module, "_WORKER_MANIFEST_QUIET_SECONDS", 0.0)
 
 
 def _running(pid: int | None) -> bool:
@@ -636,7 +637,7 @@ def test_a_resumed_worker_is_not_ended_by_its_earlier_attempts_baseline(
         captured["spec_path"] = Path(spec_path)
         return 0
 
-    monkeypatch.setattr(dispatch_module, "_start_supervisor", _capture)
+    monkeypatch.setattr(dispatch_launch_module, "_start_supervisor", _capture)
     dispatch_module.supervised_launch(
         plan,
         run_directory=fixture["directory"],

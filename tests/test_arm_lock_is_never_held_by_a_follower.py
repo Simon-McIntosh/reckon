@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon.crew import runs
 
 PROJECT = "arm-lock-sample"
@@ -89,7 +90,7 @@ def processes(tmp_path, monkeypatch):
     driver = tmp_path / "watch_driver.py"
     driver.write_text(f"#!{sys.executable}\n" + PRODUCER)
     driver.chmod(0o755)
-    monkeypatch.setattr(dispatch, "_watch_executable", lambda: str(driver))
+    monkeypatch.setattr(dispatch_watch_module, "_watch_executable", lambda: str(driver))
     env = {k: v for k, v in os.environ.items() if not k.startswith("RECKON_")}
     env.update(
         RECKON_HOME=str(home),
@@ -107,7 +108,7 @@ def processes(tmp_path, monkeypatch):
         supervisors.append(process)
         return process
 
-    monkeypatch.setattr(dispatch, "_start_watch_producer", start)
+    monkeypatch.setattr(dispatch_watch_module, "_start_watch_producer", start)
 
     def spawn(source, *, extra=None, stdout=subprocess.PIPE):
         process = subprocess.Popen(

@@ -23,6 +23,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_plan as dispatch_plan_module
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
 from reckon import crew, flight, ledger
 from reckon.crew import recovery, review, runs
@@ -2767,7 +2769,7 @@ def test_an_in_harness_dispatch_returns_a_directive_to_bind(
     # measures the directive contract rather than the runner's filesystem.
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_plan_module,
         "_can_write_worktree",
         lambda *args, **kwargs: may_write_worktree,
     )
@@ -3780,7 +3782,7 @@ def test_resume_resolves_a_stream_session_without_observation_writeback(
     def observation_must_not_run(*args, **kwargs):
         raise AssertionError("resume must not observe merely to resolve a session")
 
-    monkeypatch.setattr(dispatch_module, "observe", observation_must_not_run)
+    monkeypatch.setattr(dispatch_sessions_module, "observe", observation_must_not_run)
 
     # The supervisor recorded the run's end, the observation a resume rests on.
     liveness._write_exit_record(record["run_id"])

@@ -34,6 +34,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import crew
 from reckon.crew import reports as reports_module
 from reckon.crew.runs import pointer_path
@@ -268,12 +269,12 @@ def test_a_lane_change_restates_the_fence_for_the_attempt_it_launches(
         authority="a-ledger-authority",
         sandbox_write_roots=None,
     )
-    monkeypatch.setattr(dispatch_module, "plan_dispatch", lambda **kwargs: resolution)
+    monkeypatch.setattr(dispatch_sessions_module, "plan_dispatch", lambda **kwargs: resolution)
     monkeypatch.setattr(
-        dispatch_module, "_budget_verdict", lambda **kwargs: {"held": False}
+        dispatch_sessions_module, "_budget_verdict", lambda **kwargs: {"held": False}
     )
     monkeypatch.setattr(
-        dispatch_module, "resolve_dispatch_ledger_root", lambda authority: authority
+        dispatch_sessions_module, "resolve_dispatch_ledger_root", lambda authority: authority
     )
 
     moved = dispatch_module.change_lane(

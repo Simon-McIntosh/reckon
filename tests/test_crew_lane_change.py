@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
 from reckon import crew
 from reckon.crew import recovery
@@ -141,18 +142,18 @@ def test_redispatch_keeps_the_run_node_and_worktree(
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     signalled: list[tuple[int, str, str]] = []
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_sessions_module,
         "process_alive",
         lambda pid: pid == before["pid"],
     )
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_sessions_module,
         "_signal_process_group",
         lambda pid, started, *, reason="", **kwargs: signalled.append(
             (pid, started, reason)
         ),
     )
-    monkeypatch.setattr(dispatch_module, "_spawn", lambda *args, **kwargs: 42002)
+    monkeypatch.setattr(dispatch_sessions_module, "_spawn", lambda *args, **kwargs: 42002)
     _resolve_config(monkeypatch)
 
     result = CliRunner().invoke(
@@ -213,9 +214,9 @@ def test_redispatch_continues_a_stream_resolved_session_and_records_its_source(
     crew._write_json(crew.pointer_path(before["run_id"]), pointer)
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    monkeypatch.setattr(dispatch_module, "process_alive", lambda pid: pid == 41001)
-    monkeypatch.setattr(dispatch_module, "_signal_process_group", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dispatch_module, "_spawn", lambda *args, **kwargs: 42002)
+    monkeypatch.setattr(dispatch_sessions_module, "process_alive", lambda pid: pid == 41001)
+    monkeypatch.setattr(dispatch_sessions_module, "_signal_process_group", lambda *args, **kwargs: None)
+    monkeypatch.setattr(dispatch_sessions_module, "_spawn", lambda *args, **kwargs: 42002)
     _resolve_config(monkeypatch)
 
     result = CliRunner().invoke(
@@ -348,7 +349,7 @@ def test_both_commands_call_the_shared_lane_change_operation(monkeypatch) -> Non
         }
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    monkeypatch.setattr(dispatch_module, "change_lane", change)
+    monkeypatch.setattr(dispatch_sessions_module, "change_lane", change)
     monkeypatch.setattr(crew, "read_pointer", lambda run_id: {"project": "sample"})
     _resolve_config(monkeypatch)
     runner = CliRunner()

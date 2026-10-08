@@ -26,6 +26,8 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
+
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 # The launcher child starts a supervisor whose argv is a sleep stub and reports
@@ -275,7 +277,7 @@ def test_launcher_that_reports_no_pid_is_refused(tmp_path, monkeypatch) -> None:
     # before it could start a supervisor; its own stderr is the only account of
     # why, so the refusal must carry it.
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_launch_module,
         "_SUPERVISOR_LAUNCHER_SOURCE",
         "import sys; sys.stderr.write('no supervisor argv\\n'); sys.exit(3)",
     )

@@ -35,6 +35,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import crew
 from reckon._backends import LaunchPlan
 from reckon.host import HostFacts
@@ -227,7 +228,7 @@ def test_adding_a_backend_needs_no_placement_code(
     is what makes adding an externally served backend a configuration change.
     """
     with monkeypatch.context() as scoped:
-        scoped.setattr(dispatch_module, "_current_host_facts", _inside_allocation)
+        scoped.setattr(dispatch_launch_module, "_current_host_facts", _inside_allocation)
         for name in [LOCAL_LANE, *PLACED_LANES]:
             placement = _placement(options=[f"--partition={name}-pool"])
             wrapped = dispatch_module.apply_backend_placement(

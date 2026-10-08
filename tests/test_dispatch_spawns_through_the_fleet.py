@@ -42,6 +42,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import crew
 from reckon.crew import recovery, resumption, runs
 from reckon.crew.dispatch import WATCH_ARMING_ENV
@@ -319,7 +320,7 @@ def test_a_dispatch_with_no_fleet_record_forks_as_before(
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
     recorder = _ForkRecorder()
-    monkeypatch.setattr(dispatch_module, "_spawn_detached_supervisor", recorder)
+    monkeypatch.setattr(dispatch_launch_module, "_spawn_detached_supervisor", recorder)
     record = _dispatch(config_home, repo, "forked")
 
     assert recorder.forked, "no process was started at all"
@@ -346,7 +347,7 @@ def test_the_fleet_lane_stays_off_until_the_batch_step_opts_in(
     stub.start()
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     recorder = _ForkRecorder()
-    monkeypatch.setattr(dispatch_module, "_spawn_detached_supervisor", recorder)
+    monkeypatch.setattr(dispatch_launch_module, "_spawn_detached_supervisor", recorder)
     try:
         _dispatch(config_home, repo, "optin")
         assert stub.lines == [], "the lane ran without the opt-in"
@@ -365,7 +366,7 @@ def test_an_unacknowledged_fifo_refuses_leaving_no_pointer_or_worktree(
     runtime_dir = _publish_fleet_record(tmp_path, monkeypatch)
     _opt_in(monkeypatch)
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    monkeypatch.setattr(dispatch_module, "FLEET_SPAWN_ACK_BOUND_SECONDS", 1.0)
+    monkeypatch.setattr(dispatch_launch_module, "FLEET_SPAWN_ACK_BOUND_SECONDS", 1.0)
     stub = _StubBatchStep(runtime_dir, acknowledge=False)
     stub.start()
     try:

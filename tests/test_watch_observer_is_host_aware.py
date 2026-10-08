@@ -24,6 +24,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon.crew import runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -93,7 +94,7 @@ def test_arming_does_not_stop_a_foreign_host_producer(home: Path, monkeypatch) -
 
     stops: list[tuple[str, float]] = []
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_watch_module,
         "_stop_watch_producer_within",
         lambda name, timeout: stops.append((name, timeout)),
     )

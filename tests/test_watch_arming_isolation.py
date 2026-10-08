@@ -22,6 +22,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon import crew
 from reckon.crew.dispatch import WATCH_ARMING_ENV
 
@@ -263,7 +264,7 @@ def test_arming_proceeds_for_an_ordinary_configuration_home(monkeypatch) -> None
         monkeypatch.setenv("RECKON_HOME", str(ordinary))
         monkeypatch.delenv(WATCH_ARMING_ENV, raising=False)
         monkeypatch.setattr(dispatch_module.subprocess, "Popen", record_spawn)
-        monkeypatch.setattr(dispatch_module, "_watch_executable", lambda: "reckon")
+        monkeypatch.setattr(dispatch_watch_module, "_watch_executable", lambda: "reckon")
 
         dispatch_module._start_watch_producer("sample")
     finally:

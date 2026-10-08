@@ -24,7 +24,6 @@ as the red log's first line.
 
 from __future__ import annotations
 
-import importlib
 import json
 import os
 import socket
@@ -34,6 +33,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon.crew import recovery, runs
 from reckon.crew.dispatch import change_lane, resume_plan
 from reckon.crew.node import CrewError
@@ -315,11 +315,10 @@ def _stub_destination(monkeypatch: pytest.MonkeyPatch) -> None:
         authority="a-ledger-authority",
         sandbox_write_roots=None,
     )
-    module = importlib.import_module("reckon.crew.dispatch")
-    monkeypatch.setattr(module, "plan_dispatch", lambda **kwargs: resolution)
-    monkeypatch.setattr(module, "_budget_verdict", lambda **kwargs: {"held": False})
+    monkeypatch.setattr(dispatch_sessions_module, "plan_dispatch", lambda **kwargs: resolution)
+    monkeypatch.setattr(dispatch_sessions_module, "_budget_verdict", lambda **kwargs: {"held": False})
     monkeypatch.setattr(
-        module, "resolve_dispatch_ledger_root", lambda authority: authority
+        dispatch_sessions_module, "resolve_dispatch_ledger_root", lambda authority: authority
     )
 
 

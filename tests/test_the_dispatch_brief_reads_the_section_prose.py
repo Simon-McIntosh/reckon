@@ -222,7 +222,9 @@ def test_the_section_text_no_longer_reads_the_heading_span():
     """
     import inspect
 
-    source = inspect.getsource(dispatch._plan_section_text)
+    from reckon.crew import dispatch_sections
+
+    source = inspect.getsource(dispatch_sections._plan_section_text)
     assert "section_prose(" in source
     assert "_strip_tags(html_text[slice(*heading.span)])" in source
     without_branch = source.replace('identified.get_text(" ", strip=True)', "")

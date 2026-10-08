@@ -43,6 +43,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, crew
 from tests import test_a_live_run_never_reads_dead as liveness
 
@@ -164,7 +165,7 @@ def test_a_fenced_clive_resume_reaches_the_clive_harness(
     """
     fixture = Fixture(tmp_path, "clive")
     fixture.isolate(monkeypatch)
-    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
     record, plan = fixture.resume(fence=True)
     argv = list(plan.argv)
 
@@ -196,7 +197,7 @@ def test_a_fenced_codex_resume_finds_the_runs_own_rollout(
     """
     fixture = Fixture(tmp_path, "codex")
     fixture.isolate(monkeypatch)
-    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
     _, plan = fixture.resume(fence=True)
     argv = list(plan.argv)
 
@@ -233,7 +234,7 @@ def test_a_placed_records_command_field_is_still_the_harness(
     """
     fixture = Fixture(tmp_path, "clive")
     fixture.isolate(monkeypatch)
-    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
     liveness._write_exit_record(fixture.run_id)
     record = fixture.record(fence=False)
     record["argv"] = ["srun", "--job-name", fixture.run_id, *record["argv"]]
@@ -263,8 +264,8 @@ def test_the_negative_control_reads_the_command_field_as_today(
     """
     fixture = Fixture(tmp_path, "clive")
     fixture.isolate(monkeypatch)
-    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
-    monkeypatch.setattr(dispatch_module, "_names_the_fence", lambda command: False)
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
+    monkeypatch.setattr(dispatch_sessions_module, "_names_the_fence", lambda command: False)
 
     _, plan = fixture.resume(fence=True)
     argv = list(plan.argv)

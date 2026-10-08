@@ -24,6 +24,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_claims as dispatch_claims_module
 from reckon import crew
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -110,9 +111,9 @@ def _stub_wait(
     clock: _Clock,
     reread,
 ) -> None:
-    monkeypatch.setattr(dispatch_module, "_racing_clock", clock)
-    monkeypatch.setattr(dispatch_module, "_racing_pause", clock.pause)
-    monkeypatch.setattr(dispatch_module, "_racing_claim_current", reread)
+    monkeypatch.setattr(dispatch_claims_module, "_racing_clock", clock)
+    monkeypatch.setattr(dispatch_claims_module, "_racing_pause", clock.pause)
+    monkeypatch.setattr(dispatch_claims_module, "_racing_claim_current", reread)
 
 
 # ── The loser waits on an unlaunched winner ─────────────────────────────────

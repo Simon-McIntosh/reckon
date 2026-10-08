@@ -21,6 +21,7 @@ from typing import Any
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import crew
 from reckon.crew import runs
 
@@ -62,7 +63,7 @@ def _drop_guard(monkeypatch: pytest.MonkeyPatch) -> None:
     """Remove the guard everywhere, for the run that fails without it."""
     if NEGATIVE_CONTROL == "terminal-phase-guard":
         monkeypatch.setattr(
-            dispatch_module, "_terminal_phase_survives", lambda *args, **kwargs: False
+            dispatch_sessions_module, "_terminal_phase_survives", lambda *args, **kwargs: False
         )
 
 
@@ -75,7 +76,7 @@ def _drop_orphan_guard(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     if NEGATIVE_CONTROL == "orphaned-branch":
         monkeypatch.setattr(
-            dispatch_module,
+            dispatch_sessions_module,
             "_terminal_phase_survives",
             lambda stored, observed: (
                 False if observed == "orphaned" else _ORIGINAL_GUARD(stored, observed)

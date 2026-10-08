@@ -10,6 +10,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_plan as dispatch_plan_module
+import reckon.crew.dispatch_sections as dispatch_sections_module
 from reckon import cli as cli_module
 from reckon import crew
 from reckon.crew.dispatch import DONE_WHEN_PLAN_TEXT_SPAN_WORDS
@@ -278,7 +280,7 @@ def test_an_unreadable_section_cannot_break_dispatch(
     def unreadable(**_kwargs):
         raise OSError("unreadable after visibility validation")
 
-    monkeypatch.setattr(dispatch_module, "_resolved_plan_section_text", unreadable)
+    monkeypatch.setattr(dispatch_sections_module, "_resolved_plan_section_text", unreadable)
     result = _invoke(
         dispatch_repo,
         monkeypatch,
@@ -296,13 +298,13 @@ def test_a_report_changes_no_other_dry_run_field(
     monkeypatch.setattr(dispatch_module, "new_run_id", lambda _node: "r-fixed")
     done_when = "pytest reports one stable dry-run result"
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_plan_module,
         "_done_when_plan_overlap_warning",
         lambda **_kwargs: "done-when reproduces fixture prose",
     )
     reported = _payload(_invoke(dispatch_repo, monkeypatch, done_when))
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_plan_module,
         "_done_when_plan_overlap_warning",
         lambda **_kwargs: None,
     )

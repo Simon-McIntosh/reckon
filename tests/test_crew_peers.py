@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_peer as dispatch_peer_module
 from reckon import crew
-
 
 peer_channel = importlib.import_module("reckon.crew.dispatch")
 
@@ -170,7 +170,7 @@ def test_peer_read_blocks_on_an_event_until_the_reply_arrives(
         watching.set()
         return descriptor
 
-    monkeypatch.setattr(peer_channel, "_inotify_descriptor", observed_descriptor)
+    monkeypatch.setattr(dispatch_peer_module, "_inotify_descriptor", observed_descriptor)
     monkeypatch.setattr(
         peer_channel.time,
         "sleep",
