@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1624 _raise_repository_scope_conflict",
+    "reckon/crew/dispatch_claims.py:1516 _settle_racing_winner",
+    "reckon/crew/dispatch_launch.py:3098 _remember_claim_launch_interval",
+    "reckon/crew/dispatch_launch.py:2523 _publish_stored_phase"
+  ],
+  "completed_at": "2026-10-08T13:42:39.754Z",
+  "dispatched_at": "2026-10-08T13:25:34Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/claim-grace-follows-live-launches.html",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states the head gate as 167 passed but does not name the revision the log's header carries; gate-head-resumed.log records working-tree(base=f82b43b1c), two commits before the reviewed head 2ebbb932b, so a reader cannot tie a passing gate to the committed head."
+    },
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "1455",
+      "severity": "follow-on",
+      "text": "follow-on: RACING_WINNER_WAIT_SECONDS is now CLAIM_GRACE_FLOOR_SECONDS and is still re-exported through reckon/crew/dispatch.py:1973, while no caller reads it as a bound; a reader may take it for the operative grace it no longer is."
+    },
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "1385",
+      "severity": "follow-on",
+      "text": "follow-on: the receipt fallback in recent_claim_grace_seconds and the run ids _recent_run_names returns walk run_store.db and the live pointers, but no test exercises the indexed branch \u2014 the two derivation tests read the summary file and the explicit-root receipt path instead."
+    },
+    {
+      "file": "tests/test_dispatch_launch_cost.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the first head gate (gate-head.log, EXIT=1) aborted on an ImportError because the module still imported the removed _CLAIM_LAUNCH_OBSERVED_SECONDS, so the committed arm was not runnable at 7e33a7e34 and only the resumed arm is a readable head measurement."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit by commit against base e0497bd71; the production change is dispatch_claims.py plus dispatch_launch.py and nothing falls outside the declared paths.",
+    "done_when": "No literal launch distribution remains in source; twenty 8 s intervals and twenty 24 s intervals give 12 s and 36 s; nineteen intervals give the 5 s floor; warm-dispatch-driver.log records added_median_ms=0.028166, under the 50 ms bound.",
+    "goal": "The node goal is met \u2014 the racing-winner claim grace is derived at dispatch from recorded launch intervals. The frozen 20-value tuple is gone and claim_grace_seconds remains the derivation.",
+    "manifest": "Read; status complete; its baseline_suite and after_suite blocks reconcile with gate-base.log (161 passed, 2 failed) and gate-head-resumed.log (167 passed, EXIT=0).",
+    "write_paths": "All six changed paths are inside the granted scope \u2014 the three dispatch paths at dispatch plus the two test modules the resume advice added."
+  },
+  "justifications": {
+    "durability": "negative-control.log (EXIT=1) reddens test_two_recorded_launch_distributions_produce_distinct_graces at 33 versus 12 when the frozen deadline is restored, and the new tests are isolated through the autouse temporary RECKON_HOME and monkeypatched crew_home/runs_dir; but the indexed receipt branch reads the real run_store.db and no test exercises it.",
+    "evidence": "gate-head-resumed.log's header names working-tree(base=f82b43b1c) rather than the committed head 2ebbb932b, and the first head gate aborted on a stale-test ImportError, so the recorded 167-pass is not tied to the committed revision by the log alone; an independent run of the three changed modules at 2ebbb932b passes 15/15.",
+    "fit": "the additions follow the module's docstring-and-dict idiom and reuse _pointer_lock, _write_json and parse_utc; no name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "all three items land: claim.json records the registration instant, recent_claim_grace_seconds derives the grace from recent intervals with a 128-entry bound and a 30 s process cache, and the frozen tuple is removed \u2014 but RACING_WINNER_WAIT_SECONDS now equals the floor and stays exported though nothing reads it as a bound, and the indexed receipt fallback is untested.",
+    "reuse": "the interval-to-grace decision (len >= 20 ? claim_grace_seconds : floor) is written twice, in the summary branch and the receipt branch, and _recent_run_names re-derives worker-record discovery that recovery and promotion already own.",
+    "scope_discipline": "every path in the diff of e0497bd71..2ebbb932b is inside the granted write paths \u2014 the three dispatch paths and the fragment were granted at dispatch, and the two test modules were added by the recorded resume advice."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is met \u2014 the racing-winner claim grace is derived at dispatch from recorded launch intervals. The frozen 20-value tuple is gone and claim_grace_seconds remains the derivation.\nVERDICT done_when: No literal launch distribution remains in source; twenty 8 s intervals and twenty 24 s intervals give 12 s and 36 s; nineteen intervals give the 5 s floor; warm-dispatch-driver.log records added_median_ms=0.028166, under the 50 ms bound.\nVERDICT write_paths: All six changed paths are inside the granted scope \u2014 the three dispatch paths at dispatch plus the two test modules the resume advice added.\nVERDICT manifest: Read; status complete; its baseline_suite and after_suite blocks reconcile with gate-base.log (161 passed, 2 failed) and gate-head-resumed.log (167 passed, EXIT=0).\nVERDICT diff: Read commit by commit against base e0497bd71; the production change is dispatch_claims.py plus dispatch_launch.py and nothing falls outside the declared paths.\nCALL_SITES: reckon/crew/dispatch_claims.py:1624 _raise_repository_scope_conflict, reckon/crew/dispatch_claims.py:1516 _settle_racing_winner, reckon/crew/dispatch_launch.py:3098 _remember_claim_launch_interval, reckon/crew/dispatch_launch.py:2523 _publish_stored_phase\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all three items land: claim.json records the registration instant, recent_claim_grace_seconds derives the grace from recent intervals with a 128-entry bound and a 30 s process cache, and the frozen tuple is removed \u2014 but RACING_WINNER_WAIT_SECONDS now equals the floor and stays exported though nothing reads it as a bound, and the indexed receipt fallback is untested.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head-resumed.log's header names working-tree(base=f82b43b1c) rather than the committed head 2ebbb932b, and the first head gate aborted on a stale-test ImportError, so the recorded 167-pass is not tied to the committed revision by the log alone; an independent run of the three changed modules at 2ebbb932b passes 15/15.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff of e0497bd71..2ebbb932b is inside the granted write paths \u2014 the three dispatch paths and the fragment were granted at dispatch, and the two test modules were added by the recorded resume advice.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log (EXIT=1) reddens test_two_recorded_launch_distributions_produce_distinct_graces at 33 versus 12 when the frozen deadline is restored, and the new tests are isolated through the autouse temporary RECKON_HOME and monkeypatched crew_home/runs_dir; but the indexed receipt branch reads the real run_store.db and no test exercises it.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the module's docstring-and-dict idiom and reuse _pointer_lock, _write_json and parse_utc; no name carries a plan, sprint or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: the interval-to-grace decision (len >= 20 ? claim_grace_seconds : floor) is written twice, in the summary branch and the receipt branch, and _recent_run_names re-derives worker-record discovery that recovery and promotion already own.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/claim-grace-follows-live-launches.html:16 follow-on: the fragment states the head gate as 167 passed but does not name the revision the log's header carries; gate-head-resumed.log records working-tree(base=f82b43b1c), two commits before the reviewed head 2ebbb932b, so a reader cannot tie a passing gate to the committed head.\nFINDING reckon/crew/dispatch_claims.py:1455 follow-on: RACING_WINNER_WAIT_SECONDS is now CLAIM_GRACE_FLOOR_SECONDS and is still re-exported through reckon/crew/dispatch.py:1973, while no caller reads it as a bound; a reader may take it for the operative grace it no longer is.\nFINDING reckon/crew/dispatch_claims.py:1385 follow-on: the receipt fallback in recent_claim_grace_seconds and the run ids _recent_run_names returns walk run_store.db and the live pointers, but no test exercises the indexed branch \u2014 the two derivation tests read the summary file and the explicit-root receipt path instead.\nFINDING tests/test_dispatch_launch_cost.py:1 follow-on: the first head gate (gate-head.log, EXIT=1) aborted on an ImportError because the module still imported the removed _CLAIM_LAUNCH_OBSERVED_SECONDS, so the committed arm was not runnable at 7e33a7e34 and only the resumed arm is a readable head measurement.",
+  "review_run_id": "r-20261008T132510646966-review-of-claim-grace-follows-live-launches",
+  "reviewed_base_sha": "e0497bd71fc1561bb9e072b0dd0e0615bffcb2aa",
+  "reviewed_head_sha": "2ebbb932b84972598b4255b0db917d0b0e1152a6",
+  "reviewed_run_id": "r-20261008T124329527557-claim-grace-follows-live-launches",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash",
+    "run_id": "r-20261008T132510646966-review-of-claim-grace-follows-live-launches"
+  },
+  "reviewer_run_id": "r-20261008T132510646966-review-of-claim-grace-follows-live-launches",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:45:14.031706+00:00",
+  "total": 105
+}
