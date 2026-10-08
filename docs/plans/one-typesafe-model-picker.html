@@ -25,7 +25,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="246">
+<meta name="plan-version" content="247">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;}">
 </head>
@@ -794,13 +794,16 @@
     <div class="r-comment-body"><p>§13 landed: shared pre-pick state is read once and the last good ledger index is kept (merge <code>e03273cec</code>, review 101, no failures added). Follow-ons are §22. <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s13">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261008T124244188927-pre-pick-state-reads-once" data-who="reckon-build" data-when="2026-10-08T13:15:53.013Z">
-    <div class="r-comment-body"><p>dispatch resolves its project repository once per process (a second resolution runs no git), a refused ledger index refresh returns the last good index&#x27;s rows with their age without scanning the aggregate, the estimated-hours stamp moves on a sibling plan&#x27;s metadata edit, and the scratch survey docstring states the orphan sweep&#x27;s age rule; 6 new tests pass at head and 4 of them fail on the base revision, with zero added failures in the gate suite.</p></div>
+    <div class="r-comment-body"><p>dispatch resolves its project repository once per process (a second resolution runs no git), a refused ledger index refresh returns the last good index's rows with their age without scanning the aggregate, the estimated-hours stamp moves on a sibling plan's metadata edit, and the scratch survey docstring states the orphan sweep's age rule; 6 new tests pass at head and 4 of them fail on the base revision, with zero added failures in the gate suite.</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261008T132510646966-review-of-claim-grace-follows-live-launches" data-who="reckon-build" data-when="2026-10-08T13:42:39.754Z">
     <div class="r-comment-body"><p>Attached an independent review to run r-20261008T124329527557-claim-grace-follows-live-launches scoring 105/120 at base e0497bd71..head 2ebbb932b (goal_fidelity 18, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 16), 0 added failures, four follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-close-s21" data-who="reckon-build" data-when="2026-10-08T14:25:00Z">
     <div class="r-comment-body"><p>§21 landed: the claim grace follows recorded launch intervals (merge <code>e03273cec</code>, review 105, no failures added). Follow-ons are §23. <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s21">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261008T124329527557-claim-grace-follows-live-launches" data-who="reckon-build" data-when="2026-10-08T13:23:42Z">
+    <div class="r-comment-body"><p>Recorded per-run claim and launch instants with a bounded live observation index; 8 s and 24 s distributions yielded 12 s and 36 s graces, 19 records yielded the 5 s floor, warm derivation added 0.028166 ms median, and the head gate passed 167 tests with zero added failures.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
