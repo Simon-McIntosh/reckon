@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:171 _declared_difficulty -> _resolved_plan_path"
+  ],
+  "completed_at": "2026-10-08T13:48:17.051Z",
+  "dispatched_at": "2026-10-08T13:35:30Z",
+  "findings": [
+    {
+      "file": "tests/test_pick_stages_fit_the_bound.py",
+      "line": "237",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_moved_plan_file_is_not_served_stale rewrites probe.html in place and asserts estimated_hours becomes 7.0, but the hours are re-read from that same plan_path by _section_effort_hours (picker/__init__.py:66) on every pick, so the assertion passes whether or not the cache stamp moved; the case a stale cached resolution would actually break -- a plan renamed to a different path -- is not exercised, so the stamp-invalidation path is unguarded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T124144038643-pick-stages-fit-the-bound/manifest.md",
+      "line": "56",
+      "severity": "follow-on",
+      "text": "follow-on: the item-2 cut figure (capability_ms 1497.17 with the per-pick read restored against 1083.96 with the cut, one pick per process) appears only in this manifest; profile_capability.py's own output is not captured to any log under the run directory, so the headline measurement has no receipt a reader can open, and it is produced by a different instrument than the done-when named."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T124144038643-pick-stages-fit-the-bound/gate_head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: neither gate_head.log nor gate_base.log opens with a line naming the revision it ran at, the tree and the command, so the 194-passed EXIT=0 and 190-passed EXIT=0 summaries do not tie to reviewed heads 4821665f and 42531caaf by the logs alone."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T124144038643-pick-stages-fit-the-bound/replay_driver.py",
+      "line": "123",
+      "severity": "follow-on",
+      "text": "follow-on: the driver selects the ten slowest picks (slowest_count 10) but silently drops any case whose ledger row does not match (row is None), so only nine are replayed; the manifest and the driver docstring both say the ten slowest, and the dropped pick is nowhere recorded."
+    },
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "121",
+      "severity": "follow-on",
+      "text": "follow-on: stamp_of reaches across modules for the private ledger._file_identity as the resolved-path stamp, coupling the picker to a ledger internal when capabilities.file_stamp is the picker-visible stamp helper already imported in this function."
+    }
+  ],
+  "head_log_revision": null,
+  "justifications": {
+    "durability": "test_the_cut_stops_the_repeated_docs_scan (tests/test_pick_stages_fit_the_bound.py:195) counts resources.resolve_resource calls and is shown red for the restored read by negative_control.log (EXIT=1), and test_the_removed_read_is_what_the_cut_eliminated (:217) proves the restored path pays the scan, but test_a_moved_plan_file_is_not_served_stale (:237) edits the plan in place and the hours are re-read from that same path by _section_effort_hours (picker/__init__.py:66), so it passes even if the file stamp never moves and does not guard the stale-path case its name claims.",
+    "evidence": "gate_base.log 190 passed EXIT=0 and gate_head.log 194 passed EXIT=0 give zero added failures, and the negative control reddens test_the_cut_stops_the_repeated_docs_scan, an id the head arm does not fail; the replay's recorded medians (1805.0/5882.9/7146.0) and warm medians (19.0/10.2/33.3) reconcile exactly with replay_head_iso.json. But neither gate log carries a header naming the revision, tree and command, so its pass counts do not tie to 42531caaf/4821665f; the headline cut figure has no log receipt; the done-when's named before/after replay cannot show the cut (it is masked in one process); and one of the ten slowest picks is silently dropped.",
+    "fit": "The additions follow the module's docstring-and-helper idiom (picker/__init__.py:85, 134) and reuse the existing noqa convention; names (_resolved_plan_path, cached_pick_input_stamped) describe the mechanism and carry no plan, sprint or ticket label, and every exception is justified in a comment.",
+    "goal_fidelity": "The node's done-when was one-typesafe-model-picker s12 items 1-2: attribute the tail per stage and cut what is code. The manifest attributes snapshot_ms, state_render_ms and capability_ms to load (recorded medians 1805.0/7146.0/5882.9 ms against replayed warm medians 33.0/19.0/10.2 ms) and cuts one per-pick docs-tree resolve at picker/__init__.py:85, but the done-when's named instrument -- the replay driver run before and after showing a lower median for the cut stage -- is not satisfied: the manifest states the in-process replay masks the cut and substitutes a one-pick-per-process figure reported only in the manifest. The cohort is nine picks, not the stated ten.",
+    "reuse": "The cut routes through the existing capabilities.cached_pick_input_stamped rather than forking a cache, and reuses capabilities.file_stamp and routing._docs_scan_directories, but it reaches across modules for the private ledger._file_identity as a stamp helper (picker/__init__.py:121), and _declared_difficulty keeps a duplicate resolve_resource fallback beside the cached call.",
+    "scope_discipline": "The diff of 42531caaf..4821665f touches only reckon/crew/picker/__init__.py, tests/test_pick_stages_fit_the_bound.py and docs/evidence/fragments/one-typesafe-model-picker/pick-stages-fit-the-bound.html, all inside the node's declared write paths; the reviewed worktree is clean and no plan or project index file is modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's done-when was one-typesafe-model-picker s12 items 1-2: attribute the tail per stage and cut what is code. The manifest attributes snapshot_ms, state_render_ms and capability_ms to load (recorded medians 1805.0/7146.0/5882.9 ms against replayed warm medians 33.0/19.0/10.2 ms) and cuts one per-pick docs-tree resolve at reckon/crew/picker/__init__.py:85, but the done-when's named before/after replay cannot show the cut (it is masked in one process) and the substitute figure lives only in the manifest; the cohort is nine picks, not the stated ten.\nVERDICT done_when: The named gate is tests/test_pick_stages_fit_the_bound.py plus the picker/estimate/jev suites; the manifest records base 190 passed EXIT=0 and head 194 passed EXIT=0, zero added failures, and a negative control at EXIT=1. The before/after-replay clause is not met as written; the selection-unchanged test passes.\nVERDICT write_paths: The manifest declares reckon/crew/picker, reckon/crew/dispatch_picker.py, tests/test_pick_stages_fit_the_bound.py, the evidence fragment and a figures directory; the diff touches only the picker module, the test file and the fragment, all inside them.\nVERDICT manifest: Read; its recorded medians and warm medians reconcile with replay_before.json and replay_head_iso.json, and its gate logs give 190/194 passed EXIT=0. Its headline cut figure (1497.17/1083.96 ms) is not captured to any log.\nVERDICT diff: Read against base 42531caaf; 4821665f adds _resolved_plan_path and routes _declared_difficulty through it, adds the test file, and adds an empty evidence-fragment anchor; nothing falls outside scope.\nCALL_SITES: reckon/crew/picker/__init__.py:171 _declared_difficulty -> _resolved_plan_path\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: The node's done-when was s12 items 1-2: attribute the tail per stage and cut what is code. The manifest attributes snapshot_ms, state_render_ms and capability_ms to load (recorded medians 1805.0/7146.0/5882.9 ms against replayed warm medians 33.0/19.0/10.2 ms) and cuts one per-pick docs-tree resolve at picker/__init__.py:85, but the done-when's named instrument -- the replay driver run before and after showing a lower median for the cut stage -- is not satisfied: the manifest states the in-process replay masks the cut and substitutes a one-pick-per-process figure reported only in the manifest. The cohort is nine picks, not the stated ten.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate_base.log 190 passed EXIT=0 and gate_head.log 194 passed EXIT=0 give zero added failures, and the negative control reddens test_the_cut_stops_the_repeated_docs_scan, an id the head arm does not fail; the replay's recorded medians (1805.0/5882.9/7146.0) and warm medians (19.0/10.2/33.3) reconcile exactly with replay_head_iso.json. But neither gate log carries a header naming the revision, tree and command, so its pass counts do not tie to 42531caaf/4821665f; the headline cut figure has no log receipt; the done-when's named before/after replay cannot show the cut (it is masked in one process); and one of the ten slowest picks is silently dropped.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff of 42531caaf..4821665f touches only reckon/crew/picker/__init__.py, tests/test_pick_stages_fit_the_bound.py and docs/evidence/fragments/one-typesafe-model-picker/pick-stages-fit-the-bound.html, all inside the node's declared write paths; the reviewed worktree is clean and no plan or project index file is modified.\nSCORE durability: 14\nJUSTIFICATION durability: test_the_cut_stops_the_repeated_docs_scan (tests/test_pick_stages_fit_the_bound.py:195) counts resources.resolve_resource calls and is shown red for the restored read by negative_control.log (EXIT=1), and test_the_removed_read_is_what_the_cut_eliminated (:217) proves the restored path pays the scan, but test_a_moved_plan_file_is_not_served_stale (:237) edits the plan in place and the hours are re-read from that same path by _section_effort_hours (picker/__init__.py:66), so it passes even if the file stamp never moves and does not guard the stale-path case its name claims.\nSCORE fit: 18\nJUSTIFICATION fit: The additions follow the module's docstring-and-helper idiom (picker/__init__.py:85, 134) and reuse the existing noqa convention; names (_resolved_plan_path, cached_pick_input_stamped) describe the mechanism and carry no plan, sprint or ticket label, and every exception is justified in a comment.\nSCORE reuse: 16\nJUSTIFICATION reuse: The cut routes through the existing capabilities.cached_pick_input_stamped rather than forking a cache, and reuses capabilities.file_stamp and routing._docs_scan_directories, but it reaches across modules for the private ledger._file_identity as a stamp helper (picker/__init__.py:121), and _declared_difficulty keeps a duplicate resolve_resource fallback beside the cached call.\nFINDING tests/test_pick_stages_fit_the_bound.py:237 follow-on: test_a_moved_plan_file_is_not_served_stale rewrites probe.html in place and asserts estimated_hours becomes 7.0, but the hours are re-read from that same plan_path by _section_effort_hours (picker/__init__.py:66) on every pick, so the assertion passes whether or not the cache stamp moved; the case a stale cached resolution would actually break -- a plan renamed to a different path -- is not exercised, so the stamp-invalidation path is unguarded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T124144038643-pick-stages-fit-the-bound/manifest.md:56 follow-on: the item-2 cut figure (capability_ms 1497.17 with the per-pick read restored against 1083.96 with the cut, one pick per process) appears only in this manifest; profile_capability.py's own output is not captured to any log under the run directory, so the headline measurement has no receipt a reader can open, and it is produced by a different instrument than the done-when named.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T124144038643-pick-stages-fit-the-bound/gate_head.log:1 follow-on: neither gate_head.log nor gate_base.log opens with a line naming the revision it ran at, the tree and the command, so the 194-passed EXIT=0 and 190-passed EXIT=0 summaries do not tie to reviewed heads 4821665f and 42531caaf by the logs alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T124144038643-pick-stages-fit-the-bound/replay_driver.py:123 follow-on: the driver selects the ten slowest picks (slowest_count 10) but silently drops any case whose ledger row does not match (row is None), so only nine are replayed; the manifest and the driver docstring both say the ten slowest, and the dropped pick is nowhere recorded.\nFINDING reckon/crew/picker/__init__.py:121 follow-on: stamp_of reaches across modules for the private ledger._file_identity as the resolved-path stamp, coupling the picker to a ledger internal when capabilities.file_stamp is the picker-visible stamp helper already imported in this function.\n",
+  "review_run_id": "r-20261008T133509689556-review-of-pick-stages-fit-the-bound",
+  "reviewed_base_sha": "42531caaf26bbd03ff922a80c611c9af55af35d3",
+  "reviewed_head_sha": "4821665f829bd217c15986ed1dafe41cb0df82ef",
+  "reviewed_run_id": "r-20261008T124144038643-pick-stages-fit-the-bound",
+  "reviewer": {
+    "backend": null,
+    "effort": null,
+    "model": "deepseek-v4.1-flash",
+    "run_id": "r-20261008T133509689556-review-of-pick-stages-fit-the-bound"
+  },
+  "reviewer_run_id": "r-20261008T133509689556-review-of-pick-stages-fit-the-bound",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:48:24.524134+00:00",
+  "total": 96
+}
