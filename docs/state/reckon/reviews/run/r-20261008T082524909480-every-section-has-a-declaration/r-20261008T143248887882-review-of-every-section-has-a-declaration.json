@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_edit_plan.py::test_section_declarations_survive_two_versioned_writes",
+    "tests/test_edit_plan.py::test_set_section_declarations_round_trips_through_edit_plan",
+    "tests/test_edit_plan.py::test_write_path_makes_executable_remainder_reachable"
+  ],
+  "added_failures_note": "measured from the reviewed run's own cohort arms: baseline 6741a3ef fails 1 (test_mcp_views::test_raw_and_schema_are_explicit_layers), after 06b37a794 fails 4; the 3 added ids are the tests/test_edit_plan.py tests above. All three are retired by name in the reviewed run's own manifest (failure_attribution and follow_ons), so the added-failure total cap does not apply.",
+  "base_log_revision": "6741a3efc71ef2bbb78723ae510d8ad31d16a72f",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_store.py:1353",
+    "reckon/_store.py:1774",
+    "reckon/_store.py:3498",
+    "reckon/_store.py:3621",
+    "reckon/serve.py:3581",
+    "reckon/serve.py:3631"
+  ],
+  "completed_at": "2026-10-08T15:00:53.755Z",
+  "dispatched_at": "2026-10-08T14:33:11Z",
+  "findings": [
+    {
+      "file": "tests/test_edit_plan.py",
+      "line": "0",
+      "severity": "follow-on",
+      "text": "three tests fail at head against base: test_set_section_declarations_round_trips_through_edit_plan, test_section_declarations_survive_two_versioned_writes and test_write_path_makes_executable_remainder_reachable (added_failure_count 3, reproduced from the run's own cohort arms). Their fixture authors an empty <main> then declares s1..s4, so the write introduces orphan declarations the new guard refuses; the file is outside the node's write scope, and the run records the same in its follow_ons."
+    },
+    {
+      "file": "tests/test_every_section_has_a_declaration.py",
+      "line": "303",
+      "severity": "follow-on",
+      "text": "test_the_server_patch_path_refuses_a_write_that_drops_a_declaration assigns serve_module._MOUNTS_FILE directly and clears serve_module._DISC_CACHE without restoring them, leaving process-global state pointing at a since-deleted tmp_path for later tests in the same worker; it follows an existing repo idiom (about ten other tests assign _MOUNTS_FILE directly), but monkeypatch.setattr would restore it."
+    }
+  ],
+  "head_log_revision": "06b37a794cb96b3e914193ce8374db8b741b5df5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read 17a234247 against 9d0b0cada: _store.py replaces _require_every_section_declared with _coverage_gaps_of/new_section_coverage_gaps/_require_no_new_section_coverage_gaps, re-parameterises _require_heading_for_section_records(final=) to before_text=, widens _require_every_section_ticked with html_text plus _plan_html_text/_undeclared_headings, and threads html_text through validate_landing_patch/apply_ops; serve.py adds the patch-route coverage check and passes text to validate_landing_patch; the tests gain three cases and rework two; the promotion fixture gains an authored heading; the fragment and a census figure are updated.",
+    "done_when": "s5's done-when names a recorded census plus seven tests. The census is 109 gapped of 214 live, in the fragment; I reproduced the four-file gate at head 9d0b0cada (44 passed, EXIT=0) and re-ran both new-behaviour negative controls (undeclared_headings -> [] fails the landing test EXIT=1; new_section_coverage_gaps -> ([],[]) fails the patch-route test EXIT=1). All seven named tests are present.",
+    "goal": "The reviewed delta (17a234247..9d0b0cada) delivers plan s5's remaining clauses: new_section_coverage_gaps compares the coverage gaps of the HTML a write produces against the document as it stood when the write began, so _require_heading_for_section_records(before_text=...) refuses only a gap the write introduces and a plan already carrying a gap stays writable; at the transition into shipped/done _require_every_section_ticked(state, html_text) counts an authored heading with no declaration as open via _undeclared_headings; and the POST /plan/<project>/<slug> route runs the same comparison on the text it read and the HTML it is about to write, refusing 400 section_coverage. All three plan write paths call the check.",
+    "manifest": "The reviewed run's manifest reads complete; it names the five commits, the four-file gate and its logs, a baseline_suite and an after_suite cohort arm, and the negative-control log; both arm commands and the gate log headers name their targets with <worktree>/<repo>/<cohort_files> placeholders rather than literal paths the store can reproduce.",
+    "write_paths": "The gained delta touches exactly the node's declared scope set - reckon/_store.py, reckon/serve.py, tests/test_every_section_has_a_declaration.py, tests/test_promotion_requires_impl_move.py, the evidence fragment and its figure - and nothing else; reckon/doccheck.py is unchanged from the previously reviewed head and is not in this delta."
+  },
+  "justifications": {
+    "durability": "Three new tests each assert behaviour (the refusal names the id, the file stays byte-unchanged, the route returns 400) and each has a reproduced negative control; the promotion fixture is repaired so it keeps passing. Docked only because the serve-route test reassigns serve_module._MOUNTS_FILE and clears _DISC_CACHE without restoring them.",
+    "evidence": "The run carries a real two-armed cohort measurement (baseline 6741a3ef fails 1, after 06b37a794 fails 4, so 3 added) and I reproduced its four-file gate at head 9d0b0cada (44 passed EXIT=0) and both new negative controls (EXIT=1 each). Docked because the manifest's and logs' arm commands name their targets with <worktree>/<cohort_files> placeholders rather than the literal paths the contract requires, and the after arm was measured at 06b37a794, two docs-only commits short of the reviewed head.",
+    "fit": "Names are by mechanism (new_section_coverage_gaps, _coverage_gaps_of, _require_no_new_section_coverage_gaps, _undeclared_headings, _plan_html_text) with no plan or stage label; the two gap codes are emitted output data; the patch route reuses the store comparison rather than a second implementation. Docked for a docstring typo (\"must checks it too\") in the new serve-route test.",
+    "goal_fidelity": "Every clause of s5's gained scope is present and verified against the diff: one shared comparison applied on all three write paths (reckon/_store.py:1353 and :1774 for state+text, reckon/serve.py:3631 for the patch route), the terminal widening at _require_every_section_ticked counting undeclared authored headings, and open_sections left declaration-only.",
+    "reuse": "new_section_coverage_gaps is the single comparison, called by the store guard and by the serve route; _coverage_gaps_of factors the shared read; _undeclared_headings reuses _plan_html.authored_section_headings, the one reader of authored ids; no parallel scan or duplicated guard is introduced.",
+    "scope_discipline": "Every path in the gained delta is inside the declared scope and none is unrelated; the three mechanical edits the prior review flagged (timezone.utc -> UTC, two import splits, a blank line) are absent here because the new branch descends from base 6741a3ef, not from the reviewed head the prior review judged."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 17a234247626c81a63dcf9ead24aa632d835ddbb\nreviewed_head_sha: 9d0b0cada09f1e82c67587275aaff958ca0b7107\n\nVERDICT goal: The reviewed delta (17a234247..9d0b0cada) delivers plan s5's remaining clauses: new_section_coverage_gaps compares the coverage gaps of the HTML a write produces against the document as it stood when the write began, so _require_heading_for_section_records(before_text=...) refuses only a gap the write introduces and a plan already carrying a gap stays writable; at the transition into shipped/done _require_every_section_ticked(state, html_text) counts an authored heading with no declaration as open via _undeclared_headings; and the POST /plan/<project>/<slug> route runs the same comparison on the text it read and the HTML it is about to write, refusing 400 section_coverage. All three plan write paths call the check.\nVERDICT done_when: s5's done-when names a recorded census plus seven tests. The census is 109 gapped of 214 live, in the fragment; I reproduced the four-file gate at head 9d0b0cada (44 passed, EXIT=0) and re-ran both new-behaviour negative controls (undeclared_headings -> [] fails the landing test EXIT=1; new_section_coverage_gaps -> ([],[]) fails the patch-route test EXIT=1). All seven named tests are present.\nVERDICT write_paths: The gained delta touches exactly the node's declared scope set - reckon/_store.py, reckon/serve.py, tests/test_every_section_has_a_declaration.py, tests/test_promotion_requires_impl_move.py, the evidence fragment and its figure - and nothing else; reckon/doccheck.py is unchanged from the previously reviewed head and is not in this delta.\nVERDICT manifest: The reviewed run's manifest reads complete; it names the five commits, the four-file gate and its logs, a baseline_suite and an after_suite cohort arm, and the negative-control log; both arm commands and the gate log headers name their targets with <worktree>/<repo>/<cohort_files> placeholders rather than literal paths the store can reproduce.\nVERDICT diff: Read 17a234247 against 9d0b0cada: _store.py replaces _require_every_section_declared with _coverage_gaps_of/new_section_coverage_gaps/_require_no_new_section_coverage_gaps, re-parameterises _require_heading_for_section_records(final=) to before_text=, widens _require_every_section_ticked with html_text plus _plan_html_text/_undeclared_headings, and threads html_text through validate_landing_patch/apply_ops; serve.py adds the patch-route coverage check and passes text to validate_landing_patch; the tests gain three cases and rework two; the promotion fixture gains an authored heading; the fragment and a census figure are updated.\n\nCALL_SITES: reckon/_store.py:1353, reckon/_store.py:1774, reckon/_store.py:3498, reckon/_store.py:3621, reckon/serve.py:3581, reckon/serve.py:3631\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: Every clause of s5's gained scope is present and verified against the diff: one shared comparison applied on all three write paths (reckon/_store.py:1353 and :1774 for state+text, reckon/serve.py:3631 for the patch route), the terminal widening at _require_every_section_ticked counting undeclared authored headings, and open_sections left declaration-only.\nSCORE evidence: 18\nJUSTIFICATION evidence: The run carries a real two-armed cohort measurement (baseline 6741a3ef fails 1, after 06b37a794 fails 4, so 3 added) and I reproduced its four-file gate at head 9d0b0cada (44 passed EXIT=0) and both new negative controls (EXIT=1 each). Docked because the manifest's and logs' arm commands name their targets with <worktree>/<cohort_files> placeholders rather than the literal paths the contract requires, and the after arm was measured at 06b37a794, two docs-only commits short of the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the gained delta is inside the declared scope and none is unrelated; the three mechanical edits the prior review flagged (timezone.utc -> UTC, two import splits, a blank line) are absent here because the new branch descends from base 6741a3ef, not from the reviewed head the prior review judged.\nSCORE durability: 19\nJUSTIFICATION durability: Three new tests each assert behaviour (the refusal names the id, the file stays byte-unchanged, the route returns 400) and each has a reproduced negative control; the promotion fixture is repaired so it keeps passing. Docked only because the serve-route test reassigns serve_module._MOUNTS_FILE and clears _DISC_CACHE without restoring them.\nSCORE fit: 19\nJUSTIFICATION fit: Names are by mechanism (new_section_coverage_gaps, _coverage_gaps_of, _require_no_new_section_coverage_gaps, _undeclared_headings, _plan_html_text) with no plan or stage label; the two gap codes are emitted output data; the patch route reuses the store comparison rather than a second implementation. Docked for a docstring typo (\"must checks it too\") in the new serve-route test.\nSCORE reuse: 20\nJUSTIFICATION reuse: new_section_coverage_gaps is the single comparison, called by the store guard and by the serve route; _coverage_gaps_of factors the shared read; _undeclared_headings reuses _plan_html.authored_section_headings, the one reader of authored ids; no parallel scan or duplicated guard is introduced.\n\nFINDING tests/test_edit_plan.py:0 follow-on: three tests fail at head against base: test_set_section_declarations_round_trips_through_edit_plan, test_section_declarations_survive_two_versioned_writes and test_write_path_makes_executable_remainder_reachable (added_failure_count 3, reproduced from the run's own cohort arms). Their fixture authors an empty <main> then declares s1..s4, so the write introduces orphan declarations the new guard refuses; the file is outside the node's write scope, and the run records the same in its follow_ons.\nFINDING tests/test_every_section_has_a_declaration.py:303 follow-on: test_the_server_patch_path_refuses_a_write_that_drops_a_declaration assigns serve_module._MOUNTS_FILE directly and clears serve_module._DISC_CACHE without restoring them, leaving process-global state pointing at a since-deleted tmp_path for later tests in the same worker; it follows an existing repo idiom (about ten other tests assign _MOUNTS_FILE directly), but monkeypatch.setattr would restore it.\n",
+  "review_run_id": "r-20261008T143248887882-review-of-every-section-has-a-declaration",
+  "reviewed_base_sha": "17a234247626c81a63dcf9ead24aa632d835ddbb",
+  "reviewed_head_sha": "9d0b0cada09f1e82c67587275aaff958ca0b7107",
+  "reviewed_run_id": "r-20261008T082524909480-every-section-has-a-declaration",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T14:57:49.957294+00:00",
+  "total": 116
+}
