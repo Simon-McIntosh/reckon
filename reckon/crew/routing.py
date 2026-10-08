@@ -3645,7 +3645,7 @@ def _context_refusal_detail(context_fit: Mapping[str, Any]) -> str:
     )
 
 
-def _docs_scan_directories(docs: Path) -> tuple[list[str], list[str]]:
+def _docs_scan_inputs(docs: Path) -> tuple[list[str], list[str]]:
     """Return the docs-relative directories and files a resource scan reads.
 
     A scan walks every directory below the docs root before it identifies a
@@ -3679,6 +3679,17 @@ def _docs_scan_directories(docs: Path) -> tuple[list[str], list[str]]:
             if name.endswith(".html"):
                 files.append(str(relative / name))
     return sorted(directories), sorted(files)
+
+
+def _docs_scan_directories(docs: Path) -> list[str]:
+    """Return the docs-relative directories a resource scan reads.
+
+    A caller that stamps a resolve by the paths it walked uses the directory
+    listings alone; the candidate plan files a resolve reads are taken from
+    :func:`_docs_scan_inputs` by the estimate stage, which stamps them too.
+    """
+
+    return _docs_scan_inputs(docs)[0]
 
 
 def _estimated_hours(
@@ -3718,7 +3729,7 @@ def _estimated_hours(
     ).hexdigest()
 
     def build() -> dict[str, Any]:
-        directories, files = _docs_scan_directories(docs)
+        directories, files = _docs_scan_inputs(docs)
         resource = resources.resolve_resource(
             docs, project, node.plan, "plan", include_archived=False
         )
