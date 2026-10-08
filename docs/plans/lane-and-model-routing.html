@@ -24,7 +24,7 @@
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -38,7 +38,7 @@
       <li><strong>The model is already a launch parameter, not an identity.</strong> Codex receives <code>-m &lt;model&gt;</code> and claude receives <code>--model &lt;model&gt;</code>. The <code>claude</code> and <code>claude-haiku</code> blocks are byte-identical after comments, and <code>claude-opus</code> differs from <code>claude</code> in one line, a 40-minute time budget against 25.</li>
       <li><strong>The package never names the duplicate backends.</strong> <code>claude-opus</code>, <code>claude-haiku</code>, <code>codex-astra</code> and <code>codex-luna</code> have 0 references in <code>reckon/</code> and <code>skills/</code>. The names live in configuration (three files), tests (fixtures) and history: 3,123 ledger rows, 2,471 run records and 4,404 review files. That history is never rewritten; readers resolve old names through an alias table.</li>
     </ul>
-    <p>The first seven sections below are independently landable in the report's migration order; §8–§11 are follow-ons from their reviews. Each leaves the tree working, and the measure for each configuration step is that the resolved flight of every project in <code>mounts.json</code>, counted when the step runs, is unchanged.</p>
+    <p>The first seven sections below are independently landable in the report's migration order; §8–§12 are follow-ons from their reviews. Each leaves the tree working, and the measure for each configuration step is that the resolved flight of every project in <code>mounts.json</code>, counted when the step runs, is unchanged.</p>
     <p><strong>What the new surface retires.</strong> The plan adds a <code>lanes:</code> key (§1), a <code>--model</code> option (§4) and one resolver (§7), and each replaces more than it adds. <code>lanes:</code> replaces the per-model backend blocks as the declaration: three claude blocks and three codex blocks become two lane blocks (§3, §6). <code>--model</code> replaces naming a model through a separate backend name such as <code>--backend claude-opus</code>, which survives only as an alias. The resolver replaces scattered name comparisons on stored rows, reviews and <code>review_excluded_backends</code>. The derived entries count, which <code>reckon flight</code> reports, is the measure that the old surface is actually retiring.</p>
 
     <section class="section-landed">
@@ -100,7 +100,7 @@
 
     <h2 id="s12">§12 — One owner for the provenance leaf rule</h2>
 <section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p>The review of §9 (score 102) found that <code>_leaf_paths</code>, added by §9 in <code>reckon/flight.py</code>, is a second copy of the leaf-traversal rule that <code>_record_provenance</code> applies inline. Provenance is right only while the two agree on which paths are leaves, and a comment now asserts that agreement instead of the code holding it. Make <code>_record_provenance</code> walk the leaves through <code>_leaf_paths</code>, so the module has one owner for the rule.</p><p>Write paths: <code>reckon/flight.py</code> and its tests.</p><p><strong>Done when</strong> <code>_record_provenance</code> calls <code>_leaf_paths</code> and holds no traversal of its own. A test changes the leaf rule in <code>_leaf_paths</code> alone (treating an empty mapping as a leaf) and shows <code>origin()</code> and <code>provenance_sources</code> both follow it. Every existing <code>origin()</code> assertion still passes.</p>
+<p>The review of §9 (score 102) found that <code>_leaf_paths</code>, added by §9 in <code>reckon/flight.py</code>, is a second copy of the leaf-traversal rule that <code>_record_provenance</code> applies inline. Provenance is right only while the two agree on which paths are leaves, and a comment now asserts that agreement instead of the code holding it. Make <code>_record_provenance</code> walk the leaves through <code>_leaf_paths</code>, so the module has one owner for the rule.</p><p>Write paths: <code>reckon/flight.py</code> and its tests.</p><p><strong>Done when</strong> <code>_record_provenance</code> calls <code>_leaf_paths</code> and holds no traversal of its own. A test changes the leaf rule in <code>_leaf_paths</code> alone (treating an empty mapping as a non-leaf, which today is a leaf) and shows <code>origin()</code> and <code>provenance_sources</code> both follow it. Every existing <code>origin()</code> assertion still passes.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -164,10 +164,16 @@
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §4</pre>
     <p class="r-fu-outcome"><p>§5 landed (merge <code>bfe725991</code>, with <code>stage-time-tests-answer-by-pair</code>). §4 remains and is held on <code>every-module-fits-a-worker-window</code> §4 by the plan's section dependency. The four review follow-ons are §8–§11.</p></p>
     </article>
-<article class="r-fu" data-id="f-lmr-005" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 10:00" data-recommends-skill="/reckon-build lane-and-model-routing §9" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lmr-005" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 10:00" data-recommends-skill="/reckon-build lane-and-model-routing §9" data-resolved-at="2026-10-08T12:30:35+00:00" data-resolved-by="reckon-73">
     <h4 class="r-fu-title">Build §8–§11, then §4 after the cli.py split</h4>
     <div class="r-fu-body"><p>§9 and §11 can start now. §8 shares <code>reckon/crew/picker/prompts.py</code> with <code>one-typesafe-model-picker</code> §12 and §19. §4 and §10 edit <code>reckon/cli.py</code> and wait on <code>every-module-fits-a-worker-window</code> §4.</p></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §9</pre>
+    <p class="r-fu-outcome"><p>§9 (merge <code>c901ef916</code>, review 102) and §11 (merge <code>943d9ded5</code>, review 116) landed on 2026-10-08. §9's review follow-on became §12.</p></p>
+    </article>
+<article class="r-fu" data-id="f-lmr-006" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 12:30" data-recommends-skill="/reckon-build lane-and-model-routing §12" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §12, then §8; §4 and §10 after the section-dependency fix</h4>
+    <div class="r-fu-body"><p>§12 (one owner for the provenance leaf rule) can start now. §8 shares <code>reckon/crew/picker/prompts.py</code> with <code>one-typesafe-model-picker</code> §12 and §19, so it goes when neither holds a claim on it. §4 and §10 wait on <code>every-module-fits-a-worker-window</code> §4. That section has landed, but the roadmap's <code>_section_satisfied</code> still ignores a done declaration until <code>a-plan-is-done-when-every-section-is-ticked</code> §9 lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §12</pre>
     </article>
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">

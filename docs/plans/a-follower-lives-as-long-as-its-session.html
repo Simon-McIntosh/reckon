@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="72">
+<meta name="plan-version" content="75">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -185,18 +185,27 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
       hand-armed, handed its session back to its parent host and exited, and the host restarted it into the same hand-off. Every
       session on the fleet node lost its follower from about 12:00 to 12:04 on 2026-10-08, and each pane showed repeated
       <em>session host now delivers</em> rows.</p>
-    <p>The hand-off comes back with one more rule: a follower whose parent process is a <code>reckon crew host</code> is the host's
-      own child, whether or not the marker is set, and never hands off. The marker stays as the fast path. The rest of the
-      reverted merge is unchanged: one request writer in <code>reckon/crew/dispatch_watch.py</code>, relaunched workers adopted
-      before the hand-off, and dispatch asking a waiting host when a hand-armed follower is attached. The reverted commit is
-      <code>3889d7c5d</code>.</p>
-    <p><strong>Done when</strong> <code>tests/test_follower_hands_off_to_host.py</code> passes its six cases plus one more: a
-      follower whose parent process is a fake <code>reckon crew host</code> without the marker never hands off and streams. The
-      negative control is executed and logged: with the parent check removed, that case hands off and fails. After the merge, every
-      session host on the fleet node keeps its follower child for ten minutes, read from <code>ps</code> into a logged listing in the
-      run directory. The write paths are <code>reckon/crew_follow_commands.py</code>, <code>reckon/crew/dispatch_watch.py</code>,
-      <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/session_host.py</code>, <code>tests/test_follower_hands_off_to_host.py</code>
-      and <code>skills/reckon-build/references/coordinator-reference.md</code>.</p>
+    <p>The hand-off comes back with no new marker. The question "is this follower the host's own child" already has an owner:
+      <code>_session_host_runs_follower</code> in <code>reckon/crew/dispatch_watch.py</code>, which reads the host's census record
+      (<code>SessionHost.record()</code> in <code>reckon/crew/session_host.py</code>, its <code>children[].pid</code>) and which
+      dispatch and the dispatch plan already call to tell a host's follower from a hand-armed one. The census landed with §4, before
+      the reverted marker, so a host started on old code lists its own child's pid, and an in-place reload keeps that pid. The hand-off
+      asks that reader, keyed on the follower's own pid. A follower the census lists never hands off. <code>RECKON_SESSION_HOST_CHILD</code>
+      and its <code>CHILD_ENV</code> constant are not re-added and no second reader is written, so the section adds no public
+      definition: the hand-off helpers stay private to <code>reckon/crew/dispatch_watch.py</code> and
+      <code>reckon/crew_follow_commands.py</code>. The rest of the reverted merge is unchanged: one request writer in
+      <code>reckon/crew/dispatch_watch.py</code>, relaunched workers adopted before the hand-off, and dispatch asking a waiting host
+      when a hand-armed follower is attached. The reverted commit is <code>3889d7c5d</code>; port it onto current main without its
+      marker.</p>
+    <p><strong>Done when</strong> <code>tests/test_follower_hands_off_to_host.py</code> passes its six cases with the marker
+      removed, plus two more. First, a follower listed in a host census record written in the shape an old host writes, with no marker
+      set, never hands off and streams; this is the pairing of new follower code under a host started on old code. Second, a follower
+      no census lists hands off as before. The negative control is executed and logged: with the census check removed from the
+      hand-off, the first new case hands off and fails. The write paths are
+      <code>reckon/crew_follow_commands.py</code>, <code>reckon/crew/dispatch_watch.py</code>, <code>reckon/crew/dispatch.py</code>,
+      <code>reckon/crew/session_host.py</code>, <code>tests/test_follower_hands_off_to_host.py</code> and
+      <code>skills/reckon-build/references/coordinator-reference.md</code>. After the merge the coordinator lists every session
+      host's follower children with <code>ps</code> for ten minutes and records that listing on the plan.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>

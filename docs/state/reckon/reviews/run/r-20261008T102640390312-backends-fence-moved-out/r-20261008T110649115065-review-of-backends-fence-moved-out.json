@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:921 (_backends.fence_capability_problem)",
+    "reckon/crew/dispatch_claims.py:660 (_backends.sandbox_write_roots)",
+    "reckon/crew/dispatch_sessions.py:788 (_backends.FENCE_BINARY)"
+  ],
+  "completed_at": "2026-10-08T11:26:15.335Z",
+  "dispatched_at": "2026-10-08T11:07:13Z",
+  "findings": [
+    {
+      "file": "tests/test_the_fence_fails_closed.py",
+      "line": "471",
+      "severity": "blocking",
+      "text": "blocking: the module's declared negative-control reproduction sets _backends.shutil.which, but reckon/_backends.py no longer imports shutil, so `python tests/test_the_fence_fails_closed.py` raises AttributeError: module 'reckon._backends' has no attribute 'shutil' and the red log is never produced; the same site recurs at line 493."
+    },
+    {
+      "file": "tests/test_fence_protects_the_worktree_pool.py",
+      "line": "243",
+      "severity": "blocking",
+      "text": "blocking: _negative_control_report patches _backends.declared_protected_paths, but the fence reads declared_protected_paths as a module global of reckon/_worker_fence.py:1164, so the patch is a no-op and the mutation does not reach the caller \u2014 reproduced by running the module, which still refuses the sibling write (\"sibling probe exists after the run: False\") with the pool supposedly stripped."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against f4d5cc6; the move, the numbered-test repointing, the allowlist removal and the shared-write claim removal are the whole change, all inside scope.",
+    "done_when": "the node's done_when asks the pure-move check, the guard with the module off its allowlist, both sizes under 40,000, and no added failure at the merged head; the receipt, the guard's negative control and the focused gate cover these, but the coordinator's whole-suite base/head arms are not this node's.",
+    "goal": "the goal is a pure move of the filesystem fence region out of reckon/_backends.py into a sibling that brings each module under 40,000 tokens; the pure-move receipt (problems [], 151 statements, 57 to reckon/_worker_fence.py) and the landed sizes (36,910 and 15,475 tokens) show the move landed.",
+    "manifest": "read; it records the pure-move receipt, the 492-passed focused gate, the import and dispatch-help checks, and a size-mutation negative control, all with log paths and EXIT lines.",
+    "write_paths": "read the manifest's declared paths; every changed path in the diff is inside them, and the out-of-scope file used to reproduce a negative control (tests/test_fence_protects_the_worktree_pool.py) was left untouched as the brief requires."
+  },
+  "justifications": {
+    "durability": "the guard's size bound is proven by restoring reckon/_backends.py over the bound and watching test_every_module_fits_a_worker_window fail, but tests/test_the_fence_fails_closed.py:471 and tests/test_fence_protects_the_worktree_pool.py:243 still patch moved names through _backends, so those guards no longer fire.",
+    "evidence": "the pure-move receipt, the 492-passed focused gate, the import and dispatch-help checks, and the guard's size-mutation negative control are all recorded under log paths, but the repointing was verified only by the focused gate, which does not exercise the two missed reproduction paths.",
+    "fit": "the sibling is named for its single concern with no part number and the re-export block carries a reasoned noqa, but reckon/_worker_fence.py opens with no module docstring where sibling leaf modules such as reckon/_timestamps.py:1 carry one.",
+    "goal_fidelity": "reckon/_worker_fence.py:843 holds the fence and reckon/_backends.py:73 re-exports all 57 moved names, so the split is complete at 36,910 and 15,475 tokens, but two test patches that target the moved names were not repointed.",
+    "reuse": "the fence keeps one owner in reckon/_worker_fence.py and reckon/_backends.py:73 re-exports rather than forking it, so no capability is duplicated and the change adds no definition of its own.",
+    "scope_discipline": "every path in the diff (reckon/_backends.py, reckon/_worker_fence.py, docs/state/reckon/shared-write-paths.json, the guard and six tests, the fragment) is inside the manifest's declared write paths, and the guard comment scrub is a within-path plan-reference removal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a pure move of the filesystem fence region out of reckon/_backends.py into a sibling that brings each module under 40,000 tokens; the pure-move receipt (problems [], 151 statements, 57 to reckon/_worker_fence.py) and the landed sizes (36,910 and 15,475 tokens) show the move landed.\nVERDICT done_when: the node's done_when asks the pure-move check, the guard with the module off its allowlist, both sizes under 40,000, and no added failure at the merged head; the receipt, the guard's negative control and the focused gate cover these, but the coordinator's whole-suite base/head arms are not this node's.\nVERDICT write_paths: read the manifest's declared paths; every changed path in the diff is inside them, and the out-of-scope file used to reproduce a negative control (tests/test_fence_protects_the_worktree_pool.py) was left untouched as the brief requires.\nVERDICT manifest: read; it records the pure-move receipt, the 492-passed focused gate, the import and dispatch-help checks, and a size-mutation negative control, all with log paths and EXIT lines.\nVERDICT diff: read commit by commit against f4d5cc6; the move, the numbered-test repointing, the allowlist removal and the shared-write claim removal are the whole change, all inside scope.\nCALL_SITES: reckon/crew/dispatch.py:921 (_backends.fence_capability_problem), reckon/crew/dispatch_claims.py:660 (_backends.sandbox_write_roots), reckon/crew/dispatch_sessions.py:788 (_backends.FENCE_BINARY)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:843 holds the fence and reckon/_backends.py:73 re-exports all 57 moved names, so the split is complete at 36,910 and 15,475 tokens, but two test patches that target the moved names were not repointed.\nSCORE evidence: 16\nJUSTIFICATION evidence: the pure-move receipt, the 492-passed focused gate, the import and dispatch-help checks, and the guard's size-mutation negative control are all recorded under log paths, but the repointing was verified only by the focused gate, which does not exercise the two missed reproduction paths.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/_backends.py, reckon/_worker_fence.py, docs/state/reckon/shared-write-paths.json, the guard and six tests, the fragment) is inside the manifest's declared write paths, and the guard comment scrub is a within-path plan-reference removal.\nSCORE durability: 12\nJUSTIFICATION durability: the guard's size bound is proven by restoring reckon/_backends.py over the bound and watching test_every_module_fits_a_worker_window fail, but tests/test_the_fence_fails_closed.py:471 and tests/test_fence_protects_the_worktree_pool.py:243 still patch moved names through _backends, so those guards no longer fire.\nSCORE fit: 17\nJUSTIFICATION fit: the sibling is named for its single concern with no part number and the re-export block carries a reasoned noqa, but reckon/_worker_fence.py opens with no module docstring where sibling leaf modules such as reckon/_timestamps.py:1 carry one.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fence keeps one owner in reckon/_worker_fence.py and reckon/_backends.py:73 re-exports rather than forking it, so no capability is duplicated and the change adds no definition of its own.\nFINDING tests/test_the_fence_fails_closed.py:471 blocking: the module's declared negative-control reproduction sets _backends.shutil.which, but reckon/_backends.py no longer imports shutil, so `python tests/test_the_fence_fails_closed.py` raises AttributeError: module 'reckon._backends' has no attribute 'shutil' and the red log is never produced; the same site recurs at line 493.\nFINDING tests/test_fence_protects_the_worktree_pool.py:243 blocking: _negative_control_report patches _backends.declared_protected_paths, but the fence reads declared_protected_paths as a module global of reckon/_worker_fence.py:1164, so the patch is a no-op and the mutation does not reach the caller \u2014 reproduced by running the module, which still refuses the sibling write (\"sibling probe exists after the run: False\") with the pool supposedly stripped.",
+  "review_run_id": "r-20261008T110649115065-review-of-backends-fence-moved-out",
+  "reviewed_base_sha": "f4d5cc609c89cfa1a499efe0f0cc8368d62fbf62",
+  "reviewed_head_sha": "033515037b13141055343758b983908dff9bf339",
+  "reviewed_run_id": "r-20261008T102640390312-backends-fence-moved-out",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T11:24:55.591492+00:00",
+  "total": 102
+}

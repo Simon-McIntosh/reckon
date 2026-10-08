@@ -1408,6 +1408,37 @@ def _read_archived_resource(
     return data, int(data.get("version", 0) or 0)
 
 
+def _typed_resource_for_selector(docs_dir: Path, selector: Any) -> Any:
+    """Return the resource a typed selector names, without walking the corpus.
+
+    The provenance of a typed read is the selected document's own path, so the
+    read resolves that one document at its canonical location rather than
+    building the project's whole resource map to pick one entry out of it. A
+    slug the canonical path cannot settle — a live and an archived document
+    sharing it — falls back to the map, which owns the duplicate's collision
+    rule, so the answer matches the scan for a duplicated slug.
+    """
+
+    try:
+        resource = resolve_resource(
+            docs_dir,
+            selector.project,
+            selector.id,
+            selector.type,
+            include_archived=selector.archived,
+        )
+    except ResourceCollision:
+        resource = None
+    if resource is None:
+        resource = resource_map(
+            docs_dir,
+            selector.project,
+            include_archived=True,
+            ignore_invalid=True,
+        ).get((selector.type, selector.id, selector.archived))
+    return resource
+
+
 def _typed_resource_provenance(
     selector: Any,
     checkout_path: str | None,
@@ -1419,12 +1450,7 @@ def _typed_resource_provenance(
     if docs_dir is None:
         raise FileNotFoundError(f"no docs dir for project {selector.project!r}")
     if selector.type in {"plan", "research", "evidence"}:
-        resource = resource_map(
-            docs_dir,
-            selector.project,
-            include_archived=True,
-            ignore_invalid=True,
-        ).get((selector.type, selector.id, selector.archived))
+        resource = _typed_resource_for_selector(docs_dir, selector)
         if resource is None:
             raise FileNotFoundError(
                 f"{selector.type} resource {selector.project}:{selector.id} was not found"
@@ -1775,7 +1801,7 @@ def _read_plan_view(
             and selected_view == "summary"
             and not selector.archived
         ):
-            discovered = _index_sprint_state(selector.project, checkout_path)
+            discovered = _index_discovery(selector.project, checkout_path)
             composed_sprint = next(
                 (
                     item
@@ -1860,7 +1886,7 @@ def _read_plan_view(
             if composed is not None:
                 data = composed
         elif selector.type == "plan" and selected_view in {"summary", "detail"}:
-            discovered = _discover_project(selector.project, checkout_path)
+            discovered = _index_discovery(selector.project, checkout_path)
             inventory_plan = next(
                 (
                     item
@@ -2144,12 +2170,14 @@ def _aggregate_version(project: str, root: str | None = None) -> int:
     return int(version or 0)
 
 
-def _index_sprint_state(project: str, root: str | None = None) -> dict[str, Any]:
-    """Return the project's sprint composition, taken from the index.
+def _index_discovery(project: str, root: str | None = None) -> dict[str, Any]:
+    """Return the project's list-level discovery, taken from the index.
 
-    A sprint read derives the sprint list from the project's own state document
-    and hydrates its items against the list-level rows, instead of deriving
-    every document in the project to pick one sprint out of it.
+    A sprint read and a summary or detail read of one plan need the inventory
+    rows the index already holds — for a sprint, the items to hydrate; for a
+    plan, the derived blocking the list carries — rather than the document
+    bodies a corpus walk parses. The rows come from the persisted index and the
+    project's own state document, so neither read walks the corpus.
     """
 
     docs_dir = _docs_dir_for_project(project, root)

@@ -1,0 +1,89 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T11:11:08.714Z",
+  "dispatched_at": "2026-10-08T11:00:26Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_watch.py:89",
+      "id": "reuse_search-1",
+      "reason": "it would make the author either resolve the child test through `follower_owner()`/`_current_and_ancestor_argvs` instead of a new walk, or state why a parent check is needed beside the owner env the follower already carries.",
+      "text": "\u00a715 fixes the bug (\"a host's own follower reads as hand-armed\") with a new parent-process identity check, but the machinery for both halves of that check already exists and \u00a715 cites none of it. Reading an ancestor's identity as a `crew host` is already `_current_and_ancestor_argvs` (`reckon/crew/dispatch_watch.py:89`), which walks `/proc/<pid>/cmdline` up the ancestor chain nearest-first, together with `_process_start_time` (`reckon/crew/dispatch_watch.py:396`, imported at `:32`) \u2014 both in a file \u00a715 already lists among its write paths. The process that armed the follower is already recorded and survives the in-place reload that caused the incident: the host stamps `RECKON_FOLLOWER_OWNER` with its own pid when it spawns each child (`environ[_FOLLOWER_OWNER_ENV] = _format_follower_owner((os.getpid(), ...))`, `reckon/crew/session_host.py:409`), read by `follower_owner()` (`reckon/crew/runs.py:3060`, fixed once at `:3024`\u2013`3032` per the comment at `:3002`\u2013`3013`). That env predates the reverted child marker, so a follower from an old host \u2014 the exact population \u00a715 exists for \u2014 carries it. Census of same-fact signals \u00a715 must reconcile, none cited: the marker `CHILD_ENV` (fast path, \u00a715); the owner env `RECKON_FOLLOWER_OWNER` (already the host pid for a host child, `reckon/crew/runs.py:3002`, `reckon/crew/session_host.py:409`); the host's own child census `children[]` (`reckon/crew/session_host.py:310`\u2013`325`) read by `_session_host_runs_follower` (`reckon/crew/dispatch_watch.py:477`). \u00a715 adds a third signal where the owner env already answers the question without a `/proc` walk",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html#s15",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the public surface it adds, per the one rule for a section that adds to any of the four families.",
+      "text": "\u00a715 re-adds a public module constant, `CHILD_ENV = \"RECKON_SESSION_HOST_CHILD\"` (`reckon/crew/session_host.py`, imported cross-module by `crew_follow_commands._session_host_child`), and the handoff helpers into `reckon/crew/dispatch_watch.py` and `reckon/crew_follow_commands.py`, growing the public_definitions family (1597 this week) \u2014 and its text names nothing it retires or merges, nor states that nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1e4a84f4cdfa2eda55535f6cf063b42f91cbc563d8ab24afd85a083162bbdb29",
+  "plan_slug": "a-follower-lives-as-long-as-its-session",
+  "plan_version": 72,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-08T12:35:33.112899+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-08T12:35:36.963677+00:00"
+    }
+  ],
+  "responses": {
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T12:35:36.963677+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T12:35:33.112899+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-follower-lives-as-long-as-its-session/r-20261008T105955235736-plan-review-of-a-follower-lives-as-long-as-its-session.json",
+  "review_run_id": "r-20261008T105955235736-plan-review-of-a-follower-lives-as-long-as-its-session",
+  "reviewed_blob_sha": "22d9a70dbeefd83373e0e249b0c942bcd3ed3c8c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a715 adds no new module; it is one predicate (is my parent a crew host) split policy-versus-transport across two existing modules, which is depth rather than added surface.",
+    "duplicate_owner": "pass \u2014 \u00a715's stated aim, \"one request writer in `reckon/crew/dispatch_watch.py`\", consolidates the two request-line writers rather than adding one, and the parent check names no state reader it forks.",
+    "interface_budget": "a finding \u2014 this week public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; \u00a715 re-adds a public module constant, `CHILD_ENV` (`RECKON_SESSION_HOST_CHILD`) in `reckon/crew/session_host.py`, plus the handoff helpers, and its text names nothing it retires or merges, nor states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a715's parent-process child check is proposed without a search of the ancestor-/owner-identity machinery already present in its own write paths (`_current_and_ancestor_argvs` at `reckon/crew/dispatch_watch.py:89`, the follower owner env at `reckon/crew/runs.py:3002`\u2013`3013`, the host census at `reckon/crew/session_host.py:310`\u2013`325`).",
+    "thin_wrapper": "pass \u2014 the parent check extends the existing child-detection (the marker) instead of wrapping a parallel subsystem, and \u00a715 states in its own text why the marker cannot be trusted alone (hosts started before it carried no marker, so a reloaded child read as hand-armed)."
+  },
+  "section_digests": {
+    "_document": "859b0475212d44864c153fcb5370c100d8d9f42f019ce34697c71e2164c19cee",
+    "s1": "a4eeecaff9300863f1a6f28d4f659a0977a7583ac703af75654ddf0622bd81d4",
+    "s10": "7dd4672bb7cf4d1be69d191b1b75168b2541ba034fb2e304aac73c5826be0125",
+    "s11": "e05ea2085f88e301a9bd3edd6b7f417b6926e799c9d5ce6ed68371c6b658880d",
+    "s12": "b9d1786058731f14be5bf5e3a693f8df0c72a0163c45603a8fc047776485e6a9",
+    "s13": "a0712742324c0998b55d2e12f73be0a740cd6f26ca2a0d5647a0665e7ac7896c",
+    "s14": "ab00818b9989f3c80766edc7a4ea21ee86e4458c88c0edc5a6f1fc1724d1ebaa",
+    "s15": "cbf9baa68f1a46de6b7b4dd5b95512cdcb5c56358495417806c29f2c0a3b5c6e",
+    "s2": "b9689c739005faa621201d6009e306831a98c253828e1da227693acd6b977ab2",
+    "s3": "27ff46e837af55f0eaba51e6b64d726f133b299233e5eb3f672ab5fc6b1ca9bd",
+    "s4": "9c4d2ab6d7ca5942dead1327565460770d77bccf4ecd90e73c42a2b6eef7d94d",
+    "s5": "42339a7b96242d9c43f0a11b39792c3a77586525b5e12fff673cb29b22b1f33d",
+    "s6": "c99082a11529fcb10ae0464cbc7f1ed142dfe25618098cdf03a199fd240978c8",
+    "s7": "c115e3e35b8c6fc3d8ce9a5648d440b39c7f571ee1afabdea4a1c2a395bc3a22",
+    "s8": "7870597c5f6c188f2c555f7f17bca65a25aa338f1f74d3557f870668b31f167f",
+    "s9": "36ff7b0447b49cb29d721d4956a0d47739c48e68212f6c9d6a1cd99f2195b73b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T11:14:24.022094+00:00"
+}

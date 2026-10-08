@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T12:30:03.754Z",
+  "dispatched_at": "2026-10-08T12:25:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:167",
+      "id": "wiring-1",
+      "reason": "the followup is the plan's next-step pointer, so it must name an unlanded node (\u00a78 or \u00a712); as written it directs the next dispatch at already-shipped work and mis-states which sections are ready.",
+      "text": "the plan's open driving followup f-lmr-005 declares `data-recommends-skill=\"/reckon-build lane-and-model-routing \u00a79\"` and its prompt (line 170) is `/reckon-build lane-and-model-routing \u00a79`, but \u00a79 is declared `done` (plan-section-declarations s9=done) and landed at 2026-10-08T09:35, and the followup was written at 2026-10-08 10:00, after that landing; its body (line 169) likewise says \"\u00a79 and \u00a711 can start now\" though both have landed, while the sections actually still implementable are \u00a78 and \u00a712 \u2014 a coordinator following this one-line invocation would re-dispatch completed work",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "63a41f909d6a91fc8ea8e926ca2f46489270b9772cfc7ae026efd07db8d9fba2",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 42,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-08T12:30:40.359085+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T12:30:40.359085+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v42.json",
+  "review_run_id": "r-20261008T122523190018-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "94634ae66f21de328b6e2be8d3499a6a860e9295",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file (reckon/_backends.py _DIALECTS, reckon/flight.py _record_provenance/_leaf_paths/expand_lanes/LANE_MODEL_KEYS/provenance_sources, reckon/crew/picker/prompts.py option_key, docs/ui/plan.jsx, tests/test_flight.py#test_default_stdout_parses_as_json_and_exits_zero) and every cross-plan anchor (one-typesafe-model-picker #s6/#s10/#s12/#s19, every-module-fits-a-worker-window #s4) resolves; the archive carries ids s1,s2,s3,s5,s6,s7,s9,s11 matching the landed set.",
+    "done_when": "pass \u2014 every implementable section (\u00a74, \u00a78, \u00a710, \u00a712) carries a done-when whose assertion fails on the unfixed code (the \u00a78 key-collision and the \u00a712 leaf-rule assertions were both reproduced against the live resolver), and \u00a74/\u00a712 also state an explicit negative control.",
+    "evidence_paths": "pass \u2014 gate evidence and landed records sit under docs/evidence/ (docs/evidence/archive/lane-and-model-routing-landed.html and docs/evidence/fragments/lane-and-model-routing/), durable in-repo paths, not a scratchpad.",
+    "naming": "pass \u2014 the plan's target symbols are named by mechanism (resolve_name, expand_lanes, option_key, _leaf_paths, LANE_MODEL_KEYS, provenance_sources); no plan label, stage name, ticket number or version tag reaches code. Section-id references appear only in the plan's own prose, which is the tracker.",
+    "reasoning": "pass \u2014 all three checks hold: the stated root causes match the evidence (option_key still returns `f\"{lane}:{model}\"` and still collapses in the questions mapping; _record_provenance still holds its own leaf traversal separate from _leaf_paths; the \"0 references in reckon/ and skills/\" claim for the four duplicate backend names is measured true), each mechanism produces its done-when, and each mechanism runs on a named production caller (option_key is called by build_questions and picker/__init__; _record_provenance via expand_lanes; flight_report serves the payload).",
+    "single_goal": "pass \u2014 each section names one deliverable in one module family; \u00a78's two items are two properties of one function's key contract, closed by one verdict.",
+    "wiring": "a finding \u2014 the open driving followup f-lmr-005 resolves its recommends-skill and prompt to \u00a79, which the plan itself declares landed."
+  },
+  "section_digests": {
+    "_document": "04696bd1f0d92da62b8ba006684a0ecc63946222ab45b6c3ecc7cbf8053a723a",
+    "s0": "16a4b2aedea4665c33a94bb3453f20d24fbd5286fb2035a368a4196d085128d1",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T12:30:39.341757+00:00"
+}

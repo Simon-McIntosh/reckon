@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -116,15 +116,17 @@
     <h2 id="s5" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§5 — Every section has a todo item</h2>
     <p><strong>Deliverable.</strong> <code>reckon audit-doc</code> reports <code>section-without-todo</code> for an
       authored section heading with no declaration, and <code>todo-without-section</code> for a declaration naming no
-      heading. A plan write that would leave either is refused by one coverage check over the resulting plan HTML,
+      heading. A plan write that would introduce either gap, one the plan did not carry before the write, is refused by one coverage check over the resulting plan HTML,
       widened from <code>_require_heading_for_section_records</code> in <code>reckon/_store.py</code> to cover the
       declarations in both directions. It is called on both write paths. State-mode writes reach it through
       <code>_write_state_locked</code>, where it runs today. Text-mode writes (<code>edit_plan</code> mode text, through
       <code>_replace_plan_text</code>) never enter <code>_write_state_locked</code>, so the same function is called
       there before the write. <code>_require_new_section_contracts</code>, which that text path runs for newly
       added headings only, keeps its narrower job. The check compares headings with the declarations the write produces. On the state path that is the HTML <code>write_state</code> renders, carrying the new <code>plan-section-declarations</code>, not the authored <code>source_text</code> the existing call site reads. Otherwise a write that adds a heading and its declaration together would be refused against the old declarations. The census comes first:
-      count the live plans that would fail today, and state the count in the evidence, because closing this guard
-      turns every existing gap into a refusal at that plan's next write.</p>
+      count the live plans that carry a gap today, and state the count in the evidence. It found 109 of 214 live
+      plans across ten projects, mostly older plans with no declarations at all. A gap a plan already carries
+      therefore stays writable (decision <code>coverage-gap-scope</code>). <code>reckon audit-doc</code> reports it,
+      and a write is refused only when it adds a gap the plan did not have.</p>
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
       writes a plan with an undeclared heading and finds the audit error and the write refusal, and a second test
       finds the reverse case. Both fail on the current code, which checks neither; that is their negative
@@ -133,7 +135,9 @@
       declarations, and that is its negative control. A fourth test makes a text-mode <code>edit_plan</code>
       replacement that removes an authored heading while its declaration remains, and finds it refused. It fails
       when the check is wired into <code>_write_state_locked</code> alone, which proves the text path calls it
-      too.</p>
+      too. A fifth test writes an unrelated change to a plan that already carries an undeclared heading and finds it
+      accepted, while a write adding a second undeclared heading to the same plan is refused. It fails when the guard
+      treats the plan as carrying no gaps before the write, which is the strict form.</p>
 
     <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§6 — A plan reaches done only when every todo is ticked</h2>
     <p><strong>Deliverable.</strong> A write that sets a plan's status to <code>shipped</code> or <code>done</code> is
@@ -198,6 +202,17 @@
       <button class="r-opt" data-value="clear-when-nothing-pending">clear-when-nothing-pending</button>
       </p>
     <p class="r-dec-rat">The lead favoured blocking when the target&#x27;s only work is deferred, and asked that it not be fully deterministic. The orchestrator is told that something is blocked and makes the call. An all-deferred target, or one with an undeclared heading, holds its dependent by default and is reported in judgment_required, where the coordinator decides to build or un-defer the section, or to narrow or remove the dependency.</p>
+    </div>
+<div class="r-dec" data-key="coverage-gap-scope" data-choice="refuse-new-gaps" data-by="Simon McIntosh" data-when="2026-10-08T13:15:58+00:00" data-sections="s5" data-recommended="refuse-new-gaps" data-recommended-by="reckon-build">
+    <p class="r-dec-q">Does the coverage guard refuse a write to a plan that already carries a heading/declaration gap?</p>
+    <p class="r-dec-ctx">The census found 109 of 214 live plans in ten projects with a gap, mostly older plans with no declarations at all. Refusing every write that leaves a gap would block those plans, many of them other sessions&#x27; active plans, until their sections were declared.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="refuse-new-gaps">refuse-new-gaps</button>
+      <button class="r-opt" data-value="backfill-then-strict">backfill-then-strict</button>
+      <button class="r-opt" data-value="strict-now">strict-now</button>
+      <button class="r-opt" data-value="strict-with-declarations">strict-with-declarations</button>
+      </p>
+    <p class="r-dec-rat">The lead chose to refuse only new gaps. A write is refused when it leaves a gap the plan did not carry before, the same transition keying the terminal-status guard uses, so the 109 plans with existing gaps stay writable while reckon audit-doc lists every one. New and edited sections must still be declared.</p>
     </div>
 </section>
 

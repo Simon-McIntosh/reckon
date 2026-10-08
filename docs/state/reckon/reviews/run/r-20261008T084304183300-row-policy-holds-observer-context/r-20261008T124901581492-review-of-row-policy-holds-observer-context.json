@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the reviewed run's baseline_suite log /home/ITER/mcintos/.cache/reckon-follow-pop/base.txt reads 865 passed EXIT=0 and the reviewed run's after_suite log logs/population.txt reads 874 passed EXIT=0, so no failing id was added; both are the run's own population arms the manifest names under baseline_suite and after_suite, and neither log's first line names its revision",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/ticker.py:1558",
+    "reckon/crew/ticker.py:1571",
+    "reckon/crew/ticker.py:1580"
+  ],
+  "completed_at": "2026-10-08T13:12:44.535Z",
+  "dispatched_at": "2026-10-08T12:49:24Z",
+  "findings": [
+    {
+      "file": "logs/population.txt",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's gate logs carry no revision on their first line, so annotate_review_of_run cannot tie either arm to a commit and the added-failure pair this record carries is derived from the manifest's prose-form baseline_suite/after_suite fields rather than from the logs' own headers"
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit, 1a5b72be5 marks a seeded watch-attention state as told at reckon/crew/ticker.py:1231 and delivers five rearm cases plus the delivery-path case into an action state, ed3d6ffce records the population measurement and the delivery-path determination in the fragment",
+    "done_when": "the source done_when names tests/test_row_policy_holds_observer_context.py plus every file importing RowPolicy, PaneRowPath, SETTLED_STATES or HIDDEN_AT_ATTACH; the manifest records the in-scope gate 39 passed EXIT=0 and the 55-file population 874 passed EXIT=0 against a 865-passing base; an independent head arm over the delta's six touched or importing files at ed3d6ffce is 54 passed EXIT=0 while the same set at base 8dbf1da9b is 7 failed, 47 passed, so the delta resolves seven failures and adds none",
+    "goal": "the node goal is to hold observer-context rows back on the coordinator pane (plan a-follower-row-is-worth-a-wake section 2); this review reads only the two commits 8dbf1da9b..ed3d6ffce gained since the prior review and finds the seed fix lands the plan's recovery exception for a resumed pane at reckon/crew/ticker.py:1231",
+    "manifest": "read; status complete; baseline_suite names /home/ITER/mcintos/.cache/reckon-follow-pop/base.txt (865 passed EXIT=0) and after_suite names logs/population.txt (874 passed EXIT=0)",
+    "write_paths": "the delta 8dbf1da9b..ed3d6ffce touches reckon/crew/ticker.py, tests/test_follower_rearm_shows_nothing_twice.py, tests/test_removed_flag_migration.py and docs/evidence/fragments/a-follower-row-is-worth-a-wake/row-policy-holds-observer-context.html, each inside the manifest's declared changed_paths"
+  },
+  "justifications": {
+    "durability": "removing the seed told-marking two lines reddens tests/test_follower_keeps_memory.py::test_a_reload_keeps_the_pane_memory_and_renders_the_transition (mutation log logs/mutation-seed.txt, 1 failed/11 passed), so a regression of this change fails a test",
+    "evidence": "the reviewed run's own baseline_suite and after_suite gate logs read 865 passed EXIT=0 and 874 passed EXIT=0, and my independent head/base arms over the delta's six files (54 passed vs 7 failed) confirm the delta adds no failure, though neither the run's logs nor the two arms' logs carry a revision on their first line",
+    "fit": "the fix is two lines reusing the existing _lands_in_an_action_state predicate at reckon/crew/ticker.py:1253, and the added _deliver helper in tests/test_follower_rearm_shows_nothing_twice.py follows the file's existing fixture idiom",
+    "goal_fidelity": "reckon/crew/ticker.py:1231 now marks a seeded watch-attention state as one the pane was told, so a reloaded pane renders the blocked->working recovery the section 2 exception must print",
+    "reuse": "the fix reads the existing WATCH_ATTENTION_STATES owner in reckon/crew/runs.py:3818 through the existing _lands_in_an_action_state rather than restating the action-state vocabulary",
+    "scope_discipline": "the delta touches only reckon/crew/ticker.py, the two granted test files and the evidence fragment, all inside the manifest's declared changed_paths, and carries nothing section 2 does not imply"
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to hold observer-context rows back on the coordinator pane (plan a-follower-row-is-worth-a-wake section 2); this review reads only the two commits 8dbf1da9b..ed3d6ffce gained since the prior review and finds the seed fix lands the plan's recovery exception for a resumed pane at reckon/crew/ticker.py:1231\nVERDICT done_when: the source done_when names tests/test_row_policy_holds_observer_context.py plus every file importing RowPolicy, PaneRowPath, SETTLED_STATES or HIDDEN_AT_ATTACH; the manifest records the in-scope gate 39 passed EXIT=0 and the 55-file population 874 passed EXIT=0 against a 865-passing base; an independent head arm over the delta's six touched or importing files at ed3d6ffce is 54 passed EXIT=0 while the same set at base 8dbf1da9b is 7 failed, 47 passed, so the delta resolves seven failures and adds none\nVERDICT write_paths: the delta 8dbf1da9b..ed3d6ffce touches reckon/crew/ticker.py, tests/test_follower_rearm_shows_nothing_twice.py, tests/test_removed_flag_migration.py and docs/evidence/fragments/a-follower-row-is-worth-a-wake/row-policy-holds-observer-context.html, each inside the manifest's declared changed_paths\nVERDICT manifest: read; status complete; baseline_suite names /home/ITER/mcintos/.cache/reckon-follow-pop/base.txt (865 passed EXIT=0) and after_suite names logs/population.txt (874 passed EXIT=0)\nVERDICT diff: read commit by commit, 1a5b72be5 marks a seeded watch-attention state as told at reckon/crew/ticker.py:1231 and delivers five rearm cases plus the delivery-path case into an action state, ed3d6ffce records the population measurement and the delivery-path determination in the fragment\nCALL_SITES: reckon/crew/ticker.py:1558, reckon/crew/ticker.py:1571, reckon/crew/ticker.py:1580\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1231 now marks a seeded watch-attention state as one the pane was told, so a reloaded pane renders the blocked->working recovery the section 2 exception must print\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed run's own baseline_suite and after_suite gate logs read 865 passed EXIT=0 and 874 passed EXIT=0, and my independent head/base arms over the delta's six files (54 passed vs 7 failed) confirm the delta adds no failure, though neither the run's logs nor the two arms' logs carry a revision on their first line\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only reckon/crew/ticker.py, the two granted test files and the evidence fragment, all inside the manifest's declared changed_paths, and carries nothing section 2 does not imply\nSCORE durability: 19\nJUSTIFICATION durability: removing the seed told-marking two lines reddens tests/test_follower_keeps_memory.py::test_a_reload_keeps_the_pane_memory_and_renders_the_transition (mutation log logs/mutation-seed.txt, 1 failed/11 passed), so a regression of this change fails a test\nSCORE fit: 19\nJUSTIFICATION fit: the fix is two lines reusing the existing _lands_in_an_action_state predicate at reckon/crew/ticker.py:1253, and the added _deliver helper in tests/test_follower_rearm_shows_nothing_twice.py follows the file's existing fixture idiom\nSCORE reuse: 20\nJUSTIFICATION reuse: the fix reads the existing WATCH_ATTENTION_STATES owner in reckon/crew/runs.py:3818 through the existing _lands_in_an_action_state rather than restating the action-state vocabulary\nFINDING logs/population.txt:1 follow-on: the reviewed run's gate logs carry no revision on their first line, so annotate_review_of_run cannot tie either arm to a commit and the added-failure pair this record carries is derived from the manifest's prose-form baseline_suite/after_suite fields rather than from the logs' own headers",
+  "review_run_id": "r-20261008T124901581492-review-of-row-policy-holds-observer-context",
+  "reviewed_base_sha": "8dbf1da9b1f71afa8e436e66ffca128bcb683f14",
+  "reviewed_head_sha": "ed3d6ffceb7d03bc23c156ea4165137f917bac99",
+  "reviewed_run_id": "r-20261008T084304183300-row-policy-holds-observer-context",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:09:44.968419+00:00",
+  "total": 115
+}

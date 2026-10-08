@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T11:09:24.038Z",
+  "dispatched_at": "2026-10-08T10:59:48Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/host_lease.py:26",
+      "id": "reuse_search-1",
+      "reason": "an implementation node following \u00a74 as written looks for a lease to read and finds none, then must design the claim and the session keying that the plan currently writes as already present, so \u00a74's scope and its reuse claim both change.",
+      "text": "\u00a74 asserts as existing prior art that \"a launched worker holds a `HostLease` keyed on its worker session, from launch until it exits\" and that \"both guards read that lease\", but no per-session lease exists. `HostLease` is instantiated in exactly two places, `fleet_supervisor.py:643` (keyed on a declared service name) and `runs.py:151` `watch_host_lease` (keyed (`runs.py:148`) on a *project*, held by the follower/producer seat, not the worker), and the launched worker's liveness is read today only by `record_process_alive` (`runs.py:4541`), which is a pid probe and never touches a lease; so nothing a worker `claude -p` process holds can be read by the guards. \u00a74's write paths (`dispatch_sessions.py`, `resumption.py`, `runs.py`, the test) omit `host_lease.py` and the launch site that must claim the lease, which is where the real work of the node lies.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/host_lease.py:15",
+      "id": "reuse_search-2",
+      "reason": "without a named renewal mechanism (or a read of holder-pid liveness that does not depend on freshness) the guard silently no-ops on the very case the plan exists to close, so \u00a74 must specify the renewer or change its liveness source.",
+      "text": "even granting a session lease, `HostLease` freshness is mtime-based with `LEASE_STALE_SECONDS = 30.0` and renewal expected every `LEASE_RENEW_SECONDS = 5.0`, so a holder that does not renew reads as stale 30 s after its last write; \u00a74 names no renewer bound to the worker's life, and a `claude -p` worker runs no such loop (its hooks, `reckon/hooks/`, fire on events, not on a cadence), and the only live renewers in the tree belong to the seat and the service supervisor (`runs.py:2632` `renew_watch_host_lease`, `fleet_supervisor.py:835)`. Unrenewed, the guard admits a second worker 30 s after launch, which is exactly the observed case where the second worker was \"47 minutes old\" (\u00a71).",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/resumption.py:1371",
+      "id": "reuse_search-3",
+      "reason": "the algorithm \u00a73 states (check the log for the run id and hold signature) is satisfied by the actual record shape, so only the prose needs correcting, not the design.",
+      "text": "\u00a73 says the sweep \"appends one line per lift\" to `recovery_log_path`, but the code appends one line per *sweep* (`resumption.py:1371` writes the whole `report` with `sort_keys=True`), whose `resumed` field is a list carrying one entry per lift; a line-level match on run id plus hold signature still finds the entry, so \u00a73's reading works, but its description of the record is inaccurate.",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "bbd6c67ec14a2c4340950b2c4eb93f4c41e0a6b6cf703d9a46547c6468151ef7",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 11,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-08T12:37:16.938355+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "when": "2026-10-08T12:37:20.108357+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-3",
+      "reason": "",
+      "when": "2026-10-08T12:37:23.003847+00:00"
+    }
+  ],
+  "responses": {
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T12:37:16.938355+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T12:37:20.108357+00:00"
+    },
+    "reuse_search-3": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T12:37:23.003847+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-run-has-one-live-worker/r-20261008T105912674136-plan-review-of-a-run-has-one-live-worker.json",
+  "review_run_id": "r-20261008T105912674136-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "aaaf90ec6d45acce34706f17c817f20a442d48a0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 neither section adds a module; \u00a73 adds one reader inside `resumption.py` and \u00a74 adds one read to each of the two existing guards (`dispatch_sessions.py:975` `resume_plan`, `resumption.py:579` `_launcher_refusal`), so no complexity is spread across shallow wrappers.",
+    "duplicate_owner": "pass \u2014 the two owners a prior review named are now the mechanisms the sections extend, not fork: `recovery_log_path` (`resumption.py:329`) for \u00a73 and `HostLease` (`host_lease.py:26`) for \u00a74, both named in the sections' own text.",
+    "interface_budget": "pass \u2014 public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; neither \u00a73 nor \u00a74 adds to any of the four families (\u00a73 adds a reader, \u00a74 states it reuses the existing live-process refusal and adds no new family), so no retirement or merge is owed.",
+    "reuse_search": "a finding \u2014 \u00a74 rests on a per-session `HostLease` it says a launched worker already holds, and the codebase has no such lease: `HostLease` is instantiated only at `reckon/crew/fleet_supervisor.py:26` (per declared service name) and `reckon/crew/runs.py:148` (the per-project watch/producer seat). \u00a73's reuse is verified: the sweep's append-only `recovery_log_path` (`reckon/crew/resumption.py:329`) already carries each resumed run's id and hold signature, and \u00a73 reads it rather than adding a record.",
+    "thin_wrapper": "pass \u2014 both sections extend an existing mechanism rather than layering a parallel one: \u00a73 makes the log the sweep already writes the one it reads, and \u00a74 states it fires the existing live-process refusal rather than adding a refusal family, so neither needs a why-not-extend justification it has not given."
+  },
+  "section_digests": {
+    "_document": "02170e104cddeaa30cf41a05bd1a49a7b5ff97780df20792448999435f6144a6",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "12c758d3f22ff1aeea57eb2d64d54d7c3c7c238ea1b429c27aa05c84fa14d834",
+    "s4": "091807a54df01bca13b3c6d67789e9943f7e25a9e3764c526ab81377a51675a2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T11:09:30.539386+00:00"
+}
