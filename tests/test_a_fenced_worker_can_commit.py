@@ -46,7 +46,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends
+from reckon import _backends, _worker_fence
 
 DECLARED_MUTATION = (
     "leave the worktree git dir and object store out of the write roots as "
@@ -195,12 +195,12 @@ def _argv_without_git_roots(worktree: Path, repo: Path, home: Path) -> list[str]
     argv. Restoring the original in a ``finally`` keeps the removal confined to
     this call.
     """
-    original = _backends.worktree_git_write_roots
-    _backends.worktree_git_write_roots = lambda *_args, **_kwargs: []
+    original = _worker_fence.worktree_git_write_roots
+    _worker_fence.worktree_git_write_roots = lambda *_args, **_kwargs: []
     try:
         return _argv(worktree, repo, home)
     finally:
-        _backends.worktree_git_write_roots = original
+        _worker_fence.worktree_git_write_roots = original
 
 
 def _run(argv: list[str]) -> subprocess.CompletedProcess[str]:
@@ -241,12 +241,12 @@ def _refusal_removed() -> Iterator[None]:
     did before the refusal existed. Restoring the original in a ``finally``
     keeps the removal confined to this call.
     """
-    original = _backends._fenced_worktree_refusal
-    _backends._fenced_worktree_refusal = lambda *_args, **_kwargs: None
+    original = _worker_fence._fenced_worktree_refusal
+    _worker_fence._fenced_worktree_refusal = lambda *_args, **_kwargs: None
     try:
         yield
     finally:
-        _backends._fenced_worktree_refusal = original
+        _worker_fence._fenced_worktree_refusal = original
 
 
 def _refusal_negative_control_report(home: Path) -> list[str]:

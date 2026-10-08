@@ -158,7 +158,7 @@ def _hide_bwrap(monkeypatch: pytest.MonkeyPatch) -> None:
             return None
         return real_which(name, *args, **kwargs)
 
-    monkeypatch.setattr(_backends.shutil, "which", which)
+    monkeypatch.setattr(_worker_fence.shutil, "which", which)
 
 
 def _stub_launcher(plan, *, log_path, stderr_path, prompt_path) -> int:
