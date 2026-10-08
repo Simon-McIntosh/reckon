@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s6">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-10-08">
-  <meta name="evidence-commit" content="39112e789">
+  <meta name="evidence-commit" content="b70f47ee3">
 </head>
 <body>
 <main class="plan-doc">
@@ -57,25 +57,56 @@
 
   <h3>Measure</h3>
   <p>Gate: <code>tests/test_terminal_status_needs_every_section_ticked.py</code> at head —
-  <strong>5 passed</strong>, <code>EXIT=0</code>. The two refusal tests set a plan with one
+  <strong>7 passed</strong>, <code>EXIT=0</code>. The two refusal tests set a plan with one
   implementable, then one deferred, section to <code>done</code> and find the refusal naming
   <code>s2</code>; a third ticks the section and the same write succeeds; a fourth exercises the
-  patch writer; a fifth shows an already-terminal plan is not re-judged.</p>
+  patch writer; a fifth shows an already-terminal plan is not re-judged by the ops writer; a
+  sixth shows the patch writer does not re-judge an already-terminal plan; a seventh shows the
+  patch writer still detects a genuine transition from the stored status.</p>
   <ul>
     <li>Head arm log: <code>head_arm.log</code>.</li>
-    <li>Negative control (guard absent, base <code>786c5ba8</code>): the two refusal tests fail
-      <code>DID NOT RAISE</code> — <code>base_arm.log</code>, <code>EXIT=1</code>.</li>
+    <li>Negative control (guard absent, base <code>786c5ba8</code>): the refusal tests fail
+      <code>DID NOT RAISE</code> — <code>base_arm.log</code>, <code>EXIT=1</code>, 4 failed.</li>
   </ul>
-  <p>Regression search: the gate plus the tests that write a terminal status at head —
-  <code>test_archive</code>, <code>test_edit_plan_section_writes</code>,
-  <code>test_closure_gates</code>, <code>test_project_state</code> —
-  <strong>119 passed</strong>, <code>EXIT=0</code>. A wider run over fifteen such files
-  (<code>test_mcp_tools</code>, <code>test_review_lifecycle</code>, <code>test_crew_promotion</code>, …)
-  gave <strong>377 passed</strong> with one load-flaky error in
-  <code>test_impl_is_computed</code> that passes alone at both arms; no failure was attributed to the
-  guard. The guard refusing only <code>shipped</code> and <code>done</code> means supersede and
-  archive keep their existing scope.</p>
-</section>
+
+  <h3>The patch path keys on the transition too</h3>
+  <p>The three guard sites must agree on when the rule applies. The ops path
+  (<code>apply_ops</code>) and the common write path (<code>_write_state_locked</code>) already
+  read the status that preceded the write, so an already-terminal plan is not re-judged. The
+  patch path (<code>validate_landing_patch</code>) originally keyed on the <em>requested</em>
+  status alone, so a plan already at <code>shipped</code> or <code>done</code> that held an open
+  section was re-judged on a later patch — including a patch that merely re-asserted the same
+  status. The patch writer merges the patch into the state before its validators run
+  (<code>serve.py</code> calls <code>_patch_into</code> first), so the status the state carries is
+  the requested one and the transition is invisible there. The fix reads the status that preceded
+  the write from the stored plan — the same technique
+  <code>_followups_before_the_patch</code> already uses for the followup rule — and skips the
+  section guard when that status is already terminal, matching the other two sites. The existing
+  terminal-evidence and transition-verdict checks beside it are unchanged.</p>
+  <ul>
+    <li>Negative control for the repair (requested-status-only keying restored): the
+      already-terminal patch test fails, <code>1 failed, 6 passed</code> —
+      <code>patch_keying_negative_control.log</code>, <code>EXIT=1</code>.</li>
+  </ul>
+  <p>Regression search: the gate plus the tests that write a terminal status or call
+  <code>validate_landing_patch</code> at head — <code>test_closure_gates</code>,
+  <code>test_crew_promotion</code>, <code>test_continuation</code>,
+  <code>test_landing_patch_refuses_a_hiding_followup</code>, <code>test_archive</code>,
+  <code>test_edit_plan_section_writes</code>, <code>test_project_state</code>,
+  <code>test_plan_todos</code>. <code>test_edit_plan_section_writes</code> passes alone
+  (<strong>12 passed</strong>) and paired with the gate (<strong>19 passed</strong>), but inside
+  the nine-file run five <code>insert_section</code> body-validation tests fail
+  (<code>test_unknown_declaration_value_is_refused_with_the_accepted_values</code>,
+  <code>test_insert_section_without_a_typed_record_is_refused</code>, three cases of
+  <code>test_insert_section_refuses_unsafe_authored_fragments</code>), leaving
+  <strong>195 passed, 5 failed</strong>. Those tests build a section-insert op and assert a
+  refusal; none reaches the landing guard, and the head tree differs from the base revision in
+  that guard's keying alone — a difference that only ever narrows when the guard runs, so it
+  cannot raise a refusal these tests do not already expect. The failures are an order-dependent
+  flake of the kind this suite has shown before; a base-arm run of the same set was started for
+  comparison — it did not complete inside the node's bound on a contended host and was stopped.
+  The guard refusing only <code>shipped</code> and <code>done</code> means supersede and archive
+  keep their existing scope.</p>
 </section>
 </main>
 </body>
