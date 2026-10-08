@@ -32,10 +32,20 @@
         is listed, its recovery classification is actionable, or it lands in an action
         state the watch surface names. Gate
         <code>tests/test_row_policy_holds_observer_context.py</code>,
-        <code>tests/test_a_dispatch_is_one_row.py</code> and
-        <code>tests/test_follower_prints_only_policy_rows.py</code>: 36 passed,
-        <code>EXIT=0</code>. The declared negative control — remove the
-        observer-context hold so observer kinds print as before — fails
+        <code>tests/test_a_dispatch_is_one_row.py</code>,
+        <code>tests/test_follower_prints_only_policy_rows.py</code> and
+        <code>tests/test_attach_shows_each_live_run.py</code>: 39 passed,
+        <code>EXIT=0</code>. The hold changed rows four end-to-end follower
+        tests read, so those were measured against the base arm first: at
+        <code>6d28c3f5</code> the four files passed 65, so all 28 failures the
+        wide gate then showed were introduced by this change. Each was updated
+        to the held-back behaviour — a working run at attach and a run's start
+        reach the pane only when the run sits in an action state, and the cases
+        whose subject is the replay or the recorded time now build their fleet
+        in an action state — and the same wide set reruns at 65 passed,
+        <code>EXIT=0</code>, zero failures introduced. The declared negative
+        control — remove the observer-context hold so observer kinds print as
+        before — fails
         <code>test_a_launch_prints_only_its_completion</code> on the
         arrival, <code>dispatched&nbsp;&rarr;&nbsp;working</code>,
         <code>working&nbsp;&rarr;&nbsp;complete</code>,
