@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest left baseline_suite empty; the count was taken from its own baseline arm baseline-queue.log",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:913",
+    "reckon/crew_dispatch_commands.py:1495",
+    "reckon/crew/recovery.py:8449",
+    "reckon/crew/queue_order.py:16",
+    "reckon/crew/dispatch_admission.py:968"
+  ],
+  "completed_at": "2026-10-08T09:43:34.157Z",
+  "dispatched_at": "2026-10-08T09:28:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "585",
+      "severity": "follow-on",
+      "text": "follow-on: the dedup predicate matches on phase, session, node id and node.plan but omits node.section, so two held dispatches of one node id in different sections of a plan from one session collide and the second silently replaces the first's section and request."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "579",
+      "severity": "follow-on",
+      "text": "follow-on: queue_dispatch writes the live pointer through _write_json while holding locks/queued-dispatch.lock instead of the per-run lock _mutate_pointer uses at reckon/crew/runs.py:550-573, so a queued pointer's write and a concurrent per-run mutation of the same file take different locks and are not mutually exclusive."
+    }
+  ],
+  "head_log_revision": "cf71f7ee54e295ef731de374354d70b84a5fb183",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit cf71f7ee against base 07620d34, +274/-7 across runs.py, dispatch.py, recovery.py, crew_dispatch_commands.py and the new test file.",
+    "done_when": "\u00a72's done-when names a pointer under a zero-slot lane document with no worktree and a printed run id and position, one pointer on repeat, and discard removing it; tests/test_held_dispatch_is_queued.py:78, :81, :84, :107, :133 and :134 assert each and the manifest records the gate result.",
+    "goal": "plan \u00a72's goal is that a held local dispatch becomes one durable queued live pointer carrying its full request, hold reason and join time with no worktree; reckon/crew/runs.py:577 queue_dispatch writes exactly that record and reckon/crew/dispatch.py:935 raises LaneHeld carrying its run id and position.",
+    "manifest": "read; it records the committed-head gate at 56 passed EXIT=0 in gate-committed.log and the queued-pointer negative control at EXIT=1, but leaves baseline_suite empty so its baseline arm (baseline-queue.log, 1 failed EXIT=1) is named only under test_logs.",
+    "write_paths": "the manifest declares reckon/crew/runs.py, reckon/crew/dispatch.py, reckon/crew/recovery.py, reckon/crew_dispatch_commands.py and tests/test_held_dispatch_is_queued.py; commit cf71f7ee touches exactly those five paths and no other tracked file."
+  },
+  "justifications": {
+    "durability": "the manifest's negative control removes the queued-pointer write and tests/test_held_dispatch_is_queued.py:78 and :170 redden (EXIT=1), so the queued cases name a condition under which they fail.",
+    "evidence": "the committed-head gate is recorded (gate-committed.log 56 passed EXIT=0) and the queued-pointer control is red (negative-control.log EXIT=1), but the reviewed manifest leaves baseline_suite empty so the store's added-failure derivation reads the base arm as absent.",
+    "fit": "queue_dispatch, the queued phase and the reason field follow the live-pointer idiom in reckon/crew/runs.py around _mutate_pointer, with mechanism names and no plan labels.",
+    "goal_fidelity": "reckon/crew/runs.py:577 queue_dispatch stores one queued pointer per project/session/node with the full request, hold and queued_at, and reckon/crew/dispatch.py:913 creates no worktree before raising, matching \u00a72.",
+    "reuse": "reckon/crew/runs.py:579 queue_dispatch writes the pointer under its own locks/queued-dispatch.lock via _write_json rather than the pointer-write owner _mutate_pointer/_pointer_lock at reckon/crew/runs.py:550 writes through, so two writers of one pointer do not exclude each other.",
+    "scope_discipline": "every path commit cf71f7ee touches (runs.py, dispatch.py, recovery.py, crew_dispatch_commands.py, tests/test_held_dispatch_is_queued.py) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan \u00a72's goal is that a held local dispatch becomes one durable queued live pointer carrying its full request, hold reason and join time with no worktree; reckon/crew/runs.py:577 queue_dispatch writes exactly that record and reckon/crew/dispatch.py:935 raises LaneHeld carrying its run id and position.\nVERDICT done_when: \u00a72's done-when names a pointer under a zero-slot lane document with no worktree and a printed run id and position, one pointer on repeat, and discard removing it; tests/test_held_dispatch_is_queued.py:78, :81, :84, :107, :133 and :134 assert each and the manifest records the gate result.\nVERDICT write_paths: the manifest declares reckon/crew/runs.py, reckon/crew/dispatch.py, reckon/crew/recovery.py, reckon/crew_dispatch_commands.py and tests/test_held_dispatch_is_queued.py; commit cf71f7ee touches exactly those five paths and no other tracked file.\nVERDICT manifest: read; it records the committed-head gate at 56 passed EXIT=0 in gate-committed.log and the queued-pointer negative control at EXIT=1, but leaves baseline_suite empty so its baseline arm (baseline-queue.log, 1 failed EXIT=1) is named only under test_logs.\nVERDICT diff: read commit cf71f7ee against base 07620d34, +274/-7 across runs.py, dispatch.py, recovery.py, crew_dispatch_commands.py and the new test file.\nCALL_SITES: reckon/crew/dispatch.py:913, reckon/crew_dispatch_commands.py:1495, reckon/crew/recovery.py:8449, reckon/crew/queue_order.py:16, reckon/crew/dispatch_admission.py:968\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:577 queue_dispatch stores one queued pointer per project/session/node with the full request, hold and queued_at, and reckon/crew/dispatch.py:913 creates no worktree before raising, matching \u00a72.\nSCORE evidence: 16\nJUSTIFICATION evidence: the committed-head gate is recorded (gate-committed.log 56 passed EXIT=0) and the queued-pointer control is red (negative-control.log EXIT=1), but the reviewed manifest leaves baseline_suite empty so the store's added-failure derivation reads the base arm as absent.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path commit cf71f7ee touches (runs.py, dispatch.py, recovery.py, crew_dispatch_commands.py, tests/test_held_dispatch_is_queued.py) is inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the manifest's negative control removes the queued-pointer write and tests/test_held_dispatch_is_queued.py:78 and :170 redden (EXIT=1), so the queued cases name a condition under which they fail.\nSCORE fit: 16\nJUSTIFICATION fit: queue_dispatch, the queued phase and the reason field follow the live-pointer idiom in reckon/crew/runs.py around _mutate_pointer, with mechanism names and no plan labels.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/runs.py:579 queue_dispatch writes the pointer under its own locks/queued-dispatch.lock via _write_json rather than the pointer-write owner _mutate_pointer/_pointer_lock at reckon/crew/runs.py:550 writes through, so two writers of one pointer do not exclude each other.\nFINDING reckon/crew/runs.py:585 follow-on: the dedup predicate matches on phase, session, node id and node.plan but omits node.section, so two held dispatches of one node id in different sections of a plan from one session collide and the second silently replaces the first's section and request.\nFINDING reckon/crew/runs.py:579 follow-on: queue_dispatch writes the live pointer through _write_json while holding locks/queued-dispatch.lock instead of the per-run lock _mutate_pointer uses at reckon/crew/runs.py:550-573, so a queued pointer's write and a concurrent per-run mutation of the same file take different locks and are not mutually exclusive.\n",
+  "review_run_id": "r-20261008T092815871132-review-of-a-held-dispatch-becomes-a-queued-run",
+  "reviewed_base_sha": "07620d34682c540c01ecc0b1c4f9a4978270267e",
+  "reviewed_head_sha": "cf71f7ee54e295ef731de374354d70b84a5fb183",
+  "reviewed_run_id": "r-20261008T085254553686-a-held-dispatch-becomes-a-queued-run",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:41:27.830487+00:00",
+  "total": 100
+}
