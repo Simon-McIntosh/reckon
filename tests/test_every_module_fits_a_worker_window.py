@@ -31,7 +31,6 @@ ALLOWLIST = frozenset(
     {
         "reckon/_backends.py",
         "reckon/cli.py",
-        "reckon/crew/dispatch.py",
         "reckon/crew/promotion.py",
         "reckon/crew/recovery.py",
         "reckon/crew/runs.py",
