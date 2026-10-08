@@ -24,6 +24,7 @@ import time
 import pytest
 
 import reckon.mcp as mcp_module
+from reckon import mcp_deadlines
 from reckon.mcp import _run_under_deadline
 
 # A deadline short enough to keep the case quick, with a body that outlives it
@@ -93,7 +94,7 @@ def test_starved_runnable_body_reports_computing(
     def _starved(_tid: int) -> float:
         return next(readings)
 
-    monkeypatch.setattr(mcp_module, "_thread_run_wait_seconds", _starved)
+    monkeypatch.setattr(mcp_deadlines, "_thread_run_wait_seconds", _starved)
 
     result = _run(lambda: time.sleep(_BODY_SECONDS), label="read_plan")
 

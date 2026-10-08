@@ -25,6 +25,7 @@ import time
 import pytest
 
 import reckon.mcp as mcp_module
+from reckon import mcp_deadlines
 from reckon._mcp_tools import STORAGE_SLOW
 
 DEADLINE_ENV = mcp_module.DEADLINE_ENV
@@ -296,7 +297,7 @@ def test_a_stalled_landing_stat_still_lets_a_concurrent_read_answer(
                 return None
         return real_fingerprint(path)
 
-    monkeypatch.setattr(mcp_module, "_file_fingerprint", fingerprint)
+    monkeypatch.setattr(mcp_deadlines, "_file_fingerprint", fingerprint)
 
     def stalled_write() -> dict[str, object]:
         release.wait(BLOCK_BOUND)
@@ -372,7 +373,7 @@ def test_the_read_plan_tool_answers_storage_slow_for_a_blocked_store(monkeypatch
 
     monkeypatch.setattr(mcp_module, "read_plan", blocked_store)
     resolved = "/mounted/proj/docs/slow.html"
-    monkeypatch.setattr(mcp_module, "_written_path", lambda *a, **k: resolved)
+    monkeypatch.setattr(mcp_deadlines, "_written_path", lambda *a, **k: resolved)
     adapter = mcp_module.mcp._tool_manager._tools["read_plan"].fn
 
     async def scenario():
