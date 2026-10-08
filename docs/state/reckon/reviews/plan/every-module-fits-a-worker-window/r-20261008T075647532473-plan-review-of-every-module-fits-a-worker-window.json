@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T08:09:12.188Z",
+  "dispatched_at": "2026-10-08T07:57:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-module-fits-a-worker-window.html:99",
+      "id": "reasoning-1",
+      "reason": "the range exists only to justify \"fits any lane whole and needs no separate map node\", and each module is still oversize-but-fits, so the stale numbers steer no node down a wrong path; a reader re-measures and reaches the same conclusion.",
+      "text": "\u00a77 restates the three modules as each \"between 50,173 and 59,352 tokens\", but those are \u00a71's figures measured at the old base 6891282e9; the current tree measures reckon/mcp.py 61,290, reckon/crew/runs.py 53,893 and reckon/_backends.py 51,542 estimated tokens, so every figure is off and mcp.py is ~2k above the stated ceiling",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "70490b63a2115cda0d7fcab41f63e48be49eaa290dfbdf7858f35c0a9f291fb1",
+  "plan_slug": "every-module-fits-a-worker-window",
+  "plan_version": 18,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "the range is the dated measurement from section 1, and section 7's deliverable and done-when are stated against the 40,000-token bound, not the range; its premise that each module fits a lane whole still holds at 61,290 tokens against a 230,144-token window; the node's brief will carry figures measured at its own base when section 7 is dispatched, and editing the range now would reopen the plan-wide review gate for a number that moves with every commit",
+      "when": "2026-10-08T08:09:23.496949+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the range is the dated measurement from section 1, and section 7's deliverable and done-when are stated against the 40,000-token bound, not the range; its premise that each module fits a lane whole still holds at 61,290 tokens against a 230,144-token window; the node's brief will carry figures measured at its own base when section 7 is dispatched, and editing the range now would reopen the plan-wide review gate for a number that moves with every commit",
+      "when": "2026-10-08T08:09:23.496949+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-module-fits-a-worker-window.v18.json",
+  "review_run_id": "r-20261008T075647532473-plan-review-of-every-module-fits-a-worker-window",
+  "reviewed_blob_sha": "6ac7b93b18181272a82b1b2bd302d8dcd6393495",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 scripts/check_pure_move.py, reckon/mcp.py, reckon/crew/runs.py and reckon/_backends.py all exist in the tree, and \u00a78 and \u00a73 resolve.",
+    "done_when": "pass \u2014 \u00a77's per-module measure is checkable (check_pure_move exit 0; module and every produced module \u226440,000 estimated tokens; the guard passes with that module removed from its allowlist; the merged-head suite shows no failure absent at its base), and the guard's and move check's negative controls live in \u00a72's landed test; the changed closing sentence now folds \u00a79 into the closure set, so a coordinator following it literal no longer closes the plan with \u00a79's deliverable outstanding.",
+    "evidence_paths": "pass \u2014 \u00a77's map lands in the node's landing fragment and its gates write under the repository's evidence tree, not a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a77 introduces no code symbols; check_pure_move.py and the module names are mechanism names, carrying no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a77's restated module sizes no longer match the tree it describes; its mechanism (one pure move per module, under \u00a78) does produce its done-when, and no caller is claimed for it, so only the figures are wrong.",
+    "single_goal": "pass \u2014 \u00a77 explicitly assigns one node per module (reckon/mcp.py, reckon/crew/runs.py, reckon/_backends.py), each a single pure move, so no node carries two deliverables.",
+    "wiring": "pass \u2014 the plan declares no depends-on/informs/gates edge and its plan-standalone record states why; the fleet plan it cites (docs/plans/the-fleet-moves-to-a-new-node.html) and its \u00a76 resolve, so no needed relationship is missing and none points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "9eaaef3064453ee0cf5d155a88390ad6eb33a4193938c723abbe14458d3a9c3e",
+    "s1": "b19a00becfaeb93129b092226ec7ac1b87063bba5bb603d21e705c49edd7e380",
+    "s2": "a1c228e07f7085de5a9c3e5444cc01be2e22104f2ce7e43df4aef64175223e41",
+    "s3": "179bdf87d6a0b9655e9a16e57eb3bd82ede73c5446801dfec5e10f5fd28cdc4c",
+    "s4": "a5bc1f5a2cbfb8c697875e185119e44953d621f3ec2e8801a4937591223edb4c",
+    "s5": "aa9cdfb8d99577c174ee2e9465f22f9641d4a82f7b8b73dde429de8cf360e27f",
+    "s6": "41997e4908fcbd4839e6bcc1e88063b84d2d376bd741194f950b8b470def6c3b",
+    "s7": "e188497c11d860b03f2193d70d88beee60d8d09364bc6db3dfa450527498620b",
+    "s8": "09fb68ac509239cda4be6f9fefd549459cc0abb72771e5fe0b98c8cb3c4e1b0f",
+    "s9": "9dc51adf38bba826e43f9295f6122541a8ae3997e992abfdfe8ea35988aca18e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:09:15.561511+00:00"
+}
