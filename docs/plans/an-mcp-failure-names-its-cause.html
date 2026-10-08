@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="81">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7">
 </head>
@@ -199,6 +199,24 @@
   <p class="landed-summary">The summary view of one plan reads its inventory from the metadata index: 0 directory scans at 5 and 60 plans, against 33 and 198 before; 96 importer modules green at the merged head. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s12-summary-view-index">full record</a></p>
 </section>
 
+    <h2 id="s13">§13 — The census partitions failures and reads in seconds</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> §2's census counts a failed connection once for every cause its log carries, so the cause counts
+      do not partition <code>failed</code>: imas-cx shows 2,697 cause hits over 1,635 failed connections. Each failed connection is now
+      attributed to one cause, the first in §1's table that its log carries, and the census reports how many failures also carried each later
+      signature, so the cause counts sum to <code>failed</code>. <code>directory_kind</code>, which no caller outside the module uses, becomes
+      private, so the module keeps the one public function §2 declared. The block takes 50 to 126 s on GPFS, most of it a 21 s walk of the
+      log directories: the census skips a working-directory log directory whose modification time predates the window, and opens only log files
+      modified inside it. The doctor block states its <code>storage-slow</code> rule, a result whose payload names the error, beside the
+      count.</p>
+    <p><strong>Done when</strong> <code>tests/test_mcp_census.py</code> also passes three new cases with EXIT=0 in a logged run: a connection
+      whose log carries two signatures counts once, under the earlier, and the cause counts sum to <code>failed</code>; a log directory whose
+      modification time predates the window is never opened; and the doctor block names its <code>storage-slow</code> rule. The census over the
+      real log tree for 2026-10-01T01:00:00Z to 2026-10-08T01:00:00Z finishes in under 20 s, timed in a log in the run directory. The negative
+      control is executed and logged: with every-cause counting restored, the sum assertion fails. The write paths are
+      <code>reckon/mcp_census.py</code>, <code>reckon/project_maintenance_commands.py</code> and <code>tests/test_mcp_census.py</code>; it runs
+      after §5, which edits the doctor module too.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="launch-form" data-choice="uv-no-sync" data-by="Simon McIntosh" data-when="2026-10-08T01:52:37+00:00">
@@ -230,6 +248,11 @@
     <div class="r-fu-body"><p>§10 (<code>reckon/crew/runs.py</code>) and §12 (<code>reckon/mcp.py</code>, <code>reckon/metadata_index.py</code>) can run together. §2 and then §5 edit the CLI and run in sequence once no other live claim holds it. §11 admits <code>worker_mcp_servers</code> as a reckon-owned flight key.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §2</pre>
     <p class="r-fu-outcome">§2 landed at abb84ca78: reckon doctor names every MCP failure's cause.</p>
+    </article>
+<article class="r-fu" data-id="f-amfc-004" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the census a partition and fast</h4>
+    <div class="r-fu-body"><p>§2's review and run named four follow-ons; §13 folds them.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §13</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -300,7 +323,7 @@
     <div class="r-comment-body"><p>reckon doctor now names every MCP connection failure's cause through a new census function in reckon/mcp_census.py; the fixture gate passes 6/6 EXIT=0 and the real-tree census for 2026-10-01T01:00Z–2026-10-08T01:00Z reads imas-cx CONNECTION_CLOSED 1065 against section 1's 1068 (0.28%, within 5%).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261008T160609527755-review-of-doctor-names-every-mcp-failure" data-who="reckon-build" data-when="2026-10-08T16:16:46.500Z">
-    <div class="r-comment-body"><p>attached the independent review of r-20261008T152434093834-doctor-names-every-mcp-failure at reviewed_base_sha a7c06655d4eeb52633b366d67ce939a39a3b8d7f / reviewed_head_sha abb84ca783dfcd99886b2a2e93d6767030560822: a parsed 6-dimension record stored at both granted paths, total 115 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19, reuse 20), added_failure_count 0 with added_failure_ids [] off the run&#x27;s own after_suite (its manifest carries no baseline_suite), two follow-on findings, no blocking finding; the section&#x27;s gate, negative control and real-tree figure each reproduced independently.</p></div>
+    <div class="r-comment-body"><p>attached the independent review of r-20261008T152434093834-doctor-names-every-mcp-failure at reviewed_base_sha a7c06655d4eeb52633b366d67ce939a39a3b8d7f / reviewed_head_sha abb84ca783dfcd99886b2a2e93d6767030560822: a parsed 6-dimension record stored at both granted paths, total 115 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19, reuse 20), added_failure_count 0 with added_failure_ids [] off the run's own after_suite (its manifest carries no baseline_suite), two follow-on findings, no blocking finding; the section's gate, negative control and real-tree figure each reproduced independently.</p></div>
 </div>
 </section>
 </main>
