@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:11673",
+    "reckon/crew_dispatch_commands.py:1934"
+  ],
+  "completed_at": "2026-10-08T14:49:32.593Z",
+  "dispatched_at": "2026-10-08T14:37:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "11684",
+      "severity": "follow-on",
+      "text": "follow-on: recover's counts dict names running/scoring/promotable/completed_unpromoted/interrupted/abandoned/lane-event, plus waiting/paused/stopped/blocked/failed/unreadable when nonzero, and carries no \"queued\" key, so although the landed change makes a queued pointer classify correctly in the per-run rows, a coordinator reading only `counts` still cannot read a queued tally; recovery.py is outside this node's declared scope (reckon/crew/dispatch_sessions.py and the test)."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base d420ec996c40f0452638aa5eda293a4d98afb6c5; three files change and nothing outside the declared scope is touched.",
+    "done_when": "tests/test_recover_reads_a_queued_run.py builds a temp crew home with a queued pointer written by runs.queue_dispatch beside a launched run whose stream exists, calls recovery.recover(project=\"proj\"), and asserts the report names r-queued with classification \"queued\" and no exception; the manifest records that arm 1 passed EXIT=0 (head-arm.log).",
+    "goal": "\u00a78 asks fold to observe a cli pointer's stream only when the pointer names a log path; reckon/crew/dispatch_sessions.py:164 computes log_path = str(record.get(\"log_path\") or \"\").strip() and gates the _backends.observe_log call on `record.get(\"launch\") == \"cli\" and log_path`, so a queued pointer (launch cli, no log_path) skips the observation and keeps its stored fields.",
+    "manifest": "read; it records the head arm, a logged negative control (negative-control.log, EXIT=1, IsADirectoryError) and a repro-before-fix log (repro-unfixed.log) against base d420ec99.",
+    "write_paths": "read the manifest's declared paths \u2014 reckon/crew/dispatch_sessions.py, tests/test_recover_reads_a_queued_run.py and the evidence fragment; every path in commit 3c837fc18 is inside them."
+  },
+  "justifications": {
+    "durability": "removing the `and log_path` condition at reckon/crew/dispatch_sessions.py:164 reinstates the IsADirectoryError and reddens test_recover_reads_a_queued_run, as negative-control.log and repro-unfixed.log both show, so the assertion fails on exactly the regression it guards.",
+    "evidence": "head-arm.log records `1 passed in 1.00s EXIT=0` and negative-control.log records `1 failed` with `IsADirectoryError: [Errno 21] Is a directory: '.'` and EXIT=1, so the gate measures \u00a78's done-when; the manifest's own tests field abbreviates the suite command in angle brackets rather than quoting it, though the log header carries the literal command.",
+    "fit": "the guard reuses the surrounding normalization idiom (`str(... or \"\").strip()`) at reckon/crew/dispatch_sessions.py:164 and its comment explains the mechanism with no plan, ticket or version labels.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:165 gates the observation on a non-empty log_path, and classify_pointer at reckon/crew/recovery.py:8449 already maps phase==\"queued\" to classification \"queued\", so the guard alone delivers \u00a78's stated mechanism with no classification change.",
+    "reuse": "the diff adds no new definition \u2014 it extends fold's existing cli observation at reckon/crew/dispatch_sessions.py:164 \u2014 so no capability the repository already owns is forked.",
+    "scope_discipline": "every path in commit 3c837fc18 \u2014 reckon/crew/dispatch_sessions.py, tests/test_recover_reads_a_queued_run.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/recover-reads-a-queued-run.html \u2014 is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a78 asks fold to observe a cli pointer's stream only when the pointer names a log path; reckon/crew/dispatch_sessions.py:164 computes log_path = str(record.get(\"log_path\") or \"\").strip() and gates the _backends.observe_log call on `record.get(\"launch\") == \"cli\" and log_path`, so a queued pointer (launch cli, no log_path) skips the observation and keeps its stored fields.\nVERDICT done_when: tests/test_recover_reads_a_queued_run.py builds a temp crew home with a queued pointer written by runs.queue_dispatch beside a launched run whose stream exists, calls recovery.recover(project=\"proj\"), and asserts the report names r-queued with classification \"queued\" and no exception; the manifest records that arm 1 passed EXIT=0 (head-arm.log).\nVERDICT write_paths: read the manifest's declared paths \u2014 reckon/crew/dispatch_sessions.py, tests/test_recover_reads_a_queued_run.py and the evidence fragment; every path in commit 3c837fc18 is inside them.\nVERDICT manifest: read; it records the head arm, a logged negative control (negative-control.log, EXIT=1, IsADirectoryError) and a repro-before-fix log (repro-unfixed.log) against base d420ec99.\nVERDICT diff: read commit by commit against base d420ec996c40f0452638aa5eda293a4d98afb6c5; three files change and nothing outside the declared scope is touched.\nCALL_SITES: reckon/crew/recovery.py:11673, reckon/crew_dispatch_commands.py:1934\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:165 gates the observation on a non-empty log_path, and classify_pointer at reckon/crew/recovery.py:8449 already maps phase==\"queued\" to classification \"queued\", so the guard alone delivers \u00a78's stated mechanism with no classification change.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm.log records `1 passed in 1.00s EXIT=0` and negative-control.log records `1 failed` with `IsADirectoryError: [Errno 21] Is a directory: '.'` and EXIT=1, so the gate measures \u00a78's done-when; the manifest's own tests field abbreviates the suite command in angle brackets rather than quoting it, though the log header carries the literal command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in commit 3c837fc18 \u2014 reckon/crew/dispatch_sessions.py, tests/test_recover_reads_a_queued_run.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/recover-reads-a-queued-run.html \u2014 is inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: removing the `and log_path` condition at reckon/crew/dispatch_sessions.py:164 reinstates the IsADirectoryError and reddens test_recover_reads_a_queued_run, as negative-control.log and repro-unfixed.log both show, so the assertion fails on exactly the regression it guards.\nSCORE fit: 19\nJUSTIFICATION fit: the guard reuses the surrounding normalization idiom (`str(... or \"\").strip()`) at reckon/crew/dispatch_sessions.py:164 and its comment explains the mechanism with no plan, ticket or version labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no new definition \u2014 it extends fold's existing cli observation at reckon/crew/dispatch_sessions.py:164 \u2014 so no capability the repository already owns is forked.\nFINDING reckon/crew/recovery.py:11684 follow-on: recover's counts dict names running/scoring/promotable/completed_unpromoted/interrupted/abandoned/lane-event, plus waiting/paused/stopped/blocked/failed/unreadable when nonzero, and carries no \"queued\" key, so although the landed change makes a queued pointer classify correctly in the per-run rows, a coordinator reading only `counts` still cannot read a queued tally; recovery.py is outside this node's declared scope (reckon/crew/dispatch_sessions.py and the test).",
+  "review_run_id": "r-20261008T143648233011-review-of-recover-reads-a-queued-run",
+  "reviewed_base_sha": "d420ec996c40f0452638aa5eda293a4d98afb6c5",
+  "reviewed_head_sha": "3c837fc18283053319e4ab6870e9ca4d1c55d627",
+  "reviewed_run_id": "r-20261008T130332012447-recover-reads-a-queued-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T14:46:29.054093+00:00",
+  "total": 116
+}
