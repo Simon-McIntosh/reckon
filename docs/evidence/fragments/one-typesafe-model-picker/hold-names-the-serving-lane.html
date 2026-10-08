@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Jev's hold names the lanes that can serve the node</title>
+</head>
+<body>
+<article class="evidence-fragment" id="hold-names-the-serving-lane">
+  <h2 id="hold-names-the-serving-lane-title">Jev's hold names the lanes that can serve the node</h2>
+
+  <p id="hold-names-the-serving-lane-defect">Two recorded picks held a node without a fact Jev
+  needed to weigh the hold. At <time>2026-10-08T02:31:54Z</time> Jev held
+  <code>review-of-member-friction-asserts-its-own-writes</code> at a hold probability of
+  <strong>0.83</strong> (confidence 0.66); at <time>2026-10-07T07:46:40Z</time> it held
+  <code>review-of-subscription-lanes-record-no-spend</code> at <strong>0.84</strong>
+  (confidence 0.68). Both records, in <code>docs/state/reckon/picker-holds.jsonl</code>, carry
+  only the deterministic exclusion reasons <code>review-excluded-backend;
+  in-harness-backend</code>. The rendered state listed the exclusion of every other lane as a
+  bare absence, so a hold read as "wait for any lane to free".</p>
+
+  <p id="hold-names-the-serving-lane-figures">The lane figures that decide it: a review node's
+  role withdraws <strong>7 of the 8 declared backends</strong> from review routing
+  (<code>claude</code>, <code>claude-opus</code>, <code>claude-haiku</code>, <code>codex</code>,
+  <code>codex-astra</code>, <code>codex-luna</code>, <code>native</code>), and
+  <code>native</code> is also the in-harness backend, which a routed dispatch cannot execute.
+  <strong>One lane is left — the local lane — so exactly one lane can serve the node</strong>;
+  a hold waits for the local lane alone, and waiting for a metered lane to free changes
+  nothing because none of them may run a review. That is the fact the state lacked.</p>
+
+  <p id="hold-names-the-serving-lane-verdict">Verdict: <strong>the holds were wrong</strong> —
+  not because the local lane was congested, but because Jev lacked the fact that holding meant
+  waiting for the one lane that could serve the node. The coordinator overrode the first hold
+  with <code>--local</code> (run
+  <code>r-20261008T023220940800-review-of-member-friction-asserts-its-own-writes</code>) one
+  minute later, and the picker's own record shows a <code>route</code>, not a hold, on the next
+  pick at <time>2026-10-08T02:33:41Z</time>: the lane the hold waited on was serving
+  (<code>~/.config/reckon/crew/pick-timings.jsonl</code>).</p>
+
+  <p id="hold-names-the-serving-lane-change">The fact was missing, so the state now states it.
+  The rendered state's <code>local_lane</code> block carries three added fields, computed in
+  <code>reckon/crew/picker/prompts.py</code> from the lanes that can serve the node:
+  <code>serving_lanes</code> (the distinct lane names among the offered candidates),
+  <code>serving_lane_count</code>, and <code>hold_waits_for</code>, which reads
+  <code>the local lane, the only lane that can serve this node</code> when one lane can serve
+  and is <code>null</code> when none can. Two glossary entries define the terms for the model
+  that reads them. Re-running the replay with a stub client shows both recorded holds now
+  replay over a state that names the single serving lane: <code>serving_lanes ==
+  ["local"]</code>, <code>serving_lane_count == 1</code>.</p>
+
+  <p id="hold-names-the-serving-lane-evidence">Tests are in
+  <code>tests/test_hold_names_the_serving_lane.py</code>. The gate
+  (<code>tests/test_hold_names_the_serving_lane.py</code>, every
+  <code>tests/test_picker*.py</code>, <code>tests/test_jev_prompt_carries_what_it_weighs.py</code>,
+  <code>tests/test_pick_records_its_stage_times.py</code>) ran <strong>179 passed at the head
+  against 173 passed at the base revision</strong> — a delta of +6 tests, zero added failures.
+  The declared negative control — remove the serving-lane fact from the rendered state — turns
+  two tests red (<code>test_recorded_review_hold_names_the_single_serving_lane</code> for both
+  recorded nodes) with <code>EXIT=1</code>. The golden rendered-state fixture
+  (<code>tests/test_picker_helpers_have_one_owner.py</code>) was regenerated from the head
+  tree's own code over its frozen fixture, as its own docstring prescribes; that path is
+  outside this node's declared write scope and is recorded as a deviation.</p>
+</article>
+</body>
+</html>
