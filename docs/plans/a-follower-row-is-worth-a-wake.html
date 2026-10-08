@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.25">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -126,13 +126,18 @@
       <code>recovery_classification</code> is in <code>ACTIONABLE_RECOVERY_CLASSIFICATIONS</code> in
       <code>reckon/crew/recovery.py</code>, the owner of "needs the coordinator", so
       <code>working → exited-unfinished</code> and its kin print without the audit's list being grown by hand. A coordinator row followed by another
-      transition of the same run within a twenty-second settle window prints only the later row, so the
+      transition of the same run within a twenty-second settle window prints only the later row, when that later
+      row itself prints; a later row the policy holds back, such as the terminal echo <code>complete → recorded</code>,
+      supersedes nothing, so the
       measured chains (<code>working → exited-unfinished → blocked</code> in 2 s,
       <code>blocked → wait-aged → blocked</code> in 3 to 8 s) print once. The settle hold needs two module
-      constants beside <code>ARRIVAL_WINDOW</code>, and they are the only definitions §2 adds: the twenty-second
+      constants beside <code>ARRIVAL_WINDOW</code>: the twenty-second
       settle window, and a two-minute cap from a run's first held transition after which the latest row prints even
       if the run is still changing, so a run that changes state more often than every twenty seconds is never held
-      indefinitely. The existing windows each belong to one named noise pair, so neither can serve. The three <code>NOISE_PAIRS</code> holds keep their own measured windows (90 s for
+      indefinitely. The existing windows each belong to one named noise pair, so neither can serve. The third and last addition is
+      one keyword, <code>show_observer</code>, default false, on <code>RowPolicy</code>, <code>PaneRowPath</code> and
+      <code>replay_row_policy</code>: a pane built with it true prints observer context as today, and it is how §3's
+      negative control and §5's comparison build their pane. The three <code>NOISE_PAIRS</code> holds keep their own measured windows (90 s for
       the launch flicker, 300 s for the exit phantom and the stall flap), which §2 does not change. A pane built with observer context shown keeps today's behaviour for every row
       except those the two resolution rules above restore, which print on that pane too. <code>replay_row_policy</code>
       uses that pane for §5's comparison, and §5 counts the restored rows separately. <code>PaneRowPath</code> writes its memory only for printed rows, as it does today,
