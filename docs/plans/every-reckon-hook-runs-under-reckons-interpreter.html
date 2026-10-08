@@ -6,8 +6,8 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="every-reckon-hook-runs-under-reckons-interpreter">
-  <meta name="plan-title" content="Every Reckon Hook Runs Under Reckon's Interpreter">
-  <meta name="plan-summary" content="Every reckon hook command, however it is installed, seeded or started, runs under the checkout's own interpreter, so no guard fails open on an old system python">
+  <meta name="plan-title" content="Every Reckon Hook Runs Under Reckon&#x27;s Interpreter">
+  <meta name="plan-summary" content="Every reckon hook command, however it is installed, seeded or started, runs under the checkout&#x27;s own interpreter, so no guard fails open on an old system python">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
@@ -23,6 +23,9 @@
   <title>Every Reckon Hook Runs Under Reckon's Interpreter | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-08">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -50,7 +53,7 @@
         <tr><td>A run's harness home</td><td>A copy of the <code>hooks</code> key of the operator's <code>~/.claude/settings.json</code>, whatever it holds (<code>harness_home_files</code> in <code>flight-defaults.yaml</code>, seeded by <code>_seed_harness_entry</code> in <code>reckon/_backends.py</code>).</td></tr>
       </tbody>
     </table>
-    <p>Measured on 8 October: the operator's settings held <code>worker_stop.py</code>, <code>worker_git_guard.py</code> and <code>native_agent_guard.py</code> as bare script paths. Each script starts <code>#!/usr/bin/env python3</code>, and a plain shell on the fleet node resolves that to <code>/usr/bin/python3</code>, Python 3.9.16, where <code>from datetime import UTC</code> fails. The stop hook then crashes. A guard that cannot import its rules decides nothing, so the git guard fails open. Workers dispatched with the reckon venv first on <code>PATH</code> were masked; any other launch is exposed. Codex workers are unaffected, because they do not read these hooks.</p>
+    <p>Measured on 8 October: the operator's settings held <code>worker_stop.py</code>, <code>worker_git_guard.py</code> and <code>native_agent_guard.py</code> as bare script paths. Each script starts <code>#!/usr/bin/env python3</code>, and a plain shell on the fleet node resolves that to <code>/usr/bin/python3</code>, Python 3.9.16. The worker stop hook and the obligations hook import reckon modules that need <code>datetime.UTC</code> from Python 3.11, so under 3.9 the stop hook crashes and the worker ends its turn without its stop checks. The three guards import no module that needs 3.11 and decide correctly under 3.9: the content review measured the git guard there denying a banned <code>git reset --hard</code>. Their exposure is different. A guard whose script cannot reach its rules, such as a script copied away from its checkout or one gaining a newer import, decides nothing, and today that allows the command. Workers dispatched with the reckon venv first on <code>PATH</code> were masked; any other launch is exposed. Codex workers are unaffected, because they do not read these hooks.</p>
     <p>A durable fix cannot depend on an operator remembering to rerun an installer, so the interpreter is put in three places: the one composer every writer uses, the seeding of each run's harness home, and the hook scripts themselves.</p>
 
     <h2 id="s2">&sect;2 &mdash; One composer writes every reckon hook command</h2>
@@ -78,7 +81,7 @@
     <p>A bare command can still reach a hook script from somewhere reckon does not write: an old settings file, a hand-edited one, another harness. Each reckon hook script therefore checks, before importing anything from reckon, that the running interpreter can serve it. When it cannot, it re-executes itself under its checkout's <code>.venv/bin/python</code> with the same arguments and standard input. The worker git guard fails closed: when it cannot decide, it denies the command and says why, because a guard that allows what it could not check reports a protection it does not give.</p>
     <p><strong>Done when:</strong></p>
     <ul>
-      <li>A test starts each reckon hook script through a <code>python3</code> on <code>PATH</code> that cannot import reckon, and finds it re-executed under the checkout's interpreter and deciding exactly as it does when started correctly.</li>
+      <li>A test finds every reckon hook script that imports a reckon module by a search over <code>reckon/hooks/</code>, starts each through a <code>python3</code> on <code>PATH</code> older than reckon's interpreter floor, and finds it re-executed under the checkout's interpreter and deciding exactly as it does when started correctly. The scripts that import no reckon module are started the same way and shown to decide unchanged.</li>
       <li>A test makes the git guard unable to load its rules and finds a banned git command denied with a reason, not allowed.</li>
       <li>A script whose checkout interpreter is missing reports that and exits non-zero rather than looping.</li>
     </ul>
@@ -102,9 +105,9 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ehr-build" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build every-reckon-hook-runs-under-reckons-interpreter">
+<article class="r-fu" data-id="f-ehr-build" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build every-reckon-hook-runs-under-reckons-interpreter" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build the composer, the seeding and the self-correcting scripts, then heal this workstation</h4>
-    <div class="r-fu-body"><p>&sect;2 and &sect;4 touch separate files and can run together; &sect;3 reuses &sect;2's recogniser and composer and follows it; &sect;5 is operational and follows &sect;2.</p></div>
+    <div class="r-fu-body"><p>§2 and §4 touch separate files and can run together; §3 reuses §2's recogniser and composer and follows it; §5 is operational and follows §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-reckon-hook-runs-under-reckons-interpreter</pre>
     </article>
 </section>
