@@ -111,7 +111,17 @@ function PlanChecklist({ todos }) {
           return (
             <li key={todo.id} data-section={todo.id} data-state={row} className={`r-plan-todo is-${row}`}>
               <input className="r-plan-todo-box" type="checkbox" checked={row === "done"} readOnly tabIndex={-1} aria-label={row === "done" ? "done" : row} />
-              <a className="r-plan-todo-link" href={todo.link}>{todo.heading}</a>
+              <a
+                className="r-plan-todo-link"
+                href={todo.link}
+                onClick={event => {
+                  // The hash routes the SPA, so a bare href would leave the
+                  // plan for an unrecognised route. Keep the href for copy and
+                  // middle-click; scroll the section into view here instead.
+                  event.preventDefault();
+                  document.getElementById(todo.id)?.scrollIntoView({ block: "start" });
+                }}
+              >{todo.heading}</a>
               {row !== "done" && (
                 <span className="r-plan-todo-state">{row === "deferred" ? "deferred" : "open"}</span>
               )}

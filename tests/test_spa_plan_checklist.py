@@ -33,6 +33,33 @@ const React = {
 """
 
 
+# A document stub that records what a click scrolls into view.
+_DOCUMENT_STUB = """
+const scrolled = [];
+const document = {
+  getElementById: id => ({ scrollIntoView: options => scrolled.push([id, options]) }),
+};
+"""
+
+_CLICK_EXPRESSION = """(() => {
+  const anchors = [];
+  const walk = node => {
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (!node || !node.__element) return;
+    if (node.type === "a") anchors.push(node);
+    (node.children || []).forEach(walk);
+  };
+  walk(RENDER);
+  const last = anchors[anchors.length - 1];
+  if (typeof last.props.onClick !== "function") {
+    return { handled: false, defaultPrevented: false, scrolled: null, href: last.props.href };
+  }
+  const event = { defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+  last.props.onClick(event);
+  return { handled: true, defaultPrevented: event.defaultPrevented, scrolled, href: last.props.href };
+})()"""
+
+
 def _component_source(source: str) -> str:
     start = source.index("function PlanChecklist(")
     body = source.index(") {", start) + 2
@@ -47,21 +74,33 @@ def _component_source(source: str) -> str:
     raise AssertionError("unterminated function PlanChecklist")
 
 
-def _render(tmp_path: Path, todos: list[dict]) -> dict:
-    source = PLAN.read_text()
-    usage = CHECKLIST_USAGE.search(source)
+def _checklist_expression() -> str:
+    usage = CHECKLIST_USAGE.search(PLAN.read_text())
     assert usage, "the plan view does not render <PlanChecklist todos={...} />"
-    props = usage.group(1)
-    harness = tmp_path / "plan_checklist_probe.jsx"
+    return f"PlanChecklist({{ todos: ({usage.group(1)}) }})"
+
+
+def _harness(tmp_path: Path, todos: list[dict], name: str, extra: str = "") -> Path:
+    harness = tmp_path / f"{name}.jsx"
     harness.write_text(
         _REACT_STUB
-        + f"{_component_source(source)}\n"
+        + extra
+        + f"{_component_source(PLAN.read_text())}\n"
         + f"const fullState = {json.dumps({'todos': todos})};\n",
         encoding="utf-8",
     )
-    return spa_module_eval.evaluate_jsx_module(
-        harness, f"PlanChecklist({{ todos: ({props}) }})"
-    )
+    return harness
+
+
+def _render(tmp_path: Path, todos: list[dict]) -> dict:
+    harness = _harness(tmp_path, todos, "plan_checklist_probe")
+    return spa_module_eval.evaluate_jsx_module(harness, _checklist_expression())
+
+
+def _click(tmp_path: Path, todos: list[dict]) -> dict:
+    harness = _harness(tmp_path, todos, "plan_checklist_click", _DOCUMENT_STUB)
+    expression = _CLICK_EXPRESSION.replace("RENDER", _checklist_expression())
+    return spa_module_eval.evaluate_jsx_module(harness, expression)
 
 
 def _elements(node) -> list[dict]:
@@ -163,6 +202,15 @@ def test_checklist_render_sits_above_the_first_section():
     usage = source.index("<PlanChecklist todos=")
     body = source.index('className="r-plan-html"')
     assert usage < body
+
+
+def test_row_link_click_scrolls_the_section_without_title_navigation(tmp_path):
+    result = _click(tmp_path, TODOS)
+
+    assert result["handled"] is True
+    assert result["href"] == "#s3"
+    assert result["defaultPrevented"] is True
+    assert result["scrolled"] == [["s3", {"block": "start"}]]
 
 
 def test_checklist_styles_are_registered_for_its_rows():
