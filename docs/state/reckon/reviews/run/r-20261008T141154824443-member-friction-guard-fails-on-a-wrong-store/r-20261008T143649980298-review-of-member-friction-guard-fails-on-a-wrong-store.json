@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9a30e4e88a26e96e606f196bcf7a799043b5308e",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T15:00:39.330Z",
+  "dispatched_at": "2026-10-08T14:37:12Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T141154824443-member-friction-guard-fails-on-a-wrong-store/negative-control-xdg-literal.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log's first line records revision 9a30e4e88a26e96e606f196bcf7a799043b5308e as the revision it ran at, but its result is 7 tests (1 failed, 6 passed) including test_isolation_guard_watches_the_legacy_store_home which does not exist at that revision, so the log was run on the working tree carrying the uncommitted test change; naming only the base revision reads as a base-revision result of six tests, whereas the sibling head-friction-only.log:1 discloses \"+ uncommitted test change\"."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T141154824443-member-friction-guard-fails-on-a-wrong-store/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite and after_suite command fields name the gate as \"... <26 gate files>\" rather than the literal command that ran, which the manifest contract forbids; the gate log's own header line 3 does carry the literal 26 absolute paths, so the command is recoverable, but a reader of the manifest alone cannot reconstruct or re-run it."
+    }
+  ],
+  "head_log_revision": "e12c1e50f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; the old comparison-only test test_isolation_guard_watches_the_escape_destination is replaced by a helper _isolated_guard_home and two layout cases, and an evidence fragment is added; no product code changed.",
+    "done_when": "the done_when names three mutant conditions; the manifest records the mutant results, and I reproduced all three independently at head e12c1e50f (see tests below).",
+    "goal": "the node's goal is to make tests/test_member_friction.py compare the member-friction guard's resolved store against an independent expectation rather than against real_store_home(), the helper the guard itself calls; tests/test_member_friction.py:171-224 now builds a temporary HOME with RECKON_HOME pointed elsewhere and asserts _guard_store() equals <HOME>/.config/reckon (XDG case) and <HOME>/docs-server (legacy case), both computed from HOME alone.",
+    "manifest": "read; it carries the base/head revision pair, baseline_suite and after_suite JSON (both completed:true, exit 0, zero failures), a negative_control_log with a note, and the changed_paths; its head revision e12c1e50f equals the worktree head and the worktree was clean, so the head gate's tree is the committed tree; its baseline_suite and after_suite command fields carry an angle-bracket placeholder instead of the literal command (FINDING below).",
+    "write_paths": "git diff 9a30e4e88..e12c1e50f lists exactly tests/test_member_friction.py and docs/evidence/fragments/one-typesafe-model-picker/member-friction-guard-fails-on-a-wrong-store.html, both inside the node's declared write paths; tests/conftest.py is declared optional and was not touched."
+  },
+  "justifications": {
+    "durability": "reinstating the guard regression (tests/test_member_friction.py:73, _guard_store returning the XDG literal fallback) reddens test_isolation_guard_watches_the_legacy_store_home, and making real_store_home keep RECKON_HOME reddens both test_isolation_guard_watches_the_xdg_store_home and test_isolation_guard_watches_the_legacy_store_home, both reproduced.",
+    "evidence": "I re-ran tests/test_member_friction.py at head e12c1e50f (7 passed) and reproduced both declared mutants (XDG-literal fallback: 1 failed/6 passed on the legacy case; keep-RECKON_HOME: 2 failed/5 passed), but the recorded negative-control-xdg-literal.log header names only the base revision while its tree held the new tests, unlike the sibling head-friction-only.log which discloses the uncommitted test change.",
+    "fit": "_isolated_guard_home at tests/test_member_friction.py:171 follows the file's existing monkeypatch/tmp_path idiom and carries no plan, section or version label in its name, docstring or in the two new test names.",
+    "goal_fidelity": "tests/test_member_friction.py:219 and :231 assert the guard's target against home / \".config\" / \"reckon\" and home / \"docs-server\", values derived from the test's own HOME and independent of real_store_home().",
+    "reuse": "I searched tests/ by capability for a temp-HOME-with-optional-.config/reckon fixture (the autouse isolated_reckon_home at tests/conftest.py:1119 isolates RECKON_HOME/XDG_CONFIG_HOME, a different capability) and found no owner, so the test-local helper forks nothing.",
+    "scope_discipline": "git diff 9a30e4e88..e12c1e50f touches only tests/test_member_friction.py and the evidence fragment named in the manifest's changed_paths, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 9a30e4e88a26e96e606f196bcf7a799043b5308e\nreviewed_head_sha: e12c1e50fd804e49d962d82c81e178c63f050947\nVERDICT goal: the node's goal is to make tests/test_member_friction.py compare the member-friction guard's resolved store against an independent expectation rather than against real_store_home(), the helper the guard itself calls; tests/test_member_friction.py:171-224 now builds a temporary HOME with RECKON_HOME pointed elsewhere and asserts _guard_store() equals <HOME>/.config/reckon (XDG case) and <HOME>/docs-server (legacy case), both computed from HOME alone.\nVERDICT done_when: the done_when names three mutant conditions; the manifest records the mutant results, and I reproduced all three independently at head e12c1e50f (see tests below).\nVERDICT write_paths: git diff 9a30e4e88..e12c1e50f lists exactly tests/test_member_friction.py and docs/evidence/fragments/one-typesafe-model-picker/member-friction-guard-fails-on-a-wrong-store.html, both inside the node's declared write paths; tests/conftest.py is declared optional and was not touched.\nVERDICT manifest: read; it carries the base/head revision pair, baseline_suite and after_suite JSON (both completed:true, exit 0, zero failures), a negative_control_log with a note, and the changed_paths; its head revision e12c1e50f equals the worktree head and the worktree was clean, so the head gate's tree is the committed tree; its baseline_suite and after_suite command fields carry an angle-bracket placeholder instead of the literal command (FINDING below).\nVERDICT diff: read commit by commit; the old comparison-only test test_isolation_guard_watches_the_escape_destination is replaced by a helper _isolated_guard_home and two layout cases, and an evidence fragment is added; no product code changed.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_member_friction.py:219 and :231 assert the guard's target against home / \".config\" / \"reckon\" and home / \"docs-server\", values derived from the test's own HOME and independent of real_store_home().\nSCORE evidence: 19\nJUSTIFICATION evidence: I re-ran tests/test_member_friction.py at head e12c1e50f (7 passed) and reproduced both declared mutants (XDG-literal fallback: 1 failed/6 passed on the legacy case; keep-RECKON_HOME: 2 failed/5 passed), but the recorded negative-control-xdg-literal.log header names only the base revision while its tree held the new tests, unlike the sibling head-friction-only.log which discloses the uncommitted test change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9a30e4e88..e12c1e50f touches only tests/test_member_friction.py and the evidence fragment named in the manifest's changed_paths, both inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: reinstating the guard regression (tests/test_member_friction.py:73, _guard_store returning the XDG literal fallback) reddens test_isolation_guard_watches_the_legacy_store_home, and making real_store_home keep RECKON_HOME reddens both test_isolation_guard_watches_the_xdg_store_home and test_isolation_guard_watches_the_legacy_store_home, both reproduced.\nSCORE fit: 20\nJUSTIFICATION fit: _isolated_guard_home at tests/test_member_friction.py:171 follows the file's existing monkeypatch/tmp_path idiom and carries no plan, section or version label in its name, docstring or in the two new test names.\nSCORE reuse: 20\nJUSTIFICATION reuse: I searched tests/ by capability for a temp-HOME-with-optional-.config/reckon fixture (the autouse isolated_reckon_home at tests/conftest.py:1119 isolates RECKON_HOME/XDG_CONFIG_HOME, a different capability) and found no owner, so the test-local helper forks nothing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T141154824443-member-friction-guard-fails-on-a-wrong-store/negative-control-xdg-literal.log:1 follow-on: the log's first line records revision 9a30e4e88a26e96e606f196bcf7a799043b5308e as the revision it ran at, but its result is 7 tests (1 failed, 6 passed) including test_isolation_guard_watches_the_legacy_store_home which does not exist at that revision, so the log was run on the working tree carrying the uncommitted test change; naming only the base revision reads as a base-revision result of six tests, whereas the sibling head-friction-only.log:1 discloses \"+ uncommitted test change\".\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T141154824443-member-friction-guard-fails-on-a-wrong-store/manifest.md:15 follow-on: the baseline_suite and after_suite command fields name the gate as \"... <26 gate files>\" rather than the literal command that ran, which the manifest contract forbids; the gate log's own header line 3 does carry the literal 26 absolute paths, so the command is recoverable, but a reader of the manifest alone cannot reconstruct or re-run it.",
+  "review_run_id": "r-20261008T143649980298-review-of-member-friction-guard-fails-on-a-wrong-store",
+  "reviewed_base_sha": "9a30e4e88a26e96e606f196bcf7a799043b5308e",
+  "reviewed_head_sha": "e12c1e50fd804e49d962d82c81e178c63f050947",
+  "reviewed_run_id": "r-20261008T141154824443-member-friction-guard-fails-on-a-wrong-store",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T14:57:41.200610+00:00",
+  "total": 119
+}
