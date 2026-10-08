@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T13:16:46.455Z",
+  "dispatched_at": "2026-10-08T13:06:10Z",
+  "findings": [],
+  "plan_fingerprint": "175b697af2d39354c1b9fb99d35f8627b66a064a202f33291aa9f16c8c2d9918",
+  "plan_slug": "a-follower-lives-as-long-as-its-session",
+  "plan_version": 75,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T130539413996-plan-review-of-a-follower-lives-as-long-as-its-session",
+  "reviewed_blob_sha": "be4b2f1a266061295f1a02c098844633953f2c62",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the section adds no module; the handoff is one helper (the reverted `_hand_off_from_follower` / `_hand_off_to_waiting_host`) behind which the census read, the `_session_host_waiting` liveness check and the FIFO request write are hidden, and \u00a715 states the helpers stay private to `reckon/crew/dispatch_watch.py` and `reckon/crew_follow_commands.py`, so the sub-behaviours are not re-exposed.",
+    "duplicate_owner": "pass \u2014 \u00a715 reuses the owner `_session_host_runs_follower` instead of adding a second host-child reader, and reuses the single FIFO-path spelling landed under \u00a712 (`_session_host_fifo_path`, reckon/crew/dispatch_watch.py:402); a census of the host-child question finds only that reader on the consumer side and `_foreign_live_follower` (reckon/crew/session_host.py:387) on the host side, and the section touches neither by duplication.",
+    "interface_budget": "pass \u2014 public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; \u00a715 states in its own text that it adds no public definition \u2014 `RECKON_SESSION_HOST_CHILD` and its `CHILD_ENV` constant are not re-added and the handoff helpers stay private \u2014 so the section adds no surface to any of the four families and needs no retirement to name.",
+    "reuse_search": "pass \u2014 \u00a715 cites the existing owner of the host-child question, `_session_host_runs_follower` (reckon/crew/dispatch_watch.py:477), which reads the `SessionHost.record()` census (reckon/crew/session_host.py:310, its `children[].pid` at 315-323) and is already called by dispatch (reckon/crew/dispatch.py:1211) and the dispatch plan (reckon/crew/dispatch_plan.py:859); the census predates the reverted marker (it landed with \u00a74, 2026-10-07), so the premise that an old host already lists its own child's pid holds, and no new predicate is proposed.",
+    "thin_wrapper": "pass \u2014 the reverted `_request_host_follower` / `_ask_session_host_for_follower` split is an extension of the existing non-blocking request writer in dispatch_watch, and \u00a715 says so (\"one request writer in `reckon/crew/dispatch_watch.py`\"); the writer is shared by the waiting ask and the handoff rather than forked, and the follower's own check extends the existing reader rather than wrapping it in a parallel marker."
+  },
+  "section_digests": {
+    "_document": "859b0475212d44864c153fcb5370c100d8d9f42f019ce34697c71e2164c19cee",
+    "s1": "a4eeecaff9300863f1a6f28d4f659a0977a7583ac703af75654ddf0622bd81d4",
+    "s10": "7dd4672bb7cf4d1be69d191b1b75168b2541ba034fb2e304aac73c5826be0125",
+    "s11": "e05ea2085f88e301a9bd3edd6b7f417b6926e799c9d5ce6ed68371c6b658880d",
+    "s12": "b9d1786058731f14be5bf5e3a693f8df0c72a0163c45603a8fc047776485e6a9",
+    "s13": "a0712742324c0998b55d2e12f73be0a740cd6f26ca2a0d5647a0665e7ac7896c",
+    "s14": "ab00818b9989f3c80766edc7a4ea21ee86e4458c88c0edc5a6f1fc1724d1ebaa",
+    "s15": "cd84868e5f1fdb94d71d5491dce2660dd836160d63aa9b0d54a02fb77e46bee2",
+    "s2": "b9689c739005faa621201d6009e306831a98c253828e1da227693acd6b977ab2",
+    "s3": "27ff46e837af55f0eaba51e6b64d726f133b299233e5eb3f672ab5fc6b1ca9bd",
+    "s4": "9c4d2ab6d7ca5942dead1327565460770d77bccf4ecd90e73c42a2b6eef7d94d",
+    "s5": "42339a7b96242d9c43f0a11b39792c3a77586525b5e12fff673cb29b22b1f33d",
+    "s6": "c99082a11529fcb10ae0464cbc7f1ed142dfe25618098cdf03a199fd240978c8",
+    "s7": "c115e3e35b8c6fc3d8ce9a5648d440b39c7f571ee1afabdea4a1c2a395bc3a22",
+    "s8": "7870597c5f6c188f2c555f7f17bca65a25aa338f1f74d3557f870668b31f167f",
+    "s9": "36ff7b0447b49cb29d721d4956a0d47739c48e68212f6c9d6a1cd99f2195b73b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:22:12.187220+00:00"
+}
