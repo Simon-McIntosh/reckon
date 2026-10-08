@@ -21,13 +21,13 @@ revision <code>1f00bba45</code> and the check that now passes.</p>
 <tbody>
 <tr><th>1. The identity cache is keyed by the repository</th>
 <td>Resolving a worktree path then its mount ran two git probes: <code>the mount after the worktree re-probed git: [(&hellip; 'rev-parse', '--path-format=absolute', '--git-common-dir')]</code>. The cache keyed by the path string, so the two spellings of one repository were two entries.</td>
-<td>The memo records each probe under the resolved path of the spelling and under the resolved path of the repository the git common directory names, so the mount after the worktree is answered without a probe.</td></tr>
+<td>The memo is keyed by the resolved path string probed, with each result aliased under the resolved repository-root path it returned, so a worktree path followed by its mount costs one probe where it was two. It is not keyed by the git common directory: a mount probed before its worktree, or two linked worktrees, still probe separately.</td></tr>
 <tr><th>2. The sweep guard exercises the grace</th>
 <td>The sweep test only asserted that <code>SCRATCH_GRACE_SECONDS</code> appeared in the source, so it stayed green when the sweep stopped applying the grace.</td>
 <td><code>garbage_collect_orphan_scratch</code> runs on directories one second inside and one second outside the grace the survey docstring states; the inside directory is kept and the outside one removed, and the test fails if the sweep stops applying the figure.</td></tr>
 <tr><th>3. The driver counts git probes</th>
 <td>The driver passed at base: it timed a fixture whose local git probe is milliseconds, so it never showed the fix.</td>
-<td>The driver counts git invocations: the worktree and its mount cost one probe, and the second dispatch runs none. At base the worktree and its mount cost two.</td></tr>
+<td>The driver counts git invocations. It discriminates base on the first dispatch's probe count — the worktree and its mount cost one probe at head, two at base — and asserts the second dispatch runs none; the second dispatch is zero at base too, because the base memo already holds the worktree spelling it names.</td></tr>
 </tbody></table>
 
 <table id="pre-pick-caches-do-what-they-claim-measure"><caption>Quantitative outcomes</caption>

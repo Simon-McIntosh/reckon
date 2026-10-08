@@ -21,7 +21,7 @@ stated below with the reproduction that failed on the base revision
 <tbody>
 <tr><th>1. Repository resolved once per process</th>
 <td>The second <code>resolve_project_repository</code> in one process re-ran its git probe: <code>the second resolution ran git: [(&hellip; 'rev-parse', '--path-format=absolute', '--git-common-dir'), (&hellip;)]</code></td>
-<td>The git probe is paid once per repository per process, cached against the repository's git common directory; a worktree path and its mount are one entry, so a second resolution runs no git command.</td></tr>
+<td>The memo is keyed by the resolved path string probed, with each result aliased under the resolved repository-root path it returned. A worktree path followed by its mount is one probe where it was two; the memo is not keyed by the git common directory, so a mount probed before its worktree, or two linked worktrees, still probe separately.</td></tr>
 <tr><th>2. Refused index refresh keeps the last good index</th>
 <td>A refused refresh fell through to <code>_load_aggregate</code>; with the aggregate stubbed the read returned <code>set()</code> against the expected rows.</td>
 <td><code>load</code> reads the last published index read-only, returns its rows with <code>index_age_seconds</code>, and opens the aggregate only when no good index can be read.</td></tr>
