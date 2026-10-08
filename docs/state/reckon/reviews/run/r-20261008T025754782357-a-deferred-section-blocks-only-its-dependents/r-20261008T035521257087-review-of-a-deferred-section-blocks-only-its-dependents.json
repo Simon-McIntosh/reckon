@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived (0 added, no ids) from the reviewed run's own suite logs roadmap-suite-base.log and roadmap-suite-head.log via reckon.crew.review.added_failures_from_gate_logs; the reviewed manifest names those logs under test_logs rather than the canonical baseline_suite/after_suite fields, so the store's read-time annotation reports the count unmeasured even though the two logs are present.",
+  "backend": "local",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:4157",
+    "reckon/mcp.py:5319",
+    "reckon/serve.py:2005",
+    "reckon/flight.py:2132"
+  ],
+  "completed_at": "2026-10-08T04:23:35.687Z",
+  "dispatched_at": "2026-10-08T03:56:15Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "673",
+      "severity": "blocking",
+      "text": "blocking: `_plan_dependency_satisfied` requires at least one `done` declaration, so a plan whose every section is deferred keeps its dependents blocked; \u00a79 (\"every section is done or deferred\") and the locked decision deferred-counts-as-ticked=deferred-blocks (\"a whole-plan dependency clears once no section is left implementable\") both make that plan satisfy a whole-plan dependency, and the stricter rule re-introduces the forever-wait \u00a79 exists to remove."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "685",
+      "severity": "follow-on",
+      "text": "follow-on: the undeclared-authored-heading guard is a condition \u00a79 does not state \u2014 an authored heading with no declaration is already \u00a75's coverage control, and \u00a79's predicate reads declarations only \u2014 so the extra block is behaviour beyond the goal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 9f0d75a3 \u2014 eb455d7b adds the \u00a73-vocabulary wiring, the whole-plan helper and the test file; c5c3fbd0 adds the open-declaration short-circuit in `_section_satisfied`, the `_plan_authored_html` reader, the all-deferred guard, the authored-heading check, and the graph-closure call site.",
+    "done_when": "\u00a79's four fixture cases are asserted in tests/test_roadmap_deferred_blocks_only_its_dependents.py \u2014 a whole-plan dependency on A{s1 done,s2 deferred} is ready, A#s1 is ready, A#s2 is blocked and the blocker names A#s2, and an implementable section blocks; gate.log records 7 passed EXIT=0.",
+    "goal": "the goal is \u00a79 of reckon:a-plan-is-done-when-every-section-is-ticked \u2014 judge a roadmap dependency by the target plan's sections; the change adds `_plan_dependency_satisfied` and a declaration-aware `_section_satisfied` at reckon/roadmap.py:606 and :643 and routes every local whole-plan site through the helper, but adds an at-least-one-`done` condition \u00a79 does not state.",
+    "manifest": "read; it records the gate (7 passed EXIT=0), the two commits eb455d7b/c5c3fbd0, three negative controls each ending EXIT=1, and follow-ons naming pre-existing failures identical at the base arm.",
+    "write_paths": "the two commits change only reckon/roadmap.py and tests/test_roadmap_deferred_blocks_only_its_dependents.py, both inside the dispatch's granted scope."
+  },
+  "justifications": {
+    "durability": "each new rule carries a negative control \u2014 negative-control.log (mutation restored, 2 failed EXIT=1), negative-control-all-deferred.log and negative-control-undeclared-heading.log (1 failed EXIT=1 each) redden when the rule is removed.",
+    "evidence": "gate.log records tests/test_roadmap_deferred_blocks_only_its_dependents.py 7 passed EXIT=0, but roadmap-suite-head.log records EXIT=0 beside \"4 failed\", and roadmap-suite-base.log carries no revision/command header and ran only 5 tests.",
+    "fit": "the helper reuses \u00a73's vocabulary at reckon/_plan_html.py:783 and its reader mirrors `_plan_authored_state` at reckon/roadmap.py:189; no plan label or ticket id appears in any added symbol.",
+    "goal_fidelity": "the core rule lands at reckon/roadmap.py:643, but the at-least-one-`done` guard at reckon/roadmap.py:673 contradicts \u00a79's \"every section is done or deferred\" and the locked decision, blocking an all-declared-deferred plan's dependents.",
+    "reuse": "`open_sections` (reckon/_plan_html.py:869) and `authored_section_headings` (:846) are the existing owners and are extended, not forked; one helper replaces the scattered whole-plan `COMPLETED_STATUSES` checks.",
+    "scope_discipline": "both commits stay inside the two granted paths, yet reckon/roadmap.py:673 and :685 add two conditions (all-deferred, undeclared heading) the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \u00a79 of reckon:a-plan-is-done-when-every-section-is-ticked \u2014 judge a roadmap dependency by the target plan's sections; the change adds `_plan_dependency_satisfied` and a declaration-aware `_section_satisfied` at reckon/roadmap.py:606 and :643 and routes every local whole-plan site through the helper, but adds an at-least-one-`done` condition \u00a79 does not state.\nVERDICT done_when: \u00a79's four fixture cases are asserted in tests/test_roadmap_deferred_blocks_only_its_dependents.py \u2014 a whole-plan dependency on A{s1 done,s2 deferred} is ready, A#s1 is ready, A#s2 is blocked and the blocker names A#s2, and an implementable section blocks; gate.log records 7 passed EXIT=0.\nVERDICT write_paths: the two commits change only reckon/roadmap.py and tests/test_roadmap_deferred_blocks_only_its_dependents.py, both inside the dispatch's granted scope.\nVERDICT manifest: read; it records the gate (7 passed EXIT=0), the two commits eb455d7b/c5c3fbd0, three negative controls each ending EXIT=1, and follow-ons naming pre-existing failures identical at the base arm.\nVERDICT diff: read commit by commit against base 9f0d75a3 \u2014 eb455d7b adds the \u00a73-vocabulary wiring, the whole-plan helper and the test file; c5c3fbd0 adds the open-declaration short-circuit in `_section_satisfied`, the `_plan_authored_html` reader, the all-deferred guard, the authored-heading check, and the graph-closure call site.\nCALL_SITES: reckon/mcp.py:4157, reckon/mcp.py:5319, reckon/serve.py:2005, reckon/flight.py:2132\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: the core rule lands at reckon/roadmap.py:643, but the at-least-one-`done` guard at reckon/roadmap.py:673 contradicts \u00a79's \"every section is done or deferred\" and the locked decision, blocking an all-declared-deferred plan's dependents.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate.log records tests/test_roadmap_deferred_blocks_only_its_dependents.py 7 passed EXIT=0, but roadmap-suite-head.log records EXIT=0 beside \"4 failed\", and roadmap-suite-base.log carries no revision/command header and ran only 5 tests.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: both commits stay inside the two granted paths, yet reckon/roadmap.py:673 and :685 add two conditions (all-deferred, undeclared heading) the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: each new rule carries a negative control \u2014 negative-control.log (mutation restored, 2 failed EXIT=1), negative-control-all-deferred.log and negative-control-undeclared-heading.log (1 failed EXIT=1 each) redden when the rule is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the helper reuses \u00a73's vocabulary at reckon/_plan_html.py:783 and its reader mirrors `_plan_authored_state` at reckon/roadmap.py:189; no plan label or ticket id appears in any added symbol.\nSCORE reuse: 20\nJUSTIFICATION reuse: `open_sections` (reckon/_plan_html.py:869) and `authored_section_headings` (:846) are the existing owners and are extended, not forked; one helper replaces the scattered whole-plan `COMPLETED_STATUSES` checks.\nFINDING reckon/roadmap.py:673 blocking: `_plan_dependency_satisfied` requires at least one `done` declaration, so a plan whose every section is deferred keeps its dependents blocked; \u00a79 (\"every section is done or deferred\") and the locked decision deferred-counts-as-ticked=deferred-blocks (\"a whole-plan dependency clears once no section is left implementable\") both make that plan satisfy a whole-plan dependency, and the stricter rule re-introduces the forever-wait \u00a79 exists to remove.\nFINDING reckon/roadmap.py:685 follow-on: the undeclared-authored-heading guard is a condition \u00a79 does not state \u2014 an authored heading with no declaration is already \u00a75's coverage control, and \u00a79's predicate reads declarations only \u2014 so the extra block is behaviour beyond the goal.\nreviewed_base_sha: 9f0d75a35b70088e9adb4c784d3590294fb342d0\nreviewed_head_sha: c5c3fbd0e63a38e25fb2030a399255542ef94d17",
+  "review_run_id": "r-20261008T035521257087-review-of-a-deferred-section-blocks-only-its-dependents",
+  "reviewed_base_sha": "9f0d75a35b70088e9adb4c784d3590294fb342d0",
+  "reviewed_head_sha": "c5c3fbd0e63a38e25fb2030a399255542ef94d17",
+  "reviewed_run_id": "r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:50:18.583034+00:00",
+  "total": 100
+}
