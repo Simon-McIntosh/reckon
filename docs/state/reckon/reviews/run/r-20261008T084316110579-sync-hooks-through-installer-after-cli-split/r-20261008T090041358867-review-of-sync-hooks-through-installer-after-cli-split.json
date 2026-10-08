@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:500",
+    "reckon/cli_entry.py:344"
+  ],
+  "completed_at": "2026-10-08T09:20:54.574Z",
+  "dispatched_at": "2026-10-08T09:01:14Z",
+  "findings": [
+    {
+      "file": "tests/test_hook_installer.py",
+      "line": "565",
+      "severity": "follow-on",
+      "text": "follow-on: Section 2's done-when \"no test reads or writes the real ~/.claude/settings.json\" is not fully met: test_the_default_call_leaves_the_real_user_settings_file_untouched fingerprints the real file, and tests/test_worker_git_guard.py:401,437 read its bytes to assert they are unchanged. The reads pre-date this diff and write nothing, but they make the section's gate depend on a file outside the repository, so section 2 cannot be ticked until they move onto a temp settings path."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit bcd9ade against base 0090b96b5: install.py gains configure_crew_guards, upgrade_registered_commands, _is_crew_guard_group and RECKON_IMPORTING_SCRIPT_NAMES and generalises interpreter_path and worker_git_guard_group to take a script path; cli_entry.py loses 196 lines (three private guard recognisers and the private atomic writer) and delegates; cli.py drops four stale re-exports; the moved tests sit on the installer surface and a new discovery test is added.",
+    "done_when": "Section 2's five done-when items read: tests/test_reckon_hook_commands.py:71 searches reckon/hooks/*.py by AST for reckon-importing scripts and asserts each is composed under the checkout interpreter; the two duplicate recognisers and sync's private atomic writer are gone from the split CLI modules; sync runs against a temp project and temp settings at tests/test_reckon_hook_commands.py:79; bare commands upgrade in place through both writers at tests/test_reckon_hook_commands.py:104; item five (\"no test reads or writes the real ~/.claude/settings.json\") is only partly met, because tests/test_hook_installer.py:565 and tests/test_worker_git_guard.py:401,437 fingerprint or read the real file.",
+    "goal": "The reviewed node's goal is that reckon sync writes its hooks through the installer's composer (plan section 2); reckon/cli_entry.py:344 now delegates sync's guard write to hook_installer.configure_crew_guards, and reckon/project_maintenance_commands.py:500 is its only runtime caller.",
+    "manifest": "Read; it names the single commit bcd9ade, the gate command and its logs, and reads complete; it records no baseline_suite and no after_suite, so the reviewed run carries no pre-change arm and no relative failure count could be taken.",
+    "write_paths": "Read the manifest's declared paths; the diff touches reckon/hooks/install.py, reckon/cli.py, reckon/cli_entry.py, tests/test_reckon_hook_commands.py, tests/test_hook_installer.py, tests/test_worker_git_guard.py, tests/test_cli_settings_writer_reuses_the_store.py and the landing fragment, each inside the node's declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_reckon_hook_commands.py:87 fails when a reckon-importing hook is composed without the checkout interpreter (reproduced: EXIT=1 naming worker_git_guard.py) and tests/test_reckon_hook_commands.py:145 fails when a bare command is not upgraded, so both added guards name a regression a revert would trigger.",
+    "evidence": "The reviewed run's gate log (logs/gate-head-final.log) records 106 passed EXIT=0 for the named command, I re-ran tests/test_reckon_hook_commands.py at head (2 passed EXIT=0) and reproduced the declared negative control (EXIT=1, 2 failed naming worker_git_guard.py), but the run records no baseline arm so added failures are unmeasured and done-when item five is only partly met by pre-existing reads.",
+    "fit": "The added definitions keep install.py's recogniser and composer idiom and are named by mechanism (`_is_crew_guard_group`, `upgrade_registered_commands`, `RECKON_IMPORTING_SCRIPT_NAMES`) with no plan or stage label, though _is_crew_guard_group's python-prefix test at reckon/hooks/install.py:298 is looser than the neighbouring is_worker_git_guard_group's explicit .venv/bin/python check.",
+    "goal_fidelity": "reckon/cli_entry.py:344 delegates composition, recognition and the atomic write to hook_installer.configure_crew_guards at reckon/hooks/install.py:236, which builds on install.py's own _merge_settings and _write_settings, so sync now composes, recognises and writes through the installer as section 2 states.",
+    "reuse": "configure_crew_guards at reckon/hooks/install.py:236 extends the installer's own _merge_settings and _write_settings rather than adding a writer, and the deleted cli_entry helpers were duplicates of that owner, which a search over reckon/ confirmed has no second hook-settings writer.",
+    "scope_discipline": "Every path in the bcd9ade diff (install.py, cli.py, cli_entry.py, the four test files and the landing fragment) is inside the node's declared write paths, and nothing the goal does not imply is carried."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 0090b96b537d0d3447a5b481b176be36665ce0c1\nreviewed_head_sha: bcd9ade204c7e4262a2c83eb70ffc555bf5965b0\n\nVERDICT goal: The reviewed node's goal is that reckon sync writes its hooks through the installer's composer (plan section 2); reckon/cli_entry.py:344 now delegates sync's guard write to hook_installer.configure_crew_guards, and reckon/project_maintenance_commands.py:500 is its only runtime caller.\nVERDICT done_when: Section 2's five done-when items read: tests/test_reckon_hook_commands.py:71 searches reckon/hooks/*.py by AST for reckon-importing scripts and asserts each is composed under the checkout interpreter; the two duplicate recognisers and sync's private atomic writer are gone from the split CLI modules; sync runs against a temp project and temp settings at tests/test_reckon_hook_commands.py:79; bare commands upgrade in place through both writers at tests/test_reckon_hook_commands.py:104; item five (\"no test reads or writes the real ~/.claude/settings.json\") is only partly met, because tests/test_hook_installer.py:565 and tests/test_worker_git_guard.py:401,437 fingerprint or read the real file.\nVERDICT write_paths: Read the manifest's declared paths; the diff touches reckon/hooks/install.py, reckon/cli.py, reckon/cli_entry.py, tests/test_reckon_hook_commands.py, tests/test_hook_installer.py, tests/test_worker_git_guard.py, tests/test_cli_settings_writer_reuses_the_store.py and the landing fragment, each inside the node's declared write paths.\nVERDICT manifest: Read; it names the single commit bcd9ade, the gate command and its logs, and reads complete; it records no baseline_suite and no after_suite, so the reviewed run carries no pre-change arm and no relative failure count could be taken.\nVERDICT diff: Read commit bcd9ade against base 0090b96b5: install.py gains configure_crew_guards, upgrade_registered_commands, _is_crew_guard_group and RECKON_IMPORTING_SCRIPT_NAMES and generalises interpreter_path and worker_git_guard_group to take a script path; cli_entry.py loses 196 lines (three private guard recognisers and the private atomic writer) and delegates; cli.py drops four stale re-exports; the moved tests sit on the installer surface and a new discovery test is added.\n\nCALL_SITES: reckon/project_maintenance_commands.py:500, reckon/cli_entry.py:344\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli_entry.py:344 delegates composition, recognition and the atomic write to hook_installer.configure_crew_guards at reckon/hooks/install.py:236, which builds on install.py's own _merge_settings and _write_settings, so sync now composes, recognises and writes through the installer as section 2 states.\nSCORE evidence: 16\nJUSTIFICATION evidence: The reviewed run's gate log (logs/gate-head-final.log) records 106 passed EXIT=0 for the named command, I re-ran tests/test_reckon_hook_commands.py at head (2 passed EXIT=0) and reproduced the declared negative control (EXIT=1, 2 failed naming worker_git_guard.py), but the run records no baseline arm so added failures are unmeasured and done-when item five is only partly met by pre-existing reads.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the bcd9ade diff (install.py, cli.py, cli_entry.py, the four test files and the landing fragment) is inside the node's declared write paths, and nothing the goal does not imply is carried.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_reckon_hook_commands.py:87 fails when a reckon-importing hook is composed without the checkout interpreter (reproduced: EXIT=1 naming worker_git_guard.py) and tests/test_reckon_hook_commands.py:145 fails when a bare command is not upgraded, so both added guards name a regression a revert would trigger.\nSCORE fit: 18\nJUSTIFICATION fit: The added definitions keep install.py's recogniser and composer idiom and are named by mechanism (`_is_crew_guard_group`, `upgrade_registered_commands`, `RECKON_IMPORTING_SCRIPT_NAMES`) with no plan or stage label, though _is_crew_guard_group's python-prefix test at reckon/hooks/install.py:298 is looser than the neighbouring is_worker_git_guard_group's explicit .venv/bin/python check.\nSCORE reuse: 20\nJUSTIFICATION reuse: configure_crew_guards at reckon/hooks/install.py:236 extends the installer's own _merge_settings and _write_settings rather than adding a writer, and the deleted cli_entry helpers were duplicates of that owner, which a search over reckon/ confirmed has no second hook-settings writer.\n\nFINDING tests/test_hook_installer.py:565 follow-on: Section 2's done-when \"no test reads or writes the real ~/.claude/settings.json\" is not fully met: test_the_default_call_leaves_the_real_user_settings_file_untouched fingerprints the real file, and tests/test_worker_git_guard.py:401,437 read its bytes to assert they are unchanged. The reads pre-date this diff and write nothing, but they make the section's gate depend on a file outside the repository, so section 2 cannot be ticked until they move onto a temp settings path.\n",
+  "review_run_id": "r-20261008T090041358867-review-of-sync-hooks-through-installer-after-cli-split",
+  "reviewed_base_sha": "0090b96b537d0d3447a5b481b176be36665ce0c1",
+  "reviewed_head_sha": "bcd9ade204c7e4262a2c83eb70ffc555bf5965b0",
+  "reviewed_run_id": "r-20261008T084316110579-sync-hooks-through-installer-after-cli-split",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:16:18.165367+00:00",
+  "total": 111
+}
