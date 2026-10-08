@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -450,6 +450,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-s14-reverted" data-who="reckon-build" data-when="2026-10-08T10:06:00Z">
     <div class="r-comment-body"><p>Reverted: the merge f68aaba3c was backed out at 22e568450 because running hosts, started before the child marker existed, spawned followers that read as hand-armed and handed off to their own host in a loop. Every session lost follower delivery for about four minutes. §15 re-lands the hand-off with a parent-process check, and this section is declared deferred.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261008T090602192190-follower-hands-off-on-split-cli" data-who="reckon-build" data-when="2026-10-08T09:42:50.522Z">
+    <div class="r-comment-body"><p>ported the waiting-host handoff (24a111f28) onto the split modules: crew follow hands its pair to a waiting host and exits (crew_follow_commands), the request line is composed once and written by both the waiting ask and the handoff through dispatch_watch, the host stamps RECKON_SESSION_HOST_CHILD into its children (session_host), dispatch asks a waiting host for a foreignly-attached session and reports delivery host (dispatch), and the handoff runs after a reloaded follower adopts its carried launched workers; gate 6 passed EXIT=0, siblings 33 passed EXIT=0, negative control EXIT=1.</p></div>
 </div>
 </section>
 </main>
