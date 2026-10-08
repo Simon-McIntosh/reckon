@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:716"
+  ],
+  "completed_at": "2026-10-08T10:29:22.200Z",
+  "dispatched_at": "2026-10-08T10:12:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1397",
+      "severity": "follow-on",
+      "text": "follow-on: the default pane's new hold is not behaviour-neutral for the pane's other consumers; the reviewed run's own wide gate at logs/gate.txt (28 failed / 430 passed, EXIT=1) fails tests/test_follow_rearm_continues.py, tests/test_crew_session_delivery.py, tests/test_follow_replays_the_gap.py and tests/test_attach_shows_each_live_run.py, which drive the pane through reckon/crew_follow_commands.py:716 though they import no symbol by name, so section 2's every-other-importer-passes clause holds only under the literal symbol-name reading the node's gate-scope grep adopted"
+    },
+    {
+      "file": "tests/test_row_policy_holds_observer_context.py",
+      "line": "53",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records baseline_suite and after_suite as not-run, so the claim that the 28 wide-gate failures are newly induced by this change rather than pre-existing is asserted, not measured; a base-arm run would settle whether the node added those failing ids"
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit (089cd7741 ticker plus new test, 103d39fb2 two updated tests, afe8932f0 evidence fragment); all inside the declared scope",
+    "done_when": "section 2's done-when names tests/test_row_policy_holds_observer_context.py plus the two updated files and a negative control; the manifest records 36 passed EXIT=0 and logs/negative-control.txt ends EXIT=1 with three failures",
+    "goal": "the node goal is that RowPolicy holds observer-context rows back on the coordinator pane; reckon/crew/ticker.py:1231 adds the observer hold with three printing exceptions and a settle window",
+    "manifest": "read; status complete, tests 36 passed EXIT=0, negative control EXIT=1, and the 28 wide-gate failures are recorded under follow_ons",
+    "write_paths": "read the manifest's five declared paths (reckon/crew/ticker.py and four test/evidence paths); every path in the diff is inside them"
+  },
+  "justifications": {
+    "durability": "the negative control at logs/negative-control.txt reddens tests/test_row_policy_holds_observer_context.py:53 when the hold is removed; the settle window and the three exceptions rest on green assertions the run did not mutation-test",
+    "evidence": "the gate tests/test_row_policy_holds_observer_context.py runs 36 passed EXIT=0 and the negative control at logs/negative-control.txt ends EXIT=1, but the manifest records no baseline_suite or after_suite arm, so the done-when's added-failure clause is unmeasured and its every-other-importer clause is falsified by the run's own wide gate at logs/gate.txt (28 failed / 430 passed)",
+    "fit": "the change follows the module idiom, a NamedTuple _Hold beside the existing dict-held policy, SETTLE_WINDOW and SETTLE_CAP beside ARRIVAL_WINDOW at ticker.py:1143, and lazy imports matching the file's cycle-avoidance style",
+    "goal_fidelity": "reckon/crew/ticker.py:1397 holds observer kinds and :1480 settle-holds coordinator rows under SETTLE_WINDOW and SETTLE_CAP, and SETTLED_STATES gains withdrawn and discarded at ticker.py:338 as section 2 requires",
+    "reuse": "the change extends the existing RowPolicy and transition_class owner and reuses ACTIONABLE_RECOVERY_CLASSIFICATIONS and WATCH_ATTENTION_STATES by name at ticker.py:1244 rather than restating them",
+    "scope_discipline": "git diff --stat 6d28c3f..afe8932f lists only the five files the manifest declares, the three tests and the one evidence fragment included"
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that RowPolicy holds observer-context rows back on the coordinator pane; reckon/crew/ticker.py:1231 adds the observer hold with three printing exceptions and a settle window\nVERDICT done_when: section 2's done-when names tests/test_row_policy_holds_observer_context.py plus the two updated files and a negative control; the manifest records 36 passed EXIT=0 and logs/negative-control.txt ends EXIT=1 with three failures\nVERDICT write_paths: read the manifest's five declared paths (reckon/crew/ticker.py and four test/evidence paths); every path in the diff is inside them\nVERDICT manifest: read; status complete, tests 36 passed EXIT=0, negative control EXIT=1, and the 28 wide-gate failures are recorded under follow_ons\nVERDICT diff: read commit by commit (089cd7741 ticker plus new test, 103d39fb2 two updated tests, afe8932f0 evidence fragment); all inside the declared scope\nCALL_SITES: reckon/crew_follow_commands.py:716\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1397 holds observer kinds and :1480 settle-holds coordinator rows under SETTLE_WINDOW and SETTLE_CAP, and SETTLED_STATES gains withdrawn and discarded at ticker.py:338 as section 2 requires\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate tests/test_row_policy_holds_observer_context.py runs 36 passed EXIT=0 and the negative control at logs/negative-control.txt ends EXIT=1, but the manifest records no baseline_suite or after_suite arm, so the done-when's added-failure clause is unmeasured and its every-other-importer clause is falsified by the run's own wide gate at logs/gate.txt (28 failed / 430 passed)\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6d28c3f..afe8932f lists only the five files the manifest declares, the three tests and the one evidence fragment included\nSCORE durability: 17\nJUSTIFICATION durability: the negative control at logs/negative-control.txt reddens tests/test_row_policy_holds_observer_context.py:53 when the hold is removed; the settle window and the three exceptions rest on green assertions the run did not mutation-test\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module idiom, a NamedTuple _Hold beside the existing dict-held policy, SETTLE_WINDOW and SETTLE_CAP beside ARRIVAL_WINDOW at ticker.py:1143, and lazy imports matching the file's cycle-avoidance style\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing RowPolicy and transition_class owner and reuses ACTIONABLE_RECOVERY_CLASSIFICATIONS and WATCH_ATTENTION_STATES by name at ticker.py:1244 rather than restating them\nFINDING reckon/crew/ticker.py:1397 follow-on: the default pane's new hold is not behaviour-neutral for the pane's other consumers; the reviewed run's own wide gate at logs/gate.txt (28 failed / 430 passed, EXIT=1) fails tests/test_follow_rearm_continues.py, tests/test_crew_session_delivery.py, tests/test_follow_replays_the_gap.py and tests/test_attach_shows_each_live_run.py, which drive the pane through reckon/crew_follow_commands.py:716 though they import no symbol by name, so section 2's every-other-importer-passes clause holds only under the literal symbol-name reading the node's gate-scope grep adopted\nFINDING tests/test_row_policy_holds_observer_context.py:53 follow-on: the manifest records baseline_suite and after_suite as not-run, so the claim that the 28 wide-gate failures are newly induced by this change rather than pre-existing is asserted, not measured; a base-arm run would settle whether the node added those failing ids",
+  "review_run_id": "r-20261008T101228684878-review-of-row-policy-holds-observer-context",
+  "reviewed_base_sha": "6d28c3f50e756a9c82bf3a19f61a7d0c229cb6d0",
+  "reviewed_head_sha": "afe8932f0a50f47bbc923b2292aa6ab164cc9ed8",
+  "reviewed_run_id": "r-20261008T084304183300-row-policy-holds-observer-context",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T10:29:36.944878+00:00",
+  "total": 110
+}
