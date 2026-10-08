@@ -1,0 +1,95 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T08:29:15.313Z",
+  "dispatched_at": "2026-10-08T08:14:56Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/one-typesafe-model-picker.html:120",
+      "id": "reasoning-1",
+      "reason": "item 3 fixes `estimate_ms` to \"time the context estimate ... wherever it runs\", and clause 1's test asserts one `estimate_ms` for the pick; with the site-mapping wrong, an implementer cannot tell which of the two runs on the shadow path the stage should record (or that the pre-pick run is the one dispatch actually pays for), so the seam the done-when tests is underspecified.",
+      "text": "\u00a712 states `estimated_context_tokens` \"runs at two sites. On the shadow path it runs in `reckon/crew/dispatch_picker.py` before `pick()` starts ... On the direct path it runs inside `candidates()`\", but `pick()` calls `snapshot.candidates` (the default `snapshotter`, `reckon/crew/picker/__init__.py:202,236-243`) on every pick, and `candidates()` calls `estimated_context_tokens` unconditionally at `snapshot.py:696-698`; so `dispatch_picker.py:251` is an *extra* pre-pick call on the shadow path, not the shadow path's alternative to `candidates()` \u2014 the shadow path runs the estimate twice, once untimed outside the pick and once inside `snapshot_ms`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/one-typesafe-model-picker.html:120",
+      "id": "reasoning-2",
+      "reason": "the discrepancy is a snapshot/denominator slip on a non-load-bearing figure; the tail attribution, the exemption clause, and every done-when clause are unaffected.",
+      "text": "\u00a712's cited figures do not reconcile with the file it cites: it reports \"55 of 246 production picks\" and \"`capability_ms` runs 1.4 s median on the 52 picks that record it\", but `capability_ms` first appears at row 215 of `pick-timings.jsonl`, so a 246-row set cannot hold 52 capability records; the 52-record figure matches row 267, where the over-bound count is 57 (not 55) and the whole-pick median is 1.42 s (not 1.5 s). The distinctive maxima do match (latency 21 s, `snapshot_ms` 10.5 s, `state_render_ms` 17.3 s at n=267).",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "12d956de48e932ba529597923951cb102c13e5dd2486cca4c2ea180449e939cd",
+  "plan_slug": "one-typesafe-model-picker",
+  "plan_version": 224,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T08:30:32.252198+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "The figures were computed at about 06:20 UTC over the rows dated 2026-10-08 and the file has grown since; no clause depends on them, and the done-when measures the first 50 picks after the merge.",
+      "when": "2026-10-08T08:30:43.752233+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T08:30:32.252198+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "The figures were computed at about 06:20 UTC over the rows dated 2026-10-08 and the file has grown since; no clause depends on them, and the done-when measures the first 50 picks after the merge.",
+      "when": "2026-10-08T08:30:43.752233+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-one-typesafe-model-picker.v224.json",
+  "review_run_id": "r-20261008T081423421071-plan-review-of-one-typesafe-model-picker",
+  "reviewed_blob_sha": "e723284a6b2b74a5977e1e11ed2a610cbf8d86b1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the two `reckon/crew/picker/__init__.py` line citations (~281, ~147) both resolve to the code \u00a712 names.",
+    "done_when": "pass \u2014 \u00a712's outcome measure (the first 50 production picks, at most 3 outside the bound) is falsifiable, and clause 1 declares its own negative control (\"the current code fails this, because it times only the rendered-length division\").",
+    "evidence_paths": "pass \u2014 the gate measurement is `~/.config/reckon/crew/pick-timings.jsonl` under the crew home, not a scratch path, and the item-1 verdict lands in the run manifest.",
+    "naming": "pass \u2014 \u00a712 carries no plan label, stage name, ticket number or version tag into a symbol or comment; it names mechanisms by file and behaviour.",
+    "reasoning": "a finding \u2014 the section maps `estimated_context_tokens`'s two call sites onto the shadow path and the direct path as if exclusive, but `candidates()` (site `snapshot.py:696`) runs inside `pick()` on every pick, so the shadow path runs the estimate at *both* sites, and item 3's \"wherever it runs\" does not say which run `estimate_ms` records.",
+    "single_goal": "pass \u2014 the four items all land in `reckon/crew/picker/` (plus `dispatch_picker.py`) and serve the one bound; item 4's comment clause is covered by the done-when's fourth clause.",
+    "wiring": "pass \u2014 \u00a712 is declared a prerequisite by s14, s15 and s19 in `plan-section-depends-on` (line 23), and each of those sections names \u00a712 (or, for \u00a715, both `every-module-fits-a-worker-window#s4` and \u00a712); the edges resolve."
+  },
+  "section_digests": {
+    "_document": "42fb837409a6badc63979fd7f8f9e8d232088a7350c1e8dfdd849142016db96a",
+    "s1": "3dd077bfa248eda6f6c24717a04df3458940aa1ce4b181140912e4be27342432",
+    "s10": "f8cea7db03e6ce1a59ee44f2b9bafe7cdd9ef466468807c3d5318193033ccbc9",
+    "s11": "1d394a8f1735f908f234eebae944b87de35bf29d61262044f141232459adc254",
+    "s12": "cab531b79567b11315298de039074ffa1b0cd55ed7c0ef23535ff5f810dedade",
+    "s13": "b71eac6d273258ccac40c54d461300de9ca3d357c0aab3578ddd33d5af2cf85f",
+    "s14": "80e1aab6a3adcfc393f8eb96e4e2c521d214a091f339171692887d357aa12ded",
+    "s15": "d843acc145f2b949becb689478c1f35cd64798d88961327eb9ea48133cbd7952",
+    "s16": "ab68bc3a9d2b0f85a253ab2145a45f0685be101e187b6cd4acff11a215b7c1f0",
+    "s17": "df94e0673bf16ca4e597c2521a40a7b4182c803246232961a80c3f1a2290f5ea",
+    "s18": "2fc0286d6b14797e2ab8abd784cdc37a53b8becd7a41a5194140a99df5555ff5",
+    "s19": "80093ee76ea44f51b96b2e98eb3e696df50a928a8ec0ab0f13708c7ed589ba09",
+    "s2": "eacf32d1b5ac595aa7c3d40ee1b27dd2d2950ad725cff0f6d45bcd2ffe6f12bd",
+    "s3": "73993936e3a3367541ef63991298fd7d60aa3f241a9f1d68739b3cd180903ed2",
+    "s4": "3261b375216071d2db98d8de24e80697fd3d9d749a2e1fe7039eb2b09042d16f",
+    "s5": "bdd5ce075a9b03d3484f04421703d7210a276d0a6d8bd81ff277a411b0b6f6ac",
+    "s6": "1165482cbe98832408cc4d70e2324421e85cdc1d710cca0eff7ffa780d159838",
+    "s7": "6708dba8a743eb29f1233c04ff4d9cffe1b0db6f989cfa377622eb4ead6f8f65",
+    "s8": "02a3718052487fea0ed2e112ef68038773eae6a9ea8287e9dbd31e00b39bde71",
+    "s9": "9fdaa963d17c4033bdace1de49ee9b3f118e183f06473d4c47bf74e2c24cdbc1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:30:20.903220+00:00"
+}
