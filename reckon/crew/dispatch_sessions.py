@@ -161,12 +161,18 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         stored_phase = str(record.get("phase") or "")
         stopped = stored_phase == "stopped"
 
-        if record.get("launch") == "cli":
+        # A held dispatch is stored before anything launches, so its pointer
+        # carries no log path. Reading an absent path observes the working
+        # directory, which is not an event stream and raises, so the fold
+        # observes a cli pointer only when it names one; a pointer without a
+        # log path keeps its stored fields and the classifier reads it queued.
+        log_path = str(record.get("log_path") or "").strip()
+        if record.get("launch") == "cli" and log_path:
             backend = _backend_settings(record, config)
             observation = _backends.observe_log(
                 backend_name=backend_name,
                 backend=backend,
-                log_path=record.get("log_path", ""),
+                log_path=log_path,
             )
             data = observation.as_dict()
             record["budget"] = data["budget"]
