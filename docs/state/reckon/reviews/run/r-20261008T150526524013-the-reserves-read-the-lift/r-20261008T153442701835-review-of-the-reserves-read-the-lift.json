@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_admission.py:_refuse_against_the_bookend_reserve",
+    "reckon/crew/routing.py:_budget_verdict"
+  ],
+  "completed_at": "2026-10-08T15:46:54.804Z",
+  "dispatched_at": "2026-10-08T15:35:04Z",
+  "findings": [
+    {
+      "file": "tests/test_reserves_read_the_lift.py",
+      "line": "310",
+      "severity": "blocking",
+      "text": "blocking: the routing ceiling assertion is judged at the real wall clock \u2014 _routing_ceiling calls _budget_verdict with no now, so effective_block falls back to datetime.now(UTC), and the fixture lift (granted 2026-10-08T03:12Z, reset 2026-10-14T05:12Z) is in force only while real time sits inside that window; from 2026-10-14T05:12Z the assertion reads 92 not 100 and the test reddens with no code change, so it is a fuse of the kind this repo bans. Fix: pass now through _routing_ceiling into _budget_verdict."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "434",
+      "severity": "follow-on",
+      "text": "follow-on: no production caller of _budget_verdict passes readings, so effective_block on routing's path resolves the lift with readings=None; a reset-anchored lift there ends only at its recorded resets_at and cannot observe an early reset the way dispatch_admission (reckon/crew/dispatch_admission.py:324) does, so an early-reset lift keeps the resume and coordinator reserves released on that reader's path until the recorded stamp passes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 60df715; commit 0eeba7d adds effective_block composing budget_lift.effective_budget with reserve_block_for_group, threads it into the three readers, and adds a 7-case test file (+562/-8, five files).",
+    "done_when": "the done_when names the new test file with base/head arms and a negative control; the manifest records baseline_suite (104 passed, EXIT=0) and after_suite (111 passed, EXIT=0) at the same revision pair with zero added failures, and logs/negative-control.log shows 4 failed EXIT=1; I reproduced the new file at head (7 passed).",
+    "goal": "the node's goal is that the bookend, resume and coordinator reserves read the group's effective budget block; the diff routes dispatch_admission's bookend refusal (reckon/crew/dispatch_admission.py:321), budget_group.group_figures' reserve_pct (reckon/crew/budget_group.py:423) and the budget.policy call on routing's path (reckon/crew/routing.py:398) through budget_group.effective_block.",
+    "manifest": "read; it records head-gate (111 passed), base-gate (104 passed), negative-control (4 failed, EXIT=1) with the mutation verbatim, and commit 0eeba7d, and its fields reconcile with the logs on disk.",
+    "write_paths": "the declared scope is the three source files, the new test file, a docs evidence fragment and a figures dir; the diff touches exactly the three source files, the test file and the fragment, every path inside the grant, and the figures dir was not needed."
+  },
+  "justifications": {
+    "durability": "the negative control (logs/negative-control.log) reddens the ceiling and admit assertions when effective_budget is bypassed, but the routing assertion at tests/test_reserves_read_the_lift.py:310 is judged at the real clock rather than the fixture's now.",
+    "evidence": "the head and base arms are logged at 60df715 (logs/head-gate.log 111 passed, logs/base-gate.log 104 passed) and the negative control reddens 4 cases at EXIT=1.",
+    "fit": "reckon/crew/routing.py:396 defers the budget_group import to call time, matching the module's existing lazy-import idiom.",
+    "goal_fidelity": "reckon/crew/budget_group.py:218 composes the lift and the review-exclusion rule in one resolution and all three reserve readers call it.",
+    "reuse": "reckon/crew/budget_group.py:218 extends the owners budget_lift.effective_budget and reserve_block_for_group rather than re-implementing either, and no other reserve-releasing composition exists under reckon/crew.",
+    "scope_discipline": "every path in the diff \u2014 reckon/crew/budget_group.py, reckon/crew/dispatch_admission.py, reckon/crew/routing.py and tests/test_reserves_read_the_lift.py \u2014 lies inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the bookend, resume and coordinator reserves read the group's effective budget block; the diff routes dispatch_admission's bookend refusal (reckon/crew/dispatch_admission.py:321), budget_group.group_figures' reserve_pct (reckon/crew/budget_group.py:423) and the budget.policy call on routing's path (reckon/crew/routing.py:398) through budget_group.effective_block.\nVERDICT done_when: the done_when names the new test file with base/head arms and a negative control; the manifest records baseline_suite (104 passed, EXIT=0) and after_suite (111 passed, EXIT=0) at the same revision pair with zero added failures, and logs/negative-control.log shows 4 failed EXIT=1; I reproduced the new file at head (7 passed).\nVERDICT write_paths: the declared scope is the three source files, the new test file, a docs evidence fragment and a figures dir; the diff touches exactly the three source files, the test file and the fragment, every path inside the grant, and the figures dir was not needed.\nVERDICT manifest: read; it records head-gate (111 passed), base-gate (104 passed), negative-control (4 failed, EXIT=1) with the mutation verbatim, and commit 0eeba7d, and its fields reconcile with the logs on disk.\nVERDICT diff: read commit by commit against base 60df715; commit 0eeba7d adds effective_block composing budget_lift.effective_budget with reserve_block_for_group, threads it into the three readers, and adds a 7-case test file (+562/-8, five files).\nCALL_SITES: reckon/crew/dispatch_admission.py:_refuse_against_the_bookend_reserve, reckon/crew/routing.py:_budget_verdict\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/budget_group.py:218 composes the lift and the review-exclusion rule in one resolution and all three reserve readers call it.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head and base arms are logged at 60df715 (logs/head-gate.log 111 passed, logs/base-gate.log 104 passed) and the negative control reddens 4 cases at EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/crew/budget_group.py, reckon/crew/dispatch_admission.py, reckon/crew/routing.py and tests/test_reserves_read_the_lift.py \u2014 lies inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: the negative control (logs/negative-control.log) reddens the ceiling and admit assertions when effective_budget is bypassed, but the routing assertion at tests/test_reserves_read_the_lift.py:310 is judged at the real clock rather than the fixture's now.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/routing.py:396 defers the budget_group import to call time, matching the module's existing lazy-import idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/budget_group.py:218 extends the owners budget_lift.effective_budget and reserve_block_for_group rather than re-implementing either, and no other reserve-releasing composition exists under reckon/crew.\nFINDING tests/test_reserves_read_the_lift.py:310 blocking: the routing ceiling assertion is judged at the real wall clock \u2014 _routing_ceiling calls _budget_verdict with no now, so effective_block falls back to datetime.now(UTC), and the fixture lift (granted 2026-10-08T03:12Z, reset 2026-10-14T05:12Z) is in force only while real time sits inside that window; from 2026-10-14T05:12Z the assertion reads 92 not 100 and the test reddens with no code change, so it is a fuse of the kind this repo bans. Fix: pass now through _routing_ceiling into _budget_verdict.\nFINDING reckon/crew/routing.py:434 follow-on: no production caller of _budget_verdict passes readings, so effective_block on routing's path resolves the lift with readings=None; a reset-anchored lift there ends only at its recorded resets_at and cannot observe an early reset the way dispatch_admission (reckon/crew/dispatch_admission.py:324) does, so an early-reset lift keeps the resume and coordinator reserves released on that reader's path until the recorded stamp passes.\n",
+  "review_run_id": "r-20261008T153442701835-review-of-the-reserves-read-the-lift",
+  "reviewed_base_sha": "60df715ae466bf4751ce7bfef047b1b84114b034",
+  "reviewed_head_sha": "0eeba7d30716067b46e7e4545511f277120046f8",
+  "reviewed_run_id": "r-20261008T150526524013-the-reserves-read-the-lift",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 13,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T15:44:50.101665+00:00",
+  "total": 107
+}
