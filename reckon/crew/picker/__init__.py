@@ -62,6 +62,70 @@ def _record_pick_timings(line: dict[str, Any], *, latency_ms: float) -> None:
         return
 
 
+def _declared_difficulty(
+    request: PickRequest,
+    config: dict[str, Any],
+    *,
+    repo: Path,
+    authority: dict[str, Any] | None,
+) -> tuple[dict[str, Any] | None, float | None, str | None]:
+    """Read the capability and estimate a node's plan section declares.
+
+    A pick is handed a node and the section it names, not the difficulty that
+    section declares, so Jev weighs a deep, critical, ten-hour node as one that
+    carries nothing. Both facts live in the plan the node names: the same
+    section-routing resolver the dispatcher runs yields the capability at the
+    attempt count the section has earned, and the plan's declared effort hours
+    are the estimate a node without its own carries. The resolution reads the
+    plan and the project ledger, so it is timed inside the pick and any failure
+    -- including one for a node that names no plan -- leaves the field null
+    rather than failing or stalling the pick. A capability the request already
+    carries, or an estimate the node itself carries, is never overridden.
+    """
+
+    node = request.node
+
+    def plan_repo() -> Path:
+        plan = authority.get("plan") if isinstance(authority, dict) else None
+        repository = plan.get("repository") if isinstance(plan, dict) else None
+        return Path(str(repository)) if repository else repo
+
+    capability = request.capability or None
+    hours: float | None = None
+    hours_source: str | None = None
+    provenance = "unavailable"
+    try:
+        from reckon.crew.routing import _estimated_hours
+
+        hours, provenance = _estimated_hours(
+            plan_repo(), request.project, request.node
+        )
+    except Exception:  # noqa: BLE001 - the declaration is advisory to a pick
+        hours, provenance = None, "unavailable"
+    if hours is not None:
+        hours_source = "plan" if provenance == "plan-fallback" else "node"
+    if capability is None and node.plan.strip() and node.section.strip():
+        try:
+            from reckon import resources
+            from reckon.crew.routing import resolve_section_routing
+
+            resource = resources.resolve_resource(
+                plan_repo() / "docs",
+                request.project,
+                node.plan,
+                "plan",
+                include_archived=False,
+            )
+            if resource is not None:
+                resolved = resolve_section_routing(
+                    config, node=node, plan_path=resource.path
+                )
+                capability = resolved.get("capability") or None
+        except Exception:  # noqa: BLE001 - an unresolved capability stays null
+            capability = None
+    return capability, hours, hours_source
+
+
 def _answer(
     payload: dict[str, Any], offered: list[Candidate]
 ) -> tuple[str, float, dict[str, float]]:
@@ -112,6 +176,7 @@ def pick(
     # than a measured zero.
     stages: dict[str, float | None] = {
         "snapshot_ms": None,
+        "capability_ms": None,
         "estimate_ms": None,
         "state_render_ms": None,
         "questions_render_ms": None,
@@ -143,12 +208,23 @@ def pick(
     stages["snapshot_ms"] = _milliseconds(snapshot_started)
     offered = [candidate for candidate in options if not candidate.reasons]
     excluded = [candidate.as_dict() for candidate in options if candidate.reasons]
+    # The node's declared capability and estimate are read from the plan it
+    # names, inside the pick's own timing: a plan read that fails leaves both
+    # null rather than failing the pick, and its cost is attributed to its own
+    # stage so a slow resolve is visible rather than charged to the state render.
+    capability_started = time.perf_counter()
+    capability, estimated_hours, hours_source = _declared_difficulty(
+        request, config, repo=repo, authority=authority
+    )
+    stages["capability_ms"] = _milliseconds(capability_started)
     state_started = time.perf_counter()
     try:
         rendered = prompts.render(
             "state.jinja",
             node=request.node,
-            capability=request.capability,
+            capability=capability,
+            estimated_hours=estimated_hours,
+            estimated_hours_source=hours_source,
             estimated_context=request.estimated_context,
             comment=request.comment,
             candidates=offered,
