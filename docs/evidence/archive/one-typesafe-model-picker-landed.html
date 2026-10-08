@@ -287,6 +287,11 @@
     <p>The §12 repair and §22 were stacked onto main and measured over the 254 test files that import the routing, picker, dispatch-section or dispatch modules. Base: 2,556 passed, 6 failed. Head: 2,562 passed, 7 failed. The one head-only failure, <code>test_a_fresh_empty_claim_refuses</code>, was rerun three times per arm: it failed once at base and passed every head run. It is intermittent, not added. A focused gate of 239 tests passed at <code>c98d716c1</code>. Logs are in <code>~/.cache/reckon-suite-logs/merge-picker-s12r-s22-*.log</code>.</p>
   </section>
 
+  <section id="s24">
+    <h2>§24 — the pick&#x27;s plan cache is proved on a renamed plan (2026-10-08)</h2>
+    <p><code>stamp_of</code> in <code>reckon/crew/picker/__init__.py</code> stamps resolved paths through <code>capabilities.file_stamp</code>, not the private <code>ledger._file_identity</code>. <code>test_a_renamed_plan_file_is_not_served_stale</code> renames the plan and fails when the cache ignores its stamp (<code>48.0 == 10.0</code>). The stamp narrows to modification time and size, which still moves on every content edit and reads none for a renamed file.</p><p>Run <code>r-20261008T161243424790-pick-cache-proved-on-a-renamed-plan</code>, commit <code>debeb5bb7</code>, merged at <code>fd48070b1</code>. The merge check covered the 39 test files that import <code>reckon.crew.picker</code>: base 345 passed and head 346 passed, with the same one failure in each. Review 118 found no added failures. Its other follow-on, the wall-clock flake in <code>test_dispatch_marks_old_published_window_stale</code>, is pre-existing and recorded for a later section.</p>
+  </section>
+
 </main>
 </body>
 </html>
