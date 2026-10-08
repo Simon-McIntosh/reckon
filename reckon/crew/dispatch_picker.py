@@ -74,6 +74,7 @@ def _picker_fallback(
     *,
     input_errors: Mapping[str, str] | None = None,
     latency_ms: float | None = None,
+    authority_error: str | None = None,
 ) -> dict[str, Any]:
     """The selection dispatch records when the picker did not decide one.
 
@@ -97,7 +98,26 @@ def _picker_fallback(
         "excluded": [],
         "comment": comment,
         **({"input_errors": dict(input_errors)} if input_errors else {}),
+        **({"authority_error": authority_error} if authority_error else {}),
     }
+
+
+def resolve_picker_authority(
+    project: str, repo: Path
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Resolve the dispatch authority for a picker path that holds none.
+
+    The dry-run preview and the deferred shadow pick hold no dispatcher-resolved
+    authority, so they resolve the same one the main dispatch would and hand it
+    into the pick. A resolution that fails returns ``None`` beside its reason so
+    the failure is reported on the selection rather than swallowed: the granted
+    landing fragment is then charged, and the reader who sees the figure can see
+    why it was not exempted.
+    """
+    try:
+        return resolve_dispatch_authority(project, repo), None
+    except (CrewError, PlanVisibilityError, OSError, KeyError, TypeError) as exc:
+        return None, f"{type(exc).__name__}: {exc}"
 
 
 def _picker_ledger_rows(project: str, ledger_root: Path) -> list[dict[str, Any]]:
@@ -206,6 +226,7 @@ def dispatch_picker_selection(
     budget_snapshot: Mapping[str, Any] | None = None,
     input_errors: Mapping[str, str] | None = None,
     authority: Mapping[str, Any] | None = None,
+    authority_error: str | None = None,
 ) -> dict[str, Any]:
     """Ask the picker without letting its latency or failure stop dispatch."""
     if input_errors:
@@ -217,6 +238,7 @@ def dispatch_picker_selection(
             comment,
             input_errors=input_errors,
             latency_ms=0.0,
+            authority_error=authority_error,
         )
     finished = threading.Event()
     result: dict[str, Any] = {}
@@ -235,11 +257,13 @@ def dispatch_picker_selection(
             # a resolution that fails leaves the picker with no authority rather
             # than aborting an advisory.
             pick_authority = authority
-            if pick_authority is None:
-                try:
-                    pick_authority = resolve_dispatch_authority(project, repo)
-                except (CrewError, PlanVisibilityError, OSError, KeyError, TypeError):
-                    pick_authority = None
+            pick_authority_error = authority_error
+            if pick_authority is None and pick_authority_error is None:
+                pick_authority, pick_authority_error = resolve_picker_authority(
+                    project, repo
+                )
+            if pick_authority_error is not None:
+                result["authority_error"] = pick_authority_error
 
             # The estimate is the same deterministic measurement the context-fit
             # verdict charges a node against, measured with the same authority
@@ -296,12 +320,17 @@ def dispatch_picker_selection(
     threading.Thread(target=ask, name="dispatch-picker", daemon=True).start()
     if not finished.wait(PICKER_DISPATCH_TIMEOUT_SECONDS):
         result["error"] = "timeout"
+    authority_error = result.get("authority_error")
     if "selection" in result and "error" not in result:
-        return result["selection"]
+        selection = result["selection"]
+        if authority_error:
+            selection = {**selection, "authority_error": authority_error}
+        return selection
     return _picker_fallback(
         result.get("error") or "picker returned no selection",
         comment,
         latency_ms=round((time.monotonic() - started) * 1000, 3),
+        authority_error=authority_error,
     )
 
 
@@ -348,6 +377,13 @@ def _record_shadow_picker_selection(spec_path: Path) -> None:
                 repo,
                 ledger_root=Path(spec["ledger_root"]),
             )
+            # The deferred shadow pick holds no dispatcher-resolved authority,
+            # so it resolves the same one and passes it, reporting a resolution
+            # failure on the selection rather than leaving the granted fragment
+            # silently charged.
+            authority, authority_error = resolve_picker_authority(
+                spec["project"], repo
+            )
             result["selection"] = dispatch_picker_selection(
                 node=node,
                 config=spec["config"],
@@ -359,6 +395,8 @@ def _record_shadow_picker_selection(spec_path: Path) -> None:
                 verdict_inputs=inputs,
                 budget_snapshot=budget,
                 input_errors=errors,
+                authority=authority,
+                authority_error=authority_error,
             )
         except Exception as exc:  # noqa: BLE001 - an advisory cannot stop a run
             result["selection"] = _picker_fallback(

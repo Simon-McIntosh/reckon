@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect width="1400" height="560" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 0 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/>
+    </marker>
+  </defs>
+
+  <text x="700" y="40" text-anchor="middle" font-size="24" font-weight="600" fill="#222">Where the dispatch authority reaches the pick</text>
+
+  <!-- three entry paths -->
+  <g font-size="20">
+    <rect x="60" y="90" width="300" height="64" rx="8" fill="#eef3fa" stroke="#5b7db1"/>
+    <text x="210" y="128" text-anchor="middle" fill="#1c2a44">main dispatch</text>
+
+    <rect x="60" y="250" width="300" height="64" rx="8" fill="#f3f0e6" stroke="#b3a15b"/>
+    <text x="210" y="288" text-anchor="middle" fill="#3d3416">dry-run pick</text>
+
+    <rect x="60" y="410" width="300" height="64" rx="8" fill="#f3f0e6" stroke="#b3a15b"/>
+    <text x="210" y="448" text-anchor="middle" fill="#3d3416">deferred shadow pick</text>
+  </g>
+
+  <!-- resolver -->
+  <g font-size="20">
+    <rect x="470" y="250" width="290" height="64" rx="8" fill="#e8f0e8" stroke="#5b915b"/>
+    <text x="615" y="281" text-anchor="middle" fill="#1e3a1e">resolve_picker_authority()</text>
+    <text x="615" y="303" text-anchor="middle" font-size="17" fill="#375a37">fails &#8594; (None, reason)</text>
+  </g>
+
+  <line x1="360" y1="122" x2="470" y2="270" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="360" y1="282" x2="470" y2="282" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="360" y1="442" x2="470" y2="294" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- estimate -->
+  <g font-size="20">
+    <rect x="850" y="150" width="300" height="70" rx="8" fill="#eef3fa" stroke="#5b7db1"/>
+    <text x="1000" y="182" text-anchor="middle" fill="#1c2a44">request estimate</text>
+    <text x="1000" y="206" text-anchor="middle" font-size="17" fill="#37507a">one figure</text>
+  </g>
+  <line x1="760" y1="270" x2="850" y2="190" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- candidate blocks (item 2 divergence) -->
+  <g font-size="20">
+    <rect x="850" y="300" width="300" height="70" rx="8" fill="#fdecea" stroke="#b3261e"/>
+    <text x="1000" y="332" text-anchor="middle" fill="#7a1a15">candidate context blocks</text>
+    <text x="1000" y="356" text-anchor="middle" font-size="17" fill="#9c2b24">one figure per backend</text>
+  </g>
+  <line x1="760" y1="290" x2="850" y2="330" stroke="#b3261e" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-red)"/>
+
+  <text x="1000" y="410" text-anchor="middle" font-size="17" fill="#9c2b24">diverges when two standing chains differ</text>
+  <text x="1000" y="432" text-anchor="middle" font-size="17" fill="#7a1a15">&#8594; blocked: rule lives in snapshot.py</text>
+
+  <text x="0" y="0" font-size="16" fill="#666"/>
+  <text x="60" y="530" font-size="16" fill="#666"><tspan fill="#5b7db1">&#9679;</tspan> resolved by the dispatcher  </text>
+  <text x="360" y="530" font-size="16" fill="#666"><tspan fill="#b3a15b">&#9679;</tspan> resolve locally (this node's change)  </text>
+  <text x="720" y="530" font-size="16" fill="#666"><tspan fill="#b3261e">&#9679;</tspan> unresolved divergence (held by a peer node)</text>
+</svg>

@@ -1179,6 +1179,7 @@ def crew_dispatch(
             dispatch_picker_selection,
             resolve_project_repository,
         )
+        from reckon.crew.dispatch_picker import resolve_picker_authority
 
         # The ledger rows, the verdict inputs and the budget snapshot are read
         # here, outside the picker's own latency bound, so the picker thread
@@ -1193,6 +1194,12 @@ def crew_dispatch(
             picker_budget,
             picker_input_errors,
         ) = build_picker_inputs(project, config, picker_repo)
+        # The dry-run preview holds no dispatcher-resolved authority, so it
+        # resolves the same one and passes it, reporting a resolution failure
+        # on the pick rather than leaving the granted fragment silently charged.
+        picker_authority, picker_authority_error = resolve_picker_authority(
+            project, picker_repo
+        )
         picker_selection = dispatch_picker_selection(
             node=node,
             config=config,
@@ -1204,6 +1211,8 @@ def crew_dispatch(
             verdict_inputs=picker_verdict_inputs,
             budget_snapshot=picker_budget,
             input_errors=picker_input_errors,
+            authority=picker_authority,
+            authority_error=picker_authority_error,
         )
 
     availability_refusal = _model_availability_refusal(
