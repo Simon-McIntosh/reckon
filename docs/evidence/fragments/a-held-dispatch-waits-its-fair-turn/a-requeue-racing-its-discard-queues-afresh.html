@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-verifies" content="reckon:a-held-dispatch-waits-its-fair-turn#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-08">
+  <title>A re-queue racing its own discard queues afresh | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-requeue-racing-its-discard-queues-afresh">
+  <h2>§6 — A re-queue racing its own discard queues afresh</h2>
+  <p><code>queue_dispatch</code> now treats a queued pointer discarded between the scan and
+  the per-run lock as absent: it falls through to a first queueing and writes one fresh
+  queued pointer under the request's own run id instead of reading a pointer that is gone.
+  Gate: 12 passed, <code>EXIT=0</code>. Negative control: restoring the raising read fails
+  the new case.</p>
+</section>
+</main>
+</body>
+</html>
