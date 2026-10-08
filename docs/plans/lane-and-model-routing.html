@@ -24,7 +24,7 @@
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -164,10 +164,16 @@
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §4</pre>
     <p class="r-fu-outcome"><p>§5 landed (merge <code>bfe725991</code>, with <code>stage-time-tests-answer-by-pair</code>). §4 remains and is held on <code>every-module-fits-a-worker-window</code> §4 by the plan's section dependency. The four review follow-ons are §8–§11.</p></p>
     </article>
-<article class="r-fu" data-id="f-lmr-005" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 10:00" data-recommends-skill="/reckon-build lane-and-model-routing §9" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lmr-005" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 10:00" data-recommends-skill="/reckon-build lane-and-model-routing §9" data-resolved-at="2026-10-08T12:30:35+00:00" data-resolved-by="reckon-73">
     <h4 class="r-fu-title">Build §8–§11, then §4 after the cli.py split</h4>
     <div class="r-fu-body"><p>§9 and §11 can start now. §8 shares <code>reckon/crew/picker/prompts.py</code> with <code>one-typesafe-model-picker</code> §12 and §19. §4 and §10 edit <code>reckon/cli.py</code> and wait on <code>every-module-fits-a-worker-window</code> §4.</p></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §9</pre>
+    <p class="r-fu-outcome"><p>§9 (merge <code>c901ef916</code>, review 102) and §11 (merge <code>943d9ded5</code>, review 116) landed on 2026-10-08. §9's review follow-on became §12.</p></p>
+    </article>
+<article class="r-fu" data-id="f-lmr-006" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 12:30" data-recommends-skill="/reckon-build lane-and-model-routing §12" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §12, then §8; §4 and §10 after the section-dependency fix</h4>
+    <div class="r-fu-body"><p>§12 (one owner for the provenance leaf rule) can start now. §8 shares <code>reckon/crew/picker/prompts.py</code> with <code>one-typesafe-model-picker</code> §12 and §19, so it goes when neither holds a claim on it. §4 and §10 wait on <code>every-module-fits-a-worker-window</code> §4. That section has landed, but the roadmap's <code>_section_satisfied</code> still ignores a done declaration until <code>a-plan-is-done-when-every-section-is-ticked</code> §9 lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §12</pre>
     </article>
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">
