@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "3f7a2f71ff433c778659e93e870207d3752c748f",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_picker.py:dispatch_picker_selection",
+    "reckon/crew/dispatch.py:642",
+    "reckon/crew_dispatch_commands.py:1195",
+    "reckon/crew/picker/snapshot.py:candidates"
+  ],
+  "completed_at": "2026-10-08T10:36:30.698Z",
+  "dispatched_at": "2026-10-08T10:20:24Z",
+  "findings": [
+    {
+      "file": "tests/test_estimate_stage_times_the_estimate.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the run's evidence fence named tests/test_estimate_and_budget_view_are_honest.py and the -are-honest fragment while the granted write scope named the -stage-times-the-estimate pair actually written, so the two fence names must be reconciled by the coordinator."
+    },
+    {
+      "file": "gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate arm records \"# revision 3f7a2f71f (worktree carries this node's uncommitted change)\" and the manifest's after_suite names that same base revision, so the recorded head revision is the base rather than the landed d005674bc, which a reader comparing the pair to the promoted commit reads as a mismatch."
+    }
+  ],
+  "head_log_revision": "3f7a2f71ff433c778659e93e870207d3752c748f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit d005674bc against 3f7a2f71f; it changes reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py and reckon/crew/picker/snapshot.py, adds tests/test_estimate_stage_times_the_estimate.py and one evidence fragment, all inside the declared write paths.",
+    "done_when": "the evidence fence names a 50 ms estimator test and a measured-share-or-dropped comment; tests/test_estimate_stage_times_the_estimate.py:132 injects a 50 ms estimator and asserts estimate_ms >= 50 at :147, and the comment at reckon/crew/picker/__init__.py:148 no longer claims an unmeasured share.",
+    "goal": "the node goal is that the context estimate runs once per pick and estimate_ms records its duration; the landed diff does both, reusing or measuring the estimate once in reckon/crew/picker/snapshot.py:708 and recording that duration as estimate_ms at reckon/crew/picker/__init__.py:293.",
+    "manifest": "read; it records commit d005674bc from base 3f7a2f71f, a head gate of 190 passed EXIT=0 and a base gate of 4 failed/186 passed EXIT=1, and the estimate-stage negative control (1 failed EXIT=1).",
+    "write_paths": "the manifest declares the three source files, the new test and the fragment; every path in the diff, including the evidence fragment, is inside that declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_estimate_stage_times_the_estimate.py:132 fails at base (estimate_ms reads 0) and passes at head, and :211 mutates a first read to prove the zero-delta path no longer aliases the cache.",
+    "evidence": "the named gate ran and its result is recorded in manifest.md (head 190 passed EXIT=0, base 4 failed/186 passed EXIT=1) with both logs on disk, but the head log's own revision line at gate-head.log:1 names 3f7a2f71f, one newline short of the landed commit.",
+    "fit": "the new keyword-only parameters follow the surrounding style of reckon/crew/picker/__init__.py:205, and the rewritten comment at :148 names no forbidden plan or ticket id.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:708 reuses a figure already on the request and only measures otherwise, and reckon/crew/picker/__init__.py:293 records that duration as estimate_ms, which is the goal verbatim.",
+    "reuse": "no added definition forks a capability; the estimate_out outlet extends the existing snapshot.candidates owner at reckon/crew/picker/snapshot.py:665, and a search over reckon/crew/picker for a pre-existing time-the-estimate helper found none.",
+    "scope_discipline": "every path in the diff (reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py, reckon/crew/picker/snapshot.py, tests/test_estimate_stage_times_the_estimate.py, the fragment) is inside the SCOPE write paths and reckon/cli.py is untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the context estimate runs once per pick and estimate_ms records its duration; the landed diff does both, reusing or measuring the estimate once in reckon/crew/picker/snapshot.py:708 and recording that duration as estimate_ms at reckon/crew/picker/__init__.py:293.\nVERDICT done_when: the evidence fence names a 50 ms estimator test and a measured-share-or-dropped comment; tests/test_estimate_stage_times_the_estimate.py:132 injects a 50 ms estimator and asserts estimate_ms >= 50 at :147, and the comment at reckon/crew/picker/__init__.py:148 no longer claims an unmeasured share.\nVERDICT write_paths: the manifest declares the three source files, the new test and the fragment; every path in the diff, including the evidence fragment, is inside that declared scope.\nVERDICT manifest: read; it records commit d005674bc from base 3f7a2f71f, a head gate of 190 passed EXIT=0 and a base gate of 4 failed/186 passed EXIT=1, and the estimate-stage negative control (1 failed EXIT=1).\nVERDICT diff: read commit d005674bc against 3f7a2f71f; it changes reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py and reckon/crew/picker/snapshot.py, adds tests/test_estimate_stage_times_the_estimate.py and one evidence fragment, all inside the declared write paths.\nCALL_SITES: reckon/crew/dispatch_picker.py:dispatch_picker_selection, reckon/crew/dispatch.py:642, reckon/crew_dispatch_commands.py:1195, reckon/crew/picker/snapshot.py:candidates\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:708 reuses a figure already on the request and only measures otherwise, and reckon/crew/picker/__init__.py:293 records that duration as estimate_ms, which is the goal verbatim.\nSCORE evidence: 18\nJUSTIFICATION evidence: the named gate ran and its result is recorded in manifest.md (head 190 passed EXIT=0, base 4 failed/186 passed EXIT=1) with both logs on disk, but the head log's own revision line at gate-head.log:1 names 3f7a2f71f, one newline short of the landed commit.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py, reckon/crew/picker/snapshot.py, tests/test_estimate_stage_times_the_estimate.py, the fragment) is inside the SCOPE write paths and reckon/cli.py is untouched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_estimate_stage_times_the_estimate.py:132 fails at base (estimate_ms reads 0) and passes at head, and :211 mutates a first read to prove the zero-delta path no longer aliases the cache.\nSCORE fit: 19\nJUSTIFICATION fit: the new keyword-only parameters follow the surrounding style of reckon/crew/picker/__init__.py:205, and the rewritten comment at :148 names no forbidden plan or ticket id.\nSCORE reuse: 20\nJUSTIFICATION reuse: no added definition forks a capability; the estimate_out outlet extends the existing snapshot.candidates owner at reckon/crew/picker/snapshot.py:665, and a search over reckon/crew/picker for a pre-existing time-the-estimate helper found none.\nFINDING tests/test_estimate_stage_times_the_estimate.py:1 follow-on: the run's evidence fence named tests/test_estimate_and_budget_view_are_honest.py and the -are-honest fragment while the granted write scope named the -stage-times-the-estimate pair actually written, so the two fence names must be reconciled by the coordinator.\nFINDING gate-head.log:1 follow-on: the head gate arm records \"# revision 3f7a2f71f (worktree carries this node's uncommitted change)\" and the manifest's after_suite names that same base revision, so the recorded head revision is the base rather than the landed d005674bc, which a reader comparing the pair to the promoted commit reads as a mismatch.\nreviewed_base_sha: 3f7a2f71ff433c778659e93e870207d3752c748f\nreviewed_head_sha: d005674bc69de024fd80ccb362e7b8dc88ee629b\n",
+  "review_run_id": "r-20261008T101957348795-review-of-estimate-stage-times-the-estimate",
+  "reviewed_base_sha": "3f7a2f71ff433c778659e93e870207d3752c748f",
+  "reviewed_head_sha": "d005674bc69de024fd80ccb362e7b8dc88ee629b",
+  "reviewed_run_id": "r-20261008T093501061630-estimate-stage-times-the-estimate",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T10:33:58.262179+00:00",
+  "total": 114
+}
