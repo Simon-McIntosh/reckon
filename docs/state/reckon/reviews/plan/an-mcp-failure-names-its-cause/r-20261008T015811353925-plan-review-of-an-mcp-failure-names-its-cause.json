@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T02:07:54.089Z",
+  "dispatched_at": "2026-10-08T01:58:56Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:81",
+      "id": "duplicate_owner-1",
+      "reason": "the census should call `transcript_index`/`session_usage`'s record filter so transcript parsing has one owner rather than two.",
+      "text": "\u00a72 counts `storage-slow` tool results \"from the transcripts\" by walking `~/.claude/projects` itself, but that root is already owned at `reckon/velocity.py:1363` (`transcript_index`) and `reckon/velocity.py:1384` (`session_usage`), which already resolve the root, glob the `*.jsonl` session files, filter by window and skip sidechain records; a second walk forks the record-shape handling and drifts on the next transcript-schema change",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_backends.py:2280",
+      "id": "duplicate_owner-2",
+      "reason": "the plan names the wrong file as the owner, so an implementation node would fork harness-home writes into a second module and collide with the idempotent seeding contract.",
+      "text": "\u00a77 declares its write path as `reckon/crew/dispatch.py` (\"which writes the run's harness home\"), but the harness home is seeded by `_seed_harness_entry` in `reckon/_backends.py` (called at `reckon/_backends.py:2183`), and it skips any destination that already exists, so a settings writer added in dispatch.py is a second writer beside the owner; the project-MCP disabling belongs in the seeding path",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html#s2",
+      "id": "reuse_search-1",
+      "reason": "naming `reckon/velocity.py` and `reckon/_backends.py` as the mechanisms most resembling the proposed additions would let the author extend rather than rebuild them.",
+      "text": "the plan searched for `_run_under_deadline` and the `doctor` MCP-config reader (it cites both), but cites no search over the transcript machinery (`reckon/velocity.py`) for \u00a72's storage-slow count and none over the harness-home seeding for \u00a77; a reader cannot tell whether the author looked and rejected those mechanisms or did not look",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html#s2",
+      "id": "interface_budget-1",
+      "reason": "the section must account for its added surface in its own text, naming what it retires or why the retirement is impossible.",
+      "text": "\u00a72 adds the `reckon doctor mcp` shape with `--since` and `--json` to the CLI-option family without naming anything \u00a72 retires, merges, or a reason nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html#s7",
+      "id": "interface_budget-2",
+      "reason": "the section must name in its own text the surface it retires or merges, making the added dispatch option budget-accounted.",
+      "text": "\u00a77 adds a `--mcp <name>` dispatch option, and while it retires the default (project servers enabled by default), it never states that the launch default it disables is the surface it retires, nor names any CLI option it removes",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2ea444206f15ae4ea07aee7493abf3b57c31bac2821383336473cc1b362700fc",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T015811353925-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "76df73a93f9d3ff0488b5c2f096181908f1119ca",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73 and \u00a78 extend the existing deep body-runner `_run_under_deadline` (reckon/mcp.py:299) and \u00a72 concentrates the census in one new module rather than spreading it across wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a72 re-reads Claude Code transcripts (owner `reckon/velocity.py`) and two sections write harness settings the owner `_seed_harness_entry` seeds.",
+    "interface_budget": "a finding \u2014 public_definitions 1586, cli_options 336, mcp_views 33, refusal_families 23; \u00a72 and \u00a77 add CLI options without naming what they retire or merge, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 adds a transcript-counting reader and \u00a77 a harness-settings writer without citing the modules that already own those mechanisms.",
+    "thin_wrapper": "pass \u2014 \u00a75 extends the existing `doctor` (reckon/cli.py:8455) rather than forking a second drift/launch reader, and \u00a73 adds a field to the existing `TimeoutResult` (reckon/_mcp_tools.py:112) with a stated reason for keeping the `storage-slow` sentinel."
+  },
+  "section_digests": {
+    "_document": "f6a17f1794f2a3f9a3ec6c55cb2b418ee0839b7e46ced2f9a3ab2b2373685199",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s2": "a96908d804ed615f305aa48d666da95845f8cff18907f77fad577fd144249a7f",
+    "s3": "82031c5ca9a72cb79729fbc07674f2d108fbebb8874c2e50d572fbd48600c6b2",
+    "s4": "e8ab475d56abc119c369298b36a1fedb5af7d6342681af684858d6c50c994663",
+    "s5": "44e448ad050553b9e4bcdac87bfee8a33ae5cb62c2ea2d3fedb2cb80ea74f589",
+    "s6": "841c8e284e145de96ac3b05055692c1f2474a35d8b9924d8c1be8359e5e7f56b",
+    "s7": "ae323518339a04b68a01b852b06f812426fb901d7068520df2f0c10850ed259e",
+    "s8": "e767ac662612e3267540f7c6afbaf5dfc2387cde567739be1d2cee15e035f12e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T02:08:01.292047+00:00"
+}
