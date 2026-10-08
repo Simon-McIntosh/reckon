@@ -21,7 +21,7 @@ from reckon.crew.routing import _tokens_for_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# A quarter of a 200k-token window, the bound the plan's decision locks.
+# A quarter of a 200k-token window leaves room for multiple module inputs.
 BOUND = 50_000
 
 AREAS = ("reckon", "tests")
@@ -29,7 +29,6 @@ AREAS = ("reckon", "tests")
 # Modules above the bound when the bound was set, each scheduled for a split.
 ALLOWLIST = frozenset(
     {
-        "reckon/_backends.py",
         "reckon/crew/recovery.py",
         "reckon/crew/runs.py",
         "reckon/mcp.py",

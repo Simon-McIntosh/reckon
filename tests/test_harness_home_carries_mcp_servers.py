@@ -38,7 +38,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends, flight
+from reckon import _backends, _worker_fence, flight
 
 NEGATIVE_CONTROL_MUTATION = (
     "drop the ~/.claude.json declaration from the flight defaults; the "
@@ -119,7 +119,7 @@ def _apply_merge_mutation(monkeypatch):
         destination.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
         destination.chmod(0o644)
 
-    monkeypatch.setattr(_backends, "_write_private_json", _legacy_write)
+    monkeypatch.setattr(_worker_fence, "_write_private_json", _legacy_write)
 
 
 def _metadata_snapshot(root: Path) -> list[tuple]:

@@ -105,10 +105,10 @@ def _capture(monkeypatch, module) -> list[dict]:
 
 
 def test_private_json_default_output_unchanged(tmp_path):
-    from reckon import _backends
+    from reckon import _worker_fence
 
     destination = tmp_path / "private.json"
-    _backends._write_private_json(destination, CANONICAL_PAYLOAD)
+    _worker_fence._write_private_json(destination, CANONICAL_PAYLOAD)
 
     text, mode = _written(destination)
     assert text == CANONICAL_TEXT
@@ -116,10 +116,10 @@ def test_private_json_default_output_unchanged(tmp_path):
 
 
 def test_private_json_owner_only_mode_unchanged(tmp_path):
-    from reckon import _backends
+    from reckon import _worker_fence
 
     destination = tmp_path / "private-owner.json"
-    _backends._write_private_json(destination, CANONICAL_PAYLOAD, 0o400)
+    _worker_fence._write_private_json(destination, CANONICAL_PAYLOAD, 0o400)
 
     text, mode = _written(destination)
     assert text == CANONICAL_TEXT
@@ -127,12 +127,12 @@ def test_private_json_owner_only_mode_unchanged(tmp_path):
 
 
 def test_private_json_mode_survives_a_restrictive_umask(tmp_path):
-    from reckon import _backends
+    from reckon import _worker_fence
 
     destination = tmp_path / "private-umask.json"
     previous = os.umask(0o277)
     try:
-        _backends._write_private_json(destination, CANONICAL_PAYLOAD, 0o600)
+        _worker_fence._write_private_json(destination, CANONICAL_PAYLOAD, 0o600)
     finally:
         os.umask(previous)
 
@@ -292,10 +292,10 @@ def test_private_number_helpers_are_gone():
 
 
 def test_backends_private_json_delegates(tmp_path, monkeypatch):
-    from reckon import _backends
+    from reckon import _worker_fence
 
-    calls = _capture(monkeypatch, _backends)
-    _backends._write_private_json(tmp_path / "p.json", CANONICAL_PAYLOAD)
+    calls = _capture(monkeypatch, _worker_fence)
+    _worker_fence._write_private_json(tmp_path / "p.json", CANONICAL_PAYLOAD)
 
     assert len(calls) == 1
     kwargs = calls[0]["kwargs"]
@@ -306,10 +306,10 @@ def test_backends_private_json_delegates(tmp_path, monkeypatch):
 
 
 def test_backends_private_json_keeps_the_owner_only_ceiling(tmp_path, monkeypatch):
-    from reckon import _backends
+    from reckon import _worker_fence
 
-    calls = _capture(monkeypatch, _backends)
-    _backends._write_private_json(tmp_path / "p.json", CANONICAL_PAYLOAD, 0o400)
+    calls = _capture(monkeypatch, _worker_fence)
+    _worker_fence._write_private_json(tmp_path / "p.json", CANONICAL_PAYLOAD, 0o400)
 
     assert calls[0]["kwargs"]["mode"] == 0o400
 

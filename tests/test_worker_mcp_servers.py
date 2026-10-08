@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends
+from reckon import _backends, _worker_fence
 
 NEGATIVE_CONTROL_MUTATION = (
     "remove the seeded settings write that disables project MCP servers; the "
@@ -108,7 +108,7 @@ def _apply_declared_mutation(monkeypatch):
     if not os.environ.get("WORKER_MCP_SETTINGS_MUTATION"):
         return
     monkeypatch.setattr(
-        _backends, "_seed_worker_mcp_settings", lambda home, servers: None
+        _worker_fence, "_seed_worker_mcp_settings", lambda home, servers: None
     )
 
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":  # pragma: no cover - reproduces the red log
     import tempfile
 
     if os.environ.get("WORKER_MCP_SETTINGS_MUTATION"):
-        _backends._seed_worker_mcp_settings = lambda home, servers: None
+        _worker_fence._seed_worker_mcp_settings = lambda home, servers: None
     print(NEGATIVE_CONTROL_MUTATION)
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)

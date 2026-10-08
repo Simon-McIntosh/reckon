@@ -32,7 +32,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends, crew, ledger
+from reckon import _backends, _worker_fence, crew, ledger
 from reckon.crew.runs import live_dir, pointer_path, runs_dir
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -158,7 +158,7 @@ def _hide_bwrap(monkeypatch: pytest.MonkeyPatch) -> None:
             return None
         return real_which(name, *args, **kwargs)
 
-    monkeypatch.setattr(_backends.shutil, "which", which)
+    monkeypatch.setattr(_worker_fence.shutil, "which", which)
 
 
 def _stub_launcher(plan, *, log_path, stderr_path, prompt_path) -> int:
@@ -245,7 +245,7 @@ def test_case_1_bwrap_absent_refuses_and_leaves_nothing(
 def test_case_2_a_failed_namespace_probe_is_refused_naming_the_namespace(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(_backends, "_probe_user_namespace", _FailedProbe)
+    monkeypatch.setattr(_worker_fence, "_probe_user_namespace", _FailedProbe)
 
     with pytest.raises(crew.CrewError) as refusal:
         _dispatch(tmp_path, repository)
@@ -324,13 +324,13 @@ def test_case_7_a_second_dispatch_does_not_reprobe(
     and write paths so the second is a real dispatch, not one refused earlier.
     """
     calls = {"n": 0}
-    real_probe = _backends._probe_user_namespace
+    real_probe = _worker_fence._probe_user_namespace
 
     def counting():
         calls["n"] += 1
         return real_probe()
 
-    monkeypatch.setattr(_backends, "_probe_user_namespace", counting)
+    monkeypatch.setattr(_worker_fence, "_probe_user_namespace", counting)
 
     _dispatch(tmp_path, repository, node_id="fence-node-a")
     _dispatch(
@@ -468,7 +468,7 @@ def _negative_control_report(root: Path) -> tuple[int, list[str]]:
         raise _WorktreeReachedError()
 
     # The mutation: the capability check reports success while bwrap is absent.
-    _backends.shutil.which = which
+    _worker_fence.shutil.which = which
     _backends.fence_capability_problem = lambda *a, **k: None
     dispatch_module._create_worktree = reached
     try:
@@ -490,7 +490,7 @@ def _negative_control_report(root: Path) -> tuple[int, list[str]]:
         lines.append("the dispatch neither refused nor reached the worktree")
         return 1, lines
     finally:
-        _backends.shutil.which = real_which
+        _worker_fence.shutil.which = real_which
         _backends.fence_capability_problem = real_problem
         os.environ.pop("RECKON_HOME", None)
 
