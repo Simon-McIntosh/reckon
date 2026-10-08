@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs named in its manifest test_logs (head_arm.log at 958f39384, base_arm.log at 786c5ba8): 0 failures at head minus 3 at base yields no added failing test. The manifest spells these under test_logs rather than the canonical baseline_suite/after_suite fields, so the count was derived from the named logs directly.",
+  "base_log_revision": "786c5ba86a76d00549da0455b02e9cae31b58a6c",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:3577",
+    "reckon/mcp.py:3751",
+    "reckon/_store.py:1201"
+  ],
+  "completed_at": "2026-10-08T04:07:28.183Z",
+  "dispatched_at": "2026-10-08T03:45:26Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "3285",
+      "severity": "follow-on",
+      "text": "validate_landing_patch keys the open-section guard on the requested status rather than on the transition, so a plan already at shipped or done that holds an open section is re-judged on the PATCH path (reckon/serve.py:3577) while the other two sites grandfather it \u2014 the brief and the evidence fragment both state an already-terminal plan is not re-judged. Reproduced against the reviewed head: validate_landing_patch on an already-done state whose s2 is implementable raises 'terminal status refused: 1 section(s) still open (s2)', where apply_ops on the same state returns without raising."
+    }
+  ],
+  "head_log_revision": "958f39384ed76b61123242cef6bb4a8ddf82c18e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "read the three commits against base 786c5ba8: 958f39384 adds the guard at three sites plus the five-test file, 39112e789 scopes it to _LANDED_STATUSES, 266574666 extends the evidence fragment.",
+    "done_when": "the done_when names a recorded census and two refusal tests that must fail at base; the manifest and evidence fragment record census 17 of 213 terminal plans with an open section, head 5 passed EXIT=0, and the guard-absent base 3 failed EXIT=1 (both refusal tests DID NOT RAISE).",
+    "goal": "the goal is to refuse a write that sets a plan to shipped or done while any declaration is implementable or deferred; a probe against the reviewed head confirmed apply_ops raises 'terminal status refused: 1 section(s) still open (s2)' for both an implementable and a deferred section, naming s2.",
+    "manifest": "read; it states the gate (119 passed across five files, EXIT=0), the negative-control base arm and their log paths.",
+    "write_paths": "read the manifest's declared paths; every path in the three commits is inside them."
+  },
+  "justifications": {
+    "durability": "the two refusal tests fail DID NOT RAISE at base 786c5ba8 (base_arm.log) and pass at head, but the transition-keying is exercised only through apply_ops (tests/test_terminal_status_needs_every_section_ticked.py:106), not through the patch writer where that behaviour differs.",
+    "evidence": "the manifest's tests line and base_arm.log record the census count (17 of 213 in the evidence fragment), the 5-passed head arm EXIT=0 and the 3-failed base arm EXIT=1, so the done_when's measure is recorded rather than claimed.",
+    "fit": "reckon/_store.py:3251 adds _require_every_section_ticked in the existing _require_* terminal-guard idiom and reuses the pre-existing _LANDED_STATUSES constant (:3130) rather than a new status set.",
+    "goal_fidelity": "reckon/_store.py:3285 (validate_landing_patch), :1344 (_write_state_locked) and :3403 (apply_ops) call _require_every_section_ticked on a write moving a plan into shipped or done, and :3261 reads _plan_html.open_sections, so the landed change refuses the landing and names the open ids exactly as the goal states.",
+    "reuse": "the guard reads the single open-section predicate _plan_html.open_sections (reckon/_plan_html.py:869) that the section-to-todo work already owns, instead of re-deriving the declaration vocabulary.",
+    "scope_discipline": "the three commits change only reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py and the evidence fragment, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to refuse a write into shipped or done while any section declaration is implementable or deferred; a probe against the reviewed head shows reckon/_store.py:3261 raising 'terminal status refused: 1 section(s) still open (s2)' for both an implementable and a deferred section.\nVERDICT done_when: the done_when names the census count and two refusal tests that must fail at base; the manifest and evidence fragment record census 17 of 213, head 5 passed EXIT=0, base 3 failed EXIT=1 with both refusal tests DID NOT RAISE.\nVERDICT write_paths: read the manifest's declared paths; every path in the three commits (reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py, and the evidence fragment) is inside them.\nVERDICT manifest: read; it records the gate 119 passed across five files EXIT=0 and the negative-control base arm, with log paths.\nVERDICT diff: read commit by commit against base 786c5ba8; the guard lands at three sites, a five-test file is added, and the evidence fragment carries the census.\nCALL_SITES: reckon/serve.py:3577, reckon/mcp.py:3751, reckon/_store.py:1201\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:3285, :1344 and :3403 call _require_every_section_ticked on a shipped/done write, reading _plan_html.open_sections at :3261.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's tests line and base_arm.log record census 17 of 213, head 5 passed EXIT=0 and base 3 failed EXIT=1, so the measure is recorded not claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is exactly reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py and the evidence fragment, all inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: the two refusal tests fail DID NOT RAISE at base 786c5ba8 and pass at head, but transition-keying is tested only through apply_ops (tests/test_terminal_status_needs_every_section_ticked.py:106), not the patch writer.\nSCORE fit: 20\nJUSTIFICATION fit: _require_every_section_ticked at reckon/_store.py:3251 follows the _require_* terminal-guard idiom and reuses the existing _LANDED_STATUSES constant at :3130.\nSCORE reuse: 20\nJUSTIFICATION reuse: the guard reads the single predicate _plan_html.open_sections at reckon/_plan_html.py:869 rather than re-deriving the declaration vocabulary.\nFINDING reckon/_store.py:3285 follow-on: validate_landing_patch keys the guard on the requested status rather than the transition, so an already-terminal plan with an open section is re-judged on the PATCH path (serve.py:3577) while _write_state_locked and apply_ops grandfather it; reproduced with an already-done state raising '1 section(s) still open (s2)'.",
+  "review_run_id": "r-20261008T034441470592-review-of-a-plan-reaches-done-only-when-every-section-is-ticked",
+  "reviewed_base_sha": "786c5ba86a76d00549da0455b02e9cae31b58a6c",
+  "reviewed_head_sha": "26657466689deabf0b63dcab52a239995d5c041d",
+  "reviewed_run_id": "r-20261008T025558982950-a-plan-reaches-done-only-when-every-section-is-ticked",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T03:58:00+00:00",
+  "total": 115
+}
